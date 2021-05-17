@@ -630,8 +630,8 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         } else if (evt.key_code == KeyRight ||
                    (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeySpace) {
-            wind_vector_goal_ = Ren::Vec3f{1.0f, 0.0f, 0.0f};
+        //} else if (evt.key_code == KeySpace) {
+        //    wind_vector_goal_ = Ren::Vec3f{1.0f, 0.0f, 0.0f};
         } else {
             input_processed = false;
         }

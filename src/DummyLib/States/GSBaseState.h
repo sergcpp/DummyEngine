@@ -26,6 +26,7 @@ class ShaderLoader;
 namespace Gui {
 class BaseElement;
 class BitmapFont;
+class Image9Patch;
 class Renderer;
 }
 
@@ -51,6 +52,7 @@ protected:
     std::shared_ptr<Gui::BaseElement>   ui_root_;
     std::shared_ptr<Gui::BitmapFont>    font_;
     std::shared_ptr<DebugInfoUI>        debug_ui_;
+    std::unique_ptr<Gui::Image9Patch>   cmdline_back_;
 
     std::mutex              mtx_;
     std::thread             background_thread_;

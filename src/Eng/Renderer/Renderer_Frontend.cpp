@@ -161,6 +161,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
     const bool zfill_enabled = (list.render_flags & (EnableZFill | EnableSSAO)) != 0;
 
+    if (!lighting_enabled) {
+        list.env.sun_col = {};
+    }
+
     const uint32_t render_mask = list.draw_cam.render_mask();
 
     int program_index = 0;

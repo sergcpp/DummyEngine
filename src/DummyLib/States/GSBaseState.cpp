@@ -10,6 +10,7 @@
 #endif
 
 #include <Eng/GameStateManager.h>
+#include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Random.h>
 #include <Eng/Renderer/Renderer.h>
@@ -52,6 +53,14 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     font_ = fonts->FindFont("main_font");
 
     debug_ui_ = game->GetComponent<DebugInfoUI>(UI_DEBUG_KEY);
+
+    cmdline_back_.reset(
+        new Gui::Image9Patch(*ren_ctx_,
+                             (std::string(ASSETS_BASE_PATH) +
+                              "/textures/editor/dial_edit_back.uncompressed.tga")
+                                 .c_str(),
+                             Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f},
+                             Ren::Vec2f{2.0f, 2.0f}, ui_root_.get()));
 
     swap_interval_ = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
 
@@ -761,10 +770,24 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     const uint8_t text_color[4] = {255, 255, 255, 255};
 
     if (cmdline_enabled_) {
-        float cur_y = 1.0f - font_->height(root);
+        float cur_y = 1.0f - font_height;
 
-        for (const std::string &cmd : cmdline_history_) {
-            font_->DrawText(r, cmd.c_str(), Ren::Vec2f{-1, cur_y}, text_color, root);
+        const float total_height = (float(MAX_CMD_LINES) + 0.4f) * font_height;
+
+        cmdline_back_->Resize(Ren::Vec2f{-1.0f, 1.0f - total_height},
+                              Ren::Vec2f{2.0f, total_height}, root);
+        cmdline_back_->Draw(r);
+
+        for (size_t i = 0; i < cmdline_history_.size(); i++) {
+            const std::string &cmd = cmdline_history_[i];
+
+            const float width =
+                font_->DrawText(r, cmd.c_str(), Ren::Vec2f{-1, cur_y}, text_color, root);
+            if (i == cmdline_history_.size() - 1) {
+                // draw cursor
+                font_->DrawText(r, "_", Ren::Vec2f{-1.0f + width, cur_y}, text_color,
+                                root);
+            }
             cur_y -= font_height;
         }
     }
