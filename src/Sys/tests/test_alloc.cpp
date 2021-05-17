@@ -35,7 +35,7 @@ void test_alloc() {
 
     {   // Usage with stl
 
-        char buf[256];
+        char buf[512];
         Sys::MonoAlloc<char> my_alloc(buf, sizeof(buf));
 
         std::vector<int, Sys::MonoAlloc<int>> vec(my_alloc);
@@ -46,17 +46,25 @@ void test_alloc() {
         vec.push_back(3);
         vec.push_back(4);
 
-        require(vec[0] == 1);
-        require(vec[1] == 2);
-        require(vec[2] == 3);
-        require(vec[3] == 4);
-
         std::list<int, Sys::MonoAlloc<int>> list(my_alloc);
 
         list.push_back(1);
         list.push_back(2);
         list.push_back(3);
         list.push_back(4);
+
+        std::basic_string<char, std::char_traits<char>, Sys::MonoAlloc<char>> str(my_alloc);
+
+        str.append("test");
+        str.append("string");
+        str.append("more");
+        str.append("data");
+        str.append("to");
+        str.append("go");
+        str.append("around");
+        str.append("small");
+        str.append("string");
+        str.append("optimization");
 
         require(vec[0] == 1);
         require(vec[1] == 2);
@@ -71,6 +79,8 @@ void test_alloc() {
         require(*el == 3);
         el++;
         require(*el == 4);
+
+        require(str == "teststringmoredatatogoaroundsmallstringoptimization");
     }
 
     {   // Usage with binary tree
@@ -169,5 +179,54 @@ void test_alloc() {
                 allocator.deallocate(pointers[i][j], j + 1);
             }
         }
+    }
+
+    { // Multi-pool alloc stl usage
+        Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+        std::vector<int, Sys::MultiPoolAllocator<int>> vec(my_alloc);
+        vec.reserve(4);
+
+        vec.push_back(1);
+        vec.push_back(2);
+        vec.push_back(3);
+        vec.push_back(4);
+
+        std::list<int, Sys::MultiPoolAllocator<int>> list(my_alloc);
+
+        list.push_back(1);
+        list.push_back(2);
+        list.push_back(3);
+        list.push_back(4);
+
+        std::basic_string<char, std::char_traits<char>, Sys::MultiPoolAllocator<char>> str(
+            my_alloc);
+
+        str.append("test");
+        str.append("string");
+        str.append("more");
+        str.append("data");
+        str.append("to");
+        str.append("go");
+        str.append("around");
+        str.append("small");
+        str.append("string");
+        str.append("optimization");
+
+        require(vec[0] == 1);
+        require(vec[1] == 2);
+        require(vec[2] == 3);
+        require(vec[3] == 4);
+
+        auto el = list.begin();
+        require(*el == 1);
+        el++;
+        require(*el == 2);
+        el++;
+        require(*el == 3);
+        el++;
+        require(*el == 4);
+
+        require(str == "teststringmoredatatogoaroundsmallstringoptimization");
     }
 }

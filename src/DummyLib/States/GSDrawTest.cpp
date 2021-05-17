@@ -63,7 +63,7 @@ void GSDrawTest::Enter() {
     GSBaseState::LoadScene(SCENE_NAME);
 }
 
-void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
+void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
     GSBaseState::OnPreloadScene(js_scene);
 
 #if 0 // texture compression test
@@ -232,7 +232,7 @@ void GSDrawTest::OnPreloadScene(JsObject &js_scene) {
 #endif
 }
 
-void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
+void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
     GSBaseState::OnPostloadScene(js_scene);
 
     cam_follow_path_.clear();
@@ -240,16 +240,16 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
     cam_follow_param_ = 0.0f;
 
     if (js_scene.Has("camera")) {
-        const JsObject &js_cam = js_scene.at("camera").as_obj();
+        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArray &js_orig = js_cam.at("view_origin").as_arr();
+            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
             initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
             initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArray &js_dir = js_cam.at("view_dir").as_arr();
+            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
             initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
             initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
@@ -271,9 +271,9 @@ void GSDrawTest::OnPostloadScene(JsObject &js_scene) {
         }
 
         if (js_cam.Has("follow_path")) {
-            const JsArray &js_points = js_cam.at("follow_path").as_arr();
-            for (const JsElement &el : js_points.elements) {
-                const JsArray &js_point = el.as_arr();
+            const JsArrayP &js_points = js_cam.at("follow_path").as_arr();
+            for (const JsElementP &el : js_points.elements) {
+                const JsArrayP &js_point = el.as_arr();
 
                 const JsNumber &x = js_point.at(0).as_num(), &y = js_point.at(1).as_num(),
                                &z = js_point.at(2).as_num();
@@ -677,14 +677,17 @@ void GSDrawTest::OnUpdateScene() {
     //       view_dir_[0], view_dir_[1], view_dir_[2]);
 }
 
-void GSDrawTest::SaveScene(JsObject &js_scene) {
+void GSDrawTest::SaveScene(JsObjectP &js_scene) {
     GSBaseState::SaveScene(js_scene);
 
+    const auto &alloc = js_scene.elements.get_allocator();
+
     { // write camera
-        JsObject js_camera;
+        JsObjectP js_camera(alloc);
 
         { // write view origin
-            JsArray js_view_origin;
+            JsArrayP js_view_origin(alloc);
+
             js_view_origin.Push(JsNumber{double(initial_view_pos_[0])});
             js_view_origin.Push(JsNumber{double(initial_view_pos_[1])});
             js_view_origin.Push(JsNumber{double(initial_view_pos_[2])});
@@ -693,7 +696,8 @@ void GSDrawTest::SaveScene(JsObject &js_scene) {
         }
 
         { // write view direction
-            JsArray js_view_dir;
+            JsArrayP js_view_dir(alloc);
+
             js_view_dir.Push(JsNumber{double(initial_view_dir_[0])});
             js_view_dir.Push(JsNumber{double(initial_view_dir_[1])});
             js_view_dir.Push(JsNumber{double(initial_view_dir_[2])});

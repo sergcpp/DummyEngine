@@ -314,14 +314,14 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
     GetFileModifyTime(in_file, in_t, ctx, true /* report_error */);
     GetFileModifyTime(out_file, out_t, ctx, false /* report_error */);
 
-    JsObject &js_files = ctx.cache->js_db["files"].as_obj();
+    JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
     const int *in_ndx = ctx.cache->db_map.Find(in_file);
     if (in_ndx) {
-        JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
+        JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
         if (js_in_file.Has("in_time") && js_in_file.Has("out_time")) {
-            const JsString &js_in_file_time = js_in_file.at("in_time").as_str();
-            const JsString &js_out_file_time = js_in_file.at("out_time").as_str();
+            const JsStringP &js_in_file_time = js_in_file.at("in_time").as_str();
+            const JsStringP &js_out_file_time = js_in_file.at("out_time").as_str();
             if (strncmp(js_in_file_time.val.c_str(), in_t, 32) == 0 &&
                 strncmp(js_out_file_time.val.c_str(), out_t, 32) == 0) {
                 // can skip
@@ -333,25 +333,25 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
         const std::string in_hash_str = std::to_string(in_hash);
 
         if (js_in_file.Has("in_hash") && js_in_file.Has("out_hash")) {
-            const JsString &js_in_file_hash = js_in_file.at("in_hash").as_str();
+            const JsStringP &js_in_file_hash = js_in_file.at("in_hash").as_str();
             if (js_in_file_hash.val == in_hash_str) {
                 const uint32_t out_hash = HashFile(out_file, ctx.log);
                 const std::string out_hash_str = std::to_string(out_hash);
 
-                const JsString &js_out_file_hash = js_in_file.at("out_hash").as_str();
+                const JsStringP &js_out_file_hash = js_in_file.at("out_hash").as_str();
                 if (js_out_file_hash.val == out_hash_str) {
                     // write new time
                     if (!js_in_file.Has("in_time")) {
-                        js_in_file.Push("in_time", JsString{in_t});
+                        js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
                     } else {
-                        JsString &js_in_file_time = js_in_file["in_time"].as_str();
+                        JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
                         js_in_file_time.val = in_t;
                     }
 
                     if (!js_in_file.Has("out_time")) {
-                        js_in_file.Push("out_time", JsString{out_t});
+                        js_in_file.Push("out_time", JsStringP(out_t, *ctx.mp_alloc));
                     } else {
-                        JsString &js_out_file_time = js_in_file["out_time"].as_str();
+                        JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                         js_out_file_time.val = out_t;
                     }
 
@@ -363,26 +363,26 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
 
         // store new hash and time value
         if (!js_in_file.Has("in_hash")) {
-            js_in_file.Push("in_hash", JsString{in_hash_str});
+            js_in_file.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
         } else {
-            JsString &js_in_file_hash = js_in_file["in_hash"].as_str();
-            js_in_file_hash.val = in_hash_str;
+            JsStringP &js_in_file_hash = js_in_file["in_hash"].as_str();
+            js_in_file_hash.val = in_hash_str.c_str();
         }
 
         // write new time
         if (!js_in_file.Has("in_time")) {
-            js_in_file.Push("in_time", JsString{in_t});
+            js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
         } else {
-            JsString &js_in_file_time = js_in_file["in_time"].as_str();
+            JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
             js_in_file_time.val = in_t;
         }
     } else {
         const uint32_t in_hash = HashFile(in_file, ctx.log);
         const std::string in_hash_str = std::to_string(in_hash);
 
-        JsObject new_entry;
-        new_entry.Push("in_time", JsString{in_t});
-        new_entry.Push("in_hash", JsString{in_hash_str});
+        JsObjectP new_entry(*ctx.mp_alloc);
+        new_entry.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
+        new_entry.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
         const size_t new_ndx = js_files.Push(in_file, std::move(new_entry));
         ctx.cache->db_map[in_file] = int(new_ndx);
     }
@@ -436,44 +436,40 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
     }
 }
 
-JsObject LoadDB(const char *out_folder) {
+void LoadDB(const char *out_folder, JsObjectP &out_js_assets_db) {
     const std::string file_names[] = {std::string(out_folder) + "/assets_db.json",
                                       std::string(out_folder) + "/assets_db.json1",
                                       std::string(out_folder) + "/assets_db.json2"};
-
-    JsObject js_assets_db;
 
     int i = 0;
     for (; i < 3; i++) {
         std::ifstream in_file(file_names[i], std::ios::binary);
         if (in_file) {
             try {
-                if (js_assets_db.Read(in_file)) {
+                if (out_js_assets_db.Read(in_file)) {
                     break;
                 } else {
                     // unsuccessful read can leave junk
-                    js_assets_db.elements.clear();
+                    out_js_assets_db.elements.clear();
                 }
             } catch (...) {
                 // unsuccessful read can leave junk
-                js_assets_db.elements.clear();
+                out_js_assets_db.elements.clear();
             }
         }
     }
 
-    if (i != 0 && !js_assets_db.elements.empty()) {
+    if (i != 0 && !out_js_assets_db.elements.empty()) {
         // write loaded db as the most recent one
         std::ofstream out_file(file_names[0], std::ios::binary);
         try {
-            js_assets_db.Write(out_file);
+            out_js_assets_db.Write(out_file);
         } catch (...) {
         }
     }
-
-    return js_assets_db;
 }
 
-bool WriteDB(const JsObject &js_db, const char *out_folder) {
+bool WriteDB(const JsObjectP &js_db, const char *out_folder) {
     const std::string name1 = std::string(out_folder) + "/assets_db.json";
     const std::string name2 = std::string(out_folder) + "/assets_db.json1";
     const std::string name3 = std::string(out_folder) + "/assets_db.json2";
@@ -663,17 +659,17 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             const uint32_t out_hash = HashFile(out_file.c_str(), ctx.log);
             const std::string out_hash_str = std::to_string(out_hash);
 
-            JsObject &js_files = ctx.cache->js_db["files"].as_obj();
+            JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
             const int *in_ndx = ctx.cache->db_map.Find(in_file);
             if (in_ndx) {
-                JsObject &js_in_file = js_files[*in_ndx].second.as_obj();
+                JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
                 // store new hash value
                 if (!js_in_file.Has("out_hash")) {
-                    js_in_file.Push("out_hash", JsString{out_hash_str});
+                    js_in_file.Push("out_hash", JsStringP(out_hash_str.c_str(), *ctx.mp_alloc));
                 } else {
-                    JsString &js_out_file_hash = js_in_file["out_hash"].as_str();
-                    js_out_file_hash.val = out_hash_str;
+                    JsStringP &js_out_file_hash = js_in_file["out_hash"].as_str();
+                    js_out_file_hash.val = out_hash_str.c_str();
                 }
 
                 char out_t[32];
@@ -681,9 +677,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
 
                 // store new time value
                 if (!js_in_file.Has("out_time")) {
-                    js_in_file.Push("out_time", JsString{out_t});
+                    js_in_file.Push("out_time", JsStringP(out_t, *ctx.mp_alloc));
                 } else {
-                    JsString &js_out_file_time = js_in_file["out_time"].as_str();
+                    JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                     js_out_file_time.val = out_t;
                 }
             }
@@ -703,13 +699,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     }
 #endif
 
-    assets_context_t ctx = {platform, log};
-    ctx.cache.reset(new AssetCache);
+    Sys::MultiPoolAllocator<char> mp_alloc(32, 512);
+    assets_context_t ctx = {platform, log, {}, &mp_alloc};
+    ctx.cache.reset(new AssetCache(*ctx.mp_alloc));
 
-    ctx.cache->js_db = LoadDB(out_folder);
+    LoadDB(out_folder, ctx.cache->js_db);
 
     if (ctx.cache->js_db.Has("files")) {
-        const JsObject &js_files = ctx.cache->js_db.at("files").as_obj();
+        const JsObjectP &js_files = ctx.cache->js_db.at("files").as_obj();
         for (int i = 0; i < int(js_files.elements.size()); i++) {
             const char *key = js_files.elements[i].first.c_str();
             ctx.cache->db_map[key] = i;
@@ -721,7 +718,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             }
         }
     } else {
-        ctx.cache->js_db.Push("files", JsObject{});
+        ctx.cache->js_db.Push("files", JsObjectP{mp_alloc});
     }
 
     /*if (p_threads) {

@@ -7,4 +7,4 @@ AnimState::AnimState() {
     shape_palette_prev.reset(new uint16_t[256]);
 }
 
-void AnimState::Read(const JsObject &js_in, AnimState &as) {}
+void AnimState::Read(const JsObjectP &js_in, AnimState &as) {}

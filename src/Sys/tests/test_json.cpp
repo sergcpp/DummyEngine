@@ -73,7 +73,6 @@ const char json_example3[] = "{\n"
 }
 
 void test_json() {
-
     { // Test types
         { // JsNumber
             JsNumber n1(3.1568);
@@ -97,6 +96,19 @@ void test_json() {
             require(s1 == s2);
             s2 = JsString{ "asd111" };
             require(s2 == JsString{ "asd111" });
+        }
+
+        { // JsString pooled
+            Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+            JsStringP s1("qwe123", my_alloc);
+            std::stringstream ss;
+            s1.Write(ss);
+            JsStringP s2(my_alloc);
+            require(s2.Read(ss));
+            require(s1 == s2);
+            s2 = JsStringP{"asd111", my_alloc};
+            require(s2 == JsStringP("asd111", my_alloc));
         }
 
         { // JsArray
@@ -131,6 +143,45 @@ void test_json() {
             require(a3 != a5);
         }
 
+        { // JsArray pooled
+            Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+            auto ss1 = JsStringP{"qwe123", my_alloc};
+
+            JsArrayP a1(my_alloc);
+            a1.Push(JsNumber{1});
+            a1.Push(JsNumber{2});
+            a1.Push(JsStringP{"qwe123", my_alloc});
+            require(a1.Size() == 3);
+            require(a1[0].as_num() == Approx(1));
+            require(a1[1].as_num() == Approx(2));
+            require(a1[2].as_str() == JsStringP("qwe123", my_alloc));
+            std::stringstream ss;
+            a1.Write(ss);
+
+            volatile int ii  =0;
+
+            JsArrayP a2(my_alloc);
+            require(a2.Read(ss));
+            require(a2.Size() == 3);
+            require(a2[0].as_num() == Approx(1));
+            require(a2[1].as_num() == Approx(2));
+            require(a2[2].as_str() == JsStringP("qwe123", my_alloc));
+
+            require_throws(a2.at(3));
+
+            // check equality
+            JsArrayP a3(my_alloc), a4(my_alloc), a5(my_alloc);
+            a3.Push(JsStringP{"asdf", my_alloc});
+            a3.Push(JsStringP{"zxc", my_alloc});
+            a4.Push(JsStringP{"asdf", my_alloc});
+            a4.Push(JsStringP{"zxc", my_alloc});
+            a5.Push(JsStringP{"asdf", my_alloc});
+            a5.Push(JsStringP{"zxc1", my_alloc});
+            require(a3 == a4);
+            require(a3 != a5);
+        }
+
         { // JsObject
             JsObject obj;
             obj["123"] = JsNumber{ 143 };
@@ -157,6 +208,38 @@ void test_json() {
             obj2["asdf"] = JsString{ "asdfsdf" };
             obj3["123"] = JsNumber{ 143 };
             obj3["asdf"] = JsString{ "asdfsdf1" };
+            require(obj1 == obj2);
+            require(obj1 != obj3);
+        }
+
+        { // JsObject pooled
+            Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+            JsObjectP obj(my_alloc);
+            obj["123"] = JsNumber{143};
+            obj["asdf"] = JsStringP{"asdfsdf", my_alloc};
+            obj["123"] = JsNumber{46};
+            require(obj.Size() == 2);
+            require(obj["123"].as_num() == JsNumber{46});
+            require(obj["asdf"].as_str() == JsStringP("asdfsdf", my_alloc));
+            std::stringstream ss;
+            obj.Write(ss);
+            JsObjectP _obj(my_alloc);
+            require(_obj.Read(ss));
+            require(_obj.Size() == 2);
+            require(_obj["123"].as_num() == Approx(46));
+            require(_obj["asdf"].as_str() == JsStringP("asdfsdf", my_alloc));
+
+            require_throws(_obj.at("non exists"));
+
+            // check equality
+            JsObjectP obj1(my_alloc), obj2(my_alloc), obj3(my_alloc);
+            obj1["123"] = JsNumber{143};
+            obj1["asdf"] = JsStringP{"asdfsdf", my_alloc};
+            obj2["123"] = JsNumber{143};
+            obj2["asdf"] = JsStringP{"asdfsdf", my_alloc};
+            obj3["123"] = JsNumber{143};
+            obj3["asdf"] = JsStringP{"asdfsdf1", my_alloc};
             require(obj1 == obj2);
             require(obj1 != obj3);
         }
@@ -245,6 +328,75 @@ void test_json() {
             require_throws(_el5.as_obj());
             require_throws(el5.as_obj());
         }
+
+        { // JsElement pooled
+            Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+            JsElementP _el1(16);
+            const JsElementP &el1 = _el1;
+            require_nothrow(_el1.as_num());
+            require_nothrow(el1.as_num());
+            require_throws(_el1.as_str());
+            require_throws(el1.as_str());
+            require_throws(_el1.as_arr());
+            require_throws(el1.as_arr());
+            require_throws(_el1.as_obj());
+            require_throws(el1.as_obj());
+            require_throws(_el1.as_lit());
+            require_throws(el1.as_lit());
+
+            JsElementP _el2("my string", my_alloc);
+            const JsElementP &el2 = _el2;
+            require_nothrow(_el2.as_str());
+            require_nothrow(el2.as_str());
+            require_throws(_el2.as_num());
+            require_throws(el2.as_num());
+            require_throws(_el2.as_arr());
+            require_throws(el2.as_arr());
+            require_throws(_el2.as_obj());
+            require_throws(el2.as_obj());
+            require_throws(_el2.as_lit());
+            require_throws(el2.as_lit());
+
+            JsElementP _el3(JsType::Array, my_alloc);
+            const JsElementP &el3 = _el3;
+            require_nothrow(_el3.as_arr());
+            require_nothrow(el3.as_arr());
+            require_throws(_el3.as_num());
+            require_throws(el3.as_num());
+            require_throws(_el3.as_str());
+            require_throws(el3.as_str());
+            require_throws(_el3.as_obj());
+            require_throws(el3.as_obj());
+            require_throws(_el3.as_lit());
+            require_throws(el3.as_lit());
+
+            JsElementP _el4(JsType::Object, my_alloc);
+            const JsElementP &el4 = _el4;
+            require_nothrow(_el4.as_obj());
+            require_nothrow(el4.as_obj());
+            require_throws(_el4.as_num());
+            require_throws(el4.as_num());
+            require_throws(_el4.as_str());
+            require_throws(el4.as_str());
+            require_throws(_el4.as_arr());
+            require_throws(el4.as_arr());
+            require_throws(_el4.as_lit());
+            require_throws(el4.as_lit());
+
+            JsElement _el5(JsLiteralType::Null);
+            const JsElement &el5 = _el5;
+            require_nothrow(_el5.as_lit());
+            require_nothrow(el5.as_lit());
+            require_throws(_el5.as_num());
+            require_throws(el5.as_num());
+            require_throws(_el5.as_str());
+            require_throws(el5.as_str());
+            require_throws(_el5.as_arr());
+            require_throws(el5.as_arr());
+            require_throws(_el5.as_obj());
+            require_throws(el5.as_obj());
+        }
     }
 
     { // Complex test1
@@ -292,13 +444,61 @@ AGAIN1:
         }
     }
 
+     { // Complex test1 (pooled)
+        Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+        bool flag = true;
+        JsElementP el(JsLiteralType::Null);
+        std::stringstream ss(json_example);
+        require(el.Read(ss, my_alloc));
+
+    AGAIN2:
+        JsObjectP &root = el.as_obj();
+        require(root.Size() == 1);
+        JsObjectP &widget = root["widget"].as_obj();
+        require(widget.Size() == 4);
+        require(widget["debug"] == JsStringP("on", my_alloc));
+        JsObjectP &window = widget["window"].as_obj();
+        require(window.Size() == 4);
+        require(window["title"] == JsStringP("Sample Konfabulator Widget", my_alloc));
+        require(window["name"] == JsStringP("main_window", my_alloc));
+        require(window["width"] == JsNumber{500});
+        require(window["height"] == JsNumber{500});
+        JsObjectP &image = widget["image"].as_obj();
+        require(image.Size() == 5);
+        require(image["src"] == JsStringP("Images/Sun.png", my_alloc));
+        require(image["name"] == JsStringP("sun1", my_alloc));
+        require(image["hOffset"] == JsNumber{-250});
+        require(image["vOffset"] == JsNumber{250});
+        require(image["alignment"] == JsStringP("center", my_alloc));
+        JsObjectP &text = widget["text"].as_obj();
+        require(text.Size() == 8);
+        require(text["data"] == JsStringP("Click Here", my_alloc));
+        require(text["size"] == JsNumber{36});
+        require(text["style"] == JsStringP("bold", my_alloc));
+        require(text["name"] == JsStringP("text1", my_alloc));
+        require(text["hOffset"] == JsNumber{250});
+        require(text["vOffset"] == JsNumber{100});
+        require(text["alignment"] == JsStringP("center", my_alloc));
+        require(text["onMouseUp"] ==
+                JsStringP("sun1.opacity = (sun1.opacity / 100) * 90;", my_alloc));
+
+        if (flag) {
+            flag = false;
+            ss.clear();
+            ss.seekg(0);
+            root.Write(ss);
+            goto AGAIN2;
+        }
+    }
+
     { // Complex test2
         bool flag = true;
         JsElement el(JsLiteralType::Null);
         std::stringstream ss(json_example2);
         require(el.Read(ss));
 
-AGAIN2:
+AGAIN3:
         JsObject &root = el.as_obj();
         require(root.Size() == 1);
         JsObject &glossary = root["glossary"].as_obj();
@@ -330,7 +530,53 @@ AGAIN2:
             ss.clear();
             ss.seekg(0);
             root.Write(ss);
-            goto AGAIN2;
+            goto AGAIN3;
+        }
+    }
+
+    { // Complex test2 (pooled)
+        Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+        bool flag = true;
+        JsElementP el(JsLiteralType::Null);
+        std::stringstream ss(json_example2);
+        require(el.Read(ss, my_alloc));
+
+    AGAIN4:
+        JsObjectP &root = el.as_obj();
+        require(root.Size() == 1);
+        JsObjectP &glossary = root["glossary"].as_obj();
+        require(glossary.Size() == 2);
+        require(glossary["title"] == JsStringP("example glossary", my_alloc));
+        JsObjectP &gloss_div = glossary["GlossDiv"].as_obj();
+        require(gloss_div.Size() == 2);
+        require(gloss_div["title"] == JsStringP("S", my_alloc));
+        JsObjectP &gloss_list = gloss_div["GlossList"].as_obj();
+        require(gloss_list.Size() == 1);
+        JsObjectP &gloss_entry = gloss_list["GlossEntry"].as_obj();
+        require(gloss_entry.Size() == 7);
+        require(gloss_entry["ID"] == JsStringP("SGML", my_alloc));
+        require(gloss_entry["SortAs"] == JsStringP("SGML", my_alloc));
+        require(gloss_entry["GlossTerm"] ==
+                JsStringP("Standard Generalized Markup Language", my_alloc));
+        require(gloss_entry["Acronym"] == JsStringP("SGML", my_alloc));
+        require(gloss_entry["Abbrev"] == JsStringP("ISO 8879:1986", my_alloc));
+        require(gloss_entry["GlossSee"] == JsStringP("markup", my_alloc));
+        JsObjectP &gloss_def = gloss_entry["GlossDef"].as_obj();
+        require(gloss_def.Size() == 2);
+        require(gloss_def["para"] == JsStringP("A meta-markup language, used to create "
+                                              "markup languages such as DocBook.", my_alloc));
+        JsArrayP &gloss_see_also = gloss_def["GlossSeeAlso"].as_arr();
+        require(gloss_see_also.Size() == 2);
+        require(gloss_see_also[0] == JsStringP("GML", my_alloc));
+        require(gloss_see_also[1] == JsStringP("XML", my_alloc));
+
+        if (flag) {
+            flag = false;
+            ss.clear();
+            ss.seekg(0);
+            root.Write(ss);
+            goto AGAIN4;
         }
     }
 
@@ -339,7 +585,7 @@ AGAIN2:
         JsElement el(JsLiteralType::Null);
         std::stringstream ss(json_example3);
 
-AGAIN3:
+AGAIN5:
         require(el.Read(ss));
 
         JsObject &root = el.as_obj();
@@ -371,7 +617,50 @@ AGAIN3:
             ss.seekg(0);
             root.Write(ss);
             std::string str = ss.str();
-            goto AGAIN3;
+            goto AGAIN5;
         }
     }
-}
+
+    { // Complex test3 (pooled)
+        Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+
+        bool flag = true;
+        JsElementP el(JsLiteralType::Null);
+        std::stringstream ss(json_example3);
+
+    AGAIN6:
+        require(el.Read(ss, my_alloc));
+
+        JsObjectP &root = el.as_obj();
+        require(root.Size() == 1);
+        JsObjectP &menu = root["menu"].as_obj();
+        require(menu.Size() == 3);
+        require(menu["id"] == JsStringP("file", my_alloc));
+        require(menu["value"] == JsStringP("File", my_alloc));
+        JsObjectP &popup = menu["popup"].as_obj();
+        require(popup.Size() == 1);
+        JsArrayP &menuitem = popup["menuitem"].as_arr();
+        require(menuitem.Size() == 3);
+        JsObjectP &_0 = menuitem[0].as_obj();
+        require(_0.Size() == 2);
+        JsObjectP &_1 = menuitem[1].as_obj();
+        require(_1.Size() == 2);
+        JsObjectP &_2 = menuitem[2].as_obj();
+        require(_2.Size() == 2);
+        require(_0["value"] == JsStringP("New", my_alloc));
+        require(_0["onclick"] == JsStringP("CreateNewDoc()", my_alloc));
+        require(_1["value"] == JsStringP("Open", my_alloc));
+        require(_1["onclick"] == JsStringP("OpenDoc()", my_alloc));
+        require(_2["value"] == JsStringP("Close", my_alloc));
+        require(_2["onclick"] == JsStringP("CloseDoc()", my_alloc));
+
+        if (flag) {
+            flag = false;
+            ss.clear();
+            ss.seekg(0);
+            root.Write(ss);
+            std::string str = ss.str();
+            goto AGAIN6;
+        }
+    }
+    }

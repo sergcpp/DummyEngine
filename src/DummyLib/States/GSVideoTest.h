@@ -82,12 +82,11 @@ class GSVideoTest final : public GSBaseState {
 
     Ren::MaterialRef orig_vid_mat_[5], vid_mat_[5];
 
-    void OnPreloadScene(JsObject &js_scene) override;
-    void OnPostloadScene(JsObject &js_scene) override;
+    void OnPostloadScene(JsObjectP &js_scene) override;
 
     void OnUpdateScene() override;
 
-    void SaveScene(JsObject &js_scene) override;
+    void SaveScene(JsObjectP &js_scene) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 

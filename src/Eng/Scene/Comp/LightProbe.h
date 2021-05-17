@@ -11,8 +11,8 @@ struct LightProbe {
     // temporary data
     int layer_index;
 
-    static void Read(const JsObject &js_in, LightProbe &pr);
-    static void Write(const LightProbe &pr, JsObject &js_out);
+    static void Read(const JsObjectP &js_in, LightProbe &pr);
+    static void Write(const LightProbe &pr, JsObjectP &js_out);
 
     static const char *name() { return "probe"; }
 };

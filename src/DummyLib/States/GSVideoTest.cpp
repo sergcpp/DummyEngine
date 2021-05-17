@@ -116,24 +116,20 @@ bool GSVideoTest::OpenVideoFiles() {
     return true;
 }
 
-void GSVideoTest::OnPreloadScene(JsObject &js_scene) {
-    GSBaseState::OnPreloadScene(js_scene);
-}
-
-void GSVideoTest::OnPostloadScene(JsObject &js_scene) {
+void GSVideoTest::OnPostloadScene(JsObjectP &js_scene) {
     GSBaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
-        const JsObject &js_cam = js_scene.at("camera").as_obj();
+        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArray &js_orig = js_cam.at("view_origin").as_arr();
+            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             initial_view_pos_[0] = float(js_orig.at(0).as_num().val);
             initial_view_pos_[1] = float(js_orig.at(1).as_num().val);
             initial_view_pos_[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArray &js_dir = js_cam.at("view_dir").as_arr();
+            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
             initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
             initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
@@ -397,14 +393,17 @@ void GSVideoTest::OnUpdateScene() {
     //           view_dir_[0], view_dir_[1], view_dir_[2]);
 }
 
-void GSVideoTest::SaveScene(JsObject &js_scene) {
+void GSVideoTest::SaveScene(JsObjectP &js_scene) {
     GSBaseState::SaveScene(js_scene);
 
+    const auto &alloc = js_scene.elements.get_allocator();
+
     { // write camera
-        JsObject js_camera;
+        JsObjectP js_camera(alloc);
 
         { // write view origin
-            JsArray js_view_origin;
+            JsArrayP js_view_origin(alloc);
+
             js_view_origin.Push(JsNumber{double(initial_view_pos_[0])});
             js_view_origin.Push(JsNumber{double(initial_view_pos_[1])});
             js_view_origin.Push(JsNumber{double(initial_view_pos_[2])});
@@ -413,7 +412,8 @@ void GSVideoTest::SaveScene(JsObject &js_scene) {
         }
 
         { // write view direction
-            JsArray js_view_dir;
+            JsArrayP js_view_dir(alloc);
+
             js_view_dir.Push(JsNumber{double(initial_view_dir_[0])});
             js_view_dir.Push(JsNumber{double(initial_view_dir_[1])});
             js_view_dir.Push(JsNumber{double(initial_view_dir_[2])});

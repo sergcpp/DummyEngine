@@ -2,9 +2,9 @@
 
 #include <Sys/Json.h>
 
-void Decal::Read(const JsObject &js_in, Decal &de) {
+void Decal::Read(const JsObjectP &js_in, Decal &de) {
     if (js_in.Has("pos")) {
-        const JsArray &js_pos = js_in.at("pos").as_arr();
+        const JsArrayP &js_pos = js_in.at("pos").as_arr();
 
         const auto pos =
             Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
@@ -14,7 +14,7 @@ void Decal::Read(const JsObject &js_in, Decal &de) {
     }
 
     if (js_in.Has("rot")) {
-        const JsArray &js_rot = js_in.at("rot").as_arr();
+        const JsArrayP &js_rot = js_in.at("rot").as_arr();
 
         auto rot =
             Ren::Vec3f{float(js_rot.at(0).as_num().val), float(js_rot.at(1).as_num().val),
@@ -38,7 +38,7 @@ void Decal::Read(const JsObject &js_in, Decal &de) {
     auto dim = Ren::Vec3f{1.0f, 1.0f, 1.0f};
 
     if (js_in.Has("dim")) {
-        const JsArray &js_dim = js_in.at("dim").as_arr();
+        const JsArrayP &js_dim = js_in.at("dim").as_arr();
 
         dim =
             Ren::Vec3f{(float)js_dim.at(0).as_num().val, (float)js_dim.at(1).as_num().val,
@@ -49,4 +49,4 @@ void Decal::Read(const JsObject &js_in, Decal &de) {
                                 0.5f * dim[1], 0.0f, 1.0f * dim[2]);
 }
 
-void Decal::Write(const Decal &de, JsObject &js_out) {}
+void Decal::Write(const Decal &de, JsObjectP &js_out) {}

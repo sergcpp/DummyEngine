@@ -6,8 +6,8 @@
 
 #include "../SceneData.h"
 
-void LightSource::Read(const JsObject &js_in, LightSource &ls) {
-    const JsArray &js_color = js_in.at("color").as_arr();
+void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
+    const JsArrayP &js_color = js_in.at("color").as_arr();
 
     ls.col[0] = float(js_color[0].as_num().val);
     ls.col[1] = float(js_color[1].as_num().val);
@@ -16,7 +16,7 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     ls.brightness = std::max(ls.col[0], std::max(ls.col[1], ls.col[2]));
 
     if (js_in.Has("offset")) {
-        const JsArray &js_offset = js_in.at("offset").as_arr();
+        const JsArrayP &js_offset = js_in.at("offset").as_arr();
 
         ls.offset[0] = float(js_offset[0].as_num().val);
         ls.offset[1] = float(js_offset[1].as_num().val);
@@ -33,7 +33,7 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     ls.influence = ls.radius * (std::sqrt(ls.brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
 
     if (js_in.Has("direction")) {
-        const JsArray &js_dir = js_in.at("direction").as_arr();
+        const JsArrayP &js_dir = js_in.at("direction").as_arr();
 
         ls.dir[0] = float(js_dir[0].as_num().val);
         ls.dir[1] = float(js_dir[1].as_num().val);
@@ -61,7 +61,7 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     }
 
     if (js_in.Has("shadow_bias")) {
-        const JsArray &js_shadow_bias = js_in.at("shadow_bias").as_arr();
+        const JsArrayP &js_shadow_bias = js_in.at("shadow_bias").as_arr();
         ls.shadow_bias[0] = float(js_shadow_bias.at(0).as_num().val);
         ls.shadow_bias[1] = float(js_shadow_bias.at(1).as_num().val);
     } else {
@@ -70,9 +70,11 @@ void LightSource::Read(const JsObject &js_in, LightSource &ls) {
     }
 }
 
-void LightSource::Write(const LightSource &ls, JsObject &js_out) {
+void LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
+    const auto &alloc = js_out.elements.get_allocator();
+
     { // Write color
-        JsArray js_color;
+        JsArrayP js_color(alloc);
 
         js_color.Push(JsNumber{double(ls.col[0])});
         js_color.Push(JsNumber{double(ls.col[1])});
@@ -82,7 +84,7 @@ void LightSource::Write(const LightSource &ls, JsObject &js_out) {
     }
 
     { // Write offset
-        JsArray js_offset;
+        JsArrayP js_offset(alloc);
 
         js_offset.Push(JsNumber{double(ls.offset[0])});
         js_offset.Push(JsNumber{double(ls.offset[1])});
@@ -96,7 +98,7 @@ void LightSource::Write(const LightSource &ls, JsObject &js_out) {
     }
 
     { // Write direction and angle
-        JsArray js_dir;
+        JsArrayP js_dir(alloc);
 
         js_dir.Push(JsNumber{double(ls.dir[0])});
         js_dir.Push(JsNumber{double(ls.dir[1])});
@@ -114,7 +116,7 @@ void LightSource::Write(const LightSource &ls, JsObject &js_out) {
     }
 
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {
-        JsArray js_shadow_bias;
+        JsArrayP js_shadow_bias(alloc);
 
         js_shadow_bias.Push(JsNumber{double(ls.shadow_bias[0])});
         js_shadow_bias.Push(JsNumber{double(ls.shadow_bias[1])});

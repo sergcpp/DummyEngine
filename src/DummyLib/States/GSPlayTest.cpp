@@ -191,22 +191,22 @@ bool GSPlayTest::SaveSequence(const char *seq_name) {
     return true;
 }
 
-void GSPlayTest::OnPostloadScene(JsObject &js_scene) {
+void GSPlayTest::OnPostloadScene(JsObjectP &js_scene) {
     using namespace GSPlayTestInternal;
 
     GSBaseState::OnPostloadScene(js_scene);
 
     if (js_scene.Has("camera")) {
-        const JsObject &js_cam = js_scene.at("camera").as_obj();
+        const JsObjectP &js_cam = js_scene.at("camera").as_obj();
         if (js_cam.Has("view_origin")) {
-            const JsArray &js_orig = js_cam.at("view_origin").as_arr();
+            const JsArrayP &js_orig = js_cam.at("view_origin").as_arr();
             cam_ctrl_->view_origin[0] = float(js_orig.at(0).as_num().val);
             cam_ctrl_->view_origin[1] = float(js_orig.at(1).as_num().val);
             cam_ctrl_->view_origin[2] = float(js_orig.at(2).as_num().val);
         }
 
         if (js_cam.Has("view_dir")) {
-            const JsArray &js_dir = js_cam.at("view_dir").as_arr();
+            const JsArrayP &js_dir = js_cam.at("view_dir").as_arr();
             cam_ctrl_->view_dir[0] = float(js_dir.at(0).as_num().val);
             cam_ctrl_->view_dir[1] = float(js_dir.at(1).as_num().val);
             cam_ctrl_->view_dir[2] = float(js_dir.at(2).as_num().val);

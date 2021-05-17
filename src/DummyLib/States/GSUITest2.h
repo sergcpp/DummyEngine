@@ -39,7 +39,7 @@ class GSUITest2 : public GSBaseState {
 
     uint32_t zenith_index_          = 0xffffffff;
 
-    void OnPostloadScene(JsObject &js_scene) override;
+    void OnPostloadScene(JsObjectP &js_scene) override;
 
     void OnUpdateScene() override;
 

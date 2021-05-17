@@ -8,8 +8,8 @@ struct Decal {
     Ren::Mat4f view, proj;
     Ren::Vec4f diff, norm, spec;
 
-    static void Read(const JsObject &js_in, Decal &de);
-    static void Write(const Decal &de, JsObject &js_out);
+    static void Read(const JsObjectP &js_in, Decal &de);
+    static void Write(const Decal &de, JsObjectP &js_out);
 
     static const char *name() { return "decal"; }
 };

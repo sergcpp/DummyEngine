@@ -16,8 +16,8 @@ struct VegState {
 
     static constexpr float WindNoiseLfScale = 128.0f;
 
-    static void Read(const JsObject &js_in, VegState &vs);
-    static void Write(const VegState &vs, JsObject &js_out);
+    static void Read(const JsObjectP &js_in, VegState &vs);
+    static void Write(const VegState &vs, JsObjectP &js_out);
 
     static const char *name() { return "veg_state"; }
 };

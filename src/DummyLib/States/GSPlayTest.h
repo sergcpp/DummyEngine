@@ -49,7 +49,7 @@ class GSPlayTest : public GSBaseState {
     std::unique_ptr<DialogEditUI> dialog_edit_ui_;
     std::unique_ptr<CaptionsUI> seq_cap_ui_;
 
-    void OnPostloadScene(JsObject &js_scene) override;
+    void OnPostloadScene(JsObjectP &js_scene) override;
 
     void OnUpdateScene() override;
 

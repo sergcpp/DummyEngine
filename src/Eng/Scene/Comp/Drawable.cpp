@@ -3,7 +3,7 @@
 #include <Ren/Mesh.h>
 #include <Sys/Json.h>
 
-void Drawable::Read(const JsObject &js_in, Drawable &dr) {
+void Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     dr.flags = 0;
     dr.vis_mask = 0xffffffff;
 
@@ -22,7 +22,7 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("mesh_file")) {
-        const JsString &mesh_name = js_in.at("mesh_file").as_str();
+        const JsStringP &mesh_name = js_in.at("mesh_file").as_str();
         dr.mesh_file = Ren::String{mesh_name.val.c_str()};
     }
 
@@ -31,17 +31,17 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("ellipsoids")) {
-        const JsArray &js_ellipsoids = js_in.at("ellipsoids").as_arr();
+        const JsArrayP &js_ellipsoids = js_in.at("ellipsoids").as_arr();
         for (size_t i = 0; i < js_ellipsoids.elements.size(); i++) {
-            const JsObject &js_ellipsoid = js_ellipsoids[i].as_obj();
+            const JsObjectP &js_ellipsoid = js_ellipsoids[i].as_obj();
 
-            const JsArray &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
+            const JsArrayP &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
             dr.ellipsoids[i].offset[0] = float(js_ellipsoid_offset[0].as_num());
             dr.ellipsoids[i].offset[1] = float(js_ellipsoid_offset[1].as_num());
             dr.ellipsoids[i].offset[2] = float(js_ellipsoid_offset[2].as_num());
             dr.ellipsoids[i].radius = float(js_ellipsoid.at("radius").as_num());
 
-            const JsArray &js_ellipsoid_axis = js_ellipsoid.at("axis").as_arr();
+            const JsArrayP &js_ellipsoid_axis = js_ellipsoid.at("axis").as_arr();
             dr.ellipsoids[i].axis[0] = float(js_ellipsoid_axis[0].as_num());
             dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num());
             dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num());
@@ -56,28 +56,31 @@ void Drawable::Read(const JsObject &js_in, Drawable &dr) {
     }
 }
 
-void Drawable::Write(const Drawable &dr, JsObject &js_out) {
+void Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
+    const auto &alloc = js_out.elements.get_allocator();
+
     if (dr.mesh) {
         // write mesh file name
         const Ren::String &mesh_name = dr.mesh->name();
         if (mesh_name != dr.mesh_file) {
-            js_out.Push("mesh_name", JsString{mesh_name.c_str()});
+            js_out.Push("mesh_name", JsStringP{mesh_name.c_str(), alloc});
         }
-        js_out.Push("mesh_file", JsString{dr.mesh_file.empty() ? mesh_name.c_str()
-                                                               : dr.mesh_file.c_str()});
+        js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name.c_str()
+                                                                : dr.mesh_file.c_str(),
+                                           alloc});
     }
 
     if (dr.pt_mesh) {
         const Ren::String &mesh_name = dr.pt_mesh->name();
-        js_out.Push("pt_mesh_file", JsString{mesh_name.c_str()});
+        js_out.Push("pt_mesh_file", JsStringP{mesh_name.c_str(), alloc});
     }
 
     if (dr.flags & uint32_t(eDrFlags::DrMaterialOverride)) {
-        JsArray js_material_override;
+        JsArrayP js_material_override(alloc);
 
         const Ren::Mesh *mesh = dr.mesh.get();
         for (const auto &grp : mesh->groups()) {
-            js_material_override.Push(JsString{grp.mat->name().c_str()});
+            js_material_override.Push(JsStringP{grp.mat->name().c_str(), alloc});
         }
 
         js_out.Push("material_override", std::move(js_material_override));
@@ -93,13 +96,13 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
     }
 
     if (dr.ellipsoids_count) {
-        JsArray js_ellipsoids;
+        JsArrayP js_ellipsoids(alloc);
 
         for (int i = 0; i < dr.ellipsoids_count; i++) {
-            JsObject js_ellipsoid;
+            JsObjectP js_ellipsoid(alloc);
 
             { // write offset
-                JsArray js_ellipsoid_offset;
+                JsArrayP js_ellipsoid_offset(alloc);
                 js_ellipsoid_offset.Push(JsNumber{(double)dr.ellipsoids[i].offset[0]});
                 js_ellipsoid_offset.Push(JsNumber{(double)dr.ellipsoids[i].offset[1]});
                 js_ellipsoid_offset.Push(JsNumber{(double)dr.ellipsoids[i].offset[2]});
@@ -109,7 +112,7 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
             js_ellipsoid.Push("radius", JsNumber{(double)dr.ellipsoids[i].radius});
 
             { // write axis
-                JsArray js_ellipsoid_axis;
+                JsArrayP js_ellipsoid_axis(alloc);
                 js_ellipsoid_axis.Push(JsNumber{(double)dr.ellipsoids[i].axis[0]});
                 js_ellipsoid_axis.Push(JsNumber{(double)dr.ellipsoids[i].axis[1]});
                 js_ellipsoid_axis.Push(JsNumber{(double)dr.ellipsoids[i].axis[2]});
@@ -117,7 +120,8 @@ void Drawable::Write(const Drawable &dr, JsObject &js_out) {
             }
 
             if (!dr.ellipsoids[i].bone_name.empty()) {
-                js_ellipsoid.Push("bone", JsString{dr.ellipsoids[i].bone_name.c_str()});
+                js_ellipsoid.Push("bone",
+                                  JsStringP{dr.ellipsoids[i].bone_name.c_str(), alloc});
             }
         }
     }

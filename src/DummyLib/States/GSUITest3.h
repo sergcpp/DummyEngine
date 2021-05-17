@@ -61,7 +61,7 @@ class GSUITest3 : public GSBaseState {
 
     uint32_t book_index_                = 0xffffffff;
 
-    void OnPostloadScene(JsObject &js_scene) override;
+    void OnPostloadScene(JsObjectP &js_scene) override;
     void OnUpdateScene() override;
 
     void Draw(uint64_t dt_us) override;

@@ -24,8 +24,8 @@ struct Transform {
         UpdateInvMatrix();
     }
 
-    static void Read(const JsObject &js_in, Transform &tr);
-    static void Write(const Transform &tr, JsObject &js_out);
+    static void Read(const JsObjectP &js_in, Transform &tr);
+    static void Write(const Transform &tr, JsObjectP &js_out);
 
     static const char *name() { return "transform"; }
 };

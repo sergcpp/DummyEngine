@@ -2,12 +2,10 @@
 
 #include <vector>
 
+#include <Ren/MVec.h>
 #include <Ren/Program.h>
 #include <Ren/Texture.h>
 #include <Ren/TextureAtlas.h>
-
-#include <Ren/MVec.h>
-
 #if defined(USE_GL_RENDER)
 #include <Ren/VaoGL.h>
 #endif
@@ -19,7 +17,13 @@
 #define force_inline __forceinline
 #endif
 
-struct JsObject;
+namespace Sys {
+template <typename T, typename FallBackAllocator>
+class MultiPoolAllocator;
+}
+template <typename Alloc> struct JsObjectT;
+using JsObject = JsObjectT<std::allocator<char>>;
+using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
 namespace Ren {
 class Context;

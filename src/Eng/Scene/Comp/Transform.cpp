@@ -23,9 +23,9 @@ void Transform::UpdateBBox() {
 
 void Transform::UpdateInvMatrix() { object_from_world = Ren::Inverse(world_from_object); }
 
-void Transform::Read(const JsObject &js_in, Transform &tr) {
+void Transform::Read(const JsObjectP &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
-        const JsArray &js_pos = js_in.at("pos").as_arr();
+        const JsArrayP &js_pos = js_in.at("pos").as_arr();
 
         const auto pos =
             Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
@@ -35,7 +35,7 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
     }
 
     if (js_in.Has("rot")) {
-        const JsArray &js_rot = js_in.at("rot").as_arr();
+        const JsArrayP &js_rot = js_in.at("rot").as_arr();
 
         // angles in degrees
         tr.euler_angles_rad =
@@ -59,9 +59,11 @@ void Transform::Read(const JsObject &js_in, Transform &tr) {
     tr.UpdateInvMatrix();
 }
 
-void Transform::Write(const Transform &tr, JsObject &js_out) {
+void Transform::Write(const Transform &tr, JsObjectP &js_out) {
+    const auto &alloc = js_out.elements.get_allocator();
+
     { // write position
-        JsArray js_pos;
+        JsArrayP js_pos(alloc);
 
         js_pos.Push(JsNumber(double(tr.world_from_object[3][0])));
         js_pos.Push(JsNumber(double(tr.world_from_object[3][1])));
@@ -71,7 +73,7 @@ void Transform::Write(const Transform &tr, JsObject &js_out) {
     }
 
     { // write rotation
-        JsArray js_rot;
+        JsArrayP js_rot(alloc);
 
         const Ren::Vec3f euler_angles_deg =
             tr.euler_angles_rad * 180.0f / Ren::Pi<float>();

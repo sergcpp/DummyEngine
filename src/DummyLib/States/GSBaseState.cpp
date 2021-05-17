@@ -301,7 +301,7 @@ void GSBaseState::Enter() {
         "save", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
             auto shrd_this = weak_this.lock();
             if (shrd_this) {
-                JsObject out_scene;
+                JsObjectP out_scene(shrd_this->scene_manager_->mp_alloc());
 
                 shrd_this->SaveScene(out_scene);
 
@@ -521,7 +521,7 @@ bool GSBaseState::LoadScene(const char *name) {
         }
     }
 
-    JsObject js_scene, js_probe_cache;
+    JsObjectP js_scene(scene_manager_->mp_alloc()), js_probe_cache(scene_manager_->mp_alloc());
 
     { // Load scene data from file
         Sys::AssetFile in_scene(name);
@@ -586,14 +586,14 @@ bool GSBaseState::LoadScene(const char *name) {
     return true;
 }
 
-void GSBaseState::OnPreloadScene(JsObject &js_scene) {}
+void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {}
 
-void GSBaseState::OnPostloadScene(JsObject &js_scene) {
+void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     // trigger probes update
     probes_dirty_ = false;
 }
 
-void GSBaseState::SaveScene(JsObject &js_scene) { scene_manager_->SaveScene(js_scene); }
+void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
 
 void GSBaseState::Exit() {
     using namespace GSBaseStateInternal;

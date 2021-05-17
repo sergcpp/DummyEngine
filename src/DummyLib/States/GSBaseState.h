@@ -95,10 +95,10 @@ protected:
 
     bool LoadScene(const char *name);
 
-    virtual void OnPreloadScene(JsObject &js_scene);
-    virtual void OnPostloadScene(JsObject &js_scene);
+    virtual void OnPreloadScene(JsObjectP &js_scene);
+    virtual void OnPostloadScene(JsObjectP &js_scene);
 
-    virtual void SaveScene(JsObject &js_scene);
+    virtual void SaveScene(JsObjectP &js_scene);
 
     virtual void OnUpdateScene() {}
 

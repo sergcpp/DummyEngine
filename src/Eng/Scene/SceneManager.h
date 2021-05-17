@@ -13,7 +13,13 @@
 
 #include "SceneData.h"
 
-struct JsObject;
+namespace Sys {
+template <typename T, typename FallBackAllocator>
+class MultiPoolAllocator;
+}
+template <typename Alloc> struct JsObjectT;
+using JsObject = JsObjectT<std::allocator<char>>;
+using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
 namespace Sys {
 class ThreadPool;
@@ -30,19 +36,21 @@ class ShaderLoader;
 namespace SceneManagerInternal {
 // TODO: remove this from header file
 struct AssetCache {
-    JsObject js_db;
+    JsObjectP js_db;
     Ren::HashMap32<const char *, int> db_map;
     Ren::HashMap32<const char *, uint32_t> texture_averages;
+
+    AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
 
     void WriteTextureAverage(const char *tex_name, const uint8_t average_color[4]) {
         uint32_t color;
         memcpy(&color, average_color, 4);
         texture_averages.Insert(tex_name, color);
 
-        JsObject &js_files = js_db["files"].as_obj();
+        JsObjectP &js_files = js_db["files"].as_obj();
         const int *index = db_map.Find(tex_name);
         if (index) {
-            JsObject &js_file = js_files.elements[*index].second.as_obj();
+            JsObjectP &js_file = js_files.elements[*index].second.as_obj();
 
             if (js_file.Has("color")) {
                 JsNumber &js_color = js_file.at("color").as_num();
@@ -60,6 +68,7 @@ struct assets_context_t {
     const char *platform;
     Ren::ILog *log;
     std::unique_ptr<SceneManagerInternal::AssetCache> cache;
+    Sys::MultiPoolAllocator<char> *mp_alloc;
     Sys::ThreadPool *p_threads;
 };
 
@@ -76,6 +85,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::Mesh *cam_rig() { return cam_rig_.get(); }
     SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
+    Sys::MultiPoolAllocator<char> &mp_alloc() { return mp_alloc_; }
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
@@ -94,8 +104,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
         changed_objects_.insert(changed_objects_.end(), indices, indices + count);
     }
 
-    void LoadScene(const JsObject &js_scene);
-    void SaveScene(JsObject &js_scene);
+    void LoadScene(const JsObjectP &js_scene);
+    void SaveScene(JsObjectP &js_scene);
     void ClearScene();
 
     void LoadProbeCache();
@@ -103,7 +113,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
                    const Ren::Vec3f &up, float fov, float max_exposure);
 
-    using PostLoadFunc = void(const JsObject &js_comp_obj, void *comp,
+    using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp,
                               Ren::Vec3f obj_bbox[2]);
     void RegisterComponent(uint32_t index, CompStorage *storage,
                            const std::function<PostLoadFunc> &post_init);
@@ -137,18 +147,18 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
                                 const CompStorage *light_probe_storage, Ren::ILog *log);
 
   private:
-    void PostloadDrawable(const JsObject &js_comp_obj, void *comp,
+    void PostloadDrawable(const JsObjectP &js_comp_obj, void *comp,
                           Ren::Vec3f obj_bbox[2]);
-    void PostloadOccluder(const JsObject &js_comp_obj, void *comp,
+    void PostloadOccluder(const JsObjectP &js_comp_obj, void *comp,
                           Ren::Vec3f obj_bbox[2]);
-    void PostloadLightmap(const JsObject &js_comp_obj, void *comp,
+    void PostloadLightmap(const JsObjectP &js_comp_obj, void *comp,
                           Ren::Vec3f obj_bbox[2]);
-    void PostloadLightSource(const JsObject &js_comp_obj, void *comp,
+    void PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
                              Ren::Vec3f obj_bbox[2]);
-    void PostloadDecal(const JsObject &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void PostloadLightProbe(const JsObject &js_comp_obj, void *comp,
+    void PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp,
                             Ren::Vec3f obj_bbox[2]);
-    void PostloadSoundSource(const JsObject &js_comp_obj, void *comp,
+    void PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp,
                              Ren::Vec3f obj_bbox[2]);
 
     Ren::MaterialRef OnLoadMaterial(const char *name);
@@ -193,6 +203,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;
 
+    Sys::MultiPoolAllocator<char> mp_alloc_;
     std::unique_ptr<CompStorage> default_comp_storage_[MAX_COMPONENT_TYPES];
     std::function<PostLoadFunc> component_post_load_[MAX_COMPONENT_TYPES];
 

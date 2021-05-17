@@ -51,7 +51,7 @@ class GSUITest4 final : public GSBaseState {
 
     bool trigger_dialog_reload_ = false;
 
-    void OnPostloadScene(JsObject &js_scene) override;
+    void OnPostloadScene(JsObjectP &js_scene) override;
 
     void OnUpdateScene() override;
 

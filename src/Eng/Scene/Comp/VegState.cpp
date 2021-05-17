@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void VegState::Read(const JsObject &js_in, VegState &vs) {
+void VegState::Read(const JsObjectP &js_in, VegState &vs) {
     if (js_in.Has("movement_scale")) {
         vs.movement_scale = float(js_in.at("movement_scale").as_num().val);
     } else {
@@ -28,7 +28,7 @@ void VegState::Read(const JsObject &js_in, VegState &vs) {
     }
 }
 
-void VegState::Write(const VegState &vs, JsObject &js_out) {
+void VegState::Write(const VegState &vs, JsObjectP &js_out) {
     if (vs.movement_scale != 1.0f) {
         js_out["movement_scale"] = JsNumber{double(vs.movement_scale)};
     }

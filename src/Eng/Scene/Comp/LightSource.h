@@ -19,8 +19,8 @@ struct LightSource {
     float       angle_deg;
     Ren::Vec3f  bbox_max;
 
-    static void Read(const JsObject &js_in, LightSource &ls);
-    static void Write(const LightSource &ls, JsObject &js_out);
+    static void Read(const JsObjectP &js_in, LightSource &ls);
+    static void Write(const LightSource &ls, JsObjectP &js_out);
 
     static const char *name() { return "light"; }
 };

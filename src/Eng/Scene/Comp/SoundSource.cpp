@@ -2,8 +2,8 @@
 
 #include <Sys/Json.h>
 
-void SoundSource::Read(const JsObject &js_in, SoundSource &snd) {
-    const JsArray &js_offset = js_in.at("offset").as_arr();
+void SoundSource::Read(const JsObjectP &js_in, SoundSource &snd) {
+    const JsArrayP &js_offset = js_in.at("offset").as_arr();
     snd.offset[0] = float(js_offset[0].as_num());
     snd.offset[1] = float(js_offset[1].as_num());
     snd.offset[2] = float(js_offset[2].as_num());
@@ -14,9 +14,11 @@ void SoundSource::Read(const JsObject &js_in, SoundSource &snd) {
     snd.bone_index = -1;
 }
 
-void SoundSource::Write(const SoundSource &snd, JsObject &js_out) {
+void SoundSource::Write(const SoundSource &snd, JsObjectP &js_out) {
+    const auto &alloc = js_out.elements.get_allocator();
+
     { // write offset
-        JsArray js_offset;
+        JsArrayP js_offset(alloc);
 
         js_offset.Push(JsNumber{double(snd.offset[0])});
         js_offset.Push(JsNumber{double(snd.offset[1])});
@@ -26,7 +28,7 @@ void SoundSource::Write(const SoundSource &snd, JsObject &js_out) {
     }
 
     if (!snd.bone_name.empty()) {
-        JsString js_bone_name = JsString{snd.bone_name.c_str()};
+        auto js_bone_name = JsStringP{snd.bone_name.c_str(), alloc};
         js_out.Push("bone", std::move(js_bone_name));
     }
 }
