@@ -224,13 +224,12 @@ int DummyApp::Init(const int w, const int h) {
 
     HDC fake_dc = GetDC(fake_window);
 
-    PIXELFORMATDESCRIPTOR pixel_format;
-    ZeroMemory(&pixel_format, sizeof(pixel_format));
+    PIXELFORMATDESCRIPTOR pixel_format = {};
     pixel_format.nSize = sizeof(pixel_format);
     pixel_format.nVersion = 1;
-    pixel_format.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
+    pixel_format.dwFlags = PFD_SUPPORT_OPENGL;
     pixel_format.iPixelType = PFD_TYPE_RGBA;
-    pixel_format.cColorBits = 32;
+    pixel_format.cColorBits = 24;
     pixel_format.cAlphaBits = 8;
     pixel_format.cDepthBits = 0;
 

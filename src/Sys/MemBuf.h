@@ -26,6 +26,13 @@ class MemBuf : public std::streambuf {
         return traits_type::to_int_type(*cur_++);
     }
 
+    std::streamsize xsgetn(char *out_ptr, std::streamsize count) override {
+        count = std::min(count, end_ - cur_);
+        std::memcpy(out_ptr, cur_, count);
+        cur_ += count;
+        return count;
+    }
+
     int_type pbackfail(int_type ch) override {
         if (cur_ == beg_ || (ch != traits_type::eof() && ch != cur_[-1])) {
             return traits_type::eof();

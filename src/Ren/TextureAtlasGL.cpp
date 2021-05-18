@@ -188,7 +188,7 @@ void Ren::TextureAtlas::Finalize() {
     if (filter_ == eTexFilter::Trilinear || filter_ == eTexFilter::Bilinear) {
         for (int i = 0; i < MaxTextureCount && (formats_[i] != eTexFormat::Undefined);
              i++) {
-            if (IsCompressedFormat(formats_[i])) {
+            if (!IsCompressedFormat(formats_[i])) {
                 ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_2D, (GLuint)tex_ids_[i]);
             }
         }

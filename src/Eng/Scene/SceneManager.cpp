@@ -723,6 +723,7 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp,
             const std::string mesh_path =
                 std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
 
+#if defined(__ANDROID__)
             Sys::AssetFile in_file(mesh_path.c_str());
             if (!in_file) {
                 ren_ctx_.log()->Error("Failed to open %s", mesh_path.c_str());
@@ -735,6 +736,9 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp,
 
             Sys::MemBuf mem = {&in_file_data[0], in_file_size};
             std::istream in_file_stream(&mem);
+#else
+            std::ifstream in_file_stream(mesh_path.c_str(), std::ios::binary);
+#endif
 
             using namespace std::placeholders;
             dr->mesh =
