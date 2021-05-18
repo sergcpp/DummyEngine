@@ -32,7 +32,7 @@ bool JsLiteral::Read(std::istream &in) {
     return false;
 }
 
-void JsLiteral::Write(std::ostream &out, JsFlags /*flags*/) const {
+void JsLiteral::Write(std::ostream &out, const JsFlags /*flags*/) const {
     if (val == JsLiteralType::True) {
         out << "true";
     } else if (val == JsLiteralType::False) {
@@ -52,7 +52,7 @@ bool JsNumber::Read(std::istream &in) {
     return bool(in >> val);
 }
 
-void JsNumber::Write(std::ostream &out, JsFlags /*flags*/) const { out << val; }
+void JsNumber::Write(std::ostream &out, const JsFlags /*flags*/) const { out << val; }
 
 /////////////////////////////////////////////////////////////////
 
@@ -85,7 +85,7 @@ template <typename Alloc> bool JsStringT<Alloc>::Read(std::istream &in) {
 }
 
 template <typename Allocator>
-void JsStringT<Allocator>::Write(std::ostream &out, JsFlags /*flags*/) const {
+void JsStringT<Allocator>::Write(std::ostream &out, const JsFlags /*flags*/) const {
     out << '\"' << val << '\"';
 }
 
@@ -95,25 +95,27 @@ template struct JsStringT<Sys::MultiPoolAllocator<char>>;
 /////////////////////////////////////////////////////////////////
 
 template <typename Alloc>
-JsArrayT<Alloc>::JsArrayT(const JsElementT<Alloc> *v, size_t num, const Alloc &alloc)
+JsArrayT<Alloc>::JsArrayT(const JsElementT<Alloc> *v, const size_t num,
+                          const Alloc &alloc)
     : elements(alloc) {
     elements.assign(v, v + num);
 }
 
-template <typename Alloc> JsElementT<Alloc> &JsArrayT<Alloc>::operator[](size_t i) {
+template <typename Alloc> JsElementT<Alloc> &JsArrayT<Alloc>::operator[](const size_t i) {
     auto it = elements.begin();
     std::advance(it, i);
     return *it;
 }
 
 template <typename Alloc>
-const JsElementT<Alloc> &JsArrayT<Alloc>::operator[](size_t i) const {
+const JsElementT<Alloc> &JsArrayT<Alloc>::operator[](const size_t i) const {
     auto it = elements.cbegin();
     std::advance(it, i);
     return *it;
 }
 
-template <typename Alloc> const JsElementT<Alloc> &JsArrayT<Alloc>::at(size_t i) const {
+template <typename Alloc>
+const JsElementT<Alloc> &JsArrayT<Alloc>::at(const size_t i) const {
     if (i >= Size()) {
         throw std::out_of_range("Index out of range!");
     }
@@ -379,12 +381,12 @@ template struct JsObjectT<Sys::MultiPoolAllocator<char>>;
 /////////////////////////////////////////////////////////////////
 
 template <typename Alloc>
-JsElementT<Alloc>::JsElementT(JsLiteralType lit_type) : type_(JsType::Literal) {
+JsElementT<Alloc>::JsElementT(const JsLiteralType lit_type) : type_(JsType::Literal) {
     new (&data_) JsLiteral{lit_type};
 }
 
 template <typename Alloc>
-JsElementT<Alloc>::JsElementT(double val) : type_(JsType::Number) {
+JsElementT<Alloc>::JsElementT(const double val) : type_(JsType::Number) {
     new (&data_) JsNumber{val};
 }
 
@@ -395,7 +397,7 @@ JsElementT<Alloc>::JsElementT(const char *str, const Alloc &alloc)
 }
 
 template <typename Alloc>
-JsElementT<Alloc>::JsElementT(JsType type, const Alloc &alloc) : type_(type) {
+JsElementT<Alloc>::JsElementT(const JsType type, const Alloc &alloc) : type_(type) {
     if (type_ == JsType::Literal) {
         new (&data_) JsLiteral{JsLiteralType::Null};
     } else if (type_ == JsType::Number) {
@@ -446,7 +448,8 @@ template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsElementT<Alloc> 
         new (&data_)
             JsArrayT<Alloc>{reinterpret_cast<const JsArrayT<Alloc> &>(rhs.data_)};
     } else if (rhs.type_ == JsType::Object) {
-        new (&data_) JsObjectT<Alloc>{reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_)};
+        new (&data_)
+            JsObjectT<Alloc>{reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_)};
     }
     type_ = rhs.type_;
 }
@@ -614,7 +617,8 @@ JsElementT<Alloc> &JsElementT<Alloc>::operator=(const JsElementT &rhs) {
         new (&data_)
             JsArrayT<Alloc>{reinterpret_cast<const JsArrayT<Alloc> &>(rhs.data_)};
     } else if (rhs.type_ == JsType::Object) {
-        new (&data_) JsObjectT<Alloc>{reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_)};
+        new (&data_)
+            JsObjectT<Alloc>{reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_)};
     }
     type_ = rhs.type_;
     return *this;
@@ -679,7 +683,7 @@ bool JsElementT<Alloc>::Read(std::istream &in, const Alloc &alloc) {
 }
 
 template <typename Alloc>
-void JsElementT<Alloc>::Write(std::ostream &out, JsFlags flags) const {
+void JsElementT<Alloc>::Write(std::ostream &out, const JsFlags flags) const {
     if (type_ == JsType::Literal) {
         reinterpret_cast<const JsLiteral &>(data_).Write(out, flags);
     } else if (type_ == JsType::Number) {

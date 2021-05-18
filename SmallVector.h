@@ -12,6 +12,7 @@
 #include <cassert>
 
 namespace Sys {
+#ifndef SYS_ALIGNED_MALLOC_DEFINED
 inline void *aligned_malloc(size_t size, size_t alignment) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
     return _mm_malloc(size, alignment);
@@ -41,6 +42,8 @@ inline void aligned_free(void *p) {
     free(p);
 #endif
 }
+#define SYS_ALIGNED_MALLOC_DEFINED
+#endif
 
 template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     T *begin_, *end_;
@@ -55,8 +58,8 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         : begin_(begin), end_(end), capacity_(capacity) {}
 
     ~SmallVectorImpl() {
-        for (T *el = end_ - 1; el >= begin_; --el) {
-            el->~T();
+        while (end_ != begin_) {
+            (--end_)->~T();
         }
 
         if (capacity_ & OwnerBit) {
@@ -66,6 +69,62 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
 
     SmallVectorImpl(const SmallVectorImpl &rhs) = delete;
     SmallVectorImpl(SmallVectorImpl &&rhs) = delete;
+
+    SmallVectorImpl &operator=(const SmallVectorImpl &rhs) {
+        while (end_ != begin_) {
+            (--end_)->~T();
+        }
+
+        if (capacity_ & OwnerBit) {
+            aligned_free(begin_);
+        }
+
+        reserve(rhs.capacity_ & CapacityMask);
+
+        end_ = begin_ + (rhs.end_ - rhs.begin_);
+
+        if (rhs.end_ != rhs.begin_) {
+            T *src = rhs.end_ - 1;
+            T *dst = end_ - 1;
+            do {
+                new (dst--) T(*src--);
+            } while (src >= rhs.begin_);
+        }
+
+        return (*this);
+    }
+
+    SmallVectorImpl &operator=(SmallVectorImpl &&rhs) {
+        if (this == &rhs) {
+            return (*this);
+        }
+
+        while (end_ != begin_) {
+            (--end_)->~T();
+        }
+
+        if (capacity_ & OwnerBit) {
+            aligned_free(begin_);
+        }
+
+        if (rhs.capacity_ & OwnerBit) {
+            begin_ = exchange(rhs.begin_, nullptr);
+            end_ = exchange(rhs.end_, nullptr);
+            capacity_ = exchange(rhs.capacity_, 0);
+        } else {
+            reserve(rhs.capacity_ & CapacityMask);
+
+            end_ = begin_ + (rhs.end_ - rhs.begin_);
+
+            T *dst = end_ - 1;
+            while (rhs.end_ != rhs.begin_) {
+                new (dst--) T(std::move(*--rhs.end_));
+                rhs.end_->~T();
+            }
+        }
+
+        return (*this);
+    }
 
   public:
     const T *cdata() const noexcept { return begin_; }
@@ -119,9 +178,10 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         new (end_++) T(std::move(el));
     }
 
-    template <class... Args> void emplace_back(Args &&...args) {
+    template <class... Args> T &emplace_back(Args &&...args) {
         reserve(size_t(end_ - begin_) + 1);
         new (end_++) T(std::forward<Args>(args)...);
+        return *(end_ - 1);
     }
 
     void pop_back() {
@@ -143,12 +203,14 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         T *new_begin = (T *)aligned_malloc(new_capacity * sizeof(T), AlignmentOfT);
         T *new_end = new_begin + (end_ - begin_);
 
-        T *src = end_ - 1;
-        T *dst = new_end - 1;
-        do {
-            new (dst--) T(std::move(*src));
-            (src--)->~T();
-        } while (src >= begin_);
+        if (end_ != begin_) {
+            T *src = end_ - 1;
+            T *dst = new_end - 1;
+            do {
+                new (dst--) T(std::move(*src));
+                (src--)->~T();
+            } while (src >= begin_);
+        }
 
         if (capacity_ & OwnerBit) {
             aligned_free(begin_);
@@ -158,6 +220,25 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         end_ = new_end;
         capacity_ = (new_capacity | OwnerBit);
     }
+
+    void resize(const size_t req_size) {
+        reserve(req_size);
+
+        while (end_ > begin_ + req_size) {
+            (--end_)->~T();
+        }
+
+        while (end_ < begin_ + req_size) {
+            new (end_++) T();
+        }
+    }
+
+    void clear() {
+        for (T *el = end_; el > begin_;) {
+            (--el)->~T();
+        }
+        end_ = begin_;
+    }
 };
 
 template <typename T, int N, int AlignmentOfT = alignof(T)>
@@ -166,7 +247,20 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
 
   public:
     SmallVector() : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {}
+    SmallVector(const SmallVector &rhs)
+        : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
+        SmallVectorImpl::operator=(rhs);
+    }
+    SmallVector(SmallVector &&rhs) : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
+        SmallVectorImpl::operator=(std::move(rhs));
+    }
+
+    SmallVector &operator=(const SmallVector &rhs) = delete;
+    SmallVector &operator=(SmallVector &&rhs) {
+        SmallVectorImpl::operator=(std::move(rhs));
+        return (*this);
+    }
 
     bool is_on_heap() const { return uintptr_t(this->begin()) != uintptr_t(&buffer_[0]); }
 };
-} // namespace Sys
+} // namespace Ren
