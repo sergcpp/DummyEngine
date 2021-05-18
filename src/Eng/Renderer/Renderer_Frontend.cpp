@@ -77,7 +77,7 @@ uint32_t __record_texture(DynArray<TexEntry> &storage, const Ren::Tex2DRef &tex,
                           uint16_t distance);
 void __record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat,
                        uint16_t distance);
-void __init_wind_params(const VegState &vs, const Environment &env,
+void __init_wind_params(const VegState &vs, const EnvironmentWeak &env,
                         const Ren::Mat4f &object_from_world, InstanceData &instance);
 
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
@@ -116,7 +116,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     const uint64_t iteration_start = Sys::GetTimeUs();
 
     list.draw_cam = cam;
-    list.env = scene.env;
+    list.env = EnvironmentWeak{scene.env};
 
     list.materials = &scene.materials;
     list.decals_atlas = &scene.decals_atlas;
@@ -180,26 +180,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
                 sizeof(ProcessedObjData) * scene.objects.size());
 
     // retrieve pointers to components for fast access
-    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
-    const auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
-    const auto *occluders = (Occluder *)scene.comp_store[CompOccluder]->Get(0);
-    const auto *lightmaps = (Lightmap *)scene.comp_store[CompLightmap]->Get(0);
-    const auto *lights_src = (LightSource *)scene.comp_store[CompLightSource]->Get(0);
-    const auto *decals = (Decal *)scene.comp_store[CompDecal]->Get(0);
-    const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->Get(0);
-    const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
-    const auto *vegs = (VegState *)scene.comp_store[CompVegState]->Get(0);
-
-    // make sure we can access components by index
-    assert(scene.comp_store[CompTransform]->IsSequential());
-    assert(scene.comp_store[CompDrawable]->IsSequential());
-    assert(scene.comp_store[CompOccluder]->IsSequential());
-    assert(scene.comp_store[CompLightmap]->IsSequential());
-    assert(scene.comp_store[CompLightSource]->IsSequential());
-    assert(scene.comp_store[CompDecal]->IsSequential());
-    assert(scene.comp_store[CompProbe]->IsSequential());
-    assert(scene.comp_store[CompAnimState]->IsSequential());
-    assert(scene.comp_store[CompVegState]->IsSequential());
+    const auto *transforms =
+        (Transform *)scene.comp_store[CompTransform]->SequentialData();
+    const auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
+    const auto *occluders = (Occluder *)scene.comp_store[CompOccluder]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene.comp_store[CompLightmap]->SequentialData();
+    const auto *lights_src =
+        (LightSource *)scene.comp_store[CompLightSource]->SequentialData();
+    const auto *decals = (Decal *)scene.comp_store[CompDecal]->SequentialData();
+    const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->SequentialData();
+    const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
+    const auto *vegs = (VegState *)scene.comp_store[CompVegState]->SequentialData();
 
     const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16;
 
@@ -2275,7 +2266,7 @@ void RendererInternal::__record_textures(DynArray<TexEntry> &storage,
     }
 }
 
-void RendererInternal::__init_wind_params(const VegState &vs, const Environment &env,
+void RendererInternal::__init_wind_params(const VegState &vs, const EnvironmentWeak &env,
                                           const Ren::Mat4f &object_from_world,
                                           InstanceData &instance) {
     instance.movement_scale = f32_to_u8(vs.movement_scale);

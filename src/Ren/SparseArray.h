@@ -66,21 +66,23 @@ template <typename T> class SparseArray {
     uint32_t size() const { return size_; }
     uint32_t capacity() const { return capacity_; }
 
+    bool empty() const { return size_ == 0; }
+
     T *data() { return data_; }
     const T *data() const { return data_; }
 
     void clear() {
         for (uint32_t i = 0; i < capacity_ && size_; i++) {
             if (ctrl_[i / 8] & (1u << (i % 8))) {
-                size_--;
-                data_[i].~T();
+                erase(i);
             }
         }
     }
 
     void reserve(uint32_t new_capacity) {
-        if (new_capacity <= capacity_)
+        if (new_capacity <= capacity_) {
             return;
+        }
 
         uint8_t *old_ctrl = ctrl_;
         T *old_data = data_;
@@ -90,7 +92,7 @@ template <typename T> class SparseArray {
             mem_size += alignof(T) - (mem_size % alignof(T));
         }
 
-        size_t data_start = mem_size;
+        const size_t data_start = mem_size;
         mem_size += sizeof(T) * new_capacity;
 
         ctrl_ = new uint8_t[mem_size];
@@ -107,16 +109,18 @@ template <typename T> class SparseArray {
         // move old data
         for (uint32_t i = 0; i < capacity_; i++) {
             if (ctrl_[i / 8] & (1u << (i % 8))) {
-                T *el = data_ + i;
-                new (el) T(std::move(old_data[i]));
+                new (&data_[i]) T(std::move(old_data[i]));
                 old_data[i].~T();
+            } else {
+                // copy next free index
+                memcpy(data_ + i, old_data + i, sizeof(uint32_t));
             }
         }
 
         delete[] old_ctrl;
 
         for (uint32_t i = capacity_; i < new_capacity - 1; i++) {
-            uint32_t next_free = i + 1;
+            const uint32_t next_free = i + 1;
             memcpy(data_ + i, &next_free, sizeof(uint32_t));
         }
 
@@ -124,15 +128,14 @@ template <typename T> class SparseArray {
         first_free_ = capacity_;
 
         capacity_ = new_capacity;
-        if (size_ > capacity_)
-            size_ = capacity_;
     }
 
     template <class... Args> uint32_t emplace(Args &&...args) {
         if (size_ + 1 > capacity_) {
             reserve(capacity_ ? (capacity_ * 2) : 8);
         }
-        uint32_t index = first_free_;
+        const uint32_t index = first_free_;
+        assert((ctrl_[index / 8] & (1u << (index % 8))) == 0);
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
         T *el = data_ + index;
@@ -140,7 +143,7 @@ template <typename T> class SparseArray {
 
         ctrl_[index / 8] |= (1u << (index % 8));
 
-        size_++;
+        ++size_;
         return index;
     }
 
@@ -148,13 +151,14 @@ template <typename T> class SparseArray {
         if (size_ + 1 > capacity_) {
             reserve(capacity_ ? (capacity_ * 2) : 8);
         }
-        uint32_t index = first_free_;
+        const uint32_t index = first_free_;
+        assert((ctrl_[index / 8] & (1u << (index % 8))) == 0);
         memcpy(&first_free_, data_ + index, sizeof(uint32_t));
 
         data_[index] = el;
         ctrl_[index / 8] |= (1u << (index % 8));
 
-        size_++;
+        ++size_;
         return index;
     }
 
@@ -166,7 +170,7 @@ template <typename T> class SparseArray {
 
         memcpy(data_ + index, &first_free_, sizeof(uint32_t));
         first_free_ = index;
-        size_--;
+        --size_;
     }
 
     T &at(uint32_t index) {
@@ -190,7 +194,7 @@ template <typename T> class SparseArray {
     }
 
     T *GetOrNull(uint32_t index) {
-        if (index < size_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
+        if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
             return &data_[index];
         } else {
             return nullptr;
@@ -198,7 +202,7 @@ template <typename T> class SparseArray {
     }
 
     const T *GetOrNull(uint32_t index) const {
-        if (index < size_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
+        if (index < capacity_ && (ctrl_[index / 8] & (1u << (index % 8)))) {
             return &data_[index];
         } else {
             return nullptr;

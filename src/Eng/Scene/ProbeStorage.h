@@ -15,6 +15,7 @@ public:
 
     int Allocate();
     void Free(int i);
+    void Clear();
 
     Ren::eTexFormat format() const { return format_; }
     int res() const { return res_; }

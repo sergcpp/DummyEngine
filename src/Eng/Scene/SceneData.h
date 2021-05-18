@@ -115,6 +115,7 @@ public:
     virtual const char *name() const = 0;
 
     virtual uint32_t Create() = 0;
+    virtual void Delete(uint32_t i) = 0;
     virtual void *Get(uint32_t i) = 0;
     virtual const void *Get(uint32_t i) const = 0;
 
@@ -126,8 +127,9 @@ public:
     virtual void ReadFromJs(const JsObjectP &js_obj, void *comp) = 0;
     virtual void WriteToJs(const void *comp, JsObjectP &js_obj) const = 0;
 
-    // tells whether it is possible to access storage as if it is contiguous array
-    virtual bool IsSequential() const { return false; }
+    // returns contiguous array of data or null if storage does not support it
+    virtual const void *SequentialData() const { return nullptr; }
+    virtual void *SequentialData() { return nullptr; }
 };
 
 struct SceneData {
@@ -146,7 +148,7 @@ struct SceneData {
 
     CompStorage                             *comp_store[MAX_COMPONENT_TYPES] = {};
 
-    Ren::SparseArray<SceneObject>           objects;
+    std::vector<SceneObject>                objects;
     Ren::HashMap32<Ren::String, uint32_t>   name_to_object;
 
     std::vector<bvh_node_t>                 nodes;

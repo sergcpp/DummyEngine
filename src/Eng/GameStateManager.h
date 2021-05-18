@@ -27,9 +27,10 @@ public:
 
     void Clear();
 
-    void Update(uint64_t dt_us);
+    void UpdateFixed(uint64_t dt_us);
+    void UpdateAnim(uint64_t dt_us);
 
-    void Draw(uint64_t dt_us);
+    void Draw();
 
     void HandleInput(InputManager::Event &);
 };

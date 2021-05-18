@@ -138,12 +138,12 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
     }
 }
 
-void GSUITest::OnUpdateScene() {
+void GSUITest::UpdateAnim(const uint64_t dt_us) {
     using namespace GSUITestInternal;
 
-    GSBaseState::OnUpdateScene();
+    GSBaseState::UpdateAnim(dt_us);
 
-    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
+    const float delta_time_s = dt_us * 0.000001f;
     test_time_counter_s += delta_time_s;
 
     const float char_period_s = 0.025f;

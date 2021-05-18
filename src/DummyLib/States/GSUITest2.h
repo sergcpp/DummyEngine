@@ -41,8 +41,6 @@ class GSUITest2 : public GSBaseState {
 
     void OnPostloadScene(JsObjectP &js_scene) override;
 
-    void OnUpdateScene() override;
-
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
     void UpdateHint();
@@ -53,6 +51,8 @@ public:
 
     void Enter() override;
     void Exit() override;
+
+    void UpdateAnim(uint64_t dt_us) override;
 
     bool HandleInput(const InputManager::Event &evt) override;
 };

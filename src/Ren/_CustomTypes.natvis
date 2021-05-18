@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <Type Name="Ren::StrongRef&lt;*&gt;">
-    <DisplayString>{{ [{storage_->data_[index_].counter_} strong ref] }}</DisplayString>
+    <DisplayString Condition="storage_ != nullptr">{{ [{storage_->data_[index_].counter_} strong ref] }}</DisplayString>
+	<DisplayString Condition="storage_ == nullptr">empty</DisplayString>
     <Expand>
       <Item Name="[storage]" ExcludeView="simple">storage_</Item>
       <Item Name="[index]" ExcludeView="simple">index_</Item>
@@ -18,7 +19,7 @@
       <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
       <CustomListItems ExcludeView="simple">
         <Variable Name="i" InitialValue="0" />
-        <Size>size_</Size>
+        <!--<Size>capacity_</Size>-->
         <Loop>
           <Break Condition="i == capacity_" />
           <If Condition="(ctrl_[i / 8] &amp; (1u &lt;&lt; (i % 8))) != 0">

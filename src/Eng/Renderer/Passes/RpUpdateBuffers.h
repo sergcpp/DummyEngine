@@ -20,7 +20,7 @@ class RpUpdateBuffers : public RenderPassBase {
     DynArrayConstRef<EllipsItem> ellipsoids_;
     uint32_t render_flags_ = 0;
 
-    const Environment *env_ = nullptr;
+    const EnvironmentWeak *env_ = nullptr;
 
     const Ren::Camera *draw_cam_ = nullptr;
     const ViewState *view_state_ = nullptr;

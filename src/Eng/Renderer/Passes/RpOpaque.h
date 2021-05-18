@@ -18,7 +18,7 @@ class RpOpaque : public RenderPassBase {
     const ViewState *view_state_ = nullptr;
     Ren::Tex2DRef brdf_lut_, noise_tex_, cone_rt_lut_;
 
-    const Environment *env_ = nullptr;
+    const EnvironmentWeak *env_ = nullptr;
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
     const ProbeStorage *probe_storage_ = nullptr;
 

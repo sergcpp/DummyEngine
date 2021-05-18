@@ -41,7 +41,7 @@ class GSUITest final : public GSBaseState {
 
     void OnPostloadScene(JsObjectP &js_scene) override;
 
-    void OnUpdateScene() override;
+    void UpdateAnim(uint64_t dt_us) override;
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 public:

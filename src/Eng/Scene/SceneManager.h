@@ -131,6 +131,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void UpdateTexturePriorities(const TexEntry visible_textures[], int visible_count,
                                  const TexEntry desired_textures[], int desired_count);
+    void StartTextureLoader();
+    void StopTextureLoader();
     void ForceTextureReload();
 
     void Serve(int texture_budget = 1);

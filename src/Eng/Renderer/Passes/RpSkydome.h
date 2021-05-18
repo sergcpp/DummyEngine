@@ -16,7 +16,7 @@ class RpSkydome : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    const Environment *env_ = nullptr;
+    const EnvironmentWeak *env_ = nullptr;
 
     Ren::Vec3f draw_cam_pos_;
 

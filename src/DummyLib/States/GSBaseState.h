@@ -90,6 +90,8 @@ protected:
 
     std::vector<InputManager::Event>    cmdline_input_;
     std::vector<std::string>            cmdline_history_;
+    int                                 cmdline_history_index_ = -1;
+    uint64_t                            cmdline_cursor_blink_us_ = 0;
     bool                                cmdline_enabled_ = false;
     bool                                shift_down_ = false;
 
@@ -99,8 +101,6 @@ protected:
     virtual void OnPostloadScene(JsObjectP &js_scene);
 
     virtual void SaveScene(JsObjectP &js_scene);
-
-    virtual void OnUpdateScene() {}
 
     void BackgroundProc();
     void UpdateFrame(int list_index);
@@ -113,9 +113,10 @@ public:
     void Enter() override;
     void Exit() override;
 
-    void Draw(uint64_t dt_us) override;
+    void Draw() override;
 
-    void Update(uint64_t dt_us) override;
+    void UpdateFixed(uint64_t dt_us) override;
+    void UpdateAnim(uint64_t dt_us) override;
 
     bool HandleInput(const InputManager::Event &evt) override;
 };

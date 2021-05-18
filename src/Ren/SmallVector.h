@@ -12,7 +12,7 @@
 #include <cassert>
 
 namespace Ren {
-#ifndef ALIGNED_MALLOC_DEFINED
+#ifndef REN_ALIGNED_MALLOC_DEFINED
 inline void *aligned_malloc(size_t size, size_t alignment) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
     return _mm_malloc(size, alignment);
@@ -42,7 +42,7 @@ inline void aligned_free(void *p) {
     free(p);
 #endif
 }
-#define ALIGNED_MALLOC_DEFINED
+#define REN_ALIGNED_MALLOC_DEFINED
 #endif
 
 template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {

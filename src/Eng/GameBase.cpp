@@ -105,13 +105,12 @@ void GameBase::Frame() {
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
-    // PROFILE_FUNC();
-
     FrameInfo &fr = fr_info_;
 
     fr.cur_time_us = Sys::GetTimeUs();
-    if (fr.cur_time_us < fr.prev_time_us)
+    if (fr.cur_time_us < fr.prev_time_us) {
         fr.prev_time_us = 0;
+    }
     fr.delta_time_us = fr.cur_time_us - fr.prev_time_us;
     if (fr.delta_time_us > 200000) {
         fr.delta_time_us = 200000;
@@ -121,27 +120,22 @@ void GameBase::Frame() {
 
     uint64_t poll_time_point = fr.cur_time_us - fr.time_acc_us;
 
-    {
-        // PROFILE_BLOCK(Update);
-        while (fr.time_acc_us >= UPDATE_DELTA) {
-            InputManager::Event evt;
-            while (input_manager->PollEvent(poll_time_point, evt)) {
-                state_manager->HandleInput(evt);
-            }
-
-            state_manager->Update(UPDATE_DELTA);
-            fr.time_acc_us -= UPDATE_DELTA;
-
-            poll_time_point += UPDATE_DELTA;
+    while (fr.time_acc_us >= UPDATE_DELTA) {
+        InputManager::Event evt;
+        while (input_manager->PollEvent(poll_time_point, evt)) {
+            state_manager->HandleInput(evt);
         }
+
+        state_manager->UpdateFixed(UPDATE_DELTA);
+        fr.time_acc_us -= UPDATE_DELTA;
+
+        poll_time_point += UPDATE_DELTA;
     }
 
     fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
 
-    {
-        // PROFILE_BLOCK(Draw);
-        state_manager->Draw(fr_info_.delta_time_us);
-    }
+    state_manager->UpdateAnim(fr_info_.delta_time_us);
+    state_manager->Draw();
 }
 
 void GameBase::Quit() { terminated = true; }

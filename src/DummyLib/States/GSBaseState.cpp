@@ -91,7 +91,7 @@ void GSBaseState::Enter() {
             FrameBuf("Temp probe", *ren_ctx_, res, res, &desc, 1, {}, 1, ren_ctx_->log());
     }
 
-    cmdline_history_.resize(MAX_CMD_LINES, "~");
+    cmdline_history_.emplace_back();
 
     std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
     std::weak_ptr<GSBaseState> weak_this =
@@ -521,7 +521,12 @@ bool GSBaseState::LoadScene(const char *name) {
         }
     }
 
-    JsObjectP js_scene(scene_manager_->mp_alloc()), js_probe_cache(scene_manager_->mp_alloc());
+    // clear outdated draw data
+    main_view_lists_[0].Clear();
+    main_view_lists_[1].Clear();
+
+    JsObjectP js_scene(scene_manager_->mp_alloc()),
+        js_probe_cache(scene_manager_->mp_alloc());
 
     { // Load scene data from file
         Sys::AssetFile in_scene(name);
@@ -607,7 +612,14 @@ void GSBaseState::Exit() {
     }
 }
 
-void GSBaseState::Draw(const uint64_t dt_us) {
+void GSBaseState::UpdateAnim(const uint64_t dt_us) {
+    cmdline_cursor_blink_us_ += dt_us;
+    if (cmdline_cursor_blink_us_ > 1000000 || !cmdline_input_.empty()) {
+        cmdline_cursor_blink_us_ = 0;
+    }
+}
+
+void GSBaseState::Draw() {
     using namespace GSBaseStateInternal;
 
     if (cmdline_enabled_) {
@@ -621,21 +633,27 @@ void GSBaseState::Draw(const uint64_t dt_us) {
                 cmdline_->Execute(cmdline_history_.back().c_str());
 
                 cmdline_history_.emplace_back();
+                cmdline_history_index_ = -1;
                 if (cmdline_history_.size() > MAX_CMD_LINES) {
                     cmdline_history_.erase(cmdline_history_.begin());
                 }
             } else if (evt.key_code == KeyGrave) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.emplace_back();
+                    cmdline_history_index_ = -1;
                     if (cmdline_history_.size() > MAX_CMD_LINES) {
                         cmdline_history_.erase(cmdline_history_.begin());
                     }
                 }
             } else if (evt.key_code == KeyUp) {
-                if (cmdline_history_.size() >= 2 && cmdline_history_.back().empty()) {
-                    cmdline_history_.back() =
-                        cmdline_history_[cmdline_history_.size() - 2];
-                }
+                cmdline_history_index_ =
+                    std::min(++cmdline_history_index_, int(cmdline_history_.size()) - 2);
+                cmdline_history_.back() = cmdline_history_[cmdline_history_.size() - 2 -
+                                                           cmdline_history_index_];
+            } else if (evt.key_code == KeyDown) {
+                cmdline_history_index_ = std::max(--cmdline_history_index_, 0);
+                cmdline_history_.back() = cmdline_history_[cmdline_history_.size() - 2 -
+                                                           cmdline_history_index_];
             } else {
                 char ch = InputManager::CharFromKeycode(evt.key_code);
                 if (shift_down_) {
@@ -770,7 +788,8 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     const uint8_t text_color[4] = {255, 255, 255, 255};
 
     if (cmdline_enabled_) {
-        float cur_y = 1.0f - font_height;
+        float cur_y =
+            1.0f - font_height * float(MAX_CMD_LINES - cmdline_history_.size() + 1);
 
         const float total_height = (float(MAX_CMD_LINES) + 0.4f) * font_height;
 
@@ -783,7 +802,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
             const float width =
                 font_->DrawText(r, cmd.c_str(), Ren::Vec2f{-1, cur_y}, text_color, root);
-            if (i == cmdline_history_.size() - 1) {
+            if (i == cmdline_history_.size() - 1 && cmdline_cursor_blink_us_ < 500000) {
                 // draw cursor
                 font_->DrawText(r, "_", Ren::Vec2f{-1.0f + width, cur_y}, text_color,
                                 root);
@@ -818,7 +837,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     }
 }
 
-void GSBaseState::Update(const uint64_t dt_us) {}
+void GSBaseState::UpdateFixed(const uint64_t dt_us) {}
 
 bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     using namespace Ren;
@@ -883,7 +902,7 @@ void GSBaseState::BackgroundProc() {
 }
 
 void GSBaseState::UpdateFrame(int list_index) {
-    { // Update loop with fixed timestep
+    { // Update loop using fixed timestep
         auto input_manager = game_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
         FrameInfo &fr = fr_info_;
@@ -906,7 +925,7 @@ void GSBaseState::UpdateFrame(int list_index) {
                 this->HandleInput(evt);
             }
 
-            this->Update(UPDATE_DELTA);
+            this->UpdateFixed(UPDATE_DELTA);
             fr.time_acc_us -= UPDATE_DELTA;
 
             poll_time_point += UPDATE_DELTA;
@@ -915,7 +934,7 @@ void GSBaseState::UpdateFrame(int list_index) {
         fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
     }
 
-    OnUpdateScene();
+    this->UpdateAnim(fr_info_.delta_time_us);
 
     // Update invalidated objects
     scene_manager_->UpdateObjects();

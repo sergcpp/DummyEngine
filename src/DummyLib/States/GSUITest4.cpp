@@ -287,10 +287,10 @@ void GSUITest4::OnPostloadScene(JsObjectP &js_scene) {
     }
 }
 
-void GSUITest4::OnUpdateScene() {
+void GSUITest4::UpdateAnim(const uint64_t dt_us) {
     using namespace GSUITest4Internal;
 
-    GSBaseState::OnUpdateScene();
+    GSBaseState::UpdateAnim(dt_us);
 
     seq_cap_ui_->Clear();
     dialog_ui_->Clear();
@@ -308,7 +308,7 @@ void GSUITest4::OnUpdateScene() {
 
 void GSUITest4::Exit() { GSBaseState::Exit(); }
 
-void GSUITest4::Draw(uint64_t dt_us) {
+void GSUITest4::Draw() {
     using namespace GSUITest4Internal;
 
     if (trigger_dialog_reload_) {
@@ -325,10 +325,10 @@ void GSUITest4::Draw(uint64_t dt_us) {
         seq_edit_ui_->SetTime(float(play_time_s));
     }
 
-    GSBaseState::Draw(dt_us);
+    GSBaseState::Draw();
 }
 
-void GSUITest4::Update(uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
+void GSUITest4::UpdateFixed(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
 
 void GSUITest4::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSUITest4Internal;

@@ -60,10 +60,49 @@ struct ShadReg {
     uint32_t last_update, last_visible;
 };
 
+struct EnvironmentWeak {
+    Ren::Vec3f          sun_dir, sun_col;
+    float               sun_softness = 0.0f;
+    Ren::Vec3f          wind_vec;
+    float               wind_turbulence = 0.0f;
+    Ren::Vec2f          prev_wind_scroll_lf, prev_wind_scroll_hf;
+    Ren::Vec2f          curr_wind_scroll_lf, curr_wind_scroll_hf;
+    Ren::WeakTex2DRef   env_map;
+    Ren::WeakTex2DRef   lm_direct, lm_indir, lm_indir_sh[4];
+    float               sun_shadow_bias[2] = {4.0f, 8.0f};
+
+    Ren::String         env_map_name, env_map_name_pt;
+
+    EnvironmentWeak() = default;
+    explicit EnvironmentWeak(const Environment& env) {
+        sun_dir = env.sun_dir;
+        sun_col = env.sun_col;
+        sun_softness = env.sun_softness;
+        wind_vec = env.wind_vec;
+        wind_turbulence = env.wind_turbulence;
+        prev_wind_scroll_lf = env.prev_wind_scroll_lf;
+        prev_wind_scroll_hf = env.prev_wind_scroll_hf;
+        curr_wind_scroll_lf = env.curr_wind_scroll_lf;
+        curr_wind_scroll_hf = env.curr_wind_scroll_hf;
+        env_map = env.env_map;
+        lm_direct = env.lm_direct;
+        lm_indir = env.lm_indir;
+        for (int i = 0; i < 4; i++) {
+            lm_indir_sh[i] = env.lm_indir_sh[i];
+        }
+        sun_shadow_bias[0] = env.sun_shadow_bias[0];
+        sun_shadow_bias[1] = env.sun_shadow_bias[1];
+
+        env_map_name = env.env_map_name;
+        env_map_name_pt = env.env_map_name_pt;
+    }
+};
+static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
+
 struct DrawList {
     uint32_t                    render_flags = 0;
     Ren::Camera                 draw_cam;
-    Environment                 env;
+    EnvironmentWeak             env;
     FrontendInfo                frontend_info;
     DynArray<InstanceData>      instances;
     DynArray<DepthDrawBatch>    shadow_batches;
@@ -102,4 +141,5 @@ struct DrawList {
     std::vector<uint8_t> depth_pixels;
 
     DrawList();
+    void Clear();
 };

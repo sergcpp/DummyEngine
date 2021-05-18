@@ -135,10 +135,10 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
                               Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, max_exposure);
 }
 
-void GSUITest2::OnUpdateScene() {
+void GSUITest2::UpdateAnim(const uint64_t dt_us) {
     using namespace GSUITest2Internal;
 
-    GSBaseState::OnUpdateScene();
+    GSBaseState::UpdateAnim(dt_us);
 
     const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
     /*test_time_counter_s += delta_time_s;

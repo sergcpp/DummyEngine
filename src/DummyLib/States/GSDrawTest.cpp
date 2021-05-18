@@ -230,6 +230,14 @@ void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
         }
     }
 #endif
+
+    std::fill_n(wolf_indices_, 32, 0xffffffff);
+    std::fill_n(scooter_indices_, 16, 0xffffffff);
+    std::fill_n(sophia_indices_, 2, 0xffffffff);
+    std::fill_n(eric_indices_, 2, 0xffffffff);
+    zenith_index_ = 0xffffffff;
+    palm_index_ = 0xffffffff;
+    leaf_tree_index_ = 0xffffffff;
 }
 
 void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
@@ -359,13 +367,13 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
 
 void GSDrawTest::Exit() { GSBaseState::Exit(); }
 
-void GSDrawTest::Draw(const uint64_t dt_us) { GSBaseState::Draw(dt_us); }
+void GSDrawTest::Draw() { GSBaseState::Draw(); }
 
 void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
 }
 
-void GSDrawTest::Update(const uint64_t dt_us) {
+void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
@@ -621,7 +629,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         if ((evt.key_code == KeyUp && !cmdline_enabled_) ||
             (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeyDown ||
+        } else if ((evt.key_code == KeyDown && !cmdline_enabled_) ||
                    (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
         } else if (evt.key_code == KeyLeft ||
@@ -630,8 +638,8 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
         } else if (evt.key_code == KeyRight ||
                    (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
-        //} else if (evt.key_code == KeySpace) {
-        //    wind_vector_goal_ = Ren::Vec3f{1.0f, 0.0f, 0.0f};
+            //} else if (evt.key_code == KeySpace) {
+            //    wind_vector_goal_ = Ren::Vec3f{1.0f, 0.0f, 0.0f};
         } else {
             input_processed = false;
         }
@@ -662,8 +670,8 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
     return true;
 }
 
-void GSDrawTest::OnUpdateScene() {
-    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
+void GSDrawTest::UpdateAnim(uint64_t dt_us) {
+    const float delta_time_s = dt_us * 0.000001f;
 
     // test test test
     TestUpdateAnims(delta_time_s);

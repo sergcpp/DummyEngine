@@ -62,9 +62,10 @@ class GSUITest3 : public GSBaseState {
     uint32_t book_index_                = 0xffffffff;
 
     void OnPostloadScene(JsObjectP &js_scene) override;
-    void OnUpdateScene() override;
 
-    void Draw(uint64_t dt_us) override;
+    void UpdateAnim(uint64_t dt_us) override;
+
+    void Draw() override;
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
     Sys::Optional<Ren::Vec2f> MapPointToPageFramebuf(const Ren::Vec2f &p);

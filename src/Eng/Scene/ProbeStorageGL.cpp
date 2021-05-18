@@ -37,6 +37,11 @@ void ProbeStorage::Free(int i) {
     }
 }
 
+void ProbeStorage::Clear() {
+    size_ = 0;
+    free_indices_.clear();
+}
+
 void ProbeStorage::Resize(Ren::eTexFormat format, int res, int capacity, Ren::ILog *log) {
     if (tex_id_) {
         auto tex_id = GLuint(tex_id_);

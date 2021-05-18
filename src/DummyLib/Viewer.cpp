@@ -135,7 +135,7 @@ void Viewer::Resize(const int w, const int h) { GameBase::Resize(w, h); }
 
 void Viewer::Frame() {
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Draw(0);
+    state_manager->Draw();
 }
 
 void Viewer::PrepareAssets(const char *platform) {

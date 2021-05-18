@@ -85,7 +85,7 @@
 #define REN_SHAD_CASCADE_SOFT       1
 
 #define REN_MAX_OBJ_COUNT			4194304
-#define REN_MAX_TEX_COUNT           8388608
+#define REN_MAX_TEX_COUNT           262144
 #define REN_MAX_BATCH_SIZE			8
 
 #define REN_MAX_INSTANCES_TOTAL     262144

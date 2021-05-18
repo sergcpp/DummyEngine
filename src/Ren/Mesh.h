@@ -137,9 +137,8 @@ class Mesh : public RefCounter {
     const Vec3f &bbox_max() const { return bbox_max_; }
     const String &name() const { return name_; }
 
-    Skeleton *skel() { return &skel_; }
-
     const Skeleton *skel() const { return &skel_; }
+    Skeleton *skel() { return &skel_; }
 
     void Init(const float *positions, int vtx_count, const uint32_t *indices,
               int ndx_count, BufferRef vertex_buf1, BufferRef vertex_buf2,

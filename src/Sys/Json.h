@@ -27,12 +27,12 @@ struct JsLiteral {
     JsLiteralType val;
 
     explicit JsLiteral(const JsLiteralType v) : val(v) {}
-    bool operator==(const JsLiteral &rhs) const { return val == rhs.val; }
 
+    bool operator==(const JsLiteral &rhs) const { return val == rhs.val; }
     bool operator!=(const JsLiteral &rhs) const { return val != rhs.val; }
 
     bool Read(std::istream &in);
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    void Write(std::ostream &out, JsFlags flags = {}) const;
 
     static const JsType type = JsType::Literal;
 };
@@ -43,17 +43,14 @@ struct JsNumber {
     explicit JsNumber(const double v = 0.0) : val(v) {}
 
     bool operator==(const JsNumber &rhs) const { return val == rhs.val; }
-
     bool operator==(const double &rhs) const { return val == rhs; }
-
-    bool operator==(const int rhs) const { return val == rhs; }
 
     operator double &() { return val; }
 
     operator double() const { return val; }
 
     bool Read(std::istream &in);
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    void Write(std::ostream &out, JsFlags flags = {}) const;
 
     static const JsType type = JsType::Number;
 };
@@ -87,7 +84,7 @@ template <typename Alloc> struct JsStringT {
     bool operator==(const JsStringT &rhs) const { return val == rhs.val; }
 
     bool Read(std::istream &in);
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    void Write(std::ostream &out, JsFlags flags = {}) const;
 
     static const JsType type = JsType::String;
 };
@@ -117,7 +114,7 @@ template <typename Alloc> struct JsArrayT {
     void Push(JsElementT<Alloc> &&el);
 
     bool Read(std::istream &in);
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    void Write(std::ostream &out, JsFlags flags = {}) const;
 
     static const JsType type = JsType::Array;
 };
@@ -157,7 +154,7 @@ template <typename Alloc> struct JsObjectT {
     }
 
     bool Read(std::istream &in);
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    void Write(std::ostream &out, JsFlags flags = {}) const;
 
     static const JsType type = JsType::Object;
 };
@@ -222,7 +219,7 @@ template <typename Alloc> struct JsElementT {
     bool operator!=(const JsElementT &rhs) const { return !operator==(rhs); }
 
     bool Read(std::istream &in, const Alloc &alloc = Alloc());
-    void Write(std::ostream &out, JsFlags flags = JsFlags()) const;
+    void Write(std::ostream &out, JsFlags flags = {}) const;
 };
 
 extern template struct JsElementT<std::allocator<char>>;

@@ -13,10 +13,13 @@ public:
     virtual void Exit() {};
 
     // Drawing
-    virtual void Draw(uint64_t /*dt_us*/) {};
+    virtual void Draw() {};
 
     // Called UPDATE_RATE times per second (usually 60)
-    virtual void Update(uint64_t /*dt_us*/) {};
+    virtual void UpdateFixed(uint64_t /*dt_us*/) {};
+
+    // Called once per frame with delta time from last frame
+    virtual void UpdateAnim(const uint64_t dt_us) {}
 
     virtual bool HandleInput(const InputManager::Event &) { return false; };
 };

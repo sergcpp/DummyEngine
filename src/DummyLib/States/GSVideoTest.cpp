@@ -179,7 +179,7 @@ void GSVideoTest::Exit() {
     GSBaseState::Exit();
 }
 
-void GSVideoTest::Draw(const uint64_t dt_us) {
+void GSVideoTest::Draw() {
     using namespace GSVideoTestInternal;
 
     const uint64_t t1 = Sys::GetTimeUs();
@@ -198,14 +198,14 @@ void GSVideoTest::Draw(const uint64_t dt_us) {
     //
     // Draw scene
     //
-    GSBaseState::Draw(dt_us);
+    GSBaseState::Draw();
 }
 
 void GSVideoTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
 }
 
-void GSVideoTest::Update(const uint64_t dt_us) {
+void GSVideoTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSVideoTestInternal;
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
@@ -377,8 +377,8 @@ bool GSVideoTest::HandleInput(const InputManager::Event &evt) {
     return true;
 }
 
-void GSVideoTest::OnUpdateScene() {
-    const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
+void GSVideoTest::UpdateAnim(const uint64_t dt_us) {
+    const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
     scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),

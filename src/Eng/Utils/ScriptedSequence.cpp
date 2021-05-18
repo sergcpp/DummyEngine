@@ -440,12 +440,8 @@ void ScriptedSequence::Reset() {
     const SceneData &scene = scene_manager_.scene_data();
 
     // auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
-    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
-    auto *sounds = (SoundSource *)scene.comp_store[CompSoundSource]->Get(0);
-
-    assert(scene.comp_store[CompTransform]->IsSequential());
-    assert(scene.comp_store[CompDrawable]->IsSequential());
-    assert(scene.comp_store[CompSoundSource]->IsSequential());
+    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
+    auto *sounds = (SoundSource *)scene.comp_store[CompSoundSource]->SequentialData();
 
     for (Track &track : tracks_) {
         track.active_count = 0;
@@ -524,15 +520,10 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
                                     double time_cur_s, bool playing) {
     const SceneData &scene = scene_manager_.scene_data();
 
-    auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
-    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->Get(0);
-    auto *anim_states = (AnimState *)scene.comp_store[CompAnimState]->Get(0);
-    auto *sounds = (SoundSource *)scene.comp_store[CompSoundSource]->Get(0);
-
-    assert(scene.comp_store[CompTransform]->IsSequential());
-    assert(scene.comp_store[CompDrawable]->IsSequential());
-    assert(scene.comp_store[CompAnimState]->IsSequential());
-    assert(scene.comp_store[CompSoundSource]->IsSequential());
+    auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
+    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
+    auto *anim_states = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
+    auto *sounds = (SoundSource *)scene.comp_store[CompSoundSource]->SequentialData();
 
     const float t = float(time_cur_s - action.time_beg);
     const float t_norm = t / float(action.time_end - action.time_beg);

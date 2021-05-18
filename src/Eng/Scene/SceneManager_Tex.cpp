@@ -243,6 +243,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                             requested_textures_.push_back(std::move(*req));
                         }
 
+                        static_cast<TextureRequest &>(*req) = {};
                         req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
                     }
@@ -393,21 +394,32 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
     }
 }
 
-void SceneManager::ForceTextureReload() {
+void SceneManager::StartTextureLoader() {
+    tex_loader_stop_ = false;
+    tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
+}
+
+void SceneManager::StopTextureLoader() {
     { // stop texture loading thread
         std::unique_lock<std::mutex> lock(tex_requests_lock_);
         tex_loader_stop_ = true;
         tex_loader_cnd_.notify_one();
     }
 
+    assert(tex_loader_thread_.joinable());
     tex_loader_thread_.join();
     for (int i = 0; i < MaxSimultaneousRequests; i++) {
         size_t bytes_read = 0;
         io_pending_tex_[i].ev.GetResult(true /* block */, &bytes_read);
         io_pending_tex_[i].state = eRequestState::Idle;
+        io_pending_tex_[i].ref = {};
     }
     requested_textures_.clear();
     lod_transit_textures_.clear();
+}
+
+void SceneManager::ForceTextureReload() {
+    StopTextureLoader();
 
     // Reset texture to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures);
@@ -430,9 +442,7 @@ void SceneManager::ForceTextureReload() {
         requested_textures_.push_back(std::move(req));
     }
 
-    // start texture loading thread
-    tex_loader_stop_ = false;
-    tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
+    StartTextureLoader();
 }
 
 #undef NEXT_REQ_NDX

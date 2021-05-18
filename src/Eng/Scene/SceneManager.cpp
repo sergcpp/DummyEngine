@@ -23,6 +23,13 @@ extern "C" {
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
+#ifdef _MSC_VER
+#include <intrin.h>
+
+#pragma intrinsic(_BitScanForward)
+#pragma intrinsic(_bittestandcomplement)
+#endif
+
 #include "../Utils/Load.h"
 #include "../Utils/ShaderLoader.h"
 
@@ -66,6 +73,7 @@ template <typename T> class DefaultCompStorage : public CompStorage {
     const char *name() const override { return T::name(); }
 
     uint32_t Create() override { return data_.emplace(); }
+    void Delete(const uint32_t i) override { data_.erase(i); }
 
     const void *Get(uint32_t i) const override { return data_.GetOrNull(i); }
     void *Get(uint32_t i) override { return data_.GetOrNull(i); }
@@ -90,8 +98,30 @@ template <typename T> class DefaultCompStorage : public CompStorage {
         T::Write(*(T *)comp, js_obj);
     }
 
-    bool IsSequential() const override { return true; }
+    virtual const void *SequentialData() const override { return data_.data(); }
+    virtual void *SequentialData() override { return data_.data(); }
 };
+
+// bit scan forward
+long GetFirstBit(long mask) {
+#ifdef _MSC_VER
+    unsigned long ret;
+    _BitScanForward(&ret, (unsigned long)mask);
+    return long(ret);
+#else
+    return long(__builtin_ffsl(mask) - 1);
+#endif
+}
+
+// bit test and complement
+long ClearBit(long mask, long index) {
+#ifdef _MSC_VER
+    _bittestandcomplement(&mask, index);
+    return mask;
+#else
+    return (mask & ~(1 << index));
+#endif
+}
 
 #include "__cam_rig.inl"
 } // namespace SceneManagerInternal
@@ -213,23 +243,15 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         io_pending_tex_[i].buf.reset(new TextureUpdateFileBuf);
     }
 
-    tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
-
     const float pos[] = {0.0f, 0.0f, 0.0f};
     amb_sound_.Init(1.0f, pos);
+
+    StartTextureLoader();
 }
 
 SceneManager::~SceneManager() {
     ClearScene();
-
-    {
-        std::unique_lock<std::mutex> lock(tex_requests_lock_);
-        tex_loader_stop_ = true;
-        tex_loader_cnd_.notify_one();
-    }
-
-    assert(tex_loader_thread_.joinable());
-    tex_loader_thread_.join();
+    StopTextureLoader();
 }
 
 void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
@@ -246,7 +268,11 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
     Ren::ILog *log = ren_ctx_.log();
 
     log->Info("SceneManager: Loading scene!");
-    ClearScene();
+    if (!scene_data_.objects.empty()) {
+        StopTextureLoader();
+        ClearScene();
+        StartTextureLoader();
+    }
 
     std::map<std::string, Ren::Vec4f> decals_textures;
 
@@ -298,7 +324,8 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
     for (const JsElementP &js_elem : js_objects.elements) {
         const JsObjectP &js_obj = js_elem.as_obj();
 
-        SceneObject obj;
+        scene_data_.objects.emplace_back();
+        SceneObject &obj = scene_data_.objects.back();
 
         Ren::Vec3f obj_bbox[2] = {Ren::Vec3f{std::numeric_limits<float>::max()},
                                   Ren::Vec3f{std::numeric_limits<float>::lowest()}};
@@ -343,10 +370,9 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
         if (js_obj.Has("name")) {
             const JsStringP &js_name = js_obj.at("name").as_str();
             obj.name = Ren::String{js_name.val.c_str()};
-            scene_data_.name_to_object[obj.name] = (uint32_t)scene_data_.objects.size();
+            scene_data_.name_to_object[obj.name] =
+                uint32_t(scene_data_.objects.size() - 1);
         }
-
-        scene_data_.objects.emplace(std::move(obj));
     }
 
     if (js_scene.Has("environment")) {
@@ -500,8 +526,10 @@ void SceneManager::SaveScene(JsObjectP &js_scene) {
         }
 
         { // write env map names
-            js_env.Push("env_map", JsStringP{scene_data_.env.env_map_name.c_str(), mp_alloc_});
-            js_env.Push("env_map_pt", JsStringP{scene_data_.env.env_map_name_pt.c_str(), mp_alloc_});
+            js_env.Push("env_map",
+                        JsStringP{scene_data_.env.env_map_name.c_str(), mp_alloc_});
+            js_env.Push("env_map_pt",
+                        JsStringP{scene_data_.env.env_map_name_pt.c_str(), mp_alloc_});
         }
 
         js_scene.Push("environment", std::move(js_env));
@@ -535,10 +563,42 @@ void SceneManager::SaveScene(JsObjectP &js_scene) {
 }
 
 void SceneManager::ClearScene() {
+    using namespace SceneManagerInternal;
+
     scene_data_.name = {};
+
+    for (auto &obj : scene_data_.objects) {
+        while (obj.comp_mask) {
+            const long i = GetFirstBit(obj.comp_mask);
+
+            scene_data_.comp_store[i]->Delete(obj.components[i]);
+
+            obj.comp_mask = ClearBit(obj.comp_mask, i);
+        }
+    }
+
+    for (int i = 0; i < MAX_COMPONENT_TYPES; i++) {
+        if (scene_data_.comp_store[i]) {
+            assert(scene_data_.comp_store[i]->Count() == 0);
+        }
+    }
+
+    scene_data_.env = {};
+
+    assert(scene_data_.meshes.empty());
+    assert(scene_data_.materials.empty());
+    assert(scene_data_.textures.empty());
+
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
     scene_data_.lm_splitter.Clear();
+    scene_data_.probe_storage.Clear();
+    scene_data_.nodes.clear();
+    scene_data_.free_nodes.clear();
+    scene_data_.update_counter = 0;
+
+    changed_objects_.clear();
+    last_changed_objects_.clear();
 
     ray_scene_ = {};
 }
@@ -800,7 +860,8 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp,
 
         for (const auto &js_anim : js_anims.elements) {
             const JsStringP &js_anim_name = js_anim.as_str();
-            const std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val.c_str();
+            const std::string anim_path =
+                std::string(MODELS_PATH) + js_anim_name.val.c_str();
 
             Sys::AssetFile in_file(anim_path.c_str());
             size_t in_file_size = in_file.size();
@@ -853,7 +914,8 @@ void SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp,
     occ->mesh = LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
 
     if (status != Ren::eMeshLoadStatus::Found) {
-        const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
+        const std::string mesh_path =
+            std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
 
         Sys::AssetFile in_file(mesh_path.c_str());
         size_t in_file_size = in_file.size();

@@ -28,3 +28,29 @@ DrawList::DrawList() {
 
     cached_shadow_regions.realloc(REN_MAX_SHADOWMAPS_TOTAL);
 }
+
+void DrawList::Clear() {
+    instances.count = 0;
+    shadow_batches.count = 0;
+    shadow_batch_indices.count = 0;
+    shadow_lists.count = 0;
+    shadow_regions.count = 0;
+    zfill_batches.count = 0;
+    zfill_batch_indices.count = 0;
+    main_batches.count = 0;
+    main_batch_indices.count = 0;
+    skin_transforms.count = 0;
+    skin_regions.count = 0;
+    shape_keys_data.count = 0;
+    light_sources.count = 0;
+    decals.count = 0;
+    probes.count = 0;
+    ellipsoids.count = 0;
+
+    items.count = 0;
+
+    visible_textures.count = 0;
+    desired_textures.count = 0;
+
+    cached_shadow_regions.count = 0;
+}

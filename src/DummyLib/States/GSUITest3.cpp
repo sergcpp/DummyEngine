@@ -202,10 +202,10 @@ void GSUITest3::OnPostloadScene(JsObjectP &js_scene) {
     book_index_ = scene_manager_->FindObject("book");
 }
 
-void GSUITest3::OnUpdateScene() {
+void GSUITest3::UpdateAnim(const uint64_t dt_us) {
     using namespace GSUITest3Internal;
 
-    GSBaseState::OnUpdateScene();
+    GSBaseState::UpdateAnim(dt_us);
 
     const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
 
@@ -278,7 +278,7 @@ void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     GSBaseState::DrawUI(r, root);
 }
 
-void GSUITest3::Draw(const uint64_t dt_us) {
+void GSUITest3::Draw() {
     using namespace GSUITest3Internal;
 
     if (book_state_ != eBookState::BkClosed) {
@@ -319,7 +319,7 @@ void GSUITest3::Draw(const uint64_t dt_us) {
     scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector,
                               view_fov_, max_exposure_);
 
-    GSBaseState::Draw(dt_us);
+    GSBaseState::Draw();
 }
 
 bool GSUITest3::HandleInput(const InputManager::Event &evt) {

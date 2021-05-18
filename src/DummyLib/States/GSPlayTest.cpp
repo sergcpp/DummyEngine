@@ -229,10 +229,10 @@ void GSPlayTest::OnPostloadScene(JsObjectP &js_scene) {
     }
 }
 
-void GSPlayTest::OnUpdateScene() {
+void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
     using namespace GSPlayTestInternal;
 
-    GSBaseState::OnUpdateScene();
+    GSBaseState::UpdateAnim(dt_us);
 
     scene_manager_->SetupView(
         cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
@@ -258,7 +258,7 @@ void GSPlayTest::OnSetCurSequence(const int id) {
 
 void GSPlayTest::Exit() { GSBaseState::Exit(); }
 
-void GSPlayTest::Draw(const uint64_t dt_us) {
+void GSPlayTest::Draw() {
     if (is_playing_) {
         const float cur_time_s = 0.001f * Sys::GetTimeMs();
         if (seq_edit_ui_->timeline_grabbed()) {
@@ -276,10 +276,10 @@ void GSPlayTest::Draw(const uint64_t dt_us) {
         }
     }
 
-    GSBaseState::Draw(dt_us);
+    GSBaseState::Draw();
 }
 
-void GSPlayTest::Update(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
+void GSPlayTest::UpdateFixed(const uint64_t dt_us) { cam_ctrl_->Update(dt_us); }
 
 void GSPlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSPlayTestInternal;

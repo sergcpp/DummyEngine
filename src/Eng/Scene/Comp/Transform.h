@@ -10,7 +10,7 @@ struct Transform {
     // temporary data
     Ren::Mat4f world_from_object, object_from_world, world_from_object_prev;
     Ren::Vec3f  bbox_min;
-    uint32_t    node_index;
+    uint32_t    node_index = 0xffffffff;
     Ren::Vec3f  bbox_max;
     Ren::Vec3f  bbox_min_ws, bbox_max_ws;
     Ren::Vec3f  euler_angles_rad;

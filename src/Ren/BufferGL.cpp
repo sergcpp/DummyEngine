@@ -252,6 +252,7 @@ void Ren::Buffer::Resize(uint32_t new_size) {
 
     if (!size_) {
         size_ = new_size;
+        assert(size_ > 0);
     }
 
     while (size_ < new_size) {

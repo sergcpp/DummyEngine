@@ -75,8 +75,8 @@ void SceneManager::RebuildBVH() {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);
 
-    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->Get(0);
-    assert(scene_data_.comp_store[CompTransform]->IsSequential());
+    auto *transforms =
+        (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
@@ -231,7 +231,7 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
     if (node.parent != 0xffffffff) {
         bvh_node_t &parent = nodes[node.parent];
 
-        uint32_t other_child =
+        const uint32_t other_child =
             (parent.left_child == node_index) ? parent.right_child : parent.left_child;
         uint32_t up_parent = parent.parent;
 
@@ -246,8 +246,8 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
 
             // update hierarchy boxes
             while (up_parent != 0xffffffff) {
-                uint32_t ch0 = nodes[up_parent].left_child,
-                         ch1 = nodes[up_parent].right_child;
+                const uint32_t ch0 = nodes[up_parent].left_child,
+                               ch1 = nodes[up_parent].right_child;
 
                 nodes[up_parent].bbox_min =
                     Ren::Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
@@ -275,8 +275,8 @@ void SceneManager::UpdateObjects() {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
 
-    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->Get(0);
-    assert(scene_data_.comp_store[CompTransform]->IsSequential());
+    auto *transforms =
+        (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     scene_data_.update_counter++;
 
@@ -296,6 +296,7 @@ void SceneManager::UpdateObjects() {
             Transform &tr = transforms[obj.components[CompTransform]];
             tr.UpdateTemporaryData();
             if (tr.node_index != 0xffffffff) {
+                assert(tr.node_index < scene_data_.nodes.size());
                 const bvh_node_t &node = nodes[tr.node_index];
 
                 const bool is_fully_inside = tr.bbox_min_ws[0] >= node.bbox_min[0] &&
@@ -323,7 +324,9 @@ void SceneManager::UpdateObjects() {
     // temporary buffer used to optimize memory allocation
     temp_buf.resize(scene_data_.nodes.size() * 24);
 
-    for (const uint32_t obj_index : changed_objects_) {
+    // for (const uint32_t obj_index : changed_objects_) {
+    for (int k = 0; k < int(changed_objects_.size()); k++) {
+        const uint32_t obj_index = changed_objects_[k];
         SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
@@ -371,15 +374,15 @@ void SceneManager::UpdateObjects() {
 
                 // consider children next
                 if (!nodes[c.node_index].prim_count) {
-                    float candidate_cost = surface_area(nodes[c.node_index]);
-                    float lower_cost_bound =
+                    const float candidate_cost = surface_area(nodes[c.node_index]);
+                    const float lower_cost_bound =
                         node_cost + inherited_cost +
                         surface_area_of_union(nodes[c.node_index], new_node) -
                         candidate_cost;
 
                     if (lower_cost_bound < best_cost) {
-                        uint32_t ch0 = nodes[c.node_index].left_child,
-                                 ch1 = nodes[c.node_index].right_child;
+                        const uint32_t ch0 = nodes[c.node_index].left_child,
+                                       ch1 = nodes[c.node_index].right_child;
                         candidates.push(
                             {ch0, surface_area_of_union(nodes[ch0], new_node)});
                         candidates.push(

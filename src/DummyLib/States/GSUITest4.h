@@ -53,8 +53,6 @@ class GSUITest4 final : public GSBaseState {
 
     void OnPostloadScene(JsObjectP &js_scene) override;
 
-    void OnUpdateScene() override;
-
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
     void LoadDialog(const char *seq_name);
@@ -70,9 +68,10 @@ class GSUITest4 final : public GSBaseState {
     void Enter() override;
     void Exit() override;
 
-    void Draw(uint64_t dt_us) override;
+    void Draw() override;
 
-    void Update(uint64_t dt_us) override;
+    void UpdateFixed(uint64_t dt_us) override;
+    void UpdateAnim(uint64_t dt_us) override;
 
     bool HandleInput(const InputManager::Event &evt) override;
 };

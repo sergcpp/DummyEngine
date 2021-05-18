@@ -1,5 +1,6 @@
 #include "test_common.h"
 
+#include <random>
 #include <vector>
 
 #include "../SparseArray.h"
@@ -59,27 +60,46 @@ void test_sparse_array() {
     }
 
     {   // iteration test
-        std::vector<int> data = GenTestData(100);
+        std::vector<int> data = GenTestData(1000);
         Ren::SparseArray<int> s1;
-        s1.reserve(100);
         for (int v : data) {
             s1.push(v);
         }
 
         auto it = s1.begin();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             require(*it == data[i]);
             ++it;
         }
 
-        for (uint32_t i = 0; i < 100; i += 2) {
+        std::vector<uint32_t> to_delete;
+        for (uint32_t i = 0; i < 1000; i += 2) {
+            to_delete.push_back(i);
+        }
+
+        // make deletion to happen in random order
+        std::shuffle(to_delete.begin(), to_delete.end(), std::default_random_engine(0));
+
+        for (uint32_t i : to_delete) {
             s1.erase(i);
         }
 
         it = s1.begin();
-        for (int i = 1; i < 100; i += 2) {
+        for (int i = 1; i < 1000; i += 2) {
             require(*it == data[i]);
             ++it;
+        }
+
+        // fill the gaps and make it reallocate
+        for (int v : data) {
+            for (int i = 0; i < 100; i++) {
+                s1.push(v);
+            }
+        }
+
+        // check again
+        for (int i = 1; i < 1000; i += 2) {
+            require(s1[i] == data[i]);
         }
     }
 }

@@ -58,19 +58,24 @@ void GameStateManager::Clear() {
     }
 }
 
-void GameStateManager::Update(uint64_t dt_us) {
+void GameStateManager::UpdateFixed(uint64_t dt_us) {
     if (pop_later_) {
         Pop();
         pop_later_ = false;
     }
 
     std::shared_ptr<GameState> &st = states_.back();
-    st->Update(dt_us);
+    st->UpdateFixed(dt_us);
 }
 
-void GameStateManager::Draw(uint64_t dt_us) {
+void GameStateManager::UpdateAnim(uint64_t dt_us) {
     std::shared_ptr<GameState> &st = states_.back();
-    st->Draw(dt_us);
+    st->UpdateAnim(dt_us);
+}
+
+void GameStateManager::Draw() {
+    std::shared_ptr<GameState> &st = states_.back();
+    st->Draw();
 }
 
 void GameStateManager::HandleInput(InputManager::Event &evt) {

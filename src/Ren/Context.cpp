@@ -93,7 +93,7 @@ void Ren::Context::ReleaseMaterials() {
     materials_.clear();
 }
 
-Ren::ProgramRef Ren::Context::GetProgram(uint32_t index) { return {&programs_, index}; }
+Ren::ProgramRef Ren::Context::GetProgram(CONST uint32_t index) { return {&programs_, index}; }
 
 int Ren::Context::NumProgramsNotReady() {
     return (int)std::count_if(programs_.begin(), programs_.end(),
