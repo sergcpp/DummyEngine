@@ -47,10 +47,6 @@ struct JsNumber {
     bool operator==(const JsNumber &rhs) const { return val == rhs.val; }
     bool operator==(const double &rhs) const { return val == rhs; }
 
-    operator double &() { return val; }
-
-    operator double() const { return val; }
-
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
 
