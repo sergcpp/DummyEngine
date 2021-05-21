@@ -215,7 +215,7 @@ class Renderer {
     static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs
-    static void GatherItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums,
+    static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums,
                                          const BBox *decals_boxes,
                                          const LightSource *const *litem_to_lsource,
                                          DrawList &list, std::atomic_int &items_count);

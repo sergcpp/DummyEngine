@@ -36,15 +36,11 @@ void Snd::Source::Destroy() {
 Snd::Source::~Source() { Destroy(); }
 
 Snd::Source::Source(Source &&rhs) noexcept {
-    source_ = rhs.source_;
-    rhs.source_ = 0xffffffff;
+    source_ = exchange(rhs.source_, 0xffffffff);
 
-    looping_ = rhs.looping_;
-    rhs.looping_ = false;
-    pitch_ = rhs.pitch_;
-    rhs.pitch_ = 1.0f;
-    gain_ = rhs.gain_;
-    rhs.gain_ = 1.0f;
+    looping_ = exchange(rhs.looping_, false);
+    pitch_ = exchange(rhs.pitch_, 1.0f);
+    gain_ = exchange(rhs.gain_, 1.0f);
     memcpy(&position_[0], &rhs.position_[0], 3 * sizeof(float));
     rhs.position_[0] = rhs.position_[1] = rhs.position_[2] = 0.0f;
     memcpy(&velocity_[0], &rhs.velocity_[0], 3 * sizeof(float));
@@ -53,23 +49,18 @@ Snd::Source::Source(Source &&rhs) noexcept {
     for (int i = 0; i < rhs.bufs_count_; i++) {
         buf_refs_[i] = std::move(rhs.buf_refs_[i]);
     }
-    bufs_count_ = rhs.bufs_count_;
-    rhs.bufs_count_ = 0;
+    bufs_count_ = exchange(rhs.bufs_count_, 0);
 }
 
 Snd::Source &Snd::Source::operator=(Source &&rhs) noexcept {
     ResetBuffers();
     Destroy();
 
-    source_ = rhs.source_;
-    rhs.source_ = 0xffffffff;
+    source_ = exchange(rhs.source_, 0xffffffff);
 
-    looping_ = rhs.looping_;
-    rhs.looping_ = false;
-    pitch_ = rhs.pitch_;
-    rhs.pitch_ = 1.0f;
-    gain_ = rhs.gain_;
-    rhs.gain_ = 1.0f;
+    looping_ = exchange(rhs.looping_, false);
+    pitch_ = exchange(rhs.pitch_, 1.0f);
+    gain_ = exchange(rhs.gain_, 1.0f);
     memcpy(&position_[0], &rhs.position_[0], 3 * sizeof(float));
     rhs.position_[0] = rhs.position_[1] = rhs.position_[2] = 0.0f;
     memcpy(&velocity_[0], &rhs.velocity_[0], 3 * sizeof(float));
@@ -78,8 +69,7 @@ Snd::Source &Snd::Source::operator=(Source &&rhs) noexcept {
     for (int i = 0; i < rhs.bufs_count_; i++) {
         buf_refs_[i] = std::move(rhs.buf_refs_[i]);
     }
-    bufs_count_ = rhs.bufs_count_;
-    rhs.bufs_count_ = 0;
+    bufs_count_ = exchange(rhs.bufs_count_, 0);
 
     return *this;
 }

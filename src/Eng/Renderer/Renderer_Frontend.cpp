@@ -76,7 +76,7 @@ uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const AnimState &
 uint32_t __record_texture(DynArray<TexEntry> &storage, const Ren::Tex2DRef &tex, int prio,
                           uint16_t distance);
 void __record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat,
-                       uint16_t distance);
+                       bool is_animated, uint16_t distance);
 void __init_wind_params(const VegState &vs, const EnvironmentWeak &env,
                         const Ren::Mat4f &object_from_world, InstanceData &instance);
 
@@ -458,9 +458,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
                             if (cam_visibility != eVisResult::Invisible) {
                                 __record_textures(list.visible_textures, mat,
+                                                  (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
                             } else {
                                 __record_textures(list.desired_textures, mat,
+                                                  (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
                             }
 
@@ -1660,7 +1662,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
         for (int i = 0; i < REN_GRID_RES_Z; i++) {
             futures[i] = threads_->Enqueue(
-                GatherItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
+                ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
                 litem_to_lsource_.data, std::ref(list), std::ref(a_items_count));
         }
 
@@ -1719,10 +1721,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
     __itt_task_end(__g_itt_domain);
 }
 
-void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
-                                        const BBox *decals_boxes,
-                                        const LightSource *const *litem_to_lsource,
-                                        DrawList &list, std::atomic_int &items_count) {
+void Renderer::ClusterItemsForZSlice_Job(const int slice,
+                                         const Ren::Frustum *sub_frustums,
+                                         const BBox *decals_boxes,
+                                         const LightSource *const *litem_to_lsource,
+                                         DrawList &list, std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -1823,7 +1826,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                     const float *p_n = ValuePtr(sf->planes[k].n);
                     const float p_d = sf->planes[k].d;
 
-                    float dist =
+                    const float dist =
                         p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
                     if (dist < -influence) {
                         res = eVisResult::Invisible;
@@ -1849,7 +1852,7 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                     CellData &cell = list.cells.data[index];
                     if (cell.light_count < REN_MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count]
-                            .light_index = (uint16_t)j;
+                            .light_index = uint16_t(j);
                         cell.light_count++;
                     }
                 }
@@ -2041,9 +2044,10 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
 
         // Check if ellipsoid is inside of a whole slice
         for (int k = int(eCamPlane::Near); k <= int(eCamPlane::Far); k++) {
-            float dist = first_sf->planes[k].n[0] * p_pos[0] +
-                         first_sf->planes[k].n[1] * p_pos[1] +
-                         first_sf->planes[k].n[2] * p_pos[2] + first_sf->planes[k].d;
+            const float dist = first_sf->planes[k].n[0] * p_pos[0] +
+                               first_sf->planes[k].n[1] * p_pos[1] +
+                               first_sf->planes[k].n[2] * p_pos[2] +
+                               first_sf->planes[k].d;
             if (dist < -EllipsoidInfluence) {
                 visible_to_slice = eVisResult::Invisible;
             }
@@ -2120,12 +2124,12 @@ void Renderer::GatherItemsForZSlice_Job(const int slice, const Ren::Frustum *sub
                 cell.light_count = cell.decal_count = cell.probe_count =
                     cell.ellips_count = 0;
             } else {
-                int free_items_left = REN_MAX_ITEMS_TOTAL - cell.item_offset;
+                const int free_items_left = REN_MAX_ITEMS_TOTAL - cell.item_offset;
 
-                cell.light_count = _MIN((int)cell.light_count, free_items_left);
-                cell.decal_count = _MIN((int)cell.decal_count, free_items_left);
-                cell.probe_count = _MIN((int)cell.probe_count, free_items_left);
-                cell.ellips_count = _MIN((int)cell.ellips_count, free_items_left);
+                cell.light_count = _MIN(int(cell.light_count), free_items_left);
+                cell.decal_count = _MIN(int(cell.decal_count), free_items_left);
+                cell.probe_count = _MIN(int(cell.probe_count), free_items_left);
+                cell.ellips_count = _MIN(int(cell.ellips_count), free_items_left);
 
                 memcpy(&list.items.data[cell.item_offset], &local_items[s][0],
                        local_items_count * sizeof(ItemData));
@@ -2187,11 +2191,11 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
 
     for (int i = 0; i < skel->bones_count; i++) {
         const Ren::Mat4f matr_curr_trans = Ren::Transpose(as.matr_palette_curr[i]);
-        memcpy(&out_matr_palette[2 * i + 0].matr[0][0], Ren::ValuePtr(matr_curr_trans),
+        memcpy(out_matr_palette[2 * i + 0].matr, Ren::ValuePtr(matr_curr_trans),
                12 * sizeof(float));
 
         const Ren::Mat4f matr_prev_trans = Ren::Transpose(as.matr_palette_prev[i]);
-        memcpy(&out_matr_palette[2 * i + 1].matr[0][0], Ren::ValuePtr(matr_prev_trans),
+        memcpy(out_matr_palette[2 * i + 1].matr, Ren::ValuePtr(matr_prev_trans),
                12 * sizeof(float));
     }
 
@@ -2259,10 +2263,11 @@ uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage,
 }
 
 void RendererInternal::__record_textures(DynArray<TexEntry> &storage,
-                                         const Ren::Material *mat,
+                                         const Ren::Material *mat, const bool is_animated,
                                          const uint16_t distance) {
     for (int i = 0; i < int(mat->textures.size()); ++i) {
-        __record_texture(storage, mat->textures[i], i, distance);
+        const int prio = _MIN(is_animated ? i : (i + 8), 15);
+        __record_texture(storage, mat->textures[i], prio, distance);
     }
 }
 

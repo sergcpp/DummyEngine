@@ -239,7 +239,8 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
-    requested_textures_.reserve(4000000);
+    requested_textures_.reserve(262144);
+    finished_textures_.reserve(262144);
 
     for (int i = 0; i < MaxSimultaneousRequests; i++) {
         // io_pending_tex_[i].buf.reset(new Sys::DefaultFileReadBuf);
@@ -253,8 +254,8 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
 }
 
 SceneManager::~SceneManager() {
-    ClearScene();
     StopTextureLoader();
+    ClearScene();
 }
 
 void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
@@ -573,10 +574,9 @@ void SceneManager::ClearScene() {
     for (auto &obj : scene_data_.objects) {
         while (obj.comp_mask) {
             const long i = GetFirstBit(obj.comp_mask);
+            obj.comp_mask = ClearBit(obj.comp_mask, i);
 
             scene_data_.comp_store[i]->Delete(obj.components[i]);
-
-            obj.comp_mask = ClearBit(obj.comp_mask, i);
         }
     }
 
@@ -684,7 +684,7 @@ void SceneManager::LoadProbeCache() {
                             p_data += len;
                             data_len -= len;
 
-                            _res = _res / 2;
+                            _res /= 2;
                             level++;
                         }
 #else
@@ -1189,7 +1189,7 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
         new_req.ref = ret;
 
         if (ret->name().StartsWith("lightmaps/")) {
-            // set max priority for lightmaps
+            // set max initial priority for lightmaps
             new_req.sort_key = 0;
         }
 
@@ -1385,7 +1385,8 @@ void SceneManager::Serve(const int texture_budget) {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_serve_str);
 
+    EstimateTextureMemory(texture_budget);
     ProcessPendingTextures(texture_budget);
-
+    
     __itt_task_end(__g_itt_domain);
 }

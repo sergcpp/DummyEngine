@@ -15,6 +15,8 @@ extern const char *TEXTURES_PATH;
 
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
+
+const size_t TextureMemoryLimit = 768 * 1024 * 1024;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
@@ -61,7 +63,9 @@ void SceneManager::TextureLoaderProc() {
         {
             std::unique_lock<std::mutex> lock(tex_requests_lock_);
             tex_loader_cnd_.wait(lock, [this, &req] {
-                return tex_loader_stop_ || !requested_textures_.empty();
+                return tex_loader_stop_ ||
+                       (!requested_textures_.empty() &&
+                        scene_data_.estimated_texture_mem.load() < TextureMemoryLimit);
             });
             if (tex_loader_stop_) {
                 break;
@@ -197,9 +201,53 @@ void SceneManager::TextureLoaderProc() {
     }
 }
 
+void SceneManager::EstimateTextureMemory(const int portion_size) {
+    const int BucketSize = 16;
+    scene_data_.texture_mem_buckets.resize(
+        (scene_data_.textures.capacity() + BucketSize - 1) / BucketSize);
+
+    uint64_t mem_after_estimation = scene_data_.estimated_texture_mem.load();
+
+    for (int i = 0; i < portion_size; i++) {
+        scene_data_.tex_mem_bucket_index = (scene_data_.tex_mem_bucket_index + 1) %
+                                           scene_data_.texture_mem_buckets.size();
+        uint32_t &bucket =
+            scene_data_.texture_mem_buckets[scene_data_.tex_mem_bucket_index];
+        mem_after_estimation -= bucket;
+        bucket = 0;
+
+        const uint32_t start = scene_data_.tex_mem_bucket_index * BucketSize;
+        const uint32_t end =
+            std::min(start + BucketSize, uint32_t(scene_data_.textures.capacity()));
+
+        uint32_t index = scene_data_.textures.FindOccupiedInRange(start, end);
+        while (index != end) {
+            const auto &tex = scene_data_.textures.at(index);
+
+            bucket += Ren::EstimateMemory(tex.params());
+
+            index = scene_data_.textures.FindOccupiedInRange(index + 1, end);
+        }
+
+        mem_after_estimation += bucket;
+    }
+
+    if (scene_data_.estimated_texture_mem.exchange(mem_after_estimation) !=
+        mem_after_estimation) {
+        ren_ctx_.log()->Info("Estimated tex memory is %.3f MB",
+                             double(mem_after_estimation) / (1024.0f * 1024.0f));
+
+        std::lock_guard<std::mutex> _(tex_requests_lock_);
+        tex_loader_cnd_.notify_one();
+    }
+}
+
 void SceneManager::ProcessPendingTextures(const int portion_size) {
     using namespace SceneManagerConstants;
 
+    //
+    // Process io pending textures
+    //
     for (int i = 0; i < portion_size; i++) {
         TextureRequestPending *req = nullptr;
         Sys::eFileReadResult res;
@@ -239,8 +287,13 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
 
                         if (req->ref->params().w != req->orig_w ||
                             req->ref->params().h != req->orig_h) {
-                            // send texture to be processed further (for next mip levels)
+                            // process texture further (for next mip levels)
+                            req->sort_key =
+                                req->ref->name().StartsWith("lightmap") ? 0 : 0xffffffff;
                             requested_textures_.push_back(std::move(*req));
+                        } else {
+                            std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
+                            finished_textures_.push_back(std::move(*req));
                         }
 
                         static_cast<TextureRequest &>(*req) = {};
@@ -274,7 +327,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 const Ren::Tex2DParams &p = req->ref->params();
 
                 req->ref->Realloc(w, h, last_initialized_mip + 1 + req->mip_count_to_init,
-                                  1 /* samples */, req->orig_format,
+                                  1 /* samples */, req->orig_format, req->orig_block,
                                   (p.flags & Ren::TexSRGB) != 0, ren_ctx_.log());
 
                 int data_off = int(req->buf->data_off());
@@ -345,16 +398,113 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
             ++it;
         }
     }
+
+    { // Process GC'ed textures
+        std::lock_guard<std::mutex> lock(gc_textures_mtx_);
+        for (int i = 0; i < portion_size && !gc_textures_.empty(); i++) {
+            auto &req = gc_textures_.front();
+
+            ren_ctx_.log()->Warning("Texture %s is being garbage collected",
+                                    req.ref->name().c_str());
+
+            Ren::Tex2DParams p = req.ref->params();
+
+            // drop to lowest lod
+            const int w = std::max(p.w >> p.mip_count, 1);
+            const int h = std::max(p.h >> p.mip_count, 1);
+
+            req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
+                             p.flags & Ren::TexSRGB, ren_ctx_.log());
+
+            p.sampling.min_lod.from_float(-1.0f);
+            req.ref->SetFilter(p.sampling, ren_ctx_.log());
+
+            { // send texture for processing
+                std::lock_guard<std::mutex> _lock(tex_requests_lock_);
+                requested_textures_.push_back(req);
+            }
+
+            gc_textures_.pop_front();
+        }
+    }
 }
 
 void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
                                            const int visible_count,
                                            const TexEntry desired_textures[],
                                            const int desired_count) {
-    std::unique_lock<std::mutex> lock(tex_requests_lock_);
+    TexturesGCIteration(visible_textures, visible_count, desired_textures, desired_count);
 
-    bool kick_loader_thread = false;
-    for (auto it = requested_textures_.begin(); it != requested_textures_.end(); ++it) {
+    { // Update requested textures
+        std::unique_lock<std::mutex> lock(tex_requests_lock_);
+
+        bool kick_loader_thread = false;
+        for (auto it = requested_textures_.begin(); it != requested_textures_.end();
+             ++it) {
+            const TexEntry *found_entry = nullptr;
+
+            { // search among visible textures first
+                const TexEntry *beg = visible_textures;
+                const TexEntry *end = visible_textures + visible_count;
+
+                const TexEntry *entry = std::lower_bound(
+                    beg, end, it->ref.index(),
+                    [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+
+                if (entry != end && entry->index == it->ref.index()) {
+                    found_entry = entry;
+                }
+            }
+
+            if (!found_entry) { // search among surrounding textures
+                const TexEntry *beg = desired_textures;
+                const TexEntry *end = desired_textures + desired_count;
+
+                const TexEntry *entry = std::lower_bound(
+                    beg, end, it->ref.index(),
+                    [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+
+                if (entry != end && entry->index == it->ref.index()) {
+                    found_entry = entry;
+                }
+            }
+
+            if (found_entry) {
+                it->sort_key = found_entry->sort_key;
+                kick_loader_thread = true;
+            }
+        }
+
+        if (kick_loader_thread) {
+            tex_loader_cnd_.notify_one();
+        }
+    }
+}
+
+void SceneManager::TexturesGCIteration(const TexEntry visible_textures[],
+                                       const int visible_count,
+                                       const TexEntry desired_textures[],
+                                       const int desired_count) {
+    using namespace SceneManagerConstants;
+
+    const int FinishedPortion = 16;
+
+    const bool enable_gc =
+        (scene_data_.estimated_texture_mem.load() >= 9 * TextureMemoryLimit / 10);
+
+    std::lock_guard<std::mutex> _lock(gc_textures_mtx_);
+
+    auto start_it = finished_textures_.begin() +
+                    std::min(finished_index_, uint32_t(finished_textures_.size()));
+    finished_index_ += FinishedPortion;
+    auto end_it = finished_textures_.begin() +
+                  std::min(finished_index_, uint32_t(finished_textures_.size()));
+
+    if (finished_index_ >= finished_textures_.size()) {
+        finished_index_ = 0;
+    }
+
+    for (auto it = start_it; it != end_it;) {
         const TexEntry *found_entry = nullptr;
 
         { // search among visible textures first
@@ -370,7 +520,7 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
             }
         }
 
-        if (!found_entry) { // search among surrounding texture
+        if (!found_entry) { // search among surrounding textures
             const TexEntry *beg = desired_textures;
             const TexEntry *end = desired_textures + desired_count;
 
@@ -385,12 +535,23 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[],
 
         if (found_entry) {
             it->sort_key = found_entry->sort_key;
-            kick_loader_thread = true;
-        }
-    }
+            it->frame_dist = 0;
 
-    if (kick_loader_thread) {
-        tex_loader_cnd_.notify_one();
+            ++it;
+        } else if (++it->frame_dist > 1000 && enable_gc && it->ref->params().w > 16 &&
+                   it->ref->params().w == it->orig_w && it->ref->params().h > 16 &&
+                   it->ref->params().h == it->orig_h &&
+                   !it->ref->name().StartsWith("lightmap")) {
+            // Reduce texture's mips
+            it->frame_dist = 0;
+            it->sort_key = 0xffffffff;
+
+            gc_textures_.push_back(*it);
+
+            it = finished_textures_.erase(it);
+        } else {
+            ++it;
+        }
     }
 }
 
@@ -416,31 +577,41 @@ void SceneManager::StopTextureLoader() {
     }
     requested_textures_.clear();
     lod_transit_textures_.clear();
+    {
+        std::unique_lock<std::mutex> lock(gc_textures_mtx_);
+        finished_textures_.clear();
+        gc_textures_.clear();
+    }
 }
 
 void SceneManager::ForceTextureReload() {
     StopTextureLoader();
 
-    // Reset texture to 1x1 mip and send to processing
+    // Reset textures to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures);
          ++it) {
-        Ren::Tex2DParams p = (*it).params();
+        Ren::Tex2DParams p = it->params();
 
         // drop to lowest lod
         const int w = std::max(p.w >> p.mip_count, 1);
         const int h = std::max(p.h >> p.mip_count, 1);
 
-        (*it).Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format,
-                      p.flags & Ren::TexSRGB, ren_ctx_.log());
+        it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
+                    p.flags & Ren::TexSRGB, ren_ctx_.log());
 
         p.sampling.min_lod.from_float(-1.0f);
-        (*it).SetFilter(p.sampling, ren_ctx_.log());
+        it->SetFilter(p.sampling, ren_ctx_.log());
 
         TextureRequest req;
         req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
 
         requested_textures_.push_back(std::move(req));
     }
+
+    std::fill(std::begin(scene_data_.texture_mem_buckets),
+              std::end(scene_data_.texture_mem_buckets), 0);
+    scene_data_.tex_mem_bucket_index = 0;
+    scene_data_.estimated_texture_mem = 0;
 
     StartTextureLoader();
 }

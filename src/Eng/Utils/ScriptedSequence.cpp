@@ -79,8 +79,8 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
 
             const JsArray &js_track_actions = js_track.at("actions").as_arr();
 
-            track.action_start = (int)actions_.size();
-            track.action_count = (int)js_track_actions.Size();
+            track.action_start = int(actions_.size());
+            track.action_count = int(js_track_actions.Size());
             actions_.reserve(actions_.size() + track.action_count);
 
             for (const JsElement &js_act_el : js_track_actions.elements) {
@@ -117,16 +117,16 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                 if (js_action.Has("pos_beg")) {
                     const JsArray &js_pos_beg = js_action.at("pos_beg").as_arr();
 
-                    action.pos_beg[0] = (float)js_pos_beg[0].as_num();
-                    action.pos_beg[1] = (float)js_pos_beg[1].as_num();
-                    action.pos_beg[2] = (float)js_pos_beg[2].as_num();
+                    action.pos_beg[0] = float(js_pos_beg[0].as_num().val);
+                    action.pos_beg[1] = float(js_pos_beg[1].as_num().val);
+                    action.pos_beg[2] = float(js_pos_beg[2].as_num().val);
 
                     if (js_action.Has("pos_end")) {
                         const JsArray &js_pos_end = js_action.at("pos_end").as_arr();
 
-                        action.pos_end[0] = (float)js_pos_end[0].as_num();
-                        action.pos_end[1] = (float)js_pos_end[1].as_num();
-                        action.pos_end[2] = (float)js_pos_end[2].as_num();
+                        action.pos_end[0] = float(js_pos_end[0].as_num().val);
+                        action.pos_end[1] = float(js_pos_end[1].as_num().val);
+                        action.pos_end[2] = float(js_pos_end[2].as_num().val);
                     } else {
                         memcpy(action.pos_end, action.pos_beg, 3 * sizeof(float));
                     }
@@ -138,16 +138,16 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                 if (js_action.Has("rot_beg")) {
                     const JsArray &js_rot_beg = js_action.at("rot_beg").as_arr();
 
-                    action.rot_beg[0] = (float)js_rot_beg[0].as_num();
-                    action.rot_beg[1] = (float)js_rot_beg[1].as_num();
-                    action.rot_beg[2] = (float)js_rot_beg[2].as_num();
+                    action.rot_beg[0] = float(js_rot_beg[0].as_num().val);
+                    action.rot_beg[1] = float(js_rot_beg[1].as_num().val);
+                    action.rot_beg[2] = float(js_rot_beg[2].as_num().val);
 
                     if (js_action.Has("rot_end")) {
                         const JsArray &js_rot_end = js_action.at("rot_end").as_arr();
 
-                        action.rot_end[0] = (float)js_rot_end[0].as_num();
-                        action.rot_end[1] = (float)js_rot_end[1].as_num();
-                        action.rot_end[2] = (float)js_rot_end[2].as_num();
+                        action.rot_end[0] = float(js_rot_end[0].as_num().val);
+                        action.rot_end[1] = float(js_rot_end[1].as_num().val);
+                        action.rot_end[2] = float(js_rot_end[2].as_num().val);
                     } else {
                         memcpy(action.rot_end, action.rot_beg, 3 * sizeof(float));
                     }
@@ -166,7 +166,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                         ren_ctx_.log()->Error("Failed to load %s", anim_path.c_str());
                         return false;
                     }
-                    size_t in_file_size = in_file.size();
+                    const size_t in_file_size = in_file.size();
 
                     std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
                     in_file.Read((char *)&in_file_data[0], in_file_size);
@@ -198,7 +198,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
                         // TODO: CHANGE THIS!!!
 
                         Sys::AssetFile in_file(sound_path.c_str());
-                        size_t in_file_size = in_file.size();
+                        const size_t in_file_size = in_file.size();
 
                         std::unique_ptr<uint8_t[]> in_file_data(
                             new uint8_t[in_file_size]);

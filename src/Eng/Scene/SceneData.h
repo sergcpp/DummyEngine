@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include <atomic>
+
 #include <Ren/HashMap32.h>
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
@@ -141,6 +143,10 @@ struct SceneData {
     Ren::Texture2DStorage                   textures;
     Ren::MaterialStorage                    materials;
     Ren::MeshStorage                        meshes;
+
+    std::vector<uint32_t>                   texture_mem_buckets;
+    uint32_t                                tex_mem_bucket_index = 0;
+    std::atomic<uint64_t>                   estimated_texture_mem = 0;
 
     Environment                             env;
 

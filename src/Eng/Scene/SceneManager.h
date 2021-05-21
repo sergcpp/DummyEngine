@@ -14,8 +14,7 @@
 #include "SceneData.h"
 
 namespace Sys {
-template <typename T, typename FallBackAllocator>
-class MultiPoolAllocator;
+template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
 }
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
@@ -89,15 +88,15 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
-    SceneObject *GetObject(uint32_t i) { return &scene_data_.objects[i]; }
+    SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
     uint32_t FindObject(const char *name) {
         uint32_t *p_ndx = scene_data_.name_to_object.Find(name);
         return p_ndx ? (*p_ndx) : 0xffffffff;
     }
 
-    void InvalidateObjects(const uint32_t *indices, uint32_t count,
-                           uint32_t change_mask) {
+    void InvalidateObjects(const uint32_t *indices, const uint32_t count,
+                           const uint32_t change_mask) {
         for (uint32_t i = 0; i < count; i++) {
             scene_data_.objects[indices[i]].change_mask |= change_mask;
         }
@@ -131,6 +130,9 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void UpdateTexturePriorities(const TexEntry visible_textures[], int visible_count,
                                  const TexEntry desired_textures[], int desired_count);
+    void TexturesGCIteration(const TexEntry visible_textures[], int visible_count,
+                             const TexEntry desired_textures[], int desired_count);
+
     void StartTextureLoader();
     void StopTextureLoader();
     void ForceTextureReload();
@@ -181,6 +183,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
                               Ren::eTexLoadStatus *load_status);
     Ren::Vec4f LoadDecalTexture(const char *name);
 
+    void EstimateTextureMemory(int portion_size);
     void ProcessPendingTextures(int portion_size);
 
     void RebuildBVH();
@@ -213,6 +216,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
         Ren::Tex2DRef ref;
         uint32_t sort_key = 0xffffffff;
 
+        uint16_t frame_dist = 0;
+
         Ren::eTexFormat orig_format = Ren::eTexFormat::Undefined;
         Ren::eTexBlock orig_block;
         uint16_t orig_w, orig_h;
@@ -228,6 +233,11 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
         eRequestState state = eRequestState::Idle;
     };
     Ren::RingBuffer<TextureRequest> requested_textures_;
+
+    std::mutex gc_textures_mtx_;
+    Ren::RingBuffer<TextureRequest> finished_textures_;
+    uint32_t                        finished_index_ = 0;
+    Ren::RingBuffer<TextureRequest> gc_textures_;
 
     static const int MaxSimultaneousRequests = 4;
 

@@ -52,5 +52,9 @@ void DrawList::Clear() {
     visible_textures.count = 0;
     desired_textures.count = 0;
 
+    materials = nullptr;
+    decals_atlas = nullptr;
+    probe_storage = nullptr;
+
     cached_shadow_regions.count = 0;
 }

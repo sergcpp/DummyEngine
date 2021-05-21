@@ -80,10 +80,10 @@ void test_json() {
             n1.Write(ss);
             JsNumber n2;
             require(n2.Read(ss));
-            require(n2 == Approx(n1));
+            require(n2.val == Approx(n1.val));
             n1 = JsNumber{ 5 };
             n2 = JsNumber{ 5 };
-            require(n2 == double(5));
+            require(n2.val == double(5));
             require(n1 == n2);
         }
 
@@ -117,16 +117,16 @@ void test_json() {
             a1.Push(JsNumber{ 2 });
             a1.Push(JsString{ "qwe123" });
             require(a1.Size() == 3);
-            require(a1[0].as_num() == Approx(1));
-            require(a1[1].as_num() == Approx(2));
+            require(a1[0].as_num().val == Approx(1));
+            require(a1[1].as_num().val == Approx(2));
             require(a1[2].as_str() == JsString{ "qwe123" });
             std::stringstream ss;
             a1.Write(ss);
             JsArray a2;
             require(a2.Read(ss));
             require(a2.Size() == 3);
-            require(a2[0].as_num() == Approx(1));
-            require(a2[1].as_num() == Approx(2));
+            require(a2[0].as_num().val == Approx(1));
+            require(a2[1].as_num().val == Approx(2));
             require(a2[2].as_str() == JsString{ "qwe123" });
 
             require_throws(a2.at(3));
@@ -153,8 +153,8 @@ void test_json() {
             a1.Push(JsNumber{2});
             a1.Push(JsStringP{"qwe123", my_alloc});
             require(a1.Size() == 3);
-            require(a1[0].as_num() == Approx(1));
-            require(a1[1].as_num() == Approx(2));
+            require(a1[0].as_num().val == Approx(1));
+            require(a1[1].as_num().val == Approx(2));
             require(a1[2].as_str() == JsStringP("qwe123", my_alloc));
             std::stringstream ss;
             a1.Write(ss);
@@ -164,8 +164,8 @@ void test_json() {
             JsArrayP a2(my_alloc);
             require(a2.Read(ss));
             require(a2.Size() == 3);
-            require(a2[0].as_num() == Approx(1));
-            require(a2[1].as_num() == Approx(2));
+            require(a2[0].as_num().val == Approx(1));
+            require(a2[1].as_num().val == Approx(2));
             require(a2[2].as_str() == JsStringP("qwe123", my_alloc));
 
             require_throws(a2.at(3));
@@ -195,7 +195,7 @@ void test_json() {
             JsObject _obj;
             require(_obj.Read(ss));
             require(_obj.Size() == 2);
-            require(_obj["123"].as_num() == Approx(46));
+            require(_obj["123"].as_num().val == Approx(46));
             require(_obj["asdf"].as_str() == JsString{ "asdfsdf" });
 
             require_throws(_obj.at("non exists"));
@@ -227,7 +227,7 @@ void test_json() {
             JsObjectP _obj(my_alloc);
             require(_obj.Read(ss));
             require(_obj.Size() == 2);
-            require(_obj["123"].as_num() == Approx(46));
+            require(_obj["123"].as_num().val == Approx(46));
             require(_obj["asdf"].as_str() == JsStringP("asdfsdf", my_alloc));
 
             require_throws(_obj.at("non exists"));

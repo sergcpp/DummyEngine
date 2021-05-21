@@ -12,7 +12,7 @@ namespace PhysicsManagerInternal {
 using Phy::real;
 using Phy::Vec3;
 
-const Vec3 Gravity = Vec3{real(0.0), real(-9.8), real(0.0)};
+const auto Gravity = Vec3{real(0.0), real(-9.8), real(0.0)};
 } // namespace PhysicsManagerInternal
 
 void PhysicsManager::Update(SceneData &scene, const float dt_s) {
@@ -35,7 +35,7 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
             Physics &ph = physes[obj.components[CompPhysics]];
 
             // I = dp, F = dp/dt => dp = F * dt => I = F * dt
-            const float mass = real(1) / ph.body.inv_mass;
+            const real mass = real(1) / ph.body.inv_mass;
             const Phy::Vec3 impulse_gravity = Gravity * mass * dt_s;
             ph.body.ApplyImpulseLinear(impulse_gravity);
 

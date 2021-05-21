@@ -327,6 +327,15 @@ template <typename T> class SparseArray {
 
     const_iterator citer_at(uint32_t i) const { return const_iterator(this, i); }
 
+    uint32_t FindOccupiedInRange(uint32_t start, uint32_t end) const {
+        for (uint32_t i = start; i < end; i++) {
+            if (ctrl_[i / 8] & (1u << (i % 8))) {
+                return i;
+            }
+        }
+        return end;
+    }
+
   private:
     uint32_t NextOccupied(uint32_t index) const {
         assert((ctrl_[index / 8] & (1u << (index % 8))) && "Invalid index!");
@@ -335,11 +344,6 @@ template <typename T> class SparseArray {
                 return i;
             }
         }
-        /*for (uint32_t i = 0; i < index; i++) {
-            if (ctrl_[i / 8] & (1 << (i % 8))) {
-                return i;
-            }
-        }*/
         return capacity_;
     }
 };

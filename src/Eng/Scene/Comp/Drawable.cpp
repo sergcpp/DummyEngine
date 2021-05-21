@@ -36,15 +36,15 @@ void Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
             const JsObjectP &js_ellipsoid = js_ellipsoids[i].as_obj();
 
             const JsArrayP &js_ellipsoid_offset = js_ellipsoid.at("offset").as_arr();
-            dr.ellipsoids[i].offset[0] = float(js_ellipsoid_offset[0].as_num());
-            dr.ellipsoids[i].offset[1] = float(js_ellipsoid_offset[1].as_num());
-            dr.ellipsoids[i].offset[2] = float(js_ellipsoid_offset[2].as_num());
-            dr.ellipsoids[i].radius = float(js_ellipsoid.at("radius").as_num());
+            dr.ellipsoids[i].offset[0] = float(js_ellipsoid_offset[0].as_num().val);
+            dr.ellipsoids[i].offset[1] = float(js_ellipsoid_offset[1].as_num().val);
+            dr.ellipsoids[i].offset[2] = float(js_ellipsoid_offset[2].as_num().val);
+            dr.ellipsoids[i].radius = float(js_ellipsoid.at("radius").as_num().val);
 
             const JsArrayP &js_ellipsoid_axis = js_ellipsoid.at("axis").as_arr();
-            dr.ellipsoids[i].axis[0] = float(js_ellipsoid_axis[0].as_num());
-            dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num());
-            dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num());
+            dr.ellipsoids[i].axis[0] = float(js_ellipsoid_axis[0].as_num().val);
+            dr.ellipsoids[i].axis[1] = float(js_ellipsoid_axis[1].as_num().val);
+            dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num().val);
 
             if (js_ellipsoid.Has("bone")) {
                 dr.ellipsoids[i].bone_name =

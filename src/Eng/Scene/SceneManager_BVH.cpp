@@ -140,7 +140,7 @@ void SceneManager::RebuildBVH() {
             for (uint32_t i = leaf_index - 1; i >= scene_data_.root_node; i--) {
                 if (_out_nodes[i].left_child == leaf_index ||
                     _out_nodes[i].right_child == leaf_index) {
-                    parent_index = (uint32_t)i;
+                    parent_index = uint32_t(i);
                     break;
                 }
             }

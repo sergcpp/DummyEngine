@@ -134,7 +134,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir,
     AddComponent(SWAP_TIMER_KEY, swap_interval);
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(eGameState::GS_PHY_TEST, this));
+    state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
 }
 
 void Viewer::Resize(const int w, const int h) { GameBase::Resize(w, h); }

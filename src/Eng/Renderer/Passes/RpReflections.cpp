@@ -148,7 +148,8 @@ void RpReflections::Execute(RpBuilder &builder) {
              cells_buf.tbos[orphan_index_]->handle()},
             {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT,
              items_buf.tbos[orphan_index_]->handle()},
-            {Ren::eBindTarget::TexCubeArray, REN_ENV_TEX_SLOT, probe_storage_->handle()},
+            {Ren::eBindTarget::TexCubeArray, REN_ENV_TEX_SLOT,
+             probe_storage_ ? probe_storage_->handle() : Ren::TexHandle{}},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
              orphan_index_ * SharedDataBlockSize, sizeof(SharedDataBlock),
              unif_sh_data_buf.ref->handle()}};

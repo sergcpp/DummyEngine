@@ -53,6 +53,8 @@ inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) {
     return !operator==(lhs, rhs);
 }
 
+uint32_t EstimateMemory(const Tex2DParams &params);
+
 enum class eTexLoadStatus {
     TexFound,
     TexFoundReinitialized,
@@ -160,7 +162,7 @@ class Texture2D : public RefCounter {
               eTexLoadStatus *load_status, ILog *log);
 
     void Realloc(int w, int h, int mip_count, int samples, Ren::eTexFormat format,
-                 bool is_srgb, ILog *log);
+                 Ren::eTexBlock block, bool is_srgb, ILog *log);
 
     TexHandle handle() const { return handle_; }
     uint32_t id() const { return handle_.id; }

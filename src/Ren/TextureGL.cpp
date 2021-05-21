@@ -152,7 +152,7 @@ const uint32_t g_gl_wrap_mode[] = {
     GL_CLAMP_TO_BORDER, // ClampToBorder
 };
 static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) ==
-                  (size_t)eTexRepeat::WrapModesCount,
+                  size_t(eTexRepeat::WrapModesCount),
               "!");
 
 const uint32_t g_gl_compare_func[] = {
@@ -167,7 +167,7 @@ const uint32_t g_gl_compare_func[] = {
     GL_NEVER,    // Never
 };
 static_assert(sizeof(g_gl_compare_func) / sizeof(g_gl_compare_func[0]) ==
-                  (size_t)eTexCompare::_Count,
+                  size_t(eTexCompare::_Count),
               "!");
 
 const uint32_t gl_binding_targets[] = {
@@ -178,7 +178,7 @@ const uint32_t gl_binding_targets[] = {
     GL_UNIFORM_BUFFER,         // UBuf
 };
 static_assert(sizeof(gl_binding_targets) / sizeof(gl_binding_targets[0]) ==
-                  int(eBindTarget::_Count),
+                  size_t(eBindTarget::_Count),
               "!");
 
 const float AnisotropyLevel = 4.0f;
@@ -247,8 +247,8 @@ static_assert(sizeof(GLsync) == sizeof(void *), "!");
 
 Ren::SyncFence::~SyncFence() {
     if (sync_) {
-        glDeleteSync(reinterpret_cast<GLsync>(sync_));
-        sync_ = nullptr;
+        auto sync = reinterpret_cast<GLsync>(exchange(sync_, nullptr));
+        glDeleteSync(sync);
     }
 }
 
@@ -256,7 +256,8 @@ Ren::SyncFence::SyncFence(SyncFence &&rhs) { sync_ = exchange(rhs.sync_, nullptr
 
 Ren::SyncFence &Ren::SyncFence::operator=(SyncFence &&rhs) {
     if (sync_) {
-        glDeleteSync(reinterpret_cast<GLsync>(sync_));
+        auto sync = reinterpret_cast<GLsync>(exchange(sync_, nullptr));
+        glDeleteSync(sync);
     }
     sync_ = exchange(rhs.sync_, nullptr);
     return (*this);
@@ -418,8 +419,8 @@ void Ren::Texture2D::Free() {
 }
 
 void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples,
-                             const Ren::eTexFormat format, const bool is_srgb,
-                             ILog *log) {
+                             const Ren::eTexFormat format, const Ren::eTexBlock block,
+                             const bool is_srgb, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
 #ifdef ENABLE_OBJ_LABELS
@@ -487,6 +488,7 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     params_.mip_count = mip_count;
     params_.samples = samples;
     params_.format = format;
+    params_.block = block;
     initialized_mips_ = new_initialized_mips;
 }
 
@@ -611,7 +613,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
 
     Free();
     Realloc(int(header.dwWidth), int(header.dwHeight), int(header.dwMipMapCount), 1,
-            format, (p.flags & TexSRGB) != 0, log);
+            format, block, (p.flags & TexSRGB) != 0, log);
 
     params_.flags = p.flags;
     params_.block = block;
@@ -730,7 +732,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
 
     Free();
     Realloc(int(header.pixel_width), int(header.pixel_height),
-            int(header.mipmap_levels_count), 1, format, (p.flags & TexSRGB) != 0, log);
+            int(header.mipmap_levels_count), 1, format, block, (p.flags & TexSRGB) != 0,
+            log);
 
     params_.flags = p.flags;
     params_.block = block;
@@ -1240,6 +1243,24 @@ void Ren::Texture2D::DownloadTextureData(const eTexFormat format, void *out_data
 
     glBindTexture(GL_TEXTURE_2D, 0);
 #endif
+}
+
+uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
+    if (IsCompressedFormat(params.format)) {
+        uint32_t total_len = 0;
+        for (int i = 0; i < params.mip_count; i++) {
+            const int w = std::max(params.w >> i, 1);
+            const int h = std::max(params.h >> i, 1);
+
+            const int block_len = GetBlockLenBytes(params.format, params.block);
+            const int block_cnt = GetBlockCount(w, h, params.block);
+
+            total_len += uint32_t(block_len) * block_cnt;
+        }
+        return total_len;
+    } else {
+        return 0;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

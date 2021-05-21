@@ -41,7 +41,7 @@
       </IndexListItems>
     </Expand>
   </Type>
-  <Type Name="Ren::RingBuffer&lt;*&gt;::Iterator">
+  <Type Name="Ren::RingBuffer&lt;*&gt;::iterator">
     <DisplayString>{{ {container_->buf_[index_ &amp; (container_->capacity_ - 1)]} }}</DisplayString>
     <Expand>
       <Item Name="[index]" ExcludeView="simple">index_ &amp; (container_->capacity_ - 1)</Item>
