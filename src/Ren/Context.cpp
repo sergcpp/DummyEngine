@@ -93,7 +93,7 @@ void Ren::Context::ReleaseMaterials() {
     materials_.clear();
 }
 
-Ren::ProgramRef Ren::Context::GetProgram(CONST uint32_t index) { return {&programs_, index}; }
+Ren::ProgramRef Ren::Context::GetProgram(const uint32_t index) { return {&programs_, index}; }
 
 int Ren::Context::NumProgramsNotReady() {
     return (int)std::count_if(programs_.begin(), programs_.end(),
@@ -101,7 +101,7 @@ int Ren::Context::NumProgramsNotReady() {
 }
 
 void Ren::Context::ReleasePrograms() {
-    if (!programs_.size()) {
+    if (programs_.empty()) {
         return;
     }
     log_->Error("---------REMAINING PROGRAMS--------");
@@ -177,7 +177,7 @@ int Ren::Context::NumTexturesNotReady() {
 }
 
 void Ren::Context::Release2DTextures() {
-    if (!textures_.size()) {
+    if (textures_.empty()) {
         return;
     }
     log_->Error("---------REMAINING 2D TEXTURES--------");
@@ -202,7 +202,7 @@ Ren::Tex1DRef Ren::Context::CreateTexture1D(const char *name, BufferRef buf,
 }
 
 void Ren::Context::Release1DTextures() {
-    if (!textures_1D_.size()) {
+    if (textures_1D_.empty()) {
         return;
     }
     log_->Error("---------REMAINING 1D TEXTURES--------");
@@ -231,7 +231,7 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const vo
 }
 
 void Ren::Context::ReleaseTextureRegions() {
-    if (!texture_regions_.size())
+    if (texture_regions_.empty())
         return;
     log_->Error("-------REMAINING TEX REGIONS-------");
     for (const TextureRegion &t : texture_regions_) {
@@ -261,7 +261,7 @@ int Ren::Context::NumAnimsNotReady() {
 }
 
 void Ren::Context::ReleaseAnims() {
-    if (!anims_.size()) {
+    if (anims_.empty()) {
         return;
     }
     log_->Error("---------REMAINING ANIMS--------");
@@ -280,7 +280,7 @@ Ren::BufferRef Ren::Context::CreateBuffer(const char *name, const eBufferType ty
 }
 
 void Ren::Context::ReleaseBuffers() {
-    if (!buffers_.size()) {
+    if (buffers_.empty()) {
         return;
     }
     log_->Error("---------REMAINING BUFFERS--------");

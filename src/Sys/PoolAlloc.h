@@ -132,7 +132,7 @@ struct SharedState {
 
 template <typename T, typename FallBackAllocator = std::allocator<T>>
 class MultiPoolAllocator {
-    template <typename U, typename FallBackAllocator = std::allocator<U>>
+    template <typename U, typename FallBackAllocator2>
     friend class MultiPoolAllocator;
 
     size_t mem_step_;

@@ -246,18 +246,18 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
     alignas(AlignmentOfT) char buffer_[sizeof(T) * N];
 
   public:
-    SmallVector() : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {}
+    SmallVector() : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {}
     SmallVector(const SmallVector &rhs)
-        : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
-        SmallVectorImpl::operator=(rhs);
+        : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {
+        SmallVectorImpl<T, AlignmentOfT>::operator=(rhs);
     }
     SmallVector(SmallVector &&rhs) : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
-        SmallVectorImpl::operator=(std::move(rhs));
+        SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
     }
 
     SmallVector &operator=(const SmallVector &rhs) = delete;
     SmallVector &operator=(SmallVector &&rhs) {
-        SmallVectorImpl::operator=(std::move(rhs));
+        SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
         return (*this);
     }
 

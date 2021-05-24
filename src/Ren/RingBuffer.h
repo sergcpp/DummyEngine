@@ -166,14 +166,20 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
             : container_(container), index_(index) {}
 
       public:
+        using difference_type = std::ptrdiff_t;
+        using value_type = T;
+        using pointer = T *;
+        using reference = T &;
+        using iterator_category = std::random_access_iterator_tag;
+
         T &operator*() const { return container_->at(index_); }
         T *operator->() const { return &container_->at(index_); }
         iterator &operator++() {
             ++index_;
             return *this;
         }
-        iterator operator++(int) {
-            Iterator tmp(*this);
+        const iterator operator++(int) {
+            iterator tmp(*this);
             ++(*this);
             return tmp;
         }
@@ -249,12 +255,6 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
         friend difference_type operator-(const iterator &lhs, const iterator &rhs) {
             return difference_type(lhs.index_) - rhs.index_;
         }
-
-        using difference_type = std::ptrdiff_t;
-        using value_type = T;
-        using pointer = T *;
-        using reference = T &;
-        using iterator_category = std::random_access_iterator_tag;
     };
 
     iterator begin() { return {this, tail_}; }
@@ -311,8 +311,8 @@ template <class T> class AtomicRingBuffer {
         buf_ = new T[size];
     }
     ~AtomicRingBuffer() { delete[] buf_; }
-    AtomicRingBuffer(const RingBuffer &) = delete;
-    AtomicRingBuffer &operator=(const RingBuffer &) = delete;
+    AtomicRingBuffer(const AtomicRingBuffer &) = delete;
+    AtomicRingBuffer &operator=(const AtomicRingBuffer &) = delete;
 
     bool Empty() const {
         const int tail = tail_.load(std::memory_order_relaxed);

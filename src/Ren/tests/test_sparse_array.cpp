@@ -1,5 +1,6 @@
 #include "test_common.h"
 
+#include <algorithm>
 #include <random>
 #include <vector>
 

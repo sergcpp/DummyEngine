@@ -4,7 +4,7 @@
 #include "SparseArray.h"
 
 namespace Ren {
-template <class T, class U = T> constexpr T exchange(T &obj, U &&new_value) {
+template <class T, class U = T> T exchange(T &obj, U &&new_value) {
     T old_value = std::move(obj);
     obj = std::forward<U>(new_value);
     return old_value;
@@ -16,7 +16,7 @@ template <typename T> class Storage : public SparseArray<T> {
     HashMap32<String, uint32_t> items_by_name_;
 
   public:
-    Storage() {}
+    Storage() = default;
 
     Storage(const Storage &rhs) = delete;
 

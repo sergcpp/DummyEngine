@@ -55,7 +55,7 @@ class Material : public RefCounter {
              int params_count, ILog *log);
 
     Material(const Mesh &rhs) = delete;
-    Material(Material &&rhs) noexcept = default;
+    Material(Material &&rhs) = default;
 
     Material &operator=(const Material &rhs) = delete;
     Material &operator=(Material &&rhs) noexcept = default;
