@@ -134,10 +134,16 @@ void test_material() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
+        auto on_texture_needed = [&test](const char *name, const uint8_t color[4],
+                                         uint32_t flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
+        };
+
+        auto on_sampler_needed = [&test](Ren::SamplingParams params) {
+            Ren::eSamplerLoadStatus status;
+            return test.LoadSampler(params, &status);
         };
 
         const char *mat_src = "gl_program: constant constant.vs constant.fs\n"
@@ -151,13 +157,15 @@ void test_material() {
                               "param: 0.5 1.2 11 15";
 
         Ren::eMatLoadStatus status;
-        Ren::MaterialRef m_ref = test.LoadMaterial("mat1", nullptr, &status,
-                                                   on_program_needed, on_texture_needed);
+        Ren::MaterialRef m_ref =
+            test.LoadMaterial("mat1", nullptr, &status, on_program_needed,
+                              on_texture_needed, on_sampler_needed);
         require(status == Ren::eMatLoadStatus::SetToDefault);
 
         { require(!m_ref->ready()); }
 
-        test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed);
+        test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed,
+                          on_sampler_needed);
 
         require(status == Ren::eMatLoadStatus::CreatedFromData);
         require(m_ref->flags() & uint32_t(Ren::eMatFlags::AlphaTest));

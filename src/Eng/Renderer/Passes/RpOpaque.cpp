@@ -112,12 +112,12 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &color_t
 
         Ren::eTexLoadStatus status;
         dummy_black_ = ctx.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData ||
-               status == Ren::eTexLoadStatus::TexFound);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData ||
+               status == Ren::eTexLoadStatus::Found);
 
         dummy_white_ = ctx.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData ||
-               status == Ren::eTexLoadStatus::TexFound);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData ||
+               status == Ren::eTexLoadStatus::Found);
 
         initialized = true;
     }

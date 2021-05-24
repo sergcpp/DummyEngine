@@ -167,7 +167,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
             nodes_buf_ = builder.ctx().CreateBuffer(
                 "Nodes buf", Ren::eBufferType::Texture, Ren::eBufferAccessType::Draw,
                 Ren::eBufferAccessFreq::Dynamic, buf_size);
-            const uint32_t off = nodes_buf_->AllocRegion(buf_size, nodes_);
+            const uint32_t off = nodes_buf_->AllocRegion(buf_size, "nodes debug", nodes_);
             assert(off == 0);
 
             nodes_tbo_ = builder.ctx().CreateTexture1D(
@@ -176,7 +176,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
             const bool res = nodes_buf_->FreeRegion(0);
             assert(res);
 
-            const uint32_t off = nodes_buf_->AllocRegion(buf_size, nodes_);
+            const uint32_t off = nodes_buf_->AllocRegion(buf_size, "nodes debug", nodes_);
             assert(off == 0);
         }
 
@@ -258,9 +258,9 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
 
         Ren::eTexLoadStatus status;
         temp_tex_ = ctx.LoadTexture2D("__DEBUG_TEMP_TEXTURE__", params, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
-               status == Ren::eTexLoadStatus::TexFound ||
-               status == Ren::eTexLoadStatus::TexFoundReinitialized);
+        assert(status == Ren::eTexLoadStatus::CreatedDefault ||
+               status == Ren::eTexLoadStatus::Found ||
+               status == Ren::eTexLoadStatus::Reinitialized);
     }
 
     { // setup temp vao

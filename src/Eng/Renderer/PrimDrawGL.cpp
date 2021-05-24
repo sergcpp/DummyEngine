@@ -6,7 +6,8 @@
 #include "Renderer_GL_Defines.inl"
 
 namespace PrimDrawInternal {
-extern const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f};
+extern const float fs_quad_positions[] = {-1.0f, -1.0f, 1.0f,  -1.0f,
+                                          1.0f,  1.0f,  -1.0f, 1.0f};
 extern const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f};
 extern const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 const int TempBufSize = 256;
@@ -24,26 +25,28 @@ bool PrimDraw::LazyInit(Ren::Context &ctx) {
         // Allocate quad vertices
         uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
         mem_required += (16 - mem_required % 16); // align to vertex stride
-        quad_vtx1_offset_ = vtx_buf1->AllocRegion(mem_required, nullptr);
-        quad_vtx2_offset_ = vtx_buf2->AllocRegion(mem_required, nullptr);
+        quad_vtx1_offset_ = vtx_buf1->AllocRegion(mem_required, "quad", nullptr);
+        quad_vtx2_offset_ = vtx_buf2->AllocRegion(mem_required, "quad", nullptr);
         assert(quad_vtx1_offset_ == quad_vtx2_offset_ && "Offsets do not match!");
-        quad_ndx_offset_ = ndx_buf->AllocRegion(6 * sizeof(uint16_t), fs_quad_indices);
+        quad_ndx_offset_ =
+            ndx_buf->AllocRegion(6 * sizeof(uint16_t), "quad", fs_quad_indices);
 
         // Allocate sphere vertices
         sphere_vtx1_offset_ = vtx_buf1->AllocRegion(
-            sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16),
+            sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), "sphere",
             __sphere_positions);
         sphere_vtx2_offset_ = vtx_buf2->AllocRegion(
-            sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), nullptr);
+            sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16), "sphere",
+            nullptr);
         assert(sphere_vtx1_offset_ == sphere_vtx2_offset_ && "Offsets do not match!");
         sphere_ndx_offset_ =
-            ndx_buf->AllocRegion(sizeof(__sphere_indices), __sphere_indices);
+            ndx_buf->AllocRegion(sizeof(__sphere_indices), "sphere", __sphere_indices);
 
         // Allocate temporary buffer
-        temp_buf1_vtx_offset_ = vtx_buf1->AllocRegion(TempBufSize);
-        temp_buf2_vtx_offset_ = vtx_buf2->AllocRegion(TempBufSize);
+        temp_buf1_vtx_offset_ = vtx_buf1->AllocRegion(TempBufSize, "temp");
+        temp_buf2_vtx_offset_ = vtx_buf2->AllocRegion(TempBufSize, "temp");
         assert(temp_buf1_vtx_offset_ == temp_buf2_vtx_offset_ && "Offsets do not match!");
-        temp_buf_ndx_offset_ = ndx_buf->AllocRegion(TempBufSize);
+        temp_buf_ndx_offset_ = ndx_buf->AllocRegion(TempBufSize, "temp");
 
         // TODO: make this non-gl specific!
         glBindVertexArray(0);
@@ -120,7 +123,8 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
         if (b.trg == Ren::eBindTarget::UBuf) {
             if (b.offset) {
                 assert(b.size != 0);
-                glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.id, b.offset, b.size);
+                glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.id, b.offset,
+                                  b.size);
             } else {
                 glBindBufferBase(GL_UNIFORM_BUFFER, b.loc, b.handle.id);
             }

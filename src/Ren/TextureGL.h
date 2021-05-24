@@ -36,7 +36,7 @@ struct Tex2DParams {
     uint8_t fallback_color[4] = {0, 255, 255, 255};
     eTexFormat format = eTexFormat::Undefined;
     eTexBlock block = eTexBlock::_None;
-    TexSamplingParams sampling;
+    SamplingParams sampling;
 };
 static_assert(sizeof(Tex2DParams) == 22, "!");
 
@@ -54,13 +54,6 @@ inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) {
 }
 
 uint32_t EstimateMemory(const Tex2DParams &params);
-
-enum class eTexLoadStatus {
-    TexFound,
-    TexFoundReinitialized,
-    TexCreatedDefault,
-    TexCreatedFromData
-};
 
 struct TexHandle {
     uint32_t id = 0;         // native gl name
@@ -155,6 +148,8 @@ class Texture2D : public RefCounter {
     Texture2D &operator=(const Texture2D &rhs) = delete;
     Texture2D &operator=(Texture2D &&rhs) noexcept;
 
+    uint64_t GetBindlessHandle() const;
+
     void Init(const Tex2DParams &params, ILog *log);
     void Init(const void *data, int size, const Tex2DParams &params,
               eTexLoadStatus *load_status, ILog *log);
@@ -170,11 +165,14 @@ class Texture2D : public RefCounter {
     uint16_t initialized_mips() const { return initialized_mips_; }
 
     const Tex2DParams &params() const { return params_; }
+    const SamplingParams &sampling() const { return params_.sampling; }
 
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void SetFilter(TexSamplingParams sampling, ILog *log);
+    void SetSampling(SamplingParams sampling) { params_.sampling = sampling; }
+    void ApplySampling(SamplingParams sampling, ILog *log);
+
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey,
                      Ren::eTexFormat format, const void *data, int data_len);
     SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey,
@@ -207,10 +205,6 @@ class TextureStageBuf {
 
     void FlushMapped(uint32_t offset = 0, uint32_t size = 0);
 };
-
-using Tex2DRef = StrongRef<Texture2D>;
-using WeakTex2DRef = WeakRef<Texture2D>;
-using Texture2DStorage = Storage<Texture2D>;
 
 struct Texture1DParams {
     uint16_t offset = 0, size = 0;
@@ -248,10 +242,6 @@ class Texture1D : public RefCounter {
     void Init(BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size,
               ILog *log);
 };
-
-using Tex1DRef = StrongRef<Texture1D>;
-using WeakTex1DRef = WeakRef<Texture1D>;
-using Texture1DStorage = Storage<Texture1D>;
 
 uint32_t GLFormatFromTexFormat(eTexFormat format);
 uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);

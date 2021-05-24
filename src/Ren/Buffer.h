@@ -6,6 +6,8 @@
 #include "String.h"
 
 namespace Ren {
+class ILog;
+
 enum class eBufferType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, _Count };
 enum class eBufferAccessType : uint8_t {
     Draw, Read, Copy
@@ -36,9 +38,12 @@ class Buffer : public RefCounter {
         int parent = -1;
         int child[2] = { -1, -1 };
         uint32_t offset = 0, size = 0;
+#ifndef NDEBUG
+        char tag[32] = {};
+#endif
 
         bool has_children() const {
-            return child[0] != 0 || child[1] != 0;
+            return child[0] != -1 || child[1] != -1;
         }
     };
 
@@ -48,12 +53,13 @@ class Buffer : public RefCounter {
     eBufferAccessType   access_;
     eBufferAccessFreq   freq_;
     uint32_t            size_ = 0;
-    std::vector<Node>   nodes_;
+    SparseArray<Node>   nodes_;
     
-    int Alloc_Recursive(int i, uint32_t req_size);
+    int Alloc_Recursive(int i, uint32_t req_size, const char *tag);
     int Find_Recursive(int i, uint32_t offset) const;
-    void SafeErase(int i, int *indices, int num);
     bool Free_Node(int i);
+
+    void PrintNode(int i, std::string prefix, bool is_tail, ILog *log);
 
     static int g_GenCounter;
 public:
@@ -81,10 +87,12 @@ public:
 #endif
     uint32_t generation() const { return handle_.generation; }
 
-    uint32_t AllocRegion(uint32_t size, const void *init_data = nullptr);
+    uint32_t AllocRegion(uint32_t size, const char *tag, const void *init_data = nullptr);
     bool FreeRegion(uint32_t offset);
 
     void Resize(uint32_t new_size);
+
+    void Print(ILog *log);
 };
 
 #if defined(USE_GL_RENDER)

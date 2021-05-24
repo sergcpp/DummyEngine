@@ -170,6 +170,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
                                   const char *f_shader, const char *tc_shader,
                                   const char *te_shader);
     Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], uint32_t flags);
+    Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
     Ren::MeshRef LoadMesh(const char *name, std::istream *data,
                           const Ren::material_load_callback &on_mat_load,
@@ -177,7 +178,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::MaterialRef LoadMaterial(const char *name, const char *mat_src,
                                   Ren::eMatLoadStatus *status,
                                   const Ren::program_load_callback &on_prog_load,
-                                  const Ren::texture_load_callback &on_tex_load);
+                                  const Ren::texture_load_callback &on_tex_load,
+                                  const Ren::sampler_load_callback &on_sampler_load);
     Ren::Tex2DRef LoadTexture(const char *name, const void *data, int size,
                               const Ren::Tex2DParams &p,
                               Ren::eTexLoadStatus *load_status);

@@ -736,12 +736,6 @@ typedef void (APIENTRY *PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer,
 
 typedef void (APIENTRY *PFNGLBINDIMAGETEXTUREPROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 
-typedef void (APIENTRY *PFNGLGENSAMPLERSPROC)(GLsizei n, GLuint* samplers);
-typedef void (APIENTRY *PFNGLDELETESAMPLERSPROC)(GLsizei n, const GLuint* samplers);
-typedef void (APIENTRY *PFNGLBINDSAMPLERPROC)(GLuint unit, GLuint sampler);
-typedef void (APIENTRY *PFNGLSAMPLERPARAMETERFPROC)(GLuint sampler, GLenum pname, GLfloat param);
-typedef void (APIENTRY *PFNGLSAMPLERPARAMETERIPROC)(GLuint sampler, GLenum pname, GLint param);
-
 #endif
 
 //
@@ -805,6 +799,40 @@ typedef void (APIENTRY *PFNGLBINDTEXTUREUNITCOMPPROC)(GLenum target, GLuint unit
 
 typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGEPROC)(GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags);
 typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGECOMPPROC)(GLenum target, GLuint buffer, GLsizeiptr size, const void* data, GLbitfield flags);
+
+//
+// Bindless texture
+//
+
+typedef GLuint64 (APIENTRY* PFNGLGETTEXTUREHANDLEARB)(GLuint texture);
+typedef GLuint64 (APIENTRY* PFNGLGETTEXTURESAMPLERHANDLEARB)(GLuint texture, GLuint sampler);
+
+typedef void (APIENTRY* PFNGLMAKETEXTUREHANDLERESIDENTARB)(GLuint64 handle);
+typedef void (APIENTRY* PFNGLMAKETEXTUREHANDLENONRESIDENTARB)(GLuint64 handle);
+
+typedef GLuint64 (APIENTRY* PFNGLGETIMAGEHANDLEARB)(GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum format);
+
+typedef void (APIENTRY* PFNGLMAKEIMAGEHANDLERESIDENTARB)(GLuint64 handle, GLenum access);
+typedef void (APIENTRY* PFNGLMAKEIMAGEHANDLENONRESIDENTARB)(GLuint64 handle);
+
+typedef void (APIENTRY* PFNGLUNIFORMHANDLEUI64ARB)(GLint location, GLuint64 value);
+typedef void (APIENTRY* PFNGLUNIFORMHANDLEUI64VARB)(GLint location, GLsizei count, const GLuint64 *value);
+typedef void (APIENTRY* PFNGLPROGRAMUNIFORMHANDLEUI64ARB)(GLuint program, GLint location, GLuint64 value);
+typedef void (APIENTRY* PFNGLPROGRAMUNIFORMHANDLEUI64VARB)(GLuint program, GLint location, GLsizei count, const GLuint64 *values);
+
+typedef GLboolean (APIENTRY* PFNGLISTEXTUREHANDLERESIDENTARB)(GLuint64 handle);
+typedef GLboolean (APIENTRY* PFNGLISIMAGEHANDLERESIDENTARB)(GLuint64 handle);
+
+//
+// Sampler objects
+//
+
+typedef void (APIENTRY* PFNGLGENSAMPLERS)(GLsizei n, GLuint *samplers);
+typedef void (APIENTRY* PFNGLDELETESAMPLERS)(GLsizei count, const GLuint *samplers);
+typedef GLboolean (APIENTRY* PFNGLISSAMPLER)(GLuint sampler);
+typedef void (APIENTRY* PFNGLBINDSAMPLER)(GLuint unit, GLuint sampler);
+typedef void (APIENTRY* PFNGLSAMPLERPARAMETERI)(GLuint sampler, GLenum pname, GLint param);
+typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GLfloat param);
 
 #if !defined(__APPLE__)
 
@@ -981,12 +1009,6 @@ typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGECOMPPROC)(GLenum target, GLuint b
 #define glClearBufferfv             ren_glClearBufferfv
 
 #define glBindImageTexture          ren_glBindImageTexture
-
-#define glGenSamplers               ren_glGenSamplers
-#define glDeleteSamplers            ren_glDeleteSamplers
-#define glBindSampler               ren_glBindSampler
-#define glSamplerParameterf         ren_glSamplerParameterf
-#define glSamplerParameteri         ren_glSamplerParameteri
 #endif
 
 //
@@ -1015,6 +1037,41 @@ typedef void (APIENTRY* PFNGLNAMEDBUFFERSTORAGECOMPPROC)(GLenum target, GLuint b
 #define glBindTextureUnit           ren_glBindTextureUnit
 
 #define glNamedBufferStorage        ren_glNamedBufferStorage
+
+//
+// Bindless texture
+//
+
+#define glGetTextureHandleARB               ren_glGetTextureHandleARB
+#define glGetTextureSamplerHandleARB        ren_glGetTextureSamplerHandleARB
+
+#define glMakeTextureHandleResidentARB      ren_glMakeTextureHandleResidentARB
+#define glMakeTextureHandleNonResidentARB   ren_glMakeTextureHandleNonResidentARB
+
+#define glGetImageHandleARB                 ren_glGetImageHandleARB
+
+#define glMakeImageHandleResidentARB        ren_glMakeImageHandleResidentARB
+#define glMakeImageHandleNonResidentARB     ren_glMakeImageHandleNonResidentARB
+
+#define glUniformHandleui64ARB              ren_glUniformHandleui64ARB
+#define glUniformHandleui64vARB             ren_glUniformHandleui64vARB
+#define glProgramUniformHandleui64ARB       ren_glProgramUniformHandleui64ARB
+#define glProgramUniformHandleui64vARB      ren_glProgramUniformHandleui64vARB
+
+#define glIsTextureHandleResidentARB        ren_glIsTextureHandleResidentARB
+#define glIsImageHandleResidentARB          ren_glIsImageHandleResidentARB
+
+//
+// Sampler objects
+//
+
+#define glGenSamplers                       ren_glGenSamplers
+#define glDeleteSamplers                    ren_glDeleteSamplers
+#define glIsSampler                         ren_glIsSampler
+#define glBindSampler                       ren_glBindSampler
+#define glSamplerParameteri                 ren_glSamplerParameteri
+#define glSamplerParameterf                 ren_glSamplerParameterf
+
 
 #if !defined(__APPLE__)
 EXTERN_FUNC PFNGLCREATEPROGRAMPROC              ren_glCreateProgram;
@@ -1191,11 +1248,6 @@ EXTERN_FUNC PFNGLCLEARBUFFERFVPROC              ren_glClearBufferfv;
 
 EXTERN_FUNC PFNGLBINDIMAGETEXTUREPROC           ren_glBindImageTexture;
 
-EXTERN_FUNC PFNGLGENSAMPLERSPROC                ren_glGenSamplers;
-EXTERN_FUNC PFNGLDELETESAMPLERSPROC             ren_glDeleteSamplers;
-EXTERN_FUNC PFNGLBINDSAMPLERPROC                ren_glBindSampler;
-EXTERN_FUNC PFNGLSAMPLERPARAMETERFPROC          ren_glSamplerParameterf;
-EXTERN_FUNC PFNGLSAMPLERPARAMETERIPROC          ren_glSamplerParameteri;
 #endif
 
 //
@@ -1239,6 +1291,41 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 EXTERN_FUNC PFNGLNAMEDBUFFERSTORAGEPROC         ren_glNamedBufferStorage;
 EXTERN_FUNC PFNGLNAMEDBUFFERSTORAGECOMPPROC     ren_glNamedBufferStorage_Comp;
+
+//
+// Bindless texture
+//
+
+EXTERN_FUNC PFNGLGETTEXTUREHANDLEARB            ren_glGetTextureHandleARB;
+EXTERN_FUNC PFNGLGETTEXTURESAMPLERHANDLEARB     ren_glGetTextureSamplerHandleARB;
+
+EXTERN_FUNC PFNGLMAKETEXTUREHANDLERESIDENTARB   ren_glMakeTextureHandleResidentARB;
+EXTERN_FUNC PFNGLMAKETEXTUREHANDLENONRESIDENTARB ren_glMakeTextureHandleNonResidentARB;
+
+EXTERN_FUNC PFNGLGETIMAGEHANDLEARB              ren_glGetImageHandleARB;
+
+EXTERN_FUNC PFNGLMAKEIMAGEHANDLERESIDENTARB     ren_glMakeImageHandleResidentARB;
+EXTERN_FUNC PFNGLMAKEIMAGEHANDLENONRESIDENTARB  ren_glMakeImageHandleNonResidentARB;
+
+EXTERN_FUNC PFNGLUNIFORMHANDLEUI64ARB           ren_glUniformHandleui64ARB;
+EXTERN_FUNC PFNGLUNIFORMHANDLEUI64VARB          ren_glUniformHandleui64vARB;
+EXTERN_FUNC PFNGLPROGRAMUNIFORMHANDLEUI64ARB    ren_glProgramUniformHandleui64ARB;
+EXTERN_FUNC PFNGLPROGRAMUNIFORMHANDLEUI64VARB   ren_glProgramUniformHandleui64vARB;
+
+EXTERN_FUNC PFNGLISTEXTUREHANDLERESIDENTARB     ren_glIsTextureHandleResidentARB;
+EXTERN_FUNC PFNGLISIMAGEHANDLERESIDENTARB       ren_glIsImageHandleResidentARB;
+
+//
+// Sampler objects
+//
+
+EXTERN_FUNC PFNGLGENSAMPLERS                    ren_glGenSamplers;
+EXTERN_FUNC PFNGLDELETESAMPLERS                 ren_glDeleteSamplers;
+EXTERN_FUNC PFNGLISSAMPLER                      ren_glIsSampler;
+EXTERN_FUNC PFNGLBINDSAMPLER                    ren_glBindSampler;
+EXTERN_FUNC PFNGLSAMPLERPARAMETERI              ren_glSamplerParameteri;
+EXTERN_FUNC PFNGLSAMPLERPARAMETERF              ren_glSamplerParameterf;
+
 }
 
 #undef EXTERN_FUNC

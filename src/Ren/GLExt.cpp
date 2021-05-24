@@ -303,14 +303,6 @@ bool Ren::InitGLExtentions() {
 
     ren_glBindImageTexture =
         (PFNGLBINDIMAGETEXTUREPROC)GetProcAddress(glBindImageTexture);
-
-    ren_glGenSamplers = (PFNGLGENSAMPLERSPROC)GetProcAddress(glGenSamplers);
-    ren_glDeleteSamplers = (PFNGLDELETESAMPLERSPROC)GetProcAddress(glDeleteSamplers);
-    ren_glBindSampler = (PFNGLBINDSAMPLERPROC)GetProcAddress(glBindSampler);
-    ren_glSamplerParameterf =
-        (PFNGLSAMPLERPARAMETERFPROC)GetProcAddress(glSamplerParameterf);
-    ren_glSamplerParameteri =
-        (PFNGLSAMPLERPARAMETERIPROC)GetProcAddress(glSamplerParameteri);
 #endif
 
     //
@@ -499,6 +491,112 @@ bool Ren::InitGLExtentions() {
 
     ren_glBindTextureUnit_Comp = ren_glBindTextureUnit_Comp_emu;
 #endif
+
+    //
+    // Bindless texture
+    //
+    ren_glGetTextureHandleARB =
+        (PFNGLGETTEXTUREHANDLEARB)GetProcAddress(glGetTextureHandleARB);
+    if (!ren_glGetTextureHandleARB) {
+        ren_glGetTextureHandleARB =
+            (PFNGLGETTEXTUREHANDLEARB)GetProcAddress(glGetTextureHandleNV);
+    }
+    ren_glGetTextureSamplerHandleARB =
+        (PFNGLGETTEXTURESAMPLERHANDLEARB)GetProcAddress(glGetTextureSamplerHandleARB);
+    if (!ren_glGetTextureSamplerHandleARB) {
+        ren_glGetTextureSamplerHandleARB =
+            (PFNGLGETTEXTURESAMPLERHANDLEARB)GetProcAddress(glGetTextureSamplerHandleNV);
+    }
+
+    ren_glMakeTextureHandleResidentARB =
+        (PFNGLMAKETEXTUREHANDLERESIDENTARB)GetProcAddress(glMakeTextureHandleResidentARB);
+    if (!ren_glMakeTextureHandleResidentARB) {
+        ren_glMakeTextureHandleResidentARB =
+            (PFNGLMAKETEXTUREHANDLERESIDENTARB)GetProcAddress(
+                glMakeTextureHandleResidentNV);
+    }
+    ren_glMakeTextureHandleNonResidentARB =
+        (PFNGLMAKETEXTUREHANDLENONRESIDENTARB)GetProcAddress(
+            glMakeTextureHandleNonResidentARB);
+    if (!ren_glMakeTextureHandleNonResidentARB) {
+        ren_glMakeTextureHandleNonResidentARB =
+            (PFNGLMAKETEXTUREHANDLENONRESIDENTARB)GetProcAddress(
+                glMakeTextureHandleNonResidentNV);
+    }
+
+    ren_glGetImageHandleARB = (PFNGLGETIMAGEHANDLEARB)GetProcAddress(glGetImageHandleARB);
+    if (!ren_glGetImageHandleARB) {
+        ren_glGetImageHandleARB =
+            (PFNGLGETIMAGEHANDLEARB)GetProcAddress(glGetImageHandleNV);
+    }
+
+    ren_glMakeImageHandleResidentARB =
+        (PFNGLMAKEIMAGEHANDLERESIDENTARB)GetProcAddress(glMakeImageHandleResidentARB);
+    if (!ren_glMakeImageHandleResidentARB) {
+        ren_glMakeImageHandleResidentARB =
+            (PFNGLMAKEIMAGEHANDLERESIDENTARB)GetProcAddress(glMakeImageHandleResidentNV);
+    }
+    ren_glMakeImageHandleNonResidentARB =
+        (PFNGLMAKEIMAGEHANDLENONRESIDENTARB)GetProcAddress(
+            glMakeImageHandleNonResidentARB);
+    if (!ren_glMakeImageHandleNonResidentARB) {
+        ren_glMakeImageHandleNonResidentARB =
+            (PFNGLMAKEIMAGEHANDLENONRESIDENTARB)GetProcAddress(
+                glMakeImageHandleNonResidentNV);
+    }
+
+    ren_glUniformHandleui64ARB =
+        (PFNGLUNIFORMHANDLEUI64ARB)GetProcAddress(glUniformHandleui64ARB);
+    if (!ren_glUniformHandleui64ARB) {
+        ren_glUniformHandleui64ARB =
+            (PFNGLUNIFORMHANDLEUI64ARB)GetProcAddress(glUniformHandleui64NV);
+    }
+    ren_glUniformHandleui64vARB =
+        (PFNGLUNIFORMHANDLEUI64VARB)GetProcAddress(glUniformHandleui64vARB);
+    if (!ren_glUniformHandleui64vARB) {
+        ren_glUniformHandleui64vARB =
+            (PFNGLUNIFORMHANDLEUI64VARB)GetProcAddress(glUniformHandleui64vNV);
+    }
+    ren_glProgramUniformHandleui64ARB =
+        (PFNGLPROGRAMUNIFORMHANDLEUI64ARB)GetProcAddress(glProgramUniformHandleui64ARB);
+    if (!ren_glProgramUniformHandleui64ARB) {
+        ren_glProgramUniformHandleui64ARB =
+            (PFNGLPROGRAMUNIFORMHANDLEUI64ARB)GetProcAddress(
+                glProgramUniformHandleui64NV);
+    }
+    ren_glProgramUniformHandleui64vARB =
+        (PFNGLPROGRAMUNIFORMHANDLEUI64VARB)GetProcAddress(glProgramUniformHandleui64vARB);
+    if (!ren_glProgramUniformHandleui64vARB) {
+        ren_glProgramUniformHandleui64vARB =
+            (PFNGLPROGRAMUNIFORMHANDLEUI64VARB)GetProcAddress(
+                glProgramUniformHandleui64vNV);
+    }
+
+    ren_glIsTextureHandleResidentARB =
+        (PFNGLISTEXTUREHANDLERESIDENTARB)GetProcAddress(glIsTextureHandleResidentARB);
+    if (!ren_glIsTextureHandleResidentARB) {
+        ren_glIsTextureHandleResidentARB =
+            (PFNGLISTEXTUREHANDLERESIDENTARB)GetProcAddress(glIsTextureHandleResidentNV);
+    }
+    ren_glIsImageHandleResidentARB =
+        (PFNGLISIMAGEHANDLERESIDENTARB)GetProcAddress(glIsImageHandleResidentARB);
+    if (!ren_glIsImageHandleResidentARB) {
+        ren_glIsImageHandleResidentARB =
+            (PFNGLISIMAGEHANDLERESIDENTARB)GetProcAddress(glIsImageHandleResidentNV);
+    }
+
+    //
+    // Sampler objects
+    //
+
+    ren_glGenSamplers = (PFNGLGENSAMPLERS)GetProcAddress(glGenSamplers);
+    ren_glDeleteSamplers = (PFNGLDELETESAMPLERS)GetProcAddress(glDeleteSamplers);
+    ren_glIsSampler = (PFNGLISSAMPLER)GetProcAddress(glIsSampler);
+    ren_glBindSampler = (PFNGLBINDSAMPLER)GetProcAddress(glBindSampler);
+    ren_glSamplerParameteri = (PFNGLSAMPLERPARAMETERI)GetProcAddress(glSamplerParameteri);
+    ren_glSamplerParameterf = (PFNGLSAMPLERPARAMETERF)GetProcAddress(glSamplerParameterf);
+
+    volatile int ii = 0;
 #endif
 
     return true;

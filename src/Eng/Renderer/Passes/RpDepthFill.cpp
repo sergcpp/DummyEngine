@@ -139,8 +139,8 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &dept
             Ren::eTexLoadStatus status;
             dummy_white_ =
                 ctx.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
-            assert(status == Ren::eTexLoadStatus::TexCreatedFromData ||
-                   status == Ren::eTexLoadStatus::TexFound);
+            assert(status == Ren::eTexLoadStatus::CreatedFromData ||
+                   status == Ren::eTexLoadStatus::Found);
         }
 
         initialized = true;

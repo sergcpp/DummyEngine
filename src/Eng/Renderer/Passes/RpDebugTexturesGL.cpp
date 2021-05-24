@@ -41,11 +41,11 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context& ctx, RpAllocTex& shadowmap_te
     const auto &p = shadowmap_tex.ref->params();
     const Ren::eTexCompare comp_before = p.sampling.compare;
 
-    Ren::TexSamplingParams tmp_params = p.sampling;
+    Ren::SamplingParams tmp_params = p.sampling;
     tmp_params.compare = Ren::eTexCompare::None;
 
 
-    shadowmap_tex.ref->SetFilter(tmp_params, ctx.log());
+    shadowmap_tex.ref->ApplySampling(tmp_params, ctx.log());
 
     const float k = (float(p.h) / float(p.w)) *
                     (float(view_state_->scr_res[0]) / float(view_state_->scr_res[1]));
@@ -192,5 +192,5 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context& ctx, RpAllocTex& shadowmap_te
     // Restore compare mode
     tmp_params.compare = comp_before;
 
-    shadowmap_tex.ref->SetFilter(tmp_params, ctx.log());
+    shadowmap_tex.ref->ApplySampling(tmp_params, ctx.log());
 }

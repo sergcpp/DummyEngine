@@ -236,10 +236,15 @@ void test_mesh() {
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
         };
 
+        auto on_sampler_needed = [&test](Ren::SamplingParams params) {
+            Ren::eSamplerLoadStatus status;
+            return test.LoadSampler(params, &status);
+        };
+
         auto on_material_needed = [&](const char *name) {
             Ren::eMatLoadStatus status;
             return test.LoadMaterial(name, nullptr, &status, on_program_needed,
-                                     on_texture_needed);
+                                     on_texture_needed, on_sampler_needed);
         };
 
         Ren::eMeshLoadStatus load_status;
@@ -302,10 +307,15 @@ void test_mesh() {
             return test.LoadTexture2D(name, nullptr, 0, p, &status);
         };
 
+        auto on_sampler_needed = [&test](Ren::SamplingParams params) {
+            Ren::eSamplerLoadStatus status;
+            return test.LoadSampler(params, &status);
+        };
+
         auto on_material_needed = [&](const char *name) {
             Ren::eMatLoadStatus status;
             return test.LoadMaterial(name, nullptr, &status, on_program_needed,
-                                     on_texture_needed);
+                                     on_texture_needed, on_sampler_needed);
         };
 
         Ren::eMeshLoadStatus load_status;

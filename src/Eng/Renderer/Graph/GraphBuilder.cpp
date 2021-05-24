@@ -263,9 +263,9 @@ RpAllocTex &RpBuilder::GetWriteTexture(RpResource handle) {
     if (!tex.ref || tex.desc != tex.ref->params()) {
         Ren::eTexLoadStatus status;
         tex.ref = ctx_.LoadTexture2D(tex.name.c_str(), tex.desc, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
-               status == Ren::eTexLoadStatus::TexFound ||
-               status == Ren::eTexLoadStatus::TexFoundReinitialized);
+        assert(status == Ren::eTexLoadStatus::CreatedDefault ||
+               status == Ren::eTexLoadStatus::Found ||
+               status == Ren::eTexLoadStatus::Reinitialized);
     }
 
     ++tex.write_count;

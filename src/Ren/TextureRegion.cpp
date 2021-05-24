@@ -48,7 +48,7 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Tex2DParam
         // mark it as not ready
         ready_ = false;
         if (load_status) {
-            (*load_status) = eTexLoadStatus::TexCreatedDefault;
+            (*load_status) = eTexLoadStatus::CreatedDefault;
         }
     } else {
         if (atlas_) {
@@ -64,7 +64,7 @@ void Ren::TextureRegion::Init(const void *data, const int size, const Tex2DParam
         }
         ready_ = true;
         if (load_status) {
-            (*load_status) = eTexLoadStatus::TexCreatedFromData;
+            (*load_status) = eTexLoadStatus::CreatedFromData;
         }
     }
 }

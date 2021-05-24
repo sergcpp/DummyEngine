@@ -10,6 +10,7 @@ extern "C" {
 #include "ContextGL.cpp"
 #include "ProgramGL.cpp"
 #include "RastStateGL.cpp"
+#include "SamplerGL.cpp"
 #include "ShaderGL.cpp"
 #include "TextureGL.cpp"
 #include "TextureAtlasGL.cpp"

@@ -5,6 +5,7 @@
 #include "Material.h"
 #include "Mesh.h"
 #include "Program.h"
+#include "Sampler.h"
 #include "Shader.h"
 #include "TaskExecutor.h"
 #include "Texture.h"
@@ -28,6 +29,7 @@ class Context : public TaskExecutor {
     Texture2DStorage textures_;
     Texture1DStorage textures_1D_;
     TextureRegionStorage texture_regions_;
+    SamplerStorage samplers_;
     AnimSeqStorage anims_;
     BufferStorage buffers_;
 
@@ -87,7 +89,8 @@ class Context : public TaskExecutor {
     MaterialRef LoadMaterial(const char *name, const char *mat_src,
                              eMatLoadStatus *status,
                              const program_load_callback &on_prog_load,
-                             const texture_load_callback &on_tex_load);
+                             const texture_load_callback &on_tex_load,
+                             const sampler_load_callback &on_sampler_load);
     int NumMaterialsNotReady();
     void ReleaseMaterials();
 
@@ -138,6 +141,10 @@ class Context : public TaskExecutor {
 
     void ReleaseTextureRegions();
 
+    /** Samplers **/
+    SamplerRef LoadSampler(SamplingParams params, eSamplerLoadStatus *load_status);
+    void ReleaseSamplers();
+
     /*** Anims ***/
     AnimSeqRef LoadAnimSequence(const char *name, std::istream &data);
     int NumAnimsNotReady();
@@ -157,6 +164,7 @@ class Context : public TaskExecutor {
         int max_vertex_input = 0, max_vertex_output = 0;
         bool gl_spirv = false;
         bool persistent_buf_mapping = false;
+        bool bindless_texture = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;

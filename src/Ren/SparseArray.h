@@ -5,6 +5,12 @@
 #include <iterator>
 
 namespace Ren {
+template <class T, class U = T> T exchange(T &obj, U &&new_value) {
+    T old_value = std::move(obj);
+    obj = std::forward<U>(new_value);
+    return old_value;
+}
+
 template <typename T> class SparseArray {
   protected:
     uint8_t *ctrl_;
@@ -36,8 +42,25 @@ template <typename T> class SparseArray {
         for (uint32_t i = 0; i < capacity_; i++) {
             if (ctrl_[i / 8] & (1u << (i % 8))) {
                 data_[i] = rhs.data_[i];
+            } else {
+                // copy next free index
+                memcpy(data_ + i, rhs.data_ + i, sizeof(uint32_t));
             }
         }
+
+        first_free_ = rhs.first_free_;
+        size_ = rhs.size_;
+    }
+
+    SparseArray(SparseArray &&rhs)
+        : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
+
+        ctrl_ = exchange(rhs.ctrl_, nullptr);
+        data_ = exchange(rhs.data_, nullptr);
+
+        capacity_ = exchange(rhs.capacity_, 0);
+        size_ = exchange(rhs.size_, 0);
+        first_free_ = exchange(rhs.first_free_, 0);
     }
 
     SparseArray &operator=(const SparseArray &rhs) {
@@ -50,17 +73,45 @@ template <typename T> class SparseArray {
 
         ctrl_ = nullptr;
         data_ = nullptr;
+        capacity_ = 0;
 
         reserve(rhs.capacity_);
 
-        memcpy(ctrl_, rhs.ctrl_, capacity_);
+        if (rhs.ctrl_) {
+            memcpy(ctrl_, rhs.ctrl_, capacity_);
+        }
 
         for (uint32_t i = 0; i < capacity_; i++) {
             if (ctrl_[i / 8] & (1u << (i % 8))) {
                 data_[i] = rhs.data_[i];
+            } else {
+                // copy next free index
+                memcpy(data_ + i, rhs.data_ + i, sizeof(uint32_t));
             }
         }
-        return *this;
+
+        first_free_ = rhs.first_free_;
+        size_ = rhs.size_;
+
+        return (*this);
+    }
+
+    SparseArray &operator=(SparseArray &&rhs) {
+        if (this == &rhs) {
+            return *this;
+        }
+
+        clear();
+        delete[] ctrl_;
+
+        ctrl_ = exchange(rhs.ctrl_, nullptr);
+        data_ = exchange(rhs.data_, nullptr);
+
+        capacity_ = exchange(rhs.capacity_, 0);
+        size_ = exchange(rhs.size_, 0);
+        first_free_ = exchange(rhs.first_free_, 0);
+
+        return (*this);
     }
 
     uint32_t size() const { return size_; }

@@ -311,7 +311,8 @@ void ModlApp::Frame() {
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
 
     { // Update camera position
-        const Ren::Vec3f center = 0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
+        const Ren::Vec3f center =
+            0.5f * (view_mesh_->bbox_min() + view_mesh_->bbox_max());
         cam_.SetupView(center - Ren::Vec3f{0.0f, 0.0f, 1.0f} * view_dist_, center, up);
     }
 
@@ -1009,10 +1010,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name,
                 Ren::MaterialRef mat_ref = ctx_.LoadMaterial(
                     materials[i].c_str(), mat_data.get(), nullptr,
                     std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
-                    std::bind(&ModlApp::OnTextureNeeded, this, _1));
+                    std::bind(&ModlApp::OnTextureNeeded, this, _1),
+                    std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
-                alpha_test =
-                    (bool)(mat->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
+                alpha_test = (bool)(mat->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
             } else {
                 cerr << "material " << materials[i] << " missing!" << endl;
             }
@@ -1732,6 +1733,11 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
     return ret;
 }
 
+Ren::SamplerRef ModlApp::OnSamplerNeeded(Ren::SamplingParams params) {
+    Ren::eSamplerLoadStatus status;
+    return ctx_.LoadSampler(params, &status);
+}
+
 Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader,
                                          const char *fs_shader) {
 #if defined(USE_GL_RENDER)
@@ -1756,9 +1762,11 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
         fs_file.Read((char *)fs_src.data(), fs_size);
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = ctx_.LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vert, &sh_status);
+        Ren::ShaderRef vs_ref = ctx_.LoadShaderGLSL(vs_shader, vs_src.c_str(),
+                                                    Ren::eShaderType::Vert, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-        Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
+        Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(),
+                                                    Ren::eShaderType::Frag, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
         ret = ctx_.LoadProgram(name, vs_ref, fs_ref, {}, {}, &status);
@@ -1775,7 +1783,8 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
     using namespace std;
 
     Ren::eMatLoadStatus status;
-    Ren::MaterialRef ret = ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr);
+    Ren::MaterialRef ret =
+        ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
     if (!ret->ready()) {
         Sys::AssetFile in_file(string("assets_pc/materials/") + name);
         if (!in_file) {
@@ -1783,7 +1792,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
             return ret;
         }
 
-        size_t file_size = in_file.size();
+        const size_t file_size = in_file.size();
 
         string mat_src;
         mat_src.resize(file_size);
@@ -1793,7 +1802,8 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
 
         ret = ctx_.LoadMaterial(name, mat_src.data(), &status,
                                 std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
-                                std::bind(&ModlApp::OnTextureNeeded, this, _1));
+                                std::bind(&ModlApp::OnTextureNeeded, this, _1),
+                                std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
     return ret;

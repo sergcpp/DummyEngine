@@ -105,11 +105,11 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::eTexLoadStatus status;
         dummy_black_ =
             ctx_.LoadTexture2D("dummy_black", black, sizeof(black), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
         dummy_white_ =
             ctx_.LoadTexture2D("dummy_white", white, sizeof(white), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     { // random 2d halton 8x8
@@ -120,7 +120,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::eTexLoadStatus status;
         rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0][0],
                                          sizeof(HaltonSeq23), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     { // random 2d directions 4x4
@@ -131,7 +131,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::eTexLoadStatus status;
         rand2d_dirs_4x4_ = ctx_.LoadTexture2D("rand2d_dirs_4x4", &__rand_dirs[0],
                                               sizeof(__rand_dirs), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     { // cone/sphere intersection LUT
@@ -180,7 +180,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::eTexLoadStatus status;
         brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0],
                                        sizeof(__brdf_lut), p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     {
@@ -198,7 +198,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh,
         Ren::eTexLoadStatus status;
         noise_tex_ = ctx_.LoadTexture2D("noise", &__noise[0],
                                         __noise_res * __noise_res * 4, p, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
     /*{
@@ -296,8 +296,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
             Ren::eTexLoadStatus status;
             history_tex_ = ctx_.LoadTexture2D("History tex", params, &status);
-            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
-                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+            assert(status == Ren::eTexLoadStatus::CreatedDefault ||
+                   status == Ren::eTexLoadStatus::Reinitialized);
 
             log->Info("Setting texture lod bias to -1.0");
 
@@ -307,7 +307,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 Ren::Tex2DParams p = tex.params();
                 if (p.sampling.lod_bias.to_float() > -1.0f) {
                     p.sampling.lod_bias.from_float(-1.0f);
-                    tex.SetFilter(p.sampling, ctx_.log());
+                    tex.ApplySampling(p.sampling, ctx_.log());
                     ++counter;
                 }
             });
@@ -323,7 +323,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 Ren::Tex2DParams p = tex.params();
                 if (p.sampling.lod_bias.to_float() < 0.0f) {
                     p.sampling.lod_bias.from_float(0.0f);
-                    tex.SetFilter(p.sampling, ctx_.log());
+                    tex.ApplySampling(p.sampling, ctx_.log());
                     ++counter;
                 }
             });
@@ -340,9 +340,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
 
             Ren::eTexLoadStatus status;
             down_tex_4x_ = ctx_.LoadTexture2D("DOWN 4x", params, &status);
-            assert(status == Ren::eTexLoadStatus::TexCreatedDefault ||
-                   status == Ren::eTexLoadStatus::TexFound ||
-                   status == Ren::eTexLoadStatus::TexFoundReinitialized);
+            assert(status == Ren::eTexLoadStatus::CreatedDefault ||
+                   status == Ren::eTexLoadStatus::Found ||
+                   status == Ren::eTexLoadStatus::Reinitialized);
         }
 
         view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};

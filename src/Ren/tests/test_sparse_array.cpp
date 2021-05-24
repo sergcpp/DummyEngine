@@ -23,6 +23,19 @@ void test_sparse_array() {
         s1.reserve(128);
         require(s1.size() == 0);
         require(s1.capacity() == 128);
+
+        auto s1_copy = s1;
+        require(s1_copy.size() == 0);
+        s1_copy.reserve(128);
+        require(s1_copy.size() == 0);
+        require(s1_copy.capacity() == 128);
+
+        auto s1_stolen = std::move(s1);
+        require(s1.empty());
+        require(s1_stolen.size() == 0);
+        s1_stolen.reserve(128);
+        require(s1_stolen.size() == 0);
+        require(s1_stolen.capacity() == 128);
     }
 
     {   // pushing elements into array
@@ -30,6 +43,8 @@ void test_sparse_array() {
         uint32_t i1 = s1.emplace(1);
         uint32_t i2 = s1.push(12);
         uint32_t i3 = s1.push(45);
+
+        auto s1_copy = s1;
 
         require(i1 == 0);
         require(i2 == 1);
@@ -39,10 +54,24 @@ void test_sparse_array() {
         require(s1.at(1) == 12);
         require(s1[2] == 45);
 
+        require(s1_copy.at(0) == 1);
+        require(s1_copy.at(1) == 12);
+        require(s1_copy[2] == 45);
+
+        auto s1_stolen = std::move(s1_copy);
+        require(s1_copy.empty());
+
+        require(s1_stolen.at(0) == 1);
+        require(s1_stolen.at(1) == 12);
+        require(s1_stolen[2] == 45);
+
         s1.erase(1);
+        s1_stolen.erase(1);
 
         require(s1.at(0) == 1);
         require(s1[2] == 45);
+        require(s1_stolen.at(0) == 1);
+        require(s1_stolen[2] == 45);
 
         uint32_t i4 = s1.push(32);
         uint32_t i5 = s1.push(78);
@@ -58,6 +87,20 @@ void test_sparse_array() {
         require(*it == 1);
         ++it;
         require(*it == 32);
+
+        { // check operator move
+            s1_stolen = std::move(s1);
+            require(s1.empty());
+
+            require(s1_stolen.at(0) == 1);
+            require(s1_stolen.at(1) == 32);
+            require(s1_stolen[3] == 78);
+
+            auto it = s1_stolen.begin();
+            require(*it == 1);
+            ++it;
+            require(*it == 32);
+        }
     }
 
     {   // iteration test

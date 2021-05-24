@@ -234,7 +234,8 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         "__cam_rig", &in_mesh,
         [this](const char *name) -> Ren::MaterialRef {
             Ren::eMatLoadStatus status;
-            return ren_ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr);
+            return ren_ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr,
+                                         nullptr);
         },
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
@@ -571,6 +572,8 @@ void SceneManager::ClearScene() {
 
     scene_data_.name = {};
 
+    ren_ctx_.default_vertex_buf1()->Print(ren_ctx_.log());
+
     for (auto &obj : scene_data_.objects) {
         while (obj.comp_mask) {
             const long i = GetFirstBit(obj.comp_mask);
@@ -602,6 +605,8 @@ void SceneManager::ClearScene() {
 
     changed_objects_.clear();
     last_changed_objects_.clear();
+
+    ren_ctx_.default_vertex_buf1()->Print(ren_ctx_.log());
 
     ray_scene_ = {};
 }
@@ -1099,7 +1104,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
     using namespace SceneManagerConstants;
 
     Ren::eMatLoadStatus status;
-    Ren::MaterialRef ret = LoadMaterial(name, nullptr, &status, nullptr, nullptr);
+    Ren::MaterialRef ret = LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
     if (!ret->ready()) {
         Sys::AssetFile in_file(std::string(MATERIALS_PATH) + name);
         if (!in_file) {
@@ -1118,7 +1123,8 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
         ret = LoadMaterial(
             name, mat_src.data(), &status,
             std::bind(&SceneManager::OnLoadProgram, this, _1, _2, _3, _4, _5),
-            std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3));
+            std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
+            std::bind(&SceneManager::OnLoadSampler, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
     return ret;
@@ -1184,7 +1190,7 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
     Ren::eTexLoadStatus status;
     Ren::Tex2DRef ret = LoadTexture(name, nullptr, 0, p, &status);
 
-    if (status == Ren::eTexLoadStatus::TexCreatedDefault) {
+    if (status == Ren::eTexLoadStatus::CreatedDefault) {
         TextureRequest new_req;
         new_req.ref = ret;
 
@@ -1199,6 +1205,11 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
     }
 
     return ret;
+}
+
+Ren::SamplerRef SceneManager::OnLoadSampler(Ren::SamplingParams params) {
+    Ren::eSamplerLoadStatus status;
+    return ren_ctx_.LoadSampler(params, &status);
 }
 
 Ren::MeshRef SceneManager::LoadMesh(const char *name, std::istream *data,
@@ -1231,18 +1242,20 @@ Ren::MaterialRef
 SceneManager::LoadMaterial(const char *name, const char *mat_src,
                            Ren::eMatLoadStatus *status,
                            const Ren::program_load_callback &on_prog_load,
-                           const Ren::texture_load_callback &on_tex_load) {
+                           const Ren::texture_load_callback &on_tex_load,
+                           const Ren::sampler_load_callback &on_sampler_load) {
     Ren::MaterialRef ref = scene_data_.materials.FindByName(name);
     if (!ref) {
         ref = scene_data_.materials.Add(name, mat_src, status, on_prog_load, on_tex_load,
-                                        ren_ctx_.log());
+                                        on_sampler_load, ren_ctx_.log());
     } else {
         if (ref->ready()) {
             if (status) {
                 (*status) = Ren::eMatLoadStatus::Found;
             }
         } else if (!ref->ready() && mat_src) {
-            ref->Init(mat_src, status, on_prog_load, on_tex_load, ren_ctx_.log());
+            ref->Init(mat_src, status, on_prog_load, on_tex_load, on_sampler_load,
+                      ren_ctx_.log());
         }
     }
 
@@ -1257,7 +1270,7 @@ Ren::Tex2DRef SceneManager::LoadTexture(const char *name, const void *data, int 
         ref = scene_data_.textures.Add(name, data, size, p, load_status, ren_ctx_.log());
     } else {
         if (load_status) {
-            (*load_status) = Ren::eTexLoadStatus::TexFound;
+            (*load_status) = Ren::eTexLoadStatus::Found;
         }
         if (!ref->ready() && data) {
             ref->Init(data, size, p, load_status, ren_ctx_.log());
@@ -1387,6 +1400,6 @@ void SceneManager::Serve(const int texture_budget) {
 
     EstimateTextureMemory(texture_budget);
     ProcessPendingTextures(texture_budget);
-    
+
     __itt_task_end(__g_itt_domain);
 }

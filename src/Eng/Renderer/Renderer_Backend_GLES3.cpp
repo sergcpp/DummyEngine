@@ -105,17 +105,17 @@ void Renderer::InitRendererInternal() {
                        ndx_buf = ctx_.default_indices_buf();
 
         // Allocate temporary buffer
-        temp_buf1_vtx_offset_ = vtx_buf1->AllocRegion(TEMP_BUF_SIZE);
-        temp_buf2_vtx_offset_ = vtx_buf2->AllocRegion(TEMP_BUF_SIZE);
+        temp_buf1_vtx_offset_ = vtx_buf1->AllocRegion(TEMP_BUF_SIZE, "temp buf");
+        temp_buf2_vtx_offset_ = vtx_buf2->AllocRegion(TEMP_BUF_SIZE, "temp buf");
         assert(temp_buf1_vtx_offset_ == temp_buf2_vtx_offset_ && "Offsets do not match!");
-        temp_buf_ndx_offset_ = ndx_buf->AllocRegion(TEMP_BUF_SIZE);
+        temp_buf_ndx_offset_ = ndx_buf->AllocRegion(TEMP_BUF_SIZE, "temp buf");
 
         // Allocate buffer for skinned vertices
         // TODO: fix this. do not allocate twice more memory in buf2
         skinned_buf1_vtx_offset_ =
-            vtx_buf1->AllocRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2);
+            vtx_buf1->AllocRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
         skinned_buf2_vtx_offset_ =
-            vtx_buf2->AllocRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2);
+            vtx_buf2->AllocRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
         assert(skinned_buf1_vtx_offset_ == skinned_buf2_vtx_offset_ &&
                "Offsets do not match!");
     }
@@ -1079,7 +1079,7 @@ void Renderer::BlitPixels(const void *data, const int w, const int h,
 
         Ren::eTexLoadStatus status;
         temp_tex_ = ctx_.LoadTexture2D("__TEMP_BLIT_TEXTURE__", params, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedDefault);
+        assert(status == Ren::eTexLoadStatus::CreatedDefault);
     }
 
     { // Update texture content
@@ -1120,7 +1120,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
 
         Ren::eTexLoadStatus status;
         temp_tex_ = ctx_.LoadTexture2D("__TEMP_BLIT_TEXTURE__", params, &status);
-        assert(status == Ren::eTexLoadStatus::TexCreatedDefault);
+        assert(status == Ren::eTexLoadStatus::CreatedDefault);
     }
 
     { // Update texture content

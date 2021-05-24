@@ -3,7 +3,7 @@
 #include <cstdint>
 #undef Always
 
-#include "Fixed.h"
+#include "Sampler.h"
 
 namespace Ren {
 class Context;
@@ -66,45 +66,6 @@ enum class eTexBlock : uint8_t {
     _None
 };
 
-enum class eTexFilter : uint8_t {
-    NoFilter,
-    Bilinear,
-    Trilinear,
-    BilinearNoMipmap,
-    _Count
-};
-enum class eTexRepeat : uint8_t { Repeat, ClampToEdge, ClampToBorder, WrapModesCount };
-
-enum class eTexCompare : uint8_t {
-    None,
-    LEqual,
-    GEqual,
-    Less,
-    Greater,
-    Equal,
-    NotEqual,
-    Always,
-    Never,
-    _Count
-};
-
-using Fixed8 = Fixed<int8_t, 3>;
-
-struct TexSamplingParams {
-    eTexFilter filter = eTexFilter::NoFilter;
-    eTexRepeat repeat = eTexRepeat::Repeat;
-    eTexCompare compare = eTexCompare::None;
-    Fixed8 lod_bias;
-    Fixed8 min_lod = Fixed8::lowest(), max_lod = Fixed8::max();
-};
-static_assert(sizeof(TexSamplingParams) == 6, "!");
-
-inline bool operator==(const TexSamplingParams &lhs, const TexSamplingParams &rhs) {
-    return lhs.filter == rhs.filter && lhs.repeat == rhs.repeat &&
-           lhs.compare == rhs.compare && lhs.lod_bias == rhs.lod_bias &&
-           lhs.min_lod == rhs.min_lod && lhs.max_lod == rhs.max_lod;
-}
-
 enum class eBindTarget : uint16_t { Tex2D, Tex2DMs, TexCubeArray, TexBuf, UBuf, _Count };
 
 bool IsCompressedFormat(eTexFormat format);
@@ -115,6 +76,13 @@ inline int GetMipDataLenBytes(const int w, const int h, const eTexFormat format,
                               const eTexBlock block) {
     return GetBlockCount(w, h, block) * GetBlockLenBytes(format, block);
 }
+
+enum class eTexLoadStatus {
+    Found,
+    Reinitialized,
+    CreatedDefault,
+    CreatedFromData
+};
 } // namespace Ren
 
 #if defined(USE_GL_RENDER)
@@ -122,3 +90,13 @@ inline int GetMipDataLenBytes(const int w, const int h, const eTexFormat format,
 #elif defined(USE_SW_RENDER)
 #include "TextureSW.h"
 #endif
+
+namespace Ren {
+using Tex2DRef = StrongRef<Texture2D>;
+using WeakTex2DRef = WeakRef<Texture2D>;
+using Texture2DStorage = Storage<Texture2D>;
+
+using Tex1DRef = StrongRef<Texture1D>;
+using WeakTex1DRef = WeakRef<Texture1D>;
+using Texture1DStorage = Storage<Texture1D>;
+} // namespace Ren

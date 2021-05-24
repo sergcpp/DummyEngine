@@ -112,6 +112,7 @@ class ModlApp {
     void PrintUsage();
 
     Ren::Tex2DRef OnTextureNeeded(const char *name);
+    Ren::SamplerRef OnSamplerNeeded(Ren::SamplingParams params);
     Ren::ProgramRef OnProgramNeeded(const char *name, const char *vs_shader,
                                     const char *fs_shader);
     Ren::MaterialRef OnMaterialNeeded(const char *name);

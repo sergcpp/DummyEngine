@@ -1,9 +1,10 @@
-#include "Buffer.h"
+﻿#include "Buffer.h"
 
 #include <algorithm>
 #include <cassert>
 
 #include "GL.h"
+#include "Log.h"
 
 namespace Ren {
 const uint32_t g_gl_buf_targets[] = {
@@ -58,11 +59,14 @@ GLenum GetGLBufUsage(const eBufferAccessType access, const eBufferAccessFreq fre
 
 int Ren::Buffer::g_GenCounter = 0;
 
-Ren::Buffer::Buffer(const char *name, eBufferType type, eBufferAccessType access,
-                    eBufferAccessFreq freq, uint32_t initial_size)
+Ren::Buffer::Buffer(const char *name, const eBufferType type,
+                    const eBufferAccessType access, const eBufferAccessFreq freq,
+                    const uint32_t initial_size)
     : name_(name), type_(type), access_(access), freq_(freq), size_(0) {
-    nodes_.emplace_back();
-    nodes_.back().size = initial_size;
+    nodes_.reserve(1024);
+
+    nodes_.emplace();
+    nodes_[0].size = initial_size;
 
     Resize(initial_size);
 }
@@ -82,26 +86,25 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
         glDeleteBuffers(1, &buf);
     }
 
-    handle_ = rhs.handle_;
-    rhs.handle_ = {};
-
+    handle_ = exchange(rhs.handle_, {});
     name_ = std::move(rhs.name_);
 
-    type_ = rhs.type_;
-    rhs.type_ = eBufferType::Undefined;
+    type_ = exchange(rhs.type_, eBufferType::Undefined);
 
     access_ = rhs.access_;
     freq_ = rhs.freq_;
 
-    size_ = rhs.size_;
-    rhs.size_ = 0;
+    size_ = exchange(rhs.size_, 0);
+    if (size_ == 0) {
+        __debugbreak();
+    }
 
     nodes_ = std::move(rhs.nodes_);
 
     return (*this);
 }
 
-int Ren::Buffer::Alloc_Recursive(int i, uint32_t req_size) {
+int Ren::Buffer::Alloc_Recursive(const int i, const uint32_t req_size, const char *tag) {
     if (!nodes_[i].is_free || req_size > nodes_[i].size) {
         return -1;
     }
@@ -109,22 +112,23 @@ int Ren::Buffer::Alloc_Recursive(int i, uint32_t req_size) {
     int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
 
     if (ch0 != -1) {
-        const int new_node = Alloc_Recursive(ch0, req_size);
+        const int new_node = Alloc_Recursive(ch0, req_size, tag);
         if (new_node != -1) {
             return new_node;
         }
 
-        return Alloc_Recursive(ch1, req_size);
+        return Alloc_Recursive(ch1, req_size, tag);
     } else {
         if (req_size == nodes_[i].size) {
+#ifndef NDEBUG
+            strncpy(nodes_[i].tag, tag, 31);
+#endif
             nodes_[i].is_free = false;
             return i;
         }
 
-        nodes_[i].child[0] = ch0 = (int)nodes_.size();
-        nodes_.emplace_back();
-        nodes_[i].child[1] = ch1 = (int)nodes_.size();
-        nodes_.emplace_back();
+        nodes_[i].child[0] = ch0 = nodes_.emplace();
+        nodes_[i].child[1] = ch1 = nodes_.emplace();
 
         Node &n = nodes_[i];
 
@@ -134,11 +138,11 @@ int Ren::Buffer::Alloc_Recursive(int i, uint32_t req_size) {
         nodes_[ch1].size = n.size - req_size;
         nodes_[ch0].parent = nodes_[ch1].parent = i;
 
-        return Alloc_Recursive(ch0, req_size);
+        return Alloc_Recursive(ch0, req_size, tag);
     }
 }
 
-int Ren::Buffer::Find_Recursive(int i, uint32_t offset) const {
+int Ren::Buffer::Find_Recursive(const int i, const uint32_t offset) const {
     if ((nodes_[i].is_free && !nodes_[i].has_children()) || offset < nodes_[i].offset ||
         offset > (nodes_[i].offset + nodes_[i].size)) {
         return -1;
@@ -147,7 +151,7 @@ int Ren::Buffer::Find_Recursive(int i, uint32_t offset) const {
     const int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
 
     if (ch0 != -1) {
-        int ndx = Find_Recursive(ch0, offset);
+        const int ndx = Find_Recursive(ch0, offset);
         if (ndx != -1) {
             return ndx;
         }
@@ -157,36 +161,6 @@ int Ren::Buffer::Find_Recursive(int i, uint32_t offset) const {
             return i;
         } else {
             return -1;
-        }
-    }
-}
-
-void Ren::Buffer::SafeErase(int i, int *indices, int num) {
-    const int last = (int)nodes_.size() - 1;
-
-    if (last != i) {
-        int ch0 = nodes_[last].child[0], ch1 = nodes_[last].child[1];
-
-        if (ch0 != -1 && nodes_[i].parent != last) {
-            nodes_[ch0].parent = nodes_[ch1].parent = i;
-        }
-
-        int par = nodes_[last].parent;
-
-        if (nodes_[par].child[0] == last) {
-            nodes_[par].child[0] = i;
-        } else if (nodes_[par].child[1] == last) {
-            nodes_[par].child[1] = i;
-        }
-
-        nodes_[i] = nodes_[last];
-    }
-
-    nodes_.erase(nodes_.begin() + last);
-
-    for (int j = 0; j < num && indices; j++) {
-        if (indices[j] == last) {
-            indices[j] = i;
         }
     }
 }
@@ -205,23 +179,82 @@ bool Ren::Buffer::Free_Node(int i) {
         if (!nodes_[ch0].has_children() && nodes_[ch0].is_free &&
             !nodes_[ch1].has_children() && nodes_[ch1].is_free) {
 
-            SafeErase(ch0, &par, 1);
-            ch1 = nodes_[par].child[1];
-            SafeErase(ch1, &par, 1);
+            nodes_.erase(ch0);
+            nodes_.erase(ch1);
 
             nodes_[par].child[0] = nodes_[par].child[1] = -1;
 
+            i = par;
             par = nodes_[par].parent;
         } else {
             par = -1;
         }
     }
 
+    { // merge empty nodes
+        int par = nodes_[i].parent;
+        while (par != -1 && nodes_[par].child[0] == i && !nodes_[i].has_children()) {
+            int gr_par = nodes_[par].parent;
+            if (gr_par != -1 && nodes_[gr_par].has_children()) {
+                int ch0 = nodes_[gr_par].child[0], ch1 = nodes_[gr_par].child[1];
+
+                if (!nodes_[ch0].has_children() && nodes_[ch0].is_free && ch1 == par) {
+                    assert(nodes_[ch0].offset + nodes_[ch0].size == nodes_[i].offset);
+                    nodes_[ch0].size += nodes_[i].size;
+                    nodes_[gr_par].child[1] = nodes_[par].child[1];
+                    nodes_[nodes_[par].child[1]].parent = gr_par;
+
+                    nodes_.erase(i);
+                    nodes_.erase(par);
+
+                    i = ch0;
+                    par = gr_par;
+                } else {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+    }
+
     return true;
 }
 
-uint32_t Ren::Buffer::AllocRegion(uint32_t req_size, const void *init_data) {
-    const int i = Alloc_Recursive(0, req_size);
+void Ren::Buffer::PrintNode(int i, std::string prefix, bool is_tail, ILog *log) {
+    const auto &node = nodes_[i];
+    if (is_tail) {
+        if (!node.has_children() && node.is_free) {
+            log->Info("%s+- [0x%08x..0x%08x) <free>", prefix.c_str(), node.offset,
+                      node.offset + node.size);
+        } else {
+            log->Info("%s+- [0x%08x..0x%08x) <%s>", prefix.c_str(), node.offset,
+                      node.offset + node.size, node.tag);
+        }
+        prefix += "   ";
+    } else {
+        if (!node.has_children() && node.is_free) {
+            log->Info("%s|- [0x%08x..0x%08x) <free>", prefix.c_str(), node.offset,
+                      node.offset + node.size);
+        } else {
+            log->Info("%s|- [0x%08x..0x%08x) <%s>", prefix.c_str(), node.offset,
+                      node.offset + node.size, node.tag);
+        }
+        prefix += "|  ";
+    }
+
+    if (node.child[0] != -1) {
+        PrintNode(node.child[0], prefix, false, log);
+    }
+
+    if (node.child[1] != -1) {
+        PrintNode(node.child[1], prefix, true, log);
+    }
+}
+
+uint32_t Ren::Buffer::AllocRegion(uint32_t req_size, const char *tag,
+                                  const void *init_data) {
+    const int i = Alloc_Recursive(0, req_size, tag);
     if (i != -1) {
         Node &n = nodes_[i];
         assert(n.size == req_size);
@@ -233,8 +266,9 @@ uint32_t Ren::Buffer::AllocRegion(uint32_t req_size, const void *init_data) {
 
         return n.offset;
     } else {
+        assert(false && "Not implemented!");
         Resize(size_ + req_size);
-        return AllocRegion(req_size);
+        return AllocRegion(req_size, tag, init_data);
     }
 }
 
@@ -262,7 +296,8 @@ void Ren::Buffer::Resize(uint32_t new_size) {
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
     glBindBuffer(g_gl_buf_targets[int(type_)], gl_buffer);
-    glBufferData(g_gl_buf_targets[int(type_)], size_, nullptr, GetGLBufUsage(access_, freq_));
+    glBufferData(g_gl_buf_targets[int(type_)], size_, nullptr,
+                 GetGLBufUsage(access_, freq_));
 
     if (handle_.id) {
         glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
@@ -285,4 +320,12 @@ void Ren::GLUnbindBufferUnits(int start, int count) {
     for (int i = start; i < start + count; i++) {
         glBindBufferBase(GL_UNIFORM_BUFFER, i, 0);
     }
+}
+
+void Ren::Buffer::Print(ILog *log) {
+    log->Info("=================================================================");
+    log->Info("Buffer %s, %f MB, %i nodes", name_.c_str(),
+              float(size_) / (1024.0f * 1024.0f), int(nodes_.size()));
+    PrintNode(0, "", true, log);
+    log->Info("=================================================================");
 }

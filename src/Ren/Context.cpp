@@ -58,18 +58,20 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data,
     return ref;
 }
 
-Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_src,
-                                            eMatLoadStatus *status,
-                                            const program_load_callback &on_prog_load,
-                                            const texture_load_callback &on_tex_load) {
+Ren::MaterialRef
+Ren::Context::LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status,
+                           const program_load_callback &on_prog_load,
+                           const texture_load_callback &on_tex_load,
+                           const sampler_load_callback &on_sampler_load) {
     MaterialRef ref = materials_.FindByName(name);
     if (!ref) {
-        ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load, log_);
+        ref = materials_.Add(name, mat_src, status, on_prog_load, on_tex_load,
+                             on_sampler_load, log_);
     } else {
         if (ref->ready()) {
             (*status) = eMatLoadStatus::Found;
         } else if (!ref->ready() && mat_src) {
-            ref->Init(mat_src, status, on_prog_load, on_tex_load, log_);
+            ref->Init(mat_src, status, on_prog_load, on_tex_load, on_sampler_load, log_);
         }
     }
 
@@ -93,7 +95,9 @@ void Ren::Context::ReleaseMaterials() {
     materials_.clear();
 }
 
-Ren::ProgramRef Ren::Context::GetProgram(const uint32_t index) { return {&programs_, index}; }
+Ren::ProgramRef Ren::Context::GetProgram(const uint32_t index) {
+    return {&programs_, index};
+}
 
 int Ren::Context::NumProgramsNotReady() {
     return (int)std::count_if(programs_.begin(), programs_.end(),
@@ -119,12 +123,12 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p
     Tex2DRef ref = textures_.FindByName(name);
     if (!ref) {
         ref = textures_.Add(name, p, log_);
-        (*load_status) = eTexLoadStatus::TexCreatedDefault;
+        (*load_status) = eTexLoadStatus::CreatedDefault;
     } else if (ref->params() != p) {
         ref->Init(p, log_);
-        (*load_status) = eTexLoadStatus::TexFoundReinitialized;
+        (*load_status) = eTexLoadStatus::Reinitialized;
     } else {
-        (*load_status) = eTexLoadStatus::TexFound;
+        (*load_status) = eTexLoadStatus::Found;
     }
     return ref;
 }
@@ -136,7 +140,7 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, in
     if (!ref) {
         ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
-        (*load_status) = eTexLoadStatus::TexFound;
+        (*load_status) = eTexLoadStatus::Found;
         if (!ref->ready() && data) {
             ref->Init(data, size, p, load_status, log_);
         }
@@ -153,7 +157,7 @@ Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6
         ref = textures_.Add(name, data, size, p, load_status, log_);
     } else {
         if (ref->ready()) {
-            (*load_status) = eTexLoadStatus::TexFound;
+            (*load_status) = eTexLoadStatus::Found;
         } else if (data) {
             ref->Init(data, size, p, load_status, log_);
         }
@@ -222,7 +226,7 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const vo
         ref = texture_regions_.Add(name, data, size, p, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
-            (*load_status) = eTexLoadStatus::TexFound;
+            (*load_status) = eTexLoadStatus::Found;
         } else {
             ref->Init(data, size, p, &texture_atlas_, load_status);
         }
@@ -231,14 +235,43 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const vo
 }
 
 void Ren::Context::ReleaseTextureRegions() {
-    if (texture_regions_.empty())
+    if (texture_regions_.empty()) {
         return;
+    }
     log_->Error("-------REMAINING TEX REGIONS-------");
     for (const TextureRegion &t : texture_regions_) {
         log_->Error("%s", t.name().c_str());
     }
     log_->Error("-----------------------------------");
     texture_regions_.clear();
+}
+
+Ren::SamplerRef Ren::Context::LoadSampler(SamplingParams params,
+                                          eSamplerLoadStatus *load_status) {
+    auto it =
+        std::find_if(std::begin(samplers_), std::end(samplers_),
+                     [&](const Sampler &sampler) { return sampler.params() == params; });
+    if (it != std::end(samplers_)) {
+        (*load_status) = eSamplerLoadStatus::Found;
+        return SamplerRef{&samplers_, it.index()};
+    } else {
+        const uint32_t new_index = samplers_.emplace();
+        samplers_.at(new_index).Init(params);
+        (*load_status) = eSamplerLoadStatus::Created;
+        return SamplerRef{&samplers_, new_index};
+    }
+}
+
+void Ren::Context::ReleaseSamplers() {
+    if (samplers_.empty()) {
+        return;
+    }
+    log_->Error("--------REMAINING SAMPLERS---------");
+    for (const Sampler &s : samplers_) {
+        // log_->Error("%s", t.name().c_str());
+    }
+    log_->Error("-----------------------------------");
+    samplers_.clear();
 }
 
 Ren::AnimSeqRef Ren::Context::LoadAnimSequence(const char *name, std::istream &data) {

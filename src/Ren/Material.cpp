@@ -17,9 +17,10 @@ uint8_t from_hex_char(const char c) {
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
                         const program_load_callback &on_prog_load,
-                        const texture_load_callback &on_tex_load, ILog *log) {
+                        const texture_load_callback &on_tex_load,
+                        const sampler_load_callback &on_sampler_load, ILog *log) {
     name_ = String{name};
-    Init(mat_src, status, on_prog_load, on_tex_load, log);
+    Init(mat_src, status, on_prog_load, on_tex_load, on_sampler_load, log);
 }
 
 Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef _programs[],
@@ -27,8 +28,8 @@ Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef _prog
                         const int textures_count, const Vec4f _params[],
                         const int params_count, ILog *log) {
     name_ = String{name};
-    Init(flags, _programs, programs_count, _textures, textures_count, _params, params_count,
-         log);
+    Init(flags, _programs, programs_count, _textures, textures_count, _params,
+         params_count, log);
 }
 
 void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], int programs_count,
@@ -42,6 +43,7 @@ void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], int programs_co
     }
     for (int i = 0; i < textures_count; i++) {
         textures.emplace_back(_textures[i]);
+        // samplers.emplace_back(textures.back()->sampling());
     }
     for (int i = 0; i < params_count; i++) {
         params.emplace_back(_params[i]);
@@ -50,13 +52,15 @@ void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], int programs_co
 
 void Ren::Material::Init(const char *mat_src, eMatLoadStatus *status,
                          const program_load_callback &on_prog_load,
-                         const texture_load_callback &on_tex_load, ILog *log) {
-    InitFromTXT(mat_src, status, on_prog_load, on_tex_load, log);
+                         const texture_load_callback &on_tex_load,
+                         const sampler_load_callback &on_sampler_load, ILog *log) {
+    InitFromTXT(mat_src, status, on_prog_load, on_tex_load, on_sampler_load, log);
 }
 
 void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                                 const program_load_callback &on_prog_load,
-                                const texture_load_callback &on_tex_load, ILog *log) {
+                                const texture_load_callback &on_tex_load,
+                                const sampler_load_callback &on_sampler_load, ILog *log) {
     if (!mat_src) {
         (*status) = eMatLoadStatus::SetToDefault;
         return;
@@ -69,6 +73,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
 
     programs.clear();
     textures.clear();
+    samplers.clear();
     params.clear();
 
     for (; p != nullptr && q != nullptr; q = std::strpbrk(p, delims)) {
@@ -183,6 +188,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
 
             textures.emplace_back(
                 on_tex_load(texture_name.c_str(), texture_color, texture_flags));
+            samplers.emplace_back(on_sampler_load(textures.back()->sampling()));
         } else if (item == "param:") {
             Vec4f &par = params.emplace_back();
             p = q + 1;
@@ -204,6 +210,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
         }
         p = q + 1;
     }
+
+    assert(textures.size() == samplers.size());
 
     ready_ = true;
     (*status) = eMatLoadStatus::CreatedFromData;

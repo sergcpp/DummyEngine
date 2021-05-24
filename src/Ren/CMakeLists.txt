@@ -45,6 +45,7 @@ set(SOURCE_FILES Anim.h
                  Program.h
                  RastState.h
                  RingBuffer.h
+                 Sampler.h
                  Shader.h
                  SmallVector.h
                  SparseArray.h
@@ -73,6 +74,8 @@ if(${RENDERER} STREQUAL "GL")
                      GLExt.cpp
                      GLExtDSAEmu.h
                      GLExtDSAEmu.cpp
+                     SamplerGL.h
+                     SamplerGL.cpp
                      ShaderGL.h
                      ShaderGL.cpp
                      ProgramGL.h

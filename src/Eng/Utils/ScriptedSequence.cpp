@@ -699,7 +699,7 @@ Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
         Ren::eTexLoadStatus status;
         Ren::TextureRegionRef ret =
             ren_ctx_.LoadTextureRegion(name, nullptr, 0, {}, &status);
-        if (status == Ren::eTexLoadStatus::TexFound) {
+        if (status == Ren::eTexLoadStatus::Found) {
             return ret;
         }
     }
@@ -770,7 +770,7 @@ Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name,
     Ren::eTexLoadStatus status;
     Ren::TextureRegionRef ret =
         ren_ctx_.LoadTextureRegion(name, &tex_data[0], tex_data_size, p, &status);
-    assert(status == Ren::eTexLoadStatus::TexCreatedFromData);
+    assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
     return ret;
 }

@@ -126,35 +126,6 @@ const uint32_t g_gl_types[] = {
 static_assert(sizeof(g_gl_types) / sizeof(g_gl_types[0]) == size_t(eTexFormat::_Count),
               "!");
 
-const uint32_t g_gl_min_filter[] = {
-    GL_NEAREST,               // NoFilter
-    GL_LINEAR_MIPMAP_NEAREST, // Bilinear
-    GL_LINEAR_MIPMAP_LINEAR,  // Trilinear
-    GL_LINEAR,                // BilinearNoMipmap
-};
-static_assert(sizeof(g_gl_min_filter) / sizeof(g_gl_min_filter[0]) ==
-                  size_t(eTexFilter::_Count),
-              "!");
-
-const uint32_t g_gl_mag_filter[] = {
-    GL_NEAREST, // NoFilter
-    GL_LINEAR,  // Bilinear
-    GL_LINEAR,  // Trilinear
-    GL_LINEAR,  // BilinearNoMipmap
-};
-static_assert(sizeof(g_gl_mag_filter) / sizeof(g_gl_mag_filter[0]) ==
-                  size_t(eTexFilter::_Count),
-              "!");
-
-const uint32_t g_gl_wrap_mode[] = {
-    GL_REPEAT,          // Repeat
-    GL_CLAMP_TO_EDGE,   // ClampToEdge
-    GL_CLAMP_TO_BORDER, // ClampToBorder
-};
-static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) ==
-                  size_t(eTexRepeat::WrapModesCount),
-              "!");
-
 const uint32_t g_gl_compare_func[] = {
     0xffffffff,  // None
     GL_LEQUAL,   // LEqual
@@ -181,7 +152,6 @@ static_assert(sizeof(gl_binding_targets) / sizeof(gl_binding_targets[0]) ==
                   size_t(eBindTarget::_Count),
               "!");
 
-const float AnisotropyLevel = 4.0f;
 uint32_t TextureHandleCounter = 0;
 
 bool IsMainThread();
@@ -333,6 +303,10 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     return (*this);
 }
 
+uint64_t Ren::Texture2D::GetBindlessHandle() const {
+    return glGetTextureHandleARB(GLuint(handle_.id));
+}
+
 void Ren::Texture2D::Init(const Tex2DParams &params, ILog *log) {
     assert(IsMainThread());
     const void *null = nullptr;
@@ -351,7 +325,7 @@ void Ren::Texture2D::Init(const void *data, int size, const Tex2DParams &p,
         InitFromRAWData(p.fallback_color, _p, log);
         // mark it as not ready
         ready_ = false;
-        (*load_status) = eTexLoadStatus::TexCreatedDefault;
+        (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
             InitFromTGA_RGBEFile(data, p, log);
@@ -367,7 +341,7 @@ void Ren::Texture2D::Init(const void *data, int size, const Tex2DParams &p,
             InitFromRAWData(data, p, log);
         }
         ready_ = true;
-        (*load_status) = eTexLoadStatus::TexCreatedFromData;
+        (*load_status) = eTexLoadStatus::CreatedFromData;
     }
 }
 
@@ -384,7 +358,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
         // mark it as not ready
         ready_ = false;
         cubemap_ready_ = 0;
-        (*load_status) = eTexLoadStatus::TexCreatedDefault;
+        (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
             InitFromTGA_RGBEFile(data, p, log);
@@ -404,7 +378,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
         for (unsigned i = 1; i < 6; i++) {
             ready_ = ready_ && ((cubemap_ready_ & (1u << i)) == 1);
         }
-        (*load_status) = eTexLoadStatus::TexCreatedFromData;
+        (*load_status) = eTexLoadStatus::CreatedFromData;
     }
 }
 
@@ -545,7 +519,7 @@ void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p, ILo
     }
 
     if (p.samples == 1) {
-        SetFilter(p.sampling, log);
+        ApplySampling(p.sampling, log);
     }
 
     CheckError("create texture", log);
@@ -645,7 +619,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size,
         h = std::max(h / 2, 1);
     }
 
-    SetFilter(p.sampling, log);
+    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
@@ -713,7 +687,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size,
     params_.w = int(w);
     params_.h = int(h);
 
-    SetFilter(p.sampling, log);
+    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
@@ -779,7 +753,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size,
         data_offset += pad;
     }
 
-    SetFilter(p.sampling, log);
+    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromRAWData(const void *data[6], const Tex2DParams &p,
@@ -933,7 +907,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6],
     params_.h = int(h);
     params_.cube = 1;
 
-    SetFilter(p.sampling, log);
+    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6],
@@ -1004,7 +978,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6],
 
     params_.cube = 1;
 
-    SetFilter(p.sampling, log);
+    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
@@ -1085,10 +1059,10 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6],
         }
     }
 
-    SetFilter(p.sampling, log);
+    ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::SetFilter(TexSamplingParams sampling, ILog *log) {
+void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
     const auto tex_id = GLuint(handle_.id);
 
     if (!params_.cube) {

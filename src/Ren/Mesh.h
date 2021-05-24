@@ -66,7 +66,7 @@ enum class eMeshLoadStatus { Found, SetToDefault, CreatedFromData };
 
 enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
-typedef std::function<MaterialRef(const char *name)> material_load_callback;
+using material_load_callback = std::function<MaterialRef(const char *name)>;
 
 class Mesh : public RefCounter {
     eMeshType type_ = eMeshType::Undefined;

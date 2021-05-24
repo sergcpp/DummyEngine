@@ -279,17 +279,20 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     ready_ = true;
 
     attribs_buf1_.size = vtx_count * sizeof(packed_vertex_data1_t);
-    attribs_buf1_.offset = vertex_buf1->AllocRegion(attribs_buf1_.size, _vtx_data1);
+    attribs_buf1_.offset =
+        vertex_buf1->AllocRegion(attribs_buf1_.size, name_.c_str(), _vtx_data1);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
     attribs_buf2_.size = vtx_count * sizeof(packed_vertex_data2_t);
-    attribs_buf2_.offset = vertex_buf2->AllocRegion(attribs_buf2_.size, nullptr);
+    attribs_buf2_.offset =
+        vertex_buf2->AllocRegion(attribs_buf2_.size, name_.c_str(), nullptr);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
     indices_buf_.size = ndx_count * sizeof(uint32_t);
-    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices);
+    indices_buf_.offset =
+        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices);
     indices_buf_.buf = std::move(index_buf);
 
     (*load_status) = Ren::eMeshLoadStatus::CreatedFromData;
@@ -419,17 +422,18 @@ void Ren::Mesh::InitMeshSimple(std::istream &data,
 
     attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
     attribs_buf1_.offset =
-        vertex_buf1->AllocRegion(attribs_buf1_.size, vertices_data1.get());
+        vertex_buf1->AllocRegion(attribs_buf1_.size, name_.c_str(), vertices_data1.get());
     attribs_buf1_.buf = std::move(vertex_buf1);
 
     attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
     attribs_buf2_.offset =
-        vertex_buf2->AllocRegion(attribs_buf2_.size, vertices_data2.get());
+        vertex_buf2->AllocRegion(attribs_buf2_.size, name_.c_str(), vertices_data2.get());
     attribs_buf2_.buf = std::move(vertex_buf2);
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
-    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices_.get());
+    indices_buf_.offset =
+        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices_.get());
     indices_buf_.buf = std::move(index_buf);
 
     ready_ = true;
@@ -529,17 +533,18 @@ void Ren::Mesh::InitMeshColored(std::istream &data,
 
     attribs_buf1_.size = vertex_count * sizeof(packed_vertex_data1_t);
     attribs_buf1_.offset =
-        vertex_buf1->AllocRegion(attribs_buf1_.size, vertices_data1.get());
+        vertex_buf1->AllocRegion(attribs_buf1_.size, name_.c_str(), vertices_data1.get());
     attribs_buf1_.buf = std::move(vertex_buf1);
 
     attribs_buf2_.size = vertex_count * sizeof(packed_vertex_data2_t);
     attribs_buf2_.offset =
-        vertex_buf2->AllocRegion(attribs_buf2_.size, vertices_data2.get());
+        vertex_buf2->AllocRegion(attribs_buf2_.size, name_.c_str(), vertices_data2.get());
     attribs_buf2_.buf = std::move(vertex_buf2);
 
     assert(attribs_buf1_.offset == attribs_buf2_.offset && "Offsets do not match!");
 
-    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices_.get());
+    indices_buf_.offset =
+        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices_.get());
     indices_buf_.buf = std::move(index_buf);
 
     ready_ = true;
@@ -700,8 +705,8 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
 
         sk_deltas_buf_.size = uint32_t(skel_.shapes_count * shape_keyed_vertices_count *
                                        sizeof(packed_vertex_delta_t));
-        sk_deltas_buf_.offset =
-            delta_buf->AllocRegion(sk_deltas_buf_.size, packed_deltas.get());
+        sk_deltas_buf_.offset = delta_buf->AllocRegion(sk_deltas_buf_.size, name_.c_str(),
+                                                       packed_deltas.get());
         sk_deltas_buf_.buf = std::move(delta_buf);
     }
 
@@ -745,10 +750,11 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data,
     // allocate space for untransformed vertices
     sk_attribs_buf_.size = vertex_count * sizeof(packed_vertex_skinned_t);
     sk_attribs_buf_.offset =
-        skin_vertex_buf->AllocRegion(sk_attribs_buf_.size, vertices.get());
+        skin_vertex_buf->AllocRegion(sk_attribs_buf_.size, name_.c_str(), vertices.get());
     sk_attribs_buf_.buf = std::move(skin_vertex_buf);
 
-    indices_buf_.offset = index_buf->AllocRegion(indices_buf_.size, indices_.get());
+    indices_buf_.offset =
+        index_buf->AllocRegion(indices_buf_.size, name_.c_str(), indices_.get());
 
     ready_ = true;
 }

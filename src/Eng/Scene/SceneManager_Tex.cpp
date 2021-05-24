@@ -245,6 +245,15 @@ void SceneManager::EstimateTextureMemory(const int portion_size) {
 void SceneManager::ProcessPendingTextures(const int portion_size) {
     using namespace SceneManagerConstants;
 
+    { // TEST TEST TEST
+        std::vector<uint64_t> texture_handles(scene_data_.textures.capacity(), 0);
+        for (auto it = scene_data_.textures.begin(); it != scene_data_.textures.end();
+             ++it) {
+            //texture_handles[it.index()] = it->GetBindlessHandle();
+        }
+        volatile int ii = 0;
+    }
+
     //
     // Process io pending textures
     //
@@ -351,11 +360,11 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 }
 
                 { // offset min lod to account for newly allocated mip levels
-                    Ren::TexSamplingParams cur_sampling = req->ref->params().sampling;
+                    Ren::SamplingParams cur_sampling = req->ref->params().sampling;
                     cur_sampling.min_lod.set_value(cur_sampling.min_lod.value() +
                                                    cur_sampling.min_lod.One *
                                                        req->mip_count_to_init);
-                    req->ref->SetFilter(cur_sampling, ren_ctx_.log());
+                    req->ref->ApplySampling(cur_sampling, ren_ctx_.log());
                 }
 
                 const uint64_t t2_us = Sys::GetTimeUs();
@@ -387,9 +396,9 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
     //
     for (auto it = std::begin(lod_transit_textures_);
          it != std::end(lod_transit_textures_);) {
-        Ren::TexSamplingParams cur_sampling = (*it)->params().sampling;
+        Ren::SamplingParams cur_sampling = (*it)->params().sampling;
         cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
-        (*it)->SetFilter(cur_sampling, ren_ctx_.log());
+        (*it)->ApplySampling(cur_sampling, ren_ctx_.log());
 
         if (cur_sampling.min_lod.value() == 0) {
             // transition is done, remove texture from list
@@ -417,7 +426,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                              p.flags & Ren::TexSRGB, ren_ctx_.log());
 
             p.sampling.min_lod.from_float(-1.0f);
-            req.ref->SetFilter(p.sampling, ren_ctx_.log());
+            req.ref->ApplySampling(p.sampling, ren_ctx_.log());
 
             { // send texture for processing
                 std::lock_guard<std::mutex> _lock(tex_requests_lock_);
@@ -600,7 +609,7 @@ void SceneManager::ForceTextureReload() {
                     p.flags & Ren::TexSRGB, ren_ctx_.log());
 
         p.sampling.min_lod.from_float(-1.0f);
-        it->SetFilter(p.sampling, ren_ctx_.log());
+        it->ApplySampling(p.sampling, ren_ctx_.log());
 
         TextureRequest req;
         req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};

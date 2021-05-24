@@ -102,19 +102,9 @@ uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
         if (cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials->at(batch.mat_id);
 
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                       mat.textures[0]->id());
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
-                                       mat.textures[1]->id());
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX2_SLOT,
-                                       mat.textures[2]->id());
-            if (mat.textures[3]) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT,
-                                           mat.textures[3]->id());
-                if (mat.textures[4]) {
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX4_SLOT,
-                                               mat.textures[4]->id());
-                }
+            for (int j = 0; j < int(mat.textures.size()); ++j) {
+                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j,
+                                           mat.textures[j]->id());
             }
         }
 
