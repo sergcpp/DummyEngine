@@ -5,7 +5,8 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const int orphan_index,
+void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list,
+                         const PersistentBuffers *bufs, const int orphan_index,
                          const char instances_buf[], const char shared_data_buf[],
                          const char shadowmap_tex[], Ren::TexHandle noise_tex) {
     orphan_index_ = orphan_index;
@@ -16,6 +17,7 @@ void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const int orp
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
     noise_tex_ = noise_tex;
+    bufs_ = bufs;
 
     instances_buf_ = builder.ReadBuffer(instances_buf, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);

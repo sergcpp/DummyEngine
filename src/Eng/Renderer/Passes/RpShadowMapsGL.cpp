@@ -7,7 +7,13 @@
 
 #include <Ren/Context.h>
 
+namespace RpSharedInternal {
+void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
+                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
+}
 namespace RpShadowMapsInternal {
+using namespace RpSharedInternal;
+
 void _adjust_bias_and_viewport(Ren::RastState &rast_state, const ShadowList &sh_list) {
     Ren::RastState new_rast_state = rast_state;
 
@@ -46,6 +52,17 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
     rast_state.Apply();
 
     Ren::Context &ctx = builder.ctx();
+
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT,
+                      GLuint(bufs_->materials_buf.id),
+                      GLintptr(bufs_->materials_buf_range.first),
+                      GLsizeiptr(bufs_->materials_buf_range.second));
+    if (ctx.capabilities.bindless_texture) {
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT,
+                          GLuint(bufs_->textures_buf.id),
+                          GLintptr(bufs_->textures_buf_range.first),
+                          GLsizeiptr(bufs_->textures_buf_range.second));
+    }
 
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
     assert(instances_buf.tbos[orphan_index_]);
@@ -182,7 +199,12 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material &mat = materials_->at(batch.mat_id);
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat.textures[0]->id());
+                if (ctx.capabilities.bindless_texture) {
+                    glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
+                } else {
+                    _bind_texture0_and_sampler0(builder.ctx(), mat,
+                                                builder.temp_samplers);
+                }
                 cur_mat_id = batch.mat_id;
             }
 
@@ -230,7 +252,12 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
 
             if (batch.mat_id != cur_mat_id) {
                 const Ren::Material &mat = materials_->at(batch.mat_id);
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, 0, mat.textures[0]->id());
+                if (ctx.capabilities.bindless_texture) {
+                    glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
+                } else {
+                    _bind_texture0_and_sampler0(builder.ctx(), mat,
+                                                builder.temp_samplers);
+                }
                 cur_mat_id = batch.mat_id;
             }
 
@@ -250,6 +277,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder) {
     glDisable(GL_POLYGON_OFFSET_FILL);
 
     glBindVertexArray(0);
+    Ren::GLUnbindSamplers(0, 1);
 
     (void)draw_calls_count;
 }

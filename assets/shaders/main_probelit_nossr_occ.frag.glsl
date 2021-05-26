@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
+#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
@@ -15,9 +16,11 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
+#if !defined(GL_ARB_bindless_texture)
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diff_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D norm_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D spec_texture;
+#endif // GL_ARB_bindless_texture
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
@@ -42,6 +45,11 @@ layout(location = 2) in mediump vec3 aVertexNormal_;
 layout(location = 3) in mediump vec3 aVertexTangent_;
 layout(location = 4) in mediump vec4 aVertexOcclusion_;
 layout(location = 5) in highp vec3 aVertexShUVs_[4];
+#if defined(GL_ARB_bindless_texture)
+layout(location = 9) in flat uvec2 diff_texture;
+layout(location = 10) in flat uvec2 norm_texture;
+layout(location = 11) in flat uvec2 spec_texture;
+#endif // GL_ARB_bindless_texture
 #else
 in highp vec3 aVertexPos_;
 in mediump vec2 aVertexUVs_;
@@ -49,6 +57,11 @@ in mediump vec3 aVertexNormal_;
 in mediump vec3 aVertexTangent_;
 in mediump vec4 aVertexOcclusion_;
 in highp vec3 aVertexShUVs_[4];
+#if defined(GL_ARB_bindless_texture)
+in flat uvec2 diff_texture;
+in flat uvec2 norm_texture;
+in flat uvec2 spec_texture;
+#endif // GL_ARB_bindless_texture
 #endif
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -69,11 +82,11 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
     
-    vec3 albedo_color = texture(diffuse_texture, aVertexUVs_).rgb;
+    vec3 albedo_color = texture(SAMPLER2D(diff_texture), aVertexUVs_).rgb;
     
     vec2 duv_dx = dFdx(aVertexUVs_), duv_dy = dFdy(aVertexUVs_);
-    vec3 normal_color = texture(normals_texture, aVertexUVs_).wyz;
-    vec4 specular_color = texture(specular_texture, aVertexUVs_);
+    vec3 normal_color = texture(SAMPLER2D(norm_texture), aVertexUVs_).wyz;
+    vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);

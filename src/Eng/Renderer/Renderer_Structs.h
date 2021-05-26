@@ -278,6 +278,13 @@ struct SharedDataBlock {
 };
 static_assert(sizeof(SharedDataBlock) == 7824, "!");
 
+struct MaterialData {
+    uint32_t texture_indices[5];
+    uint32_t _pad[3];
+    Ren::Vec4f params;
+};
+static_assert(sizeof(MaterialData) == 48, "!");
+
 // Constant that controls buffers orphaning
 const int FrameSyncWindow = 2;
 const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;

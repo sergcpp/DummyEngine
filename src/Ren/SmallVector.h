@@ -233,6 +233,18 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         }
     }
 
+    void resize(const size_t req_size, const T &val) {
+        reserve(req_size);
+
+        while (end_ > begin_ + req_size) {
+            (--end_)->~T();
+        }
+
+        while (end_ < begin_ + req_size) {
+            new (end_++) T(val);
+        }
+    }
+
     void clear() {
         for (T *el = end_; el > begin_;) {
             (--el)->~T();

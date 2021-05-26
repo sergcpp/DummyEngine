@@ -34,6 +34,8 @@ class RpUpdateBuffers : public RenderPassBase {
     RpResource items_buf_;
     RpResource shared_data_buf_;
 
+    std::vector<uint64_t> texture_handles_;
+
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                int orphan_index, void **fences, const char skin_transforms_buf[],

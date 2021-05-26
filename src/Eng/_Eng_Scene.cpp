@@ -28,4 +28,5 @@
 
 #if defined(USE_GL_RENDER)
 #include "Scene/ProbeStorageGL.cpp"
+#include "Scene/SceneManagerGL.cpp"
 #endif

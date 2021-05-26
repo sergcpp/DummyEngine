@@ -11,8 +11,9 @@ GLuint LoadShader(GLenum shader_type, const char *source, ILog *log);
 GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *log);
 #endif
 
-void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count,
-                       ILog *log);
+void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
+                       SmallVectorImpl<Descr> &unif_bindings,
+                       SmallVectorImpl<Descr> &blck_bindings, ILog *log);
 bool IsMainThread();
 
 const GLenum GLShaderTypes[] = {0xffffffff,
@@ -59,16 +60,9 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     type_ = rhs.type_;
     name_ = std::move(rhs.name_);
 
-    for (int j = 0; j < 3; j++) {
-        int i = 0;
-        for (; i < rhs.bindings_count[j]; i++) {
-            bindings[j][i] = std::move(rhs.bindings[j][i]);
-        }
-        for (; i < bindings_count[j]; i++) {
-            bindings[j][i] = {};
-        }
-        bindings_count[j] = rhs.bindings_count[j];
-    }
+    attr_bindings = std::move(rhs.attr_bindings);
+    unif_bindings = std::move(rhs.unif_bindings);
+    blck_bindings = std::move(rhs.blck_bindings);
 
     RefCounter::operator=(std::move(rhs));
 
@@ -107,8 +101,7 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type,
 #endif
     }
 
-    Descr *_bindings[3] = {bindings[0], bindings[1], bindings[2]};
-    ParseGLSLBindings(shader_src, _bindings, bindings_count, log);
+    ParseGLSLBindings(shader_src, attr_bindings, unif_bindings, blck_bindings, log);
 
     (*status) = eShaderLoadStatus::CreatedFromData;
 }
@@ -138,28 +131,29 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
         spvReflectCreateShaderModule(data_size, shader_data, &module);
     assert(res == SPV_REFLECT_RESULT_SUCCESS);
 
-    bindings_count[0] = 0;
+    attr_bindings.clear();
+    unif_bindings.clear();
+    blck_bindings.clear();
+
     for (uint32_t i = 0; i < module.input_variable_count; i++) {
         const auto &var = module.input_variables[i];
         if (var.built_in == -1) {
-            const int ndx = bindings_count[0]++;
-            bindings[0][ndx].name = String{var.name};
-            bindings[0][ndx].loc = var.location;
+            Descr &new_item = attr_bindings.emplace_back();
+            new_item.name = String{var.name};
+            new_item.loc = var.location;
         }
     }
 
-    bindings_count[1] = 0;
-    bindings_count[2] = 0;
     for (uint32_t i = 0; i < module.descriptor_binding_count; i++) {
         const auto &desc = module.descriptor_bindings[i];
         if (desc.descriptor_type == SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-            const int ndx = bindings_count[2]++;
-            bindings[2][ndx].name = String{desc.name};
-            bindings[2][ndx].loc = desc.binding;
+            Descr &new_item = blck_bindings.emplace_back();
+            new_item.name = String{desc.name};
+            new_item.loc = desc.binding;
         } else {
-            const int ndx = bindings_count[1]++;
-            bindings[1][ndx].name = String{desc.name};
-            bindings[1][ndx].loc = desc.binding;
+            Descr &new_item = unif_bindings.emplace_back();
+            new_item.name = String{desc.name};
+            new_item.loc = desc.binding;
         }
     }
 
@@ -240,35 +234,31 @@ GLuint Ren::LoadShader(GLenum shader_type, const uint8_t *data, const int data_s
 }
 #endif
 
-void Ren::ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count,
-                            ILog *log) {
+void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
+                            SmallVectorImpl<Descr> &unif_bindings,
+                            SmallVectorImpl<Descr> &blck_bindings, ILog *log) {
     const char *delims = " \r\n\t";
     const char *p = strstr(shader_str, "/*");
     const char *q = p ? strpbrk(p + 2, delims) : nullptr;
 
-    Descr *cur_bind_target = nullptr;
-    int *cur_bind_count = nullptr;
-
+    SmallVectorImpl<Descr> *cur_bind_target = nullptr;
     for (; p != nullptr && q != nullptr; q = strpbrk(p, delims)) {
         if (p == q) {
             p = q + 1;
             continue;
         }
 
-        String item(p, q);
+        std::string item(p, q);
         if (item == "/*") {
             cur_bind_target = nullptr;
         } else if (item == "*/" && cur_bind_target) {
             break;
         } else if (item == "ATTRIBUTES") {
-            cur_bind_target = bindings[0];
-            cur_bind_count = &bindings_count[0];
+            cur_bind_target = &attr_bindings;
         } else if (item == "UNIFORMS") {
-            cur_bind_target = bindings[1];
-            cur_bind_count = &bindings_count[1];
+            cur_bind_target = &unif_bindings;
         } else if (item == "UNIFORM_BLOCKS") {
-            cur_bind_target = bindings[2];
-            cur_bind_count = &bindings_count[2];
+            cur_bind_target = &blck_bindings;
         } else if (cur_bind_target) {
             p = q + 1;
             q = strpbrk(p, delims);
@@ -279,9 +269,9 @@ void Ren::ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindi
             q = strpbrk(p, delims);
             int loc = std::atoi(p);
 
-            cur_bind_target[*cur_bind_count].name = item;
-            cur_bind_target[*cur_bind_count].loc = loc;
-            (*cur_bind_count)++;
+            Descr &new_item = cur_bind_target->emplace_back();
+            new_item.name = String{item.c_str()};
+            new_item.loc = loc;
         }
 
         if (!q) {

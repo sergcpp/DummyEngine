@@ -280,6 +280,7 @@ void RpBuilder::Reset() {
     for (RpAllocTex &tex : textures_) {
         tex._generation = 0;
     }
+    temp_samplers.clear();
 }
 
 void RpBuilder::Compile(RenderPassBase *first_pass) {

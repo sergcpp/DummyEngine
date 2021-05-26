@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
+#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
@@ -15,11 +16,13 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
+#if !defined(GL_ARB_bindless_texture)
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diff_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D norm_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D spec_texture;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D sss_texture;
-layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D normals_detail_texture;
+layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D norm_detail_texture;
+#endif // GL_ARB_bindless_texture
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
@@ -45,12 +48,26 @@ layout(location = 1) in mediump vec3 aVertexUVAndCurvature_;
 layout(location = 2) in mediump vec3 aVertexNormal_;
 layout(location = 3) in mediump vec3 aVertexTangent_;
 layout(location = 4) in highp vec3 aVertexShUVs_[4];
+#if defined(GL_ARB_bindless_texture)
+layout(location = 8) in flat uvec2 diff_texture;
+layout(location = 9) in flat uvec2 norm_texture;
+layout(location = 10) in flat uvec2 spec_texture;
+layout(location = 11) in flat uvec2 sss_texture;
+layout(location = 12) in flat uvec2 norm_detail_texture;
+#endif // GL_ARB_bindless_texture
 #else
 in highp vec3 aVertexPos_;
 in mediump vec3 aVertexUVAndCurvature_;
 in mediump vec3 aVertexNormal_;
 in mediump vec3 aVertexTangent_;
 in highp vec3 aVertexShUVs_[4];
+#if defined(GL_ARB_bindless_texture)
+in flat uvec2 diff_texture;
+in flat uvec2 norm_texture;
+in flat uvec2 spec_texture;
+in flat uvec2 sss_texture;
+in flat uvec2 norm_detail_texture;
+#endif // GL_ARB_bindless_texture
 #endif
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -69,30 +86,30 @@ void main(void) {
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
     
-    vec3 albedo_color = texture(diffuse_texture, aVertexUVAndCurvature_.xy).rgb;
+    vec3 albedo_color = texture(SAMPLER2D(diff_texture), aVertexUVAndCurvature_.xy).rgb;
     
     vec2 duv_dx = dFdx(aVertexUVAndCurvature_.xy), duv_dy = dFdy(aVertexUVAndCurvature_.xy);
-    vec3 normal_color = texture(normals_texture, aVertexUVAndCurvature_.xy).wyz;
-	vec3 normal_detail_color = texture(normals_detail_texture, aVertexUVAndCurvature_.xy * uMaterialParams.w).wyz;
+    vec3 normal_color = texture(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy).wyz;
+	vec3 normal_detail_color = texture(SAMPLER2D(norm_detail_texture), aVertexUVAndCurvature_.xy * uMaterialParams.w).wyz;
 	
 	normal_color.xy += normal_detail_color.xy;
 	
 	const vec3 lod_offsets = { 3.0, 2.0, 1.0 };
 	const vec3 der_muls = uMaterialParams.xyz;//{ 8.0, 4.0, 2.0 };
 	
-	vec3 normal_color_r = textureGrad(normals_texture, aVertexUVAndCurvature_.xy,
+	vec3 normal_color_r = textureGrad(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy,
 									  der_muls.x * dFdx(aVertexUVAndCurvature_.xy), der_muls.x * dFdy(aVertexUVAndCurvature_.xy)).wyz;
-	vec3 normal_color_g = textureGrad(normals_texture, aVertexUVAndCurvature_.xy,
+	vec3 normal_color_g = textureGrad(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy,
 									  der_muls.y * dFdx(aVertexUVAndCurvature_.xy), der_muls.y * dFdy(aVertexUVAndCurvature_.xy)).wyz;
-	vec3 normal_color_b = textureGrad(normals_texture, aVertexUVAndCurvature_.xy,
+	vec3 normal_color_b = textureGrad(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy,
 									  der_muls.z * dFdx(aVertexUVAndCurvature_.xy), der_muls.z * dFdy(aVertexUVAndCurvature_.xy)).wyz;
 									 
-	/*float lod = textureQueryLod(normals_texture, aVertexUVAndCurvature_.xy).x;
-	vec3 normal_color_r = textureLod(normals_texture, aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
-	vec3 normal_color_g = textureLod(normals_texture, aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
-	vec3 normal_color_b = textureLod(normals_texture, aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
+	/*float lod = textureQueryLod(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy).x;
+	vec3 normal_color_r = textureLod(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
+	vec3 normal_color_g = textureLod(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
+	vec3 normal_color_b = textureLod(SAMPLER2D(norm_texture), aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
 									  
-    vec4 specular_color = texture(specular_texture, aVertexUVAndCurvature_.xy);
+    vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVAndCurvature_.xy);
     
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);
@@ -208,16 +225,16 @@ void main(void) {
             
 #if 0
             float _dot1 = dot(L, normal);
-            vec3 l_diffuse = texture(sss_texture, vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
+            vec3 l_diffuse = texture(SAMPLER2D(sss_texture), vec2(_dot1 * 0.5 + 0.5, curvature)).rgb;
 			
             additional_light += col_and_index.xyz * atten * l_diffuse * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
 #else
 			float _dot_r = dot(L, normal_r);
 			float _dot_g = dot(L, normal_g);
 			float _dot_b = dot(L, normal_b);
-            float l_diffuse_r = texture(sss_texture, vec2(_dot_r * 0.5 + 0.5, curvature)).r;
-			float l_diffuse_g = texture(sss_texture, vec2(_dot_g * 0.5 + 0.5, curvature)).g;
-			float l_diffuse_b = texture(sss_texture, vec2(_dot_b * 0.5 + 0.5, curvature)).b;
+            float l_diffuse_r = texture(SAMPLER2D(sss_texture), vec2(_dot_r * 0.5 + 0.5, curvature)).r;
+			float l_diffuse_g = texture(SAMPLER2D(sss_texture), vec2(_dot_g * 0.5 + 0.5, curvature)).g;
+			float l_diffuse_b = texture(SAMPLER2D(sss_texture), vec2(_dot_b * 0.5 + 0.5, curvature)).b;
 			
 			additional_light += col_and_index.xyz * atten * vec3(l_diffuse_r, l_diffuse_g, l_diffuse_b) * smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
 #endif
@@ -268,7 +285,7 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, aVertexShUVs_);
     }
     
-    vec3 sun_diffuse = texture(sss_texture, vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
+    vec3 sun_diffuse = texture(SAMPLER2D(sss_texture), vec2(N_dot_L * 0.5 + 0.5, curvature)).rgb;
     
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;

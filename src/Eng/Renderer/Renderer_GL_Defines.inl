@@ -44,6 +44,9 @@
 #define REN_NOISE_TEX_SLOT 19
 #define REN_CONE_RT_LUT_SLOT 20
 
+#define REN_MATERIALS_SLOT 21
+#define REN_BINDLESS_TEX_SLOT 0 // shares slot with material slot 0
+
 #define REN_BASE0_TEX_SLOT 0
 #define REN_BASE1_TEX_SLOT 1
 #define REN_BASE2_TEX_SLOT 2
@@ -60,6 +63,7 @@
 #define REN_U_M_MATRIX_LOC  0
 #define REN_U_INSTANCES_LOC 1
 #define REN_U_MAT_PARAM_LOC 3
+#define REN_U_MAT_INDEX_LOC 4
 
 #define REN_UB_SHARED_DATA_LOC  0
 
@@ -87,6 +91,9 @@
 #define REN_MAX_OBJ_COUNT			4194304
 #define REN_MAX_TEX_COUNT           262144
 #define REN_MAX_BATCH_SIZE			8
+
+#define REN_MAX_TEX_PER_MATERIAL    5
+#define REN_MAX_MATERIALS           262144
 
 #define REN_MAX_INSTANCES_TOTAL     262144
 #define REN_MAX_SHADOWMAPS_TOTAL    32

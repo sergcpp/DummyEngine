@@ -88,6 +88,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
+    PersistentBuffers persistent_bufs() const;
+
     SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
     uint32_t FindObject(const char *name) {
@@ -136,6 +138,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void StartTextureLoader();
     void StopTextureLoader();
     void ForceTextureReload();
+
+    void InsertPersistentBuffersFence();
 
     void Serve(int texture_budget = 1);
 
@@ -188,6 +192,9 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void EstimateTextureMemory(int portion_size);
     void ProcessPendingTextures(int portion_size);
 
+    void RebuildMaterialTextureGraph();
+    void UpdateMaterialsBuffer();
+
     void RebuildBVH();
     void RemoveNode(uint32_t node_index);
 
@@ -238,7 +245,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     std::mutex gc_textures_mtx_;
     Ren::RingBuffer<TextureRequest> finished_textures_;
-    uint32_t                        finished_index_ = 0;
+    uint32_t finished_index_ = 0;
     Ren::RingBuffer<TextureRequest> gc_textures_;
 
     static const int MaxSimultaneousRequests = 4;

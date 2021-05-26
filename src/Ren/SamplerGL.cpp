@@ -33,13 +33,14 @@ static_assert(sizeof(g_gl_wrap_mode) / sizeof(g_gl_wrap_mode[0]) ==
 const float AnisotropyLevel = 4.0f;
 } // namespace Ren
 
-Ren::Sampler::Sampler(Sampler &&rhs) {
-    id_ = exchange(rhs.id_, 0);
-    params_ = exchange(rhs.params_, {});
-}
-
 Ren::Sampler &Ren::Sampler::operator=(Sampler &&rhs) {
+    if (&rhs == this) {
+        return (*this);
+    }
+
     Destroy();
+
+    RefCounter::operator=(std::move(rhs));
 
     id_ = exchange(rhs.id_, 0);
     params_ = exchange(rhs.params_, {});
@@ -83,4 +84,10 @@ void Ren::Sampler::Init(const SamplingParams params) {
 
     id_ = uint32_t(new_sampler);
     params_ = params;
+}
+
+void Ren::GLUnbindSamplers(const int start, const int count) {
+    for (int i = start; i < start + count; i++) {
+        glBindSampler(GLuint(i), 0);
+    }
 }

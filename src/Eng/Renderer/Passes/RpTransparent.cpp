@@ -5,14 +5,17 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpTransparent::Setup(
-    RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
-    const ViewState *view_state, int orphan_index, Ren::Tex2DRef brdf_lut,
-    Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
-    const char shared_data_buf[], const char cells_buf[], const char items_buf[],
-    const char lights_buf[], const char decals_buf[], const char shadowmap_tex[],
-    const char ssao_tex[], const char color_tex[], const char normal_tex[],
-    const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]) {
+void RpTransparent::Setup(RpBuilder &builder, const DrawList &list,
+                          const int *alpha_blend_start_index, const ViewState *view_state,
+                          const PersistentBuffers *bufs, int orphan_index,
+                          Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex,
+                          Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
+                          const char shared_data_buf[], const char cells_buf[],
+                          const char items_buf[], const char lights_buf[],
+                          const char decals_buf[], const char shadowmap_tex[],
+                          const char ssao_tex[], const char color_tex[],
+                          const char normal_tex[], const char spec_tex[],
+                          const char depth_tex[], const char transparent_tex_name[]) {
     orphan_index_ = orphan_index;
     view_state_ = view_state;
 
@@ -29,6 +32,7 @@ void RpTransparent::Setup(
     main_batches_ = list.main_batches;
     main_batch_indices_ = list.main_batch_indices;
     alpha_blend_start_index_ = alpha_blend_start_index;
+    bufs_ = bufs;
 
     instances_buf_ = builder.ReadBuffer(instances_buf, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);

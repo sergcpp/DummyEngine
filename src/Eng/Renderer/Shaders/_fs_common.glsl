@@ -314,4 +314,10 @@ float TransparentDepthWeight(float z, float alpha) {
     return alpha * max(3e3 * pow3(1.0 - z), 1e-2);
 }
 
+#if defined(GL_ARB_bindless_texture)
+#define SAMPLER2D(x) sampler2D(x)
+#else // GL_ARB_bindless_texture
+#define SAMPLER2D
+#endif // GL_ARB_bindless_texture
+
 )"

@@ -55,7 +55,8 @@ class Renderer {
     BackendInfo backend_info() const { return backend_info_; }
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
-    void ExecuteDrawList(const DrawList &list, const FrameBuf *target = nullptr);
+    void ExecuteDrawList(const DrawList &list, const PersistentBuffers &persistent_bufs,
+                         const FrameBuf *target = nullptr);
 
     void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
@@ -99,8 +100,6 @@ class Renderer {
          EnableDecals | EnableShadows | EnableTonemap | EnableDOF | EnableTimers);
 #endif
     uint32_t render_flags_ = default_flags;
-
-    int frame_counter_ = 0;
 
     DynArray<const LightSource *> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
@@ -163,7 +162,6 @@ class Renderer {
     int cur_query_ = 0;
 
     void *buf_range_fences_[FrameSyncWindow] = {};
-    int cur_buf_chunk_ = 0;
 #endif
 
     DynArray<ShadReg> allocated_shadow_regions_;
@@ -207,6 +205,7 @@ class Renderer {
 
     ViewState view_state_;
     PrimDraw prim_draw_;
+    uint32_t frame_index_ = 0;
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 

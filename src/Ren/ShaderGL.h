@@ -2,13 +2,13 @@
 
 #include <cstdint>
 
+#include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"
 
 namespace Ren {
 class ILog;
 
-const int MaxBindingsCount = 32;
 struct Descr {
     String name;
     int loc = -1;
@@ -33,8 +33,8 @@ class Shader : public RefCounter {
                        eShaderLoadStatus *status, ILog *log);
 #endif
   public:
-    Descr bindings[3][MaxBindingsCount];
-    int bindings_count[3] = {};
+    SmallVector<Descr, 16> attr_bindings, unif_bindings, blck_bindings;
+
 
     Shader() = default;
     Shader(const char *name, const char *shader_src, eShaderType type,

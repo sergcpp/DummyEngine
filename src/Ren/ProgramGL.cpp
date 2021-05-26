@@ -166,29 +166,8 @@ void Ren::Program::InitBindings(ILog *log) {
         }
 
         Shader &sh = (*sh_ref);
-        attributes_.resize(8);
-        for (int i = 0; i < sh.bindings_count[0]; i++) {
-            Descr &b = sh.bindings[0][i];
-            Attribute &a = attributes_[b.loc];
-            a.loc = glGetAttribLocation(GLuint(id_), b.name.c_str());
-            if (a.loc != -1) {
-                a.name = b.name;
-            }
-        }
-
-        uniforms_.resize(8);
-        for (int i = 0; i < sh.bindings_count[1]; i++) {
-            Descr &b = sh.bindings[1][i];
-            Attribute &u = uniforms_[b.loc];
-            u.loc = glGetUniformLocation(GLuint(id_), b.name.c_str());
-            if (u.loc != -1) {
-                u.name = b.name;
-            }
-        }
-
-        uniform_blocks_.resize(4);
-        for (int i = 0; i < sh.bindings_count[2]; i++) {
-            Descr &b = sh.bindings[2][i];
+        for (Descr &b : sh.blck_bindings) {
+            uniform_blocks_.resize(b.loc + 1);
             Attribute &u = uniform_blocks_[b.loc];
             u.loc = glGetUniformBlockIndex(GLuint(id_), b.name.c_str());
             if (u.loc != -1) {
@@ -198,7 +177,7 @@ void Ren::Program::InitBindings(ILog *log) {
         }
     }
 
-    // Enumerate rest of attributes
+    // Enumerate attributes
     GLint num;
     glGetProgramiv(GLuint(id_), GL_ACTIVE_ATTRIBUTES, &num);
     for (int i = 0; i < num; i++) {
@@ -207,21 +186,9 @@ void Ren::Program::InitBindings(ILog *log) {
         char name[128];
         glGetActiveAttrib(GLuint(id_), i, 128, &len, &len, &n, name);
 
-        int skip = 0, free_index = -1;
-        for (int j = 0; j < int(attributes_.size()); j++) {
-            if (free_index == -1 && attributes_[j].loc == -1) {
-                free_index = j;
-            }
-            if (attributes_[j].loc != -1 && name[0] && attributes_[j].name == name) {
-                skip = 1;
-                break;
-            }
-        }
-
-        if (!skip && free_index != -1) {
-            attributes_[free_index].name = String{name};
-            attributes_[free_index].loc = glGetAttribLocation(GLuint(id_), name);
-        }
+        Descr &new_attr = attributes_.emplace_back();
+        new_attr.name = String{name};
+        new_attr.loc = glGetAttribLocation(GLuint(id_), name);
     }
 
     log->Info("PROGRAM %s", name_.c_str());
@@ -235,7 +202,7 @@ void Ren::Program::InitBindings(ILog *log) {
         log->Info("\t\t%s : %i", attributes_[i].name.c_str(), attributes_[i].loc);
     }
 
-    // Enumerate rest of uniforms
+    // Enumerate uniforms
     glGetProgramiv(GLuint(id_), GL_ACTIVE_UNIFORMS, &num);
     for (int i = 0; i < num; i++) {
         int len;
@@ -243,21 +210,9 @@ void Ren::Program::InitBindings(ILog *log) {
         char name[128];
         glGetActiveUniform(GLuint(id_), i, 128, &len, &len, &n, name);
 
-        int skip = 0, free_index = -1;
-        for (int j = 0; j < int(uniforms_.size()); j++) {
-            if (free_index == -1 && uniforms_[j].loc == -1) {
-                free_index = j;
-            }
-            if (uniforms_[j].loc != -1 && uniforms_[j].name == name) {
-                skip = 1;
-                break;
-            }
-        }
-
-        if (!skip && free_index != -1) {
-            uniforms_[free_index].name = String{name};
-            uniforms_[free_index].loc = glGetUniformLocation(GLuint(id_), name);
-        }
+        Descr &new_uniform = uniforms_.emplace_back();
+        new_uniform.name = String{name};
+        new_uniform.loc = glGetUniformLocation(GLuint(id_), name);
     }
 
     // Print all uniforms

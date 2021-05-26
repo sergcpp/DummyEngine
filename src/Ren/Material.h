@@ -45,18 +45,19 @@ class Material : public RefCounter {
 
   public:
     SmallVector<ProgramRef, 4> programs;
-    SmallVector<Tex2DRef, 8> textures;
-    SmallVector<SamplerRef, 8> samplers;
+    SmallVector<Tex2DRef, 4> textures;
+    SmallVector<SamplerRef, 4> samplers;
     SmallVector<Vec4f, 4> params;
+    SmallVector<uint32_t, 4> next_texture_user;
 
     Material() = default;
     Material(const char *name, const char *mat_src, eMatLoadStatus *status,
              const program_load_callback &on_prog_load,
              const texture_load_callback &on_tex_load,
              const sampler_load_callback &on_sampler_load, ILog *log);
-    Material(const char *name, uint32_t flags, ProgramRef programs[], int programs_count,
-             Tex2DRef textures[], int textures_count, const Vec4f params[],
-             int params_count, ILog *log);
+    Material(const char *name, uint32_t flags, const ProgramRef programs[],
+             int programs_count, const Tex2DRef textures[], const SamplerRef samplers[],
+             int textures_count, const Vec4f params[], int params_count, ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) = default;
@@ -68,9 +69,9 @@ class Material : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void Init(uint32_t flags, ProgramRef _programs[], int programs_count,
-              Tex2DRef _textures[], int textures_count, const Vec4f _params[],
-              int params_count, ILog *log);
+    void Init(uint32_t flags, const ProgramRef _programs[], int programs_count,
+              const Tex2DRef _textures[], const SamplerRef _samplers[],
+              int textures_count, const Vec4f _params[], int params_count, ILog *log);
     void Init(const char *mat_src, eMatLoadStatus *status,
               const program_load_callback &on_prog_load,
               const texture_load_callback &on_tex_load,

@@ -1,5 +1,6 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
+#extension GL_ARB_bindless_texture: enable
 
 #include "_vs_common.glsl"
 
@@ -32,7 +33,19 @@ uniform SharedDataBlock {
 
 layout(binding = REN_INST_BUF_SLOT) uniform mediump samplerBuffer instances_buffer;
 layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D noise_texture;
+
+layout(location = REN_U_MAT_INDEX_LOC) uniform uint uMaterialIndex;
 layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
+
+layout(binding = REN_MATERIALS_SLOT) buffer Materials {
+	MaterialData materials[];
+};
+
+#if defined(GL_ARB_bindless_texture)
+layout(binding = REN_BINDLESS_TEX_SLOT) buffer TextureHandles {
+	uvec2 texture_handles[];
+};
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
     #ifdef TRANSPARENT_PERM
@@ -40,6 +53,9 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BA
     #ifdef HASHED_TRANSPARENCY
     layout(location = 1) out vec3 aVertexObjCoord_;
     #endif
+	#if defined(GL_ARB_bindless_texture)
+	layout(location = 4) out flat uvec2 alpha_texture;
+	#endif // GL_ARB_bindless_texture
     #endif
     #ifdef OUTPUT_VELOCITY
     layout(location = 2) out vec3 aVertexCSCurr_;
@@ -51,6 +67,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BA
     #ifdef HASHED_TRANSPARENCY
     out vec3 aVertexObjCoord_;
     #endif
+	out flat uvec2 alpha_texture;
     #endif
     #ifdef OUTPUT_VELOCITY
     out vec3 aVertexCSCurr_;
@@ -71,6 +88,11 @@ void main() {
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
+	
+#if defined(GL_ARB_bindless_texture)
+	MaterialData mat = materials[uMaterialIndex];
+	alpha_texture = texture_handles[mat.texture_indices[0]];
+#endif // GL_ARB_bindless_texture
 #ifdef HASHED_TRANSPARENCY
     aVertexObjCoord_ = aVertexPositionCurr;
 #endif

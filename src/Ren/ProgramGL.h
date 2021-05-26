@@ -26,7 +26,7 @@ class Program : public RefCounter {
     uint32_t flags_ = 0;
     std::array<ShaderRef, int(eShaderType::_Count)> shaders_;
     SmallVector<Attribute, 8> attributes_;
-    SmallVector<Uniform, 8> uniforms_;
+    SmallVector<Uniform, 16> uniforms_;
     SmallVector<UniformBlock, 4> uniform_blocks_;
     String name_;
 

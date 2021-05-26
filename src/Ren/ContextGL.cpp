@@ -93,8 +93,9 @@ void Ren::Context::Init(int w, int h, ILog *log) {
                                 GLsizei length, const GLchar *message,
                                 const void *userParam) {
             if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-                auto *self = (Context *)userParam;
+                auto *self = reinterpret_cast<const Context *>(userParam);
                 self->log_->Error("%s", message);
+                __debugbreak();
             }
         };
 
@@ -126,12 +127,22 @@ void Ren::Context::Init(int w, int h, ILog *log) {
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT, &unif_buf_offset_alignment);
         capabilities.unif_buf_offset_alignment = unif_buf_offset_alignment;
     }
-    
-    default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_skin_vertex_buf_ = buffers_.Add("default_skin_vtx_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_delta_buf_ = buffers_.Add("default_delta_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
-    default_indices_buf_ = buffers_.Add("default_ndx_buf2", eBufferType::VertexIndices, eBufferAccessType::Draw, eBufferAccessFreq::Static, 64 * 1024 * 1024);
+
+    default_vertex_buf1_ = buffers_.Add("default_vtx_buf1", eBufferType::VertexAttribs,
+                                        eBufferAccessType::Draw,
+                                        eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_vertex_buf2_ = buffers_.Add("default_vtx_buf2", eBufferType::VertexAttribs,
+                                        eBufferAccessType::Draw,
+                                        eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_skin_vertex_buf_ = buffers_.Add(
+        "default_skin_vtx_buf", eBufferType::VertexAttribs, eBufferAccessType::Draw,
+        eBufferAccessFreq::Static, 64 * 1024 * 1024);
+    default_delta_buf_ = buffers_.Add("default_delta_buf", eBufferType::VertexAttribs,
+                                      eBufferAccessType::Draw, eBufferAccessFreq::Static,
+                                      64 * 1024 * 1024);
+    default_indices_buf_ = buffers_.Add("default_ndx_buf2", eBufferType::VertexIndices,
+                                        eBufferAccessType::Draw,
+                                        eBufferAccessFreq::Static, 64 * 1024 * 1024);
 
     texture_atlas_ =
         TextureAtlasArray{TextureAtlasWidth, TextureAtlasHeight, TextureAtlasLayers,
@@ -247,6 +258,7 @@ void Ren::ResetGLState() {
     glUseProgram(0);
 
     Ren::GLUnbindTextureUnits(0, 24);
+    Ren::GLUnbindSamplers(0, 24);
     Ren::GLUnbindBufferUnits(0, 24);
 }
 

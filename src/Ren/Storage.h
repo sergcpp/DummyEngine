@@ -75,8 +75,7 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
   public:
     StrongRef() : storage_(nullptr), index_(0) {}
-    StrongRef(StorageType *storage, uint32_t index)
-        : storage_(storage), index_(index) {
+    StrongRef(StorageType *storage, uint32_t index) : storage_(storage), index_(index) {
         if (storage_) {
             T &p = storage_->at(index_);
             p.add_ref();
@@ -100,10 +99,6 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
     }
 
     StrongRef &operator=(const StrongRef &rhs) {
-        if (this == &rhs) {
-            return *this;
-        }
-
         Release();
 
         storage_ = rhs.storage_;
@@ -118,6 +113,10 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
     }
 
     StrongRef &operator=(StrongRef &&rhs) noexcept {
+        if (&rhs == this) {
+            return (*this);
+        }
+
         Release();
 
         storage_ = exchange(rhs.storage_, nullptr);
@@ -160,7 +159,7 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
     uint32_t index() const { return index_; }
 
-    bool operator==(const StrongRef &rhs) {
+    bool operator==(const StrongRef &rhs) const {
         return storage_ == rhs.storage_ && index_ == rhs.index_;
     }
 

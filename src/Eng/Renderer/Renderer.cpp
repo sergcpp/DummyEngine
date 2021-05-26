@@ -255,7 +255,9 @@ void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam,
     GatherDrawables(scene, cam, list);
 }
 
-void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
+void Renderer::ExecuteDrawList(const DrawList &list,
+                               const PersistentBuffers &persistent_bufs,
+                               const FrameBuf *target) {
     using namespace RendererInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
@@ -369,10 +371,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     assert(view_state_.act_res[0] <= view_state_.scr_res[0] &&
            view_state_.act_res[1] <= view_state_.scr_res[1]);
 
-    cur_buf_chunk_ = (cur_buf_chunk_ + 1) % FrameSyncWindow;
+    const int cur_buf_chunk = list.frame_index % FrameSyncWindow;
 
     if ((list.render_flags & EnableTaa) != 0) {
-        Ren::Vec2f jitter = HaltonSeq23[frame_counter_ % TaaSampleCount];
+        Ren::Vec2f jitter = HaltonSeq23[list.frame_index % TaaSampleCount];
         jitter = (jitter * 2.0f - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};
 
         list.draw_cam.SetPxOffset(jitter);
@@ -386,7 +388,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Update buffers
         //
-        rp_update_buffers_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+        rp_update_buffers_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk,
                                  buf_range_fences_, SKIN_TRANSFORMS_BUF, SHAPE_KEYS_BUF,
                                  INSTANCES_BUF, CELLS_BUF, LIGHTS_BUF, DECALS_BUF,
                                  ITEMS_BUF, SHARED_DATA_BUF);
@@ -396,7 +398,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Skinning and blend shapes
         //
-        rp_skinning_.Setup(rp_builder_, list, cur_buf_chunk_, ctx_.default_vertex_buf1(),
+        rp_skinning_.Setup(rp_builder_, list, cur_buf_chunk, ctx_.default_vertex_buf1(),
                            ctx_.default_vertex_buf2(), ctx_.default_delta_buf(),
                            ctx_.default_skin_vertex_buf(), SKIN_TRANSFORMS_BUF,
                            SHAPE_KEYS_BUF);
@@ -406,8 +408,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Shadow maps
         //
-        rp_shadow_maps_.Setup(rp_builder_, list, cur_buf_chunk_, INSTANCES_BUF,
-                              SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_->handle());
+        rp_shadow_maps_.Setup(rp_builder_, list, &persistent_bufs, cur_buf_chunk,
+                              INSTANCES_BUF, SHARED_DATA_BUF, SHADOWMAP_TEX,
+                              noise_tex_->handle());
         rp_tail->p_next = &rp_shadow_maps_;
         rp_tail = rp_tail->p_next;
 
@@ -415,7 +418,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // Skydome drawing
         //
         if (list.env.env_map) {
-            rp_skydome_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+            rp_skydome_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk,
                               SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_SPEC_TEX,
                               MAIN_DEPTH_TEX);
             rp_tail->p_next = &rp_skydome_;
@@ -428,9 +431,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // Depth prepass
         //
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
-            rp_depth_fill_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
-                                 INSTANCES_BUF, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
-                                 MAIN_VELOCITY_TEX, noise_tex_->handle());
+            rp_depth_fill_.Setup(rp_builder_, list, &view_state_, &persistent_bufs,
+                                 cur_buf_chunk, INSTANCES_BUF, SHARED_DATA_BUF,
+                                 MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX, noise_tex_->handle());
             rp_tail->p_next = &rp_depth_fill_;
             rp_tail = rp_tail->p_next;
         }
@@ -441,7 +444,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         if ((list.render_flags & EnableZFill) &&
             (list.render_flags & (EnableSSAO | EnableSSR)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            rp_down_depth_.Setup(rp_builder_, &view_state_, cur_buf_chunk_,
+            rp_down_depth_.Setup(rp_builder_, &view_state_, cur_buf_chunk,
                                  SHARED_DATA_BUF, MAIN_DEPTH_TEX, DEPTH_DOWN_2X_TEX);
             rp_tail->p_next = &rp_down_depth_;
             rp_tail = rp_tail->p_next;
@@ -453,7 +456,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
         const uint32_t use_ssao = (EnableZFill | EnableSSAO);
         if ((list.render_flags & use_ssao_mask) == use_ssao) {
-            rp_ssao_.Setup(rp_builder_, &view_state_, cur_buf_chunk_,
+            rp_ssao_.Setup(rp_builder_, &view_state_, cur_buf_chunk,
                            rand2d_dirs_4x4_->handle(), SHARED_DATA_BUF, DEPTH_DOWN_2X_TEX,
                            MAIN_DEPTH_TEX, SSAO_TEX);
             rp_tail->p_next = &rp_ssao_;
@@ -463,11 +466,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Opaque pass
         //
-        rp_opaque_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_, brdf_lut_,
-                         noise_tex_, cone_rt_lut_, INSTANCES_BUF, SHARED_DATA_BUF,
-                         CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX,
-                         SSAO_TEX, MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                         MAIN_DEPTH_TEX);
+        rp_opaque_.Setup(rp_builder_, list, &view_state_, &persistent_bufs, cur_buf_chunk,
+                         brdf_lut_, noise_tex_, cone_rt_lut_, INSTANCES_BUF,
+                         SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF,
+                         SHADOWMAP_TEX, SSAO_TEX, MAIN_COLOR_TEX, MAIN_NORMAL_TEX,
+                         MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
         rp_tail->p_next = &rp_opaque_;
         rp_tail = rp_tail->p_next;
 
@@ -484,10 +487,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
 
         rp_transparent_.Setup(rp_builder_, list, &rp_opaque_.alpha_blend_start_index_,
-                              &view_state_, cur_buf_chunk_, brdf_lut_, noise_tex_,
-                              cone_rt_lut_, INSTANCES_BUF, SHARED_DATA_BUF, CELLS_BUF,
-                              ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_TEX,
-                              MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
+                              &view_state_, &persistent_bufs, cur_buf_chunk, brdf_lut_,
+                              noise_tex_, cone_rt_lut_, INSTANCES_BUF, SHARED_DATA_BUF,
+                              CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX,
+                              SSAO_TEX, MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
                               MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
         rp_tail->p_next = &rp_transparent_;
         rp_tail = rp_tail->p_next;
@@ -499,7 +502,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         const char *refl_out_name =
             view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
 
-        rp_reflections_.Setup(rp_builder_, &view_state_, cur_buf_chunk_,
+        rp_reflections_.Setup(rp_builder_, &view_state_, cur_buf_chunk,
                               list.probe_storage, down_tex_4x_->handle(), brdf_lut_,
                               SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX,
                               MAIN_NORMAL_TEX, MAIN_SPEC_TEX, DEPTH_DOWN_2X_TEX,
@@ -511,14 +514,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         // Debug geometry
         //
         if (list.render_flags & DebugProbes) {
-            rp_debug_probes_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+            rp_debug_probes_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk,
                                    SHARED_DATA_BUF, refl_out_name);
             rp_tail->p_next = &rp_debug_probes_;
             rp_tail = rp_tail->p_next;
         }
 
         if (list.render_flags & DebugEllipsoids) {
-            rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk_,
+            rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_, cur_buf_chunk,
                                        SHARED_DATA_BUF, refl_out_name);
             rp_tail->p_next = &rp_debug_ellipsoids_;
             rp_tail = rp_tail->p_next;
@@ -529,7 +532,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         if (list.render_flags & EnableTaa) {
             assert(!view_state_.is_multisampled);
-            rp_taa_.Setup(rp_builder_, &view_state_, cur_buf_chunk_,
+            rp_taa_.Setup(rp_builder_, &view_state_, cur_buf_chunk,
                           history_tex_->handle(), reduced_average_,
                           list.draw_cam.max_exposure, SHARED_DATA_BUF, MAIN_COLOR_TEX,
                           MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX, RESOLVED_COLOR_TEX);
@@ -542,7 +545,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap | EnableDOF)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            rp_down_color_.Setup(rp_builder_, &view_state_, cur_buf_chunk_,
+            rp_down_color_.Setup(rp_builder_, &view_state_, cur_buf_chunk,
                                  SHARED_DATA_BUF, refl_out_name, down_tex_4x_->handle());
             rp_tail->p_next = &rp_down_color_;
             rp_tail = rp_tail->p_next;
@@ -572,7 +575,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
                 }
             }
 
-            rp_dof_.Setup(rp_builder_, &list.draw_cam, &view_state_, cur_buf_chunk_,
+            rp_dof_.Setup(rp_builder_, &list.draw_cam, &view_state_, cur_buf_chunk,
                           SHARED_DATA_BUF, color_in_name, MAIN_DEPTH_TEX,
                           DEPTH_DOWN_2X_TEX, DEPTH_DOWN_4X_TEX, down_tex_4x_->handle(),
                           dof_out_name);
@@ -594,7 +597,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
         //
         // Fence
         //
-        rp_fence_.Setup(rp_builder_, cur_buf_chunk_, buf_range_fences_);
+        rp_fence_.Setup(rp_builder_, cur_buf_chunk, buf_range_fences_);
         rp_tail->p_next = &rp_fence_;
         rp_tail = rp_tail->p_next;
 
@@ -675,7 +678,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             // Ren::TexHandle output_tex =
             //    target ? target->attachments[0].tex->handle() : Ren::TexHandle{};
 
-            rp_fxaa_.Setup(rp_builder_, &view_state_, cur_buf_chunk_, SHARED_DATA_BUF,
+            rp_fxaa_.Setup(rp_builder_, &view_state_, cur_buf_chunk, SHARED_DATA_BUF,
                            MAIN_COMBINED_TEX, nullptr);
             rp_tail->p_next = &rp_fxaa_;
             rp_tail = rp_tail->p_next;
@@ -688,7 +691,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
             Ren::TexHandle output_tex =
                 target ? target->attachments[0].tex->handle() : Ren::TexHandle{};
 
-            rp_debug_textures_.Setup(rp_builder_, &view_state_, list, cur_buf_chunk_,
+            rp_debug_textures_.Setup(rp_builder_, &view_state_, list, cur_buf_chunk,
                                      down_tex_4x_, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF,
                                      SHADOWMAP_TEX, MAIN_COLOR_TEX, MAIN_NORMAL_TEX,
                                      MAIN_SPEC_TEX, MAIN_DEPTH_TEX, SSAO_TEX,
@@ -719,7 +722,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const FrameBuf *target) {
     backend_cpu_start_ = cpu_draw_start_us;
     backend_cpu_end_ = cpu_draw_end_us;
     backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
-    frame_counter_++;
 
     __itt_task_end(__g_itt_domain);
 }

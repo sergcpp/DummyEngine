@@ -13,6 +13,9 @@ bool IsMainThread();
 uint8_t from_hex_char(const char c) {
     return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0');
 }
+
+const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexRepeat::Repeat,
+                                              eTexCompare::None};
 } // namespace Ren
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,
@@ -23,27 +26,34 @@ Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *s
     Init(mat_src, status, on_prog_load, on_tex_load, on_sampler_load, log);
 }
 
-Ren::Material::Material(const char *name, const uint32_t flags, ProgramRef _programs[],
-                        const int programs_count, Tex2DRef _textures[],
-                        const int textures_count, const Vec4f _params[],
-                        const int params_count, ILog *log) {
+Ren::Material::Material(const char *name, uint32_t flags, const ProgramRef _programs[],
+                        int programs_count, const Tex2DRef _textures[],
+                        const SamplerRef _samplers[], int textures_count,
+                        const Vec4f _params[], int params_count, ILog *log) {
     name_ = String{name};
-    Init(flags, _programs, programs_count, _textures, textures_count, _params,
+    Init(flags, _programs, programs_count, _textures, _samplers, textures_count, _params,
          params_count, log);
 }
 
-void Ren::Material::Init(uint32_t flags, ProgramRef _programs[], int programs_count,
-                         Tex2DRef _textures[], int textures_count, const Vec4f _params[],
-                         int params_count, ILog *log) {
+void Ren::Material::Init(uint32_t flags, const ProgramRef _programs[],
+                         const int programs_count, const Tex2DRef _textures[],
+                         const SamplerRef _samplers[], const int textures_count,
+                         const Vec4f _params[], int params_count, ILog *log) {
     assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
+
+    programs.clear();
+    textures.clear();
+    samplers.clear();
+    params.clear();
+
     for (int i = 0; i < programs_count; i++) {
         programs.emplace_back(_programs[i]);
     }
     for (int i = 0; i < textures_count; i++) {
         textures.emplace_back(_textures[i]);
-        // samplers.emplace_back(textures.back()->sampling());
+        samplers.emplace_back(_samplers[i]);
     }
     for (int i = 0; i < params_count; i++) {
         params.emplace_back(_params[i]);
@@ -147,6 +157,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             const char *_p = q + 1;
             const char *_q = std::strpbrk(_p, delims);
 
+            SamplingParams sampler_params = g_default_mat_sampler;
+
             for (; _p != nullptr && _q != nullptr; _q = std::strpbrk(_p, delims)) {
                 if (_p == _q) {
                     break;
@@ -170,6 +182,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                     texture_flags |= TexSRGB;
                 } else if (strncmp(flag, "norepeat", flag_len) == 0) {
                     texture_flags |= TexNoRepeat;
+                    sampler_params.repeat = eTexRepeat::ClampToEdge;
                 } else if (strncmp(flag, "mip_min", flag_len) == 0) {
                     texture_flags |= TexMIPMin;
                 } else if (strncmp(flag, "mip_max", flag_len) == 0) {
@@ -188,7 +201,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
 
             textures.emplace_back(
                 on_tex_load(texture_name.c_str(), texture_color, texture_flags));
-            samplers.emplace_back(on_sampler_load(textures.back()->sampling()));
+            samplers.emplace_back(on_sampler_load(sampler_params));
         } else if (item == "param:") {
             Vec4f &par = params.emplace_back();
             p = q + 1;

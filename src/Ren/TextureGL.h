@@ -132,6 +132,8 @@ class Texture2D : public RefCounter {
                          ILog *log);
 
   public:
+    uint32_t first_user = 0xffffffff;
+
     Texture2D() = default;
     Texture2D(const char *name, const Tex2DParams &params, ILog *log);
     // TODO: remove this!

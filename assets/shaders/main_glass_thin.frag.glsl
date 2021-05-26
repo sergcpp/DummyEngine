@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
+#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
@@ -13,8 +14,10 @@ $ModifyWarning
 
 #include "internal/_fs_common.glsl"
 
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
+#if !defined(GL_ARB_bindless_texture)
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D norm_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D spec_texture;
+#endif // GL_ARB_bindless_texture
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
 layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
@@ -42,11 +45,19 @@ layout(location = 0) in highp vec3 aVertexPos_;
 layout(location = 1) in mediump vec2 aVertexUVs_;
 layout(location = 2) in mediump vec3 aVertexNormal_;
 layout(location = 3) in mediump vec3 aVertexTangent_;
+#if defined(GL_ARB_bindless_texture)
+layout(location = 9) in flat uvec2 norm_texture;
+layout(location = 10) in flat uvec2 spec_texture;
+#endif // GL_ARB_bindless_texture
 #else
 in highp vec3 aVertexPos_;
 in mediump vec2 aVertexUVs_;
 in mediump vec3 aVertexNormal_;
 in mediump vec3 aVertexTangent_;
+#if defined(GL_ARB_bindless_texture)
+in flat uvec2 norm_texture;
+in flat uvec2 spec_texture;
+#endif // GL_ARB_bindless_texture
 #endif
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -60,7 +71,7 @@ void main(void) {
     highp float transp_z = 2.0 * (log(lin_depth) - shrd_data.uTranspParamsAndTime[0]) /
                            shrd_data.uTranspParamsAndTime[1] - 1.0;
     
-    vec3 normal_color = texture(normals_texture, aVertexUVs_).wyz;
+    vec3 normal_color = texture(SAMPLER2D(norm_texture), aVertexUVs_).wyz;
     
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
@@ -83,7 +94,7 @@ void main(void) {
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
         
-        vec4 specular_color = texture(specular_texture, aVertexUVs_);
+        vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
         vec3 refl_ray_ws = reflect(view_ray_ws, normal);
         
         vec3 reflected_color = vec3(0.0);

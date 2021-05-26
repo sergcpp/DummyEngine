@@ -746,7 +746,9 @@ void GSBaseState::Draw() {
                 if (probe_to_render_) {
                     for (int i = 0; i < 6; i++) {
                         renderer_->ExecuteDrawList(temp_probe_lists_[i],
+                                                   scene_manager_->persistent_bufs(),
                                                    &temp_probe_buf_);
+                        scene_manager_->InsertPersistentBuffersFence();
                         renderer_->BlitToTempProbeFace(temp_probe_buf_,
                                                        scene_data.probe_storage, i);
                     }
@@ -774,7 +776,9 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
-            renderer_->ExecuteDrawList(main_view_lists_[back_list]);
+            renderer_->ExecuteDrawList(main_view_lists_[back_list],
+                                       scene_manager_->persistent_bufs());
+            scene_manager_->InsertPersistentBuffersFence();
         }
     }
 
@@ -844,7 +848,8 @@ void GSBaseState::UpdateFixed(const uint64_t dt_us) {
 
     { // invalidate objects updated by physics manager
         uint32_t updated_count = 0;
-        const uint32_t* updated_objects = physics_manager_->updated_objects(updated_count);
+        const uint32_t *updated_objects =
+            physics_manager_->updated_objects(updated_count);
         scene_manager_->InvalidateObjects(updated_objects, updated_count, CompPhysicsBit);
     }
 }

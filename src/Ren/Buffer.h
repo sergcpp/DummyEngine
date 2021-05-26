@@ -8,10 +8,16 @@
 namespace Ren {
 class ILog;
 
-enum class eBufferType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, _Count };
-enum class eBufferAccessType : uint8_t {
-    Draw, Read, Copy
+enum class eBufferType : uint8_t {
+    Undefined,
+    VertexAttribs,
+    VertexIndices,
+    Texture,
+    Uniform,
+    Storage,
+    _Count
 };
+enum class eBufferAccessType : uint8_t { Draw, Read, Copy };
 enum class eBufferAccessFreq : uint8_t {
     Stream, // modified once, used a few times
     Static, // modified once, used many times
@@ -36,25 +42,23 @@ class Buffer : public RefCounter {
     struct Node {
         bool is_free = true;
         int parent = -1;
-        int child[2] = { -1, -1 };
+        int child[2] = {-1, -1};
         uint32_t offset = 0, size = 0;
 #ifndef NDEBUG
         char tag[32] = {};
 #endif
 
-        bool has_children() const {
-            return child[0] != -1 || child[1] != -1;
-        }
+        bool has_children() const { return child[0] != -1 || child[1] != -1; }
     };
 
-    BufHandle           handle_;
-    String              name_;
-    eBufferType         type_ = eBufferType::Undefined;
-    eBufferAccessType   access_;
-    eBufferAccessFreq   freq_;
-    uint32_t            size_ = 0;
-    SparseArray<Node>   nodes_;
-    
+    BufHandle handle_;
+    String name_;
+    eBufferType type_ = eBufferType::Undefined;
+    eBufferAccessType access_;
+    eBufferAccessFreq freq_;
+    uint32_t size_ = 0;
+    SparseArray<Node> nodes_;
+
     int Alloc_Recursive(int i, uint32_t req_size, const char *tag);
     int Find_Recursive(int i, uint32_t offset) const;
     bool Free_Node(int i);
@@ -62,14 +66,13 @@ class Buffer : public RefCounter {
     void PrintNode(int i, std::string prefix, bool is_tail, ILog *log);
 
     static int g_GenCounter;
-public:
+
+  public:
     Buffer() = default;
     explicit Buffer(const char *name, eBufferType type, eBufferAccessType access,
                     eBufferAccessFreq freq, uint32_t initial_size);
     Buffer(const Buffer &rhs) = delete;
-    Buffer(Buffer &&rhs) noexcept {
-        (*this) = std::move(rhs);
-    }
+    Buffer(Buffer &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Buffer();
 
     Buffer &operator=(const Buffer &rhs) = delete;
@@ -92,6 +95,11 @@ public:
 
     void Resize(uint32_t new_size);
 
+    uint8_t *Map() { return MapRange(0, size_); }
+    uint8_t *MapRange(uint32_t offset, uint32_t size);
+    void FlushRange(uint32_t offset, uint32_t size);
+    void Unmap();
+
     void Print(ILog *log);
 };
 
@@ -101,4 +109,4 @@ void GLUnbindBufferUnits(int start, int count);
 
 typedef StrongRef<Buffer> BufferRef;
 typedef Storage<Buffer> BufferStorage;
-}
+} // namespace Ren

@@ -8,13 +8,18 @@
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
-uint32_t _draw_list_range_full(Ren::Context &ctx,
+void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
+                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
+void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
+                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
+uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
                                const DynArrayConstRef<MainDrawBatch> &main_batches,
                                const DynArrayConstRef<uint32_t> &main_batch_indices,
                                uint32_t i, uint64_t mask, uint64_t &cur_mat_id,
                                uint64_t &cur_prog_id, BackendInfo &backend_info);
 
-uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
+uint32_t _draw_list_range_full_rev(RpBuilder &builder,
+                                   const Ren::MaterialStorage *materials,
                                    const DynArrayConstRef<MainDrawBatch> &main_batches,
                                    const DynArrayConstRef<uint32_t> &main_batch_indices,
                                    uint32_t ndx, uint64_t mask, uint64_t &cur_mat_id,
@@ -27,6 +32,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
                                            RpAllocBuf &lights_buf, RpAllocBuf &decals_buf,
                                            RpAllocTex &shadowmap_tex,
                                            RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
+    using namespace RpSharedInternal;
+
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = true;
     rast_state.depth_test.func = Ren::eTestFunc::Less;
@@ -62,6 +69,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     Ren::RastState applied_state = rast_state;
 
     glBindVertexArray(draw_pass_vao_.id());
+
+    auto &ctx = builder.ctx();
 
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
@@ -113,13 +122,22 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_->id());
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT, cone_rt_lut_->id());
 
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT,
+                      GLuint(bufs_->materials_buf.id),
+                      GLintptr(bufs_->materials_buf_range.first),
+                      GLsizeiptr(bufs_->materials_buf_range.second));
+    if (ctx.capabilities.bindless_texture) {
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT,
+                          GLuint(bufs_->textures_buf.id),
+                          GLintptr(bufs_->textures_buf_range.first),
+                          GLsizeiptr(bufs_->textures_buf_range.second));
+    }
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
                                GLuint(instances_buf.tbos[orphan_index_]->id()));
 
     uint64_t cur_prog_id = 0xffffffffffffffff;
     uint64_t cur_mat_id = 0xffffffffffffffff;
 
-    Ren::Context &ctx = builder.ctx();
     BackendInfo backend_info;
 
     for (int j = int(main_batch_indices_.count) - 1; j >= *alpha_blend_start_index_;
@@ -144,26 +162,15 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
             glUseProgram(p->id());
         }
 
-        if (cur_mat_id != batch.mat_id) {
+        if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials_->at(batch.mat_id);
-
-            for (int j = 0; j < int(mat.textures.size()); ++j) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j,
-                                           mat.textures[j]->id());
-            }
-        }
-
-        if (cur_prog_id != batch.prog_id || cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials_->at(batch.mat_id);
-            if (!mat.params.empty()) {
-                glUniform4fv(REN_U_MAT_PARAM_LOC, GLsizei(mat.params.size()),
-                             ValuePtr(mat.params[0]));
-            }
+            _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
         cur_prog_id = batch.prog_id;
         cur_mat_id = batch.mat_id;
 
+        glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
         glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
                      &batch.instance_indices[0]);
 
@@ -199,26 +206,15 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
             glUseProgram(p->id());
         }
 
-        if (cur_mat_id != batch.mat_id) {
+        if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials_->at(batch.mat_id);
-
-            for (int j = 0; j < int(mat.textures.size()); ++j) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j,
-                                           mat.textures[j]->id());
-            }
-        }
-
-        if (cur_prog_id != batch.prog_id || cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials_->at(batch.mat_id);
-            if (!mat.params.empty()) {
-                glUniform4fv(REN_U_MAT_PARAM_LOC, GLsizei(mat.params.size()),
-                             ValuePtr(mat.params[0]));
-            }
+            _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
         cur_prog_id = batch.prog_id;
         cur_mat_id = batch.mat_id;
 
+        glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
         glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
                      &batch.instance_indices[0]);
 
@@ -258,6 +254,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 }
 
 void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
+    using namespace RpSharedInternal;
+
     Ren::RastState rast_state;
     rast_state.depth_test.enabled = true;
     rast_state.depth_test.func = Ren::eTestFunc::LEqual;
@@ -347,8 +345,12 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
             }
 
             if (cur_mat != &mat) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                           mat.textures[0]->id());
+                if (ctx.capabilities.bindless_texture) {
+                    glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
+                } else {
+                    _bind_texture0_and_sampler0(builder.ctx(), mat,
+                                                builder.temp_samplers);
+                }
                 cur_mat = &mat;
             }
 
@@ -422,17 +424,11 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
             }
 
             if (cur_mat != &mat) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT,
-                                           mat.textures[0]->id());
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX1_SLOT,
-                                           mat.textures[1]->id());
-                if (mat.textures[3]) {
-                    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT,
-                                               mat.textures[3]->id());
-                    if (mat.textures[4]) {
-                        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX4_SLOT,
-                                                   mat.textures[4]->id());
-                    }
+                if (ctx.capabilities.bindless_texture) {
+                    glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
+                } else {
+                    _bind_texture0_and_sampler0(builder.ctx(), mat,
+                                                builder.temp_samplers);
                 }
                 cur_mat = &mat;
             }
@@ -450,6 +446,8 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
                 (batch.indices_count / 3) * batch.instance_count;
         }
     }
+
+    Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 8);
 }
 
 void RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) {}

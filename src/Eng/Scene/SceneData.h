@@ -137,11 +137,23 @@ public:
     virtual void *SequentialData() { return nullptr; }
 };
 
+struct PersistentBuffers {
+    Ren::BufHandle                  materials_buf;
+    std::pair<uint32_t, uint32_t>   materials_buf_range;
+    Ren::BufHandle                  textures_buf;
+    std::pair<uint32_t, uint32_t>   textures_buf_range;
+};
+
 struct SceneData {
     Ren::String                             name;
     
     Ren::Texture2DStorage                   textures;
     Ren::MaterialStorage                    materials;
+    std::vector<uint32_t>                   material_changes;
+    Ren::BufferRef                          materials_buf, textures_buf;
+    void                                    *mat_buf_sync[4] = {};
+    std::pair<uint32_t, uint32_t>           mat_update_ranges[4];
+    uint32_t                                mat_buf_index = 0;
     Ren::MeshStorage                        meshes;
 
     std::vector<uint32_t>                   texture_mem_buckets;

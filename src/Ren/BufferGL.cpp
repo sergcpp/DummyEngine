@@ -13,9 +13,10 @@ const uint32_t g_gl_buf_targets[] = {
     GL_ELEMENT_ARRAY_BUFFER, // VertexIndices
     GL_TEXTURE_BUFFER,       // Texture
     GL_UNIFORM_BUFFER,       // Uniform
+    GL_SHADER_STORAGE_BUFFER // Storage
 };
 static_assert(sizeof(g_gl_buf_targets) / sizeof(g_gl_buf_targets[0]) ==
-                  (size_t)eBufferType::_Count,
+                  size_t(eBufferType::_Count),
               "!");
 
 GLenum GetGLBufUsage(const eBufferAccessType access, const eBufferAccessFreq freq) {
@@ -316,9 +317,37 @@ void Ren::Buffer::Resize(uint32_t new_size) {
     handle_.generation = g_GenCounter++;
 }
 
+uint8_t *Ren::Buffer::MapRange(uint32_t offset, uint32_t size) {
+    const GLbitfield BufferRangeBindFlags =
+        GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
+        GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
+
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
+    uint8_t *ret =
+        (uint8_t *)glMapBufferRange(g_gl_buf_targets[int(type_)], GLintptr(offset),
+                                    GLsizeiptr(size), BufferRangeBindFlags);
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
+
+    return ret;
+}
+
+void Ren::Buffer::FlushRange(uint32_t offset, uint32_t size) {
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
+    glFlushMappedBufferRange(g_gl_buf_targets[int(type_)], GLintptr(offset),
+                             GLsizeiptr(size));
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
+}
+
+void Ren::Buffer::Unmap() {
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
+    glUnmapBuffer(g_gl_buf_targets[int(type_)]);
+    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
+}
+
 void Ren::GLUnbindBufferUnits(int start, int count) {
     for (int i = start; i < start + count; i++) {
         glBindBufferBase(GL_UNIFORM_BUFFER, i, 0);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, 0);
     }
 }
 

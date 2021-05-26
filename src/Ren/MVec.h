@@ -358,9 +358,13 @@ template <typename T> force_inline Vec<T, 4> MakeVec4(const T *v) {
     return Vec<T, 4>(v[0], v[1], v[2], v[3]);
 }
 
-using Vec2i = Vec<int, 2>;
-using Vec3i = Vec<int, 3>;
-using Vec4i = Vec<int, 4>;
+using Vec2i = Vec<int32_t, 2>;
+using Vec3i = Vec<int32_t, 3>;
+using Vec4i = Vec<int32_t, 4>;
+
+using Vec2u = Vec<uint32_t, 2>;
+using Vec3u = Vec<uint32_t, 3>;
+using Vec4u = Vec<uint32_t, 4>;
 
 using Vec2f = Vec<float, 2>;
 using Vec3f = Vec<float, 3>;

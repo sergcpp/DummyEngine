@@ -1,6 +1,7 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
+#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
@@ -21,12 +22,18 @@ layout(location = 1) in mediump vec2 aVertexUVs_ES[];
 layout(location = 2) in mediump vec3 aVertexNormal_ES[];
 layout(location = 3) in mediump vec3 aVertexTangent_ES[];
 layout(location = 4) in highp vec3 aVertexShUVs_ES[][4];
+#if defined(GL_ARB_bindless_texture)
+layout(location = 12) out flat uvec2 bump_texture;
+#endif // GL_ARB_bindless_texture
 #else
 in highp vec3 aVertexPos_ES[];
 in mediump vec2 aVertexUVs_ES[];
 in mediump vec3 aVertexNormal_ES[];
 in mediump vec3 aVertexTangent_ES[];
 in highp vec3 aVertexShUVs_ES[][4];
+#if defined(GL_ARB_bindless_texture)
+layout(location = 12) in flat uvec2 bump_texture;
+#endif // GL_ARB_bindless_texture
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -45,7 +52,9 @@ out highp vec3 aVertexShUVs_[4];
 out lowp float tex_height;
 #endif
 
+#if !defined(GL_ARB_bindless_texture)
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D bump_texture;
+#endif // GL_ARB_bindless_texture
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = 0, std140)
@@ -73,7 +82,7 @@ void main(void) {
 	//float k = gl_TessLevelInner[0] / 64.0;
 
 	//aVertexPos_.y += 4.0 * sin(aVertexPos_.x * 0.1);
-	tex_height = 0.5 * texture(bump_texture, aVertexUVs_).r * k;
+	tex_height = 0.5 * texture(SAMPLER2D(bump_texture), aVertexUVs_).r * k;
 	aVertexPos_ += 1.0 * 0.05 * normalize(aVertexNormal_) * tex_height * k;
 
 	gl_Position = shrd_data.uViewProjMatrix * vec4(aVertexPos_, 1.0);

@@ -1,6 +1,7 @@
 #version 310 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
+#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
@@ -27,9 +28,20 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
+layout(location = REN_U_MAT_INDEX_LOC) uniform uint uMaterialIndex;
 layout (location = REN_U_INSTANCES_LOC) uniform ivec4 uInstanceIndices[REN_MAX_BATCH_SIZE / 4];
 
 layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
+
+layout(binding = REN_MATERIALS_SLOT) buffer Materials {
+	MaterialData materials[];
+};
+
+#if defined(GL_ARB_bindless_texture)
+layout(binding = REN_BINDLESS_TEX_SLOT) buffer TextureHandles {
+	uvec2 texture_handles[];
+};
+#endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out highp vec3 aVertexPos_;
@@ -37,12 +49,26 @@ layout(location = 1) out mediump vec3 aVertexUVAndCurvature_;
 layout(location = 2) out mediump vec3 aVertexNormal_;
 layout(location = 3) out mediump vec3 aVertexTangent_;
 layout(location = 4) out highp vec3 aVertexShUVs_[4];
+#if defined(GL_ARB_bindless_texture)
+layout(location = 8) out flat uvec2 diff_texture;
+layout(location = 9) out flat uvec2 norm_texture;
+layout(location = 10) out flat uvec2 spec_texture;
+layout(location = 11) out flat uvec2 sss_texture;
+layout(location = 12) out flat uvec2 norm_detail_texture;
+#endif // GL_ARB_bindless_texture
 #else
 out highp vec3 aVertexPos_;
 out mediump vec3 aVertexUVAndCurvature_;
 out mediump vec3 aVertexNormal_;
 out mediump vec3 aVertexTangent_;
 out highp vec3 aVertexShUVs_[4];
+#if defined(GL_ARB_bindless_texture)
+out flat uvec2 diff_texture;
+out flat uvec2 norm_texture;
+out flat uvec2 spec_texture;
+out flat uvec2 sss_texture;
+out flat uvec2 norm_detail_texture;
+#endif // GL_ARB_bindless_texture
 #endif
 
 #ifdef VULKAN
@@ -82,5 +108,14 @@ void main(void) {
         aVertexShUVs_[i].xy += offsets[i];
     }
     
+#if defined(GL_ARB_bindless_texture)
+	MaterialData mat = materials[uMaterialIndex];
+	diff_texture = texture_handles[mat.texture_indices[0]];
+	norm_texture = texture_handles[mat.texture_indices[1]];
+	spec_texture = texture_handles[mat.texture_indices[2]];
+	sss_texture = texture_handles[mat.texture_indices[3]];
+	norm_detail_texture = texture_handles[mat.texture_indices[4]];
+#endif // GL_ARB_bindless_texture
+	
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 } 

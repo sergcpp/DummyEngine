@@ -30,6 +30,20 @@
       </CustomListItems>
     </Expand>
   </Type>
+  <Type Name="Ren::SparseArray&lt;*&gt;::SparseArrayIterator">
+    <DisplayString>{{ {container_->data_[index_]} }}</DisplayString>
+	<Expand>
+      <Item Name="[index]" ExcludeView="simple">index_</Item>
+      <Item Name="[ptr]" ExcludeView="simple">&amp;container_->data_[index_]</Item>
+    </Expand>
+  </Type>
+  <Type Name="Ren::SparseArray&lt;*&gt;::SparseArrayConstIterator">
+    <DisplayString>{{ {container_->data_[index_]} }}</DisplayString>
+	<Expand>
+      <Item Name="[index]" ExcludeView="simple">index_</Item>
+      <Item Name="[ptr]" ExcludeView="simple">&amp;container_->data_[index_]</Item>
+    </Expand>
+  </Type>
   <Type Name="Ren::RingBuffer&lt;*&gt;">
     <DisplayString>{{ size={head_ - tail_}, capacity={capacity_} }}</DisplayString>
     <Expand>
@@ -49,14 +63,17 @@
     </Expand>
   </Type>
   <Type Name="Ren::SmallVectorImpl&lt;*&gt;">
-    <DisplayString>{{ size={end_ - begin_}, capacity={capacity_} }}</DisplayString>
+    <DisplayString>{{ size={end_ - begin_}, capacity={capacity_ &amp; CapacityMask} }}</DisplayString>
     <Expand>
       <Item Name="[size]" ExcludeView="simple">end_ - begin_</Item>
-      <Item Name="[capacity]" ExcludeView="simple">capacity_</Item>
+      <Item Name="[capacity]" ExcludeView="simple">capacity_ &amp; CapacityMask</Item>
       <ArrayItems>
         <Size>end_ - begin_</Size>
         <ValuePointer>begin_</ValuePointer>
       </ArrayItems>
     </Expand>
+  </Type>
+  <Type Name="Ren::Fixed&lt;*&gt;">
+    <DisplayString>{{ {float(value_) / One} }}</DisplayString>
   </Type>
 </AutoVisualizer>

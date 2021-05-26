@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
+#extension GL_ARB_bindless_texture: enable
 //#extension GL_EXT_control_flow_attributes : enable
 
 $ModifyWarning
@@ -15,10 +16,12 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
+#if !defined(GL_ARB_bindless_texture)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D diffuse_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D normals_texture;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D specular_texture;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D bump_texture;
+#endif // GL_ARB_bindless_texture
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
@@ -44,6 +47,12 @@ layout(location = 2) in mediump vec3 aVertexNormal_;
 layout(location = 3) in mediump vec3 aVertexTangent_;
 layout(location = 4) in highp vec3 aVertexShUVs_[4];
 layout(location = 8) in lowp float tex_height;
+#if defined(GL_ARB_bindless_texture)
+layout(location = 9) in flat uvec2 diff_texture;
+layout(location = 10) in flat uvec2 norm_texture;
+layout(location = 11) in flat uvec2 spec_texture;
+layout(location = 12) in flat uvec2 bump_texture;
+#endif // GL_ARB_bindless_texture
 #else
 in highp vec3 aVertexPos_;
 in mediump vec2 aVertexUVs_;
@@ -51,6 +60,12 @@ in mediump vec3 aVertexNormal_;
 in mediump vec3 aVertexTangent_;
 in highp vec3 aVertexShUVs_[4];
 in lowp float tex_height;
+#if defined(GL_ARB_bindless_texture)
+in flat uvec2 diff_texture;
+in flat uvec2 norm_texture;
+in flat uvec2 spec_texture;
+in flat uvec2 bump_texture;
+#endif // GL_ARB_bindless_texture
 #endif
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;

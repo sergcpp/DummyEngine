@@ -115,6 +115,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
 
     const uint64_t iteration_start = Sys::GetTimeUs();
 
+    list.frame_index = frame_index_;
     list.draw_cam = cam;
     list.env = EnvironmentWeak{scene.env};
 
@@ -983,7 +984,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
             sun_shadow_cache_[casc].valid &=
                 (cached_dist < 1.0f && cached_dir_dist < 0.1f);
 
-            const uint8_t pattern_bit = (1u << uint8_t(frame_counter_ % 8));
+            const uint8_t pattern_bit = (1u << uint8_t(frame_index_ % 8));
             bool should_update = (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
 
             if (EnableSunCulling && casc > 0 && should_update) {
@@ -1717,6 +1718,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam,
         list.frontend_info.items_assignment_time_us =
             uint32_t(iteration_end - items_assignment_start);
     }
+
+    ++frame_index_;
 
     __itt_task_end(__g_itt_domain);
 }

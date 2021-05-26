@@ -38,6 +38,8 @@ R"(
 #define REN_MOMENTS2_MS_TEX_SLOT )" AS_STR(REN_MOMENTS2_MS_TEX_SLOT) R"(
 #define REN_NOISE_TEX_SLOT )" AS_STR(REN_NOISE_TEX_SLOT) R"(
 #define REN_CONE_RT_LUT_SLOT )" AS_STR(REN_CONE_RT_LUT_SLOT) R"(
+#define REN_MATERIALS_SLOT )" AS_STR(REN_MATERIALS_SLOT) R"(
+#define REN_BINDLESS_TEX_SLOT )" AS_STR(REN_BINDLESS_TEX_SLOT) R"(
 
 #define REN_BASE0_TEX_SLOT )" AS_STR(REN_BASE0_TEX_SLOT) R"(
 #define REN_BASE1_TEX_SLOT )" AS_STR(REN_BASE1_TEX_SLOT) R"(
@@ -53,6 +55,7 @@ R"(
 #define REN_REFL_DEPTH_LOW_TEX_SLOT )" AS_STR(REN_REFL_DEPTH_LOW_TEX_SLOT) R"(
 
 #define REN_U_M_MATRIX_LOC  )" AS_STR(REN_U_M_MATRIX_LOC) R"(
+#define REN_U_MAT_INDEX_LOC )" AS_STR(REN_U_MAT_INDEX_LOC) R"(
 #define REN_U_INSTANCES_LOC )" AS_STR(REN_U_INSTANCES_LOC) R"(
 #define REN_U_MAT_PARAM_LOC )" AS_STR(REN_U_MAT_PARAM_LOC) R"(
 
@@ -151,6 +154,12 @@ struct SharedData {
     vec4 uWindScroll, uWindScrollPrev;
     ProbeItem uProbes[REN_MAX_PROBES_TOTAL];
     EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL];
+};
+
+struct MaterialData {
+    uint texture_indices[5];
+    uint _pad[3];
+    vec4 params;
 };
 
 )"

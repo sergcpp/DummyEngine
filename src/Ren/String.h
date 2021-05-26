@@ -152,7 +152,7 @@ public:
     }
 
     friend bool operator==(const BasicString &s1, const char *s2) {
-        return strcmp(s1.str_, s2) == 0;
+        return s1.str_ && strcmp(s1.str_, s2) == 0;
     }
 
     friend bool operator!=(const BasicString &s1, const char *s2) {

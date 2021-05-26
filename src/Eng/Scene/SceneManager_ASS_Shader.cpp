@@ -224,7 +224,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
             if (res != 0) {
                 ctx.log->Error("[PrepareAssets] Failed to compile %s", spv_file.c_str());
 #if !defined(NDEBUG) && defined(_WIN32)
-                __debugbreak();
+                //__debugbreak();
 #endif
                 return false;
             }

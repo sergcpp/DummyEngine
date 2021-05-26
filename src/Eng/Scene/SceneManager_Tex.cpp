@@ -7,11 +7,7 @@
 extern __itt_domain *__g_itt_domain;
 
 namespace SceneManagerConstants {
-#if defined(__ANDROID__)
 extern const char *TEXTURES_PATH;
-#else
-extern const char *TEXTURES_PATH;
-#endif
 
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
@@ -42,6 +38,21 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
     default:
         log->Error("Unknown DDS pixel format %i", px_format);
         return;
+    }
+}
+
+void CaptureMaterialTextureChange(Ren::Context &ctx, SceneData &scene_data,
+                                  const Ren::Tex2DRef &ref) {
+    uint32_t tex_user = ref->first_user;
+    while (tex_user != 0xffffffff) {
+        Ren::Material &mat = scene_data.materials[tex_user];
+        scene_data.material_changes.push_back(tex_user);
+        const size_t ndx =
+            std::distance(mat.textures.begin(),
+                          std::find(mat.textures.begin(), mat.textures.end(), ref));
+        Ren::eSamplerLoadStatus status;
+        mat.samplers[ndx] = ctx.LoadSampler(ref->sampling(), &status);
+        tex_user = mat.next_texture_user[ndx];
     }
 }
 } // namespace SceneManagerInternal
@@ -149,6 +160,8 @@ void SceneManager::TextureLoaderProc() {
                    req->ref->name().EndsWith(".KTX")) {
             assert(false && "Not implemented!");
             read_offset += sizeof(Ren::KTXHeader);
+        } else {
+            read_success = false;
         }
 
         if (read_success) {
@@ -202,6 +215,10 @@ void SceneManager::TextureLoaderProc() {
 }
 
 void SceneManager::EstimateTextureMemory(const int portion_size) {
+    if (scene_data_.textures.capacity() == 0) {
+        return;
+    }
+
     const int BucketSize = 16;
     scene_data_.texture_mem_buckets.resize(
         (scene_data_.textures.capacity() + BucketSize - 1) / BucketSize);
@@ -245,15 +262,6 @@ void SceneManager::EstimateTextureMemory(const int portion_size) {
 void SceneManager::ProcessPendingTextures(const int portion_size) {
     using namespace SceneManagerConstants;
 
-    { // TEST TEST TEST
-        std::vector<uint64_t> texture_handles(scene_data_.textures.capacity(), 0);
-        for (auto it = scene_data_.textures.begin(); it != scene_data_.textures.end();
-             ++it) {
-            //texture_handles[it.index()] = it->GetBindlessHandle();
-        }
-        volatile int ii = 0;
-    }
-
     //
     // Process io pending textures
     //
@@ -290,7 +298,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                                 });
                             if (it == std::end(lod_transit_textures_) ||
                                 it->index() != req->ref.index()) {
-                                lod_transit_textures_.insert(it, req->ref);
+                                lod_transit_textures_.insert(it, {req->ref});
                             }
                         }
 
@@ -364,7 +372,9 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                     cur_sampling.min_lod.set_value(cur_sampling.min_lod.value() +
                                                    cur_sampling.min_lod.One *
                                                        req->mip_count_to_init);
-                    req->ref->ApplySampling(cur_sampling, ren_ctx_.log());
+                    req->ref->SetSampling(cur_sampling);
+                    SceneManagerInternal::CaptureMaterialTextureChange(
+                        ren_ctx_, scene_data_, req->ref);
                 }
 
                 const uint64_t t2_us = Sys::GetTimeUs();
@@ -398,7 +408,9 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
          it != std::end(lod_transit_textures_);) {
         Ren::SamplingParams cur_sampling = (*it)->params().sampling;
         cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
-        (*it)->ApplySampling(cur_sampling, ren_ctx_.log());
+        (*it)->SetSampling(cur_sampling);
+
+        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, *it);
 
         if (cur_sampling.min_lod.value() == 0) {
             // transition is done, remove texture from list
@@ -426,7 +438,10 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                              p.flags & Ren::TexSRGB, ren_ctx_.log());
 
             p.sampling.min_lod.from_float(-1.0f);
-            req.ref->ApplySampling(p.sampling, ren_ctx_.log());
+            req.ref->SetSampling(p.sampling);
+
+            SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_,
+                                                               req.ref);
 
             { // send texture for processing
                 std::lock_guard<std::mutex> _lock(tex_requests_lock_);
@@ -434,6 +449,44 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
             }
 
             gc_textures_.pop_front();
+        }
+    }
+}
+
+void SceneManager::RebuildMaterialTextureGraph() {
+    // reset texture user
+    for (auto &texture : scene_data_.textures) {
+        texture.first_user = 0xffffffff;
+    }
+    // assign material index as the first user
+    for (auto it = scene_data_.materials.begin(); it != scene_data_.materials.end();
+         ++it) {
+        it->next_texture_user = {};
+        it->next_texture_user.resize(it->textures.size(), 0xffffffff);
+        for (auto &texture : it->textures) {
+            if (texture->first_user == 0xffffffff) {
+                texture->first_user = it.index();
+            } else {
+                uint32_t last_user;
+                uint32_t next_user = texture->first_user;
+                do {
+                    const auto &mat = scene_data_.materials.at(next_user);
+                    const size_t ndx = std::distance(
+                        mat.textures.begin(),
+                        std::find(mat.textures.begin(), mat.textures.end(), texture));
+                    last_user = next_user;
+                    next_user = mat.next_texture_user[ndx];
+                } while (next_user != 0xffffffff);
+
+                { // set next user
+                    auto &mat = scene_data_.materials.at(last_user);
+                    const size_t ndx = std::distance(
+                        mat.textures.begin(),
+                        std::find(mat.textures.begin(), mat.textures.end(), texture));
+                    assert(mat.next_texture_user[ndx] == 0xffffffff);
+                    mat.next_texture_user[ndx] = it.index();
+                }
+            }
         }
     }
 }
@@ -613,6 +666,8 @@ void SceneManager::ForceTextureReload() {
 
         TextureRequest req;
         req.ref = Ren::Tex2DRef{&scene_data_.textures, it.index()};
+
+        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
         requested_textures_.push_back(std::move(req));
     }

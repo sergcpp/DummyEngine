@@ -10,9 +10,10 @@ class Sampler : public RefCounter {
   public:
     Sampler() = default;
     Sampler(const Sampler &rhs) = delete;
-    Sampler(Sampler &&rhs);
+    Sampler(Sampler &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Sampler() { Destroy(); }
 
+    uint32_t id() const { return id_; }
     SamplingParams params() const { return params_; }
 
     Sampler &operator=(const Sampler &rhs) = delete;
@@ -20,4 +21,6 @@ class Sampler : public RefCounter {
 
     void Init(SamplingParams params);
 };
+
+void GLUnbindSamplers(int start, int count);
 } // namespace Ren

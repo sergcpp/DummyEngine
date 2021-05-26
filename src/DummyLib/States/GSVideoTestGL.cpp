@@ -64,15 +64,16 @@ void GSVideoTest::InitVideoTextures() {
                 return;
             }
 
-            Ren::SmallVector<Ren::ProgramRef, 4> programs = orig_vid_mat_[tx]->programs;
-            Ren::SmallVector<Ren::Tex2DRef, 8> textures = orig_vid_mat_[tx]->textures;
-            Ren::SmallVector<Ren::Vec4f, 4> params = orig_vid_mat_[tx]->params;
+            auto programs = orig_vid_mat_[tx]->programs;
+            auto textures = orig_vid_mat_[tx]->textures;
+            auto samplers = orig_vid_mat_[tx]->samplers;
+            auto params = orig_vid_mat_[tx]->params;
 
             sprintf(name_buf, "__video_texture_material_%i__", tx);
             vid_mat_[tx] = scene_manager_->scene_data().materials.Add(
                 name_buf,
                 orig_vid_mat_[tx]->flags() | uint32_t(Ren::eMatFlags::TaaResponsive),
-                programs.data(), int(programs.size()), textures.data(),
+                programs.data(), int(programs.size()), textures.data(), samplers.data(),
                 int(textures.size()), params.data(), int(params.size()), log_.get());
         }
 

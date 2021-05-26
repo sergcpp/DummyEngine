@@ -10,9 +10,10 @@
 #endif
 
 namespace Ren {
-std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format);
+std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h,
+                                       eTexFormat &format);
 void CheckError(const char *op);
-}
+} // namespace Ren
 
 Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
                           const Tex2DParams &p, eTexLoadStatus *load_status) {
@@ -32,7 +33,9 @@ Ren::Texture2D::~Texture2D() {
 }
 
 Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
-    if (this == &rhs) return *this;
+    if (this == &rhs) {
+        return *this;
+    }
 
     if (params_.format != Undefined) {
         SWint sw_tex = (SWint)tex_id_;
@@ -58,14 +61,15 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
     ((void)size);
 
     if (!data) {
-        unsigned char cyan[3] = { 0, 255, 255 };
+        unsigned char cyan[3] = {0, 255, 255};
         Tex2DParams _p;
         _p.w = _p.h = 1;
         _p.format = RawRGB888;
         InitFromRAWData(cyan, _p);
         // mark it as not ready
         ready_ = false;
-        if (load_status) *load_status = TexCreatedDefault;
+        if (load_status)
+            *load_status = TexCreatedDefault;
     } else {
         if (strstr(name, ".tga") != 0 || strstr(name, ".TGA") != 0) {
             InitFromTGAFile(data, p);
@@ -75,7 +79,8 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
             InitFromRAWData(data, p);
         }
         ready_ = true;
-        if (load_status) *load_status = TexCreatedFromData;
+        if (load_status)
+            *load_status = TexCreatedFromData;
     }
 }
 

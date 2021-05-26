@@ -24,6 +24,7 @@ class RpShadowMaps : public RenderPassBase {
     DynArrayConstRef<ShadowList> shadow_lists_;
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
     Ren::TexHandle noise_tex_;
+    const PersistentBuffers *bufs_ = nullptr;
 
     // inputs
     RpResource instances_buf_;
@@ -44,10 +45,9 @@ class RpShadowMaps : public RenderPassBase {
   public:
     RpShadowMaps(int w, int h) : w_(w), h_(h) {}
 
-    void Setup(RpBuilder &builder, const DrawList &list, int orphan_index,
-               const char instances_buf[], const char shared_data_buf[],
-               const char shadowmap_tex[],
-               Ren::TexHandle noise_tex);
+    void Setup(RpBuilder &builder, const DrawList &list, const PersistentBuffers *bufs,
+               int orphan_index, const char instances_buf[], const char shared_data_buf[],
+               const char shadowmap_tex[], Ren::TexHandle noise_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SHADOW MAPS"; }

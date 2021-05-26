@@ -17,6 +17,7 @@ class RpOpaque : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     Ren::Tex2DRef brdf_lut_, noise_tex_, cone_rt_lut_;
+    const PersistentBuffers *bufs_ = nullptr;
 
     const EnvironmentWeak *env_ = nullptr;
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
@@ -52,12 +53,13 @@ class RpOpaque : public RenderPassBase {
 #endif
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               int orphan_index, Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex,
-               Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
-               const char shared_data_buf[], const char cells_buf[],
-               const char items_buf[], const char lights_buf[], const char decals_buf[],
-               const char shadowmap_tex[], const char ssao_tex[], const char out_color[],
-               const char out_normals[], const char out_spec[], const char out_depth[]);
+               const PersistentBuffers *bufs, int orphan_index, Ren::Tex2DRef brdf_lut,
+               Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut,
+               const char instances_buf[], const char shared_data_buf[],
+               const char cells_buf[], const char items_buf[], const char lights_buf[],
+               const char decals_buf[], const char shadowmap_tex[], const char ssao_tex[],
+               const char out_color[], const char out_normals[], const char out_spec[],
+               const char out_depth[]);
     void Execute(RpBuilder &builder) override;
 
     // TODO: remove this

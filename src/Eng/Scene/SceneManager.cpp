@@ -497,6 +497,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
     log->Info("SceneManager: RebuildBVH!");
 
     RebuildBVH();
+    RebuildMaterialTextureGraph();
 
     __itt_task_end(__g_itt_domain);
 }
@@ -602,6 +603,8 @@ void SceneManager::ClearScene() {
     scene_data_.nodes.clear();
     scene_data_.free_nodes.clear();
     scene_data_.update_counter = 0;
+
+    scene_data_.materials_buf = {};
 
     changed_objects_.clear();
     last_changed_objects_.clear();
@@ -1127,6 +1130,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
             std::bind(&SceneManager::OnLoadSampler, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
+    scene_data_.material_changes.push_back(ret.index());
     return ret;
 }
 
@@ -1400,6 +1404,8 @@ void SceneManager::Serve(const int texture_budget) {
 
     EstimateTextureMemory(texture_budget);
     ProcessPendingTextures(texture_budget);
+
+    UpdateMaterialsBuffer();
 
     __itt_task_end(__g_itt_domain);
 }

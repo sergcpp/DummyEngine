@@ -21,6 +21,7 @@ class TextureSplitter;
 
 using AnimSeqRef = StrongRef<AnimSequence>;
 using BufferRef = StrongRef<Buffer>;
+using WeakBufferRef = WeakRef<Buffer>;
 using MaterialRef = StrongRef<Material>;
 using MeshRef = StrongRef<Mesh>;
 using ProgramRef = StrongRef<Program>;

@@ -24,13 +24,11 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-                          //"physics_test.json";
                           //"skin_test.json";
                           "living_room_gumroad.json";
 //"bistro.json";
 //"pbr_test.json";
 //"zenith.json";
-//"corridor.json";
 //"vegetation_test.json";
 //"vegetation_test_night.json";
 //"test_decals.json";

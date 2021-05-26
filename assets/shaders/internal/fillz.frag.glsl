@@ -1,4 +1,5 @@
 #version 310 es
+#extension GL_ARB_bindless_texture: enable
 
 #ifdef GL_ES
     precision mediump float;
@@ -22,32 +23,45 @@ uniform SharedDataBlock {
 };
 
 #ifdef TRANSPARENT_PERM
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alphatest_texture;
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs1_;
-#else
-in vec2 aVertexUVs1_;
+#if !defined(GL_ARB_bindless_texture)
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alpha_texture;
 #endif
-
 #ifdef HASHED_TRANSPARENCY
 layout(location = 3) uniform float hash_scale;
+#endif // HASHED_TRANSPARENCY
+#endif // TRANSPARENT_PERM
+
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 1) in vec3 aVertexObjCoord_;
+	#ifdef OUTPUT_VELOCITY
+    layout(location = 0) in vec3 aVertexCSCurr_;
+    layout(location = 1) in vec3 aVertexCSPrev_;
+    #endif // OUTPUT_VELOCITY
+    #ifdef TRANSPARENT_PERM
+    layout(location = 2) in vec2 aVertexUVs1_;
+    #ifdef HASHED_TRANSPARENCY
+    layout(location = 3) in vec3 aVertexObjCoord_;
+    #endif // HASHED_TRANSPARENCY
+	#if defined(GL_ARB_bindless_texture)
+	layout(location = 4) in flat uvec2 alpha_texture;
+	#endif // GL_ARB_bindless_texture
+    #endif // TRANSPARENT_PERM
 #else
-in vec3 aVertexObjCoord_;
-#endif
-#endif
+	#ifdef OUTPUT_VELOCITY
+    in vec3 aVertexCSCurr_;
+    in vec3 aVertexCSPrev_;
+    #endif // OUTPUT_VELOCITY
+    #ifdef TRANSPARENT_PERM
+    in vec2 aVertexUVs1_;
+    #ifdef HASHED_TRANSPARENCY
+    in vec3 aVertexObjCoord_;
+    #endif // HASHED_TRANSPARENCY
+	#if defined(GL_ARB_bindless_texture)
+	in flat uvec2 alpha_texture;
+	#endif // GL_ARB_bindless_texture
+    #endif // TRANSPARENT_PERM
 #endif
 
 #ifdef OUTPUT_VELOCITY
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 2) in vec3 aVertexCSCurr_;
-layout(location = 3) in vec3 aVertexCSPrev_;
-#else
-in vec3 aVertexCSCurr_;
-in vec3 aVertexCSPrev_;
-#endif
-
 layout(location = 0) out vec2 outVelocity;
 #endif
 
@@ -62,7 +76,7 @@ float hash3D(vec3 v) {
 
 void main() {
 #ifdef TRANSPARENT_PERM
-    float tx_alpha = texture(alphatest_texture, aVertexUVs1_).a;
+    float tx_alpha = texture(SAMPLER2D(alpha_texture), aVertexUVs1_).a;
 #ifndef HASHED_TRANSPARENCY
     if (tx_alpha < 0.9) discard;
 #else

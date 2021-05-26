@@ -160,7 +160,8 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Renderer_Backend_GLES3.cpp
                         Renderer/Renderer_GL_Defines.inl)
     set(SCENE_SOURCES ${SCENE_SOURCES}
-                        Scene/ProbeStorageGL.cpp)
+                        Scene/ProbeStorageGL.cpp
+                        Scene/SceneManagerGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
                         Renderer/Passes/RpDebugTexturesGL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp

@@ -7,11 +7,22 @@
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
-uint32_t _draw_list_range_full(Ren::Context &ctx, const Ren::MaterialStorage *materials,
+void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
+                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
+    assert(mat.textures.size() == mat.samplers.size());
+    for (int j = 0; j < int(mat.textures.size()); ++j) {
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j,
+                                   mat.textures[j]->id());
+        glBindSampler(REN_MAT_TEX0_SLOT + j, mat.samplers[j]->id());
+    }
+}
+uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
                                const DynArrayConstRef<MainDrawBatch> &main_batches,
                                const DynArrayConstRef<uint32_t> &main_batch_indices,
                                uint32_t i, uint64_t mask, uint64_t &cur_mat_id,
                                uint64_t &cur_prog_id, BackendInfo &backend_info) {
+    auto &ctx = builder.ctx();
+
     GLenum cur_primitive;
     if (cur_prog_id != 0xffffffffffffffff) {
         const Ren::Program *p = ctx.GetProgram(uint32_t(cur_prog_id)).get();
@@ -43,26 +54,15 @@ uint32_t _draw_list_range_full(Ren::Context &ctx, const Ren::MaterialStorage *ma
             }
         }
 
-        if (cur_mat_id != batch.mat_id) {
+        if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials->at(batch.mat_id);
-
-            for (int j = 0; j < int(mat.textures.size()); ++j) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j,
-                                           mat.textures[j]->id());
-            }
-        }
-
-        if (cur_prog_id != batch.prog_id || cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials->at(batch.mat_id);
-            if (!mat.params.empty()) {
-                glUniform4fv(REN_U_MAT_PARAM_LOC, GLsizei(mat.params.size()),
-                             ValuePtr(mat.params[0]));
-            }
+            _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
         cur_prog_id = batch.prog_id;
         cur_mat_id = batch.mat_id;
 
+        glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
         glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
                      &batch.instance_indices[0]);
 
@@ -77,12 +77,14 @@ uint32_t _draw_list_range_full(Ren::Context &ctx, const Ren::MaterialStorage *ma
     return i;
 }
 
-uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
+uint32_t _draw_list_range_full_rev(RpBuilder &builder,
                                    const Ren::MaterialStorage *materials,
                                    const DynArrayConstRef<MainDrawBatch> &main_batches,
                                    const DynArrayConstRef<uint32_t> &main_batch_indices,
                                    uint32_t ndx, uint64_t mask, uint64_t &cur_mat_id,
                                    uint64_t &cur_prog_id, BackendInfo &backend_info) {
+    auto &ctx = builder.ctx();
+
     int i = int(ndx);
     for (; i >= 0; i--) {
         const MainDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
@@ -99,26 +101,15 @@ uint32_t _draw_list_range_full_rev(Ren::Context &ctx,
             glUseProgram(p->id());
         }
 
-        if (cur_mat_id != batch.mat_id) {
+        if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
             const Ren::Material &mat = materials->at(batch.mat_id);
-
-            for (int j = 0; j < int(mat.textures.size()); ++j) {
-                ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j,
-                                           mat.textures[j]->id());
-            }
-        }
-
-        if (cur_prog_id != batch.prog_id || cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials->at(batch.mat_id);
-            if (!mat.params.empty()) {
-                glUniform4fv(REN_U_MAT_PARAM_LOC, GLsizei(mat.params.size()),
-                             ValuePtr(mat.params[0]));
-            }
+            _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
         cur_prog_id = batch.prog_id;
         cur_mat_id = batch.mat_id;
 
+        glUniform1ui(REN_U_MAT_INDEX_LOC, batch.mat_id);
         glUniform4iv(REN_U_INSTANCES_LOC, (batch.instance_count + 3) / 4,
                      &batch.instance_indices[0]);
 
@@ -171,10 +162,11 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     glBindVertexArray(draw_pass_vao_.id());
 
+    auto &ctx = builder.ctx();
+
     //
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
-
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
@@ -185,7 +177,16 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(shadowmap_tex_);
     RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
-    auto id = unif_shared_data_buf.ref->id();
+    glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT,
+                      GLuint(bufs_->materials_buf.id),
+                      GLintptr(bufs_->materials_buf_range.first),
+                      GLsizeiptr(bufs_->materials_buf_range.second));
+    if (ctx.capabilities.bindless_texture) {
+        glBindBufferRange(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT,
+                          GLuint(bufs_->textures_buf.id),
+                          GLintptr(bufs_->textures_buf_range.first),
+                          GLsizeiptr(bufs_->textures_buf_range.second));
+    }
 
     glBindBufferRange(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                       unif_shared_data_buf.ref->id(), orphan_index_ * SharedDataBlockSize,
@@ -253,7 +254,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(applied_state);
             applied_state = rast_state;
 
-            i = _draw_list_range_full(builder.ctx(), materials_, main_batches_,
+            i = _draw_list_range_full(builder, materials_, main_batches_,
                                       main_batch_indices_, i, 0ull, cur_mat_id,
                                       cur_prog_id, _dummy);
         }
@@ -265,7 +266,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(applied_state);
             applied_state = rast_state;
 
-            i = _draw_list_range_full(builder.ctx(), materials_, main_batches_,
+            i = _draw_list_range_full(builder, materials_, main_batches_,
                                       main_batch_indices_, i, MDB::BitTwoSided,
                                       cur_mat_id, cur_prog_id, _dummy);
         }
@@ -277,7 +278,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(applied_state);
             applied_state = rast_state;
 
-            i = _draw_list_range_full(builder.ctx(), materials_, main_batches_,
+            i = _draw_list_range_full(builder, materials_, main_batches_,
                                       main_batch_indices_, i, MDB::BitAlphaTest,
                                       cur_mat_id, cur_prog_id, _dummy);
         }
@@ -290,7 +291,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             applied_state = rast_state;
 
             i = _draw_list_range_full(
-                builder.ctx(), materials_, main_batches_, main_batch_indices_, i,
+                builder, materials_, main_batches_, main_batch_indices_, i,
                 MDB::BitAlphaTest | MDB::BitTwoSided, cur_mat_id, cur_prog_id, _dummy);
         }
 
@@ -304,7 +305,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             applied_state = rast_state;
 
             i = _draw_list_range_full_rev(
-                builder.ctx(), materials_, main_batches_, main_batch_indices_,
+                builder, materials_, main_batches_, main_batch_indices_,
                 main_batch_indices_.count - 1,
                 MDB::BitAlphaBlend | MDB::BitAlphaTest | MDB::BitTwoSided, cur_mat_id,
                 cur_prog_id, _dummy);
@@ -318,8 +319,10 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             applied_state = rast_state;
 
             _draw_list_range_full_rev(
-                builder.ctx(), materials_, main_batches_, main_batch_indices_, i,
+                builder, materials_, main_batches_, main_batch_indices_, i,
                 MDB::BitAlphaBlend | MDB::BitAlphaTest, cur_mat_id, cur_prog_id, _dummy);
         }
     }
+
+    Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 8);
 }

@@ -101,6 +101,7 @@ static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
 
 struct DrawList {
     uint32_t                    render_flags = 0;
+    uint32_t                    frame_index = 0;
     Ren::Camera                 draw_cam;
     EnvironmentWeak             env;
     FrontendInfo                frontend_info;

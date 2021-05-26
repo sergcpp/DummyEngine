@@ -141,4 +141,6 @@ class RpBuilder {
     void Reset();
     void Compile(RenderPassBase *first_pass);
     void Execute(RenderPassBase *first_pass);
+
+    Ren::SmallVector<Ren::SamplerRef, 64> temp_samplers;
 };

@@ -21,6 +21,7 @@ class RpTransparent : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     Ren::Tex2DRef brdf_lut_, noise_tex_, cone_rt_lut_;
+    const PersistentBuffers *bufs_ = nullptr;
 
     const EnvironmentWeak *env_ = nullptr;
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
@@ -70,13 +71,13 @@ class RpTransparent : public RenderPassBase {
 
     void Setup(RpBuilder &builder, const DrawList &list,
                const int *alpha_blend_start_index, const ViewState *view_state,
-               int orphan_index, Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex,
-               Ren::Tex2DRef cone_rt_lut, const char instances_buf[],
-               const char shared_data_buf[], const char cells_buf[],
-               const char items_buf[], const char lights_buf[], const char decals_buf[],
-               const char shadowmap_tex[], const char ssao_tex[], const char color_tex[],
-               const char normal_tex[], const char spec_tex[], const char depth_tex[],
-               const char transparent_tex_name[]);
+               const PersistentBuffers *bufs, int orphan_index, Ren::Tex2DRef brdf_lut,
+               Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut,
+               const char instances_buf[], const char shared_data_buf[],
+               const char cells_buf[], const char items_buf[], const char lights_buf[],
+               const char decals_buf[], const char shadowmap_tex[], const char ssao_tex[],
+               const char color_tex[], const char normal_tex[], const char spec_tex[],
+               const char depth_tex[], const char transparent_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "TRANSPARENT PASS"; }

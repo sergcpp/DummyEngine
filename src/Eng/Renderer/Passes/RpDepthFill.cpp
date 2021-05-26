@@ -6,7 +6,7 @@
 #include "../Renderer_Structs.h"
 
 void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
-                        const ViewState *view_state, int orphan_index,
+                        const ViewState *view_state, const PersistentBuffers *bufs, int orphan_index,
                         const char instances_buf[], const char shared_data_buf[],
                         const char main_depth_tex[], const char main_velocity_tex[],
                         Ren::TexHandle noise_tex) {
@@ -19,6 +19,7 @@ void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list,
     zfill_batches = list.zfill_batches;
 
     noise_tex_ = noise_tex;
+    bufs_ = bufs;
 
     instances_buf_ = builder.ReadBuffer(instances_buf, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, *this);

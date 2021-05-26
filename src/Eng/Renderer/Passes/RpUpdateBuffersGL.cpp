@@ -55,8 +55,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
                                             orphan_index_ * ShapeKeysBufChunkSize,
                                             ShapeKeysBufChunkSize, BufferRangeMapFlags);
         if (pinned_mem) {
-            const size_t shape_keys_mem_size =
-                shape_keys_.count * sizeof(ShapeKeyData);
+            const size_t shape_keys_mem_size = shape_keys_.count * sizeof(ShapeKeyData);
             memcpy(pinned_mem, shape_keys_.data, shape_keys_mem_size);
             glFlushMappedBufferRange(GL_SHADER_STORAGE_BUFFER, 0, shape_keys_mem_size);
             glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);

@@ -53,7 +53,7 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "sph_low.mesh",
-				"material_override" : [ "checker_pn.txt", "checker.txt" ]
+				"material_override" : [ "checker_pn.txt" ]
 			}
 		},
 		{
