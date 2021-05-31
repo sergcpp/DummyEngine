@@ -12,10 +12,8 @@
 #include <xmmintrin.h>
 
 #ifdef __linux__
-#define _mm_storeu_si32(mem_addr, a) \
-    _mm_store_ss((float*)mem_addr, _mm_castsi128_ps(a));
-#define _mm_loadu_si32(mem_addr) \
-    _mm_castps_si128(_mm_load_ss((float const*)mem_addr))
+#define _mm_storeu_si32(mem_addr, a) _mm_store_ss((float *)mem_addr, _mm_castsi128_ps(a));
+#define _mm_loadu_si32(mem_addr) _mm_castps_si128(_mm_load_ss((float const *)mem_addr))
 #endif
 
 #include "CPUFeatures.h"
@@ -488,122 +486,134 @@ void EmitColorIndices_SSE2(const uint8_t block[64], const uint8_t min_color[4],
                            const uint8_t max_color[4], uint8_t *&out_data) {
     __m128i result = _mm_setzero_si128();
 
+    // Find 4 colors on the line through min - max color
+    // compute color0 (max_color)
     __m128i color0 = _mm_loadu_si32(max_color);
     color0 = _mm_and_si128(color0, RGBMask);
-    color0 = _mm_shuffle_epi32(color0, _MM_SHUFFLE(1, 0, 1, 0));
+    color0 = _mm_unpacklo_epi8(color0, _mm_setzero_si128());
+    __m128i rb = _mm_shufflelo_epi16(color0, _MM_SHUFFLE(3, 2, 3, 0));
+    __m128i g = _mm_shufflelo_epi16(color0, _MM_SHUFFLE(3, 3, 1, 3));
+    rb = _mm_srli_epi16(rb, 5);
+    g = _mm_srli_epi16(g, 6);
+    color0 = _mm_or_si128(color0, rb);
+    color0 = _mm_or_si128(color0, g);
 
+    // compute color1 (min_color)
     __m128i color1 = _mm_loadu_si32(min_color);
     color1 = _mm_and_si128(color1, RGBMask);
-    color1 = _mm_shuffle_epi32(color1, _MM_SHUFFLE(1, 0, 1, 0));
+    color1 = _mm_unpacklo_epi8(color1, _mm_setzero_si128());
+    rb = _mm_shufflelo_epi16(color1, _MM_SHUFFLE(3, 2, 3, 0));
+    g = _mm_shufflelo_epi16(color1, _MM_SHUFFLE(3, 3, 1, 3));
+    rb = _mm_srli_epi16(rb, 5);
+    g = _mm_srli_epi16(g, 6);
+    color1 = _mm_or_si128(color1, rb);
+    color1 = _mm_or_si128(color1, g);
 
-    __m128i color2 = _mm_unpacklo_epi8(color0, _mm_setzero_si128());
-    __m128i color3 = _mm_unpacklo_epi8(color1, _mm_setzero_si128());
-
-    __m128i tmp = color3;
-    color3 = _mm_add_epi16(color3, color2);
-    color2 = _mm_add_epi16(color2, color3);
-    color2 = _mm_mulhi_epi16(color2, DivBy3_i16);
-    color2 = _mm_packus_epi16(color2, _mm_setzero_si128());
-    color2 = _mm_shuffle_epi32(color2, _MM_SHUFFLE(1, 0, 1, 0));
-
-    color3 = _mm_add_epi16(color3, tmp);
+    // compute and pack color3
+    __m128i color3 = _mm_add_epi16(color1, color1);
+    color3 = _mm_add_epi16(color0, color3);
     color3 = _mm_mulhi_epi16(color3, DivBy3_i16);
     color3 = _mm_packus_epi16(color3, _mm_setzero_si128());
     color3 = _mm_shuffle_epi32(color3, _MM_SHUFFLE(1, 0, 1, 0));
 
-    // disassembled from original source code :(
-    __m128i xmm0, xmm1, xmm2, xmm3, xmm4, xmm5, xmm6, xmm7;
+    // compute and pack color2
+    __m128i color2 = _mm_add_epi16(color0, color0);
+    color2 = _mm_add_epi16(color2, color1);
+    color2 = _mm_mulhi_epi16(color2, DivBy3_i16);
+    color2 = _mm_packus_epi16(color2, _mm_setzero_si128());
+    color2 = _mm_shuffle_epi32(color2, _MM_SHUFFLE(1, 0, 1, 0));
+
+    // pack color1
+    color1 = _mm_packus_epi16(color1, _mm_setzero_si128());
+    color1 = _mm_shuffle_epi32(color1, _MM_SHUFFLE(1, 0, 1, 0));
+
+    // pack color0
+    color0 = _mm_packus_epi16(color0, _mm_setzero_si128());
+    color0 = _mm_shuffle_epi32(color0, _MM_SHUFFLE(1, 0, 1, 0));
 
     for (int i = 32; i >= 0; i -= 32) {
-        xmm3 = _mm_loadu_si64(block + i + 0);
-        xmm3 = _mm_shuffle_epi32(xmm3, _MM_SHUFFLE(3, 1, 2, 0));
-        xmm5 = _mm_loadu_si64(block + i + 8);
-        xmm5 = _mm_shuffle_epi32(xmm5, _MM_SHUFFLE(3, 1, 2, 0));
+        // load 4 colors
+        __m128i color_hi = _mm_loadu_si64(block + i + 0);
+        color_hi = _mm_shuffle_epi32(color_hi, _MM_SHUFFLE(3, 1, 2, 0));
+        __m128i color_lo = _mm_loadu_si64(block + i + 8);
+        color_lo = _mm_shuffle_epi32(color_lo, _MM_SHUFFLE(3, 1, 2, 0));
 
-        xmm0 = xmm3;
-        xmm6 = xmm5;
-        xmm0 = _mm_sad_epu8(xmm0, color0);
-        xmm6 = _mm_sad_epu8(xmm6, color0);
-        xmm0 = _mm_packs_epi32(xmm0, xmm6);
-        xmm1 = xmm3;
-        xmm6 = xmm5;
-        xmm1 = _mm_sad_epu8(xmm1, color1);
-        xmm6 = _mm_sad_epu8(xmm6, color1);
-        xmm1 = _mm_packs_epi32(xmm1, xmm6);
-        xmm2 = xmm3;
-        xmm6 = xmm5;
-        xmm2 = _mm_sad_epu8(xmm2, color2);
-        xmm6 = _mm_sad_epu8(xmm6, color2);
-        xmm2 = _mm_packs_epi32(xmm2, xmm6);
-        xmm3 = _mm_sad_epu8(xmm3, color3);
-        xmm5 = _mm_sad_epu8(xmm5, color3);
-        xmm3 = _mm_packs_epi32(xmm3, xmm5);
+        // compute the sum of abs diff for each color
+        __m128i d_hi = _mm_sad_epu8(color_hi, color0);
+        __m128i d_lo = _mm_sad_epu8(color_lo, color0);
+        __m128i d0 = _mm_packs_epi32(d_hi, d_lo);
+        d_hi = _mm_sad_epu8(color_hi, color1);
+        d_lo = _mm_sad_epu8(color_lo, color1);
+        __m128i d1 = _mm_packs_epi32(d_hi, d_lo);
+        d_hi = _mm_sad_epu8(color_hi, color2);
+        d_lo = _mm_sad_epu8(color_lo, color2);
+        __m128i d2 = _mm_packs_epi32(d_hi, d_lo);
+        d_hi = _mm_sad_epu8(color_hi, color3);
+        d_lo = _mm_sad_epu8(color_lo, color3);
+        __m128i d3 = _mm_packs_epi32(d_hi, d_lo);
 
-        xmm4 = _mm_loadu_si64(block + i + 16);
-        xmm4 = _mm_shuffle_epi32(xmm4, _MM_SHUFFLE(3, 1, 2, 0));
-        xmm5 = _mm_loadu_si64(block + i + 24);
-        xmm5 = _mm_shuffle_epi32(xmm5, _MM_SHUFFLE(3, 1, 2, 0));
+        // load next 4 colors
+        color_hi = _mm_loadu_si64(block + i + 16);
+        color_hi = _mm_shuffle_epi32(color_hi, _MM_SHUFFLE(3, 1, 2, 0));
+        color_lo = _mm_loadu_si64(block + i + 24);
+        color_lo = _mm_shuffle_epi32(color_lo, _MM_SHUFFLE(3, 1, 2, 0));
 
-        xmm6 = xmm4;
-        xmm7 = xmm5;
-        xmm6 = _mm_sad_epu8(xmm6, color0);
-        xmm7 = _mm_sad_epu8(xmm7, color0);
-        xmm6 = _mm_packs_epi32(xmm6, xmm7);
-        xmm0 = _mm_packs_epi32(xmm0, xmm6);
-        xmm6 = xmm4;
-        xmm7 = xmm5;
-        xmm6 = _mm_sad_epu8(xmm6, color1);
-        xmm7 = _mm_sad_epu8(xmm7, color1);
-        xmm6 = _mm_packs_epi32(xmm6, xmm7);
-        xmm1 = _mm_packs_epi32(xmm1, xmm6);
-        xmm6 = xmm4;
-        xmm7 = xmm5;
-        xmm6 = _mm_sad_epu8(xmm6, color2);
-        xmm7 = _mm_sad_epu8(xmm7, color2);
-        xmm6 = _mm_packs_epi32(xmm6, xmm7);
-        xmm2 = _mm_packs_epi32(xmm2, xmm6);
-        xmm4 = _mm_sad_epu8(xmm4, color3);
-        xmm5 = _mm_sad_epu8(xmm5, color3);
-        xmm4 = _mm_packs_epi32(xmm4, xmm5);
-        xmm3 = _mm_packs_epi32(xmm3, xmm4);
+        // compute the sum of abs diff for each color and combine with prev result
+        d_hi = _mm_sad_epu8(color_hi, color0);
+        d_lo = _mm_sad_epu8(color_lo, color0);
+        d_lo = _mm_packs_epi32(d_hi, d_lo);
+        d0 = _mm_packs_epi32(d0, d_lo);
+        d_hi = _mm_sad_epu8(color_hi, color1);
+        d_lo = _mm_sad_epu8(color_lo, color1);
+        d_lo = _mm_packs_epi32(d_hi, d_lo);
+        d1 = _mm_packs_epi32(d1, d_lo);
+        d_hi = _mm_sad_epu8(color_hi, color2);
+        d_lo = _mm_sad_epu8(color_lo, color2);
+        d_lo = _mm_packs_epi32(d_hi, d_lo);
+        d2 = _mm_packs_epi32(d2, d_lo);
+        d_hi = _mm_sad_epu8(color_hi, color3);
+        d_lo = _mm_sad_epu8(color_lo, color3);
+        d_lo = _mm_packs_epi32(d_hi, d_lo);
+        d3 = _mm_packs_epi32(d3, d_lo);
 
-        xmm7 = result;
-        xmm7 = _mm_slli_epi32(xmm7, 16);
+        // compare the distances
+        __m128i b0 = _mm_cmpgt_epi16(d0, d3);
+        __m128i b1 = _mm_cmpgt_epi16(d1, d2);
+        __m128i b2 = _mm_cmpgt_epi16(d0, d2);
+        __m128i b3 = _mm_cmpgt_epi16(d1, d3);
+        __m128i b4 = _mm_cmpgt_epi16(d2, d3);
 
-        xmm4 = xmm0;
-        xmm5 = xmm1;
-        xmm0 = _mm_cmpgt_epi16(xmm0, xmm3);
-        xmm1 = _mm_cmpgt_epi16(xmm1, xmm2);
-        xmm4 = _mm_cmpgt_epi16(xmm4, xmm2);
-        xmm5 = _mm_cmpgt_epi16(xmm5, xmm3);
-        xmm2 = _mm_cmpgt_epi16(xmm2, xmm3);
-        xmm4 = _mm_and_si128(xmm4, xmm1);
-        xmm5 = _mm_and_si128(xmm5, xmm0);
-        xmm2 = _mm_and_si128(xmm2, xmm0);
-        xmm4 = _mm_or_si128(xmm4, xmm5);
-        xmm2 = _mm_and_si128(xmm2, Ones_i16);
-        xmm4 = _mm_and_si128(xmm4, Twos_i16);
-        xmm2 = _mm_or_si128(xmm2, xmm4);
+        // compute color index
+        __m128i x0 = _mm_and_si128(b2, b1);
+        __m128i x1 = _mm_and_si128(b3, b0);
+        __m128i x2 = _mm_and_si128(b4, b0);
+        __m128i index_bit0 = _mm_or_si128(x0, x1);
+        index_bit0 = _mm_and_si128(index_bit0, Twos_i16);
+        __m128i index_bit1 = _mm_and_si128(x2, Ones_i16);
+        __m128i index = _mm_or_si128(index_bit1, index_bit0);
 
-        xmm5 = _mm_shuffle_epi32(xmm2, _MM_SHUFFLE(1, 0, 3, 2));
-        xmm2 = _mm_unpacklo_epi16(xmm2, Zeroes_128);
-        xmm5 = _mm_unpacklo_epi16(xmm5, Zeroes_128);
-        xmm5 = _mm_slli_epi32(xmm5, 8);
-        xmm7 = _mm_or_si128(xmm7, xmm5);
-        xmm7 = _mm_or_si128(xmm7, xmm2);
-        result = xmm7;
+        // pack index into result
+        __m128i index_hi = _mm_shuffle_epi32(index, _MM_SHUFFLE(1, 0, 3, 2));
+        index_hi = _mm_unpacklo_epi16(index_hi, Zeroes_128);
+        index_hi = _mm_slli_epi32(index_hi, 8);
+        __m128i index_lo = _mm_unpacklo_epi16(index, Zeroes_128);
+        result = _mm_slli_epi32(result, 16);
+        result = _mm_or_si128(result, index_hi);
+        result = _mm_or_si128(result, index_lo);
     }
 
-    xmm4 = _mm_shuffle_epi32(xmm7, _MM_SHUFFLE(0, 3, 2, 1));
-    xmm5 = _mm_shuffle_epi32(xmm7, _MM_SHUFFLE(1, 0, 3, 2));
-    xmm6 = _mm_shuffle_epi32(xmm7, _MM_SHUFFLE(2, 1, 0, 3));
-    xmm4 = _mm_slli_epi32(xmm4, 2);
-    xmm5 = _mm_slli_epi32(xmm5, 4);
-    xmm6 = _mm_slli_epi32(xmm6, 6);
-    xmm7 = _mm_or_si128(xmm7, xmm4);
-    xmm7 = _mm_or_si128(xmm7, xmm5);
-    xmm7 = _mm_or_si128(xmm7, xmm6);
-    _mm_storeu_si32(out_data, xmm7);
+    // pack 16 2-bit color indices into a single 32-bit value
+    __m128i result1 = _mm_shuffle_epi32(result, _MM_SHUFFLE(0, 3, 2, 1));
+    __m128i result2 = _mm_shuffle_epi32(result, _MM_SHUFFLE(1, 0, 3, 2));
+    __m128i result3 = _mm_shuffle_epi32(result, _MM_SHUFFLE(2, 1, 0, 3));
+    result1 = _mm_slli_epi32(result1, 2);
+    result2 = _mm_slli_epi32(result2, 4);
+    result3 = _mm_slli_epi32(result3, 6);
+    result = _mm_or_si128(result, result1);
+    result = _mm_or_si128(result, result2);
+    result = _mm_or_si128(result, result3);
+
+    _mm_storeu_si32(out_data, result);
     out_data += 4;
 }
 
@@ -625,11 +635,11 @@ static const __m128i AlphaMask3 = _mm_setr_epi32(7 << 9, 0, 7 << 9, 0);
 static const __m128i AlphaMask4 = _mm_setr_epi32(7 << 12, 0, 7 << 12, 0);
 static const __m128i AlphaMask5 = _mm_setr_epi32(7 << 15, 0, 7 << 15, 0);
 static const __m128i AlphaMask6 = _mm_setr_epi32(7 << 18, 0, 7 << 18, 0);
-static const __m128i AlphaMask7 = _mm_setr_epi32(7 << 21, 0, 7 << 21, 0); 
+static const __m128i AlphaMask7 = _mm_setr_epi32(7 << 21, 0, 7 << 21, 0);
 
 void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha,
-                           const uint8_t max_alpha, uint8_t*& out_data) {
-    __m128i line0 = _mm_load_si128(reinterpret_cast<const __m128i*>(block));
+                           const uint8_t max_alpha, uint8_t *&out_data) {
+    __m128i line0 = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
     __m128i line1 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 16));
     __m128i line2 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 32));
     __m128i line3 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 48));
@@ -642,112 +652,112 @@ void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha,
     __m128i line01 = _mm_packus_epi16(line0, line1);
     __m128i line23 = _mm_packus_epi16(line2, line3);
 
-    __m128i xmm5 = _mm_set1_epi16(max_alpha);
-    __m128i xmm7 = xmm5;
+    // pack all 16 alpha values
+    __m128i alpha = _mm_packus_epi16(line01, line23);
 
-    __m128i xmm2 = _mm_set1_epi16(min_alpha);
-    __m128i xmm3 = xmm2;
+    __m128i max = _mm_set1_epi16(max_alpha);
+    __m128i min = _mm_set1_epi16(min_alpha);
 
-    __m128i xmm4 = xmm5;
-    xmm4 = _mm_sub_epi16(xmm4, xmm2);
-    xmm4 = _mm_mulhi_epi16(xmm4, DivBy14_i16);
+    // compute midpoint offset between any two interpolated alpha values
+    __m128i mid = _mm_sub_epi16(max, min);
+    mid = _mm_mulhi_epi16(mid, DivBy14_i16);
 
-    __m128i xmm1 = xmm2;
-    xmm1 = _mm_add_epi16(xmm1, xmm4);
-    xmm1 = _mm_packus_epi16(xmm1, xmm1);
+    // compute first midpoint
+    __m128i ab1 = min;
+    ab1 = _mm_add_epi16(ab1, mid);
+    ab1 = _mm_packus_epi16(ab1, ab1);
 
-    xmm5 = _mm_mullo_epi16(xmm5, ScaleBy_66554400_i16);
-    xmm7 = _mm_mullo_epi16(xmm7, ScaleBy_11223300_i16);
-    xmm2 = _mm_mullo_epi16(xmm2, ScaleBy_11223300_i16);
-    xmm3 = _mm_mullo_epi16(xmm3, ScaleBy_66554400_i16);
-    xmm5 = _mm_add_epi16(xmm5, xmm2);
-    xmm7 = _mm_add_epi16(xmm7, xmm3);
-    xmm5 = _mm_mulhi_epi16(xmm5, DivBy7_i16);
-    xmm7 = _mm_mulhi_epi16(xmm7, DivBy7_i16);
+    // compute the next three midpoints
+    __m128i max456 = _mm_mullo_epi16(max, ScaleBy_66554400_i16);
+    __m128i min123 = _mm_mullo_epi16(min, ScaleBy_11223300_i16);
+    __m128i ab234 = _mm_add_epi16(max456, min123);
+    ab234 = _mm_mulhi_epi16(ab234, DivBy7_i16);
+    ab234 = _mm_add_epi16(ab234, mid);
+    __m128i ab2 = _mm_shuffle_epi32(ab234, _MM_SHUFFLE(0, 0, 0, 0));
+    ab2 = _mm_packus_epi16(ab2, ab2);
+    __m128i ab3 = _mm_shuffle_epi32(ab234, _MM_SHUFFLE(1, 1, 1, 1));
+    ab3 = _mm_packus_epi16(ab3, ab3);
+    __m128i ab4 = _mm_shuffle_epi32(ab234, _MM_SHUFFLE(2, 2, 2, 2));
+    ab4 = _mm_packus_epi16(ab4, ab4);
 
-    xmm2 = _mm_shuffle_epi32(xmm5, _MM_SHUFFLE(0, 0, 0, 0));
-    xmm3 = _mm_shuffle_epi32(xmm5, _MM_SHUFFLE(1, 1, 1, 1));
-    xmm4 = _mm_shuffle_epi32(xmm5, _MM_SHUFFLE(2, 2, 2, 2));
-    xmm2 = _mm_packus_epi16(xmm2, xmm2);
-    xmm3 = _mm_packus_epi16(xmm3, xmm3);
-    xmm4 = _mm_packus_epi16(xmm4, xmm4);
+    // compute the last three midpoints
+    __m128i max123 = _mm_mullo_epi16(max, ScaleBy_11223300_i16);
+    __m128i min456 = _mm_mullo_epi16(min, ScaleBy_66554400_i16);
+    __m128i ab567 = _mm_add_epi16(max123, min456);
+    ab567 = _mm_mulhi_epi16(ab567, DivBy7_i16);
+    ab567 = _mm_add_epi16(ab567, mid);
+    __m128i ab5 = _mm_shuffle_epi32(ab567, _MM_SHUFFLE(2, 2, 2, 2));
+    ab5 = _mm_packus_epi16(ab5, ab5);
+    __m128i ab6 = _mm_shuffle_epi32(ab567, _MM_SHUFFLE(1, 1, 1, 1));
+    ab6 = _mm_packus_epi16(ab6, ab6);
+    __m128i ab7 = _mm_shuffle_epi32(ab567, _MM_SHUFFLE(0, 0, 0, 0));
+    ab7 = _mm_packus_epi16(ab7, ab7);
 
-    __m128i xmm0 = _mm_packus_epi16(line01, line23);
+    // compare the alpha values to the midpoints
+    __m128i b1 = _mm_min_epu8(ab1, alpha);
+    b1 = _mm_cmpeq_epi8(b1, alpha);
+    b1 = _mm_and_si128(b1, Ones_i8);
+    __m128i b2 = _mm_min_epu8(ab2, alpha);
+    b2 = _mm_cmpeq_epi8(b2, alpha);
+    b2 = _mm_and_si128(b2, Ones_i8);
+    __m128i b3 = _mm_min_epu8(ab3, alpha);
+    b3 = _mm_cmpeq_epi8(b3, alpha);
+    b3 = _mm_and_si128(b3, Ones_i8);
+    __m128i b4 = _mm_min_epu8(ab4, alpha);
+    b4 = _mm_cmpeq_epi8(b4, alpha);
+    b4 = _mm_and_si128(b4, Ones_i8);
+    __m128i b5 = _mm_min_epu8(ab5, alpha);
+    b5 = _mm_cmpeq_epi8(b5, alpha);
+    b5 = _mm_and_si128(b5, Ones_i8);
+    __m128i b6 = _mm_min_epu8(ab6, alpha);
+    b6 = _mm_cmpeq_epi8(b6, alpha);
+    b6 = _mm_and_si128(b6, Ones_i8);
+    __m128i b7 = _mm_min_epu8(ab7, alpha);
+    b7 = _mm_cmpeq_epi8(b7, alpha);
+    b7 = _mm_and_si128(b7, Ones_i8);
 
-    xmm5 = _mm_shuffle_epi32(xmm7, _MM_SHUFFLE(2, 2, 2, 2));
-    __m128i xmm6 = _mm_shuffle_epi32(xmm7, _MM_SHUFFLE(1, 1, 1, 1));
-    xmm7 = _mm_shuffle_epi32(xmm7, _MM_SHUFFLE(0, 0, 0, 0));
-    xmm5 = _mm_packus_epi16(xmm5, xmm5);
-    xmm6 = _mm_packus_epi16(xmm6, xmm6);
-    xmm7 = _mm_packus_epi16(xmm7, xmm7);
+    // compute alpha indices
+    __m128i index = _mm_adds_epu8(b1, b2);
+    index = _mm_adds_epu8(index, b3);
+    index = _mm_adds_epu8(index, b4);
+    index = _mm_adds_epu8(index, b5);
+    index = _mm_adds_epu8(index, b6);
+    index = _mm_adds_epu8(index, b7);
 
-    xmm1 = _mm_min_epu8(xmm1, xmm0);
-    xmm2 = _mm_min_epu8(xmm2, xmm0);
-    xmm3 = _mm_min_epu8(xmm3, xmm0);
-    xmm1 = _mm_cmpeq_epi8(xmm1, xmm0);
-    xmm2 = _mm_cmpeq_epi8(xmm2, xmm0);
-    xmm3 = _mm_cmpeq_epi8(xmm3, xmm0);
-    xmm4 = _mm_min_epu8(xmm4, xmm0);
-    xmm5 = _mm_min_epu8(xmm5, xmm0);
-    xmm6 = _mm_min_epu8(xmm6, xmm0);
-    xmm7 = _mm_min_epu8(xmm7, xmm0);
-    xmm4 = _mm_cmpeq_epi8(xmm4, xmm0);
-    xmm5 = _mm_cmpeq_epi8(xmm5, xmm0);
-    xmm6 = _mm_cmpeq_epi8(xmm6, xmm0);
-    xmm7 = _mm_cmpeq_epi8(xmm7, xmm0);
-    xmm1 = _mm_and_si128(xmm1, Ones_i8);
-    xmm2 = _mm_and_si128(xmm2, Ones_i8);
-    xmm3 = _mm_and_si128(xmm3, Ones_i8);
-    xmm4 = _mm_and_si128(xmm4, Ones_i8);
-    xmm5 = _mm_and_si128(xmm5, Ones_i8);
-    xmm6 = _mm_and_si128(xmm6, Ones_i8);
-    xmm7 = _mm_and_si128(xmm7, Ones_i8);
-    xmm0 = Ones_i8;
-    xmm0 = _mm_adds_epu8(xmm0, xmm1);
-    xmm2 = _mm_adds_epu8(xmm2, xmm3);
-    xmm4 = _mm_adds_epu8(xmm4, xmm5);
-    xmm6 = _mm_adds_epu8(xmm6, xmm7);
-    xmm0 = _mm_adds_epu8(xmm0, xmm2);
-    xmm4 = _mm_adds_epu8(xmm4, xmm6);
-    xmm0 = _mm_adds_epu8(xmm0, xmm4);
-    xmm0 = _mm_and_si128(xmm0, Sevens_i8);
-    xmm1 = Twos_i8;
-    xmm1 = _mm_cmpgt_epi8(xmm1, xmm0);
-    xmm1 = _mm_and_si128(xmm1, Ones_i8);
-    xmm0 = _mm_xor_si128(xmm0, xmm1);
-    xmm1 = xmm0;
-    xmm2 = xmm0;
-    xmm3 = xmm0;
-    xmm4 = xmm0;
-    xmm5 = xmm0;
-    xmm6 = xmm0;
-    xmm7 = xmm0;
-    xmm1 = _mm_srli_epi64(xmm1, 8 - 3);
-    xmm2 = _mm_srli_epi64(xmm2, 16 - 6);
-    xmm3 = _mm_srli_epi64(xmm3, 24 - 9);
-    xmm4 = _mm_srli_epi64(xmm4, 32 - 12);
-    xmm5 = _mm_srli_epi64(xmm5, 40 - 15);
-    xmm6 = _mm_srli_epi64(xmm6, 48 - 18);
-    xmm7 = _mm_srli_epi64(xmm7, 56 - 21);
-    xmm0 = _mm_and_si128(xmm0, AlphaMask0);
-    xmm1 = _mm_and_si128(xmm1, AlphaMask1);
-    xmm2 = _mm_and_si128(xmm2, AlphaMask2);
-    xmm3 = _mm_and_si128(xmm3, AlphaMask3);
-    xmm4 = _mm_and_si128(xmm4, AlphaMask4);
-    xmm5 = _mm_and_si128(xmm5, AlphaMask5);
-    xmm6 = _mm_and_si128(xmm6, AlphaMask6);
-    xmm7 = _mm_and_si128(xmm7, AlphaMask7);
-    xmm0 = _mm_or_si128(xmm0, xmm1);
-    xmm2 = _mm_or_si128(xmm2, xmm3);
-    xmm4 = _mm_or_si128(xmm4, xmm5);
-    xmm6 = _mm_or_si128(xmm6, xmm7);
-    xmm0 = _mm_or_si128(xmm0, xmm2);
-    xmm4 = _mm_or_si128(xmm4, xmm6);
-    xmm0 = _mm_or_si128(xmm0, xmm4);
+    // convert natural index ordering to DXT index ordering
+    index = _mm_adds_epu8(index, Ones_i8);
+    index = _mm_and_si128(index, Sevens_i8);
+    __m128i swapMinMax = _mm_cmpgt_epi8(Twos_i8, index);
+    swapMinMax = _mm_and_si128(swapMinMax, Ones_i8);
+    index = _mm_xor_si128(index, swapMinMax);
 
-    _mm_storeu_si32(out_data, xmm0);
-    xmm1 = _mm_shuffle_epi32(xmm0, _MM_SHUFFLE(1, 0, 3, 2));
-    _mm_storeu_si32(out_data + 3, xmm1);
+    // pack the 16 3-bit indices into 6 bytes
+    __m128i index0 = _mm_and_si128(index, AlphaMask0);
+    __m128i index1 = _mm_srli_epi64(index, 8 - 3);
+    index1 = _mm_and_si128(index1, AlphaMask1);
+    __m128i index2 = _mm_srli_epi64(index, 16 - 6);
+    index2 = _mm_and_si128(index2, AlphaMask2);
+    __m128i index3 = _mm_srli_epi64(index, 24 - 9);
+    index3 = _mm_and_si128(index3, AlphaMask3);
+    __m128i index4 = _mm_srli_epi64(index, 32 - 12);
+    index4 = _mm_and_si128(index4, AlphaMask4);
+    __m128i index5 = _mm_srli_epi64(index, 40 - 15);
+    index5 = _mm_and_si128(index5, AlphaMask5);
+    __m128i index6 = _mm_srli_epi64(index, 48 - 18);
+    index6 = _mm_and_si128(index6, AlphaMask6);
+    __m128i index7 = _mm_srli_epi64(index, 56 - 21);
+    index7 = _mm_and_si128(index7, AlphaMask7);
+    index = _mm_or_si128(index0, index1);
+    index = _mm_or_si128(index, index2);
+    index = _mm_or_si128(index, index3);
+    index = _mm_or_si128(index, index4);
+    index = _mm_or_si128(index, index5);
+    index = _mm_or_si128(index, index6);
+    index = _mm_or_si128(index, index7);
+
+    _mm_storeu_si32(out_data, index);
+    index = _mm_shuffle_epi32(index, _MM_SHUFFLE(1, 0, 3, 2));
+    _mm_storeu_si32(out_data + 3, index);
 
     out_data += 6;
 }

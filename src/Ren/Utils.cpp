@@ -1340,6 +1340,38 @@ void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[64])
     }
 }
 
+template <int Channels>
+void ExtractIncomplete4x4Block_Ref(const uint8_t src[], const int stride,
+                                   const int blck_w, const int blck_h, uint8_t dst[64]) {
+    if (Channels == 4) {
+        for (int j = 0; j < blck_h; j++) {
+            assert(blck_w <= 4);
+            memcpy(&dst[0], src, 4 * blck_w);
+            for (int i = blck_w; i < 4; i++) {
+                memcpy(&dst[i * 4], &dst[(blck_w - 1) * 4], 4);
+            }
+            dst += 4 * 4;
+            src += stride;
+        }
+    } else if (Channels == 3) {
+        for (int j = 0; j < blck_h; j++) {
+            for (int i = 0; i < blck_w; i++) {
+                memcpy(&dst[i * 4], &src[i * 3], 3);
+            }
+            for (int i = blck_w; i < 4; i++) {
+                memcpy(&dst[i * 4], &dst[(blck_w - 1) * 4], 4);
+            }
+            dst += 4 * 4;
+            src += stride;
+        }
+    }
+    uint8_t *dst2 = dst - 4 * 4;
+    for (int j = blck_h; j < 4; j++) {
+        memcpy(dst, dst2, 4 * 4);
+        dst += 4 * 4;
+    }
+}
+
 // WARNING: Reads 4 bytes outside of block!
 template <int Channels>
 void Extract4x4Block_SSSE3(const uint8_t src[], int stride, uint8_t dst[64]);
@@ -1605,7 +1637,7 @@ void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3],
     // find best ind for each pixel in a block
     uint32_t result_indices = 0;
 
-#if 0   // use euclidian distance (slower)
+#if 0 // use euclidian distance (slower)
         uint32_t palette_indices[16];
         for (int i = 0; i < 16; i++) {
             uint32_t min_dist = std::numeric_limits<uint32_t>::max();
@@ -1732,26 +1764,102 @@ void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha,
 void EmitAlphaIndices_SSE2(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha,
                            uint8_t *&out_data);
 
+void EmitDXT1Block_Ref(const uint8_t block[64], uint8_t *&out_data) {
+    uint8_t min_color[4], max_color[4];
+    GetMinMaxColorByBBox_Ref(block, min_color, max_color);
+
+    push_u16(rgb888_to_rgb565(max_color), out_data);
+    push_u16(rgb888_to_rgb565(min_color), out_data);
+
+    EmitColorIndices_Ref(block, min_color, max_color, out_data);
+}
+
+template <bool Is_YCoCg> void EmitDXT5Block_Ref(uint8_t block[64], uint8_t *&out_data) {
+    uint8_t min_color[4], max_color[4];
+    GetMinMaxColorByBBox_Ref<true /* UseAlpha */, Is_YCoCg>(block, min_color, max_color);
+    if (Is_YCoCg) {
+        ScaleYCoCg_Ref(block, min_color, max_color);
+        InsetYCoCgBBox_Ref(min_color, max_color);
+        SelectYCoCgDiagonal_Ref(block, min_color, max_color);
+    }
+
+    //
+    // Write alpha block
+    //
+
+    push_u8(max_color[3], out_data);
+    push_u8(min_color[3], out_data);
+
+    EmitAlphaIndices_Ref(block, min_color[3], max_color[3], out_data);
+
+    //
+    // Write color block
+    //
+
+    push_u16(rgb888_to_rgb565(max_color), out_data);
+    push_u16(rgb888_to_rgb565(min_color), out_data);
+
+    EmitColorIndices_Ref(block, min_color, max_color, out_data);
+}
+
+void EmitDXT1Block_SSE2(const uint8_t block[64], uint8_t *&out_data) {
+    alignas(16) uint8_t min_color[4], max_color[4];
+    GetMinMaxColorByBBox_SSE2(block, min_color, max_color);
+
+    push_u16(rgb888_to_rgb565(max_color), out_data);
+    push_u16(rgb888_to_rgb565(min_color), out_data);
+
+    EmitColorIndices_SSE2(block, min_color, max_color, out_data);
+}
+
+template <bool Is_YCoCg> void EmitDXT5Block_SSE2(uint8_t block[64], uint8_t *&out_data) {
+    alignas(16) uint8_t min_color[4], max_color[4];
+    GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, Is_YCoCg>(block, min_color, max_color);
+    if (Is_YCoCg) {
+        ScaleYCoCg_SSE2(block, min_color, max_color);
+        InsetYCoCgBBox_SSE2(min_color, max_color);
+        SelectYCoCgDiagonal_SSE2(block, min_color, max_color);
+    }
+
+    //
+    // Write alpha block
+    //
+
+    push_u8(max_color[3], out_data);
+    push_u8(min_color[3], out_data);
+
+    EmitAlphaIndices_SSE2(block, min_color[3], max_color[3], out_data);
+
+    //
+    // Write color block
+    //
+
+    push_u16(rgb888_to_rgb565(max_color), out_data);
+    push_u16(rgb888_to_rgb565(min_color), out_data);
+
+    EmitColorIndices_SSE2(block, min_color, max_color, out_data);
+}
+
 // clang-format off
 
 const int BlockSize_DXT1 = 2 * sizeof(uint16_t) + sizeof(uint32_t);
-//                        \_ low/high colors_/   \_ 16 x 2-bit _/
+//                         \_ low/high colors_/   \_ 16 x 2-bit _/
 
 const int BlockSize_DXT5 = 2 * sizeof(uint8_t) + 6 * sizeof(uint8_t) +
-//                        \_ low/high alpha_/     \_ 16 x 3-bit _/
+//                         \_ low/high alpha_/     \_ 16 x 3-bit _/
                            2 * sizeof(uint16_t) + sizeof(uint32_t);
-//                        \_ low/high colors_/   \_ 16 x 2-bit _/
+//                         \_ low/high colors_/   \_ 16 x 2-bit _/
 
 // clang-format on
 
 } // namespace Ren
 
 int Ren::GetRequiredMemory_DXT1(const int w, const int h) {
-    return BlockSize_DXT1 * (w * h) / (4 * 4);
+    return BlockSize_DXT1 * ((w + 3) / 4) * ((h + 3) / 4);
 }
 
 int Ren::GetRequiredMemory_DXT5(const int w, const int h) {
-    return BlockSize_DXT5 * (w * h) / (4 * 4);
+    return BlockSize_DXT5 * ((w + 3) / 4) * ((h + 3) / 4);
 }
 
 template <int Channels>
@@ -1760,37 +1868,48 @@ void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h,
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
+    const int w_aligned = w - (w % 4);
+    const int h_aligned = h - (h % 4);
+
     if (g_CpuFeatures.ssse3_supported && g_CpuFeatures.sse41_supported) {
-        for (int j = 0; j < h; j += 4, img_src += 4 * w * Channels) {
-            for (int i = 0; i < w; i += 4) {
+        for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
+            for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_SSSE3<Channels>(&img_src[i * Channels], w * Channels,
                                                 block);
-
-                alignas(16) uint8_t min_color[4], max_color[4];
-                GetMinMaxColorByBBox_SSE2(block, min_color, max_color);
-
-                push_u16(rgb888_to_rgb565(max_color), p_out);
-                push_u16(rgb888_to_rgb565(min_color), p_out);
-
-                EmitColorIndices_SSE2(block, min_color, max_color, p_out);
+                EmitDXT1Block_SSE2(block, p_out);
+            }
+            // process last column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels],
+                                                        w * Channels, w % 4, 4, block);
+                EmitDXT1Block_SSE2(block, p_out);
             }
         }
+        // process last row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
+                                                    _MIN(4, w - i), h % 4, block);
+            EmitDXT1Block_SSE2(block, p_out);
+        }
     } else {
-        for (int j = 0; j < h; j += 4, img_src += 4 * w * Channels) {
-            for (int i = 0; i < w; i += 4) {
+        for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
+            for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
                                               block);
-
-                uint8_t min_color[4], max_color[4];
-                // GetMinMaxColorByDistance(block, min_color, max_color);
-                // GetMinMaxColorByLuma(block, min_color, max_color);
-                GetMinMaxColorByBBox_Ref(block, min_color, max_color);
-
-                push_u16(rgb888_to_rgb565(max_color), p_out);
-                push_u16(rgb888_to_rgb565(min_color), p_out);
-
-                EmitColorIndices_Ref(block, min_color, max_color, p_out);
+                EmitDXT1Block_Ref(block, p_out);
             }
+            // process last column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels],
+                                                        w * Channels, w % 4, 4, block);
+                EmitDXT1Block_Ref(block, p_out);
+            }
+        }
+        // process last row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels,
+                                                    _MIN(4, w - i), h % 4, block);
+            EmitDXT1Block_Ref(block, p_out);
         }
     }
 }
@@ -1806,71 +1925,46 @@ void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h,
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
+    const int w_aligned = w - (w % 4);
+    const int h_aligned = h - (h % 4);
+
     if (g_CpuFeatures.ssse3_supported && g_CpuFeatures.sse2_supported) {
-        for (int j = 0; j < h; j += 4, img_src += w * 4 * 4) {
-            for (int i = 0; i < w; i += 4) {
+        for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
+            for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_SSSE3<4 /* Channels */>(&img_src[i * 4], w * 4, block);
-
-                alignas(16) uint8_t min_color[4], max_color[4];
-                GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, Is_YCoCg>(block, min_color,
-                                                                         max_color);
-                if (Is_YCoCg) {
-                    ScaleYCoCg_SSE2(block, min_color, max_color);
-                    InsetYCoCgBBox_SSE2(min_color, max_color);
-                    SelectYCoCgDiagonal_SSE2(block, min_color, max_color);
-                }
-
-                //
-                // Write alpha block
-                //
-
-                push_u8(max_color[3], p_out);
-                push_u8(min_color[3], p_out);
-
-                EmitAlphaIndices_SSE2(block, min_color[3], max_color[3], p_out);
-
-                //
-                // Write color block
-                //
-
-                push_u16(rgb888_to_rgb565(max_color), p_out);
-                push_u16(rgb888_to_rgb565(min_color), p_out);
-
-                EmitColorIndices_SSE2(block, min_color, max_color, p_out);
+                EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
+            }
+            // process last column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4],
+                                                                w * 4, w % 4, 4, block);
+                EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
             }
         }
+        // process last row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4,
+                                                            _MIN(4, w - i), h % 4, block);
+            EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
+        }
     } else {
-        for (int j = 0; j < h; j += 4, img_src += w * 4 * 4) {
-            for (int i = 0; i < w; i += 4) {
+        for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
+            for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, block);
-
-                uint8_t min_color[4], max_color[4];
-                GetMinMaxColorByBBox_Ref<true /* UseAlpha */, Is_YCoCg>(block, min_color,
-                                                                        max_color);
-                if (Is_YCoCg) {
-                    ScaleYCoCg_Ref(block, min_color, max_color);
-                    InsetYCoCgBBox_Ref(min_color, max_color);
-                    SelectYCoCgDiagonal_Ref(block, min_color, max_color);
-                }
-
-                //
-                // Write alpha block
-                //
-
-                push_u8(max_color[3], p_out);
-                push_u8(min_color[3], p_out);
-
-                EmitAlphaIndices_Ref(block, min_color[3], max_color[3], p_out);
-
-                //
-                // Write color block
-                //
-
-                push_u16(rgb888_to_rgb565(max_color), p_out);
-                push_u16(rgb888_to_rgb565(min_color), p_out);
-
-                EmitColorIndices_Ref(block, min_color, max_color, p_out);
+                EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
             }
+            // process last column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4],
+                                                                w * 4, w % 4, 4, block);
+                EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
+            }
+        }
+        // process last row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4,
+                                                            _MIN(4, w - i), h % 4, block);
+            EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
         }
     }
 }
