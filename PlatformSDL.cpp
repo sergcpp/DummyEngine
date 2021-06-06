@@ -83,7 +83,7 @@ int Sys::Platform::Init(const std::string &window_name, int w, int h) {
     if (!texture_) return -1;
 #endif
 
-    Sys::InitWorker();
+    InitWorker();
 
     return 0;
 }
@@ -124,7 +124,7 @@ void Sys::Platform::Release() {
         //SDL_Quit();
     }
 
-    Sys::StopWorker();
+    StopWorker();
 }
 
 void Sys::Platform::DrawPixels(const void *pixels) {

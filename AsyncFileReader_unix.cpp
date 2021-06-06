@@ -2,137 +2,129 @@
 
 #include <algorithm>
 
-#if defined(_WIN32)
-#include <Windows.h>
-#undef min
-#undef max
-#elif defined(__linux__)
 #include <fcntl.h>
 #include <linux/aio_abi.h>
 #include <sys/syscall.h>
 #include <unistd.h>
-#endif
 
 namespace Sys {
 static const int MaxVolumeSectorSize = 4096;
 static const int SimultaniousFileRequests = 16;
-#if defined(_WIN32)
-void FileReadBuf::Realloc(const size_t new_size) {
-    if (new_size < size_t(chunk_size_ * chunk_count_)) {
-        return;
-    }
 
-    Free();
-
-    chunk_count_ = uint32_t((new_size + chunk_size_ - 1) / chunk_size_);
-    mem_ = (uint8_t *)::VirtualAlloc(NULL, SIZE_T(chunk_size_) * chunk_count_, MEM_COMMIT,
-                                     PAGE_READWRITE);
+static long io_setup(unsigned nr, aio_context_t *ctxp) {
+    return syscall(__NR_io_setup, nr, ctxp);
 }
 
-void FileReadBuf::Free() {
+static long io_destroy(aio_context_t ctx) { return syscall(__NR_io_destroy, ctx); }
+
+static long io_submit(aio_context_t ctx, long nr, struct iocb **iocbpp) {
+    return syscall(__NR_io_submit, ctx, nr, iocbpp);
+}
+
+static long io_getevents(aio_context_t ctx, long min_nr, long max_nr,
+                         struct io_event *events, struct timespec *timeout) {
+    return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout);
+}
+
+uint32_t FileReadBufBase::GetOptimalChunkSize() {
+    return uint32_t(getpagesize() * 128);
+}
+
+uint8_t *DefaultFileReadBuf::Alloc(const size_t new_size) {
+    return (uint8_t *)::malloc(new_size);
+}
+
+void DefaultFileReadBuf::Free() {
     if (mem_) {
-        ::VirtualFree(mem_, 0, MEM_RELEASE);
+        ::free(mem_);
         mem_ = nullptr;
     }
 }
 
-uint32_t FileReadBuf::GetOptimalChunkSize() {
-    SYSTEM_INFO os_info;
-    ::GetSystemInfo(&os_info);
-    return uint32_t(os_info.dwPageSize * 128);
-}
-
 FileReadEvent::FileReadEvent() {
-    static_assert(sizeof(OVERLAPPED) <= sizeof(ov_), "!");
-
-    h_file_ = NULL;
-    ev_ = ::CreateEvent(NULL /* attribs */, TRUE /* manual reset */,
-                        FALSE /* initial state */, NULL /* name */);
+    const long ret = io_setup(1 /* requests count */, &ctx_);
+    assert(ret >= 0 && "io_setup failed!");
 }
 
 FileReadEvent::~FileReadEvent() {
-    ::CloseHandle(h_file_);
-    ::CloseHandle(ev_);
+    io_destroy(ctx_);
 }
 
-bool FileReadEvent::ReadFile(void *h_file, const size_t read_offset,
-                             const size_t read_size, uint8_t *out_buf) {
-    assert(!h_file_);
-    h_file_ = h_file;
+bool FileReadEvent::ReadFile(int fd, size_t read_offset, size_t read_size, uint8_t *out_buf) {
+    assert(!fd_);
+    fd_ = fd;
 
-    LARGE_INTEGER ofs;
-    ofs.QuadPart = read_offset;
+    static_assert(sizeof(cb_buf_) >= sizeof(struct iocb), "!");
+    auto *cb = reinterpret_cast<struct iocb *>(cb_buf_);
 
-    auto &ov = reinterpret_cast<OVERLAPPED &>(ov_);
+    cb->aio_fildes = fd;
+    cb->aio_lio_opcode = IOCB_CMD_PREAD;
 
-    ov = {0};
-    ov.Offset = ofs.LowPart;
-    ov.OffsetHigh = ofs.HighPart;
-    ov.hEvent = ev_;
+    cb->aio_offset = int64_t(read_offset);
+    cb->aio_nbytes = read_size;
+    cb->aio_buf = reinterpret_cast<const uintptr_t &>(out_buf);
 
-    assert(read_offset % MaxVolumeSectorSize == 0);
-    assert(read_size % MaxVolumeSectorSize == 0);
-    return ::ReadFile(h_file, out_buf, DWORD(read_size), NULL, &ov) == FALSE &&
-           ::GetLastError() == ERROR_IO_PENDING;
+    const long ret = io_submit(ctx_, 1, &cb);
+    return ret == 1;
 }
 
 eFileReadResult FileReadEvent::GetResult(const bool block, size_t *bytes_read) {
-    if (!h_file_) {
+    if (!fd_) {
         return eFileReadResult::Failed;
     }
 
-    DWORD cb;
-    const bool success =
-        ::GetOverlappedResult(h_file_, reinterpret_cast<OVERLAPPED *>(ov_), &cb,
-                              block ? TRUE : FALSE) != 0;
+    io_event ev = {0};
+    timespec timeout = {};
+    const long ret = io_getevents(ctx_, 1, 1, &ev, block ? nullptr : &timeout);
+
     eFileReadResult res;
-    if (!block && !success && GetLastError() == ERROR_IO_INCOMPLETE) {
+    if (!block && ret == 0) {
         res = eFileReadResult::Pending;
     } else {
-        res = success ? eFileReadResult::Successful : eFileReadResult::Failed;
+        res = ret == 1 ? eFileReadResult::Successful : eFileReadResult::Failed;
     }
 
-    (*bytes_read) = size_t(cb);
+    (*bytes_read) = size_t(ev.res);
     if (block) {
-        h_file_ = NULL;
-    } else if (!block && res != eFileReadResult::Pending) {
-        ::CloseHandle(h_file_);
-        h_file_ = NULL;
+        fd_ = 0;
+    } else if (res != eFileReadResult::Pending) {
+        close(fd_);
+        fd_ = 0;
     }
 
     return res;
 }
 
 class AsyncFileReaderImpl {
-    FileReadBuf internal_buf_;
+    DefaultFileReadBuf internal_buf_;
     FileReadEvent internal_ev_[SimultaniousFileRequests];
 
   public:
     AsyncFileReaderImpl() {
-        internal_buf_.Realloc(internal_buf_.chunk_size() * SimultaniousFileRequests);
+        internal_buf_.Realloc(size_t(internal_buf_.chunk_size()) *
+                              SimultaniousFileRequests);
     }
 
     bool ReadFileBlocking(const char *file_path, const size_t read_offset,
                           size_t read_size, void *out_data, size_t &out_size) {
-        HANDLE h_file =
-            ::CreateFile(file_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |
-                             FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED,
-                         NULL);
-
-        if (h_file == INVALID_HANDLE_VALUE) {
+        const int fd = open(file_path, O_RDONLY);
+        if (!fd) {
             out_size = 0;
             return false;
         }
 
-        LARGE_INTEGER size;
-        GetFileSizeEx(h_file, &size);
+        const off_t file_size = lseek(fd, 0, SEEK_END);
+        if (file_size == off_t(-1)) {
+            close(fd);
+            out_size = 0;
+            return false;
+        }
 
-        read_size = std::min(read_size, size_t(size.QuadPart) - read_offset);
+        read_size = std::min(read_size, size_t(file_size) - read_offset);
         const size_t out_buf_size = out_size;
 
         if (out_buf_size < read_size) {
-            ::CloseHandle(h_file);
+            close(fd);
             return false;
         }
 
@@ -148,7 +140,7 @@ class AsyncFileReaderImpl {
         const size_t aligned_read_size =
             chunks_count * size_t(internal_buf_.chunk_size());
 
-        uint8_t *p_out_data = reinterpret_cast<uint8_t *>(out_data);
+        auto *p_out_data = reinterpret_cast<uint8_t *>(out_data);
         size_t left_to_read = read_size;
         size_t left_to_request = aligned_read_size;
 
@@ -156,9 +148,9 @@ class AsyncFileReaderImpl {
             const size_t req_size =
                 std::min(size_t(internal_buf_.chunk_size()), left_to_request);
             if (!internal_ev_[i].ReadFile(
-                    h_file, aligned_read_offset + i * internal_buf_.chunk_size(),
-                    req_size, internal_buf_.chunk(i % SimultaniousFileRequests))) {
-                ::CloseHandle(h_file);
+                fd, aligned_read_offset + size_t(i) * internal_buf_.chunk_size(),
+                req_size, internal_buf_.chunk(i % SimultaniousFileRequests))) {
+                ::close(fd);
                 return false;
             }
             left_to_request -= req_size;
@@ -177,7 +169,7 @@ class AsyncFileReaderImpl {
             }
             if (i == chunks_count - 1) {
                 bytes_read -=
-                    std::min(aligned_read_size, size_t(size.QuadPart) - read_offset) -
+                    std::min(aligned_read_size, size_t(file_size) - read_offset) -
                     read_size;
                 assert(left_to_read <= bytes_read);
             }
@@ -188,10 +180,11 @@ class AsyncFileReaderImpl {
                     std::min(size_t(internal_buf_.chunk_size()), left_to_request);
                 const int next_i = next_request % SimultaniousFileRequests;
                 if (!internal_ev_[next_i].ReadFile(
-                        h_file,
-                        aligned_read_offset + next_request * internal_buf_.chunk_size(),
-                        req_size, internal_buf_.chunk(next_i))) {
-                    ::CloseHandle(h_file);
+                    fd,
+                    aligned_read_offset +
+                    size_t(next_request) * internal_buf_.chunk_size(),
+                    req_size, internal_buf_.chunk(next_i))) {
+                    close(fd);
                     return false;
                 }
                 left_to_request -= req_size;
@@ -206,35 +199,35 @@ class AsyncFileReaderImpl {
         assert(left_to_request == 0);
         assert(left_to_read == 0);
 
-        ::CloseHandle(h_file);
+        close(fd);
         return true;
     }
 
     bool ReadFileBlocking(const char *file_path, const size_t read_offset,
-                          const size_t read_size, FileReadBuf &out_buf) {
+                          const size_t read_size, FileReadBufBase &out_buf) {
         return ReadFileBlocking(file_path, read_offset, read_size, out_buf, internal_ev_,
                                 SimultaniousFileRequests);
     }
 
     bool ReadFileBlocking(const char *file_path, const size_t read_offset,
-                          size_t read_size, FileReadBuf &out_buf, FileReadEvent *events,
-                          const int events_count) {
-        HANDLE h_file =
-            ::CreateFile(file_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |
-                             FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED,
-                         NULL);
-
-        if (h_file == INVALID_HANDLE_VALUE) {
+                          size_t read_size, FileReadBufBase &out_buf,
+                          FileReadEvent *events, const int events_count) {
+        const int fd = open(file_path, O_RDONLY);
+        if (!fd) {
             out_buf.set_data_off(0);
             out_buf.set_data_len(0);
             return false;
         }
 
-        LARGE_INTEGER size;
-        GetFileSizeEx(h_file, &size);
+        const off_t file_size = lseek(fd, 0, SEEK_END);
+        if (file_size == off_t(-1)) {
+            close(fd);
+            out_buf.set_data_off(0);
+            out_buf.set_data_len(0);
+            return false;
+        }
 
-        read_size = std::min(read_size, size_t(size.QuadPart) - read_offset);
+        read_size = std::min(read_size, size_t(file_size) - read_offset);
 
         // read offset must be aligned to volume sector size
         const size_t aligned_read_offset =
@@ -254,12 +247,12 @@ class AsyncFileReaderImpl {
         for (int i = 0; i < std::min(chunks_count, events_count); i++) {
             const size_t req_size =
                 std::min(size_t(out_buf.chunk_size()), left_to_request);
-            if (!events[i].ReadFile(h_file,
-                                    aligned_read_offset + i * out_buf.chunk_size(),
-                                    req_size, out_buf.chunk(i))) {
+            if (!events[i].ReadFile(
+                fd, aligned_read_offset + size_t(i) * out_buf.chunk_size(),
+                req_size, out_buf.chunk(i))) {
                 out_buf.set_data_off(0);
                 out_buf.set_data_len(0);
-                ::CloseHandle(h_file);
+                close(fd);
                 return false;
             }
             left_to_request -= req_size;
@@ -274,11 +267,12 @@ class AsyncFileReaderImpl {
                 const size_t req_size =
                     std::min(size_t(out_buf.chunk_size()), left_to_request);
                 if (!events[next_request % events_count].ReadFile(
-                        h_file, aligned_read_offset + next_request * out_buf.chunk_size(),
-                        req_size, out_buf.chunk(next_request % out_buf.chunk_count()))) {
+                    fd,
+                    aligned_read_offset + size_t(next_request) * out_buf.chunk_size(),
+                    req_size, out_buf.chunk(next_request % out_buf.chunk_count()))) {
                     out_buf.set_data_off(0);
                     out_buf.set_data_len(0);
-                    ::CloseHandle(h_file);
+                    close(fd);
                     return false;
                 }
                 left_to_request -= req_size;
@@ -287,29 +281,29 @@ class AsyncFileReaderImpl {
 
         assert(left_to_request == 0);
 
-        ::CloseHandle(h_file);
+        close(fd);
         return true;
     }
 
     bool ReadFileNonBlocking(const char *file_path, const size_t read_offset,
-                             size_t read_size, FileReadBuf &out_buf,
+                             size_t read_size, FileReadBufBase &out_buf,
                              FileReadEvent &out_event) {
-        HANDLE h_file =
-            ::CreateFile(file_path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING,
-                         FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN |
-                             FILE_FLAG_NO_BUFFERING | FILE_FLAG_OVERLAPPED,
-                         NULL);
-
-        if (h_file == INVALID_HANDLE_VALUE) {
+        const int fd = open(file_path, O_RDONLY);
+        if (!fd) {
             out_buf.set_data_off(0);
             out_buf.set_data_len(0);
             return false;
         }
 
-        LARGE_INTEGER size;
-        GetFileSizeEx(h_file, &size);
+        const off_t file_size = lseek(fd, 0, SEEK_END);
+        if (file_size == off_t(-1)) {
+            close(fd);
+            out_buf.set_data_off(0);
+            out_buf.set_data_len(0);
+            return false;
+        }
 
-        read_size = std::min(read_size, size_t(size.QuadPart) - read_offset);
+        read_size = std::min(read_size, size_t(file_size) - read_offset);
 
         // read offset must be aligned to volume sector size
         const size_t aligned_read_offset =
@@ -324,18 +318,19 @@ class AsyncFileReaderImpl {
         out_buf.set_data_off(read_offset - aligned_read_offset);
         out_buf.set_data_len(read_size);
 
-        if (!out_event.ReadFile(h_file, aligned_read_offset, aligned_read_size,
+        if (!out_event.ReadFile(fd, aligned_read_offset, aligned_read_size,
                                 out_buf.chunk(0))) {
             out_buf.set_data_off(0);
             out_buf.set_data_len(0);
-            ::CloseHandle(h_file);
+            close(fd);
             return false;
         }
 
         return true;
     }
 };
-#elif defined(__linux__)
+
+#if 0
 void FileReadBuf::Realloc(const size_t new_size) {
     if (new_size < size_t(chunk_size_) * chunk_count_) {
         return;
@@ -365,20 +360,7 @@ class AsyncFileReaderImpl {
     struct iocb req_cbs_[SimultaniousFileRequestsCount] = {};
     struct iocb *p_req_cbs_[SimultaniousFileRequestsCount] = {};
 
-    static long io_setup(unsigned nr, aio_context_t *ctxp) {
-        return syscall(__NR_io_setup, nr, ctxp);
-    }
 
-    static long io_destroy(aio_context_t ctx) { return syscall(__NR_io_destroy, ctx); }
-
-    static long io_submit(aio_context_t ctx, long nr, struct iocb **iocbpp) {
-        return syscall(__NR_io_submit, ctx, nr, iocbpp);
-    }
-
-    static long io_getevents(aio_context_t ctx, long min_nr, long max_nr,
-                             struct io_event *events, struct timespec *timeout) {
-        return syscall(__NR_io_getevents, ctx, min_nr, max_nr, events, timeout);
-    }
 
   public:
     AsyncFileReaderImpl() noexcept {
@@ -465,14 +447,6 @@ class AsyncFileReaderImpl {
 };
 
 const int AsyncFileReaderImpl::SimultaniousFileRequestsCount;
-#else
-class AsyncFileReaderImpl {
-  public:
-    bool ReadFile(const char *file_path, const size_t max_size, void *out_data,
-                  size_t &out_size) {
-        return false;
-    }
-};
 #endif
 } // namespace Sys
 
@@ -483,7 +457,7 @@ Sys::AsyncFileReader::~AsyncFileReader() = default;
 bool Sys::AsyncFileReader ::ReadFileBlocking(const char *file_path,
                                              const size_t read_offset,
                                              const size_t read_size,
-                                             FileReadBuf &out_buf) {
+                                             FileReadBufBase &out_buf) {
     return impl_->ReadFileBlocking(file_path, read_offset, read_size, out_buf);
 }
 
@@ -495,7 +469,7 @@ bool Sys::AsyncFileReader::ReadFileBlocking(const char *file_path,
 }
 
 bool Sys::AsyncFileReader::ReadFileNonBlocking(const char *file_path, size_t read_offset,
-                                               size_t read_size, FileReadBuf &out_buf,
+                                               size_t read_size, FileReadBufBase &out_buf,
                                                FileReadEvent &out_event) {
     return impl_->ReadFileNonBlocking(file_path, read_offset, read_size, out_buf,
                                       out_event);

@@ -82,7 +82,7 @@ eFileReadResult FileReadEvent::GetResult(const bool block, size_t *bytes_read) {
     (*bytes_read) = size_t(cb);
     if (block) {
         h_file_ = NULL;
-    } else if (!block && res != eFileReadResult::Pending) {
+    } else if (res != eFileReadResult::Pending) {
         ::CloseHandle(h_file_);
         h_file_ = NULL;
     }

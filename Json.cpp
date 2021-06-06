@@ -74,7 +74,7 @@ template <typename Alloc> bool JsStringT<Alloc>::Read(std::istream &in) {
                 new_c = cur;
             }
             if (new_c) {
-                val = val.substr(0, val.length() - 1);
+                val.pop_back();
                 val += new_c;
             }
         }
