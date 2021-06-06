@@ -7,10 +7,8 @@
 #include <html5.h>
 #endif
 
-#ifdef ENABLE_ITT_API
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
-#endif
 
 #if defined(USE_GL_RENDER)
 #include <Ren/GL.h>
@@ -67,10 +65,8 @@ class AuxGfxThread : public Sys::ThreadWorker {
   public:
     AuxGfxThread(Display *dpy, GLXContext gl_ctx) : dpy_(dpy), gl_ctx_(gl_ctx) {
         AddTask([this]() {
-#ifdef ENABLE_ITT_API
-          __itt_thread_set_name("AuxGfxThread");
-#endif
-          glXMakeCurrent(dpy_, None, gl_ctx_);
+            __itt_thread_set_name("AuxGfxThread");
+            glXMakeCurrent(dpy_, None, gl_ctx_);
         });
     }
 
@@ -103,12 +99,29 @@ int DummyApp::Init(int w, int h) {
         return -1;
     }
 
-    static const int attribute_list[] = {
-        GLX_X_RENDERABLE, True, GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT, GLX_RENDER_TYPE,
-        GLX_RGBA_BIT, GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR, GLX_RED_SIZE, 8, GLX_GREEN_SIZE,
-        8, GLX_BLUE_SIZE, 8, GLX_ALPHA_SIZE, 0, GLX_DEPTH_SIZE, 0, GLX_STENCIL_SIZE, 0,
-        GLX_DOUBLEBUFFER, True,
-        None};
+    static const int attribute_list[] = {GLX_X_RENDERABLE,
+                                         True,
+                                         GLX_DRAWABLE_TYPE,
+                                         GLX_WINDOW_BIT,
+                                         GLX_RENDER_TYPE,
+                                         GLX_RGBA_BIT,
+                                         GLX_X_VISUAL_TYPE,
+                                         GLX_TRUE_COLOR,
+                                         GLX_RED_SIZE,
+                                         8,
+                                         GLX_GREEN_SIZE,
+                                         8,
+                                         GLX_BLUE_SIZE,
+                                         8,
+                                         GLX_ALPHA_SIZE,
+                                         0,
+                                         GLX_DEPTH_SIZE,
+                                         0,
+                                         GLX_STENCIL_SIZE,
+                                         0,
+                                         GLX_DOUBLEBUFFER,
+                                         True,
+                                         None};
 
     int element_count = 0;
     GLXFBConfig *fbc =
@@ -216,14 +229,14 @@ void DummyApp::Frame() { viewer_->Frame(); }
 
 void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
 
-void DummyApp::AddEvent(int type, uint32_t key_code, float x, float y, float dx,
-                        float dy) {
+void DummyApp::AddEvent(RawInputEv type, const uint32_t key_code, const float x,
+                        const float y, const float dx, const float dy) {
     auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
     if (!input_manager)
         return;
 
     InputManager::Event evt;
-    evt.type = (RawInputEvent)type;
+    evt.type = type;
     evt.key_code = key_code;
     evt.point.x = x;
     evt.point.y = y;
@@ -261,14 +274,11 @@ int DummyApp::Run(int argc, char *argv[]) {
         return -1;
     }
 
-#ifdef ENABLE_ITT_API
     __itt_thread_set_name("Main Thread");
-#endif
 
     while (!terminated()) {
-#ifdef ENABLE_ITT_API
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
-#endif
+
         this->PollEvents();
 
         this->Frame();
@@ -286,15 +296,15 @@ int DummyApp::Run(int argc, char *argv[]) {
 #elif defined(USE_SW_RENDER)
         // TODO
 #endif
-#ifdef ENABLE_ITT_API
         __itt_frame_end_v3(__g_itt_domain, nullptr);
-#endif
     }
 
     this->Destroy();
 
     return 0;
 }
+
+#undef None
 
 void DummyApp::PollEvents() {
     std::shared_ptr<InputManager> input_manager = input_manager_.lock();
@@ -319,40 +329,40 @@ void DummyApp::PollEvents() {
             if (key_code == KeyEscape) {
                 quit_ = true;
             } else {
-                evt.type = RawInputEvent::EvKeyDown;
+                evt.type = RawInputEv::KeyDown;
                 evt.key_code = key_code;
             }
         } else if (xev.type == KeyRelease) {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);
 
-            evt.type = RawInputEvent::EvKeyUp;
+            evt.type = RawInputEv::KeyUp;
             evt.key_code = key_code;
         } else if (xev.type == ButtonPress &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
-                evt.type = RawInputEvent::EvP1Down;
+                evt.type = RawInputEv::P1Down;
             } else if (xev.xbutton.button == Button3) {
-                evt.type = RawInputEvent::EvP2Down;
+                evt.type = RawInputEv::P2Down;
             } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
-                evt.type = RawInputEvent::EvMouseWheel;
+                evt.type = RawInputEv::MouseWheel;
                 evt.move.dx = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
             }
-            evt.point.x = (float)xev.xbutton.x;
-            evt.point.y = (float)xev.xbutton.y;
+            evt.point.x = float(xev.xbutton.x);
+            evt.point.y = float(xev.xbutton.y);
         } else if (xev.type == ButtonRelease &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
-                evt.type = RawInputEvent::EvP1Up;
+                evt.type = RawInputEv::P1Up;
             } else if (xev.xbutton.button == Button3) {
-                evt.type = RawInputEvent::EvP2Up;
+                evt.type = RawInputEv::P2Up;
             }
-            evt.point.x = (float)xev.xbutton.x;
-            evt.point.y = (float)xev.xbutton.y;
+            evt.point.x = float(xev.xbutton.x);
+            evt.point.y = float(xev.xbutton.y);
         } else if (xev.type == MotionNotify) {
-            evt.type = RawInputEvent::EvP1Move;
-            evt.point.x = (float)xev.xmotion.x;
-            evt.point.y = (float)xev.xmotion.y;
+            evt.type = RawInputEv::P1Move;
+            evt.point.x = float(xev.xmotion.x);
+            evt.point.y = float(xev.xmotion.y);
             evt.move.dx = evt.point.x - last_p1_pos[0];
             evt.move.dy = evt.point.y - last_p1_pos[1];
 
@@ -364,7 +374,7 @@ void DummyApp::PollEvents() {
 
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
-                evt.type = RawInputEvent::EvResize;
+                evt.type = RawInputEv::Resize;
                 evt.point.x = (float)xev.xconfigure.width;
                 evt.point.y = (float)xev.xconfigure.height;
 
@@ -373,7 +383,7 @@ void DummyApp::PollEvents() {
             }
         }
 
-        if (evt.type != RawInputEvent::EvNone) {
+        if (evt.type != RawInputEv::None) {
             evt.time_stamp = Sys::GetTimeUs();
             input_manager->AddRawInputEvent(evt);
         }

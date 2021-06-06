@@ -198,10 +198,8 @@ void main(void) {
         require(p->attribute(0).name == "aVertexPosition");
         require(p->attribute(0).loc != -1);
 
-        require(p->uniform(0).name == "uMVPMatrix");
-        require(p->uniform(0).loc != -1);
-        require(p->uniform(1).name == "col");
-        require(p->uniform(1).loc != -1);
+        require(p->uniform("uMVPMatrix").loc != -1);
+        require(p->uniform("col").loc != -1);
     }
 
     { // Load compute

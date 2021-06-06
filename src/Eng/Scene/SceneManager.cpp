@@ -20,6 +20,8 @@ extern "C" {
 #include <Ren/SOIL2/stb_image.h>
 }
 
+#include "TexUpdateFileBuf.h"
+
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
@@ -79,7 +81,7 @@ template <typename T> class DefaultCompStorage : public CompStorage {
     void *Get(uint32_t i) override { return data_.GetOrNull(i); }
 
     uint32_t First() const override {
-        return !data_.size() ? 0xffffffff : data_.cbegin().index();
+        return data_.empty() ? 0xffffffff : data_.cbegin().index();
     }
 
     uint32_t Next(uint32_t i) const override {
@@ -98,8 +100,8 @@ template <typename T> class DefaultCompStorage : public CompStorage {
         T::Write(*(T *)comp, js_obj);
     }
 
-    virtual const void *SequentialData() const override { return data_.data(); }
-    virtual void *SequentialData() override { return data_.data(); }
+    const void *SequentialData() const override { return data_.data(); }
+    void *SequentialData() override { return data_.data(); }
 };
 
 // bit scan forward
@@ -125,28 +127,6 @@ long ClearBit(long mask, long index) {
 
 #include "__cam_rig.inl"
 } // namespace SceneManagerInternal
-
-class TextureUpdateFileBuf : public Sys::FileReadBufBase {
-    Ren::TextureStageBuf stage_buf_;
-
-  public:
-    TextureUpdateFileBuf() { Realloc(24 * 1024 * 1024); }
-    ~TextureUpdateFileBuf() override { Free(); }
-
-    Ren::TextureStageBuf &stage_buf() { return stage_buf_; }
-
-    uint8_t *Alloc(const size_t new_size) override {
-        stage_buf_.Alloc(uint32_t(new_size));
-        return stage_buf_.mapped_ptr();
-    }
-
-    void Free() override {
-        stage_buf_.Free();
-        mem_ = nullptr;
-    }
-
-    Ren::SyncFence fence;
-};
 
 SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
                            Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
@@ -1107,7 +1087,8 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
     using namespace SceneManagerConstants;
 
     Ren::eMatLoadStatus status;
-    Ren::MaterialRef ret = LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
+    Ren::MaterialRef ret =
+        LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
     if (!ret->ready()) {
         Sys::AssetFile in_file(std::string(MATERIALS_PATH) + name);
         if (!in_file) {

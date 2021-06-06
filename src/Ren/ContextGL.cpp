@@ -95,7 +95,6 @@ void Ren::Context::Init(int w, int h, ILog *log) {
             if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
                 auto *self = reinterpret_cast<const Context *>(userParam);
                 self->log_->Error("%s", message);
-                __debugbreak();
             }
         };
 

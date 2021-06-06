@@ -1,8 +1,8 @@
 #include "Utils.h"
 
 #ifdef __GNUC__
-#pragma GCC push_options
-#pragma GCC target("avx")
+//#pragma GCC push_options
+//#pragma GCC target("avx2")
 #endif
 
 #include <cassert>
@@ -82,5 +82,5 @@ void Ren::CopyYChannel_32px(const uint8_t *y_src, const int y_stride, const int 
 }
 
 #ifdef __GNUC__
-#pragma GCC pop_options
+//#pragma GCC pop_options
 #endif

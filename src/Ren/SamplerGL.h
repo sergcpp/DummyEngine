@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Storage.h"
+
 namespace Ren {
 class Sampler : public RefCounter {
     uint32_t id_ = 0;

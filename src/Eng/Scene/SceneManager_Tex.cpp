@@ -3,6 +3,8 @@
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
 
+#include "TexUpdateFileBuf.h"
+
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 

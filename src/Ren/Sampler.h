@@ -33,6 +33,12 @@ struct SamplingParams {
     eTexCompare compare = eTexCompare::None;
     Fixed8 lod_bias;
     Fixed8 min_lod = Fixed8::lowest(), max_lod = Fixed8::max();
+
+    SamplingParams() = default;
+    SamplingParams(eTexFilter _filter, eTexRepeat _repeat, eTexCompare _compare,
+                   Fixed8 _lod_bias, Fixed8 _min_lod, Fixed8 _max_lod)
+        : filter(_filter), repeat(_repeat), compare(_compare), lod_bias(_lod_bias),
+          min_lod(_min_lod), max_lod(_max_lod) {}
 };
 static_assert(sizeof(SamplingParams) == 6, "!");
 
@@ -42,11 +48,8 @@ inline bool operator==(const SamplingParams &lhs, const SamplingParams &rhs) {
            lhs.min_lod == rhs.min_lod && lhs.max_lod == rhs.max_lod;
 }
 
-enum class eSamplerLoadStatus {
-    Found,
-    Created
-};
-}
+enum class eSamplerLoadStatus { Found, Created };
+} // namespace Ren
 
 #if defined(USE_GL_RENDER)
 #include "SamplerGL.h"
@@ -57,4 +60,4 @@ namespace Ren {
 using SamplerRef = StrongRef<Sampler, SparseArray<Sampler>>;
 using WeakSamplerRef = WeakRef<Sampler, SparseArray<Sampler>>;
 using SamplerStorage = SparseArray<Sampler>;
-}
+} // namespace Ren

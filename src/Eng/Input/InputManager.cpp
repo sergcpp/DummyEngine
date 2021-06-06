@@ -11,6 +11,8 @@ InputManager::InputManager() {
     imp_.reset(new InputManagerImp());
 }
 
+InputManager::~InputManager() = default;
+
 void InputManager::SetConverter(RawInputEv evt_type, const std::function<void(Event &)> &conv) {
     imp_->input_converters[int(evt_type)] = conv;
 }

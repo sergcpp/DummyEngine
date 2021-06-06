@@ -96,10 +96,6 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     freq_ = rhs.freq_;
 
     size_ = exchange(rhs.size_, 0);
-    if (size_ == 0) {
-        __debugbreak();
-    }
-
     nodes_ = std::move(rhs.nodes_);
 
     return (*this);
@@ -229,8 +225,13 @@ void Ren::Buffer::PrintNode(int i, std::string prefix, bool is_tail, ILog *log) 
             log->Info("%s+- [0x%08x..0x%08x) <free>", prefix.c_str(), node.offset,
                       node.offset + node.size);
         } else {
+#ifndef NDEBUG
             log->Info("%s+- [0x%08x..0x%08x) <%s>", prefix.c_str(), node.offset,
                       node.offset + node.size, node.tag);
+#else
+            log->Info("%s+- [0x%08x..0x%08x) <occupied>", prefix.c_str(), node.offset,
+                      node.offset + node.size);
+#endif
         }
         prefix += "   ";
     } else {
@@ -238,8 +239,13 @@ void Ren::Buffer::PrintNode(int i, std::string prefix, bool is_tail, ILog *log) 
             log->Info("%s|- [0x%08x..0x%08x) <free>", prefix.c_str(), node.offset,
                       node.offset + node.size);
         } else {
+#ifndef NDEBUG
             log->Info("%s|- [0x%08x..0x%08x) <%s>", prefix.c_str(), node.offset,
                       node.offset + node.size, node.tag);
+#else
+            log->Info("%s|- [0x%08x..0x%08x) <occupied>", prefix.c_str(), node.offset,
+                      node.offset + node.size);
+#endif
         }
         prefix += "|  ";
     }

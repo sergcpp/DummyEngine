@@ -33,7 +33,7 @@ public:
     };
 
     InputManager();
-    ~InputManager() = default;
+    ~InputManager();
     InputManager(const InputManager &) = delete;
     InputManager &operator=(const InputManager &) = delete;
 

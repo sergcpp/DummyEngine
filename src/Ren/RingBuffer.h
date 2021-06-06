@@ -1,5 +1,9 @@
 #pragma once
 
+#include <cassert>
+
+#include <malloc.h>
+
 #include <atomic>
 
 namespace Ren {

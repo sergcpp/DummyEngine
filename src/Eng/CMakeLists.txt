@@ -103,7 +103,8 @@ set(SCENE_SOURCES   Scene/__cam_rig.inl
                     Scene/SceneManager_BVH.cpp
                     Scene/SceneManager_PT.cpp
                     Scene/SceneManager_Tex.cpp
-                    Scene/ProbeStorage.h)
+                    Scene/ProbeStorage.h
+                    Scene/TexUpdateFileBuf.h)
 
 set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
                     Renderer/Graph/GraphBuilder.cpp)

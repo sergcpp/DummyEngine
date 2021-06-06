@@ -12,6 +12,15 @@
 #include <cassert>
 
 namespace Ren {
+#ifndef EXCHANGE_DEFINED
+template <class T, class U = T> T exchange(T &obj, U &&new_value) {
+    T old_value = std::move(obj);
+    obj = std::forward<U>(new_value);
+    return old_value;
+}
+#define EXCHANGE_DEFINED
+#endif
+
 #ifndef REN_ALIGNED_MALLOC_DEFINED
 inline void *aligned_malloc(size_t size, size_t alignment) {
 #if defined(_MSC_VER) || defined(__MINGW32__)
@@ -67,10 +76,11 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         }
     }
 
-    SmallVectorImpl(const SmallVectorImpl &rhs) = delete;
-    SmallVectorImpl(SmallVectorImpl &&rhs) = delete;
-
     SmallVectorImpl &operator=(const SmallVectorImpl &rhs) {
+        if (&rhs == this) {
+            return (*this);
+        }
+
         while (end_ != begin_) {
             (--end_)->~T();
         }
@@ -94,7 +104,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         return (*this);
     }
 
-    SmallVectorImpl &operator=(SmallVectorImpl &&rhs) {
+    SmallVectorImpl &operator=(SmallVectorImpl &&rhs) noexcept {
         if (this == &rhs) {
             return (*this);
         }
@@ -127,6 +137,9 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     }
 
   public:
+    SmallVectorImpl(const SmallVectorImpl &rhs) = delete;
+    SmallVectorImpl(SmallVectorImpl &&rhs) = delete;
+
     const T *cdata() const noexcept { return begin_; }
     const T *data() const noexcept { return begin_; }
     const T *begin() const noexcept { return begin_; }
@@ -258,17 +271,17 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
     alignas(AlignmentOfT) char buffer_[sizeof(T) * N];
 
   public:
-    SmallVector() : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {}
-    SmallVector(const SmallVector &rhs)
+    SmallVector() : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {} // NOLINT
+    SmallVector(const SmallVector &rhs) // NOLINT
         : SmallVectorImpl<T, AlignmentOfT>((T *)buffer_, (T *)buffer_, N) {
         SmallVectorImpl<T, AlignmentOfT>::operator=(rhs);
     }
-    SmallVector(SmallVector &&rhs) : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) {
+    SmallVector(SmallVector &&rhs) noexcept : SmallVectorImpl<T>((T *)buffer_, (T *)buffer_, N) { // NOLINT
         SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
     }
 
     SmallVector &operator=(const SmallVector &rhs) = delete;
-    SmallVector &operator=(SmallVector &&rhs) {
+    SmallVector &operator=(SmallVector &&rhs) noexcept {
         SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
         return (*this);
     }

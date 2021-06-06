@@ -9,6 +9,7 @@
 #include <Ren/Buffer.h>
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
+#include <Ren/SmallVector.h>
 #include <Ren/SparseArray.h>
 #include <Ren/Texture.h>
 

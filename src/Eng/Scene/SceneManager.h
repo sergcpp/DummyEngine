@@ -39,7 +39,7 @@ struct AssetCache {
     Ren::HashMap32<const char *, int> db_map;
     Ren::HashMap32<const char *, uint32_t> texture_averages;
 
-    AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
+    explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
 
     void WriteTextureAverage(const char *tex_name, const uint8_t average_color[4]) {
         uint32_t color;

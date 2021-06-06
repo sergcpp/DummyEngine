@@ -15,7 +15,8 @@ uint8_t from_hex_char(const char c) {
 }
 
 const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexRepeat::Repeat,
-                                              eTexCompare::None};
+                                              eTexCompare::None,     Fixed8{},
+                                              Fixed8::lowest(),      Fixed8::max()};
 } // namespace Ren
 
 Ren::Material::Material(const char *name, const char *mat_src, eMatLoadStatus *status,

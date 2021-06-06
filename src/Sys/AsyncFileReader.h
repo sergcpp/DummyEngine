@@ -76,13 +76,19 @@ class FileReadEvent {
     char ov_[32] = {};
 #elif defined(__linux__)
     unsigned long ctx_ = 0;
+    int fd_ = 0;
+    char cb_buf_[64] = {};
 #endif
 
   public:
     FileReadEvent();
     ~FileReadEvent();
 
+#if defined(_WIN32)
     bool ReadFile(void *h_file, size_t read_offset, size_t read_size, uint8_t *out_buf);
+#else
+    bool ReadFile(int fd, size_t read_offset, size_t read_size, uint8_t *out_buf);
+#endif
     eFileReadResult GetResult(bool block, size_t *bytes_read);
 };
 

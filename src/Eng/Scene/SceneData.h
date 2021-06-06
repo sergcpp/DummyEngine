@@ -158,7 +158,7 @@ struct SceneData {
 
     std::vector<uint32_t>                   texture_mem_buckets;
     uint32_t                                tex_mem_bucket_index = 0;
-    std::atomic<uint64_t>                   estimated_texture_mem = 0;
+    std::atomic<uint64_t>                   estimated_texture_mem = {};
 
     Environment                             env;
 
