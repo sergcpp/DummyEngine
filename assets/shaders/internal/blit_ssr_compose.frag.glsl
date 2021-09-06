@@ -28,17 +28,17 @@ uniform SharedDataBlock {
 
 #if defined(MSAA_4)
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_spec_texture;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS s_depth_texture;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS s_norm_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2DMS s_depth_texture;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2DMS s_norm_texture;
 #else
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_spec_texture;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2D s_depth_texture;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D s_norm_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2D s_depth_texture;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2D s_norm_texture;
 #endif
-layout(binding = REN_REFL_DEPTH_LOW_TEX_SLOT) uniform mediump sampler2D depth_low_texture;
-layout(binding = REN_REFL_SSR_TEX_SLOT) uniform mediump sampler2D source_texture;
+layout(binding = REN_REFL_DEPTH_LOW_TEX_SLOT) uniform highp sampler2D depth_low_texture;
+layout(binding = REN_REFL_SSR_TEX_SLOT) uniform highp sampler2D source_texture;
 
-layout(binding = REN_REFL_PREV_TEX_SLOT) uniform mediump sampler2D prev_texture;
+layout(binding = REN_REFL_PREV_TEX_SLOT) uniform highp sampler2D prev_texture;
 layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D brdf_lut_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray probe_textures;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
