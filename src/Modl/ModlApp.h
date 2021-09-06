@@ -8,6 +8,9 @@
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/Mesh.h>
+#include <Ren/Pipeline.h>
+#include <Ren/RenderPass.h>
+#include <Ren/VertexInput.h>
 
 struct SDL_Window;
 
@@ -51,17 +54,13 @@ class ModlApp {
 
   private:
     enum class eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
-    eCompileResult CompileModel(const std::string &in_file_name,
-                                const std::string &out_file_name, bool optimize,
+    eCompileResult CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize,
                                 bool generate_occlusion);
-    eCompileResult CompileAnim(const std::string &in_file_name,
-                               const std::string &out_file_name);
+    eCompileResult CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
 
-    std::vector<Ren::Vec4f>
-    GenerateOcclusion(const std::vector<float> &positions,
-                      const std::vector<float> &normals,
-                      const std::vector<float> &tangents,
-                      const std::vector<std::vector<uint32_t>> &indices) const;
+    std::vector<Ren::Vec4f> GenerateOcclusion(const std::vector<float> &positions, const std::vector<float> &normals,
+                                              const std::vector<float> &tangents,
+                                              const std::vector<std::vector<uint32_t>> &indices) const;
 
     bool quit_;
     SDL_Window *window_ = nullptr;
@@ -69,8 +68,8 @@ class ModlApp {
 #if defined(USE_GL_RENDER)
     void *gl_ctx_main_ = nullptr;
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
-    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_skin_vertex_buffer_ = 0,
-             last_delta_buffer_ = 0, last_index_buffer_ = 0;
+    uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_skin_vertex_buffer_ = 0, last_delta_buffer_ = 0,
+             last_index_buffer_ = 0;
     uint32_t uniform_buf_ = 0;
 
     void CheckInitVAOs();
@@ -93,6 +92,10 @@ class ModlApp {
 
     int shape_key_index_ = -1;
 
+    Ren::VertexInput draw_vi_;
+    Ren::RenderPass rp_draw_;
+    Ren::PipelineStorage pipelines_;
+
     enum class eViewMode {
         Diffuse,
         DiagNormals1,
@@ -113,8 +116,8 @@ class ModlApp {
 
     Ren::Tex2DRef OnTextureNeeded(const char *name);
     Ren::SamplerRef OnSamplerNeeded(Ren::SamplingParams params);
-    Ren::ProgramRef OnProgramNeeded(const char *name, const char *vs_shader,
-                                    const char *fs_shader);
+    void OnPipelinesNeeded(const char *prog_name, uint32_t flags, const char *vs_shader, const char *fs_shader,
+                           const char *arg3, const char *arg4, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     Ren::MaterialRef OnMaterialNeeded(const char *name);
 
     static void ClearColorAndDepth(float r, float g, float b, float a);

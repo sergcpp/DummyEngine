@@ -966,7 +966,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                 mat_file.read(mat_data.get(), file_size);
 
                 Ren::MaterialRef mat_ref = ctx_.LoadMaterial(materials[i].c_str(), mat_data.get(), nullptr,
-                                                             std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
+                                                             std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
                                                              std::bind(&ModlApp::OnTextureNeeded, this, _1),
                                                              std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
@@ -1659,18 +1659,20 @@ Ren::SamplerRef ModlApp::OnSamplerNeeded(Ren::SamplingParams params) {
     return ctx_.LoadSampler(params, &status);
 }
 
-Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader, const char *fs_shader) {
+void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const char *vs_shader, const char *fs_shader,
+                                const char *arg3, const char *arg4,
+                                Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
-    Ren::ProgramRef ret = ctx_.LoadProgram(name, {}, {}, {}, {}, &status);
-    if (!ret->ready()) {
+    Ren::ProgramRef prog = ctx_.LoadProgram(prog_name, {}, {}, {}, {}, &status);
+    if (!prog->ready()) {
         using namespace std;
 
         Sys::AssetFile vs_file(string("assets_pc/shaders/") + vs_shader),
             fs_file(string("assets_pc/shaders/") + fs_shader);
         if (!vs_file || !fs_file) {
-            LOGE("Error loading program %s", name);
-            return ret;
+            LOGE("Error loading program %s", prog_name);
+            return;
         }
 
         size_t vs_size = vs_file.size(), fs_size = fs_file.size();
@@ -1687,10 +1689,26 @@ Ren::ProgramRef ModlApp::OnProgramNeeded(const char *name, const char *vs_shader
         Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
 
-        ret = ctx_.LoadProgram(name, vs_ref, fs_ref, {}, {}, &status);
+        prog = ctx_.LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
-    return ret;
+
+    Ren::RastState rast_state;
+    rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+    rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
+
+    rast_state.depth.test_enabled = true;
+    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);
+
+    const uint32_t new_index = pipelines_.emplace();
+    Ren::Pipeline &new_pipeline = pipelines_.at(new_index);
+
+    const bool res = new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, ctx_.log());
+    if (!res) {
+        LOGE("Failed to initialize pipeline!");
+    }
+
+    out_pipelines.emplace_back(&pipelines_, new_index);
 #elif defined(USE_SW_RENDER)
     Ren::ProgramRef LoadSWProgram(Ren::Context &, const char *);
     return LoadSWProgram(ctx_, name);
@@ -1717,7 +1735,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
 
         using namespace std::placeholders;
 
-        ret = ctx_.LoadMaterial(name, mat_src.data(), &status, std::bind(&ModlApp::OnProgramNeeded, this, _1, _2, _3),
+        ret = ctx_.LoadMaterial(name, mat_src.data(), &status, std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
                                 std::bind(&ModlApp::OnTextureNeeded, this, _1),
                                 std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
