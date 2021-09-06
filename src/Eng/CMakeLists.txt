@@ -24,7 +24,6 @@ set(SOURCE_FILES Config.h
                  GameStateManager.cpp
                  Log.h
                  Log.cpp
-                 ObjectPool.h
                  Random.h
                  Random.cpp)
 
