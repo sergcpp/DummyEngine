@@ -16,6 +16,8 @@ extern const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 const int TempBufSize = 256;
 #include "__skydome_mesh.inl"
 #include "__sphere_mesh.inl"
+
+extern const int SphereIndicesCount = __sphere_indices_count;
 } // namespace PrimDrawInternal
 
 bool PrimDraw::LazyInit(Ren::Context &ctx) {

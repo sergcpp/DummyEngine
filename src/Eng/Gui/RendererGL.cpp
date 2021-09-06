@@ -10,6 +10,10 @@
 #include <Ren/GLCtx.h>
 #include <Sys/Json.h>
 
+namespace UIRendererConstants {
+extern const int TexAtlasSlot;
+} // namespace UIRendererConstants
+
 Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
     instance_index_ = g_instance_count++;
 }
@@ -117,7 +121,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     glBindVertexArray(pipeline_.vtx_input()->gl_vao());
     glUseProgram(pipeline_.prog()->id());
 
-    glActiveTexture(GL_TEXTURE0 + TEX_ATLAS_SLOT);
+    glActiveTexture(GL_TEXTURE0 + UIRendererConstants::TexAtlasSlot);
     glBindTexture(GL_TEXTURE_2D_ARRAY, GLuint(ctx_.texture_atlas().tex_id()));
 
     glDrawElements(GL_TRIANGLES, ndx_count_[ctx_.backend_frame()], GL_UNSIGNED_SHORT,

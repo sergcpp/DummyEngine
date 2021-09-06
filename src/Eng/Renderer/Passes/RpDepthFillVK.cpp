@@ -4,7 +4,9 @@
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
+#include <Ren/DescriptorPool.h>
 #include <Ren/RastState.h>
+#include <Ren/VKCtx.h>
 
 namespace RpSharedInternal {
 uint32_t _depth_draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,

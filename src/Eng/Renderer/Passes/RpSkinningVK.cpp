@@ -1,6 +1,8 @@
 #include "RpSkinning.h"
 
 #include <Ren/Buffer.h>
+#include <Ren/Context.h>
+#include <Ren/DescriptorPool.h>
 #include <Ren/VKCtx.h>
 
 #include "../Renderer_Structs.h"

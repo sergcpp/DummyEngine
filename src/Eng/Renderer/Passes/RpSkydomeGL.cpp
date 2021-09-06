@@ -1,6 +1,9 @@
 #include "RpSkydome.h"
 
 #include <Ren/Context.h>
+#include <Ren/GL.h>
+
+#include "../../Renderer/PrimDraw.h"
 
 #include "../Renderer_Structs.h"
 #include "../assets/shaders/internal/skydome_interface.glsl"

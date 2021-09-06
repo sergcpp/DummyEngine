@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 
+#include "../../Renderer/PrimDraw.h"
 #include "../../Utils/ShaderLoader.h"
 
 #include "../assets/shaders/internal/blit_reduced_interface.glsl"
@@ -30,8 +31,6 @@ const Ren::Vec2f poisson_disk[] = {
     Ren::Vec2f{0.504440f, 0.372295f},   Ren::Vec2f{0.155736f, 0.065157f},   Ren::Vec2f{0.391522f, 0.849605f},
     Ren::Vec2f{-0.620106f, -0.328104f}, Ren::Vec2f{0.789239f, -0.419965f},  Ren::Vec2f{-0.545396f, 0.538133f},
     Ren::Vec2f{-0.178564f, -0.596057f}};
-const float MaxValue = 64.0f;
-const float AvgAlpha = 1.0f / 64.0f;
 } // namespace RpSampleBrightnessInternal
 
 void RpSampleBrightness::Setup(RpBuilder &builder, Ren::WeakTex2DRef tex_to_sample, const char reduced_tex_name[]) {
@@ -82,41 +81,6 @@ void RpSampleBrightness::Execute(RpBuilder &builder) {
                             builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
                             sizeof(Reduced::Params), 0);
     }
-
-#if 0
-    float lum = 0.0f;
-
-    const uint32_t read_size = 4 * res_[0] * res_[1] * sizeof(float);
-
-    { // Retrieve result of glReadPixels call from previous frame
-        auto *reduced_pixels =
-            (float *)readback_buf_->MapRange(Ren::BufMapRead, read_size * ctx.backend_frame(), read_size);
-        if (reduced_pixels) {
-            for (int i = 0; i < 4 * res_[0] * res_[1]; i += 4) {
-                if (!std::isnan(reduced_pixels[i])) {
-                    lum += std::min(reduced_pixels[i], MaxValue);
-                }
-            }
-            readback_buf_->Unmap();
-        }
-    }
-
-    lum /= float(res_[0] * res_[1]);
-    reduced_average_ = AvgAlpha * lum + (1.0f - AvgAlpha) * reduced_average_;
-
-    { // Start asynchronous memory read from framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, reduced_fb_.id());
-        glReadBuffer(GL_COLOR_ATTACHMENT0);
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, GLuint(readback_buf_->id()));
-
-        glReadPixels(0, 0, res_[0], res_[1], GL_RGBA, GL_FLOAT,
-                     reinterpret_cast<GLvoid *>(uintptr_t(read_size * ctx.backend_frame())));
-
-        glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    }
-#endif
 }
 
 void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &reduced_tex) {

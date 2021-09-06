@@ -1,5 +1,8 @@
 #include "RpUpdateBuffers.h"
 
+#include <Ren/Context.h>
+#include <Sys/Time_.h>
+
 #include "../Renderer_Structs.h"
 
 void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,

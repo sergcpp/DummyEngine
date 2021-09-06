@@ -1,11 +1,11 @@
 #include "RpShadowMaps.h"
 
+#include <Ren/Context.h>
+#include <Ren/DescriptorPool.h>
 #include <Ren/RastState.h>
+#include <Ren/VKCtx.h>
 
 #include "../Renderer_Structs.h"
-
-#include <Ren/Context.h>
-#include <Ren/VKCtx.h>
 
 #include "../assets/shaders/internal/shadow_interface.glsl"
 

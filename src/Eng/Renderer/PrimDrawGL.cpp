@@ -1,11 +1,16 @@
 #include "PrimDraw.h"
 
 #include <Ren/Context.h>
+#include <Ren/Framebuffer.h>
 #include <Ren/GL.h>
+
+#include "../Scene/ProbeStorage.h"
 
 #include "Renderer_GL_Defines.inl"
 
-namespace PrimDrawInternal {} // namespace PrimDrawInternal
+namespace PrimDrawInternal {
+extern const int SphereIndicesCount;
+} // namespace PrimDrawInternal
 
 PrimDraw::~PrimDraw() = default;
 
@@ -73,7 +78,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
     } else if (prim == ePrim::Sphere) {
         glBindVertexArray(sphere_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, GLsizei(__sphere_indices_count), GL_UNSIGNED_SHORT,
+        glDrawElements(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
                        (void *)uintptr_t(sphere_ndx_offset_));
     }
 
@@ -134,7 +139,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
     } else if (prim == ePrim::Sphere) {
         glBindVertexArray(sphere_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, GLsizei(__sphere_indices_count), GL_UNSIGNED_SHORT,
+        glDrawElements(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
                        (void *)uintptr_t(sphere_ndx_offset_));
     }
 

@@ -1,6 +1,7 @@
 #include "Utils.h"
 
 namespace PhyInternal {
+using namespace Phy;
 int CompareSigns(const real a, const real b) {
     if (a > real(0) && b > real(0)) {
         return 1;

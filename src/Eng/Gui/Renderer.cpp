@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include "Utils.h"
+
 #include "shaders.inl"
 
 int Gui::Renderer::g_instance_count = 0;
@@ -13,6 +15,10 @@ const uint8_t Gui::ColorBlue[4] = {0, 0, 255, 255};
 const uint8_t Gui::ColorCyan[4] = {0, 255, 255, 255};
 const uint8_t Gui::ColorMagenta[4] = {255, 0, 255, 255};
 const uint8_t Gui::ColorYellow[4] = {255, 255, 0, 255};
+
+namespace UIRendererConstants {
+extern const int TexAtlasSlot = TEX_ATLAS_SLOT;
+}
 
 bool Gui::Renderer::Init() {
     Ren::ProgramRef ui_program;
@@ -351,3 +357,9 @@ void Gui::Renderer::PushCurve(eDrawMode draw_mode, int tex_layer, const uint8_t 
         PushCurve(draw_mode, tex_layer, color, p0123, p123, p23, p3, thickness);
     }
 }
+
+#undef VTX_POS_LOC
+#undef VTX_COL_LOC
+#undef VTX_UVS_LOC
+
+#undef TEX_ATLAS_SLOT

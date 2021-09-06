@@ -1,10 +1,12 @@
 #include "RpOpaque.h"
 
-#include "../Renderer_Structs.h"
-
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
+#include <Ren/DescriptorPool.h>
 #include <Ren/RastState.h>
+#include <Ren/VKCtx.h>
+
+#include "../Renderer_Structs.h"
 
 namespace RpSharedInternal {
 uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,

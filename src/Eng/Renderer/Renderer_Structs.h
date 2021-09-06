@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include <Ren/MMat.h>
+#include <Ren/SmallVector.h>
 
 #include "Renderer_GL_Defines.inl"
 
@@ -273,6 +274,12 @@ struct MaterialData {
     Ren::Vec4f params;
 };
 static_assert(sizeof(MaterialData) == 48, "!");
+
+#if defined(USE_VK_RENDER)
+#include <Ren/VK.h>
+#elif defined(USE_GL_RENDER)
+#include <Ren/Buffer.h>
+#endif
 
 struct BindlessTextureData {
 #if defined(USE_VK_RENDER)
