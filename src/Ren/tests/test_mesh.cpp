@@ -192,17 +192,9 @@ void test_mesh() {
 
         MeshTest test;
 
-        auto on_program_needed = [&test](const char *name, const char *arg1, const char *arg2, const char *arg3,
-                                         const char *arg4) {
-            Ren::eProgLoadStatus status;
-#if defined(USE_GL_RENDER)
-            return test.LoadProgram(name, {}, {}, {}, {}, &status);
-#elif defined(USE_SW_RENDER)
-            Ren::Attribute attrs[] = {{}};
-            Ren::Uniform unifs[] = {{}};
-            return test.LoadProgramSW(name, nullptr, nullptr, 0, attrs, unifs, &status);
-#endif
-        };
+        auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
+                                           const char *arg2, const char *arg3, const char *arg4,
+                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {};
 
         auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
             Ren::eTexLoadStatus status;
@@ -217,7 +209,7 @@ void test_mesh() {
 
         auto on_material_needed = [&](const char *name) {
             Ren::eMatLoadStatus status;
-            return test.LoadMaterial(name, nullptr, &status, on_program_needed, on_texture_needed, on_sampler_needed);
+            return test.LoadMaterial(name, nullptr, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
         };
 
         Ren::eMeshLoadStatus load_status;
@@ -259,11 +251,11 @@ void test_mesh() {
 
         MeshTest test;
 
-        auto on_program_needed = [&test](const char *name, const char *arg1, const char *arg2, const char *arg3,
-                                         const char *arg4) {
-            Ren::eProgLoadStatus status;
+        auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
+                                           const char *arg2, const char *arg3, const char *arg4,
+                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
-            return test.LoadProgram(name, {}, {}, {}, {}, &status);
+
 #elif defined(USE_SW_RENDER)
             Ren::Attribute _attrs[] = {{}};
             Ren::Uniform _unifs[] = {{}};
@@ -284,7 +276,7 @@ void test_mesh() {
 
         auto on_material_needed = [&](const char *name) {
             Ren::eMatLoadStatus status;
-            return test.LoadMaterial(name, nullptr, &status, on_program_needed, on_texture_needed, on_sampler_needed);
+            return test.LoadMaterial(name, nullptr, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
         };
 
         Ren::eMeshLoadStatus load_status;
