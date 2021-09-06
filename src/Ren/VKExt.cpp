@@ -25,7 +25,7 @@ bool Ren::LoadVulkan(ILog *log) {
         return false;                                                                   \
     }
 #elif defined(__linux__)
-    void *vulkan_module = dlopen("./libvulkan.so", RTLD_LAZY);
+    void *vulkan_module = dlopen("libvulkan.so.1", RTLD_LAZY);
     if (!vulkan_module) {
         log->Error("Failed to load libvulkan.so");
         return false;
