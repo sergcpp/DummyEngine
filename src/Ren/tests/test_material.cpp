@@ -2,6 +2,8 @@
 
 #include "../Context.h"
 #include "../Material.h"
+#include "../RenderPass.h"
+#include "../VertexInput.h"
 
 #ifdef USE_GL_RENDER
 
@@ -24,6 +26,10 @@ class MaterialTest : public Ren::Context {
     Ren::LogNull log_;
 
   public:
+    Ren::PipelineStorage pipelines;
+    Ren::VertexInput vtx_input;
+    Ren::RenderPass render_pass;
+
     MaterialTest() {
 #if defined(_WIN32)
         hInstance = GetModuleHandle(NULL);
@@ -116,11 +122,20 @@ void test_material() {
     { // Load material
         MaterialTest test;
 
-        auto on_program_needed = [&test](const char *name, const char *arg1, const char *arg2, const char *arg3,
-                                         const char *arg4) {
+        auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
+                                           const char *arg2, const char *arg3, const char *arg4,
+                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
             Ren::eProgLoadStatus status;
 #if defined(USE_GL_RENDER)
-            return test.LoadProgram(name, {}, {}, {}, {}, &status);
+            Ren::RastState rast_state;
+
+            Ren::ProgramRef prog = test.LoadProgram(prog_name, {}, {}, {}, {}, &status);
+            const uint32_t new_index = test.pipelines.emplace();
+            const bool res = test.pipelines[new_index].Init(test.api_ctx(), rast_state, std::move(prog),
+                                                            &test.vtx_input, &test.render_pass, test.log());
+            require(res);
+
+            out_pipelines.emplace_back(&test.pipelines, new_index);
 #elif defined(USE_SW_RENDER)
             Ren::Attribute _attrs[] = {{}};
             Ren::Uniform _unifs[] = {{}};
@@ -151,19 +166,19 @@ void test_material() {
 
         Ren::eMatLoadStatus status;
         Ren::MaterialRef m_ref =
-            test.LoadMaterial("mat1", nullptr, &status, on_program_needed, on_texture_needed, on_sampler_needed);
+            test.LoadMaterial("mat1", nullptr, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
         require(status == Ren::eMatLoadStatus::SetToDefault);
 
         { require(!m_ref->ready()); }
 
-        test.LoadMaterial("mat1", mat_src, &status, on_program_needed, on_texture_needed, on_sampler_needed);
+        test.LoadMaterial("mat1", mat_src, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
 
         require(status == Ren::eMatLoadStatus::CreatedFromData);
         require(m_ref->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
         require(m_ref->ready());
         require(m_ref->name() == "mat1");
 
-        Ren::ProgramRef p = m_ref->programs[0];
+        Ren::ProgramRef p = m_ref->pipelines[0]->prog();
 
         require(p->name() == "constant");
         require(!p->ready());
