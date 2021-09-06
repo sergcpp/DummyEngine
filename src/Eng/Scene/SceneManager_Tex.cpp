@@ -332,7 +332,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                 int data_off = int(req->buf->data_off());
                 for (int i = int(req->mip_offset_to_init); i < int(req->mip_offset_to_init) + req->mip_count_to_init;
                      i++) {
-                    if (data_off >= bytes_read) {
+                    if (data_off >= int(bytes_read)) {
                         ren_ctx_.log()->Error("File %s has not enough data!", tex_name.c_str());
                         break;
                     }

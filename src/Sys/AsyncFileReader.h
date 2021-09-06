@@ -5,7 +5,7 @@
 namespace Sys {
 class AsyncFileReaderImpl;
 
-const size_t WholeFile = 0xffffffffffffffff;
+const size_t WholeFile = std::numeric_limits<size_t>::max();
 
 class FileReadBufBase {
   protected:

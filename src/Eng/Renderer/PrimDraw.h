@@ -89,7 +89,7 @@ class PrimDraw {
         Binding(Ren::eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, Handle _handle)
             : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
     };
-    static_assert(sizeof(Binding) == 16, "!");
+    static_assert(sizeof(Binding) == sizeof(void*) + 8, "!");
 
     struct Uniform {
         Ren::eType type;
@@ -120,7 +120,7 @@ class PrimDraw {
             : type(Ren::eType::Int32), size(2), loc(_loc), idata(_idata[0], _idata[1], 0, 0) {}
         Uniform(uint16_t _loc, const int _idata) : type(Ren::eType::Int32), size(1), loc(_loc), idata(_idata) {}
     };
-    static_assert(sizeof(Uniform) == 24, "!");
+    static_assert(sizeof(Uniform) == 20 || sizeof(Uniform) == 24, "!");
 
     struct RenderTarget {
         Ren::Framebuffer *fb;
