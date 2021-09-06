@@ -1,0 +1,45 @@
+stages:
+  - build
+  - test
+  - deploy
+
+build-job:
+  stage: build
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_gl
+    - mkdir build_vk
+    - cd build_gl
+    - cmake .. -G "Visual Studio 16 2019" -A x64 -DENABLE_OPENCL=ON -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cd build_vk
+    - cmake .. -G "Visual Studio 16 2019" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl --target ALL_BUILD --config Release
+    - cmake --build build_vk --target DummyApp --config Release
+    - echo "Compile complete."
+
+test-job:
+  stage: test
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - echo "Running unit tests..."
+    - build_gl/src/Eng/_tests/Release/test_Eng
+    - build_gl/src/Ray/tests/Release/test_Ray
+    - build_gl/src/Ren/tests/Release/test_Ren
+    - build_gl/src/Ren/SW/tests/Release/test_SW
+    - build_gl/src/Sys/tests/Release/test_Sys
+    - build_gl/src/DummyLib/tests/Release/test_DummyLib
+
+deploy-job:
+  stage: deploy
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - echo "Deploying application..."
+    - ./DummyAppVK --prepare_assets pc --norun
+    - 7z a -mx9 dummy_app.zip DummyAppGL.exe
+    - 7z a -mx9 dummy_app.zip DummyAppVK.exe
+    - 7z a -mx9 dummy_app.zip assets_pc
+    - echo "Application successfully deployed."
