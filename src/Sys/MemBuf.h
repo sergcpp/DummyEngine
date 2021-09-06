@@ -29,8 +29,8 @@ class MemBuf : public std::streambuf {
     }
 
     std::streamsize xsgetn(char *out_ptr, std::streamsize count) override {
-        count = std::min(count, end_ - cur_);
-        std::memcpy(out_ptr, cur_, count);
+        count = std::min(count, std::streamsize(end_ - cur_));
+        std::memcpy(out_ptr, cur_, size_t(count));
         cur_ += count;
         return count;
     }
