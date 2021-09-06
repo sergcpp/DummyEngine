@@ -13,7 +13,7 @@ UNIFORM_BLOCKS
 	UniformParams : $ubUnifParamLoc
 */
 
-layout(binding = SSR_TEX_SLOT) uniform lowp sampler2D source_texture;
+layout(binding = SSR_TEX_SLOT) uniform highp sampler2D source_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 aVertexUVs_;

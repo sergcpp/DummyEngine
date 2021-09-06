@@ -32,20 +32,16 @@ uniform SharedDataBlock {
     SharedData shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
 #if defined(MSAA_4)
-layout(binding = NORM_TEX_SLOT) uniform mediump sampler2DMS norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS norm_texture;
 layout(binding = SPEC_TEX_SLOT) uniform mediump sampler2DMS spec_texture;
 #else
-layout(binding = NORM_TEX_SLOT) uniform mediump sampler2D norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2D norm_texture;
 layout(binding = SPEC_TEX_SLOT) uniform mediump sampler2D spec_texture;
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
-#else
-in vec2 aVertexUVs_;
-#endif
+LAYOUT(location = 0) in vec2 aVertexUVs_;
 
 layout(location = 0) out vec4 outColor;
 
