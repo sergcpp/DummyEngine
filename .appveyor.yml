@@ -3,7 +3,7 @@ branches:
         - master
 
 image:
-    - Visual Studio 2017
+    - Visual Studio 2019
 
 clone_folder: c:\projects\dummy
 
@@ -17,7 +17,7 @@ matrix:
     fast_finish: true
 
 platform:
-    - x86
+    - x64
 
 configuration:
     - Release
@@ -25,32 +25,39 @@ configuration:
 init:
     - set arch=
     - if "%PLATFORM%"=="x64" ( set arch= Win64)
+    - if "%PLATFORM%"=="x64" ( set arch2= -A x64)
+    - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019" %arch2% )
     - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" ( set generator="Visual Studio 15 2017%arch%" )
     - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2015" ( set generator="Visual Studio 14 2015%arch%" )
     - if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2013" ( set generator="Visual Studio 12 2013%arch%" )
 
 before_build:
-    - mkdir build
-    - cd build
-    - cmake .. -G %generator% -DENABLE_OPENCL=OFF
+    - mkdir build_gl
+    - mkdir build_vk
+    - cd build_gl
+    - cmake .. -G %generator% -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cd build_vk
+    - cmake .. -G %generator% -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
         
-build:
-    project: build\ALL_BUILD.vcxproj
+build_script:
+    - cmake --build build_gl --target ALL_BUILD --config Release
+    - cmake --build build_vk --target DummyApp --config Release
 
 after_build:
-    - cd ..
-    - DummyApp --prepare_assets pc --norun
-    - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip DummyApp.exe
+    - DummyAppVK --prepare_assets pc --norun
+    - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip DummyAppGL.exe
+    - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip DummyAppVK.exe
     - 7z a -mx9 dummy_app_%APPVEYOR_BUILD_VERSION%.zip assets_pc
     
 test_script:
-    - build\src\Eng\_tests\%CONFIGURATION%\test_Eng
-    - build\src\Ray\tests\%CONFIGURATION%\test_Ray
-#    - build\src\Ren\tests\%CONFIGURATION%\test_Ren
-    - build\src\Ren\SW\tests\%CONFIGURATION%\test_SW
-    - build\src\Sys\tests\%CONFIGURATION%\test_Sys
-#    - build\src\Gui\tests\%CONFIGURATION%\test_Gui
-    - build\src\DummyLib\tests\%CONFIGURATION%\test_DummyLib
+    - build_gl\src\Eng\_tests\%CONFIGURATION%\test_Eng
+    - build_gl\src\Ray\tests\%CONFIGURATION%\test_Ray
+#    - build_gl\src\Ren\tests\%CONFIGURATION%\test_Ren
+    - build_gl\src\Ren\SW\tests\%CONFIGURATION%\test_SW
+    - build_gl\src\Sys\tests\%CONFIGURATION%\test_Sys
+    - build_gl\src\DummyLib\tests\%CONFIGURATION%\test_DummyLib
     
 artifacts:
   - path: dummy_app_%APPVEYOR_BUILD_VERSION%.zip
