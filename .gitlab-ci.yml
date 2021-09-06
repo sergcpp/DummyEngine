@@ -1,10 +1,11 @@
 stages:
-  - build
-  - test
+  - build_and_test
   - deploy
 
-build-job:
-  stage: build
+.windows-build-job:
+  stage: build_and_test
+  tags:
+    - windows
   script:
     - echo "Compiling the code..."
     - mkdir build_gl
@@ -15,14 +16,59 @@ build-job:
     - cd build_vk
     - cmake .. -G "Visual Studio 16 2019" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target ALL_BUILD --config Release
-    - cmake --build build_vk --target DummyApp --config Release
+    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 4
+    - cmake --build build_vk --target DummyApp --config Release --parallel 4
     - echo "Compile complete."
+  artifacts:
+    paths:
+      - build_gl/
+      - DummyAppGL.exe
+      - build_vk/
+      - DummyAppVK.exe
+    
+.linux-build-job:
+  stage: build_and_test
+  tags:
+    - linux
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_gl
+    - mkdir build_vk
+    - cd build_gl
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cd build_vk
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl --target all --config Release  --parallel 4
+    - cmake --build build_vk --target DummyApp --config Release  --parallel 4
+    - echo "Compile complete."
+  artifacts:
+    paths:
+      - build_gl/*
+      - ./DummyAppGL
+      - build_vk/*
+      - ./DummyAppVK
+    
+.macos-build-job:
+  stage: build_and_test
+  tags:
+    - macos
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk
+    - cd build_vk
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release  --parallel 4
+    - echo "Compile complete."
+#  artifacts:
+#    paths:
+#      - build_vk/
+#      - DummyAppVK
 
-test-job:
-  stage: test
-  variables:
-    GIT_STRATEGY: none
+.test-job-gl:
+  stage: build_and_test
   script:
     - echo "Running unit tests..."
     - build_gl/src/Eng/_tests/Release/test_Eng
@@ -30,7 +76,43 @@ test-job:
     - build_gl/src/Ren/tests/Release/test_Ren
     - build_gl/src/Ren/SW/tests/Release/test_SW
     - build_gl/src/Sys/tests/Release/test_Sys
+    - build_gl/src/Net/tests/Release/test_Net
     - build_gl/src/DummyLib/tests/Release/test_DummyLib
+
+.test-job-vk:
+  stage: build_and_test
+  script:
+    - echo "Running unit tests..."
+    - build_vk/src/Eng/_tests/Release/test_Eng
+    - build_vk/src/Ray/tests/Release/test_Ray
+    #- build_vk/src/Ren/tests/Release/test_Ren
+    - build_vk/src/Ren/SW/tests/Release/test_SW
+    - build_vk/src/Sys/tests/Release/test_Sys
+    - build_vk/src/Net/tests/Release/test_Net
+    - build_vk/src/DummyLib/tests/Release/test_DummyLib
+
+windows-build-and-test-job:
+  extends:
+    - .test-job-vk
+    - .test-job-gl
+    - .windows-build-job
+  tags:
+    - windows
+    
+linux-build-and-test-job:
+  extends:
+    - .test-job-vk
+    - .test-job-gl
+    - .linux-build-job
+  tags:
+    - linux
+    
+macos-build-and-test-job:
+  extends:
+    - .test-job-vk
+    - .macos-build-job
+  tags:
+    - macos
 
 deploy-job:
   stage: deploy
@@ -43,3 +125,9 @@ deploy-job:
     - 7z a -mx9 dummy_app.zip DummyAppVK.exe
     - 7z a -mx9 dummy_app.zip assets_pc
     - echo "Application successfully deployed."
+  artifacts:
+    paths:
+      - dummy_app.zip
+  tags:
+    - windows
+
