@@ -1,6 +1,7 @@
 #include "RpShadowMaps.h"
 
 #include <Ren/Context.h>
+#include <Ren/GL.h>
 #include <Ren/RastState.h>
 
 #include "../Renderer_Structs.h"

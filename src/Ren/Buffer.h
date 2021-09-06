@@ -140,6 +140,7 @@ void CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t 
 void GLUnbindBufferUnits(int start, int count);
 #endif
 
-typedef StrongRef<Buffer> BufferRef;
-typedef Storage<Buffer> BufferStorage;
+using BufferRef = StrongRef<Buffer>;
+using WeakBufferRef = WeakRef<Buffer>;
+using BufferStorage = Storage<Buffer>;
 } // namespace Ren

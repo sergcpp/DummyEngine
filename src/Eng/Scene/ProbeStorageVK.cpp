@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
+#include <Ren/VKCtx.h>
 
 namespace Ren {
 uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, uint32_t mem_type_bits,

@@ -138,6 +138,10 @@ public:
     virtual void *SequentialData() { return nullptr; }
 };
 
+#if defined(USE_VK_RENDER)
+#include <Ren/DescriptorPool.h>
+#endif
+
 struct PersistentGpuData {
     Ren::BufferRef                          materials_buf;
 #if defined(USE_VK_RENDER)

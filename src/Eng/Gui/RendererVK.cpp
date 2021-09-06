@@ -14,6 +14,8 @@
 namespace UIRendererConstants {
 const int MaxVerticesPerRange = 64 * 1024;
 const int MaxIndicesPerRange = 128 * 1024;
+
+extern const int TexAtlasSlot;
 } // namespace UIRendererConstants
 
 Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
@@ -238,7 +240,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     VkWriteDescriptorSet descr_write;
     descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descr_write.dstSet = descr_set;
-    descr_write.dstBinding = TEX_ATLAS_SLOT;
+    descr_write.dstBinding = UIRendererConstants::TexAtlasSlot;
     descr_write.dstArrayElement = 0;
     descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     descr_write.descriptorCount = 1;
@@ -293,8 +295,4 @@ void Gui::Renderer::Draw(const int w, const int h) {
     ndx_count_[api_ctx->backend_frame] = 0;
 }
 
-#undef VTX_POS_LOC
-#undef VTX_COL_LOC
-#undef VTX_UVS_LOC
 
-#undef TEX_ATLAS_SLOT

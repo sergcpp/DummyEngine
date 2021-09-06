@@ -4,6 +4,11 @@
 
 #include "../../Utils/ShaderLoader.h"
 
+namespace RpReadBrightnessInternal {
+const float MaxValue = 64.0f;
+const float AvgAlpha = 1.0f / 64.0f;
+} // namespace RpReadBrightnessInternal
+
 void RpReadBrightness::Setup(RpBuilder &builder, const char intput_tex_name[], Ren::WeakBufferRef output_buf) {
     input_tex_ = builder.ReadTexture(intput_tex_name, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 
@@ -11,7 +16,7 @@ void RpReadBrightness::Setup(RpBuilder &builder, const char intput_tex_name[], R
 }
 
 void RpReadBrightness::Execute(RpBuilder &builder) {
-    using namespace RpSampleBrightnessInternal;
+    using namespace RpReadBrightnessInternal;
 
     RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
     RpAllocBuf &output_buf = builder.GetWriteBuffer(output_buf_);

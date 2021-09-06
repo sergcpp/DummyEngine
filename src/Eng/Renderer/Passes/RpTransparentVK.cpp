@@ -6,6 +6,7 @@
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 #include <Ren/RastState.h>
+#include <Ren/VKCtx.h>
 
 namespace RpSharedInternal {
 /*void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,

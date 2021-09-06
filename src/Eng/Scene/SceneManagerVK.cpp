@@ -3,6 +3,7 @@
 #include <Ren/Context.h>
 #include <Ren/DescriptorPool.h>
 #include <Ren/Utils.h>
+#include <Ren/VKCtx.h>
 
 #include "../Renderer/Renderer_Structs.h"
 

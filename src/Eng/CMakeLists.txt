@@ -115,30 +115,18 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBlur.cpp
                     Renderer/Passes/RpCombine.h
                     Renderer/Passes/RpCombine.cpp
-                    Renderer/Passes/RpDebugEllipsoids.h
-                    Renderer/Passes/RpDebugEllipsoids.cpp
-                    Renderer/Passes/RpDebugProbes.h
-                    Renderer/Passes/RpDebugProbes.cpp
-                    Renderer/Passes/RpDebugTextures.h
-                    Renderer/Passes/RpDebugTextures.cpp
                     Renderer/Passes/RpDepthFill.h
                     Renderer/Passes/RpDepthFill.cpp
-                    Renderer/Passes/RpDOF.h
-                    Renderer/Passes/RpDOF.cpp
                     Renderer/Passes/RpDownColor.h
                     Renderer/Passes/RpDownColor.cpp
                     Renderer/Passes/RpDownDepth.h
                     Renderer/Passes/RpDownDepth.cpp
                     Renderer/Passes/RpFillStaticVel.h
                     Renderer/Passes/RpFillStaticVel.cpp
-                    Renderer/Passes/RpFXAA.h
-                    Renderer/Passes/RpFXAA.cpp
                     Renderer/Passes/RpOpaque.h
                     Renderer/Passes/RpOpaque.cpp
                     Renderer/Passes/RpReadBrightness.h
                     Renderer/Passes/RpReadBrightness.cpp
-                    Renderer/Passes/RpResolve.h
-                    Renderer/Passes/RpResolve.cpp
                     Renderer/Passes/RpSampleBrightness.h
                     Renderer/Passes/RpSampleBrightness.cpp
                     Renderer/Passes/RpShadowMaps.h
@@ -171,7 +159,20 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/FrameBufGL.cpp
                         Renderer/PrimDrawGL.cpp
                         Renderer/RendererGL.cpp
-                        Renderer/Renderer_GL_Defines.inl)
+                        Renderer/Renderer_GL_Defines.inl
+                        # temporarily GL-only
+                        Renderer/Passes/RpDOF.h
+                        Renderer/Passes/RpDOF.cpp
+                        Renderer/Passes/RpFXAA.h
+                        Renderer/Passes/RpFXAA.cpp
+                        Renderer/Passes/RpResolve.h
+                        Renderer/Passes/RpResolve.cpp
+                        Renderer/Passes/RpDebugEllipsoids.h
+                        Renderer/Passes/RpDebugEllipsoids.cpp
+                        Renderer/Passes/RpDebugProbes.h
+                        Renderer/Passes/RpDebugProbes.cpp
+                        Renderer/Passes/RpDebugTextures.h
+                        Renderer/Passes/RpDebugTextures.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         Scene/ProbeStorageGL.cpp
                         Scene/SceneManagerGL.cpp)

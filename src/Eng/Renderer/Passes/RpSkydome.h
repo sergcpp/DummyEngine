@@ -8,6 +8,8 @@
 #include <Ren/RenderPass.h>
 #include <Ren/VertexInput.h>
 
+class PrimDraw;
+
 class RpSkydome : public RenderPassBase {
     PrimDraw &prim_draw_;
     bool initialized = false;

@@ -1,7 +1,10 @@
 #include "PrimDraw.h"
 
 #include <Ren/Context.h>
+#include <Ren/Framebuffer.h>
 #include <Ren/VKCtx.h>
+
+#include "../Scene/ProbeStorage.h"
 
 #include "Renderer_GL_Defines.inl"
 
@@ -13,8 +16,6 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
                         const Ren::RenderPass &rp, const Ren::RastState &new_rast_state,
                         Ren::RastState &applied_rast_state, const Binding bindings[], const int bindings_count,
                         const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
-    using namespace PrimDrawInternal;
-
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
 
     const Ren::Pipeline *pipeline = FindOrCreatePipeline(p, &rp, &new_rast_state, bindings, bindings_count);
