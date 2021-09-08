@@ -510,6 +510,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
         scene_data_.env = {};
     }
 
+    scene_data_.probe_storage.Finalize();
     LoadProbeCache();
 
     scene_data_.decals_atlas.Finalize();
@@ -627,11 +628,7 @@ void SceneManager::ClearScene() {
         range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
     }
 
-#if defined(USE_VK_RENDER)
-    vkDestroyDescriptorSetLayout(ren_ctx_.api_ctx()->device, scene_data_.persistant_data.textures_descr_layout,
-                                 nullptr);
-#endif
-    scene_data_.persistant_data = {};
+    scene_data_.persistant_data.Clear();
 
     changed_objects_.clear();
     last_changed_objects_.clear();

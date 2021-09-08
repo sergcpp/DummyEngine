@@ -7,7 +7,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision highp float;
     precision mediump sampler2DShadow;
 #endif
@@ -27,8 +27,8 @@ layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D lm_indirect_sh_texture[4];
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D ao_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer lights_buffer;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer decals_buffer;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer lights_buffer;
+layout(binding = REN_DECAL_BUF_SLOT) uniform highp samplerBuffer decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D cone_rt_lut;
@@ -50,10 +50,10 @@ LAYOUT(location = 4) in highp vec4 aVertexShUVs_0;
 LAYOUT(location = 5) in highp vec4 aVertexShUVs_1;
 LAYOUT(location = 6) in highp vec4 aVertexShUVs_2;
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
-	LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
-	LAYOUT(location = 10) in flat TEX_HANDLE mat3_texture; // unused
+    LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 10) in flat TEX_HANDLE mat3_texture; // unused
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -77,7 +77,7 @@ void main(void) {
     vec3 diff_color = texture(SAMPLER2D(diff_texture), aVertexUVs_).rgb;
     vec3 norm_color = texture(SAMPLER2D(norm_texture), aVertexUVs_).wyz;
     vec4 spec_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
-	
+    
     vec2 duv_dx = dFdx(aVertexUVs_), duv_dy = dFdy(aVertexUVs_);
     vec3 dp_dx = dFdx(aVertexPos_);
     vec3 dp_dy = dFdy(aVertexPos_);
@@ -182,9 +182,16 @@ void main(void) {
                 
                 highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
-                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
+#if defined(VULKAN)
+                pp.xy = pp.xy * 0.5 + vec2(0.5);
+#else // VULKAN
+                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+#endif // VULKAN
+                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+#if defined(VULKAN)
+                pp.y = 1.0 - pp.y;
+#endif // VULKAN
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
