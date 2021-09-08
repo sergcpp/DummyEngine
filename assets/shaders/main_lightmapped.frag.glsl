@@ -9,7 +9,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision highp float;
     precision mediump sampler2DShadow;
 #endif
@@ -52,9 +52,9 @@ LAYOUT(location = 4) in highp vec4 aVertexShUVs_0;
 LAYOUT(location = 5) in highp vec4 aVertexShUVs_1;
 LAYOUT(location = 6) in highp vec4 aVertexShUVs_2;
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
-	LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -180,12 +180,18 @@ void main(void) {
             /*[[branch]]*/ if (shadowreg_index != -1) {
                 vec4 reg_tr = shrd_data.uShadowMapRegions[shadowreg_index].transform;
                 
-                highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world *
-                                    vec4(aVertexPos_, 1.0);
+                highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
-                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
+#if defined(VULKAN)
+                pp.xy = pp.xy * 0.5 + vec2(0.5);
+#else // VULKAN
+                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+#endif // VULKAN
+                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+#if defined(VULKAN)
+                pp.y = 1.0 - pp.y;
+#endif // VULKAN
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             

@@ -32,6 +32,8 @@ class DescrPool {
     DescrPool &operator=(const DescrPool &rhs) = delete;
     DescrPool &operator=(DescrPool &&rhs) noexcept;
 
+    ApiContext *api_ctx() { return api_ctx_; }
+
     uint32_t free_count() const { return sets_count_ - next_free_; }
     uint32_t descr_count(const eDescrType type) const { return descr_counts_[int(type)]; }
 
@@ -59,6 +61,8 @@ class DescrPoolAlloc {
         : api_ctx_(api_ctx), img_count_(img_count), ubuf_count_(ubuf_count), sbuf_count_(sbuf_count),
           tbuf_count_(tbuf_count), initial_sets_count_(initial_sets_count) {}
 
+    ApiContext *api_ctx() { return api_ctx_; }
+
     VkDescriptorSet Alloc(VkDescriptorSetLayout layout);
     bool Reset();
 };
@@ -75,6 +79,8 @@ class DescrMultiPoolAlloc {
   public:
     DescrMultiPoolAlloc(ApiContext *api_ctx, uint32_t pool_step, uint32_t max_img_count, uint32_t max_ubuf_count,
                         uint32_t max_sbuf_count, uint32_t max_tbuf_count, uint32_t initial_sets_count);
+
+    ApiContext *api_ctx() { return pools_.front().api_ctx(); }
 
     VkDescriptorSet Alloc(uint32_t img_count, uint32_t ubuf_count, uint32_t sbuf_count, uint32_t tbuf_count,
                           VkDescriptorSetLayout layout);

@@ -1,7 +1,7 @@
 #version 310 es
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision highp float;
 #endif
 
@@ -36,10 +36,11 @@ void main() {
 
     vec4 point_cs = vec4(aVertexUVs_.xy / shrd_data.uResAndFRes.xy, depth, 1.0);
 #if defined(VULKAN)
-	point_cs.xy = 2.0 * point_cs.xy - vec2(1.0);
-#else
+    point_cs.xy = 2.0 * point_cs.xy - vec2(1.0);
+    point_cs.y = -point_cs.y;
+#else // VULKAN
     point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
-#endif
+#endif // VULKAN
 
     vec4 point_ws = shrd_data.uInvViewProjMatrix * point_cs;
     point_ws /= point_ws.w;
@@ -47,10 +48,13 @@ void main() {
     vec4 point_prev_cs = shrd_data.uViewProjPrevMatrix * point_ws;
     point_prev_cs /= point_prev_cs.w;
 
-	vec2 unjitter = shrd_data.uTaaInfo.xy;
+    vec2 unjitter = shrd_data.uTaaInfo.xy;
 #if defined(VULKAN)
     unjitter.y = -unjitter.y;
 #endif
     outVelocity = 0.5 * (point_cs.xy + unjitter - point_prev_cs.xy);
+#if defined(VULKAN)
+    outVelocity.y = - outVelocity.y;
+#endif
 }
 

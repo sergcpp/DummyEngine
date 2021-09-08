@@ -7,7 +7,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif
@@ -50,9 +50,9 @@ LAYOUT(location = 4) in highp vec4 aVertexShUVs_0;
 LAYOUT(location = 5) in highp vec4 aVertexShUVs_1;
 LAYOUT(location = 6) in highp vec4 aVertexShUVs_2;
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
-	LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -120,12 +120,18 @@ void main(void) {
             if (shadowreg_index != -1) {
                 vec4 reg_tr = shrd_data.uShadowMapRegions[shadowreg_index].transform;
                 
-                highp vec4 pp =
-                    shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
+                highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
-                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
                 
+#if defined(VULKAN)
+                pp.xy = pp.xy * 0.5 + vec2(0.5);
+#else // VULKAN
+                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+#endif // VULKAN
+                pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+#if defined(VULKAN)
+                pp.y = 1.0 - pp.y;
+#endif // VULKAN
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
             
@@ -133,14 +139,14 @@ void main(void) {
                 smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
-	
-	vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
-	vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-	
-	float refl_lod = 6.0 * specular_color.a;
+    
+    vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
+    vec3 refl_ray_ws = reflect(view_ray_ws, normal);
+    
+    float refl_lod = 6.0 * specular_color.a;
     
     vec3 indirect_col = vec3(0.0);
-	vec3 reflected_col = vec3(0.0);
+    vec3 reflected_col = vec3(0.0);
     float total_fade = 0.0;
     
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
@@ -154,7 +160,7 @@ void main(void) {
                                                           shrd_data.uProbes[pi].sh_coeffs[0],
                                                           shrd_data.uProbes[pi].sh_coeffs[1],
                                                           shrd_data.uProbes[pi].sh_coeffs[2]);
-		reflected_col += fade * RGBMDecode(
+        reflected_col += fade * RGBMDecode(
                 textureLod(env_texture, vec4(refl_ray_ws,
                                              shrd_data.uProbes[pi].unused_and_layer.w), refl_lod));
         total_fade += fade;
@@ -163,7 +169,7 @@ void main(void) {
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(indirect_col, vec3(0.0));
     reflected_col /= max(total_fade, 1.0);
-	
+    
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
@@ -179,7 +185,7 @@ void main(void) {
     float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
     
     vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
-	vec2 brdf = texture(brdf_lut_texture, vec2(N_dot_V, specular_color.a)).xy;
+    vec2 brdf = texture(brdf_lut_texture, vec2(N_dot_V, specular_color.a)).xy;
 
     outColor = vec4(diffuse_color * (1.0 - kS) + reflected_col * (kS * brdf.x + brdf.y), diff_color.a);
     //outNormal = vec4(normal * 0.5 + 0.5, 1.0);

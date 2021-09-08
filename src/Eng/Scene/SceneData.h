@@ -156,8 +156,9 @@ struct PersistentGpuData {
     PersistentGpuData();
     ~PersistentGpuData();
 
-    PersistentGpuData(PersistentGpuData &&rhs) noexcept = default;
-    PersistentGpuData &operator=(PersistentGpuData &&rhs) noexcept = default;
+    PersistentGpuData(PersistentGpuData &&rhs) noexcept = delete;
+
+    void Clear();
 };
 
 struct SceneData {
