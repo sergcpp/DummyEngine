@@ -31,7 +31,7 @@ layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_spec_text
 layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2DMS s_depth_texture;
 layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2DMS s_norm_texture;
 #else
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_spec_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform highp sampler2D s_spec_texture;
 layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2D s_depth_texture;
 layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2D s_norm_texture;
 #endif

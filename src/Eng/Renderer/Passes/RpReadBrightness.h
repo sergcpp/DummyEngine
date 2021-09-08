@@ -22,6 +22,6 @@ class RpReadBrightness : public RenderPassBase {
     void Setup(RpBuilder &builder, const char intput_tex_name[], Ren::WeakBufferRef output_buf);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "READ BRIGHTNESS"; }
+    const char *name() const override { return "BRIGHTNESS READBACK"; }
     float reduced_average() const { return reduced_average_; }
 };
