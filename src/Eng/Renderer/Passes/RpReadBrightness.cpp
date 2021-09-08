@@ -11,7 +11,6 @@ const float AvgAlpha = 1.0f / 64.0f;
 
 void RpReadBrightness::Setup(RpBuilder &builder, const char intput_tex_name[], Ren::WeakBufferRef output_buf) {
     input_tex_ = builder.ReadTexture(intput_tex_name, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
-
     output_buf_ = builder.WriteBuffer(output_buf, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
@@ -26,7 +25,7 @@ void RpReadBrightness::Execute(RpBuilder &builder) {
     float lum = 0.0f;
     const uint32_t read_size = input_tex.desc.w * input_tex.desc.h * sizeof(float);
 
-    { // Retrieve result of glReadPixels call from previous frame
+    { // Retrieve result of readback from previous frame
         auto *reduced_pixels =
             (float *)output_buf.ref->MapRange(Ren::BufMapRead, read_size * ctx.backend_frame(), read_size);
         if (reduced_pixels) {
