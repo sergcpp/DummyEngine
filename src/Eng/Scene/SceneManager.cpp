@@ -614,7 +614,7 @@ void SceneManager::ClearScene() {
 
     assert(scene_data_.meshes.empty());
     assert(scene_data_.materials.empty());
-    // assert(scene_data_.textures.empty());
+    assert(scene_data_.textures.empty());
 
     scene_data_.objects.clear();
     scene_data_.name_to_object.clear();
