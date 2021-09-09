@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "../BinaryTree.h"
+#include "../BitmapAlloc.h"
 #include "../MonoAlloc.h"
 #include "../PoolAlloc.h"
 
@@ -219,14 +220,116 @@ void test_alloc() {
         require(vec[3] == 4);
 
         auto el = list.begin();
-        require(*el == 1);
-        el++;
-        require(*el == 2);
-        el++;
-        require(*el == 3);
-        el++;
+        require(*el++ == 1);
+        require(*el++ == 2);
+        require(*el++ == 3);
         require(*el == 4);
 
         require(str == "teststringmoredatatogoaroundsmallstringoptimization");
+    }
+
+    { // BitmapAllocator first fit
+        Sys::BitmapAllocator alloc(16, 16 * 1024 * 1024);
+
+        void *mem0 = alloc.Alloc_FirstFit(256);
+        void *mem1 = alloc.Alloc_FirstFit(64);
+        require(uintptr_t(mem1) == uintptr_t(mem0) + 256);
+        void *mem2 = alloc.Alloc_FirstFit(128);
+        require(uintptr_t(mem2) == uintptr_t(mem1) + 64);
+        void *mem3 = alloc.Alloc_FirstFit(48);
+        require(uintptr_t(mem3) == uintptr_t(mem2) + 128);
+        void *mem4 = alloc.Alloc_FirstFit(128);
+        require(uintptr_t(mem4) == uintptr_t(mem3) + 48);
+        void *mem5 = alloc.Alloc_FirstFit(24);
+        require(uintptr_t(mem5) == uintptr_t(mem4) + 128);
+        void *mem6 = alloc.Alloc_FirstFit(128);
+        require(uintptr_t(mem6) == uintptr_t(mem5) + 32);
+        alloc.Free(mem1, 64);
+        alloc.Free(mem3, 48);
+        alloc.Free(mem5, 24);
+
+        void *mem7 = alloc.Alloc_FirstFit(24);
+        require(uintptr_t(mem7) == uintptr_t(mem1));
+
+        alloc.Free(mem0, 256);
+        alloc.Free(mem2, 128);
+        alloc.Free(mem4, 128);
+        alloc.Free(mem6, 128);
+        alloc.Free(mem7, 24);
+    }
+
+    { // BitmapAllocator best fit
+        Sys::BitmapAllocator alloc(16, 16 * 1024 * 1024);
+
+        void *mem0 = alloc.Alloc_BestFit(256);
+        void *mem1 = alloc.Alloc_BestFit(64);
+        require(uintptr_t(mem1) == uintptr_t(mem0) + 256);
+        void *mem2 = alloc.Alloc_BestFit(128);
+        require(uintptr_t(mem2) == uintptr_t(mem1) + 64);
+        void *mem3 = alloc.Alloc_BestFit(48);
+        require(uintptr_t(mem3) == uintptr_t(mem2) + 128);
+        void *mem4 = alloc.Alloc_BestFit(128);
+        require(uintptr_t(mem4) == uintptr_t(mem3) + 48);
+        void *mem5 = alloc.Alloc_BestFit(24);
+        require(uintptr_t(mem5) == uintptr_t(mem4) + 128);
+        void *mem6 = alloc.Alloc_BestFit(128);
+        require(uintptr_t(mem6) == uintptr_t(mem5) + 32);
+        alloc.Free(mem1, 64);
+        alloc.Free(mem3, 48);
+        alloc.Free(mem5, 24);
+
+        void *mem7 = alloc.Alloc_BestFit(24);
+        require(uintptr_t(mem7) == uintptr_t(mem5));
+
+        alloc.Free(mem0, 256);
+        alloc.Free(mem2, 128);
+        alloc.Free(mem4, 128);
+        alloc.Free(mem6, 128);
+        alloc.Free(mem7, 24);
+    }
+
+    { // BitmapAllocator stress test
+        uint8_t cmp_buf[256];
+        for (int i = 0; i < 256; ++i) {
+            cmp_buf[i] = uint8_t(i);
+        }
+
+        volatile int free_space = 128 * 1024 * 1024;
+        Sys::BitmapAllocator alloc(1 * 1024, free_space);
+
+        std::vector<std::pair<uint8_t *, int>> allocated;
+
+        for (int i = 0; i < 32 * 1024; ++i) {
+            const int size_to_alloc = 1 + rand() % (8 * 1024 * 1024);
+            uint8_t *new_alloc;
+            if (i % 2) {
+                new_alloc = (uint8_t *)alloc.Alloc_FirstFit(size_to_alloc);
+            } else {
+                new_alloc = (uint8_t *)alloc.Alloc_BestFit(size_to_alloc);
+            }
+            if (!new_alloc) {
+                const int index_to_free = rand() % allocated.size();
+                auto it_to_free = std::begin(allocated) + index_to_free;
+                for (int i = 0; i < it_to_free->second; i += 256) {
+                    require(memcmp(&it_to_free->first[i], cmp_buf, std::min(it_to_free->second - i, 256)) == 0);
+                }
+                alloc.Free(it_to_free->first, it_to_free->second);
+                free_space += it_to_free->second;
+                allocated.erase(it_to_free);
+            } else {
+                for (int j = 0; j < size_to_alloc; j += 256) {
+                    memcpy(&new_alloc[j], cmp_buf, std::min(size_to_alloc - j, 256));
+                }
+                free_space -= size_to_alloc;
+                allocated.emplace_back(new_alloc, size_to_alloc);
+            }
+        }
+
+        for (const auto &al : allocated) {
+            for (int i = 0; i < al.second; i += 256) {
+                require(memcmp(&al.first[i], cmp_buf, std::min(al.second - i, 256)) == 0);
+            }
+            alloc.Free(al.first, al.second);
+        }
     }
 }

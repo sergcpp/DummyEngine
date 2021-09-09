@@ -13,19 +13,16 @@ void test_optional() {
             bool b;
 
           public:
-            MyObj(int) : b(true) { printf("constructed\n"); }
+            MyObj(int) : b(true) { }
             MyObj(const MyObj &rhs) {
                 b = rhs.b;
-                printf("copied\n");
             }
             MyObj(MyObj &&rhs) noexcept {
-                printf("moved\n");
                 b = rhs.b;
                 rhs.b = false;
             }
             ~MyObj() {
                 if (b) {
-                    printf("destroyed\n");
                 }
             }
         };
