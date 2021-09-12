@@ -112,13 +112,25 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
     rast_state.depth.test_enabled = true;
     rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
 
-    const uint32_t new_index = scene_data_.persistant_data.pipelines.emplace();
-    Ren::Pipeline &new_pipeline = scene_data_.persistant_data.pipelines.at(new_index);
+    // find of create pipeline
+    uint32_t new_index = 0xffffffff;
+    for (auto it = std::begin(scene_data_.persistant_data.pipelines);
+         it != std::end(scene_data_.persistant_data.pipelines); ++it) {
+        if (it->prog() == prog && it->rast_state() == rast_state) {
+            new_index = it.index();
+            break;
+        }
+    }
 
-    const bool res =
-        new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, ren_ctx_.log());
-    if (!res) {
-        ren_ctx_.log()->Error("Failed to initialize pipeline!");
+    if (new_index == 0xffffffff) {
+        new_index = scene_data_.persistant_data.pipelines.emplace();
+        Ren::Pipeline &new_pipeline = scene_data_.persistant_data.pipelines.at(new_index);
+
+        const bool res =
+            new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, ren_ctx_.log());
+        if (!res) {
+            ren_ctx_.log()->Error("Failed to initialize pipeline!");
+        }
     }
 
     out_pipelines.emplace_back(&scene_data_.persistant_data.pipelines, new_index);

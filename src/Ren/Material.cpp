@@ -79,6 +79,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
     textures.clear();
     samplers.clear();
     params.clear();
+    flags_ = 0;
 
     SmallVector<std::string, 4> program_names;
     SmallVector<std::string, 4> v_shader_names, f_shader_names, tc_shader_names, te_shader_names;
