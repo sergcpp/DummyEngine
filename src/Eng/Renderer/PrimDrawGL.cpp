@@ -121,14 +121,14 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
 
     Ren::Buffer temp_stage_buffer, temp_unif_buffer;
     if (uniform_data) {
-        temp_stage_buffer = Ren::Buffer("Temp stage buf", ctx_->api_ctx(), Ren::eBufType::Stage, uniform_data_len);
+        temp_stage_buffer = Ren::Buffer("Temp stage buf", ctx_->api_ctx(), Ren::eBufType::Stage, uniform_data_len, 16);
         {
             uint8_t *stage_data = temp_stage_buffer.Map(Ren::BufMapWrite);
             memcpy(stage_data, uniform_data, uniform_data_len);
             temp_stage_buffer.FlushMappedRange(0, uniform_data_len);
             temp_stage_buffer.Unmap();
         }
-        temp_unif_buffer = Ren::Buffer("Temp uniform buf", ctx_->api_ctx(), Ren::eBufType::Uniform, uniform_data_len);
+        temp_unif_buffer = Ren::Buffer("Temp uniform buf", ctx_->api_ctx(), Ren::eBufType::Uniform, uniform_data_len, 16);
         Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);
 
         glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_UNIF_PARAM_LOC, temp_unif_buffer.id());

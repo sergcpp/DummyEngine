@@ -108,9 +108,9 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        assert(vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_));
-        assert(vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_));
-        assert(ndx_buf->FreeSubRegion(temp_buf_ndx_offset_));
+        //assert(vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_));
+        //assert(vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_));
+        //assert(ndx_buf->FreeSubRegion(temp_buf_ndx_offset_));
     }
 
     for (int i = 0; i < Ren::MaxFramesInFlight; i++) {

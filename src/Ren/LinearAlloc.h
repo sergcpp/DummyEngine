@@ -1,47 +1,66 @@
 #pragma once
 
+#include <climits>
+#include <cstring>
+
 #include <string>
 
-#include "SparseArray.h"
-
 namespace Ren {
+#ifndef REN_EXCHANGE_DEFINED
+template <class T, class U = T> T exchange(T &obj, U &&new_value) {
+    T old_value = std::move(obj);
+    obj = std::forward<U>(new_value);
+    return old_value;
+}
+#define REN_EXCHANGE_DEFINED
+#endif
+
 class ILog;
 
 class LinearAlloc {
   protected:
-    struct Node {
-        bool is_free = true;
-        int parent = -1;
-        int child[2] = {-1, -1};
-        uint32_t offset = 0, size = 0;
-#ifndef NDEBUG
-        char tag[32] = {};
-#endif
+    uint32_t block_size_ = 0;
+    uint32_t block_count_ = 0;
 
-        bool has_children() const { return child[0] != -1 || child[1] != -1; }
-    };
+    uint64_t *bitmap_ = nullptr;
 
-    SparseArray<Node> nodes_;
+    static const int BitmapGranularity = sizeof(uint64_t) * CHAR_BIT;
 
   public:
     LinearAlloc() = default;
-    explicit LinearAlloc(uint32_t initial_size) {
-        nodes_.emplace();
-        nodes_[0].size = initial_size;
+    LinearAlloc(const uint32_t block_size, const uint32_t total_size) {
+        block_size_ = block_size;
+        block_count_ = (total_size + block_size - 1) / block_size;
+        block_count_ = BitmapGranularity * ((block_count_ + BitmapGranularity - 1) / BitmapGranularity);
+
+        bitmap_ = new uint64_t[block_count_ / BitmapGranularity];
+        memset(bitmap_, 0xff, sizeof(uint64_t) * (block_count_ / BitmapGranularity));
     }
+    ~LinearAlloc() { delete[] bitmap_; }
 
     LinearAlloc(const LinearAlloc &rhs) = delete;
-    LinearAlloc(LinearAlloc &&rhs) noexcept = default;
+    LinearAlloc(LinearAlloc &&rhs) noexcept
+        : block_size_(rhs.block_size_), block_count_(rhs.block_count_), bitmap_(exchange(rhs.bitmap_, nullptr)) {}
 
     LinearAlloc &operator=(const LinearAlloc &rhs) = delete;
-    LinearAlloc &operator=(LinearAlloc &&rhs) noexcept = default;
+    LinearAlloc &operator=(LinearAlloc &&rhs) noexcept {
+        if (&rhs == this) {
+            return (*this);
+        }
 
-    uint32_t size() const { return nodes_[0].size; }
-    uint32_t node_off(int i) { return nodes_[i].offset; }
+        delete[] bitmap_;
 
-    int Alloc_r(int i, uint32_t req_size, const char *tag);
-    int Find_r(int i, uint32_t offset) const;
-    bool Free_Node(int i);
+        block_size_ = exchange(rhs.block_size_, 0);
+        block_count_ = exchange(rhs.block_count_, 0);
+        bitmap_ = exchange(rhs.bitmap_, nullptr);
+
+        return (*this);
+    }
+
+    uint32_t size() const { return block_size_ * block_count_; }
+
+    uint32_t Alloc(uint32_t req_size, const char *tag);
+    void Free(uint32_t offset, uint32_t size);
 
     void PrintNode(int i, std::string prefix, bool is_tail, ILog *log) const;
 

@@ -21,13 +21,14 @@ class MemoryAllocator;
 
 struct MemAllocation {
     uint32_t block_ndx = 0;
-    uint32_t alloc_off = 0;
+    uint32_t alloc_off = 0, alloc_size = 0;
     MemoryAllocator *owner = nullptr;
 
     MemAllocation() = default;
     MemAllocation(const MemAllocation &rhs) = delete;
     MemAllocation(MemAllocation &&rhs) noexcept
-        : block_ndx(rhs.block_ndx), alloc_off(rhs.alloc_off), owner(exchange(rhs.owner, nullptr)) {}
+        : block_ndx(rhs.block_ndx), alloc_off(rhs.alloc_off), alloc_size(rhs.alloc_size),
+          owner(exchange(rhs.owner, nullptr)) {}
 
     MemAllocation &operator=(const MemAllocation &rhs) = delete;
     MemAllocation &operator=(MemAllocation &&rhs) noexcept {
@@ -35,6 +36,7 @@ struct MemAllocation {
 
         block_ndx = rhs.block_ndx;
         alloc_off = rhs.alloc_off;
+        alloc_size = rhs.alloc_size;
         owner = exchange(rhs.owner, nullptr);
 
         return (*this);
@@ -79,7 +81,7 @@ class MemoryAllocator {
     uint32_t mem_type_index() const { return mem_type_index_; }
 
     MemAllocation Allocate(uint32_t size, uint32_t alignment, const char *tag);
-    void Free(uint32_t block_ndx, uint32_t alloc_off);
+    void Free(uint32_t block_ndx, uint32_t alloc_off, uint32_t alloc_size);
 
     void Print(ILog *log) const {
         for (const auto &block : blocks_) {

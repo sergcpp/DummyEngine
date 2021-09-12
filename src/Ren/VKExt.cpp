@@ -100,6 +100,7 @@ bool Ren::LoadVulkan(ILog *log) {
     LOAD_VK_FUN(vkWaitForFences)
     LOAD_VK_FUN(vkResetFences)
     LOAD_VK_FUN(vkDestroyFence)
+    LOAD_VK_FUN(vkGetFenceStatus)
 
     LOAD_VK_FUN(vkBeginCommandBuffer)
     LOAD_VK_FUN(vkEndCommandBuffer)

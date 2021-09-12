@@ -37,9 +37,10 @@ uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, 
 
 int Ren::Buffer::g_GenCounter = 0;
 
-Ren::Buffer::Buffer(const char *name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size)
-    : LinearAlloc(initial_size), name_(name), api_ctx_(api_ctx), type_(type), size_(0) {
-    Resize(initial_size);
+Ren::Buffer::Buffer(const char *name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
+                    const uint32_t suballoc_align)
+    : LinearAlloc(suballoc_align, initial_size), name_(name), api_ctx_(api_ctx), type_(type), size_(0) {
+    Resize(size());
 }
 
 Ren::Buffer::~Buffer() { Free(); }
@@ -75,11 +76,8 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
 
 uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf, void *_cmd_buf,
                                      const uint32_t init_off) {
-    const int i = Alloc_r(0, req_size, tag);
-    if (i != -1) {
-        const Node &n = nodes_[i];
-        assert(n.size == req_size);
-
+    const uint32_t alloc_off = Alloc(req_size, tag);
+    if (alloc_off != 0xffffffff) {
         if (init_buf) {
             assert(init_buf->type_ == eBufType::Stage);
             VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
@@ -110,8 +108,8 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.buffer = handle_.buf;
-                new_barrier.offset = VkDeviceSize{n.offset};
-                new_barrier.size = VkDeviceSize{n.size};
+                new_barrier.offset = VkDeviceSize{alloc_off};
+                new_barrier.size = VkDeviceSize{req_size};
 
                 src_stages |= VKPipelineStagesForState(this->resource_state);
                 dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
@@ -124,8 +122,8 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
 
             VkBufferCopy region_to_copy = {};
             region_to_copy.srcOffset = VkDeviceSize{init_off};
-            region_to_copy.dstOffset = VkDeviceSize{n.offset};
-            region_to_copy.size = VkDeviceSize{n.size};
+            region_to_copy.dstOffset = VkDeviceSize{alloc_off};
+            region_to_copy.size = VkDeviceSize{req_size};
 
             vkCmdCopyBuffer(cmd_buf, init_buf->handle_.buf, handle_.buf, 1, &region_to_copy);
 
@@ -133,7 +131,7 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
             this->resource_state = eResState::CopyDst;
         }
 
-        return n.offset;
+        return alloc_off;
     }
 
     return 0xffffffff;
@@ -194,9 +192,9 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
     this->resource_state = eResState::CopyDst;
 }
 
-bool Ren::Buffer::FreeSubRegion(const uint32_t offset) {
-    const int i = Find_r(0, offset);
-    return Free_Node(i);
+bool Ren::Buffer::FreeSubRegion(const uint32_t offset, const uint32_t size) {
+    LinearAlloc::Free(offset, size);
+    return true;
 }
 
 void Ren::Buffer::Resize(const uint32_t new_size) {
@@ -351,10 +349,12 @@ void Ren::Buffer::Unmap() {
 }
 
 void Ren::Buffer::Print(ILog *log) {
+#if 0
     log->Info("=================================================================");
     log->Info("Buffer %s, %f MB, %i nodes", name_.c_str(), float(size_) / (1024.0f * 1024.0f), int(nodes_.size()));
     PrintNode(0, "", true, log);
     log->Info("=================================================================");
+#endif
 }
 
 void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,

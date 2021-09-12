@@ -55,7 +55,7 @@ struct BufferRange {
 
     void Release() {
         if (buf) {
-            const bool res = buf->FreeSubRegion(offset);
+            const bool res = buf->FreeSubRegion(offset, size);
             assert(res);
         }
         buf = {};

@@ -383,7 +383,6 @@ void ProbeStorage::Finalize() {
 
     if (!img_barriers.empty()) {
         VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx_->device, api_ctx_->temp_command_pool);
-        //VkCommandBuffer cmd_buf = api_ctx_->draw_cmd_buf[api_ctx_->backend_frame];
 
         vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
                              nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.cdata());

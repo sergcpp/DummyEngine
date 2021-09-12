@@ -220,7 +220,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     api_ctx_->phys_device_limits = device_properties.limits;
     api_ctx_->max_combined_image_samplers =
         std::min(std::min(device_properties.limits.maxPerStageDescriptorSampledImages,
-                          device_properties.limits.maxPerStageDescriptorSamplers) - 10,
+                          device_properties.limits.maxPerStageDescriptorSamplers) -
+                     10,
                  16384u);
     capabilities.max_combined_image_samplers = api_ctx_->max_combined_image_samplers;
 
@@ -282,8 +283,6 @@ void Ren::Context::CheckDeviceCapabilities() {
 
 void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
-    vkResetCommandBuffer(cmd_buf, 0);
 
     VkCommandBufferBeginInfo begin_info = {};
     begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

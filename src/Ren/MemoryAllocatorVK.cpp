@@ -18,7 +18,7 @@ uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, 
 
 void Ren::MemAllocation::Release() {
     if (owner) {
-        owner->Free(block_ndx, alloc_off);
+        owner->Free(block_ndx, alloc_off, alloc_size);
         owner = nullptr;
     }
 }
@@ -45,7 +45,7 @@ bool Ren::MemoryAllocator::AllocateNewBlock(const uint32_t size) {
     blocks_.emplace_back();
     MemBlock &new_block = blocks_.back();
 
-    new_block.alloc = LinearAlloc{size};
+    new_block.alloc = LinearAlloc{1024, size};
 
     VkMemoryAllocateInfo buf_alloc_info = {};
     buf_alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -64,12 +64,12 @@ Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t size, const uin
                 continue;
             }
 
-            const int node_ndx = blocks_[i].alloc.Alloc_r(0, size + alignment, tag);
-            if (node_ndx != -1) {
+            const uint32_t alloc_off = blocks_[i].alloc.Alloc(size + alignment, tag);
+            if (alloc_off != 0xffffffff) {
                 // allocation succeded
                 MemAllocation new_alloc = {};
                 new_alloc.block_ndx = i;
-                new_alloc.alloc_off = blocks_[i].alloc.node_off(node_ndx);
+                new_alloc.alloc_off = alloc_off;
                 new_alloc.owner = this;
                 return new_alloc;
             }
@@ -84,11 +84,9 @@ Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t size, const uin
     return {};
 }
 
-void Ren::MemoryAllocator::Free(uint32_t block_ndx, uint32_t alloc_off) {
+void Ren::MemoryAllocator::Free(const uint32_t block_ndx, const uint32_t alloc_off, const uint32_t alloc_size) {
     assert(block_ndx < blocks_.size());
-    const int node_ndx = blocks_[block_ndx].alloc.Find_r(0, alloc_off);
-    assert(node_ndx != -1);
-    blocks_[block_ndx].alloc.Free_Node(node_ndx);
+    blocks_[block_ndx].alloc.Free(alloc_off, alloc_size);
 }
 
 void Ren::MemoryAllocators::Print(ILog *log) {

@@ -122,7 +122,7 @@ void test_buffer() {
         require(buf.AllocSubRegion(64, "temp") == 16 + 32);
         require(buf.AllocSubRegion(16, "temp") == 16 + 32 + 64);
 
-        buf.FreeSubRegion(0);
+        buf.FreeSubRegion(0, 16);
 
         require(buf.AllocSubRegion(16, "temp") == 0);
     }

@@ -163,13 +163,15 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
     if (render_flags_ & DebugBVH) {
         const uint32_t buf_size = nodes_count_ * sizeof(bvh_node_t);
 
-        Ren::BufferRef temp_stage_buf = builder.ctx().LoadBuffer("Nodes stage buf", Ren::eBufType::Stage, buf_size);
+        Ren::BufferRef temp_stage_buf =
+            builder.ctx().LoadBuffer("Nodes stage buf", Ren::eBufType::Stage, buf_size);
 
         auto *stage_nodes = reinterpret_cast<bvh_node_t *>(temp_stage_buf->Map(Ren::BufMapWrite));
         memcpy(stage_nodes, nodes_, buf_size);
         temp_stage_buf->FlushMappedRange(0, buf_size);
         temp_stage_buf->Unmap();
 
+        const uint32_t prev_size = nodes_buf_->size();
         if (!nodes_buf_ || buf_size > nodes_buf_->size()) {
             nodes_buf_ = {};
             nodes_tbo_ = {};
@@ -178,7 +180,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
                 builder.ctx().CreateTexture1D("Nodes TBO", nodes_buf_, Ren::eTexFormat::RawRGBA32F, 0, buf_size);
         }
 
-        nodes_buf_->FreeSubRegion(0);
+        nodes_buf_->FreeSubRegion(0, prev_size);
         const uint32_t off = nodes_buf_->AllocSubRegion(buf_size, "nodes debug", temp_stage_buf.get());
         assert(off == 0);
 

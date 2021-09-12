@@ -177,8 +177,7 @@ class BitmapAllocator {
                 if (bit_end == BitmapGranularity) {
                     ++loc_end;
                     bit_end = 0;
-                    while (loc_end < loc_lim &&
-                           (loc_end - loc_beg) * BitmapGranularity - int(bit_beg) + bit_end < blocks_required) {
+                    while (loc_end < loc_lim) {
                         bit_end = CountTrailingZeroes(~bitmap_[loc_end]);
                         if (bit_end != BitmapGranularity) {
                             break;

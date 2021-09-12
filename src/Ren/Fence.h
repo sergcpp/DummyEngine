@@ -35,6 +35,8 @@ class SyncFence {
     operator bool() const { return fence_ != VK_NULL_HANDLE; }
     VkFence fence() { return fence_; }
 
+    bool signaled() const { return vkGetFenceStatus(device_, fence_) == VK_SUCCESS; }
+
     bool Reset();
 #elif defined(USE_GL_RENDER)
     operator bool() const { return sync_ != nullptr; }

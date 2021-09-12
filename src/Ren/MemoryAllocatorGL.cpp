@@ -19,11 +19,9 @@ Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t size, const uin
     return {};
 }
 
-void Ren::MemoryAllocator::Free(uint32_t block_ndx, uint32_t alloc_off) {
+void Ren::MemoryAllocator::Free(uint32_t block_ndx, uint32_t alloc_off, uint32_t alloc_size) {
     assert(block_ndx < blocks_.size());
-    const int node_ndx = blocks_[block_ndx].alloc.Find_r(0, alloc_off);
-    assert(node_ndx != -1);
-    blocks_[block_ndx].alloc.Free_Node(node_ndx);
+    blocks_[block_ndx].alloc.Free(alloc_off, alloc_size);
 }
 
 void Ren::MemoryAllocators::Print(ILog *log) {}
