@@ -292,7 +292,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
             vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0].handle());
             vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0].layout(), 0, 2,
                                     simple_descr_sets, 0, nullptr);
-            _depth_draw_range_ext(cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
+            i = _depth_draw_range_ext(cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
                                   DDB::BitAlphaTest, materials_per_descriptor, *bindless_tex_->textures_descr_sets,
                                   _dummy);
         }
@@ -302,9 +302,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
             vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[1].handle());
             vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[1].layout(), 0, 2,
                                     simple_descr_sets, 0, nullptr);
-            _depth_draw_range_ext(cmd_buf, pi_static_transp_[1], zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitAlphaTest, materials_per_descriptor, *bindless_tex_->textures_descr_sets,
-                                  _dummy);
+            i = _depth_draw_range_ext(cmd_buf, pi_static_transp_[1], zfill_batch_indices, zfill_batches, i,
+                                  DDB::BitAlphaTest | DDB::BitTwoSided, materials_per_descriptor,
+                                  *bindless_tex_->textures_descr_sets, _dummy);
         }
 
         vkCmdEndRenderPass(cmd_buf);

@@ -133,7 +133,8 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
     { // Brightness readback buffer
         readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Stage,
                                        rp_sample_brightness_.res()[0] * rp_sample_brightness_.res()[1] * sizeof(float) *
-                                           Ren::MaxFramesInFlight);
+                                           Ren::MaxFramesInFlight,
+                                       16);
     }
 
     { // cone/sphere intersection LUT
@@ -487,7 +488,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
 
             rp_ssao_upscale_.Setup(rp_builder_, cur_res, view_state_.clip_info, DEPTH_DOWN_2X_TEX, MAIN_DEPTH_TEX,
-                              "SSAO BLUR TEMP2", SSAO_RES);
+                                   "SSAO BLUR TEMP2", SSAO_RES);
             rp_tail->p_next = &rp_ssao_upscale_;
             rp_tail = rp_tail->p_next;
         }

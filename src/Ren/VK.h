@@ -64,6 +64,7 @@
 #define vkWaitForFences ren_vkWaitForFences
 #define vkResetFences ren_vkResetFences
 #define vkDestroyFence ren_vkDestroyFence
+#define vkGetFenceStatus ren_vkGetFenceStatus
 
 #define vkBeginCommandBuffer ren_vkBeginCommandBuffer
 #define vkEndCommandBuffer ren_vkEndCommandBuffer
@@ -213,6 +214,7 @@ EXTERN_FUNC PFN_vkCreateFence ren_vkCreateFence;
 EXTERN_FUNC PFN_vkWaitForFences ren_vkWaitForFences;
 EXTERN_FUNC PFN_vkResetFences ren_vkResetFences;
 EXTERN_FUNC PFN_vkDestroyFence ren_vkDestroyFence;
+EXTERN_FUNC PFN_vkGetFenceStatus ren_vkGetFenceStatus;
 
 EXTERN_FUNC PFN_vkBeginCommandBuffer ren_vkBeginCommandBuffer;
 EXTERN_FUNC PFN_vkEndCommandBuffer ren_vkEndCommandBuffer;

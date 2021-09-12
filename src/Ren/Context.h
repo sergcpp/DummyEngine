@@ -21,22 +21,43 @@ namespace Ren {
 const int TextureAtlasWidth = 1024, TextureAtlasHeight = 512, TextureAtlasLayers = 4;
 const int StageBufferCount = 16;
 
+const uint32_t DefaultSubAllocAlign = 768;
+
 struct ApiContext;
 class DescrMultiPoolAlloc;
 
+struct StageBufRef {
+    Context &ctx;
+    BufferRef buf;
+    SyncFence &fence;
+    void *cmd_buf;
+    bool &is_in_use;
+
+    StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, void *_cmd_buf, bool &_is_in_use);
+    ~StageBufRef();
+
+    StageBufRef(const StageBufRef &rhs) = delete;
+    StageBufRef(StageBufRef &&rhs) = default;
+};
+
 struct StageBufs {
+    Context *ctx;
     BufferRef bufs[StageBufferCount];
     SyncFence fences[StageBufferCount];
     void *cmd_bufs[StageBufferCount];
+    bool is_in_use[StageBufferCount];
 
   private:
     int cur = 0;
 
   public:
-    int next_index() {
-        const int ret = cur;
-        cur = (cur + 1) % StageBufferCount;
-        return ret;
+    StageBufRef GetNextBuffer() {
+        int ret;
+        do {
+            ret = cur;
+            cur = (cur + 1) % StageBufferCount;
+        } while (is_in_use[ret]);
+        return StageBufRef{*ctx, bufs[ret], fences[ret], cmd_bufs[ret], is_in_use[ret]};
     }
 };
 
@@ -194,7 +215,8 @@ class Context : public TaskExecutor {
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef LoadBuffer(const char *name, eBufType type, uint32_t initial_size);
+    BufferRef LoadBuffer(const char *name, eBufType type, uint32_t initial_size,
+                         uint32_t suballoc_align = DefaultSubAllocAlign);
     void ReleaseBuffers();
 
     void InitDefaultBuffers();

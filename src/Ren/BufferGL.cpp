@@ -42,9 +42,10 @@ GLbitfield GetGLBufStorageFlags(const eBufType type) {
 
 int Ren::Buffer::g_GenCounter = 0;
 
-Ren::Buffer::Buffer(const char *name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size)
-    : LinearAlloc(initial_size), name_(name), api_ctx_(api_ctx), type_(type), size_(0) {
-    Resize(initial_size);
+Ren::Buffer::Buffer(const char *name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
+                    const uint32_t suballoc_align)
+    : LinearAlloc(suballoc_align, initial_size), name_(name), api_ctx_(api_ctx), type_(type), size_(0) {
+    Resize(size());
 }
 
 Ren::Buffer::~Buffer() { Free(); }
@@ -77,16 +78,13 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
 
 uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf, void *,
                                      const uint32_t init_off) {
-    const int i = Alloc_r(0, req_size, tag);
-    if (i != -1) {
-        Node &n = nodes_[i];
-        assert(n.size == req_size);
-
+    const uint32_t alloc_off = Alloc(req_size, tag);
+    if (alloc_off != 0xffffffff) {
         if (init_buf) {
-            UpdateSubRegion(n.offset, n.size, *init_buf, init_off);
+            UpdateSubRegion(alloc_off, req_size, *init_buf, init_off);
         }
 
-        return n.offset;
+        return alloc_off;
     } else {
         assert(false && "Not implemented!");
         Resize(size_ + req_size);
@@ -106,9 +104,9 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-bool Ren::Buffer::FreeSubRegion(uint32_t offset) {
-    const int i = Find_r(0, offset);
-    return Free_Node(i);
+bool Ren::Buffer::FreeSubRegion(const uint32_t offset, const uint32_t size) {
+    LinearAlloc::Free(offset, size);
+    return true;
 }
 
 void Ren::Buffer::Resize(uint32_t new_size) {
@@ -159,7 +157,8 @@ void Ren::Buffer::Free() {
         glDeleteBuffers(1, &gl_buf);
         handle_ = {};
         size_ = 0;
-        nodes_.clear();
+
+        LinearAlloc::Clear();
     }
 }
 
@@ -230,10 +229,12 @@ void Ren::Buffer::Unmap() {
 }
 
 void Ren::Buffer::Print(ILog *log) {
+#if 0
     log->Info("=================================================================");
     log->Info("Buffer %s, %f MB, %i nodes", name_.c_str(), float(size_) / (1024.0f * 1024.0f), int(nodes_.size()));
     PrintNode(0, "", true, log);
     log->Info("=================================================================");
+#endif
 }
 
 uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) { return offset; }

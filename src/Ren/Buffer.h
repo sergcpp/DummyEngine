@@ -87,7 +87,8 @@ class Buffer : public RefCounter, public LinearAlloc {
 
   public:
     Buffer() = default;
-    explicit Buffer(const char *name, ApiContext *api_ctx, eBufType type, uint32_t initial_size);
+    explicit Buffer(const char *name, ApiContext *api_ctx, eBufType type, uint32_t initial_size,
+                    uint32_t suballoc_align = 1);
     Buffer(const Buffer &rhs) = delete;
     Buffer(Buffer &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Buffer();
@@ -97,7 +98,7 @@ class Buffer : public RefCounter, public LinearAlloc {
 
     const String &name() const { return name_; }
     eBufType type() const { return type_; }
-    //uint32_t size() const { return size_; }
+    // uint32_t size() const { return size_; }
 
     BufHandle handle() const { return handle_; }
 #if defined(USE_VK_RENDER)
@@ -116,7 +117,7 @@ class Buffer : public RefCounter, public LinearAlloc {
                             uint32_t init_off = 0);
     void UpdateSubRegion(uint32_t offset, uint32_t size, const Buffer &init_buf, uint32_t init_off = 0,
                          void *cmd_buf = nullptr);
-    bool FreeSubRegion(uint32_t offset);
+    bool FreeSubRegion(uint32_t offset, uint32_t size);
 
     void Resize(uint32_t new_size);
     void Free();

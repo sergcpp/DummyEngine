@@ -2,123 +2,151 @@
 
 #include "Log.h"
 
-int Ren::LinearAlloc::Alloc_r(const int i, const uint32_t req_size, const char *tag) {
-    if (!nodes_[i].is_free || req_size > nodes_[i].size) {
-        return -1;
-    }
-
-    int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
-
-    if (ch0 != -1) {
-        const int new_node = Alloc_r(ch0, req_size, tag);
-        if (new_node != -1) {
-            return new_node;
-        }
-
-        return Alloc_r(ch1, req_size, tag);
-    } else {
-        if (req_size == nodes_[i].size) {
-#ifndef NDEBUG
-            strncpy(nodes_[i].tag, tag, 31);
+#ifdef __GNUC__
+#define force_inline __attribute__((always_inline)) inline
 #endif
-            nodes_[i].is_free = false;
-            return i;
-        }
+#ifdef _MSC_VER
+#define force_inline __forceinline
 
-        nodes_[i].child[0] = ch0 = nodes_.emplace();
-        nodes_[i].child[1] = ch1 = nodes_.emplace();
+#include <intrin.h>
 
-        Node &n = nodes_[i];
+#pragma intrinsic(_BitScanForward64)
+#pragma intrinsic(_tzcnt_u64)
+#endif
 
-        nodes_[ch0].offset = n.offset;
-        nodes_[ch0].size = req_size;
-        nodes_[ch1].offset = n.offset + req_size;
-        nodes_[ch1].size = n.size - req_size;
-        nodes_[ch0].parent = nodes_[ch1].parent = i;
-
-        return Alloc_r(ch0, req_size, tag);
-    }
+namespace Ren {
+force_inline bool GetFirstBit(const uint64_t mask, unsigned long *bit_index) {
+#ifdef _MSC_VER
+    return _BitScanForward64(bit_index, mask);
+#else
+    const int ret = __builtin_ffsll(mask);
+    (*bit_index) = ret - 1;
+    return ret != 0;
+#endif
 }
 
-int Ren::LinearAlloc::Find_r(const int i, const uint32_t offset) const {
-    if ((nodes_[i].is_free && !nodes_[i].has_children()) || offset < nodes_[i].offset ||
-        offset > (nodes_[i].offset + nodes_[i].size)) {
-        return -1;
+force_inline int CountTrailingZeroes(const uint64_t mask) {
+#ifdef _MSC_VER
+    return int(_tzcnt_u64(mask));
+#else
+    if (mask == 0) {
+        return 64;
     }
-
-    const int ch0 = nodes_[i].child[0], ch1 = nodes_[i].child[1];
-
-    if (ch0 != -1) {
-        const int ndx = Find_r(ch0, offset);
-        if (ndx != -1) {
-            return ndx;
-        }
-        return Find_r(ch1, offset);
-    } else {
-        if (offset == nodes_[i].offset) {
-            return i;
-        } else {
-            return -1;
-        }
-    }
+    return __builtin_ctzll(mask);
+#endif
+}
 }
 
-bool Ren::LinearAlloc::Free_Node(int i) {
-    if (i == -1 || nodes_[i].is_free) {
-        return false;
+uint32_t Ren::LinearAlloc::Alloc(const uint32_t req_size, const char *tag) {
+    const uint32_t blocks_required = (req_size + block_size_ - 1) / block_size_;
+
+    uint32_t best_blocks_available = block_count_ + 1;
+    uint32_t best_loc = 0xffffffff;
+
+    uint32_t loc_beg = 0;
+    // Skip initial occupied blocks
+    while (!bitmap_[loc_beg]) {
+        ++loc_beg;
     }
 
-    nodes_[i].is_free = true;
+#if 1
+    const uint32_t loc_lim = (block_count_ - blocks_required + BitmapGranularity - 1) / BitmapGranularity;
+    unsigned long bit_beg = 0;
+    while (loc_beg < loc_lim) {
+        if (GetFirstBit(bitmap_[loc_beg] & ~((1ull << bit_beg) - 1), &bit_beg)) {
+            int bit_end = CountTrailingZeroes(~(bitmap_[loc_beg] | ((1ull << bit_beg) - 1)));
+            uint32_t loc_end = loc_beg;
+            if (bit_end == BitmapGranularity) {
+                ++loc_end;
+                bit_end = 0;
+                while (loc_end < (block_count_ / BitmapGranularity)) {
+                    bit_end = CountTrailingZeroes(~bitmap_[loc_end]);
+                    if (bit_end != BitmapGranularity) {
+                        break;
+                    }
+                    ++loc_end;
+                    bit_end = 0;
+                }
+            }
 
-    int par = nodes_[i].parent;
-    while (par != -1) {
-        int ch0 = nodes_[par].child[0], ch1 = nodes_[par].child[1];
-
-        if (!nodes_[ch0].has_children() && nodes_[ch0].is_free && !nodes_[ch1].has_children() && nodes_[ch1].is_free) {
-
-            nodes_.erase(ch0);
-            nodes_.erase(ch1);
-
-            nodes_[par].child[0] = nodes_[par].child[1] = -1;
-
-            i = par;
-            par = nodes_[par].parent;
-        } else {
-            par = -1;
-        }
-    }
-
-    { // merge empty nodes
-        int par = nodes_[i].parent;
-        while (par != -1 && nodes_[par].child[0] == i && !nodes_[i].has_children()) {
-            int gr_par = nodes_[par].parent;
-            if (gr_par != -1 && nodes_[gr_par].has_children()) {
-                int ch0 = nodes_[gr_par].child[0], ch1 = nodes_[gr_par].child[1];
-
-                if (!nodes_[ch0].has_children() && nodes_[ch0].is_free && ch1 == par) {
-                    assert(nodes_[ch0].offset + nodes_[ch0].size == nodes_[i].offset);
-                    nodes_[ch0].size += nodes_[i].size;
-                    nodes_[gr_par].child[1] = nodes_[par].child[1];
-                    nodes_[nodes_[par].child[1]].parent = gr_par;
-
-                    nodes_.erase(i);
-                    nodes_.erase(par);
-
-                    i = ch0;
-                    par = gr_par;
-                } else {
+            const uint32_t blocks_found = (loc_end - loc_beg) * BitmapGranularity - bit_beg + bit_end;
+            if (blocks_found >= blocks_required && blocks_found < best_blocks_available) {
+                best_blocks_available = blocks_found;
+                best_loc = loc_beg * BitmapGranularity + bit_beg;
+                if (blocks_found == blocks_required) {
+                    // Perfect fit was found, can stop here
                     break;
                 }
-            } else {
+            }
+            bit_beg = bit_end;
+            loc_beg = loc_end;
+        } else {
+            ++loc_beg;
+            bit_beg = 0;
+        }
+    }
+#else
+    loc_beg *= BitmapGranularity;
+    for (; loc_beg <= block_count_ - blocks_required;) {
+        if (!bitmap_[loc_beg / BitmapGranularity]) {
+            const int count = (BitmapGranularity - (loc_beg % BitmapGranularity));
+            loc_beg += count;
+            continue;
+        }
+
+        // Count the number of available blocks
+        uint32_t loc_end = loc_beg;
+        while (loc_end < block_count_) {
+            const int xword_index = loc_end / BitmapGranularity;
+            const int bit_index = loc_end % BitmapGranularity;
+            if ((bitmap_[xword_index] & (1ull << bit_index)) == 0) {
+                break;
+            }
+            ++loc_end;
+        }
+
+        if ((loc_end - loc_beg) >= blocks_required && (loc_end - loc_beg) < best_blocks_available) {
+            best_blocks_available = (loc_end - loc_beg);
+            best_loc = loc_beg;
+            if ((loc_end - loc_beg) == blocks_required) {
+                // Perfect fit was found, can stop here
                 break;
             }
         }
+        loc_beg = loc_end + 1;
+    }
+#endif
+
+    if (best_loc != 0xffffffff) {
+        // Mark blocks as occupied
+        for (uint32_t i = best_loc; i < best_loc + blocks_required; ++i) {
+            const int xword_index = i / BitmapGranularity;
+            const int bit_index = i % BitmapGranularity;
+            bitmap_[xword_index] &= ~(1ull << bit_index);
+        }
+        return block_size_ * best_loc;
     }
 
-    return true;
+    return 0xffffffff;
+}
+
+void Ren::LinearAlloc::Free(const uint32_t offset, const uint32_t size) {
+    assert(offset % block_size_ == 0);
+    const uint32_t block_index = int(offset / block_size_);
+    assert(block_index < block_count_);
+    const uint32_t blocks_required = (size + block_size_ - 1) / block_size_;
+
+    // Mark blocks as free
+    for (uint32_t i = block_index; i < block_index + blocks_required; ++i) {
+        const int xword_index = i / BitmapGranularity;
+        const int bit_index = i % BitmapGranularity;
+        assert((bitmap_[xword_index] & (1ull << bit_index)) == 0);
+        bitmap_[xword_index] |= (1ull << bit_index);
+    }
 }
 
 void Ren::LinearAlloc::PrintNode(int i, std::string prefix, bool is_tail, ILog *log) const {
+#if 0
     const auto &node = nodes_[i];
     if (is_tail) {
         if (!node.has_children() && node.is_free) {
@@ -151,6 +179,14 @@ void Ren::LinearAlloc::PrintNode(int i, std::string prefix, bool is_tail, ILog *
     if (node.child[1] != -1) {
         PrintNode(node.child[1], prefix, true, log);
     }
+#endif
 }
 
-void Ren::LinearAlloc::Clear() { nodes_.clear(); }
+void Ren::LinearAlloc::Clear() {
+    // Mark all blocks as free
+    for (uint32_t i = 0; i < block_count_; ++i) {
+        const int xword_index = i / BitmapGranularity;
+        const int bit_index = i % BitmapGranularity;
+        bitmap_[xword_index] |= (1ull << bit_index);
+    }
+}
