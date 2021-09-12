@@ -219,7 +219,7 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
 
         rast_state.depth.test_enabled = true;
-        
+
         if (mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) {
             rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
 
@@ -230,8 +230,18 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
             rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
         }
 
-        { // opaque pipeline
-            const uint32_t new_index = scene_data_.persistant_data.pipelines.emplace();
+        // find of create pipeline
+        uint32_t new_index = 0xffffffff;
+        for (auto it = std::begin(scene_data_.persistant_data.pipelines);
+             it != std::end(scene_data_.persistant_data.pipelines); ++it) {
+            if (it->prog() == prog && it->rast_state() == rast_state) {
+                new_index = it.index();
+                break;
+            }
+        }
+
+        if (new_index == 0xffffffff) {
+            new_index = scene_data_.persistant_data.pipelines.emplace();
             Ren::Pipeline &new_pipeline = scene_data_.persistant_data.pipelines.at(new_index);
 
             const bool res =
@@ -239,8 +249,8 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
             if (!res) {
                 ren_ctx_.log()->Error("Failed to initialize pipeline!");
             }
-
-            out_pipelines.emplace_back(&scene_data_.persistant_data.pipelines, new_index);
         }
+
+        out_pipelines.emplace_back(&scene_data_.persistant_data.pipelines, new_index);
     }
 }
