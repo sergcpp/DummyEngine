@@ -7,6 +7,8 @@
 
 #include "../Renderer_Structs.h"
 
+#include "../assets/shaders/internal/skinning_interface.glsl"
+
 void RpSkinning::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
@@ -64,32 +66,30 @@ void RpSkinning::Execute(RpBuilder &builder) {
             const uint32_t non_shapekeyed_vertex_count = sr.vertex_count - sr.shape_keyed_vertex_count;
 
             if (non_shapekeyed_vertex_count) {
-                const Ren::Vec4u push_constant_data[3] = {
-                    // uSkinParams
-                    Ren::Vec4u{sr.in_vtx_offset, non_shapekeyed_vertex_count, sr.xform_offset, sr.out_vtx_offset},
-                    // uShapeParamsCurr
-                    Ren::Vec4u{0, 0, 0, 0},
-                    // uShapeParamsPrev
-                    Ren::Vec4u{0, 0, 0, 0}};
+                Skinning::Params uniform_params;
+                uniform_params.uSkinParams =
+                    Ren::Vec4u{sr.in_vtx_offset, non_shapekeyed_vertex_count, sr.xform_offset, sr.out_vtx_offset};
+                uniform_params.uShapeParamsCurr = Ren::Vec4u{0, 0, 0, 0};
+                uniform_params.uShapeParamsPrev = Ren::Vec4u{0, 0, 0, 0};
 
-                vkCmdPushConstants(cmd_buf, pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, 3 * sizeof(Ren::Vec4u),
-                                   push_constant_data);
+                vkCmdPushConstants(cmd_buf, pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Skinning::Params),
+                                   &uniform_params);
 
                 vkCmdDispatch(cmd_buf, (sr.vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1, 1);
             }
 
             if (sr.shape_keyed_vertex_count) {
-                const Ren::Vec4u push_constant_data[3] = {
-                    // uSkinParams
+                Skinning::Params uniform_params;
+                uniform_params.uSkinParams =
                     Ren::Vec4u{sr.in_vtx_offset + non_shapekeyed_vertex_count, sr.shape_keyed_vertex_count,
-                               sr.xform_offset, sr.out_vtx_offset + non_shapekeyed_vertex_count},
-                    // uShapeParamsCurr
-                    Ren::Vec4u{sr.shape_key_offset_curr, sr.shape_key_count_curr, sr.delta_offset, 0},
-                    // uShapeParamsPrev
-                    Ren::Vec4u{sr.shape_key_offset_prev, sr.shape_key_count_prev, sr.delta_offset, 0}};
+                               sr.xform_offset, sr.out_vtx_offset + non_shapekeyed_vertex_count};
+                uniform_params.uShapeParamsCurr =
+                    Ren::Vec4u{sr.shape_key_offset_curr, sr.shape_key_count_curr, sr.delta_offset, 0};
+                uniform_params.uShapeParamsPrev =
+                    Ren::Vec4u{sr.shape_key_offset_prev, sr.shape_key_count_prev, sr.delta_offset, 0};
 
-                vkCmdPushConstants(cmd_buf, pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, 3 * sizeof(Ren::Vec4u),
-                                   push_constant_data);
+                vkCmdPushConstants(cmd_buf, pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Skinning::Params),
+                                   &uniform_params);
 
                 vkCmdDispatch(cmd_buf, (sr.shape_keyed_vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1,
                               1);

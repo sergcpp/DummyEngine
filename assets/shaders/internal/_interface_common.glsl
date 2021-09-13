@@ -11,6 +11,10 @@
 #define IVEC3_TYPE Ren::Vec3i
 #define IVEC4_TYPE Ren::Vec4i
 
+#define UVEC2_TYPE Ren::Vec2u
+#define UVEC3_TYPE Ren::Vec3u
+#define UVEC4_TYPE Ren::Vec4u
+
 #define MAT2_TYPE Ren::Mat2f
 #define MAT3_TYPE Ren::Mat3f
 #define MAT4_TYPE Ren::Mat4f
@@ -25,6 +29,10 @@
 #define IVEC2_TYPE ivec2
 #define IVEC3_TYPE ivec3
 #define IVEC4_TYPE ivec4
+
+#define UVEC2_TYPE uvec2
+#define UVEC3_TYPE uvec3
+#define UVEC4_TYPE uvec4
 
 #define MAT2_TYPE mat2
 #define MAT3_TYPE mat3
