@@ -215,7 +215,7 @@ int DummyApp::Init(const int w, const int h, const char *device_name) {
     int win_pos[] = {CW_USEDEFAULT, CW_USEDEFAULT};
 
     window_handle_ = ::CreateWindowEx(
-        NULL, "MainWindowClass", "View", WS_OVERLAPPEDWINDOW | WS_VISIBLE, win_pos[0],
+        NULL, "MainWindowClass", "View (VK)", WS_OVERLAPPEDWINDOW | WS_VISIBLE, win_pos[0],
         win_pos[1], rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
         GetModuleHandle(nullptr), nullptr);
 
