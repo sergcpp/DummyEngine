@@ -18,6 +18,7 @@ extern "C" {
 #include "Passes/RpDebugProbes.h"
 #include "Passes/RpDebugTextures.h"
 #include "Passes/RpDepthFill.h"
+#include "Passes/RpDepthHierarchy.h"
 #include "Passes/RpDownColor.h"
 #include "Passes/RpDownDepth.h"
 #include "Passes/RpFXAA.h"
@@ -186,6 +187,7 @@ class Renderer {
     RpDepthFill rp_depth_fill_;
     RpDownColor rp_down_color_ = {prim_draw_};
     RpDownDepth rp_down_depth_ = {prim_draw_};
+    RpDepthHierarchy rp_depth_hierarchy_;
     RpSSAO rp_ssao_ = {prim_draw_};
     RpBilateralBlur rp_ssao_blur_h_ = {prim_draw_}, rp_ssao_blur_v_ = {prim_draw_};
     RpUpscale rp_ssao_upscale_ = {prim_draw_};

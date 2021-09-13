@@ -117,6 +117,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpCombine.cpp
                     Renderer/Passes/RpDepthFill.h
                     Renderer/Passes/RpDepthFill.cpp
+                    Renderer/Passes/RpDepthHierarchy.h
+                    Renderer/Passes/RpDepthHierarchy.cpp
                     Renderer/Passes/RpDownColor.h
                     Renderer/Passes/RpDownColor.cpp
                     Renderer/Passes/RpDownDepth.h
@@ -179,6 +181,7 @@ if(${RENDERER} STREQUAL "GL")
     set(PASS_SOURCES ${PASS_SOURCES}
                         Renderer/Passes/RpDebugTexturesGL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp
+                        Renderer/Passes/RpDepthHierarchyGL.cpp
                         Renderer/Passes/RpOpaqueGL.cpp
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
@@ -197,6 +200,7 @@ elseif(${RENDERER} STREQUAL "VK")
     set(PASS_SOURCES ${PASS_SOURCES}
                         Renderer/Passes/RpSkydomeVK.cpp
                         Renderer/Passes/RpDepthFillVK.cpp
+                        Renderer/Passes/RpDepthHierarchyVK.cpp
                         Renderer/Passes/RpOpaqueVK.cpp
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp

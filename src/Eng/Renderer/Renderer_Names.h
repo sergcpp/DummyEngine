@@ -25,6 +25,7 @@ const char MAIN_COMBINED_TEX[] = "Main Combined";
 const char RESOLVED_COLOR_TEX[] = "Resolved Color";
 const char DEPTH_DOWN_2X_TEX[] = "Depth Down 2x";
 const char DEPTH_DOWN_4X_TEX[] = "Depth Down 4x";
+const char DEPTH_HIERARCHY_TEX[] = "Depth Hierarchy";
 
 const char SSAO_RAW[] = "SSAO RAW";
 const char SSAO_RES[] = "SSAO RES";

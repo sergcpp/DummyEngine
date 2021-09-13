@@ -8,7 +8,6 @@
 #include <Eng/Utils/Cmdline.h>
 #include <Eng/Utils/ShaderLoader.h>
 #include <Ren/Context.h>
-#include <Ren/GL.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -26,8 +25,8 @@ const char SCENE_NAME[] = "assets/scenes/"
 #else
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
-                          //"test_skin.json";
-                          "living_room_gumroad.json";
+                          "test_skin.json";
+                          //"living_room_gumroad.json";
                           //"bistro.json";
                           //"pbr_test.json";
                           //"zenith.json";
@@ -731,12 +730,12 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
                 skel->UpdateBones(&as->matr_palette_curr[0]);
 
                 {
-                    Ren::Mat4f rot_mat;
-                    //rot_mat = Ren::Rotate(rot_mat, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
-                    rot_mat = Ren::Translate(rot_mat, Ren::Vec3f{0.001f, 0.0f, 0.0f});
+                    Ren::Mat4f xform;
+                    //xform = Ren::Rotate(xform, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    xform = Ren::Translate(xform, delta_time_s * Ren::Vec3f{0.1f, 0.0f, 0.0f});
 
                     tr->world_from_object_prev = tr->world_from_object;
-                    tr->world_from_object = rot_mat * tr->world_from_object;
+                    tr->world_from_object = xform * tr->world_from_object;
                     scene_manager_->InvalidateObjects(&wolf_index, 1, CompTransformBit);
                 }
             }
