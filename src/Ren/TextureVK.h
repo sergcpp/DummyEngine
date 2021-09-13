@@ -31,13 +31,19 @@ enum eTexFlags {
 
 struct TexHandle {
     VkImage img = VK_NULL_HANDLE;
-    VkImageView views[2] = {VK_NULL_HANDLE, VK_NULL_HANDLE};
+    SmallVector<VkImageView, 1> views;
     VkSampler sampler = VK_NULL_HANDLE;
     uint32_t generation = 0; // used to identify unique texture (name can be reused)
 
-    TexHandle() = default;
+    TexHandle() {
+        views.push_back(VK_NULL_HANDLE);
+    }
     TexHandle(VkImage _img, VkImageView _view0, VkImageView _view1, VkSampler _sampler, uint32_t _generation)
-        : img(_img), views{_view0, _view1}, sampler(_sampler), generation(_generation) {}
+        : img(_img), sampler(_sampler), generation(_generation) {
+        assert(_view0 != VK_NULL_HANDLE);
+        views.push_back(_view0);
+        views.push_back(_view1);
+    }
 
     explicit operator bool() const { return img != VK_NULL_HANDLE; }
 };
@@ -49,11 +55,9 @@ inline bool operator<(const TexHandle lhs, const TexHandle rhs) {
     if (lhs.img < rhs.img) {
         return true;
     } else if (lhs.img == rhs.img) {
-        if (lhs.views[0] < rhs.views[0]) {
+        if (lhs.views[0] < rhs.views[0]) { // we always compare only the first view
             return true;
-        } else if (lhs.views[0] == rhs.views[0] && lhs.views[1] < rhs.views[1]) {
-            return true;
-        } else if (lhs.views[0] == rhs.views[0] && lhs.views[1] == rhs.views[1]) {
+        } else {
             return lhs.generation < rhs.generation;
         }
     }
@@ -131,15 +135,16 @@ class Texture2D : public RefCounter {
     bool Realloc(int w, int h, int mip_count, int samples, Ren::eTexFormat format, Ren::eTexBlock block, bool is_srgb,
                  void *_cmd_buf, MemoryAllocators *mem_allocs, ILog *log);
 
-    TexHandle handle() const { return handle_; }
+    const TexHandle &handle() const { return handle_; }
+    TexHandle &handle() { return handle_; }
     VkSampler vk_sampler() const { return handle_.sampler; }
     uint16_t initialized_mips() const { return initialized_mips_; }
 
-    VkDescriptorImageInfo vk_desc_image_info() const {
+    VkDescriptorImageInfo vk_desc_image_info(const int view_index = 0, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
         VkDescriptorImageInfo ret;
         ret.sampler = handle_.sampler;
-        ret.imageView = handle_.views[0];
-        ret.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        ret.imageView = handle_.views[view_index];
+        ret.imageLayout = layout;
         return ret;
     }
 

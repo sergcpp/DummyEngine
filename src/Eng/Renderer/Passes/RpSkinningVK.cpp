@@ -22,7 +22,7 @@ void RpSkinning::Execute(RpBuilder &builder) {
 
     if (skin_regions_.count) {
         Ren::Context &ctx = builder.ctx();
-        Ren::ApiContext *api_ctx = builder.ctx().api_ctx();
+        Ren::ApiContext *api_ctx = ctx.api_ctx();
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
         VkDescriptorSetLayout descr_set_layout = pi_skinning_.prog()->descr_set_layouts()[0];
@@ -54,8 +54,6 @@ void RpSkinning::Execute(RpBuilder &builder) {
             vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
         }
 
-        const int SkinLocalGroupSize = 128;
-
         vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.handle());
         vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.layout(), 0, 1, &descr_set, 0,
                                 nullptr);
@@ -75,7 +73,8 @@ void RpSkinning::Execute(RpBuilder &builder) {
                 vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                    sizeof(Skinning::Params), &uniform_params);
 
-                vkCmdDispatch(cmd_buf, (sr.vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1, 1);
+                vkCmdDispatch(cmd_buf, (sr.vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE,
+                              1, 1);
             }
 
             if (sr.shape_keyed_vertex_count) {
@@ -91,8 +90,9 @@ void RpSkinning::Execute(RpBuilder &builder) {
                 vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
                                    sizeof(Skinning::Params), &uniform_params);
 
-                vkCmdDispatch(cmd_buf, (sr.shape_keyed_vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1,
-                              1);
+                vkCmdDispatch(
+                    cmd_buf,
+                    (sr.shape_keyed_vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
             }
         }
     }

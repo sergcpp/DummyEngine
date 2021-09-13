@@ -308,7 +308,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
 
         if (!IsCompressedFormat(format)) {
-            img_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+            img_info.usage |= (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
         }
 
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -512,7 +512,10 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
     params = p;
     initialized_mips_ = 0;
 
-    const int mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+    int mip_count = params.mip_count;
+    if (!mip_count) {
+        mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+    }
 
     { // create image
         VkImageCreateInfo img_info = {};
@@ -529,8 +532,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         if (IsDepthFormat(p.format)) {
             img_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        } else {
-            img_info.usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        } else if (!IsCompressedFormat(p.format)) {
+            img_info.usage |= (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
         }
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VkSampleCountFlagBits(p.samples);
@@ -595,11 +598,13 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         if (IsDepthStencilFormat(p.format)) {
             // create additional depth-only image view
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-            const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[1]);
+            VkImageView depth_only_view;
+            const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &depth_only_view);
             if (res != VK_SUCCESS) {
                 log->Error("Failed to create image view!");
                 return;
             }
+            handle_.views.push_back(depth_only_view);
         }
     }
 
@@ -1071,6 +1076,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                          VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        if (!IsCompressedFormat(p.format)) {
+            img_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+        }
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VkSampleCountFlagBits(p.samples);
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;

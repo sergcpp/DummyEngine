@@ -15,6 +15,7 @@
 
 #include "Renderer/Passes/RpBlur.cpp"
 #include "Renderer/Passes/RpDepthFill.cpp"
+#include "Renderer/Passes/RpDepthHierarchy.cpp"
 #include "Renderer/Passes/RpDownColor.cpp"
 #include "Renderer/Passes/RpDownDepth.cpp"
 #include "Renderer/Passes/RpFillStaticVel.cpp"
@@ -48,6 +49,7 @@
 #include "Renderer/RendererGL.cpp"
 #include "Renderer/Passes/RpDebugTexturesGL.cpp"
 #include "Renderer/Passes/RpDepthFillGL.cpp"
+#include "Renderer/Passes/RpDepthHierarchyGL.cpp"
 #include "Renderer/Passes/RpOpaqueGL.cpp"
 #include "Renderer/Passes/RpShadowMapsGL.cpp"
 #include "Renderer/Passes/RpSkinningGL.cpp"
@@ -59,6 +61,7 @@
 #include "Renderer/PrimDrawVK.cpp"
 #include "Renderer/RendererVK.cpp"
 #include "Renderer/Passes/RpDepthFillVK.cpp"
+#include "Renderer/Passes/RpDepthHierarchyVK.cpp"
 #include "Renderer/Passes/RpOpaqueVK.cpp"
 #include "Renderer/Passes/RpTransparentVK.cpp"
 

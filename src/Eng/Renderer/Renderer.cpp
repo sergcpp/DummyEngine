@@ -462,6 +462,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_down_depth_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, DEPTH_DOWN_2X_TEX);
             rp_tail->p_next = &rp_down_depth_;
             rp_tail = rp_tail->p_next;
+
+            rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, DEPTH_HIERARCHY_TEX);
+            rp_tail->p_next = &rp_depth_hierarchy_;
+            rp_tail = rp_tail->p_next;
         }
 
         //

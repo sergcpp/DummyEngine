@@ -446,7 +446,10 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
                internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format, (p.flags & eTexFlags::TexSRGB) != 0),
                type = (GLenum)GLTypeFromTexFormat(p.format);
 
-    auto mip_count = (GLsizei)CalcMipCount(p.w, p.h, 1, p.sampling.filter);
+    auto mip_count = GLsizei(p.mip_count);
+    if (!mip_count) {
+        mip_count = GLsizei(CalcMipCount(p.w, p.h, 1, p.sampling.filter));
+    }
 
     if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
         if (p.flags & TexMutable) {

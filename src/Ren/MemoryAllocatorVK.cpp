@@ -77,7 +77,8 @@ Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t size, const uin
 
         // allocation failed, add new buffer
         do {
-            AllocateNewBlock(uint32_t(blocks_.back().alloc.size() * growth_factor_));
+            const bool res = AllocateNewBlock(uint32_t(blocks_.back().alloc.size() * growth_factor_));
+            assert(res);
         } while (blocks_.back().alloc.size() < size);
     }
 
