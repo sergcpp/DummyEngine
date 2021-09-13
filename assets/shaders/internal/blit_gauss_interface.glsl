@@ -1,3 +1,5 @@
+#ifndef BLIT_GAUSS_INTERFACE_GLSL
+#define BLIT_GAUSS_INTERFACE_GLSL
 
 #include "_interface_common.glsl"
 
@@ -15,3 +17,5 @@ struct Params {
 #endif
 
 INTERFACE_END
+
+#endif // BLIT_GAUSS_INTERFACE_GLSL

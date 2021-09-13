@@ -1,3 +1,5 @@
+#ifndef PROBE_INTERFACE_GLSL
+#define PROBE_INTERFACE_GLSL
 
 #include "_interface_common.glsl"
 
@@ -15,3 +17,5 @@ INTERFACE_START(Probe)
 #endif
 
 INTERFACE_END
+
+#endif // PROBE_INTERFACE_GLSL

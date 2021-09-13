@@ -1,3 +1,5 @@
+#ifndef ELLIPSOID_INTERFACE_GLSL
+#define ELLIPSOID_INTERFACE_GLSL
 
 #include "_interface_common.glsl"
 
@@ -15,3 +17,5 @@ INTERFACE_START(Ellipsoid)
 #endif
 
 INTERFACE_END
+
+#endif // ELLIPSOID_INTERFACE_GLSL
