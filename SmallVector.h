@@ -329,7 +329,10 @@ class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
         SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
     }
 
-    SmallVector &operator=(const SmallVectorImpl<T, AlignmentOfT> &rhs) { SmallVectorImpl<T, AlignmentOfT>::operator=(rhs); }
+    SmallVector &operator=(const SmallVectorImpl<T, AlignmentOfT> &rhs) {
+        SmallVectorImpl<T, AlignmentOfT>::operator=(rhs);
+        return (*this);
+    }
     SmallVector &operator=(SmallVector &&rhs) noexcept {
         SmallVectorImpl<T, AlignmentOfT>::operator=(std::move(rhs));
         return (*this);
