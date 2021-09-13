@@ -121,7 +121,7 @@ int DummyApp::Init(const int w, const int h, const char *) {
                     NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable,
                     NSBackingStoreBuffered,
                     false);
-    msg(window, sel("setTitle:"), nsstring("View"));
+    msg(window, sel("setTitle:"), nsstring("View (VK)"));
 
     id metal_device = MTLCreateSystemDefaultDevice();
     

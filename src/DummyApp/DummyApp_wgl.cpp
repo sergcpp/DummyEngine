@@ -257,9 +257,9 @@ int DummyApp::Init(const int w, const int h, const char *) {
     PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
     wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(wglGetProcAddress("wglSwapIntervalEXT"));
 
-    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View", WS_OVERLAPPEDWINDOW | WS_VISIBLE, CW_USEDEFAULT,
-                                      CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
-                                      GetModuleHandle(nullptr), nullptr);
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                      CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
+                                      nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
 
     device_context_ = GetDC(window_handle_);
 
