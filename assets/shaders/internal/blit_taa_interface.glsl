@@ -1,3 +1,5 @@
+#ifndef BLIT_TAA_INTERFACE_GLSL
+#define BLIT_TAA_INTERFACE_GLSL
 
 #include "_interface_common.glsl"
 
@@ -27,3 +29,5 @@ struct Params {
 #endif
 
 INTERFACE_END
+
+#endif // BLIT_TAA_INTERFACE_GLSL

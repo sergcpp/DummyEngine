@@ -1,3 +1,5 @@
+#ifndef SHADOW_INTERFACE_GLSL
+#define SHADOW_INTERFACE_GLSL
 
 #include "_interface_common.glsl"
 
@@ -15,3 +17,5 @@ struct Params {
 #endif
 
 INTERFACE_END
+
+#endif // SHADOW_INTERFACE_GLSL
