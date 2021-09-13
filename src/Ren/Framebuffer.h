@@ -25,6 +25,7 @@ class Framebuffer {
         TexHandle handle; // handle is stored to detect texture reallocation
     };
 
+    void Destroy();
   public:
     int w = -1, h = -1;
 

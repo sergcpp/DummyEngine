@@ -7,9 +7,7 @@ Ren::Framebuffer &Ren::Framebuffer::operator=(Framebuffer &&rhs) noexcept {
         return (*this);
     }
 
-    if (handle_ != VK_NULL_HANDLE) {
-        api_ctx_->framebuffers_to_destroy->push_back(handle_);
-    }
+    Destroy();
 
     api_ctx_ = exchange(rhs.api_ctx_, nullptr);
     handle_ = exchange(rhs.handle_, VkFramebuffer{VK_NULL_HANDLE});
@@ -23,9 +21,12 @@ Ren::Framebuffer &Ren::Framebuffer::operator=(Framebuffer &&rhs) noexcept {
     return (*this);
 }
 
-Ren::Framebuffer::~Framebuffer() {
+Ren::Framebuffer::~Framebuffer() { Destroy(); }
+
+void Ren::Framebuffer::Destroy() {
     if (handle_ != VK_NULL_HANDLE) {
-        api_ctx_->framebuffers_to_destroy->push_back(handle_);
+        api_ctx_->framebuffers_to_destroy[api_ctx_->backend_frame].push_back(handle_);
+        handle_ = VK_NULL_HANDLE;
     }
 }
 
@@ -51,9 +52,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         return true;
     }*/
 
-    if (handle_ != VK_NULL_HANDLE) {
-        api_ctx_->framebuffers_to_destroy->push_back(handle_);
-    }
+    Destroy();
 
     api_ctx_ = api_ctx;
     color_attachments.clear();
@@ -120,10 +119,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         return true;
     }*/
 
-    if (handle_ != VK_NULL_HANDLE) {
-        api_ctx_->framebuffers_to_destroy->push_back(handle_);
-        handle_ = VK_NULL_HANDLE;
-    }
+    Destroy();
 
     api_ctx_ = api_ctx;
     color_attachments.clear();
