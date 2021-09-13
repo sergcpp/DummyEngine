@@ -24,7 +24,7 @@ void RpSkinning::Execute(RpBuilder &builder) {
         const GLuint delta_buf_id = delta_buf.ref->id();
         const GLuint skin_vtx_buf_id = skin_vtx_buf.ref->id();
 
-        const Ren::Program *p = skinning_prog_.get();
+        const Ren::Program *p = pi_skinning_.prog().get();
 
         glUseProgram(p->id());
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, Skinning::IN_VERTICES_SLOT, skin_vtx_buf_id);
@@ -95,7 +95,3 @@ void RpSkinning::Execute(RpBuilder &builder) {
         glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
     }
 }
-
-bool RpSkinning::InitPipeline(Ren::Context &ctx) { return true; }
-
-RpSkinning::~RpSkinning() = default;

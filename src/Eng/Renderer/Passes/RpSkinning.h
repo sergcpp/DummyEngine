@@ -8,7 +8,7 @@ struct DrawList;
 class RpSkinning : public RenderPassBase {
     // lazily initialized data
     bool initialized = false;
-    Ren::ProgramRef skinning_prog_;
+    Ren::Pipeline pi_skinning_;
 
     // temp data (valid only between Setup and Execute calls)
     DynArrayConstRef<SkinRegion> skin_regions_;
@@ -21,18 +21,8 @@ class RpSkinning : public RenderPassBase {
     RpResource vtx_buf1_;
     RpResource vtx_buf2_;
 
-#if defined(USE_VK_RENDER)
-    Ren::ApiContext *api_ctx_ = nullptr;
-    VkPipelineLayout pipeline_layout_ = VK_NULL_HANDLE;
-    VkPipeline pipeline_ = VK_NULL_HANDLE;
-#endif
-
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
-
-    bool InitPipeline(Ren::Context &ctx);
   public:
-    ~RpSkinning();
-
     void Setup(RpBuilder &builder, const DrawList &list, Ren::BufferRef vtx_buf1,
                Ren::BufferRef vtx_buf2, Ren::BufferRef delta_buf, Ren::BufferRef skin_vtx_buf,
                const char skin_transforms_buf[], const char shape_keys_buf[]);
