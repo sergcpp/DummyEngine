@@ -25,7 +25,7 @@ void RpSkinning::Execute(RpBuilder &builder) {
         Ren::ApiContext *api_ctx = builder.ctx().api_ctx();
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-        VkDescriptorSetLayout descr_set_layout = skinning_prog_->descr_set_layouts()[0];
+        VkDescriptorSetLayout descr_set_layout = pi_skinning_.prog()->descr_set_layouts()[0];
         VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(
             0 /* img_count */, 0 /* ubuf_count */, 6 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
 
@@ -56,8 +56,8 @@ void RpSkinning::Execute(RpBuilder &builder) {
 
         const int SkinLocalGroupSize = 128;
 
-        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_);
-        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline_layout_, 0, 1, &descr_set, 0,
+        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.handle());
+        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.layout(), 0, 1, &descr_set, 0,
                                 nullptr);
 
         for (uint32_t i = 0; i < skin_regions_.count; i++) {
@@ -72,8 +72,8 @@ void RpSkinning::Execute(RpBuilder &builder) {
                 uniform_params.uShapeParamsCurr = Ren::Vec4u{0, 0, 0, 0};
                 uniform_params.uShapeParamsPrev = Ren::Vec4u{0, 0, 0, 0};
 
-                vkCmdPushConstants(cmd_buf, pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Skinning::Params),
-                                   &uniform_params);
+                vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                   sizeof(Skinning::Params), &uniform_params);
 
                 vkCmdDispatch(cmd_buf, (sr.vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1, 1);
             }
@@ -88,73 +88,12 @@ void RpSkinning::Execute(RpBuilder &builder) {
                 uniform_params.uShapeParamsPrev =
                     Ren::Vec4u{sr.shape_key_offset_prev, sr.shape_key_count_prev, sr.delta_offset, 0};
 
-                vkCmdPushConstants(cmd_buf, pipeline_layout_, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(Skinning::Params),
-                                   &uniform_params);
+                vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                   sizeof(Skinning::Params), &uniform_params);
 
                 vkCmdDispatch(cmd_buf, (sr.shape_keyed_vertex_count + SkinLocalGroupSize - 1) / SkinLocalGroupSize, 1,
                               1);
             }
         }
-    }
-}
-
-bool RpSkinning::InitPipeline(Ren::Context &ctx) {
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
-
-    api_ctx_ = api_ctx;
-
-    { // create pipeline layout
-        VkPipelineLayoutCreateInfo layout_create_info = {};
-        layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        layout_create_info.setLayoutCount = 1;
-        layout_create_info.pSetLayouts = skinning_prog_->descr_set_layouts();
-
-        VkPushConstantRange pc_ranges[1] = {};
-        pc_ranges[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-        pc_ranges[0].offset = 0;
-        pc_ranges[0].size = 3 * sizeof(Ren::Vec4u);
-
-        layout_create_info.pushConstantRangeCount = 1;
-        layout_create_info.pPushConstantRanges = pc_ranges;
-
-        const VkResult res = vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &pipeline_layout_);
-        if (res != VK_SUCCESS) {
-            ctx.log()->Error("Failed to create pipeline layout!");
-            return false;
-        }
-    }
-
-    { // create pipeline
-        VkPipelineShaderStageCreateInfo shader_stage_create_info = {};
-        shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-        shader_stage_create_info.stage = VK_SHADER_STAGE_COMPUTE_BIT;
-        shader_stage_create_info.module = skinning_prog_->shader(Ren::eShaderType::Comp)->module();
-        shader_stage_create_info.pName = "main";
-        shader_stage_create_info.pSpecializationInfo = nullptr;
-
-        VkComputePipelineCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-        info.stage = shader_stage_create_info;
-        info.layout = pipeline_layout_;
-
-        const VkResult res = vkCreateComputePipelines(api_ctx->device, VK_NULL_HANDLE, 1, &info, nullptr, &pipeline_);
-        if (res != VK_SUCCESS) {
-            ctx.log()->Error("Failed to create pipeline!");
-            return false;
-        }
-    }
-
-    return true;
-}
-
-RpSkinning::~RpSkinning() {
-    /*if (desc_pool_) {
-        vkDestroyDescriptorPool(api_ctx_->device, desc_pool_, nullptr);
-    }*/
-    if (pipeline_layout_) {
-        vkDestroyPipelineLayout(api_ctx_->device, pipeline_layout_, nullptr);
-    }
-    if (pipeline_) {
-        vkDestroyPipeline(api_ctx_->device, pipeline_, nullptr);
     }
 }

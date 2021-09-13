@@ -28,10 +28,14 @@ void RpSkinning::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         return;
     }
 
-    skinning_prog_ = sh.LoadProgram(ctx, "skinning_prog", "internal/skinning.comp.glsl");
-    assert(skinning_prog_->ready());
+    Ren::ProgramRef skinning_prog = sh.LoadProgram(ctx, "skinning_prog", "internal/skinning.comp.glsl");
+    assert(skinning_prog->ready());
 
-    InitPipeline(ctx);
+    if (!pi_skinning_.Init(ctx.api_ctx(), std::move(skinning_prog), ctx.log())) {
+        ctx.log()->Error("RpSkinning: failed to initialize pipeline!");
+    }
+
+    // InitPipeline(ctx);
 
     initialized = true;
 }

@@ -269,10 +269,65 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
     }
 
     api_ctx_ = api_ctx;
+    type_ = ePipelineType::Graphics;
     rast_state_ = rast_state;
     render_pass_ = render_pass;
     prog_ = std::move(prog);
     vtx_input_ = vtx_input;
+
+    return true;
+}
+
+bool Ren::Pipeline::Init(ApiContext* api_ctx, ProgramRef prog, ILog* log) {
+    Destroy();
+
+    SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
+    for (int i = 0; i < int(eShaderType::_Count); ++i) {
+        const ShaderRef &sh = prog->shader(eShaderType(i));
+        if (!sh) {
+            continue;
+        }
+
+        auto &stage_info = shader_stage_create_info.emplace_back();
+        stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stage_info.stage = g_shader_stages_vk[i];
+        stage_info.module = prog->shader(eShaderType(i))->module();
+        stage_info.pName = "main";
+        stage_info.pSpecializationInfo = nullptr;
+    }
+
+    { // create pipeline layout
+        VkPipelineLayoutCreateInfo layout_create_info = {};
+        layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        layout_create_info.setLayoutCount = prog->descr_set_layouts_count();
+        layout_create_info.pSetLayouts = prog->descr_set_layouts();
+        layout_create_info.pushConstantRangeCount = prog->pc_range_count();
+        layout_create_info.pPushConstantRanges = prog->pc_ranges();
+
+        const VkResult res = vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
+        if (res != VK_SUCCESS) {
+            log->Error("Failed to create pipeline layout!");
+            return false;
+        }
+    }
+
+    { // create compute pipeline
+        VkComputePipelineCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+        info.stage = shader_stage_create_info[0];
+        info.layout = layout_;
+
+        const VkResult res = vkCreateComputePipelines(api_ctx->device, VK_NULL_HANDLE, 1, &info, nullptr, &handle_);
+        if (res != VK_SUCCESS) {
+            log->Error("Failed to create pipeline!");
+            return false;
+        }
+
+        type_ = ePipelineType::Compute;
+    }
+
+    api_ctx_ = api_ctx;
+    prog_ = std::move(prog);
 
     return true;
 }
