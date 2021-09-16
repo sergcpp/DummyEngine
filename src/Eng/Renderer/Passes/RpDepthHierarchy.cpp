@@ -5,18 +5,26 @@
 
 #include "../../Utils/ShaderLoader.h"
 
+namespace RpDepthHierarchyInternal {
+const int MipCount = 6;
+const int TileSize = 1 << (MipCount - 1);
+}
+
 void RpDepthHierarchy::Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex[],
                              const char output_tex[]) {
+    using namespace RpDepthHierarchyInternal;
+
     view_state_ = view_state;
 
     input_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
     { // 32-bit linear depth hierarchy
         Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0];
-        params.h = view_state->scr_res[1];
+        params.w = ((view_state->scr_res[0] + TileSize - 1) / TileSize) * TileSize;
+        params.h = ((view_state->scr_res[1] + TileSize - 1) / TileSize) * TileSize;
         params.format = Ren::eTexFormat::RawR32F;
-        params.mip_count = 6;
+        params.mip_count = MipCount;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.sampling.filter = Ren::eTexFilter::NearestMipmap;
 
         output_tex_ = builder.WriteTexture(output_tex, params, Ren::eResState::UnorderedAccess,
                                            Ren::eStageBits::ComputeShader, *this);

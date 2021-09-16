@@ -43,6 +43,7 @@ uniform SharedDataBlock {
 };
 
 LAYOUT(location = 1) in vec2 aVertexUVs_;
+LAYOUT(location = 2) in mediump vec3 aVertexNormal_;
 #if defined(BINDLESS_TEXTURES)
 	LAYOUT(location = 8) in flat TEX_HANDLE diff_texture;
 #endif // BINDLESS_TEXTURES
@@ -55,5 +56,5 @@ void main(void) {
     vec3 albedo_color = texture(SAMPLER2D(diff_texture), aVertexUVs_).rgb;
     
     outColor = vec4(albedo_color, 1.0);
-    outNormal = vec4(0.0);
+    outNormal = vec4(0.5 * aVertexNormal_ + 0.5, 0.0);
 }

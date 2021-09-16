@@ -6,6 +6,7 @@ const VkFilter g_vk_min_mag_filter[] = {
     VK_FILTER_LINEAR,  // Bilinear
     VK_FILTER_LINEAR,  // Trilinear
     VK_FILTER_LINEAR,  // BilinearNoMipmap
+    VK_FILTER_NEAREST, // NearestMipmap
 };
 static_assert(COUNT_OF(g_vk_min_mag_filter) == size_t(eTexFilter::_Count), "!");
 
@@ -21,6 +22,7 @@ const VkSamplerMipmapMode g_vk_mipmap_mode[] = {
     VK_SAMPLER_MIPMAP_MODE_NEAREST, // Bilinear
     VK_SAMPLER_MIPMAP_MODE_LINEAR,  // Trilinear
     VK_SAMPLER_MIPMAP_MODE_NEAREST, // BilinearNoMipmap
+    VK_SAMPLER_MIPMAP_MODE_NEAREST, // NearestMipmap
 };
 static_assert(COUNT_OF(g_vk_mipmap_mode) == size_t(eTexFilter::_Count), "!");
 

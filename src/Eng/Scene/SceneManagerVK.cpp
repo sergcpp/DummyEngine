@@ -57,7 +57,7 @@ void SceneManager::UpdateMaterialsBuffer() {
         const int needed_descriptors_count = (max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor;
 
         persistant_data.textures_descr_pool->Init(
-            Ren::MaxFramesInFlight * needed_descriptors_count * api_ctx->max_combined_image_samplers, 0, 0, 0,
+            Ren::MaxFramesInFlight * needed_descriptors_count * api_ctx->max_combined_image_samplers, 0, 0, 0, 0,
             Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
 
         if (!persistant_data.textures_descr_layout) {

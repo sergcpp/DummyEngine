@@ -7,7 +7,7 @@
 namespace Ren {
 using Fixed8 = Fixed<int8_t, 3>;
 
-enum class eTexFilter : uint8_t { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, _Count };
+enum class eTexFilter : uint8_t { NoFilter, Bilinear, Trilinear, BilinearNoMipmap, NearestMipmap, _Count };
 enum class eTexWrap : uint8_t { Repeat, ClampToEdge, ClampToBorder, _Count };
 
 #undef Always
@@ -28,7 +28,7 @@ struct SamplingParams {
 };
 static_assert(sizeof(SamplingParams) == 6, "!");
 
-inline bool operator==(const SamplingParams &lhs, const SamplingParams &rhs) {
+inline bool operator==(const SamplingParams lhs, const SamplingParams rhs) {
     return lhs.filter == rhs.filter && lhs.wrap == rhs.wrap && lhs.compare == rhs.compare &&
            lhs.lod_bias == rhs.lod_bias && lhs.min_lod == rhs.min_lod && lhs.max_lod == rhs.max_lod;
 }

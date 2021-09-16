@@ -6,6 +6,7 @@ const uint32_t g_gl_min_filter[] = {
     GL_LINEAR_MIPMAP_NEAREST, // Bilinear
     GL_LINEAR_MIPMAP_LINEAR,  // Trilinear
     GL_LINEAR,                // BilinearNoMipmap
+    GL_NEAREST_MIPMAP_NEAREST,// NearestMipmap
 };
 static_assert(COUNT_OF(g_gl_min_filter) == size_t(eTexFilter::_Count), "!");
 
@@ -14,6 +15,7 @@ const uint32_t g_gl_mag_filter[] = {
     GL_LINEAR,  // Bilinear
     GL_LINEAR,  // Trilinear
     GL_LINEAR,  // BilinearNoMipmap
+    GL_NEAREST, // NearestMipmap
 };
 static_assert(COUNT_OF(g_gl_mag_filter) == size_t(eTexFilter::_Count), "!");
 

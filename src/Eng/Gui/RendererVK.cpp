@@ -229,8 +229,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
 
     VkDescriptorSetLayout descr_set_layout = pipeline_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set = ctx_.default_descr_alloc()->Alloc(
-        1 /* img_count */, 0 /* ubuf_count */, 0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    VkDescriptorSet descr_set =
+        ctx_.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 0 /* ubuf_count */,
+                                          0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
 
     VkDescriptorImageInfo img_info = {};
     img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -294,5 +295,3 @@ void Gui::Renderer::Draw(const int w, const int h) {
     vtx_count_[api_ctx->backend_frame] = 0;
     ndx_count_[api_ctx->backend_frame] = 0;
 }
-
-

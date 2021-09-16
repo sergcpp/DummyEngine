@@ -11,19 +11,16 @@
 
 #include "../assets/shaders/internal/blit_ssr_interface.glsl"
 
-void RpSSRTrace::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakTex2DRef down_buf_4x_tex,
-                       Ren::Tex2DRef brdf_lut, const char shared_data_buf[], const char normal_tex[],
-                       const char spec_tex[], const char depth_down_2x[], const char output_tex_name[]) {
+void RpSSRTrace::Setup(RpBuilder &builder, const ViewState *view_state, Ren::Tex2DRef brdf_lut,
+                       const char shared_data_buf[], const char normal_tex[], const char depth_down_2x[],
+                       const char output_tex_name[]) {
     view_state_ = view_state;
-
-    down_buf_4x_tex_ = down_buf_4x_tex;
     brdf_lut_ = brdf_lut;
 
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
     normal_tex_ =
         builder.ReadTexture(normal_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    spec_tex_ = builder.ReadTexture(spec_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     depth_down_2x_tex_ =
         builder.ReadTexture(depth_down_2x, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
 
@@ -43,7 +40,6 @@ void RpSSRTrace::Setup(RpBuilder &builder, const ViewState *view_state, Ren::Wea
 void RpSSRTrace::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &spec_tex = builder.GetReadTexture(spec_tex_);
     RpAllocTex &depth_down_2x_tex = builder.GetReadTexture(depth_down_2x_tex_);
     RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
@@ -66,12 +62,11 @@ void RpSSRTrace::Execute(RpBuilder &builder) {
         const PrimDraw::Binding bindings[] = {
             {Ren::eBindTarget::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
             {clean_buf_bind_target, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
-            {clean_buf_bind_target, SSRTrace::SPEC_TEX_SLOT, *spec_tex.ref},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 
         SSRTrace::Params uniform_params;
         uniform_params.transform =
-            Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])};
+            Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0] / 2), float(view_state_->act_res[1] / 2)};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, ssr_program, output_fb_, render_pass_, rast_state,
                             builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,

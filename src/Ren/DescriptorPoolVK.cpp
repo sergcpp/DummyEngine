@@ -4,9 +4,9 @@
 #include "VKCtx.h"
 
 namespace Ren {
-const VkDescriptorType g_descr_types_vk[] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                             VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER};
+const VkDescriptorType g_descr_types_vk[] = {
+    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER};
 static_assert(COUNT_OF(g_descr_types_vk) == int(eDescrType::_Count), "!");
 } // namespace Ren
 
@@ -28,11 +28,12 @@ Ren::DescrPool &Ren::DescrPool::operator=(DescrPool &&rhs) noexcept {
     return (*this);
 }
 
-bool Ren::DescrPool::Init(const uint32_t img_count, const uint32_t ubuf_count, const uint32_t sbuf_count,
-                          const uint32_t tbuf_count, const uint32_t sets_count) {
+bool Ren::DescrPool::Init(const uint32_t img_sampler_count, const uint32_t store_img_count, const uint32_t ubuf_count,
+                          const uint32_t sbuf_count, const uint32_t tbuf_count, const uint32_t sets_count) {
     Destroy();
 
-    descr_counts_[int(eDescrType::CombinedImageSampler)] = img_count;
+    descr_counts_[int(eDescrType::CombinedImageSampler)] = img_sampler_count;
+    descr_counts_[int(eDescrType::StorageImage)] = store_img_count;
     descr_counts_[int(eDescrType::UniformBuffer)] = ubuf_count;
     descr_counts_[int(eDescrType::StorageBuffer)] = sbuf_count;
     descr_counts_[int(eDescrType::UniformTexBuffer)] = tbuf_count;
@@ -100,7 +101,8 @@ VkDescriptorSet Ren::DescrPoolAlloc::Alloc(const VkDescriptorSetLayout layout) {
             const uint32_t count_mul = (1u << pools_.size());
 
             DescrPool &new_pool = pools_.emplace_back(api_ctx_);
-            if (!new_pool.Init(img_count_, ubuf_count_, sbuf_count_, tbuf_count_, count_mul * initial_sets_count_)) {
+            if (!new_pool.Init(img_sampler_count_, store_img_count_, ubuf_count_, sbuf_count_, tbuf_count_,
+                               count_mul * initial_sets_count_)) {
                 return VK_NULL_HANDLE;
             }
         }
@@ -124,18 +126,21 @@ bool Ren::DescrPoolAlloc::Reset() {
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_t pool_step,
-                                              const uint32_t max_img_count, const uint32_t max_ubuf_count,
-                                              const uint32_t max_sbuf_count, const uint32_t max_tbuf_count,
-                                              const uint32_t initial_sets_count)
+                                              const uint32_t max_img_sampler_count, const uint32_t max_store_img_count,
+                                              const uint32_t max_ubuf_count, const uint32_t max_sbuf_count,
+                                              const uint32_t max_tbuf_count, const uint32_t initial_sets_count)
     : pool_step_(pool_step) {
-    img_based_count_ = (max_img_count + pool_step - 1) / pool_step;
+    img_sampler_based_count_ = (max_img_sampler_count + pool_step - 1) / pool_step;
+    store_img_based_count_ = (max_store_img_count + pool_step - 1) / pool_step;
     ubuf_based_count_ = (max_ubuf_count + pool_step - 1) / pool_step;
     sbuf_based_count_ = (max_sbuf_count + pool_step - 1) / pool_step;
     tbuf_based_count_ = (max_tbuf_count + pool_step - 1) / pool_step;
-    const uint32_t required_pools_count = img_based_count_ * ubuf_based_count_ * sbuf_based_count_ * tbuf_based_count_;
+    const uint32_t required_pools_count =
+        img_sampler_based_count_ * store_img_based_count_ * ubuf_based_count_ * sbuf_based_count_ * tbuf_based_count_;
 
     // store rounded values
-    max_img_count_ = pool_step * img_based_count_;
+    max_img_sampler_count_ = pool_step * img_sampler_based_count_;
+    max_store_img_count_ = pool_step * store_img_based_count_;
     max_ubuf_count_ = pool_step * ubuf_based_count_;
     max_sbuf_count_ = pool_step * sbuf_based_count_;
     max_tbuf_count_ = pool_step * tbuf_based_count_;
@@ -149,25 +154,32 @@ Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_
         index /= sbuf_based_count_;
         const uint32_t ubuf_count = pool_step * ((index % ubuf_based_count_) + 1);
         index /= ubuf_based_count_;
-        const uint32_t img_count = pool_step * ((index % img_based_count_) + 1);
-        index /= img_based_count_;
+        const uint32_t img_sampler_count = pool_step * ((index % img_sampler_based_count_) + 1);
+        index /= img_sampler_based_count_;
+        const uint32_t store_img_count = pool_step * ((index % store_img_based_count_) + 1);
+        index /= store_img_based_count_;
 
-        pools_.emplace_back(api_ctx, img_count, ubuf_count, sbuf_count, tbuf_count, initial_sets_count);
+        pools_.emplace_back(api_ctx, img_sampler_count, store_img_count, ubuf_count, sbuf_count, tbuf_count,
+                            initial_sets_count);
     }
     assert(pools_.size() == required_pools_count);
 }
 
-VkDescriptorSet Ren::DescrMultiPoolAlloc::Alloc(const uint32_t img_count, const uint32_t ubuf_count,
-                                                const uint32_t sbuf_count, const uint32_t tbuf_count,
-                                                const VkDescriptorSetLayout layout) {
-    const uint32_t img_based_index = img_count ? ((img_count + pool_step_ - 1) / pool_step_ - 1) : 0;
+VkDescriptorSet Ren::DescrMultiPoolAlloc::Alloc(const uint32_t img_sampler_count, const uint32_t store_img_count,
+                                                const uint32_t ubuf_count, const uint32_t sbuf_count,
+                                                const uint32_t tbuf_count, const VkDescriptorSetLayout layout) {
+    const uint32_t img_sampler_based_index =
+        img_sampler_count ? ((img_sampler_count + pool_step_ - 1) / pool_step_ - 1) : 0;
+    const uint32_t store_img_based_index = store_img_count ? ((store_img_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t ubuf_based_index = ubuf_count ? ((ubuf_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t sbuf_based_index = sbuf_count ? ((sbuf_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t tbuf_based_index = tbuf_count ? ((tbuf_count + pool_step_ - 1) / pool_step_ - 1) : 0;
 
-    const uint32_t pool_index = img_based_index * ubuf_based_count_ * sbuf_based_count_ * tbuf_based_count_ +
-                                ubuf_based_index * sbuf_based_count_ * tbuf_based_count_ +
-                                sbuf_based_index * tbuf_based_count_ + tbuf_based_index;
+    const uint32_t pool_index =
+        img_sampler_based_index * store_img_based_index * ubuf_based_count_ * sbuf_based_count_ * tbuf_based_count_ +
+        store_img_based_index * ubuf_based_index * sbuf_based_count_ * tbuf_based_count_ +
+        ubuf_based_index * sbuf_based_index * tbuf_based_count_ + sbuf_based_index * tbuf_based_count_ +
+        tbuf_based_index;
     return pools_[pool_index].Alloc(layout);
 }
 

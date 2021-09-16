@@ -26,8 +26,9 @@ void RpSkinning::Execute(RpBuilder &builder) {
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
         VkDescriptorSetLayout descr_set_layout = pi_skinning_.prog()->descr_set_layouts()[0];
-        VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(
-            0 /* img_count */, 0 /* ubuf_count */, 6 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+        VkDescriptorSet descr_set =
+            ctx.default_descr_alloc()->Alloc(0 /* img_sampler_count */, 0 /* store_img_count */, 0 /* ubuf_count */,
+                                             6 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
 
         { // update descriptor set
             const VkDescriptorBufferInfo buf_infos[6] = {

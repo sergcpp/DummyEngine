@@ -145,6 +145,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpSSRDilate.cpp
                     Renderer/Passes/RpSSRTrace.h
                     Renderer/Passes/RpSSRTrace.cpp
+                    Renderer/Passes/RpSSRTraceHQ.h
+                    Renderer/Passes/RpSSRTraceHQ.cpp
                     Renderer/Passes/RpTAA.h
                     Renderer/Passes/RpTAA.cpp
                     Renderer/Passes/RpTAACopyTex.h
@@ -162,7 +164,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/PrimDrawGL.cpp
                         Renderer/RendererGL.cpp
                         Renderer/Renderer_GL_Defines.inl
-                        # temporarily GL-only
                         Renderer/Passes/RpDOF.h
                         Renderer/Passes/RpDOF.cpp
                         Renderer/Passes/RpFXAA.h
@@ -186,6 +187,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
+                        Renderer/Passes/RpSSRTraceHQGL.cpp
                         Renderer/Passes/RpTransparentGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
@@ -198,12 +200,13 @@ elseif(${RENDERER} STREQUAL "VK")
                         Scene/SceneManagerVK.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderVK.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
-                        Renderer/Passes/RpSkydomeVK.cpp
                         Renderer/Passes/RpDepthFillVK.cpp
                         Renderer/Passes/RpDepthHierarchyVK.cpp
                         Renderer/Passes/RpOpaqueVK.cpp
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp
+                        Renderer/Passes/RpSkydomeVK.cpp
+                        Renderer/Passes/RpSSRTraceHQVK.cpp
                         Renderer/Passes/RpTransparentVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}

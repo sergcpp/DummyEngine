@@ -50,7 +50,7 @@ void RpSSRDilate::Execute(RpBuilder &builder) {
         const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
 
         SSRDilate::Params uniform_params;
-        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_->act_res[0] / 2, view_state_->act_res[1] / 2};
+        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_dilate_prog_, output_fb_, render_pass_, rast_state,
                             builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,

@@ -21,7 +21,6 @@ PERM @MSAA_4
 #define STRIDE 0.0125
 #define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
-//4
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -35,15 +34,13 @@ uniform SharedDataBlock {
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
 #if defined(MSAA_4)
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS norm_texture;
-layout(binding = SPEC_TEX_SLOT) uniform mediump sampler2DMS spec_texture;
 #else
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D norm_texture;
-layout(binding = SPEC_TEX_SLOT) uniform mediump sampler2D spec_texture;
 #endif
 
 LAYOUT(location = 0) in vec2 aVertexUVs_;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 out_color;
 
 float distance2(vec2 P0, vec2 P1) {
     vec2 d = P1 - P0;
@@ -190,17 +187,16 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     return res;
 }
 
-
 void main() {
-    outColor = vec4(0.0);
+    out_color = vec4(0.0);
 
     ivec2 pix_uvs = ivec2(aVertexUVs_ + vec2(0.5));
-    vec2 norm_uvs = aVertexUVs_ / shrd_data.uResAndFRes.xy;
+    vec2 norm_uvs = 2.0 * aVertexUVs_ / shrd_data.uResAndFRes.xy;
 
-    vec4 normal_tex = texelFetch(norm_texture, pix_uvs + ivec2(0, 0), 0);
+    vec4 normal_tex = texelFetch(norm_texture, 2 * pix_uvs, 0);
     if (normal_tex.w < 0.0001) return;
 
-    float depth = DelinearizeDepth(texelFetch(depth_texture, pix_uvs / 2, 0).r, shrd_data.uClipInfo);
+    float depth = DelinearizeDepth(texelFetch(depth_texture, pix_uvs, 0).r, shrd_data.uClipInfo);
 
     vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
     vec3 normal_vs = (shrd_data.uViewMatrix * vec4(normal_ws, 0.0)).xyz;
@@ -219,7 +215,7 @@ void main() {
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 refl_ray_vs = reflect(view_ray_vs, normal_vs);
 
-    ivec2 c = ivec2(gl_FragCoord.xy);
+    ivec2 c = pix_uvs;
     float jitter = float((c.x + c.y) & 1) * 0.5;    
 
     vec2 hit_pixel;
@@ -239,8 +235,8 @@ void main() {
         float mm = max(abs(0.5 - hit_prev.x), abs(0.5 - hit_prev.y));
         float mix_factor = min(4.0 * (1.0 - 2.0 * mm), 1.0);
 
-        outColor.rg = hit_prev.xy;
-        outColor.b = mix_factor;
+        out_color.rg = hit_prev.xy;
+        out_color.b = mix_factor;
     }
 }
 

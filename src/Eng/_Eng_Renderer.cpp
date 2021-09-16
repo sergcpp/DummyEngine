@@ -21,6 +21,7 @@
 #include "Renderer/Passes/RpFillStaticVel.cpp"
 #include "Renderer/Passes/RpOpaque.cpp"
 #include "Renderer/Passes/RpSSRTrace.cpp"
+#include "Renderer/Passes/RpSSRTraceHQ.cpp"
 #include "Renderer/Passes/RpSSRDilate.cpp"
 #include "Renderer/Passes/RpSSRCompose.cpp"
 #include "Renderer/Passes/RpSampleBrightness.cpp"
@@ -54,18 +55,21 @@
 #include "Renderer/Passes/RpShadowMapsGL.cpp"
 #include "Renderer/Passes/RpSkinningGL.cpp"
 #include "Renderer/Passes/RpSkydomeGL.cpp"
+#include "Renderer/Passes/RpSSRTraceHQGL.cpp"
 #include "Renderer/Passes/RpTransparentGL.cpp"
 #elif defined(USE_VK_RENDER)
-#include "Renderer/Passes/RpShadowMapsVK.cpp"
 #include "Renderer/FrameBufVK.cpp"
 #include "Renderer/PrimDrawVK.cpp"
 #include "Renderer/RendererVK.cpp"
 #include "Renderer/Passes/RpDepthFillVK.cpp"
 #include "Renderer/Passes/RpDepthHierarchyVK.cpp"
 #include "Renderer/Passes/RpOpaqueVK.cpp"
+#include "Renderer/Passes/RpShadowMapsVK.cpp"
+#include "Renderer/Passes/RpSkinningVK.cpp"
+#include "Renderer/Passes/RpSkydomeVK.cpp"
+#include "Renderer/Passes/RpSSRTraceHQVK.cpp"
 #include "Renderer/Passes/RpTransparentVK.cpp"
 
 #include "Renderer/Graph/GraphBuilderVK.cpp"
-#include "Renderer/Passes/RpSkinningVK.cpp"
-#include "Renderer/Passes/RpSkydomeVK.cpp"
+
 #endif

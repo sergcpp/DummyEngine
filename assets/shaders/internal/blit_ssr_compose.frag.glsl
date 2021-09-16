@@ -15,6 +15,8 @@
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
 PERM @MSAA_4
+PERM @HALFRES
+PERM @HALFRES;MSAA_4
 */
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -56,7 +58,6 @@ void main() {
     outColor = vec4(0.0);
 
     ivec2 icoord = ivec2(gl_FragCoord.xy);
-    ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
 
 #if defined(MSAA_4)
     vec4 specular = 0.25 * (texelFetch(s_spec_texture, icoord, 0) +
@@ -71,15 +72,17 @@ void main() {
     float depth = texelFetch(s_depth_texture, icoord, 0).r;
     float d0 = LinearizeDepth(depth, shrd_data.uClipInfo);
  
-    float d1 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 0), 0).r);
+#if defined(HALFRES)
+	ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
+
+	float d1 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 0), 0).r);
     float d2 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 1), 0).r);
     float d3 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(1, 0), 0).r);
     float d4 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(1, 1), 0).r);
  
     float dmin = min(min(d1, d2), min(d3, d4));
- 
-    vec3 ssr_uvs;
 
+	vec3 ssr_uvs;
     if (dmin < 0.05) {
         ssr_uvs = textureLod(source_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, 0.0).rgb;
     } else {
@@ -93,6 +96,9 @@ void main() {
             ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(1, 1), 0).rgb;
         }
     }
+#else // HALFRES
+	vec3 ssr_uvs = texelFetch(source_texture, icoord, 0).rgb;
+#endif // HALFRES
 
     vec3 normal = 2.0 * texelFetch(s_norm_texture, icoord, 0).xyz - 1.0;
 

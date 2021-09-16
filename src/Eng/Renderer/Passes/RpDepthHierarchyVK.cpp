@@ -3,12 +3,14 @@
 #include <Ren/Context.h>
 #include <Ren/Program.h>
 
-#include "../Renderer_Structs.h"
 #include "../../Utils/ShaderLoader.h"
+#include "../Renderer_Structs.h"
 
 #include "../assets/shaders/internal/depth_hierarchy_interface.glsl"
 
 void RpDepthHierarchy::Execute(RpBuilder &builder) {
+    using namespace RpDepthHierarchyInternal;
+
     RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
     RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
@@ -42,19 +44,16 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSetLayout descr_set_layout = pi_depth_hierarchy_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(
-        7 /* img_count */, 0 /* ubuf_count */, 0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    VkDescriptorSet descr_set =
+        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 6 /* store_img_count */, 0 /* ubuf_count */,
+                                         0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorImageInfo depth_tex_info = input_tex.ref->vk_desc_image_info(1);
-        const VkDescriptorImageInfo depth_img_infos[] = {
-            output_tex.ref->vk_desc_image_info(1, VK_IMAGE_LAYOUT_GENERAL),
-            output_tex.ref->vk_desc_image_info(2, VK_IMAGE_LAYOUT_GENERAL),
-            output_tex.ref->vk_desc_image_info(3, VK_IMAGE_LAYOUT_GENERAL),
-            output_tex.ref->vk_desc_image_info(4, VK_IMAGE_LAYOUT_GENERAL),
-            output_tex.ref->vk_desc_image_info(5, VK_IMAGE_LAYOUT_GENERAL),
-            output_tex.ref->vk_desc_image_info(6, VK_IMAGE_LAYOUT_GENERAL)
-        };
+        Ren::SmallVector<VkDescriptorImageInfo, 16> depth_img_infos;
+        for (int i = 0; i < MipCount; ++i) {
+            depth_img_infos.push_back(output_tex.ref->vk_desc_image_info(i + 1, VK_IMAGE_LAYOUT_GENERAL));
+        }
 
         VkWriteDescriptorSet descr_writes[2] = {};
         descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -70,8 +69,8 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
         descr_writes[1].dstBinding = DepthHierarchy::DEPTH_IMG_SLOT;
         descr_writes[1].dstArrayElement = 0;
         descr_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
-        descr_writes[1].descriptorCount = COUNT_OF(depth_img_infos);
-        descr_writes[1].pImageInfo = depth_img_infos;
+        descr_writes[1].descriptorCount = uint32_t(depth_img_infos.size());
+        descr_writes[1].pImageInfo = depth_img_infos.cdata();
 
         vkUpdateDescriptorSets(api_ctx->device, 2, descr_writes, 0, nullptr);
     }
@@ -89,6 +88,6 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
 
     vkCmdDispatch(
         cmd_buf,
-        (view_state_->scr_res[0] + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X,
-        (view_state_->scr_res[1] + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y, 1);
+        (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X,
+        (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y, 1);
 }

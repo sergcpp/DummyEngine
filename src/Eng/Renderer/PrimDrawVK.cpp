@@ -112,7 +112,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             }
         }
 
-        descr_set = ctx_->default_descr_alloc()->Alloc(img_infos_count, ubuf_infos_count, sbuf_infos_count,
+        descr_set = ctx_->default_descr_alloc()->Alloc(img_infos_count, 0, ubuf_infos_count, sbuf_infos_count,
                                                        tbuf_infos_count, descr_set_layout);
         if (!descr_set) {
             ctx_->log()->Error("Failed to allocate descriptor set!");
