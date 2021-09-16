@@ -109,8 +109,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     VkDescriptorSetLayout simple_descr_set_layout = pi_static_solid_[0].prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
-    simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(0 /* img_count */, 1 /* ubuf_count */, 1 /* sbuf_count */,
-                                                            1 /* tbuf_count */, simple_descr_set_layout);
+    simple_descr_sets[0] =
+        ctx.default_descr_alloc()->Alloc(0 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
+                                         1 /* sbuf_count */, 1 /* tbuf_count */, simple_descr_set_layout);
     simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
 
     { // update descriptor sets
@@ -148,8 +149,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_vel_[0].prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
-    vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(1 /* img_count */, 1 /* ubuf_count */, 0 /* sbuf_count */,
-                                                          1 /* tbuf_count */, vege_descr_set_layout);
+    vege_descr_sets[0] =
+        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
+                                         0 /* sbuf_count */, 1 /* tbuf_count */, vege_descr_set_layout);
     vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
 
     { // update descriptor set
@@ -293,8 +295,8 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
             vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0].layout(), 0, 2,
                                     simple_descr_sets, 0, nullptr);
             i = _depth_draw_range_ext(cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitAlphaTest, materials_per_descriptor, *bindless_tex_->textures_descr_sets,
-                                  _dummy);
+                                      DDB::BitAlphaTest, materials_per_descriptor, *bindless_tex_->textures_descr_sets,
+                                      _dummy);
         }
 
         { // two-sided
@@ -303,8 +305,8 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
             vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[1].layout(), 0, 2,
                                     simple_descr_sets, 0, nullptr);
             i = _depth_draw_range_ext(cmd_buf, pi_static_transp_[1], zfill_batch_indices, zfill_batches, i,
-                                  DDB::BitAlphaTest | DDB::BitTwoSided, materials_per_descriptor,
-                                  *bindless_tex_->textures_descr_sets, _dummy);
+                                      DDB::BitAlphaTest | DDB::BitTwoSided, materials_per_descriptor,
+                                      *bindless_tex_->textures_descr_sets, _dummy);
         }
 
         vkCmdEndRenderPass(cmd_buf);

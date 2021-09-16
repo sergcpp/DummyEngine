@@ -77,8 +77,11 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
         view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D;
 
     { // compose reflections on top of clean buffer
-        Ren::Program *blit_ssr_compose_prog =
-            view_state_->is_multisampled ? blit_ssr_compose_ms_prog_.get() : blit_ssr_compose_prog_.get();
+        Ren::ProgramRef blit_ssr_compose_prog =
+            view_state_->is_multisampled ? blit_ssr_compose_ms_prog_ : blit_ssr_compose_prog_;
+        if (ssr_tex.desc.w == output_tex.desc.w) {
+            blit_ssr_compose_prog = blit_ssr_compose_hq_prog_;
+        }
 
         // TODO: get rid of global binding slots
         const PrimDraw::Binding bindings[] = {
@@ -100,7 +103,7 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
         SSRCompose::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, output_fb_, render_pass_, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog, output_fb_, render_pass_, rast_state,
                             builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
                             sizeof(SSRCompose::Params), 0);
     }
@@ -109,11 +112,15 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
 void RpSSRCompose::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_ssr_compose_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose", "internal/blit_ssr_compose.vert.glsl",
-                                                "internal/blit_ssr_compose.frag.glsl");
+                                                "internal/blit_ssr_compose.frag.glsl@HALFRES");
         assert(blit_ssr_compose_prog_->ready());
         blit_ssr_compose_ms_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose_ms", "internal/blit.vert.glsl",
-                                                   "internal/blit_ssr_compose.frag.glsl@MSAA_4");
+                                                   "internal/blit_ssr_compose.frag.glsl@HALFRES;MSAA_4");
         assert(blit_ssr_compose_ms_prog_->ready());
+
+        blit_ssr_compose_hq_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose_hq", "internal/blit_ssr_compose.vert.glsl",
+                                                   "internal/blit_ssr_compose.frag.glsl");
+        assert(blit_ssr_compose_hq_prog_->ready());
 
         initialized = true;
     }

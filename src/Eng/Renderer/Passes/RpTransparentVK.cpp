@@ -59,8 +59,9 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         return;
     }
 
-    const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(
-        10 /* img_count */, 1 /* ubuf_count */, 2 /* sbuf_count */, 4 /* tbuf_count */, descr_set_layout_);
+    const VkDescriptorSet res_descr_set =
+        ctx.default_descr_alloc()->Alloc(10 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
+                                         2 /* sbuf_count */, 4 /* tbuf_count */, descr_set_layout_);
 
     { // update descriptor set
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();

@@ -536,18 +536,26 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
 
-        rp_ssr_trace_.Setup(rp_builder_, &view_state_, down_tex_4x_, brdf_lut_, SHARED_DATA_BUF, MAIN_NORMAL_TEX,
-                            MAIN_SPEC_TEX, DEPTH_DOWN_2X_TEX, "SSR Temp 1");
-        rp_tail->p_next = &rp_ssr_trace_;
-        rp_tail = rp_tail->p_next;
+        if (list.render_flags & EnableSSR_HQ) {
+            rp_ssr_trace_hq_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_NORMAL_TEX, DEPTH_HIERARCHY_TEX,
+                                   "SSR Temp 2");
+            rp_tail->p_next = &rp_ssr_trace_hq_;
+            rp_tail = rp_tail->p_next;
+        } else {
+            rp_ssr_trace_.Setup(rp_builder_, &view_state_, brdf_lut_, SHARED_DATA_BUF, MAIN_NORMAL_TEX,
+                                DEPTH_DOWN_2X_TEX, "SSR Temp 1");
+            rp_tail->p_next = &rp_ssr_trace_;
+            rp_tail = rp_tail->p_next;
 
-        rp_ssr_dilate_.Setup(rp_builder_, &view_state_, "SSR Temp 1", "SSR Temp 2");
-        rp_tail->p_next = &rp_ssr_dilate_;
-        rp_tail = rp_tail->p_next;
+            rp_ssr_dilate_.Setup(rp_builder_, &view_state_, "SSR Temp 1", "SSR Temp 2");
+            rp_tail->p_next = &rp_ssr_dilate_;
+            rp_tail = rp_tail->p_next;
+        }
 
-        rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage, down_tex_4x_, brdf_lut_, SHARED_DATA_BUF,
-                              CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, DEPTH_DOWN_2X_TEX,
-                              "SSR Temp 2", refl_out_name);
+        rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
+                              (list.render_flags & EnableSSR_HQ) ? history_tex_ : down_tex_4x_, brdf_lut_,
+                              SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
+                              DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
         rp_tail->p_next = &rp_ssr_compose_;
         rp_tail = rp_tail->p_next;
 

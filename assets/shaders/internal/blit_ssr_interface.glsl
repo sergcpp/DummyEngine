@@ -1,3 +1,5 @@
+#ifndef BLIT_SSR_INTERFACE
+#define BLIT_SSR_INTERFACE
 
 #include "_interface_common.glsl"
 
@@ -10,11 +12,11 @@ struct Params {
 #ifdef __cplusplus
 	const int DEPTH_TEX_SLOT = 0;
 	const int NORM_TEX_SLOT = 1;
-	const int SPEC_TEX_SLOT = 2;
 #else
 	#define DEPTH_TEX_SLOT 0
 	#define NORM_TEX_SLOT 1
-	#define SPEC_TEX_SLOT 2
 #endif
 
 INTERFACE_END
+
+#endif // BLIT_SSR_INTERFACE

@@ -25,8 +25,9 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
     VkDescriptorSetLayout descr_set_layout = pipeline_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(
-        1 /* img_count */, 1 /* ubuf_count */, 0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    VkDescriptorSet descr_set =
+        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
+                                         0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorBufferInfo buf_infos[] = {

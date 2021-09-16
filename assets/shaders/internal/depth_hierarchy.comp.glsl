@@ -1,5 +1,10 @@
 #version 310 es
 
+#if defined(GL_ES) || defined(VULKAN)
+    precision highp int;
+    precision highp float;
+#endif
+
 #include "_cs_common.glsl"
 #include "depth_hierarchy_interface.glsl"
 
@@ -18,7 +23,7 @@ layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[6];
 layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
 ivec2 limit_coords(ivec2 icoord) {
-	return clamp(icoord, ivec2(0), params.depth_size.xy - ivec2(1));
+	return clamp(icoord, ivec2(0), params.depth_size.xy - 1);
 }
 
 float ReduceSrcDepth4(ivec2 base) {
@@ -26,7 +31,7 @@ float ReduceSrcDepth4(ivec2 base) {
 	float v1 = texelFetch(depth_texture, limit_coords(base + ivec2(0, 1)), 0).r;
 	float v2 = texelFetch(depth_texture, limit_coords(base + ivec2(1, 0)), 0).r;
 	float v3 = texelFetch(depth_texture, limit_coords(base + ivec2(1, 1)), 0).r;
-	return LinearizeDepth(min(min(v0, v1), min(v2, v3)), params.clip_info);
+	return min(min(v0, v1), min(v2, v3));
 }
 
 void WriteDstDepth(int index, ivec2 icoord, float v) {
@@ -52,10 +57,11 @@ void main() {
 	for (int i = 0; i < 2; ++i) {
 		for (int j = 0; j < 8; ++j) {
 			ivec2 icoord = ivec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
+			float depth_val = 0.0;
 			if (icoord.x < params.depth_size.x && icoord.y < params.depth_size.y) {
-				float depth_val = LinearizeDepth(texelFetch(depth_texture, icoord, 0).r, params.clip_info);
-				imageStore(depth_hierarchy[0], icoord, vec4(depth_val));
+				depth_val = texelFetch(depth_texture, icoord, 0).r;
 			}
+			imageStore(depth_hierarchy[0], icoord, vec4(depth_val));
 		}
 	}
 	

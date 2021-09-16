@@ -58,8 +58,9 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     VkDescriptorSetLayout simple_descr_set_layout = pi_solid_.prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
-    simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(0 /* img_count */, 0 /* ubuf_count */, 1 /* sbuf_count */,
-                                                            1 /* tbuf_count */, simple_descr_set_layout);
+    simple_descr_sets[0] =
+        ctx.default_descr_alloc()->Alloc(0 /* img_sampler_count */, 0 /* sample_img_count */, 0 /* ubuf_count */,
+                                         1 /* sbuf_count */, 1 /* tbuf_count */, simple_descr_set_layout);
     simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
 
     { // update descriptor set
@@ -89,8 +90,9 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
-    vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(1 /* img_count */, 0 /* ubuf_count */, 1 /* sbuf_count */,
-                                                          1 /* tbuf_count */, vege_descr_set_layout);
+    vege_descr_sets[0] =
+        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 0 /* ubuf_count */,
+                                         1 /* sbuf_count */, 1 /* tbuf_count */, vege_descr_set_layout);
     vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
 
     { // update descriptor set

@@ -34,6 +34,7 @@ extern "C" {
 #include "Passes/RpSSRCompose.h"
 #include "Passes/RpSSRDilate.h"
 #include "Passes/RpSSRTrace.h"
+#include "Passes/RpSSRTraceHQ.h"
 #include "Passes/RpTAA.h"
 #include "Passes/RpTAACopyTex.h"
 #include "Passes/RpTransparent.h"
@@ -93,9 +94,9 @@ class Renderer {
 
     Ren::TextureSplitter shadow_splitter_;
 
-    static const uint32_t default_flags =
+    static const uint32_t DefaultFlags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSAO | EnableLightmap |
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
          EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*|
          DebugEllipsoids*/);
@@ -103,7 +104,7 @@ class Renderer {
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
 #endif
-    uint32_t render_flags_ = default_flags;
+    uint32_t render_flags_ = DefaultFlags;
 
     DynArray<const LightSource *> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
@@ -194,6 +195,7 @@ class Renderer {
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
     RpSSRTrace rp_ssr_trace_ = {prim_draw_};
+    RpSSRTraceHQ rp_ssr_trace_hq_;
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
