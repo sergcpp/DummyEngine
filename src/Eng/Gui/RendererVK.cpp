@@ -25,8 +25,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
 
 #if !defined(NDEBUG) && defined(USE_VK_RENDER)
     for (int i = 0; i < Ren::MaxFramesInFlight; ++i) {
-        VkFenceCreateInfo fence_info = {};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
         const VkResult res = vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
@@ -83,7 +82,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         if (vertex_buf_->resource_state != Ren::eResState::Undefined &&
             vertex_buf_->resource_state != Ren::eResState::CopyDst) {
             auto &new_barrier = buf_barriers.emplace_back();
-            new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
             new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(vertex_buf_->resource_state);
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -99,7 +98,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         if (index_buf_->resource_state != Ren::eResState::Undefined &&
             index_buf_->resource_state != Ren::eResState::CopyDst) {
             auto &new_barrier = buf_barriers.emplace_back();
-            new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
             new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(index_buf_->resource_state);
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -157,7 +156,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     { // vertex buffer barrier [CopyDst -> VertexBuffer]
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::VertexBuffer);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -172,7 +171,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     { // index buffer barrier [CopyDst -> IndexBuffer]
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::IndexBuffer);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -187,7 +186,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     if (atlas.resource_state != Ren::eResState::ShaderResource) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(atlas.resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::ShaderResource);
         new_barrier.oldLayout = Ren::VKImageLayoutForState(atlas.resource_state);
@@ -229,9 +228,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
 
     VkDescriptorSetLayout descr_set_layout = pipeline_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set =
-        ctx_.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 0 /* ubuf_count */,
-                                          0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    Ren::DescrSizes descr_sizes;
+    descr_sizes.img_sampler_count = 1;
+    VkDescriptorSet descr_set = ctx_.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
 
     VkDescriptorImageInfo img_info = {};
     img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -239,7 +238,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     img_info.sampler = ctx_.texture_atlas().sampler().vk_handle();
 
     VkWriteDescriptorSet descr_write;
-    descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
     descr_write.dstSet = descr_set;
     descr_write.dstBinding = UIRendererConstants::TexAtlasSlot;
     descr_write.dstArrayElement = 0;
@@ -259,8 +258,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     assert(vertex_buf_->resource_state == Ren::eResState::VertexBuffer);
     assert(index_buf_->resource_state == Ren::eResState::IndexBuffer);
 
-    VkRenderPassBeginInfo render_pass_begin_info = {};
-    render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     render_pass_begin_info.renderPass = render_pass_.handle();
     render_pass_begin_info.framebuffer = framebuffers_[api_ctx->backend_frame].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(w), uint32_t(h)};

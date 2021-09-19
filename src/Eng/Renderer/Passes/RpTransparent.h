@@ -83,13 +83,14 @@ class RpTransparent : public RenderPassBase {
     ~RpTransparent();
 
     void Setup(RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
-               const ViewState *view_state, Ren::BufferRef vtx_buf1, Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf,
-               Ren::BufferRef materials_buf, const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
-               Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut, Ren::Tex2DRef dummy_black,
-               Ren::Tex2DRef dummy_white, const char instances_buf[], const char shared_data_buf[],
-               const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
-               const char shad_tex[], const char ssao_tex[], const char color_tex[], const char normal_tex[],
-               const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]);
+               const ViewState *view_state, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
+               const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf, const Ren::Pipeline pipelines[],
+               const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut, const Ren::Tex2DRef &noise_tex,
+               const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black, const Ren::Tex2DRef &dummy_white,
+               const char instances_buf[], const char shared_data_buf[], const char cells_buf[], const char items_buf[],
+               const char lights_buf[], const char decals_buf[], const char shad_tex[], const char ssao_tex[],
+               const char color_tex[], const char normal_tex[], const char spec_tex[], const char depth_tex[],
+               const char transparent_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "TRANSPARENT PASS"; }

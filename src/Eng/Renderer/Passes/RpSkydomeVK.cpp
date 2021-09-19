@@ -25,9 +25,10 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
     VkDescriptorSetLayout descr_set_layout = pipeline_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set =
-        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
-                                         0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    Ren::DescrSizes descr_sizes;
+    descr_sizes.img_sampler_count = 1;
+    descr_sizes.ubuf_count = 1;
+    VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorBufferInfo buf_infos[] = {
@@ -37,8 +38,8 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         const VkDescriptorImageInfo img_infos[] = {env_tex.ref->handle().sampler, env_tex.ref->handle().views[0],
                                                    VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}; // environment texture
 
-        VkWriteDescriptorSet descr_writes[2] = {};
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[2];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = descr_set;
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
         descr_writes[0].dstArrayElement = 0;
@@ -46,7 +47,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pBufferInfo = buf_infos;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = descr_set;
         descr_writes[1].dstBinding = Skydome::ENV_TEX_SLOT;
         descr_writes[1].dstArrayElement = 0;
@@ -59,8 +60,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    VkRenderPassBeginInfo render_pass_begin_info = {};
-    render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     render_pass_begin_info.renderPass = render_pass_.handle();
     render_pass_begin_info.framebuffer = framebuf_[ctx.backend_frame()].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};

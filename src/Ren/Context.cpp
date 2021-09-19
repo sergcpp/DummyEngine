@@ -170,6 +170,30 @@ Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef cs_ref, eP
     return ref;
 }
 
+#if defined(USE_VK_RENDER)
+Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
+                                          ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref,
+                                          eProgLoadStatus *load_status) {
+    ProgramRef ref = programs_.FindByName(name);
+
+    if (!ref) {
+        ref = programs_.Add(name, api_ctx_.get(), std::move(raygen_ref), std::move(closesthit_ref),
+                            std::move(anyhit_ref), std::move(miss_ref), std::move(intersection_ref), load_status, log_);
+    } else {
+        if (ref->ready()) {
+            if (load_status) {
+                (*load_status) = eProgLoadStatus::Found;
+            }
+        } else if (!ref->ready() && raygen_ref && (closesthit_ref || anyhit_ref) && miss_ref) {
+            ref->Init(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
+                      std::move(intersection_ref), load_status, log_);
+        }
+    }
+
+    return ref;
+}
+#endif
+
 Ren::ProgramRef Ren::Context::GetProgram(const uint32_t index) { return {&programs_, index}; }
 
 int Ren::Context::NumProgramsNotReady() {
@@ -434,8 +458,7 @@ void Ren::Context::InitDefaultBuffers() {
         sprintf(name_buf, "default_stage_buf_%i", i);
         default_stage_bufs_.bufs[i] = buffers_.Add(name_buf, api_ctx_.get(), eBufType::Stage, 32 * 1024 * 1024, 192);
 #if defined(USE_VK_RENDER)
-        VkFenceCreateInfo fence_info = {};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
         VkResult res = vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
@@ -443,8 +466,7 @@ void Ren::Context::InitDefaultBuffers() {
 
         default_stage_bufs_.fences[i] = SyncFence{api_ctx_->device, new_fence};
 
-        VkCommandBufferAllocateInfo alloc_info = {};
-        alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
         alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         alloc_info.commandPool = api_ctx_->command_pool;
         alloc_info.commandBufferCount = 1;

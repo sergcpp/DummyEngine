@@ -14,6 +14,7 @@
 #include "Scene/SceneManager_PT.cpp"
 #include "Scene/SceneManager_Tex.cpp"
 
+#include "Scene/Comp/AccStructure.cpp"
 #include "Scene/Comp/AnimState.cpp"
 #include "Scene/Comp/Decal.cpp"
 #include "Scene/Comp/Drawable.cpp"

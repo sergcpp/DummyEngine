@@ -40,10 +40,6 @@ float pow6(float x) {
     return (x * x) * (x * x) * (x * x);
 }
 
-vec3 RGBMDecode(vec4 rgbm) {
-    return 4.0 * rgbm.rgb * rgbm.a;
-}
-
 vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
 }

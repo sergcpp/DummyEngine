@@ -208,8 +208,7 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
     mip_count_ = Ren::CalcMipCount(w, h, 1, filter);
 
     { // create image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(w);
         img_info.extent.height = uint32_t(h);
@@ -232,8 +231,7 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
         VkMemoryRequirements img_tex_mem_req = {};
         vkGetImageMemoryRequirements(api_ctx_->device, img_, &img_tex_mem_req);
 
-        VkMemoryAllocateInfo img_alloc_info = {};
-        img_alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+        VkMemoryAllocateInfo img_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
         img_alloc_info.allocationSize = img_tex_mem_req.size;
 
         uint32_t img_tex_type_bits = img_tex_mem_req.memoryTypeBits;
@@ -261,8 +259,7 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
     }
 
     { // create default image view
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = img_;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
         view_info.format = g_vk_formats[size_t(format)];
@@ -362,7 +359,7 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
 
             if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
                 auto &new_barrier = buf_barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
                 new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -378,7 +375,7 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
             SmallVector<VkImageMemoryBarrier, 1> img_barriers;
             if (resource_state != eResState::CopyDst) {
                 auto &new_barrier = img_barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = VKAccessFlagsForState(resource_state);
                 new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
                 new_barrier.oldLayout = (VkImageLayout)VKImageLayoutForState(resource_state);

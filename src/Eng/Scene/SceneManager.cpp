@@ -185,6 +185,10 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
 
         default_comp_storage_[CompPhysics].reset(new DefaultCompStorage<Physics>);
         RegisterComponent(CompPhysics, default_comp_storage_[CompPhysics].get(), nullptr);
+
+        default_comp_storage_[CompAccStructure].reset(new DefaultCompStorage<AccStructure>);
+        RegisterComponent(CompAccStructure, default_comp_storage_[CompAccStructure].get(),
+                          std::bind(&SceneManager::PostloadAccStructure, this, _1, _2, _3));
     }
 
     Sys::MemBuf buf{__cam_rig_mesh, size_t(__cam_rig_mesh_size)};
@@ -515,10 +519,18 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
 
     scene_data_.decals_atlas.Finalize();
 
-    log->Info("SceneManager: RebuildBVH!");
+    log->Info("SceneManager: RebuildSceneBVH!");
 
-    RebuildBVH();
+    RebuildSceneBVH();
     RebuildMaterialTextureGraph();
+
+    if (ren_ctx_.capabilities.raytracing) {
+#if !defined(USE_GL_RENDER)
+        InitHWAccStructures();
+#endif
+    } else {
+        //InitSWAccStructures();
+    }
 
     __itt_task_end(__g_itt_domain);
 }
@@ -628,7 +640,7 @@ void SceneManager::ClearScene() {
         range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
     }
 
-    scene_data_.persistant_data.Clear();
+    scene_data_.persistent_data.Clear();
 
     changed_objects_.clear();
     last_changed_objects_.clear();
@@ -1091,6 +1103,38 @@ void SceneManager::PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp,
 
     const Ren::Vec3f center = 0.5f * (obj_bbox[0] + obj_bbox[1]);
     snd->snd_src.Init(1.0f, Ren::ValuePtr(center));
+}
+
+void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
+    using namespace SceneManagerConstants;
+
+    auto *acc = (AccStructure *)comp;
+
+    const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
+
+    Ren::eMeshLoadStatus status;
+    acc->mesh = LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
+
+    if (status != Ren::eMeshLoadStatus::Found) {
+        const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
+
+        Sys::AssetFile in_file(mesh_path.c_str());
+        size_t in_file_size = in_file.size();
+
+        std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
+        in_file.Read((char *)&in_file_data[0], in_file_size);
+
+        Sys::MemBuf mem = {&in_file_data[0], in_file_size};
+        std::istream in_file_stream(&mem);
+
+        using namespace std::placeholders;
+        acc->mesh = LoadMesh(js_mesh_file_name.val.c_str(), &in_file_stream,
+                             std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+        assert(status == Ren::eMeshLoadStatus::CreatedFromData);
+    }
+
+    obj_bbox[0] = Ren::Min(obj_bbox[0], acc->mesh->bbox_min());
+    obj_bbox[1] = Ren::Max(obj_bbox[1], acc->mesh->bbox_max());
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

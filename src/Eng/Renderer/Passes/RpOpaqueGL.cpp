@@ -184,6 +184,15 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
     RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
 
+    RpAllocTex *lm_tex[4];
+    for (int i = 0; i < 4; ++i) {
+        if (lm_tex_[i]) {
+            lm_tex[i] = &builder.GetReadTexture(lm_tex_[i]);
+        } else {
+            lm_tex[i] = &dummy_black;
+        }
+    }
+
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT, GLuint(materials_buf.ref->id()));
     if (ctx.capabilities.bindless_texture) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
@@ -205,14 +214,8 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut.ref->id());
 
-    if ((render_flags_ & EnableLightmap) && env_->lm_direct) {
-        for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, env_->lm_indir_sh[sh_l]->id());
-        }
-    } else {
-        for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, dummy_black.ref->id());
-        }
+    for (int sh_l = 0; sh_l < 4; sh_l++) {
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, lm_tex[sh_l]->ref->id());
     }
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,

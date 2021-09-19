@@ -6,6 +6,7 @@ extern "C" {
 #if defined(USE_VK_RENDER)
 #include "VKExt.cpp"
 #include "VKCtx.cpp"
+#include "AccStructureVK.cpp"
 #include "BufferVK.cpp"
 #include "ContextVK.cpp"
 #include "DescriptorPoolVK.cpp"

@@ -177,6 +177,12 @@ class Context : public TaskExecutor {
     ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader, int num_fvars, const Attribute *attrs,
                              const Uniform *unifs, eProgLoadStatus *load_status);
 #endif
+
+#if defined(USE_VK_RENDER)
+    ProgramRef LoadProgram(const char *name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
+                           ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *load_status);
+#endif
+
     ProgramRef GetProgram(uint32_t index);
     int NumProgramsNotReady();
     void ReleasePrograms();
@@ -235,6 +241,7 @@ class Context : public TaskExecutor {
         bool spirv = false;
         bool persistent_buf_mapping = false;
         bool bindless_texture = false;
+        bool raytracing = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;
@@ -249,6 +256,7 @@ class Context : public TaskExecutor {
         bool spirv = true;
         bool persistent_buf_mapping = true;
         bool bindless_texture = false;
+        bool raytracing = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;

@@ -217,12 +217,13 @@ enum eRenderFlags : uint32_t {
     DebugLights = (1u << 22u),
     DebugDeferred = (1u << 23u),
     DebugBlur = (1u << 24u),
-    DebugDecals = (1u << 24u),
-    DebugSSAO = (1u << 25u),
-    DebugTimings = (1u << 26u),
-    DebugBVH = (1u << 27u),
-    DebugProbes = (1u << 28u),
-    DebugEllipsoids = (1u << 29u)
+    DebugDecals = (1u << 25u),
+    DebugSSAO = (1u << 26u),
+    DebugTimings = (1u << 27u),
+    DebugBVH = (1u << 28u),
+    DebugProbes = (1u << 29u),
+    DebugEllipsoids = (1u << 30u),
+    DebugRT = (1u << 31u)
 };
 
 struct FrontendInfo {
@@ -276,6 +277,18 @@ struct MaterialData {
 };
 static_assert(sizeof(MaterialData) == 48, "!");
 
+const uint32_t RTGeoProbeBits = 0xff;
+const uint32_t RTGeoLightmappedBit = (1u << 8u);
+
+struct RTGeoInstance {
+    uint32_t indices_start;
+    uint32_t vertices_start;
+    uint32_t material_index;
+    uint32_t flags;
+    float lmap_transform[4];
+};
+static_assert(sizeof(RTGeoInstance) == 32, "!");
+
 #if defined(USE_VK_RENDER)
 #include <Ren/VK.h>
 #elif defined(USE_GL_RENDER)
@@ -285,9 +298,15 @@ static_assert(sizeof(MaterialData) == 48, "!");
 struct BindlessTextureData {
 #if defined(USE_VK_RENDER)
     const Ren::SmallVectorImpl<VkDescriptorSet> *textures_descr_sets;
+    VkDescriptorSet rt_textures_descr_set;
 #elif defined(USE_GL_RENDER)
     Ren::WeakBufferRef textures_buf;
 #endif
+};
+
+struct AccelerationStructureData {
+    Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf;
+    Ren::IAccStructure *rt_tlas = nullptr;
 };
 
 // Constant that controls buffers orphaning

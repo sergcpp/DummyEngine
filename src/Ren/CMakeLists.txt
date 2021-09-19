@@ -30,6 +30,8 @@ endif()
 
 set(SOURCE_FILES Anim.h
                  Anim.cpp
+                 AccStructure.h
+                 AccStructure.cpp
                  Buffer.h
                  Camera.h
                  Camera.cpp
@@ -129,6 +131,7 @@ elseif(${RENDERER} STREQUAL "SW")
                      TextureSW.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(SOURCE_FILES ${SOURCE_FILES}
+                     AccStructureVK.cpp
                      BufferVK.cpp
                      ContextVK.cpp
                      DescriptorPoolVK.cpp

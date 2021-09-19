@@ -291,8 +291,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     mip_count = std::min(mip_count, CalcMipCount(w, h, 1, Ren::eTexFilter::Trilinear));
 
     { // create new image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(w);
         img_info.extent.height = uint32_t(h);
@@ -322,8 +321,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         }
 
 #ifdef ENABLE_OBJ_LABELS
-        VkDebugUtilsObjectNameInfoEXT name_info = {};
-        name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(new_image);
         name_info.pObjectName = name_.c_str();
@@ -348,8 +346,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     }
 
     { // create new image view
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = new_image;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_vk_formats[size_t(format)];
@@ -431,7 +428,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             // src image barrier
             if (this->resource_state != eResState::CopySrc) {
                 auto &new_barrier = barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
                 new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
                 new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -452,7 +449,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             // dst image barrier
             if (new_resource_state != eResState::CopyDst) {
                 auto &new_barrier = barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = VKAccessFlagsForState(new_resource_state);
                 new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
                 new_barrier.oldLayout = VKImageLayoutForState(new_resource_state);
@@ -518,8 +515,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
     }
 
     { // create image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(p.w);
         img_info.extent.height = uint32_t(p.h);
@@ -546,8 +542,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         }
 
 #ifdef ENABLE_OBJ_LABELS
-        VkDebugUtilsObjectNameInfoEXT name_info = {};
-        name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
@@ -572,8 +567,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
     }
 
     { // create default image view(s)
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_vk_formats[size_t(p.format)];
@@ -621,7 +615,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
 
         if (sbuf->resource_state != eResState::Undefined && sbuf->resource_state != eResState::CopySrc) {
             auto &new_barrier = buf_barriers.emplace_back();
-            new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf->resource_state);
             new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -636,7 +630,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
 
         if (this->resource_state != eResState::CopyDst) {
             auto &new_barrier = img_barriers.emplace_back();
-            new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
             new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
             new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -683,8 +677,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
     }
 
     { // create new sampler
-        VkSamplerCreateInfo sampler_info = {};
-        sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
         sampler_info.magFilter = g_vk_min_mag_filter[size_t(p.sampling.filter)];
         sampler_info.minFilter = g_vk_min_mag_filter[size_t(p.sampling.filter)];
         sampler_info.addressModeU = g_vk_wrap_mode[size_t(p.sampling.wrap)];
@@ -808,7 +801,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -823,7 +816,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
 
     if (this->resource_state != eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -961,7 +954,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -976,7 +969,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
 
     if (this->resource_state != eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -1063,8 +1056,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
     const int mip_count = CalcMipCount(p.w, p.h, 1, p.sampling.filter);
 
     { // create image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(p.w);
         img_info.extent.height = uint32_t(p.h);
@@ -1090,8 +1082,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         }
 
 #ifdef ENABLE_OBJ_LABELS
-        VkDebugUtilsObjectNameInfoEXT name_info = {};
-        name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
@@ -1116,8 +1107,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
     }
 
     { // create default image view
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
@@ -1144,7 +1134,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1159,7 +1149,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
 
     if (this->resource_state != eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -1380,8 +1370,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     initialized_mips_ = 0;
 
     { // create image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(p.w);
         img_info.extent.height = uint32_t(p.h);
@@ -1403,8 +1392,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         }
 
 #ifdef ENABLE_OBJ_LABELS
-        VkDebugUtilsObjectNameInfoEXT name_info = {};
-        name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
@@ -1429,8 +1417,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     }
 
     { // create default image view
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
@@ -1457,7 +1444,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1472,7 +1459,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
     if (this->resource_state != eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -1595,8 +1582,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
     }
 
     { // create image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(p.w);
         img_info.extent.height = uint32_t(p.h);
@@ -1618,8 +1604,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         }
 
 #ifdef ENABLE_OBJ_LABELS
-        VkDebugUtilsObjectNameInfoEXT name_info = {};
-        name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
@@ -1644,8 +1629,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
     }
 
     { // create default image view
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
@@ -1672,7 +1656,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1687,7 +1671,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 
     if (this->resource_state != eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -1823,7 +1807,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopySrc) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1838,7 +1822,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 
     if (this->resource_state != eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -1893,8 +1877,7 @@ void Ren::Texture2D::SetSampling(const SamplingParams s) {
         api_ctx_->samplers_to_destroy[api_ctx_->backend_frame].emplace_back(handle_.sampler);
     }
 
-    VkSamplerCreateInfo sampler_info = {};
-    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
     sampler_info.magFilter = g_vk_min_mag_filter[size_t(s.filter)];
     sampler_info.minFilter = g_vk_min_mag_filter[size_t(s.filter)];
     sampler_info.addressModeU = g_vk_wrap_mode[size_t(s.wrap)];
@@ -1942,7 +1925,7 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
 
     if (this->resource_state != eResState::CopySrc) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
@@ -1962,7 +1945,7 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
 
     if (sbuf.resource_state != eResState::Undefined && sbuf.resource_state != eResState::CopyDst) {
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(sbuf.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -2057,8 +2040,7 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
                           ILog *log) {
     Free();
 
-    VkBufferViewCreateInfo view_info = {};
-    view_info.sType = VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO;
+    VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
     view_info.buffer = buf->handle().buf;
     view_info.format = g_vk_formats[size_t(format)];
     view_info.offset = VkDeviceSize(offset);

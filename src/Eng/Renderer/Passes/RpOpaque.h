@@ -22,7 +22,6 @@ class RpOpaque : public RenderPassBase {
     const Ren::Pipeline *pipelines_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const EnvironmentWeak *env_ = nullptr;
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
     const ProbeStorage *probe_storage_ = nullptr;
 
@@ -66,13 +65,14 @@ class RpOpaque : public RenderPassBase {
   public:
     ~RpOpaque();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
-               Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf,
-               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, Ren::Tex2DRef brdf_lut,
-               Ren::Tex2DRef noise_tex, Ren::Tex2DRef cone_rt_lut, Ren::Tex2DRef dummy_black, Ren::Tex2DRef dummy_white,
-               const char instances_buf[], const char shared_data_buf[], const char cells_buf[], const char items_buf[],
-               const char lights_buf[], const char decals_buf[], const char shadowmap_tex[], const char ssao_tex[],
-               const char out_color[], const char out_normals[], const char out_spec[], const char out_depth[]);
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const Ren::BufferRef &vtx_buf1,
+               const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
+               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
+               const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
+               const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char shared_data_buf[],
+               const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
+               const char shadowmap_tex[], const char ssao_tex[], const char out_color[], const char out_normals[],
+               const char out_spec[], const char out_depth[]);
     void Execute(RpBuilder &builder) override;
 
     // TODO: remove this

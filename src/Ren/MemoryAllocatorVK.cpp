@@ -47,8 +47,7 @@ bool Ren::MemoryAllocator::AllocateNewBlock(const uint32_t size) {
 
     new_block.alloc = LinearAlloc{1024, size};
 
-    VkMemoryAllocateInfo buf_alloc_info = {};
-    buf_alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    VkMemoryAllocateInfo buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     buf_alloc_info.allocationSize = VkDeviceSize(size);
     buf_alloc_info.memoryTypeIndex = mem_type_index_;
 
@@ -91,10 +90,10 @@ void Ren::MemoryAllocator::Free(const uint32_t block_ndx, const uint32_t alloc_o
 }
 
 void Ren::MemoryAllocators::Print(ILog *log) {
-    log->Info("=================================================================");
+    /*log->Info("=================================================================");
     log->Info("MemAllocs %s", name_);
     for (const auto &alloc : allocators_) {
         alloc.Print(log);
     }
-    log->Info("=================================================================");
+    log->Info("=================================================================");*/
 }

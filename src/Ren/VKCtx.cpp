@@ -90,14 +90,12 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
         }
     }
 
-    VkApplicationInfo app_info = {};
-    app_info.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    VkApplicationInfo app_info = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app_info.pApplicationName = "Dummy";
     app_info.engineVersion = 1;
     app_info.apiVersion = VK_MAKE_VERSION(1, 0, 0);
 
-    VkInstanceCreateInfo instance_info = {};
-    instance_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    VkInstanceCreateInfo instance_info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     instance_info.pApplicationInfo = &app_info;
     instance_info.enabledLayerCount = enabled_layers_count;
     instance_info.ppEnabledLayerNames = enabled_layers;
@@ -117,8 +115,7 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
 bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-    VkWin32SurfaceCreateInfoKHR surface_create_info = {};
-    surface_create_info.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
+    VkWin32SurfaceCreateInfoKHR surface_create_info = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
     surface_create_info.hinstance = GetModuleHandle(NULL);
     surface_create_info.hwnd = GetActiveWindow();
 
@@ -128,8 +125,7 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
         return false;
     }
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    VkXlibSurfaceCreateInfoKHR surface_create_info = {};
-    surface_create_info.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
+    VkXlibSurfaceCreateInfoKHR surface_create_info = {VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
     surface_create_info.dpy = g_dpy;
     surface_create_info.window = g_win;
 
@@ -139,8 +135,7 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
         return false;
     }
 #elif defined(VK_USE_PLATFORM_IOS_MVK)
-    VkIOSSurfaceCreateInfoMVK surface_create_info = {};
-    surface_create_info.sType = VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK;
+    VkIOSSurfaceCreateInfoMVK surface_create_info = {VK_STRUCTURE_TYPE_IOS_SURFACE_CREATE_INFO_MVK};
     surface_create_info.pView = ctx.view_from_world;
 
     VkResult res = vkCreateIOSSurfaceMVK(ctx.instance, &surface_create_info, nullptr, &ctx.surface);
@@ -149,8 +144,7 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
         return false;
     }
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
-    VkMacOSSurfaceCreateInfoMVK surface_create_info = {};
-    surface_create_info.sType = VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK;
+    VkMacOSSurfaceCreateInfoMVK surface_create_info = {VK_STRUCTURE_TYPE_MACOS_SURFACE_CREATE_INFO_MVK};
     surface_create_info.pView = g_metal_layer;
 
     VkResult res = vkCreateMacOSSurfaceMVK(instance, &surface_create_info, nullptr, &surface);
@@ -166,7 +160,8 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
 bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &out_device_properties,
                                  VkPhysicalDeviceMemoryProperties &out_mem_properties,
                                  uint32_t &out_present_family_index, uint32_t &out_graphics_family_index,
-                                 const char *preferred_device, VkInstance instance, VkSurfaceKHR surface, ILog *log) {
+                                 bool &out_raytracing_supported, const char *preferred_device, VkInstance instance,
+                                 VkSurfaceKHR surface, ILog *log) {
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
 
@@ -178,6 +173,8 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
     for (uint32_t i = 0; i < physical_device_count; i++) {
         VkPhysicalDeviceProperties device_properties = {};
         vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
+
+        bool acc_struct_supported = false, raytracing_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -194,6 +191,14 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
 
                 if (strcmp(ext.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) {
                     swapchain_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME) == 0) {
+                    acc_struct_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) == 0) {
+                    raytracing_supported = true;
+                }
+
+                if (swapchain_supported && acc_struct_supported && raytracing_supported) {
+                    // all needed extensions were found
                     break;
                 }
             }
@@ -249,6 +254,10 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 score += 500;
             }
 
+            if (acc_struct_supported && raytracing_supported) {
+                score += 500;
+            }
+
             if (preferred_device && strstr(device_properties.deviceName, preferred_device)) {
                 // preffered device found
                 score += 100000;
@@ -262,6 +271,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 out_device_properties = device_properties;
                 out_present_family_index = present_family_index;
                 out_graphics_family_index = graphics_family_index;
+                out_raytracing_supported = (acc_struct_supported && raytracing_supported);
             }
         }
     }
@@ -277,13 +287,13 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
 }
 
 bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint32_t present_family_index,
-                       uint32_t graphics_family_index, const char *enabled_layers[], int enabled_layers_count,
-                       ILog *log) {
+                       uint32_t graphics_family_index, bool enable_raytracing, const char *enabled_layers[],
+                       int enabled_layers_count, ILog *log) {
     VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
     const float queue_priorities[] = {1.0f};
 
     { // present queue
-        queue_create_infos[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_infos[0] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
         queue_create_infos[0].queueFamilyIndex = present_family_index;
         queue_create_infos[0].queueCount = 1;
 
@@ -293,7 +303,7 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
 
     if (graphics_family_index != present_family_index) {
         // graphics queue
-        queue_create_infos[1].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queue_create_infos[1] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
         queue_create_infos[1].queueFamilyIndex = graphics_family_index;
         queue_create_infos[1].queueCount = 1;
 
@@ -302,43 +312,86 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
         ++infos_count;
     }
 
-    VkDeviceCreateInfo device_info = {};
-    device_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    VkDeviceCreateInfo device_info = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
     device_info.queueCreateInfoCount = infos_count;
     device_info.pQueueCreateInfos = queue_create_infos;
     device_info.enabledLayerCount = enabled_layers_count;
     device_info.ppEnabledLayerNames = enabled_layers;
 
-    const char *device_extensions[] = {
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-        VK_KHR_MAINTENANCE3_EXTENSION_NAME,
-        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+    SmallVector<const char *, 16> device_extensions;
+
+    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+    //device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
-        VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
+    device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
 #endif
-    };
-    device_info.enabledExtensionCount = COUNT_OF(device_extensions);
-    device_info.ppEnabledExtensionNames = device_extensions;
+
+    if (enable_raytracing) {
+        device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
+    }
+
+    device_info.enabledExtensionCount = uint32_t(device_extensions.size());
+    device_info.ppEnabledExtensionNames = device_extensions.cdata();
 
     VkPhysicalDeviceFeatures features = {};
     features.shaderClipDistance = VK_TRUE;
     features.samplerAnisotropy = VK_TRUE;
     features.imageCubeArray = VK_TRUE;
     device_info.pEnabledFeatures = &features;
+    void **pp_next = const_cast<void **>(&device_info.pNext);
 
-    VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexing_features = {};
-    indexing_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
-    indexing_features.pNext = nullptr;
+    /*VkPhysicalDeviceFeatures2KHR feat2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+    feat2.features.shaderClipDistance = VK_TRUE;
+    feat2.features.samplerAnisotropy = VK_TRUE;
+    feat2.features.imageCubeArray = VK_TRUE;
+    device_info.pNext = &feat2;
+    void **pp_next = const_cast<void **>(&feat2.pNext);*/
+    
+    VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexing_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
     indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
     indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
     indexing_features.runtimeDescriptorArray = VK_TRUE;
-    device_info.pNext = &indexing_features;
+    (*pp_next) = &indexing_features;
+    pp_next = &indexing_features.pNext;
+
+    VkPhysicalDeviceBufferDeviceAddressFeaturesKHR device_address_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR};
+    device_address_features.bufferDeviceAddress = VK_TRUE;
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rt_pipeline_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    rt_pipeline_features.rayTracingPipeline = VK_TRUE;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acc_struct_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    acc_struct_features.accelerationStructure = VK_TRUE;
+
+    if (enable_raytracing) {
+        (*pp_next) = &device_address_features;
+        pp_next = &device_address_features.pNext;
+
+        (*pp_next) = &rt_pipeline_features;
+        pp_next = &rt_pipeline_features.pNext;
+
+        (*pp_next) = &acc_struct_features;
+        pp_next = &acc_struct_features.pNext;
+    }
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
-    VkPhysicalDevicePortabilitySubsetFeaturesKHR subset_features = {};
-    subset_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR;
+    VkPhysicalDevicePortabilitySubsetFeaturesKHR subset_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
     subset_features.mutableComparisonSamplers = VK_TRUE;
-    indexing_features.pNext = &subset_features;
+    (*pp_next) = &subset_features;
+    pp_next = &subset_features.pNext;
 #endif
 
     const VkResult res = vkCreateDevice(physical_device, &device_info, nullptr, &device);
@@ -436,15 +489,15 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
         pre_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
     }
 
-    VkSwapchainCreateInfoKHR swap_chain_create_info = {};
-    swap_chain_create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    VkSwapchainCreateInfoKHR swap_chain_create_info = {VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR};
     swap_chain_create_info.surface = surface;
     swap_chain_create_info.minImageCount = desired_image_count;
     swap_chain_create_info.imageFormat = surface_format.format;
     swap_chain_create_info.imageColorSpace = surface_format.colorSpace;
     swap_chain_create_info.imageExtent = extent;
     swap_chain_create_info.imageArrayLayers = 1;
-    swap_chain_create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    swap_chain_create_info.imageUsage =
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
 
     uint32_t queue_fam_indices[] = {present_family_index, graphics_family_index};
 
@@ -480,8 +533,7 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
     vkGetDeviceQueue(device, present_family_index, 0, &present_queue);
     graphics_queue = present_queue;
 
-    VkCommandPoolCreateInfo cmd_pool_create_info = {};
-    cmd_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    VkCommandPoolCreateInfo cmd_pool_create_info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     cmd_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     cmd_pool_create_info.queueFamilyIndex = present_family_index;
 
@@ -492,8 +544,7 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
     }
 
     { // create pool for temporary commands
-        VkCommandPoolCreateInfo tmp_cmd_pool_create_info = {};
-        tmp_cmd_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        VkCommandPoolCreateInfo tmp_cmd_pool_create_info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
         tmp_cmd_pool_create_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
         tmp_cmd_pool_create_info.queueFamilyIndex = present_family_index;
 
@@ -504,8 +555,7 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
         }
     }
 
-    VkCommandBufferAllocateInfo cmd_buf_alloc_info = {};
-    cmd_buf_alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    VkCommandBufferAllocateInfo cmd_buf_alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     cmd_buf_alloc_info.commandPool = command_pool;
     cmd_buf_alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     cmd_buf_alloc_info.commandBufferCount = 1;
@@ -525,11 +575,9 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
     }
 
     { // create fences
-        VkSemaphoreCreateInfo sem_info = {};
-        sem_info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+        VkSemaphoreCreateInfo sem_info = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 
-        VkFenceCreateInfo fence_info = {};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
         for (int i = 0; i < MaxFramesInFlight; i++) {
@@ -564,8 +612,7 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
     present_images.resize(image_count);
     vkGetSwapchainImagesKHR(device, swapchain, &image_count, &present_images[0]);
 
-    VkImageViewCreateInfo present_images_view_create_info = {};
-    present_images_view_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    VkImageViewCreateInfo present_images_view_create_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     present_images_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
     present_images_view_create_info.format = surface_format.format;
     present_images_view_create_info.components = {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
@@ -576,12 +623,10 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
     present_images_view_create_info.subresourceRange.baseArrayLayer = 0;
     present_images_view_create_info.subresourceRange.layerCount = 1;
 
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    VkFenceCreateInfo fence_create_info = {};
-    fence_create_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFenceCreateInfo fence_create_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
 
     VkFence submit_fence = {};
     vkCreateFence(device, &fence_create_info, nullptr, &submit_fence);
@@ -592,8 +637,7 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
 
         vkBeginCommandBuffer(setup_cmd_buf, &begin_info);
 
-        VkImageMemoryBarrier layout_transition_barrier = {};
-        layout_transition_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         layout_transition_barrier.srcAccessMask = 0;
         layout_transition_barrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         layout_transition_barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -611,8 +655,7 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
         vkEndCommandBuffer(setup_cmd_buf);
 
         VkPipelineStageFlags wait_stage_mask[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        VkSubmitInfo submit_info = {};
-        submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
         submit_info.waitSemaphoreCount = 0;
         submit_info.pWaitSemaphores = nullptr;
         submit_info.pWaitDstStageMask = wait_stage_mask;
@@ -645,8 +688,7 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
 }
 
 VkCommandBuffer Ren::BegSingleTimeCommands(VkDevice device, VkCommandPool temp_command_pool) {
-    VkCommandBufferAllocateInfo alloc_info = {};
-    alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandPool = temp_command_pool;
     alloc_info.commandBufferCount = 1;
@@ -654,8 +696,7 @@ VkCommandBuffer Ren::BegSingleTimeCommands(VkDevice device, VkCommandPool temp_c
     VkCommandBuffer command_buf = {};
     vkAllocateCommandBuffers(device, &alloc_info, &command_buf);
 
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(command_buf, &begin_info);
@@ -666,8 +707,7 @@ void Ren::EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuf
                                 VkCommandPool temp_command_pool) {
     vkEndCommandBuffer(command_buf);
 
-    VkSubmitInfo submit_info = {};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buf;
 
@@ -681,8 +721,7 @@ void Ren::EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuf
                                 VkCommandPool temp_command_pool, VkFence fence_to_insert) {
     vkEndCommandBuffer(command_buf);
 
-    VkSubmitInfo submit_info = {};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buf;
 
@@ -747,4 +786,9 @@ void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {
         vkDestroyPipeline(api_ctx->device, pipe, nullptr);
     }
     api_ctx->pipelines_to_destroy[i].clear();
+
+    for (VkAccelerationStructureKHR acc_struct : api_ctx->acc_structs_to_destroy[i]) {
+        vkDestroyAccelerationStructureKHR(api_ctx->device, acc_struct, nullptr);
+    }
+    api_ctx->acc_structs_to_destroy[i].clear();
 }

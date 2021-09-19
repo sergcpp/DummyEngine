@@ -21,8 +21,7 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
 
     if (output_tex.ref->handle().views.size() < 6) {
         // Initialize per-mip views
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = output_tex.ref->handle().img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = Ren::VKFormatFromTexFormat(Ren::eTexFormat::RawR32F);
@@ -44,9 +43,10 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSetLayout descr_set_layout = pi_depth_hierarchy_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set =
-        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 6 /* store_img_count */, 0 /* ubuf_count */,
-                                         0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    Ren::DescrSizes descr_sizes;
+    descr_sizes.img_sampler_count = 1;
+    descr_sizes.store_img_count = 6;
+    VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorImageInfo depth_tex_info = input_tex.ref->vk_desc_image_info(1);
@@ -55,8 +55,8 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
             depth_img_infos.push_back(output_tex.ref->vk_desc_image_info(i + 1, VK_IMAGE_LAYOUT_GENERAL));
         }
 
-        VkWriteDescriptorSet descr_writes[2] = {};
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[2];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = descr_set;
         descr_writes[0].dstBinding = DepthHierarchy::DEPTH_TEX_SLOT;
         descr_writes[0].dstArrayElement = 0;
@@ -64,7 +64,7 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pImageInfo = &depth_tex_info;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = descr_set;
         descr_writes[1].dstBinding = DepthHierarchy::DEPTH_IMG_SLOT;
         descr_writes[1].dstArrayElement = 0;
