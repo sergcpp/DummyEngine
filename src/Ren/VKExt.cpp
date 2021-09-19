@@ -46,7 +46,7 @@ bool Ren::LoadVulkan(ILog *log) {
         return false;
     }
 #else
-    void *vulkan_module = dlopen("./libvulkan.dylib", RTLD_LAZY);
+    void *vulkan_module = dlopen("libvulkan.dylib", RTLD_LAZY);
     if (!vulkan_module) {
         log->Error("Failed to load libvulkan.dylib");
         return false;
