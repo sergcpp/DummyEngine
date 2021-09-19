@@ -494,6 +494,16 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_showRT", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint32_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugRT;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     // Initialize first draw list
     UpdateFrame(0);
 }

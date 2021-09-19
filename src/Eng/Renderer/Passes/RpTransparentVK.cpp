@@ -59,9 +59,12 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         return;
     }
 
-    const VkDescriptorSet res_descr_set =
-        ctx.default_descr_alloc()->Alloc(10 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
-                                         2 /* sbuf_count */, 4 /* tbuf_count */, descr_set_layout_);
+    Ren::DescrSizes descr_sizes;
+    descr_sizes.img_sampler_count = 10;
+    descr_sizes.ubuf_count = 1;
+    descr_sizes.sbuf_count = 2;
+    descr_sizes.tbuf_count = 4;
+    const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
@@ -105,8 +108,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         { // shadow map
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_SHAD_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -116,8 +118,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // lightmap
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_LMAP_SH_SLOT;
             descr_write.dstArrayElement = 0;
@@ -127,8 +128,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // decals tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_DECAL_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -138,8 +138,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // ssao tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_SSAO_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -149,8 +148,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // noise tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_NOISE_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -160,8 +158,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // env tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_ENV_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -171,8 +168,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // cone rt lut
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_CONE_RT_LUT_SLOT;
             descr_write.dstArrayElement = 0;
@@ -182,8 +178,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         /*{ // brdf lut
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_BRDF_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -193,8 +188,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }*/
         { // lights tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_LIGHT_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -204,8 +198,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // decals tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_DECAL_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -215,8 +208,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // cells tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_CELLS_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -226,8 +218,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // items tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_ITEMS_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -237,8 +228,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // instances tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_INST_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -248,8 +238,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // shared data ubuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_UB_SHARED_DATA_LOC;
             descr_write.dstArrayElement = 0;
@@ -259,8 +248,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
         { // materials sbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_MATERIALS_SLOT;
             descr_write.dstArrayElement = 0;
@@ -294,8 +282,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         uint64_t cur_mat_id = 0xffffffffffffffff;
         uint32_t bound_descr_id = 0xffffffff;
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_transparent_.handle();
         rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
@@ -418,8 +405,7 @@ void RpTransparent::InitDescrSetLayout() {
         // storage buffers (2)
         {REN_MATERIALS_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
-    VkDescriptorSetLayoutCreateInfo layout_info = {};
-    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layout_info.bindingCount = COUNT_OF(bindings);
     layout_info.pBindings = bindings;
 

@@ -27,7 +27,10 @@
 			},
             "lightmap" : {
                 "res" : 512
-            }
+            },
+			"acc_structure" : {
+				"mesh_file" : "inter_walls.mesh"
+			}
         },
         {
             "transform" : {
@@ -39,7 +42,10 @@
             },
             "lightmap" : {
                 "res" : 256
-            }
+            },
+			"acc_structure" : {
+				"mesh_file" : "ladder.mesh"
+			}
         },
         {
             "transform" : {
@@ -51,7 +57,10 @@
             },
             "lightmap" : {
                 "res" : 256
-            }
+            },
+			"acc_structure" : {
+				"mesh_file" : "ladder.mesh"
+			}
         },
         {
             "name" : "wolf00",

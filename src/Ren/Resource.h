@@ -18,10 +18,12 @@ enum class eStageBits : uint16_t {
     GeometryShader = (1u << 4u),
     FragmentShader = (1u << 5u),
     ComputeShader = (1u << 6u),
-    ColorAttachment = (1u << 7u),
-    DepthAttachment = (1u << 8u),
-    DrawIndirect = (1u << 9u),
-    Transfer = (1u << 10u)
+    RayTracingShader = (1u << 7u),
+    ColorAttachment = (1u << 8u),
+    DepthAttachment = (1u << 9u),
+    DrawIndirect = (1u << 10u),
+    Transfer = (1u << 11u),
+    AccStructureBuild = (1u << 12u)
 };
 inline eStageBits operator|(const eStageBits &lhs, const eStageBits &rhs) {
     return eStageBits(uint16_t(lhs) | uint16_t(rhs));
@@ -38,9 +40,11 @@ inline eStageBits operator&=(eStageBits &lhs, const eStageBits &rhs) {
     return lhs;
 }
 
-const eStageBits AllStages = eStageBits::VertexInput | eStageBits::VertexShader | eStageBits::FragmentShader |
-                             eStageBits::ComputeShader | eStageBits::ColorAttachment | eStageBits::DepthAttachment |
-                             eStageBits::Transfer;
+const eStageBits AllStages = eStageBits::VertexInput | eStageBits::VertexShader | eStageBits::TessCtrlShader |
+                             eStageBits::TessEvalShader | eStageBits::GeometryShader | eStageBits::FragmentShader |
+                             eStageBits::ComputeShader | eStageBits::RayTracingShader | eStageBits::ColorAttachment |
+                             eStageBits::DepthAttachment | eStageBits::DrawIndirect | eStageBits::Transfer |
+                             eStageBits::AccStructureBuild;
 
 enum class eResState : uint8_t {
     Undefined,
@@ -55,6 +59,9 @@ enum class eResState : uint8_t {
     IndirectArgument,
     CopyDst,
     CopySrc,
+    BuildASRead,
+    BuildASWrite,
+    RayTracing,
     _Count
 };
 

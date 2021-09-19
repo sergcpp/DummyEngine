@@ -172,6 +172,10 @@ bool Ren::LoadVulkan(ILog *log) {
     LOAD_VK_FUN(vkFreeDescriptorSets)
     LOAD_VK_FUN(vkUpdateDescriptorSets)
 
+    LOAD_VK_FUN(vkCreateQueryPool)
+    LOAD_VK_FUN(vkDestroyQueryPool)
+    LOAD_VK_FUN(vkGetQueryPoolResults)
+
     LOAD_VK_FUN(vkCmdBeginRenderPass)
     LOAD_VK_FUN(vkCmdBindPipeline)
     LOAD_VK_FUN(vkCmdSetViewport)
@@ -191,15 +195,16 @@ bool Ren::LoadVulkan(ILog *log) {
     LOAD_VK_FUN(vkCmdClearAttachments)
     LOAD_VK_FUN(vkCmdCopyImage)
     LOAD_VK_FUN(vkCmdDispatch)
+    LOAD_VK_FUN(vkCmdResetQueryPool)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     LOAD_VK_FUN(vkCreateWin32SurfaceKHR)
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-    LOAD_VK_FUN(vkCreateXlibSurfaceKHR);
+    LOAD_VK_FUN(vkCreateXlibSurfaceKHR)
 #elif defined(VK_USE_PLATFORM_IOS_MVK)
-    LOAD_VK_FUN(vkCreateIOSSurfaceMVK);
+    LOAD_VK_FUN(vkCreateIOSSurfaceMVK)
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
-    LOAD_VK_FUN(vkCreateMacOSSurfaceMVK);
+    LOAD_VK_FUN(vkCreateMacOSSurfaceMVK)
 #endif
     LOAD_VK_FUN(vkDestroySurfaceKHR)
 
@@ -220,13 +225,29 @@ bool Ren::LoadVulkanExtensions(VkInstance instance, ILog *log) {
     LOAD_VK_FUN(vkDestroyDebugReportCallbackEXT)
     LOAD_VK_FUN(vkDebugReportMessageEXT)
 
-    LOAD_VK_FUN(vkCmdBeginDebugUtilsLabelEXT);
-    LOAD_VK_FUN(vkCmdEndDebugUtilsLabelEXT);
-    LOAD_VK_FUN(vkSetDebugUtilsObjectNameEXT);
+    LOAD_VK_FUN(vkCreateAccelerationStructureKHR);
+    LOAD_VK_FUN(vkDestroyAccelerationStructureKHR);
+
+    LOAD_VK_FUN(vkCmdBeginDebugUtilsLabelEXT)
+    LOAD_VK_FUN(vkCmdEndDebugUtilsLabelEXT)
+    LOAD_VK_FUN(vkSetDebugUtilsObjectNameEXT)
 
     LOAD_VK_FUN(vkCmdSetDepthBias);
 
+    LOAD_VK_FUN(vkCmdBuildAccelerationStructuresKHR);
+    LOAD_VK_FUN(vkCmdWriteAccelerationStructuresPropertiesKHR);
+    LOAD_VK_FUN(vkCmdCopyAccelerationStructureKHR);
+    LOAD_VK_FUN(vkCmdTraceRaysKHR);
+
     LOAD_VK_FUN(vkDeviceWaitIdle)
+
+    LOAD_VK_FUN(vkGetPhysicalDeviceProperties2KHR);
+    LOAD_VK_FUN(vkGetBufferDeviceAddressKHR)
+    LOAD_VK_FUN(vkGetAccelerationStructureBuildSizesKHR)
+    LOAD_VK_FUN(vkGetAccelerationStructureDeviceAddressKHR)
+    LOAD_VK_FUN(vkGetRayTracingShaderGroupHandlesKHR)
+
+    LOAD_VK_FUN(vkCreateRayTracingPipelinesKHR)
 
     return true;
 

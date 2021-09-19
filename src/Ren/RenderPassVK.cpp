@@ -117,8 +117,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
         subpass.pDepthStencilAttachment = &depth_attachment_ref;
     }
 
-    VkRenderPassCreateInfo render_pass_create_info = {};
-    render_pass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+    VkRenderPassCreateInfo render_pass_create_info = {VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO};
     render_pass_create_info.attachmentCount = uint32_t(pass_attachments.size());
     render_pass_create_info.pAttachments = pass_attachments.data();
     render_pass_create_info.subpassCount = 1;

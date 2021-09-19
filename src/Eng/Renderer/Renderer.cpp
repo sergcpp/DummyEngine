@@ -396,9 +396,18 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     BindlessTextureData bindless_tex;
 #if defined(USE_VK_RENDER)
     bindless_tex.textures_descr_sets = &persistent_data.textures_descr_sets[ctx_.backend_frame()];
+    bindless_tex.rt_textures_descr_set = persistent_data.rt_textures_descr_sets[ctx_.backend_frame()];
 #elif defined(USE_GL_RENDER)
     bindless_tex.textures_buf = persistent_data.textures_buf;
 #endif
+
+    AccelerationStructureData acc_struct_data;
+    acc_struct_data.rt_instance_buf = persistent_data.rt_instance_buf;
+    acc_struct_data.rt_geo_data_buf = persistent_data.rt_geo_data_buf;
+    acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
+    if (persistent_data.rt_tlas) {
+        acc_struct_data.rt_tlas = persistent_data.rt_tlas.get();
+    }
 
     { // Setup render passes
         rp_builder_.Reset();
@@ -552,12 +561,25 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
         }
 
-        rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
-                              (list.render_flags & EnableSSR_HQ) ? history_tex_ : down_tex_4x_, brdf_lut_,
-                              SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                              DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
-        rp_tail->p_next = &rp_ssr_compose_;
-        rp_tail = rp_tail->p_next;
+#if defined(USE_VK_RENDER) // vk-only for now
+        if (ctx_.capabilities.raytracing && (list.render_flags & EnableSSR_HQ) && list.env.env_map) {
+            rp_rt_reflections_.Setup(rp_builder_, &view_state_, list, ctx_.default_vertex_buf1(),
+                                     ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), &acc_struct_data,
+                                     &bindless_tex, persistent_data.materials_buf, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
+                                     MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2", history_tex_, brdf_lut_,
+                                     dummy_black_, refl_out_name);
+            rp_tail->p_next = &rp_rt_reflections_;
+            rp_tail = rp_tail->p_next;
+        } else
+#endif
+        {
+            rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
+                                  (list.render_flags & EnableSSR_HQ) ? history_tex_ : down_tex_4x_, brdf_lut_,
+                                  SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
+                                  DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
+            rp_tail->p_next = &rp_ssr_compose_;
+            rp_tail = rp_tail->p_next;
+        }
 
 #if defined(USE_GL_RENDER) // gl-only for now
         //
@@ -575,6 +597,17 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
         }
 #endif
+
+#if defined(USE_VK_RENDER) // vk-only for now
+        if ((list.render_flags & DebugRT) && list.env.env_map) {
+            rp_debug_rt_.Setup(rp_builder_, &view_state_, list, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
+                               ctx_.default_indices_buf(), &acc_struct_data, &bindless_tex,
+                               persistent_data.materials_buf, SHARED_DATA_BUF, dummy_black_, refl_out_name);
+            rp_tail->p_next = &rp_debug_rt_;
+            rp_tail = rp_tail->p_next;
+        }
+#endif
+
         //
         // Temporal resolve
         //

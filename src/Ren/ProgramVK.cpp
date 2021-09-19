@@ -9,14 +9,7 @@
 #endif
 
 namespace Ren {
-const VkShaderStageFlagBits g_shader_stage_flag_bits[int(eShaderType::_Count)] = {
-    VK_SHADER_STAGE_VERTEX_BIT,                  // Vert
-    VK_SHADER_STAGE_FRAGMENT_BIT,                // Frag
-    VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    // Tesc
-    VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, // Tese
-    VK_SHADER_STAGE_COMPUTE_BIT                  // Comp
-};
-static_assert(COUNT_OF(g_shader_stage_flag_bits) == int(eShaderType::_Count), "!");
+extern const VkShaderStageFlagBits g_shader_stages_vk[];
 
 bool IsMainThread();
 } // namespace Ren
@@ -32,6 +25,15 @@ Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, e
     name_ = String{name};
     api_ctx_ = api_ctx;
     Init(std::move(cs_ref), status, log);
+}
+
+Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
+                      ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status,
+                      ILog *log) {
+    name_ = String{name};
+    api_ctx_ = api_ctx;
+    Init(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
+         std::move(intersection_ref), status, log);
 }
 
 Ren::Program::~Program() { Destroy(); }
@@ -104,6 +106,30 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
     (*status) = eProgLoadStatus::CreatedFromData;
 }
 
+void Ren::Program::Init(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
+                        ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log) {
+    assert(IsMainThread());
+
+    if (!raygen_ref || (!closesthit_ref && !anyhit_ref) || !miss_ref) {
+        (*status) = eProgLoadStatus::SetToDefault;
+        return;
+    }
+
+    // store shaders
+    shaders_[int(eShaderType::RayGen)] = std::move(raygen_ref);
+    shaders_[int(eShaderType::ClosestHit)] = std::move(closesthit_ref);
+    shaders_[int(eShaderType::AnyHit)] = std::move(anyhit_ref);
+    shaders_[int(eShaderType::Miss)] = std::move(miss_ref);
+    shaders_[int(eShaderType::Intersection)] = std::move(intersection_ref);
+
+    if (!InitDescrSetLayouts(log)) {
+        log->Error("Failed to initialize descriptor set layouts! (%s)", name_.c_str());
+    }
+    InitBindings(log);
+
+    (*status) = eProgLoadStatus::CreatedFromData;
+}
+
 bool Ren::Program::InitDescrSetLayouts(ILog *log) {
     SmallVector<VkDescriptorSetLayoutBinding, 16> layout_bindings[4];
 
@@ -132,16 +158,12 @@ bool Ren::Program::InitDescrSetLayouts(ILog *log) {
                     new_binding.descriptorCount = u.count;
                 }
 
-                new_binding.stageFlags = g_shader_stage_flag_bits[i];
+                new_binding.stageFlags = g_shader_stages_vk[i];
                 new_binding.pImmutableSamplers = nullptr;
             } else {
-                it->stageFlags |= g_shader_stage_flag_bits[i];
+                it->stageFlags |= g_shader_stages_vk[i];
             }
         }
-    }
-
-    if (layout_bindings[0].size() == 17) {
-        volatile int ii = 0;
     }
 
     for (int i = 0; i < 4; ++i) {
@@ -149,15 +171,14 @@ bool Ren::Program::InitDescrSetLayouts(ILog *log) {
             continue;
         }
 
-        VkDescriptorSetLayoutCreateInfo layout_info = {};
-        layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
         layout_info.bindingCount = uint32_t(layout_bindings[i].size());
         layout_info.pBindings = layout_bindings[i].cdata();
 
         VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
 
-        VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {};
-        extended_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT;
+        VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
         extended_info.pNext = nullptr;
         extended_info.bindingCount = 1u;
         extended_info.pBindingFlags = &bind_flag;
@@ -205,11 +226,11 @@ void Ren::Program::InitBindings(ILog *log) {
 
             if (it == std::end(pc_ranges_)) {
                 VkPushConstantRange &new_rng = pc_ranges_.emplace_back();
-                new_rng.stageFlags = g_shader_stage_flag_bits[i];
+                new_rng.stageFlags = g_shader_stages_vk[i];
                 new_rng.offset = r.offset;
                 new_rng.size = r.size;
             } else {
-                it->stageFlags |= g_shader_stage_flag_bits[i];
+                it->stageFlags |= g_shader_stages_vk[i];
             }
         }
     }

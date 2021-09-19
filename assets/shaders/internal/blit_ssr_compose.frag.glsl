@@ -38,7 +38,7 @@ layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2D s_depth_textur
 layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2D s_norm_texture;
 #endif
 layout(binding = REN_REFL_DEPTH_LOW_TEX_SLOT) uniform highp sampler2D depth_low_texture;
-layout(binding = REN_REFL_SSR_TEX_SLOT) uniform highp sampler2D source_texture;
+layout(binding = REN_REFL_SSR_TEX_SLOT) uniform highp sampler2D ssr_texture;
 
 layout(binding = REN_REFL_PREV_TEX_SLOT) uniform highp sampler2D prev_texture;
 layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D brdf_lut_texture;
@@ -84,20 +84,20 @@ void main() {
 
 	vec3 ssr_uvs;
     if (dmin < 0.05) {
-        ssr_uvs = textureLod(source_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, 0.0).rgb;
+        ssr_uvs = textureLod(ssr_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, 0.0).rgb;
     } else {
         if (dmin == d1) {
-            ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(0, 0), 0).rgb;
+            ssr_uvs = texelFetch(ssr_texture, icoord_low + ivec2(0, 0), 0).rgb;
         } else if (dmin == d2) {
-            ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(0, 1), 0).rgb;
+            ssr_uvs = texelFetch(ssr_texture, icoord_low + ivec2(0, 1), 0).rgb;
         } else if (dmin == d3) {
-            ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(1, 0), 0).rgb;
+            ssr_uvs = texelFetch(ssr_texture, icoord_low + ivec2(1, 0), 0).rgb;
         } else {
-            ssr_uvs = texelFetch(source_texture, icoord_low + ivec2(1, 1), 0).rgb;
+            ssr_uvs = texelFetch(ssr_texture, icoord_low + ivec2(1, 1), 0).rgb;
         }
     }
 #else // HALFRES
-	vec3 ssr_uvs = texelFetch(source_texture, icoord, 0).rgb;
+	vec3 ssr_uvs = texelFetch(ssr_texture, icoord, 0).rgb;
 #endif // HALFRES
 
     vec3 normal = 2.0 * texelFetch(s_norm_texture, icoord, 0).xyz - 1.0;

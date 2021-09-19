@@ -14,7 +14,17 @@ enum class eDescrType : uint8_t {
     UniformBuffer,
     StorageBuffer,
     UniformTexBuffer,
+    AccStructure,
     _Count
+};
+
+struct DescrSizes {
+    uint32_t img_sampler_count = 0;
+    uint32_t store_img_count = 0;
+    uint32_t ubuf_count = 0;
+    uint32_t sbuf_count = 0;
+    uint32_t tbuf_count = 0;
+    uint32_t acc_count = 0;
 };
 
 class DescrPool {
@@ -38,8 +48,7 @@ class DescrPool {
     uint32_t free_count() const { return sets_count_ - next_free_; }
     uint32_t descr_count(const eDescrType type) const { return descr_counts_[int(type)]; }
 
-    bool Init(uint32_t img_sampler_count, uint32_t store_img_count, uint32_t ubuf_count, uint32_t sbuf_count,
-              uint32_t tbuf_count, uint32_t sets_count);
+    bool Init(const DescrSizes &sizes, uint32_t sets_count);
     void Destroy();
 
     VkDescriptorSet Alloc(VkDescriptorSetLayout layout);
@@ -51,19 +60,15 @@ class DescrPool {
 //
 class DescrPoolAlloc {
     ApiContext *api_ctx_ = nullptr;
-    uint32_t img_sampler_count_ = 0, store_img_count_ = 0, ubuf_count_ = 0, sbuf_count_ = 0, tbuf_count_ = 0;
+    DescrSizes sizes_;
     uint32_t initial_sets_count_ = 0;
 
     SmallVector<DescrPool, 256> pools_;
     int next_free_pool_ = -1;
 
   public:
-    DescrPoolAlloc(ApiContext *api_ctx, const uint32_t img_sampler_count, const uint32_t store_img_count,
-                   const uint32_t ubuf_count, const uint32_t sbuf_count, const uint32_t tbuf_count,
-                   const uint32_t initial_sets_count)
-        : api_ctx_(api_ctx), img_sampler_count_(img_sampler_count), store_img_count_(store_img_count),
-          ubuf_count_(ubuf_count), sbuf_count_(sbuf_count), tbuf_count_(tbuf_count),
-          initial_sets_count_(initial_sets_count) {}
+    DescrPoolAlloc(ApiContext *api_ctx, const DescrSizes &sizes, const uint32_t initial_sets_count)
+        : api_ctx_(api_ctx), sizes_(sizes), initial_sets_count_(initial_sets_count) {}
 
     ApiContext *api_ctx() { return api_ctx_; }
 
@@ -77,20 +82,19 @@ class DescrPoolAlloc {
 class DescrMultiPoolAlloc {
     uint32_t pool_step_ = 0;
     uint32_t img_sampler_based_count_ = 0, store_img_based_count_ = 0, ubuf_based_count_ = 0, sbuf_based_count_ = 0,
-             tbuf_based_count_ = 0;
+             tbuf_based_count_ = 0, acc_based_count_;
     uint32_t max_img_sampler_count_ = 0, max_store_img_count_ = 0, max_ubuf_count_ = 0, max_sbuf_count_ = 0,
-             max_tbuf_count_ = 0;
+             max_tbuf_count_ = 0, max_acc_count_ = 0;
     SmallVector<DescrPoolAlloc, 16> pools_;
 
   public:
     DescrMultiPoolAlloc(ApiContext *api_ctx, uint32_t pool_step, uint32_t max_img_sampler_count,
                         uint32_t max_store_img_count, uint32_t max_ubuf_count, uint32_t max_sbuf_count,
-                        uint32_t max_tbuf_count, uint32_t initial_sets_count);
+                        uint32_t max_tbuf_count, uint32_t max_acc_count, uint32_t initial_sets_count);
 
     ApiContext *api_ctx() { return pools_.front().api_ctx(); }
 
-    VkDescriptorSet Alloc(uint32_t img_sampler_count, uint32_t store_img_count, uint32_t ubuf_count,
-                          uint32_t sbuf_count, uint32_t tbuf_count, VkDescriptorSetLayout layout);
+    VkDescriptorSet Alloc(const DescrSizes &sizes, VkDescriptorSetLayout layout);
     bool Reset();
 };
 } // namespace Ren

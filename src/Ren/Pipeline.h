@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fwd.h"
+#include "Buffer.h"
 #include "Program.h"
 #include "RastState.h"
 
@@ -8,7 +9,7 @@ namespace Ren {
 struct ApiContext;
 
 enum class ePipelineType : uint8_t {
-    Undefined, Graphics, Compute
+    Undefined, Graphics, Compute, Raytracing
 };
 
 class Pipeline : public RefCounter {
@@ -21,6 +22,15 @@ class Pipeline : public RefCounter {
 #if defined(USE_VK_RENDER)
     VkPipelineLayout layout_ = VK_NULL_HANDLE;
     VkPipeline handle_ = VK_NULL_HANDLE;
+
+    SmallVector<VkRayTracingShaderGroupCreateInfoKHR, 4> rt_shader_groups_;
+
+    VkStridedDeviceAddressRegionKHR rgen_region_ = {};
+    VkStridedDeviceAddressRegionKHR miss_region_ = {};
+    VkStridedDeviceAddressRegionKHR hit_region_ = {};
+    VkStridedDeviceAddressRegionKHR call_region_ = {};
+
+    Buffer rt_sbt_buf_;
 #endif
 
     void Destroy();
@@ -45,6 +55,11 @@ class Pipeline : public RefCounter {
 #if defined(USE_VK_RENDER)
     VkPipelineLayout layout() const { return layout_; }
     VkPipeline handle() const { return handle_; }
+
+    const VkStridedDeviceAddressRegionKHR *rgen_table() const { return &rgen_region_; }
+    const VkStridedDeviceAddressRegionKHR *miss_table() const { return &miss_region_; }
+    const VkStridedDeviceAddressRegionKHR *hit_table() const { return &hit_region_; }
+    const VkStridedDeviceAddressRegionKHR *call_table() const { return &call_region_; }
 #endif
 
     bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,

@@ -68,8 +68,7 @@ void Ren::Sampler::Destroy() {
 void Ren::Sampler::Init(ApiContext *api_ctx, const SamplingParams params) {
     Destroy();
 
-    VkSamplerCreateInfo sampler_info = {};
-    sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
     sampler_info.magFilter = g_vk_min_mag_filter[size_t(params.filter)];
     sampler_info.minFilter = g_vk_min_mag_filter[size_t(params.filter)];
     sampler_info.addressModeU = g_vk_wrap_mode[size_t(params.wrap)];

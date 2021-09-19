@@ -11,11 +11,14 @@ const VkPipelineStageFlags g_stage_flags_vk[] = {
     VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT,                                                  // GeometryShader
     VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,                                                  // FragmentShader
     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,                                                   // ComputeShader
+    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,                                           // RayTracingShader
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,                                          // ColorAttachment
     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // DepthAttachment
     VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,                                                    // DrawIndirect
-    VK_PIPELINE_STAGE_TRANSFER_BIT                                                          // Transfer
+    VK_PIPELINE_STAGE_TRANSFER_BIT,                                                         // Transfer
+    VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR                                  // AccStructureBuild
 };
+
 static_assert(uint16_t(eStageBits::VertexInput) == 0b00000001u, "!");
 static_assert(uint16_t(eStageBits::VertexShader) == 0b00000010u, "!");
 static_assert(uint16_t(eStageBits::TessCtrlShader) == 0b00000100u, "!");
@@ -23,10 +26,12 @@ static_assert(uint16_t(eStageBits::TessEvalShader) == 0b00001000u, "!");
 static_assert(uint16_t(eStageBits::GeometryShader) == 0b00010000u, "!");
 static_assert(uint16_t(eStageBits::FragmentShader) == 0b00100000u, "!");
 static_assert(uint16_t(eStageBits::ComputeShader) == 0b01000000u, "!");
-static_assert(uint16_t(eStageBits::ColorAttachment) == 0b10000000u, "!");
-static_assert(uint16_t(eStageBits::DepthAttachment) == 0b100000000u, "!");
-static_assert(uint16_t(eStageBits::DrawIndirect) == 0b1000000000u, "!");
-static_assert(uint16_t(eStageBits::Transfer) == 0b10000000000u, "!");
+static_assert(uint16_t(eStageBits::RayTracingShader) == 0b10000000u, "!");
+static_assert(uint16_t(eStageBits::ColorAttachment) == 0b100000000u, "!");
+static_assert(uint16_t(eStageBits::DepthAttachment) == 0b1000000000u, "!");
+static_assert(uint16_t(eStageBits::DrawIndirect) == 0b10000000000u, "!");
+static_assert(uint16_t(eStageBits::Transfer) == 0b100000000000u, "!");
+static_assert(uint16_t(eStageBits::AccStructureBuild) == 0b1000000000000u, "!");
 
 VkPipelineStageFlags to_pipeline_stage_flags_vk(const eStageBits stage_mask) {
     uint16_t mask_u16 = uint16_t(stage_mask);
@@ -53,23 +58,29 @@ const VkImageLayout g_image_layout_per_state_vk[] = {
     VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // ShaderResource
     VK_IMAGE_LAYOUT_UNDEFINED,                        // IndirectArgument
     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // CopyDst
-    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL              // CopySrc
+    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,             // CopySrc
+    VK_IMAGE_LAYOUT_UNDEFINED,                        // BuildASRead
+    VK_IMAGE_LAYOUT_UNDEFINED,                        // BuildASWrite
+    VK_IMAGE_LAYOUT_UNDEFINED                         // RayTracing
 };
 static_assert(COUNT_OF(g_image_layout_per_state_vk) == int(eResState::_Count), "!");
 
 const VkAccessFlags g_access_flags_per_state_vk[] = {
-    0,                                                                                          // Undefined
-    VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,                                                        // VertexBuffer
-    VK_ACCESS_UNIFORM_READ_BIT,                                                                 // UniformBuffer
-    VK_ACCESS_INDEX_READ_BIT,                                                                   // IndexBuffer
-    VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,                 // RenderTarget
-    VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,                                     // UnorderedAccess,
-    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                                                // DepthRead
-    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // DepthWrite
-    VK_ACCESS_SHADER_READ_BIT,                                                                  // ShaderResource
-    VK_ACCESS_INDIRECT_COMMAND_READ_BIT,                                                        // IndirectArgument
-    VK_ACCESS_TRANSFER_WRITE_BIT,                                                               // CopyDst
-    VK_ACCESS_TRANSFER_READ_BIT                                                                 // CopySrc
+    0,                                                                                              // Undefined
+    VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,                                                            // VertexBuffer
+    VK_ACCESS_UNIFORM_READ_BIT,                                                                     // UniformBuffer
+    VK_ACCESS_INDEX_READ_BIT,                                                                       // IndexBuffer
+    VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,                     // RenderTarget
+    VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,                                         // UnorderedAccess,
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                                                    // DepthRead
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // DepthWrite
+    VK_ACCESS_SHADER_READ_BIT,                                                                      // ShaderResource
+    VK_ACCESS_INDIRECT_COMMAND_READ_BIT,                                                            // IndirectArgument
+    VK_ACCESS_TRANSFER_WRITE_BIT,                                                                   // CopyDst
+    VK_ACCESS_TRANSFER_READ_BIT,                                                                    // CopySrc
+    VK_ACCESS_SHADER_READ_BIT,                                                                      // BuildASRead
+    VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, // BuildASWrite
+    VK_ACCESS_SHADER_READ_BIT,                                                                      // RayTracing
 };
 static_assert(COUNT_OF(g_access_flags_per_state_vk) == int(eResState::_Count), "!");
 
@@ -83,15 +94,20 @@ const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
     VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,                                    // RenderTarget
     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | /*VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
         VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |*/
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,       // UnorderedAccess
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+        VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,                                       // UnorderedAccess
     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // DepthRead
     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // DepthWrite
     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | /*VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
         VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |*/
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, // ShaderResource
-    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,                                              // IndirectArgument
-    VK_PIPELINE_STAGE_TRANSFER_BIT,                                                   // CopyDst
-    VK_PIPELINE_STAGE_TRANSFER_BIT                                                    // CopySrc
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+        VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,       // ShaderResource
+    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,                    // IndirectArgument
+    VK_PIPELINE_STAGE_TRANSFER_BIT,                         // CopyDst
+    VK_PIPELINE_STAGE_TRANSFER_BIT,                         // CopySrc
+    VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, // BuildASRead
+    VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, // BuildASWrite
+    VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR            // RayTracing
 };
 static_assert(COUNT_OF(g_pipeline_stages_per_state_vk) == int(eResState::_Count), "!");
 } // namespace Ren
@@ -123,7 +139,7 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
             }
 
             auto &new_barrier = img_barriers.emplace_back();
-            new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+            new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(old_state);
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(transitions[i].new_state);
             new_barrier.oldLayout = Ren::VKImageLayoutForState(old_state);
@@ -162,7 +178,7 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
             }
 
             auto &new_barrier = buf_barriers.emplace_back();
-            new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
             new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(old_state);
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(transitions[i].new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

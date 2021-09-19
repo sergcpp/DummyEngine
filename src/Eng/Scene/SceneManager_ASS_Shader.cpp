@@ -114,7 +114,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
             }
 
             if (line.rfind("#version ") == 0) {
-                if (strcmp(ctx.platform, "pc") == 0) {
+                if (strcmp(ctx.platform, "pc") == 0 && line.rfind("es") != std::string::npos) {
                     line = "#version 430";
                 }
                 dst_stream << line << "\r\n";
@@ -149,6 +149,11 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
     if (strcmp(ctx.platform, "pc") == 0) {
         for (const bool is_vk : {false, true}) {
+            const bool is_rt = (strstr(in_file, ".rgen") || strstr(in_file, ".rint") || strstr(in_file, ".rahit") ||
+                                strstr(in_file, ".rchit") || strstr(in_file, ".rmiss") || strstr(in_file, ".rcall"));
+            if (!is_vk && is_rt) {
+                continue;
+            }
             for (const std::string &perm : permutations) {
                 std::string spv_file = out_file + perm;
 
@@ -219,6 +224,9 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
                 if (is_vk) {
                     compile_cmd += " -V ";
+                    if (is_rt) {
+                        compile_cmd += " --target-env spirv1.4 ";
+                    }
                 } else {
                     compile_cmd += " -G ";
                 }

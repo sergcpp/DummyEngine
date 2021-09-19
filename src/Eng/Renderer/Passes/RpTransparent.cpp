@@ -6,14 +6,16 @@
 #include "../Renderer_Structs.h"
 
 void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
-                          const ViewState *view_state, Ren::BufferRef vtx_buf1, Ren::BufferRef vtx_buf2,
-                          Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf, const Ren::Pipeline pipelines[],
-                          const BindlessTextureData *bindless_tex, Ren::Tex2DRef brdf_lut, Ren::Tex2DRef noise_tex,
-                          Ren::Tex2DRef cone_rt_lut, Ren::Tex2DRef dummy_black, Ren::Tex2DRef dummy_white,
-                          const char instances_buf[], const char shared_data_buf[], const char cells_buf[],
-                          const char items_buf[], const char lights_buf[], const char decals_buf[],
-                          const char shad_tex[], const char ssao_tex[], const char color_tex[], const char normal_tex[],
-                          const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]) {
+                          const ViewState *view_state, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
+                          const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
+                          const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
+                          const Ren::Tex2DRef &brdf_lut, const Ren::Tex2DRef &noise_tex,
+                          const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
+                          const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char shared_data_buf[],
+                          const char cells_buf[], const char items_buf[], const char lights_buf[],
+                          const char decals_buf[], const char shad_tex[], const char ssao_tex[], const char color_tex[],
+                          const char normal_tex[], const char spec_tex[], const char depth_tex[],
+                          const char transparent_tex_name[]) {
     view_state_ = view_state;
     pipelines_ = pipelines;
     bindless_tex_ = bindless_tex;
@@ -28,11 +30,9 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *a
     main_batch_indices_ = list.main_batch_indices;
     alpha_blend_start_index_ = alpha_blend_start_index;
 
-    vtx_buf1_ =
-        builder.ReadBuffer(std::move(vtx_buf1), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    vtx_buf2_ =
-        builder.ReadBuffer(std::move(vtx_buf2), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    ndx_buf_ = builder.ReadBuffer(std::move(ndx_buf), Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
@@ -45,8 +45,8 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *a
         builder.ReadBuffer(decals_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     shad_tex_ = builder.ReadTexture(shad_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     ssao_tex_ = builder.ReadTexture(ssao_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    materials_buf_ = builder.ReadBuffer(std::move(materials_buf), Ren::eResState::ShaderResource,
-                                        Ren::eStageBits::VertexShader, *this);
+    materials_buf_ =
+        builder.ReadBuffer(materials_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
 #if defined(USE_GL_RENDER)
     textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
                                        Ren::eStageBits::VertexShader, *this);
@@ -61,17 +61,16 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *a
         }
     }
 
-    brdf_lut_ = builder.ReadTexture(std::move(brdf_lut), Ren::eResState::ShaderResource,
-                                    Ren::eStageBits::FragmentShader, *this);
-    noise_tex_ = builder.ReadTexture(std::move(noise_tex), Ren::eResState::ShaderResource,
+    brdf_lut_ = builder.ReadTexture(brdf_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    noise_tex_ = builder.ReadTexture(noise_tex, Ren::eResState::ShaderResource,
                                      Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    cone_rt_lut_ = builder.ReadTexture(std::move(cone_rt_lut), Ren::eResState::ShaderResource,
-                                       Ren::eStageBits::FragmentShader, *this);
+    cone_rt_lut_ =
+        builder.ReadTexture(cone_rt_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
 
-    dummy_black_ = builder.ReadTexture(std::move(dummy_black), Ren::eResState::ShaderResource,
-                                       Ren::eStageBits::FragmentShader, *this);
-    dummy_white_ = builder.ReadTexture(std::move(dummy_white), Ren::eResState::ShaderResource,
-                                       Ren::eStageBits::FragmentShader, *this);
+    dummy_black_ =
+        builder.ReadTexture(dummy_black, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    dummy_white_ =
+        builder.ReadTexture(dummy_white, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
 
     color_tex_ = builder.WriteTexture(color_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
     normal_tex_ =

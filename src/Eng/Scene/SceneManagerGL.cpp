@@ -17,25 +17,25 @@ void SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
-    if (!scene_data_.persistant_data.materials_buf) {
-        scene_data_.persistant_data.materials_buf =
+    if (!scene_data_.persistent_data.materials_buf) {
+        scene_data_.persistent_data.materials_buf =
             ren_ctx_.LoadBuffer("Materials Buffer", Ren::eBufType::Storage, req_mat_buf_size);
     }
 
-    if (scene_data_.persistant_data.materials_buf->size() < req_mat_buf_size) {
-        scene_data_.persistant_data.materials_buf->Resize(req_mat_buf_size);
+    if (scene_data_.persistent_data.materials_buf->size() < req_mat_buf_size) {
+        scene_data_.persistent_data.materials_buf->Resize(req_mat_buf_size);
     }
 
     const uint32_t max_tex_count = std::max(1u, REN_MAX_TEX_PER_MATERIAL * max_mat_count);
     const uint32_t req_tex_buf_size = max_tex_count * sizeof(GLuint64);
 
-    if (!scene_data_.persistant_data.textures_buf) {
-        scene_data_.persistant_data.textures_buf =
+    if (!scene_data_.persistent_data.textures_buf) {
+        scene_data_.persistent_data.textures_buf =
             ren_ctx_.LoadBuffer("Textures Buffer", Ren::eBufType::Storage, req_tex_buf_size);
     }
 
-    if (scene_data_.persistant_data.textures_buf->size() < req_tex_buf_size) {
-        scene_data_.persistant_data.textures_buf->Resize(req_tex_buf_size);
+    if (scene_data_.persistent_data.textures_buf->size() < req_tex_buf_size) {
+        scene_data_.persistent_data.textures_buf->Resize(req_tex_buf_size);
     }
 
     auto &update_range = scene_data_.mat_update_ranges[0];
@@ -89,14 +89,14 @@ void SceneManager::UpdateMaterialsBuffer() {
     if (texture_data) {
         textures_stage_buf.FlushMappedRange(0, (update_range.second - update_range.first) * TexSizePerMaterial);
         textures_stage_buf.Unmap();
-        scene_data_.persistant_data.textures_buf->UpdateSubRegion(
+        scene_data_.persistent_data.textures_buf->UpdateSubRegion(
             update_range.first * TexSizePerMaterial, (update_range.second - update_range.first) * TexSizePerMaterial,
             textures_stage_buf);
     }
 
     materials_stage_buf.FlushMappedRange(0, (update_range.second - update_range.first) * sizeof(MaterialData));
     materials_stage_buf.Unmap();
-    scene_data_.persistant_data.materials_buf->UpdateSubRegion(
+    scene_data_.persistent_data.materials_buf->UpdateSubRegion(
         update_range.first * sizeof(MaterialData), (update_range.second - update_range.first) * sizeof(MaterialData),
         materials_stage_buf);
 
@@ -114,8 +114,8 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
 
     // find of create pipeline
     uint32_t new_index = 0xffffffff;
-    for (auto it = std::begin(scene_data_.persistant_data.pipelines);
-         it != std::end(scene_data_.persistant_data.pipelines); ++it) {
+    for (auto it = std::begin(scene_data_.persistent_data.pipelines);
+         it != std::end(scene_data_.persistent_data.pipelines); ++it) {
         if (it->prog() == prog && it->rast_state() == rast_state) {
             new_index = it.index();
             break;
@@ -123,8 +123,8 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
     }
 
     if (new_index == 0xffffffff) {
-        new_index = scene_data_.persistant_data.pipelines.emplace();
-        Ren::Pipeline &new_pipeline = scene_data_.persistant_data.pipelines.at(new_index);
+        new_index = scene_data_.persistent_data.pipelines.emplace();
+        Ren::Pipeline &new_pipeline = scene_data_.persistent_data.pipelines.at(new_index);
 
         const bool res =
             new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, ren_ctx_.log());
@@ -133,5 +133,5 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
         }
     }
 
-    out_pipelines.emplace_back(&scene_data_.persistant_data.pipelines, new_index);
+    out_pipelines.emplace_back(&scene_data_.persistent_data.pipelines, new_index);
 }

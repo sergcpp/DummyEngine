@@ -295,6 +295,13 @@ RpResource RpBuilder::WriteTexture(RpResource handle, Ren::eResState desired_sta
     ++tex.write_count;
     ++pass.ref_count_;
 
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.output_.size(); i++) {
+        assert(pass.output_[i].type != eRpResType::Texture || pass.output_[i].index != ret.index);
+    }
+#endif
+    pass.output_.push_back(ret);
+
     return ret;
 }
 
@@ -308,6 +315,13 @@ RpResource RpBuilder::WriteTexture(const char *name, Ren::eResState desired_stat
 
     ++tex.write_count;
     ++pass.ref_count_;
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.output_.size(); i++) {
+        assert(pass.output_[i].type != eRpResType::Texture || pass.output_[i].index != ret.index);
+    }
+#endif
+    pass.output_.push_back(ret);
 
     return ret;
 }
@@ -346,7 +360,6 @@ RpResource RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, 
         assert(pass.output_[i].type != eRpResType::Texture || pass.output_[i].index != ret.index);
     }
 #endif
-
     pass.output_.push_back(ret);
 
     return ret;

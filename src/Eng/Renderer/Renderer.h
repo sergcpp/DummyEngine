@@ -16,6 +16,7 @@ extern "C" {
 #include "Passes/RpDOF.h"
 #include "Passes/RpDebugEllipsoids.h"
 #include "Passes/RpDebugProbes.h"
+#include "Passes/RpDebugRT.h"
 #include "Passes/RpDebugTextures.h"
 #include "Passes/RpDepthFill.h"
 #include "Passes/RpDepthHierarchy.h"
@@ -28,6 +29,7 @@ extern "C" {
 #include "Passes/RpSSAO.h"
 #include "Passes/RpSampleBrightness.h"
 #include "Passes/RpReadBrightness.h"
+#include "Passes/RpRTReflections.h"
 #include "Passes/RpShadowMaps.h"
 #include "Passes/RpSkinning.h"
 #include "Passes/RpSkydome.h"
@@ -98,7 +100,7 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*|
+         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*| DebugRT*/ /*|
          DebugEllipsoids*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
@@ -198,6 +200,7 @@ class Renderer {
     RpSSRTraceHQ rp_ssr_trace_hq_;
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
+    RpRTReflections rp_rt_reflections_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
     RpTAACopyTex rp_taa_copy_tex_;
@@ -206,7 +209,9 @@ class Renderer {
     RpReadBrightness rp_read_brightness_;
     RpCombine rp_combine_ = {prim_draw_};
 
-#if defined(USE_GL_RENDER)
+#if defined(USE_VK_RENDER)
+    RpDebugRT rp_debug_rt_;
+#elif defined(USE_GL_RENDER)
     RpResolve rp_resolve_ = {prim_draw_};
     RpDOF rp_dof_ = {prim_draw_};
     RpFXAA rp_fxaa_ = {prim_draw_};

@@ -32,8 +32,8 @@ class RpCombine : public RenderPassBase {
   public:
     RpCombine(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, Ren::Tex2DRef dummy_black, float gamma, float exposure,
-               float fade, bool tonemap, const char color_tex_name[], const char blur_tex_name[],
+    void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::Tex2DRef &dummy_black, float gamma,
+               float exposure, float fade, bool tonemap, const char color_tex_name[], const char blur_tex_name[],
                const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 

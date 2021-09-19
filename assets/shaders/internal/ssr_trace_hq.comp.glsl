@@ -142,8 +142,6 @@ float IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out 
 	hit_point_vs.xyz /= hit_point_vs.w;
 	
 	out_hit_point = hit_point_vs.xyz;
-	
-	//return 1.0;
 
 	float hit_depth_fetch = texelFetch(depth_texture, ivec2(cur_pos_ss.xy * params.resolution.xy), 0).r;
 	vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);

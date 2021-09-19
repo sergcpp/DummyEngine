@@ -65,12 +65,12 @@ void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
 }
 
 __itt_string_handle *itt_rebuild_bvh_str =
-    __itt_string_handle_create("SceneManager::RebuildBVH");
+    __itt_string_handle_create("SceneManager::RebuildSceneBVH");
 __itt_string_handle *itt_update_bvh_str =
     __itt_string_handle_create("SceneManager::UpdateBVH");
 } // namespace SceneManagerInternal
 
-void SceneManager::RebuildBVH() {
+void SceneManager::RebuildSceneBVH() {
     using namespace SceneManagerInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);

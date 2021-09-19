@@ -13,6 +13,7 @@
 
 #include "ProbeStorage.h"
 
+#include "Comp/AccStructure.h"
 #include "Comp/AnimState.h"
 #include "Comp/Decal.h"
 #include "Comp/Drawable.h"
@@ -26,17 +27,18 @@
 #include "Comp/VegState.h"
 
 enum eObjectComp : uint32_t {
-    CompTransform   = 0,
-    CompDrawable    = 1,
-    CompOccluder    = 2,
-    CompLightmap    = 3,
-    CompLightSource = 4,
-    CompDecal       = 5,
-    CompProbe       = 6,
-    CompAnimState   = 7,
-    CompVegState    = 8,
-    CompSoundSource = 9,
-    CompPhysics     = 10,
+    CompTransform    = 0,
+    CompDrawable     = 1,
+    CompOccluder     = 2,
+    CompLightmap     = 3,
+    CompLightSource  = 4,
+    CompDecal        = 5,
+    CompProbe        = 6,
+    CompAnimState    = 7,
+    CompVegState     = 8,
+    CompSoundSource  = 9,
+    CompPhysics      = 10,
+    CompAccStructure = 11,
 };
 
 enum eObjectCompBit : uint32_t {
@@ -51,6 +53,7 @@ enum eObjectCompBit : uint32_t {
     CompVegStateBit     = (1u << CompVegState),
     CompSoundSourceBit  = (1u << CompSoundSource),
     CompPhysicsBit      = (1u << CompPhysics),
+    CompAccStructureBit = (1u << CompAccStructure)
 };
 
 const int MAX_COMPONENT_TYPES = 32;
@@ -147,11 +150,17 @@ struct PersistentGpuData {
 #if defined(USE_VK_RENDER)
     std::unique_ptr<Ren::DescrPool>         textures_descr_pool;
     VkDescriptorSetLayout                   textures_descr_layout = VK_NULL_HANDLE;
+    std::unique_ptr<Ren::DescrPool>         rt_textures_descr_pool;
+    VkDescriptorSetLayout                   rt_textures_descr_layout = VK_NULL_HANDLE;
     Ren::SmallVector<VkDescriptorSet, 1024> textures_descr_sets[4];
+    VkDescriptorSet                         rt_textures_descr_sets[4];
 #elif defined(USE_GL_RENDER)
     Ren::BufferRef                          textures_buf;
 #endif
     Ren::PipelineStorage                    pipelines;
+
+    Ren::BufferRef                          rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_blas_buf;
+    std::unique_ptr<Ren::IAccStructure>     rt_tlas;
 
     PersistentGpuData();
     ~PersistentGpuData();
@@ -167,7 +176,7 @@ struct SceneData {
     Ren::Texture2DStorage                   textures;
     Ren::MaterialStorage                    materials;
     std::vector<uint32_t>                   material_changes;
-    PersistentGpuData                       persistant_data = {};
+    PersistentGpuData                       persistent_data = {};
     std::pair<uint32_t, uint32_t>           mat_update_ranges[4];
     Ren::MeshStorage                        meshes;
 

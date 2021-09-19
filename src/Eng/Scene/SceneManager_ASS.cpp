@@ -604,6 +604,12 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
         g_asset_handlers["png"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
         g_asset_handlers["dds"] = {"dds", HCopy};
+        g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HPreprocessShader};
+        g_asset_handlers["rint.glsl"] = {"rint.glsl", HPreprocessShader};
+        g_asset_handlers["rchit.glsl"] = {"rchit.glsl", HPreprocessShader};
+        g_asset_handlers["rahit.glsl"] = {"rahit.glsl", HPreprocessShader};
+        g_asset_handlers["rmiss.glsl"] = {"rmiss.glsl", HPreprocessShader};
+        g_asset_handlers["rcall.glsl"] = {"rcall.glsl", HPreprocessShader};
     } else if (strcmp(platform, "android") == 0) {
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};

@@ -19,7 +19,10 @@ const eStageBits g_stage_bits_per_state[] = {
         eStageBits::FragmentShader | eStageBits::ComputeShader, // ShaderResource
     eStageBits::DrawIndirect,                                   // IndirectArgument
     eStageBits::Transfer,                                       // CopyDst
-    eStageBits::Transfer                                        // CopySrc
+    eStageBits::Transfer,                                       // CopySrc
+    eStageBits::AccStructureBuild,                              // BuildASRead
+    eStageBits::AccStructureBuild,                              // BuildASWrite
+    eStageBits::RayTracingShader                                // RayTracing
 };
 static_assert(sizeof(g_stage_bits_per_state) / sizeof(g_stage_bits_per_state[0]) == int(eResState::_Count), "!");
 } // namespace Ren

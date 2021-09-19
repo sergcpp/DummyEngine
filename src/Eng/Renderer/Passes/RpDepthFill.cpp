@@ -5,11 +5,11 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
-                        Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf,
-                        const BindlessTextureData *bindless_tex, const char instances_buf[],
-                        const char shared_data_buf[], Ren::Tex2DRef noise_tex, const char main_depth_tex[],
-                        const char main_velocity_tex[]) {
+void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
+                        const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
+                        const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex,
+                        const char instances_buf[], const char shared_data_buf[], const Ren::Tex2DRef &noise_tex,
+                        const char main_depth_tex[], const char main_velocity_tex[]) {
     view_state_ = view_state;
     bindless_tex_ = bindless_tex;
 
@@ -18,17 +18,15 @@ void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewStat
     zfill_batch_indices = list.zfill_batch_indices;
     zfill_batches = list.zfill_batches;
 
-    vtx_buf1_ =
-        builder.ReadBuffer(std::move(vtx_buf1), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    vtx_buf2_ =
-        builder.ReadBuffer(std::move(vtx_buf2), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    ndx_buf_ = builder.ReadBuffer(std::move(ndx_buf), Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    materials_buf_ = builder.ReadBuffer(std::move(materials_buf), Ren::eResState::ShaderResource,
-                                        Ren::eStageBits::VertexShader, *this);
+    materials_buf_ =
+        builder.ReadBuffer(materials_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
 #if defined(USE_GL_RENDER)
     if (bindless_tex->textures_buf) {
         textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
