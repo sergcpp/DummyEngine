@@ -53,10 +53,10 @@ class RpDepthFill : public RenderPassBase {
     Ren::Framebuffer depth_fill_fb_[Ren::MaxFramesInFlight], depth_fill_vel_fb_[Ren::MaxFramesInFlight];
 
   public:
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
-               Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf,
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const Ren::BufferRef &vtx_buf1,
+               const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
                const BindlessTextureData *bindless_tex, const char instances_buf[], const char shared_data_buf[],
-               Ren::Tex2DRef noise_tex, const char main_depth_tex[], const char main_velocity_tex[]);
+               const Ren::Tex2DRef &noise_tex, const char main_depth_tex[], const char main_velocity_tex[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEPTH FILL"; }

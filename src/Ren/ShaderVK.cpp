@@ -15,9 +15,20 @@ const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_FRAGMENT_BIT,                // Frag
     VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    // Tesc
     VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, // Tese
-    VK_SHADER_STAGE_COMPUTE_BIT                  // Comp
+    VK_SHADER_STAGE_COMPUTE_BIT,                 // Comp
+    VK_SHADER_STAGE_RAYGEN_BIT_KHR,              // RayGen
+    VK_SHADER_STAGE_MISS_BIT_KHR,                // Miss
+    VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR,         // ClosestHit
+    VK_SHADER_STAGE_ANY_HIT_BIT_KHR,             // AnyHit
+    VK_SHADER_STAGE_INTERSECTION_BIT_KHR         // Intersection
 };
 static_assert(COUNT_OF(g_shader_stages_vk) == int(eShaderType::_Count), "!");
+
+// TODO: not rely on this order somehow
+static_assert(int(eShaderType::RayGen) < int(eShaderType::Miss), "!");
+static_assert(int(eShaderType::Miss) < int(eShaderType::ClosestHit), "!");
+static_assert(int(eShaderType::ClosestHit) < int(eShaderType::AnyHit), "!");
+static_assert(int(eShaderType::AnyHit) < int(eShaderType::Intersection), "!");
 } // namespace Ren
 
 Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const char *shader_src, eShaderType type,
@@ -69,8 +80,7 @@ void Ren::Shader::Init(const uint8_t *shader_code, const int code_size, const eS
     InitFromSPIRV(shader_code, code_size, type, status, log);
 
 #ifdef ENABLE_OBJ_LABELS
-    VkDebugUtilsObjectNameInfoEXT name_info = {};
-    name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
     name_info.objectHandle = uint64_t(module_);
     name_info.pObjectName = name_.c_str();
@@ -85,9 +95,10 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_code, const int code_size,
         return;
     }
 
+    type_ = type;
+
     { // init module
-        VkShaderModuleCreateInfo create_info = {};
-        create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+        VkShaderModuleCreateInfo create_info = {VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
         create_info.codeSize = static_cast<size_t>(code_size);
         create_info.pCode = reinterpret_cast<const uint32_t *>(shader_code);
 
@@ -112,12 +123,12 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_code, const int code_size,
     pc_ranges.clear();
 
     for (uint32_t i = 0; i < module.input_variable_count; i++) {
-        const auto &var = module.input_variables[i];
-        if (var.built_in == -1) {
+        const auto *var = module.input_variables[i];
+        if (var->built_in == -1) {
             Descr &new_item = attr_bindings.emplace_back();
-            new_item.name = String{var.name};
-            new_item.loc = var.location;
-            new_item.format = VkFormat(var.format);
+            new_item.name = String{var->name};
+            new_item.loc = var->location;
+            new_item.format = VkFormat(var->format);
         }
     }
 

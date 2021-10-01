@@ -92,7 +92,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
-    const PersistentGpuData &persistent_data() const { return scene_data_.persistant_data; }
+    const PersistentGpuData &persistent_data() const { return scene_data_.persistent_data; }
 
     SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
@@ -157,6 +157,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
+    void PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
     Ren::MaterialRef OnLoadMaterial(const char *name);
     void OnLoadPipelines(const char *name, uint32_t flags, const char *v_shader, const char *f_shader,
@@ -184,9 +185,11 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::VertexInput draw_pass_vi_;
     Ren::RenderPass rp_main_draw_;
     void UpdateMaterialsBuffer();
-    void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
+    void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags,
+                                 Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
+    void InitHWAccStructures();
 
-    void RebuildBVH();
+    void RebuildSceneBVH();
     void RemoveNode(uint32_t node_index);
 
     int scene_texture_load_counter_ = 0;

@@ -12,9 +12,9 @@
 
 #include "../assets/shaders/internal/blit_combine_interface.glsl"
 
-void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, Ren::Tex2DRef dummy_black, const float gamma,
-                      const float exposure, const float fade, const bool tonemap, const char color_tex_name[],
-                      const char blur_tex_name[], const char output_tex_name[]) {
+void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, const Ren::Tex2DRef &dummy_black,
+                      const float gamma, const float exposure, const float fade, const bool tonemap,
+                      const char color_tex_name[], const char blur_tex_name[], const char output_tex_name[]) {
     view_state_ = view_state;
     gamma_ = gamma;
     exposure_ = exposure;
@@ -28,8 +28,8 @@ void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, Ren::Tex2
         blur_tex_ =
             builder.ReadTexture(blur_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     } else {
-        blur_tex_ = builder.ReadTexture(std::move(dummy_black), Ren::eResState::ShaderResource,
-                                        Ren::eStageBits::FragmentShader, *this);
+        blur_tex_ =
+            builder.ReadTexture(dummy_black, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     }
 
     if (output_tex_name) {

@@ -115,6 +115,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBlur.cpp
                     Renderer/Passes/RpCombine.h
                     Renderer/Passes/RpCombine.cpp
+                    Renderer/Passes/RpDebugRT.h
+                    Renderer/Passes/RpDebugRT.cpp
                     Renderer/Passes/RpDepthFill.h
                     Renderer/Passes/RpDepthFill.cpp
                     Renderer/Passes/RpDepthHierarchy.h
@@ -129,6 +131,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpOpaque.cpp
                     Renderer/Passes/RpReadBrightness.h
                     Renderer/Passes/RpReadBrightness.cpp
+                    Renderer/Passes/RpRTReflections.h
+                    Renderer/Passes/RpRTReflections.cpp
                     Renderer/Passes/RpSampleBrightness.h
                     Renderer/Passes/RpSampleBrightness.cpp
                     Renderer/Passes/RpShadowMaps.h
@@ -200,9 +204,11 @@ elseif(${RENDERER} STREQUAL "VK")
                         Scene/SceneManagerVK.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderVK.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
+                        Renderer/Passes/RpDebugRT_VK.cpp
                         Renderer/Passes/RpDepthFillVK.cpp
                         Renderer/Passes/RpDepthHierarchyVK.cpp
                         Renderer/Passes/RpOpaqueVK.cpp
+                        Renderer/Passes/RpRTReflections_VK.cpp
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp
                         Renderer/Passes/RpSkydomeVK.cpp
@@ -215,6 +221,8 @@ endif()
 
 set(SCENE_COMP_SOURCES
         Scene/Comp/Common.h
+        Scene/Comp/AccStructure.h
+        Scene/Comp/AccStructure.cpp
         Scene/Comp/AnimState.h
         Scene/Comp/AnimState.cpp
         Scene/Comp/Decal.h

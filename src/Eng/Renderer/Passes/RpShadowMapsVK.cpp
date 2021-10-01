@@ -58,18 +58,21 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     VkDescriptorSetLayout simple_descr_set_layout = pi_solid_.prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
-    simple_descr_sets[0] =
-        ctx.default_descr_alloc()->Alloc(0 /* img_sampler_count */, 0 /* sample_img_count */, 0 /* ubuf_count */,
-                                         1 /* sbuf_count */, 1 /* tbuf_count */, simple_descr_set_layout);
-    simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    { // allocate descriptor sets
+        Ren::DescrSizes descr_sizes;
+        descr_sizes.sbuf_count = 1;
+        descr_sizes.tbuf_count = 1;
+
+        simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, simple_descr_set_layout);
+        simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    }
 
     { // update descriptor set
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
 
-        VkWriteDescriptorSet descr_writes[2] = {};
-
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[2];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = simple_descr_sets[0];
         descr_writes[0].dstBinding = REN_INST_BUF_SLOT;
         descr_writes[0].dstArrayElement = 0;
@@ -77,7 +80,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pTexelBufferView = &instances_buf_view;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = simple_descr_sets[0];
         descr_writes[1].dstBinding = REN_MATERIALS_SLOT;
         descr_writes[1].dstArrayElement = 0;
@@ -90,10 +93,15 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
-    vege_descr_sets[0] =
-        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 0 /* ubuf_count */,
-                                         1 /* sbuf_count */, 1 /* tbuf_count */, vege_descr_set_layout);
-    vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    { // allocate descriptor sets
+        Ren::DescrSizes descr_sizes;
+        descr_sizes.img_sampler_count = 1;
+        descr_sizes.sbuf_count = 1;
+        descr_sizes.tbuf_count = 1;
+
+        vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, vege_descr_set_layout);
+        vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    }
 
     { // update descriptor set
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
@@ -101,9 +109,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
         const VkDescriptorImageInfo img_info = noise_tex.ref->vk_desc_image_info();
 
-        VkWriteDescriptorSet descr_writes[4] = {};
-
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[4];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = vege_descr_sets[0];
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
         descr_writes[0].dstArrayElement = 0;
@@ -111,7 +118,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pBufferInfo = &ubuf_info;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = vege_descr_sets[0];
         descr_writes[1].dstBinding = REN_INST_BUF_SLOT;
         descr_writes[1].dstArrayElement = 0;
@@ -119,7 +126,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         descr_writes[1].descriptorCount = 1;
         descr_writes[1].pTexelBufferView = &instances_buf_view;
 
-        descr_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = vege_descr_sets[0];
         descr_writes[2].dstBinding = REN_NOISE_TEX_SLOT;
         descr_writes[2].dstArrayElement = 0;
@@ -127,7 +134,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pImageInfo = &img_info;
 
-        descr_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = vege_descr_sets[0];
         descr_writes[3].dstBinding = REN_MATERIALS_SLOT;
         descr_writes[3].dstArrayElement = 0;
@@ -144,8 +151,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
     {
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_.handle();
         rp_begin_info.framebuffer = shadow_fb_.handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(shadowmap_tex.ref->params.w), uint32_t(shadowmap_tex.ref->params.h)};

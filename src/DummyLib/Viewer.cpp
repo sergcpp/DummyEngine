@@ -166,15 +166,13 @@ void Viewer::Frame() {
 
     ///////////////////////////////////////////////////////////////
 
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 
     { // change layout from present_src to attachment_optimal
-        VkImageMemoryBarrier layout_transition_barrier = {};
-        layout_transition_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         layout_transition_barrier.dstAccessMask =
             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -201,8 +199,7 @@ void Viewer::Frame() {
 
 #if defined(USE_VK_RENDER)
     { // change layout from  attachment_optimal to present_src
-        VkImageMemoryBarrier layout_transition_barrier = {};
-        layout_transition_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         layout_transition_barrier.dstAccessMask =
             VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -223,8 +220,7 @@ void Viewer::Frame() {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
-    VkSubmitInfo submit_info = {};
-    submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 
     VkSemaphore wait_semaphores[] = {api_ctx->image_avail_semaphores[api_ctx->backend_frame]};
     VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
@@ -247,8 +243,7 @@ void Viewer::Frame() {
         ctx->log()->Error("Failed to submit into a queue!");
     }
 
-    VkPresentInfoKHR present_info = {};
-    present_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+    VkPresentInfoKHR present_info = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 
     present_info.waitSemaphoreCount = 1;
     present_info.pWaitSemaphores = signal_semaphores;

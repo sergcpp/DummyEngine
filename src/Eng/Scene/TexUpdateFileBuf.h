@@ -17,8 +17,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
         Realloc(24 * 1024 * 1024);
 
 #if defined(USE_VK_RENDER)
-        VkFenceCreateInfo fence_info = {};
-        fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+        VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
         VkResult res = vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
@@ -26,8 +25,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
 
         fence = Ren::SyncFence{api_ctx->device, new_fence};
 
-        VkCommandBufferAllocateInfo alloc_info = {};
-        alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
         alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         alloc_info.commandPool = api_ctx->command_pool;
         alloc_info.commandBufferCount = 1;

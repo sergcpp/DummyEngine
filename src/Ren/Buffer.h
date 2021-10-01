@@ -29,7 +29,7 @@ enum class eType : uint8_t {
     Int32,
     _Count
 };
-enum class eBufType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, Storage, Stage, _Count };
+enum class eBufType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, Storage, Stage, AccStructure, ShaderBinding, _Count };
 
 const uint8_t BufMapRead = (1u << 0u);
 const uint8_t BufMapWrite = (1u << 1u);
@@ -105,6 +105,7 @@ class Buffer : public RefCounter, public LinearAlloc {
     ApiContext *api_ctx() const { return api_ctx_; }
     VkBuffer vk_handle() const { return handle_.buf; }
     VkDeviceMemory mem() const { return mem_; }
+    VkDeviceAddress vk_device_address() const;
 #elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t id() const { return handle_.id; }
 #endif

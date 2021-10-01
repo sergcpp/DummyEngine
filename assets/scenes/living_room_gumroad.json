@@ -37,6 +37,9 @@
 			}, 
 			"lightmap" : {
 				"res" : 1024
+			},
+			"acc_structure" : {
+				"mesh_file" : "room.mesh"
 			}
 		}, 
 		{
@@ -71,6 +74,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "radiator.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "radiator.mesh"
 			}
 		}, 
 		{
@@ -87,6 +93,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "sofa.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "sofa.mesh"
 			}
 		}, 
@@ -106,6 +115,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "wall_picture_0.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "wall_picture_0.mesh"
 			}
 		}, 
 		{
@@ -123,6 +135,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "wood_crate.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "wood_crate.mesh"
 			}
 		}, 
 		{
@@ -139,6 +154,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "wood_crate.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "wood_crate.mesh"
 			}
 		}, 
@@ -160,6 +178,9 @@
 			}, 
 			"lightmap" : {
 				"res" : 512
+			},
+			"acc_structure" : {
+				"mesh_file" : "carpet.mesh"
 			}
 		}, 
 		{
@@ -176,6 +197,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "books.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "books.mesh"
 			}
 		}, 
@@ -194,6 +218,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "box.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "box.mesh"
 			}
 		}, 
 		{
@@ -210,6 +237,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "lamp.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "lamp.mesh"
 			}
 		}, 
@@ -228,6 +258,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "laptop.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "laptop.mesh"
 			}
 		}, 
 		{
@@ -244,6 +277,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "ornament.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "ornament.mesh"
 			}
 		}, 
@@ -262,6 +298,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "ornaments.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "ornaments.mesh"
 			}
 		}, 
 		{
@@ -278,6 +317,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "plant_01.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "plant_01.mesh"
 			}
 		}, 
@@ -296,6 +338,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "plant_02.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "plant_02.mesh"
 			}
 		}, 
 		{
@@ -312,6 +357,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "plant_03.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "plant_03.mesh"
 			}
 		}, 
@@ -330,6 +378,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "plant_crate.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "plant_crate.mesh"
 			}
 		}, 
 		{
@@ -346,6 +397,9 @@
 				]
 			}, 
 			"drawable" : {
+				"mesh_file" : "small_lamp.mesh"
+			},
+			"acc_structure" : {
 				"mesh_file" : "small_lamp.mesh"
 			}
 		}, 
@@ -364,24 +418,6 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "curtains.mesh", 
-				"visible_to_shadow" : false
-			}
-		}, 
-		{
-			"transform" : {
-				"pos" : [
-					4, 
-					0.2, 
-					-4
-				], 
-				"rot" : [
-					0, 
-					90, 
-					0
-				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "mv_40.mesh", 
 				"visible_to_shadow" : false
 			}
 		}, 

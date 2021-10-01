@@ -15,8 +15,16 @@ void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bind
                        SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
 bool IsMainThread();
 
-const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, GL_TESS_CONTROL_SHADER, GL_TESS_EVALUATION_SHADER,
-                                GL_COMPUTE_SHADER};
+const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER,
+                                GL_FRAGMENT_SHADER,
+                                GL_TESS_CONTROL_SHADER,
+                                GL_TESS_EVALUATION_SHADER,
+                                GL_COMPUTE_SHADER,
+                                0xffffffff /* RayGen */,
+                                0xffffffff /* ClosestHit */,
+                                0xffffffff /* AnyHit */,
+                                0xffffffff /* Miss */,
+                                0xffffffff /*Intersection*/};
 static_assert(COUNT_OF(GLShaderTypes) == int(Ren::eShaderType::_Count), "!");
 } // namespace Ren
 
@@ -129,11 +137,11 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
     blck_bindings.clear();
 
     for (uint32_t i = 0; i < module.input_variable_count; i++) {
-        const auto &var = module.input_variables[i];
-        if (var.built_in == -1) {
+        const auto *var = module.input_variables[i];
+        if (var->built_in == -1) {
             Descr &new_item = attr_bindings.emplace_back();
-            new_item.name = String{var.name};
-            new_item.loc = var.location;
+            new_item.name = String{var->name};
+            new_item.loc = var->location;
         }
     }
 

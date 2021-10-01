@@ -24,6 +24,16 @@ Ren::eShaderType ShaderTypeFromName(const char *name, const int len) {
         type = Ren::eShaderType::Tese;
     } else if (std::strncmp(name + len - 10, ".comp.glsl", 10) == 0) {
         type = Ren::eShaderType::Comp;
+    } else if (std::strncmp(name + len - 10, ".rgen.glsl", 10) == 0) {
+        type = Ren::eShaderType::RayGen;
+    } else if (std::strncmp(name + len - 11, ".rchit.glsl", 11) == 0) {
+        type = Ren::eShaderType::ClosestHit;
+    } else if (std::strncmp(name + len - 11, ".rahit.glsl", 11) == 0) {
+        type = Ren::eShaderType::AnyHit;
+    } else if (std::strncmp(name + len - 11, ".rmiss.glsl", 11) == 0) {
+        type = Ren::eShaderType::Miss;
+    } else if (std::strncmp(name + len - 10, ".rint.glsl", 10) == 0) {
+        type = Ren::eShaderType::Intersection;
     } else {
         type = Ren::eShaderType::_Count;
     }
@@ -151,6 +161,41 @@ Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name,
     }
     return ret;
 }
+
+#if defined(USE_VK_RENDER)
+Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, const char *raygen_name,
+                                          const char *closesthit_name, const char *anyhit_name, const char *miss_name,
+                                          const char *intersection_name) {
+    Ren::eProgLoadStatus status;
+    Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
+    if (!ret->ready()) {
+        ctx.log()->Info("Loading %s", name);
+        Ren::ShaderRef raygen_ref = LoadShader(ctx, raygen_name);
+
+        Ren::ShaderRef closesthit_ref, anyhit_ref;
+        if (closesthit_name) {
+            closesthit_ref = LoadShader(ctx, closesthit_name);
+        }
+        if (anyhit_name) {
+            anyhit_ref = LoadShader(ctx, anyhit_name);
+        }
+
+        Ren::ShaderRef miss_ref = LoadShader(ctx, miss_name);
+
+        Ren::ShaderRef intersection_ref;
+        if (intersection_name) {
+            intersection_ref = LoadShader(ctx, intersection_name);
+        }
+
+        ret->Init(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
+                  std::move(intersection_ref), &status, ctx.log());
+        if (status == Ren::eProgLoadStatus::SetToDefault) {
+            ctx.log()->Error("Error loading program %s", name);
+        }
+    }
+    return ret;
+}
+#endif
 
 Ren::ShaderRef ShaderLoader::LoadShader(Ren::Context &ctx, const char *name) {
     using namespace ShaderLoaderInternal;

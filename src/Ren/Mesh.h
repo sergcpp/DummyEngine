@@ -2,6 +2,7 @@
 
 #include <memory>
 
+#include "AccStructure.h"
 #include "Anim.h"
 #include "Buffer.h"
 #include "Material.h"
@@ -142,6 +143,8 @@ class Mesh : public RefCounter {
     void Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
               BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
               BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
+
+    std::unique_ptr<IAccStructure> blas;
 };
 
 typedef StrongRef<Mesh> MeshRef;
