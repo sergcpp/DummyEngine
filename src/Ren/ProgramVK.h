@@ -42,6 +42,8 @@ class Program : public RefCounter {
     Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
             ShaderRef tes_ref, eProgLoadStatus *status, ILog *log);
     Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
+    Program(const char *name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
+            ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
 
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -53,7 +55,10 @@ class Program : public RefCounter {
     uint32_t flags() const { return flags_; }
     bool ready() const {
         return (shaders_[int(eShaderType::Vert)] && shaders_[int(eShaderType::Frag)]) ||
-               shaders_[int(eShaderType::Comp)];
+               shaders_[int(eShaderType::Comp)] ||
+               (shaders_[int(eShaderType::RayGen)] &&
+                (shaders_[int(eShaderType::ClosestHit)] || shaders_[int(eShaderType::AnyHit)]) &&
+                shaders_[int(eShaderType::Miss)]);
     }
     bool has_tessellation() const { return shaders_[int(eShaderType::Tesc)] && shaders_[int(eShaderType::Tese)]; }
     const String &name() const { return name_; }
@@ -91,6 +96,8 @@ class Program : public RefCounter {
     void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, eProgLoadStatus *status,
               ILog *log);
     void Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
+    void Init(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
+              ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
 };
 
 typedef StrongRef<Program> ProgramRef;

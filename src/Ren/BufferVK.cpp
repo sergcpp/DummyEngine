@@ -12,16 +12,25 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const eBufType type) {
     VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
     if (type == eBufType::VertexAttribs) {
-        flags |= (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        flags |= (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                  VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
     } else if (type == eBufType::VertexIndices) {
-        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
     } else if (type == eBufType::Texture) {
         flags |= (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     } else if (type == eBufType::Uniform) {
         flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     } else if (type == eBufType::Storage) {
-        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
     } else if (type == eBufType::Stage) {
+    } else if (type == eBufType::AccStructure) {
+        flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+    } else if (type == eBufType::ShaderBinding) {
+        flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
     }
 
     return flags;
@@ -74,6 +83,12 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     return (*this);
 }
 
+VkDeviceAddress Ren::Buffer::vk_device_address() const {
+    VkBufferDeviceAddressInfo addr_info = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO};
+    addr_info.buffer = handle_.buf;
+    return vkGetBufferDeviceAddressKHR(api_ctx_->device, &addr_info);
+}
+
 uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf, void *_cmd_buf,
                                      const uint32_t init_off) {
     const uint32_t alloc_off = Alloc(req_size, tag);
@@ -87,7 +102,7 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
 
             if (init_buf->resource_state != eResState::Undefined && init_buf->resource_state != eResState::CopySrc) {
                 auto &new_barrier = barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = VKAccessFlagsForState(init_buf->resource_state);
                 new_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -102,7 +117,7 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
 
             if (this->resource_state != eResState::Undefined && this->resource_state != eResState::CopyDst) {
                 auto &new_barrier = barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
                 new_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -147,7 +162,7 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
 
     if (init_buf.resource_state != eResState::Undefined && init_buf.resource_state != eResState::CopySrc) {
         auto &new_barrier = barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(init_buf.resource_state);
         new_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -162,7 +177,7 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
 
     if (this->resource_state != eResState::Undefined && this->resource_state != eResState::CopyDst) {
         auto &new_barrier = barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -213,8 +228,7 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
         size_ *= 2;
     }
 
-    VkBufferCreateInfo buf_create_info = {};
-    buf_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     buf_create_info.size = VkDeviceSize(new_size);
     buf_create_info.usage = GetVkBufferUsageFlags(type_);
     buf_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -224,8 +238,7 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     assert(res == VK_SUCCESS && "Failed to create vertex buffer!");
 
 #ifdef ENABLE_OBJ_LABELS
-    VkDebugUtilsObjectNameInfoEXT name_info = {};
-    name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+    VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_BUFFER;
     name_info.objectHandle = uint64_t(new_buf);
     name_info.pObjectName = name_.c_str();
@@ -235,11 +248,17 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     VkMemoryRequirements memory_requirements = {};
     vkGetBufferMemoryRequirements(api_ctx_->device, new_buf, &memory_requirements);
 
-    VkMemoryAllocateInfo buf_alloc_info = {};
-    buf_alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    VkMemoryAllocateInfo buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     buf_alloc_info.allocationSize = memory_requirements.size;
     buf_alloc_info.memoryTypeIndex =
         FindMemoryType(&api_ctx_->mem_properties, memory_requirements.memoryTypeBits, GetVkMemoryPropertyFlags(type_));
+
+    VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
+    additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
+
+    if (type_ != eBufType::Stage) {
+        buf_alloc_info.pNext = &additional_flags;
+    }
 
     VkDeviceMemory buffer_mem = {};
     res = vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
@@ -322,8 +341,7 @@ void Ren::Buffer::FlushMappedRange(uint32_t offset, const uint32_t size) {
     // offset argument is relative to mapped range
     offset += mapped_offset_;
 
-    VkMappedMemoryRange range;
-    range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
     range.memory = mem_;
     range.offset = VkDeviceSize(offset);
     range.size = VkDeviceSize(size);
@@ -366,7 +384,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
 
     if (src.resource_state != eResState::Undefined && src.resource_state != eResState::CopySrc) {
         auto &new_barrier = barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(src.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -381,7 +399,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
 
     if (dst.resource_state != eResState::Undefined && dst.resource_state != eResState::CopyDst) {
         auto &new_barrier = barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(dst.resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;

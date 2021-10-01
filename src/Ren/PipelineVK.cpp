@@ -56,6 +56,8 @@ const VkBlendFactor g_blend_factor_vk[] = {
 };
 static_assert(COUNT_OF(g_blend_factor_vk) == int(eBlendFactor::_Count), "!");
 
+uint32_t align_up(const uint32_t size, const uint32_t alignment) { return (size + alignment - 1) & ~(alignment - 1); }
+
 } // namespace Ren
 
 Ren::Pipeline &Ren::Pipeline::operator=(Pipeline &&rhs) noexcept {
@@ -73,6 +75,15 @@ Ren::Pipeline &Ren::Pipeline::operator=(Pipeline &&rhs) noexcept {
     layout_ = exchange(rhs.layout_, {});
     handle_ = exchange(rhs.handle_, {});
 
+    rt_shader_groups_ = std::move(rhs.rt_shader_groups_);
+
+    rgen_region_ = exchange(rhs.rgen_region_, {});
+    miss_region_ = exchange(rhs.miss_region_, {});
+    hit_region_ = exchange(rhs.hit_region_, {});
+    call_region_ = exchange(rhs.call_region_, {});
+
+    rt_sbt_buf_ = std::move(rhs.rt_sbt_buf_);
+
     RefCounter::operator=(std::move(rhs));
 
     return (*this);
@@ -89,6 +100,14 @@ void Ren::Pipeline::Destroy() {
         api_ctx_->pipelines_to_destroy[api_ctx_->backend_frame].emplace_back(handle_);
         handle_ = VK_NULL_HANDLE;
     }
+    rt_shader_groups_.clear();
+
+    rgen_region_ = {};
+    miss_region_ = {};
+    hit_region_ = {};
+    call_region_ = {};
+
+    rt_sbt_buf_ = {};
 }
 
 bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
@@ -103,7 +122,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         }
 
         auto &stage_info = shader_stage_create_info.emplace_back();
-        stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stage_info = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
         stage_info.stage = g_shader_stages_vk[i];
         stage_info.module = prog->shader(eShaderType(i))->module();
         stage_info.pName = "main";
@@ -111,8 +130,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
     }
 
     { // create pipeline layout
-        VkPipelineLayoutCreateInfo layout_create_info = {};
-        layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        VkPipelineLayoutCreateInfo layout_create_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         layout_create_info.setLayoutCount = prog->descr_set_layouts_count();
         layout_create_info.pSetLayouts = prog->descr_set_layouts();
         layout_create_info.pushConstantRangeCount = prog->pc_range_count();
@@ -130,15 +148,15 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         SmallVector<VkVertexInputAttributeDescription, 8> attribs;
         vtx_input->FillVKDescriptions(bindings, attribs);
 
-        VkPipelineVertexInputStateCreateInfo vtx_input_state_create_info = {};
-        vtx_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        VkPipelineVertexInputStateCreateInfo vtx_input_state_create_info = {
+            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
         vtx_input_state_create_info.vertexBindingDescriptionCount = uint32_t(bindings.size());
         vtx_input_state_create_info.pVertexBindingDescriptions = bindings.cdata();
         vtx_input_state_create_info.vertexAttributeDescriptionCount = uint32_t(attribs.size());
         vtx_input_state_create_info.pVertexAttributeDescriptions = attribs.cdata();
 
-        VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {};
-        input_assembly_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        VkPipelineInputAssemblyStateCreateInfo input_assembly_state_create_info = {
+            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO};
         input_assembly_state_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         input_assembly_state_create_info.primitiveRestartEnable = VK_FALSE;
 
@@ -154,15 +172,14 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         scissors.offset = {0, 0};
         scissors.extent = {1, 1};
 
-        VkPipelineViewportStateCreateInfo viewport_state_ci = {};
-        viewport_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        VkPipelineViewportStateCreateInfo viewport_state_ci = {VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO};
         viewport_state_ci.viewportCount = 1;
         viewport_state_ci.pViewports = &viewport;
         viewport_state_ci.scissorCount = 1;
         viewport_state_ci.pScissors = &scissors;
 
-        VkPipelineRasterizationStateCreateInfo rasterization_state_ci = {};
-        rasterization_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        VkPipelineRasterizationStateCreateInfo rasterization_state_ci = {
+            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO};
         rasterization_state_ci.depthClampEnable = VK_FALSE;
         rasterization_state_ci.rasterizerDiscardEnable = VK_FALSE;
         rasterization_state_ci.polygonMode = g_poly_mode_vk[rast_state.poly.mode];
@@ -176,8 +193,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         rasterization_state_ci.depthBiasSlopeFactor = rast_state.depth_bias.slope_factor;
         rasterization_state_ci.lineWidth = 1.0f;
 
-        VkPipelineMultisampleStateCreateInfo multisample_state_ci = {};
-        multisample_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        VkPipelineMultisampleStateCreateInfo multisample_state_ci = {
+            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO};
         multisample_state_ci.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
         multisample_state_ci.sampleShadingEnable = VK_FALSE;
         multisample_state_ci.minSampleShading = 0;
@@ -194,8 +211,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         stencil_state.writeMask = rast_state.stencil.write_mask;
         stencil_state.reference = rast_state.stencil.reference;
 
-        VkPipelineDepthStencilStateCreateInfo depth_state_ci = {};
-        depth_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        VkPipelineDepthStencilStateCreateInfo depth_state_ci = {
+            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO};
         depth_state_ci.depthTestEnable = rast_state.depth.test_enabled ? VK_TRUE : VK_FALSE;
         depth_state_ci.depthWriteEnable = rast_state.depth.write_enabled ? VK_TRUE : VK_FALSE;
         depth_state_ci.depthCompareOp = g_compare_op_vk[int(rast_state.depth.compare_op)];
@@ -218,8 +235,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
             color_blend_attachment_states[i].colorWriteMask = 0xf;
         }
 
-        VkPipelineColorBlendStateCreateInfo color_blend_state_ci = {};
-        color_blend_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        VkPipelineColorBlendStateCreateInfo color_blend_state_ci = {
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO};
         color_blend_state_ci.logicOpEnable = VK_FALSE;
         color_blend_state_ci.logicOp = VK_LOGIC_OP_CLEAR;
         color_blend_state_ci.attachmentCount = uint32_t(render_pass->color_rts.size());
@@ -236,13 +253,11 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
             dynamic_states.push_back(VK_DYNAMIC_STATE_DEPTH_BIAS);
         }
 
-        VkPipelineDynamicStateCreateInfo dynamic_state_ci = {};
-        dynamic_state_ci.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        VkPipelineDynamicStateCreateInfo dynamic_state_ci = {VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
         dynamic_state_ci.dynamicStateCount = uint32_t(dynamic_states.size());
         dynamic_state_ci.pDynamicStates = dynamic_states.cdata();
 
-        VkGraphicsPipelineCreateInfo pipeline_create_info = {};
-        pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+        VkGraphicsPipelineCreateInfo pipeline_create_info = {VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
         pipeline_create_info.stageCount = uint32_t(shader_stage_create_info.size());
         pipeline_create_info.pStages = shader_stage_create_info.cdata();
         pipeline_create_info.pVertexInputState = &vtx_input_state_create_info;
@@ -278,27 +293,87 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
     return true;
 }
 
-bool Ren::Pipeline::Init(ApiContext* api_ctx, ProgramRef prog, ILog* log) {
+bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
     Destroy();
 
+    ePipelineType type = ePipelineType::Undefined;
+
     SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
+    int hit_group_index = -1;
     for (int i = 0; i < int(eShaderType::_Count); ++i) {
         const ShaderRef &sh = prog->shader(eShaderType(i));
         if (!sh) {
             continue;
         }
 
+        if (eShaderType(i) == eShaderType::Comp) {
+            assert(type == ePipelineType::Undefined);
+            type = ePipelineType::Compute;
+        } else if (eShaderType(i) == eShaderType::RayGen) {
+            assert(type == ePipelineType::Undefined);
+            type = ePipelineType::Raytracing;
+
+            auto &new_group = rt_shader_groups_.emplace_back();
+            new_group = {VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
+            new_group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+            new_group.generalShader = uint32_t(shader_stage_create_info.size());
+            new_group.anyHitShader = VK_SHADER_UNUSED_KHR;
+            new_group.closestHitShader = VK_SHADER_UNUSED_KHR;
+            new_group.intersectionShader = VK_SHADER_UNUSED_KHR;
+        } else if (eShaderType(i) == eShaderType::Miss) {
+            auto &new_group = rt_shader_groups_.emplace_back();
+            new_group = {VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
+            new_group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+            new_group.generalShader = uint32_t(shader_stage_create_info.size());
+            new_group.anyHitShader = VK_SHADER_UNUSED_KHR;
+            new_group.closestHitShader = VK_SHADER_UNUSED_KHR;
+            new_group.intersectionShader = VK_SHADER_UNUSED_KHR;
+        } else if (eShaderType(i) == eShaderType::ClosestHit) {
+            VkRayTracingShaderGroupCreateInfoKHR *hit_group = nullptr;
+            if (hit_group_index == -1) {
+                hit_group_index = int(rt_shader_groups_.size());
+                hit_group = &rt_shader_groups_.emplace_back();
+                (*hit_group) = {VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
+                hit_group->type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+                hit_group->generalShader = VK_SHADER_UNUSED_KHR;
+                hit_group->anyHitShader = VK_SHADER_UNUSED_KHR;
+                hit_group->closestHitShader = VK_SHADER_UNUSED_KHR;
+                hit_group->intersectionShader = VK_SHADER_UNUSED_KHR;
+            } else {
+                hit_group = &rt_shader_groups_[hit_group_index];
+            }
+            hit_group->closestHitShader = uint32_t(shader_stage_create_info.size());
+        } else if (eShaderType(i) == eShaderType::AnyHit) {
+            VkRayTracingShaderGroupCreateInfoKHR *hit_group = nullptr;
+            if (hit_group_index == -1) {
+                hit_group_index = int(rt_shader_groups_.size());
+                hit_group = &rt_shader_groups_.emplace_back();
+                (*hit_group) = {VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
+                hit_group->type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+                hit_group->generalShader = VK_SHADER_UNUSED_KHR;
+                hit_group->anyHitShader = VK_SHADER_UNUSED_KHR;
+                hit_group->closestHitShader = VK_SHADER_UNUSED_KHR;
+                hit_group->intersectionShader = VK_SHADER_UNUSED_KHR;
+            } else {
+                hit_group = &rt_shader_groups_[hit_group_index];
+            }
+            hit_group->anyHitShader = uint32_t(shader_stage_create_info.size());
+        }
+
         auto &stage_info = shader_stage_create_info.emplace_back();
-        stage_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+        stage_info = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
         stage_info.stage = g_shader_stages_vk[i];
         stage_info.module = prog->shader(eShaderType(i))->module();
         stage_info.pName = "main";
         stage_info.pSpecializationInfo = nullptr;
     }
 
+    if (type == ePipelineType::Undefined) {
+        return false;
+    }
+
     { // create pipeline layout
-        VkPipelineLayoutCreateInfo layout_create_info = {};
-        layout_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        VkPipelineLayoutCreateInfo layout_create_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
         layout_create_info.setLayoutCount = prog->descr_set_layouts_count();
         layout_create_info.pSetLayouts = prog->descr_set_layouts();
         layout_create_info.pushConstantRangeCount = prog->pc_range_count();
@@ -311,9 +386,8 @@ bool Ren::Pipeline::Init(ApiContext* api_ctx, ProgramRef prog, ILog* log) {
         }
     }
 
-    { // create compute pipeline
-        VkComputePipelineCreateInfo info = {};
-        info.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    if (type == ePipelineType::Compute) {
+        VkComputePipelineCreateInfo info = {VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO};
         info.stage = shader_stage_create_info[0];
         info.layout = layout_;
 
@@ -322,11 +396,106 @@ bool Ren::Pipeline::Init(ApiContext* api_ctx, ProgramRef prog, ILog* log) {
             log->Error("Failed to create pipeline!");
             return false;
         }
+    } else if (type == ePipelineType::Raytracing) {
+        VkRayTracingPipelineCreateInfoKHR info = {VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR};
+        info.pStages = shader_stage_create_info.cdata();
+        info.stageCount = uint32_t(shader_stage_create_info.size());
+        info.layout = layout_;
+        info.maxPipelineRayRecursionDepth = 1;
+        info.groupCount = uint32_t(rt_shader_groups_.size());
+        info.pGroups = rt_shader_groups_.cdata();
 
-        type_ = ePipelineType::Compute;
+        const VkResult res = vkCreateRayTracingPipelinesKHR(api_ctx->device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &info,
+                                                            nullptr, &handle_);
+        if (res != VK_SUCCESS) {
+            log->Error("Failed to create pipeline!");
+            return false;
+        }
+
+        { // create shader binding table
+            const int RgenCount = 1;
+            const int MissCount = 1;
+            const int HitCount = rt_shader_groups_.size() == 4 ? 2 : 1;
+
+            const int HandleCount = RgenCount + MissCount + HitCount;
+
+            const uint32_t handle_size = api_ctx->rt_props.shaderGroupHandleSize;
+            const uint32_t handle_size_aligned = align_up(handle_size, api_ctx->rt_props.shaderGroupHandleAlignment);
+
+            rgen_region_.stride = align_up(handle_size_aligned, api_ctx->rt_props.shaderGroupBaseAlignment);
+            rgen_region_.size = rgen_region_.stride;
+            miss_region_.stride = handle_size_aligned;
+            miss_region_.size = align_up(MissCount * handle_size_aligned, api_ctx->rt_props.shaderGroupBaseAlignment);
+            hit_region_.stride = handle_size_aligned;
+            hit_region_.size = align_up(HitCount * handle_size_aligned, api_ctx->rt_props.shaderGroupBaseAlignment);
+
+            const uint32_t data_size = HandleCount * handle_size;
+            SmallVector<uint8_t, 128> handles_data(data_size);
+
+            const VkResult res = vkGetRayTracingShaderGroupHandlesKHR(api_ctx->device, handle_, 0, HandleCount,
+                                                                      data_size, &handles_data[0]);
+            if (res != VK_SUCCESS) {
+                log->Error("Failed to get shader group handles!");
+                return false;
+            }
+
+            const VkDeviceSize sbt_size = rgen_region_.size + miss_region_.size + hit_region_.size;
+
+            rt_sbt_buf_ = Buffer("SBT Buffer", api_ctx, eBufType::ShaderBinding, uint32_t(sbt_size));
+            Buffer sbt_stage_buf = Buffer("SBT Staging Buffer", api_ctx, eBufType::Stage, uint32_t(sbt_size));
+
+            const VkDeviceAddress sbt_address = rt_sbt_buf_.vk_device_address();
+            rgen_region_.deviceAddress = sbt_address;
+            miss_region_.deviceAddress = sbt_address + rgen_region_.size;
+            hit_region_.deviceAddress = sbt_address + rgen_region_.size + miss_region_.size;
+
+            { // Init staging buffer
+                uint8_t *p_sbt_stage = sbt_stage_buf.Map(BufMapWrite);
+                uint8_t *p_dst = p_sbt_stage;
+                int handle_ndx = 0;
+                // Copy raygen
+                memcpy(p_dst, handles_data.cdata() + (handle_ndx++) * handle_size, handle_size);
+                p_dst = p_sbt_stage + rgen_region_.size;
+                // Copy miss
+                for (int i = 0; i < MissCount; ++i) {
+                    memcpy(p_dst, handles_data.cdata() + (handle_ndx++) * handle_size, handle_size);
+                    p_dst += miss_region_.stride;
+                }
+                p_dst = p_sbt_stage + rgen_region_.size + miss_region_.size;
+                // Copy hit
+                for (int i = 0; i < HitCount; ++i) {
+                    uint32_t off = (handle_ndx++) * handle_size;
+                    uint8_t debug_value[32] = {};
+                    memcpy(&debug_value, handles_data.cdata() + off, handle_size);
+                    memcpy(p_dst, handles_data.cdata() + off, handle_size);
+                    p_dst += hit_region_.stride;
+                }
+                //p_dst = p_sbt_stage + rgen_region_.size + miss_region_.size + hit_region_.size;
+
+                sbt_stage_buf.Unmap();
+            }
+
+            { // Copy data
+                VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+
+                VkBufferCopy region_to_copy = {};
+                region_to_copy.srcOffset = VkDeviceSize{0};
+                region_to_copy.dstOffset = VkDeviceSize{0};
+                region_to_copy.size = VkDeviceSize{sbt_stage_buf.size()};
+
+                vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.handle().buf, rt_sbt_buf_.handle().buf, 1, &region_to_copy);
+
+                sbt_stage_buf.resource_state = eResState::CopySrc;
+                rt_sbt_buf_.resource_state = eResState::CopyDst;
+
+                Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf,
+                                           api_ctx->temp_command_pool);
+            }
+        }
     }
 
     api_ctx_ = api_ctx;
+    type_ = type;
     prog_ = std::move(prog);
 
     return true;

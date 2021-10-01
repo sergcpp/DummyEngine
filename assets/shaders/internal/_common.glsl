@@ -35,6 +35,10 @@ struct MaterialData {
     vec4 params;
 };
 
+vec3 RGBMDecode(vec4 rgbm) {
+    return 4.0 * rgbm.rgb * rgbm.a;
+}
+
 #if defined(VULKAN) || defined(GL_SPIRV)
 #define LAYOUT(x) layout(x)
 #else

@@ -111,8 +111,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
 #ifndef NDEBUG
     { // Sebug debug report callback
-        VkDebugReportCallbackCreateInfoEXT callback_create_info = {};
-        callback_create_info.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+        VkDebugReportCallbackCreateInfoEXT callback_create_info = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT};
         callback_create_info.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
                                      VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
         callback_create_info.pfnCallback = DebugReportCallback;
@@ -132,14 +131,16 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
         return false;
     }
 
+    bool raytracing_supported = false;
     if (!ChooseVkPhysicalDevice(api_ctx_->physical_device, api_ctx_->device_properties, api_ctx_->mem_properties,
-                                api_ctx_->present_family_index, api_ctx_->graphics_family_index, preferred_device,
-                                api_ctx_->instance, api_ctx_->surface, log)) {
+                                api_ctx_->present_family_index, api_ctx_->graphics_family_index, raytracing_supported,
+                                preferred_device, api_ctx_->instance, api_ctx_->surface, log)) {
         return false;
     }
 
     if (!InitVkDevice(api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
-                      api_ctx_->graphics_family_index, enabled_layers, enabled_layers_count, log)) {
+                      api_ctx_->graphics_family_index, raytracing_supported, enabled_layers, enabled_layers_count,
+                      log)) {
         return false;
     }
 
@@ -181,6 +182,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     log_->Info("===========================================");
 
+    capabilities.raytracing = raytracing_supported;
     CheckDeviceCapabilities();
 
     default_memory_allocs_.reset(new MemoryAllocators(
@@ -209,9 +211,10 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     }
 
     for (int i = 0; i < MaxFramesInFlight; ++i) {
-        default_descr_alloc_[i].reset(new DescrMultiPoolAlloc(
-            api_ctx_.get(), 4 /* pool_step */, 32 /* max_img_sampler_count */, 6 /* max_store_img_count */,
-            8 /* max_ubuf_count */, 16 /* max_sbuf_count */, 16 /* max_tbuf_count */, 16 /* initial_sets_count */));
+        default_descr_alloc_[i].reset(
+            new DescrMultiPoolAlloc(api_ctx_.get(), 4 /* pool_step */, 32 /* max_img_sampler_count */,
+                                    6 /* max_store_img_count */, 8 /* max_ubuf_count */, 16 /* max_sbuf_count */,
+                                    16 /* max_tbuf_count */, 1 /* max_acc_count */, 16 /* initial_sets_count */));
     }
 
     VkPhysicalDeviceProperties device_properties = {};
@@ -279,13 +282,19 @@ void Ren::Context::CheckDeviceCapabilities() {
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &props);
 
     capabilities.depth24_stencil8_format = (res == VK_SUCCESS);
+
+    if (capabilities.raytracing) {
+        VkPhysicalDeviceProperties2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+        prop2.pNext = &api_ctx_->rt_props;
+
+        vkGetPhysicalDeviceProperties2KHR(api_ctx_->physical_device, &prop2);
+    }
 }
 
 void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
-    VkCommandBufferBeginInfo begin_info = {};
-    begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     VkResult res = vkBeginCommandBuffer(cmd_buf, &begin_info);
@@ -293,8 +302,7 @@ void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
 }
 
 Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
-    VkFenceCreateInfo fence_info = {};
-    fence_info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     VkFence new_fence;
     const VkResult res = vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
     if (res != VK_SUCCESS) {

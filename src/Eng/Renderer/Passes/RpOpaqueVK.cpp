@@ -121,13 +121,19 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     RpAllocBuf &decals_buf = builder.GetReadBuffer(decals_buf_);
 
     RpAllocTex &shad_tex = builder.GetReadTexture(shad_tex_);
-    RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
     RpAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     RpAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
 
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
     RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
+
+    RpAllocTex *ssao_tex;
+    if (ssao_tex_) {
+        ssao_tex = &builder.GetReadTexture(ssao_tex_);
+    } else {
+        ssao_tex = &dummy_white;
+    }
 
     RpAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
@@ -142,31 +148,22 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         return;
     }
 
-    const VkDescriptorSet res_descr_set =
-        ctx.default_descr_alloc()->Alloc(10 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
-                                         2 /* sbuf_count */, 4 /* tbuf_count */, descr_set_layout_);
+    Ren::DescrSizes descr_sizes;
+    descr_sizes.img_sampler_count = 10;
+    descr_sizes.ubuf_count = 1;
+    descr_sizes.sbuf_count = 2;
+    descr_sizes.tbuf_count = 4;
+    const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout_);
 
     { // update descriptor set
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
         VkDescriptorImageInfo lm_infos[4];
-
-        if ((render_flags_ & EnableLightmap) && env_->lm_direct) {
-            for (int sh_l = 0; sh_l < 4; sh_l++) {
-                lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
-            }
-        } else {
-            for (int sh_l = 0; sh_l < 4; sh_l++) {
-                lm_infos[sh_l] = dummy_black.ref->vk_desc_image_info();
-            }
+        for (int sh_l = 0; sh_l < 4; sh_l++) {
+            lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
         }
 
         const VkDescriptorImageInfo decal_info = dummy_black.ref->vk_desc_image_info();
-        VkDescriptorImageInfo ssao_info;
-        if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-            ssao_info = ssao_tex.ref->vk_desc_image_info();
-        } else {
-            ssao_info = dummy_white.ref->vk_desc_image_info();
-        }
+        const VkDescriptorImageInfo ssao_info = ssao_tex->ref->vk_desc_image_info();
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
         const VkDescriptorImageInfo env_info = {probe_storage_->handle().sampler, probe_storage_->handle().views[0],
@@ -188,8 +185,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
         { // shadow map
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_SHAD_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -199,8 +195,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // lightmap
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_LMAP_SH_SLOT;
             descr_write.dstArrayElement = 0;
@@ -210,8 +205,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // decals tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_DECAL_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -221,8 +215,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // ssao tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_SSAO_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -232,8 +225,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // noise tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_NOISE_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -243,8 +235,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // env tex
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_ENV_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -254,8 +245,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // cone rt lut
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_CONE_RT_LUT_SLOT;
             descr_write.dstArrayElement = 0;
@@ -265,8 +255,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         /*{ // brdf lut
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_BRDF_TEX_SLOT;
             descr_write.dstArrayElement = 0;
@@ -276,8 +265,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }*/
         { // lights tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_LIGHT_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -287,8 +275,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // decals tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_DECAL_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -298,8 +285,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // cells tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_CELLS_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -309,8 +295,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // items tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_ITEMS_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -320,8 +305,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // instances tbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_INST_BUF_SLOT;
             descr_write.dstArrayElement = 0;
@@ -331,8 +315,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // shared data ubuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_UB_SHARED_DATA_LOC;
             descr_write.dstArrayElement = 0;
@@ -342,8 +325,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
         { // materials sbuf
             auto &descr_write = descr_writes.emplace_back();
-            descr_write = {};
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
             descr_write.dstBinding = REN_MATERIALS_SLOT;
             descr_write.dstArrayElement = 0;
@@ -378,8 +360,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
         uint32_t i = 0;
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_opaque_.handle();
         rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
@@ -459,8 +440,7 @@ void RpOpaque::InitDescrSetLayout() {
         // storage buffers (2)
         {REN_MATERIALS_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
-    VkDescriptorSetLayoutCreateInfo layout_info = {};
-    layout_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layout_info.bindingCount = COUNT_OF(bindings);
     layout_info.pBindings = bindings;
 

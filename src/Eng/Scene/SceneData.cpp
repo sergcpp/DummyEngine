@@ -14,11 +14,17 @@ void PersistentGpuData::Clear() {
     if (textures_descr_pool) {
         vkDestroyDescriptorSetLayout(textures_descr_pool->api_ctx()->device, textures_descr_layout, nullptr);
         textures_descr_layout = VK_NULL_HANDLE;
+        vkDestroyDescriptorSetLayout(textures_descr_pool->api_ctx()->device, rt_textures_descr_layout, nullptr);
+        rt_textures_descr_layout = VK_NULL_HANDLE;
         for (auto &descr_set : textures_descr_sets) {
             descr_set.clear();
         }
+        for (auto &descr_set : rt_textures_descr_sets) {
+            descr_set = VK_NULL_HANDLE;
+        }
     }
     textures_descr_pool.reset();
+    rt_textures_descr_pool.reset();
 #elif defined(USE_GL_RENDER)
     textures_buf = {};
 #endif

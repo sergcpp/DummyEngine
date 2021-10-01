@@ -26,9 +26,9 @@ void RpSkinning::Execute(RpBuilder &builder) {
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
         VkDescriptorSetLayout descr_set_layout = pi_skinning_.prog()->descr_set_layouts()[0];
-        VkDescriptorSet descr_set =
-            ctx.default_descr_alloc()->Alloc(0 /* img_sampler_count */, 0 /* store_img_count */, 0 /* ubuf_count */,
-                                             6 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+        Ren::DescrSizes descr_sizes;
+        descr_sizes.sbuf_count = 6;
+        VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
 
         { // update descriptor set
             const VkDescriptorBufferInfo buf_infos[6] = {
@@ -40,17 +40,13 @@ void RpSkinning::Execute(RpBuilder &builder) {
                 {vtx_buf2.ref->handle().buf, 0, VK_WHOLE_SIZE}             // output vertices1 binding
             };
 
-            VkWriteDescriptorSet descr_write;
-            descr_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = descr_set;
             descr_write.dstBinding = 0;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descr_write.descriptorCount = 6;
             descr_write.pBufferInfo = buf_infos;
-            descr_write.pImageInfo = nullptr;
-            descr_write.pTexelBufferView = nullptr;
-            descr_write.pNext = nullptr;
 
             vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
         }

@@ -109,18 +109,23 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     VkDescriptorSetLayout simple_descr_set_layout = pi_static_solid_[0].prog()->descr_set_layouts()[0];
     VkDescriptorSet simple_descr_sets[2];
-    simple_descr_sets[0] =
-        ctx.default_descr_alloc()->Alloc(0 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
-                                         1 /* sbuf_count */, 1 /* tbuf_count */, simple_descr_set_layout);
-    simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    { // allocate descriptors
+        Ren::DescrSizes descr_sizes;
+        descr_sizes.ubuf_count = 1;
+        descr_sizes.sbuf_count = 1;
+        descr_sizes.tbuf_count = 1;
+
+        simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, simple_descr_set_layout);
+        simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    }
 
     { // update descriptor sets
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
 
-        VkWriteDescriptorSet descr_writes[3] = {};
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[3];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = simple_descr_sets[0];
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
         descr_writes[0].dstArrayElement = 0;
@@ -128,7 +133,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pBufferInfo = &ubuf_info;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = simple_descr_sets[0];
         descr_writes[1].dstBinding = REN_INST_BUF_SLOT;
         descr_writes[1].dstArrayElement = 0;
@@ -136,7 +141,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[1].descriptorCount = 1;
         descr_writes[1].pTexelBufferView = &instances_buf_view;
 
-        descr_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = simple_descr_sets[0];
         descr_writes[2].dstBinding = REN_MATERIALS_SLOT;
         descr_writes[2].dstArrayElement = 0;
@@ -149,10 +154,15 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_vel_[0].prog()->descr_set_layouts()[0];
     VkDescriptorSet vege_descr_sets[2];
-    vege_descr_sets[0] =
-        ctx.default_descr_alloc()->Alloc(1 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
-                                         0 /* sbuf_count */, 1 /* tbuf_count */, vege_descr_set_layout);
-    vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    { // allocate descriptors
+        Ren::DescrSizes descr_sizes;
+        descr_sizes.img_sampler_count = 1;
+        descr_sizes.ubuf_count = 1;
+        descr_sizes.tbuf_count = 1;
+
+        vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, vege_descr_set_layout);
+        vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+    }
 
     { // update descriptor set
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
@@ -160,8 +170,8 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
         const VkDescriptorImageInfo img_info = noise_tex.ref->vk_desc_image_info();
 
-        VkWriteDescriptorSet descr_writes[4] = {};
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[4];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = vege_descr_sets[0];
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
         descr_writes[0].dstArrayElement = 0;
@@ -169,7 +179,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pBufferInfo = &ubuf_info;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = vege_descr_sets[0];
         descr_writes[1].dstBinding = REN_INST_BUF_SLOT;
         descr_writes[1].dstArrayElement = 0;
@@ -177,7 +187,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[1].descriptorCount = 1;
         descr_writes[1].pTexelBufferView = &instances_buf_view;
 
-        descr_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = vege_descr_sets[0];
         descr_writes[2].dstBinding = REN_NOISE_TEX_SLOT;
         descr_writes[2].dstArrayElement = 0;
@@ -185,7 +195,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pImageInfo = &img_info;
 
-        descr_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = vege_descr_sets[0];
         descr_writes[3].dstBinding = REN_MATERIALS_SLOT;
         descr_writes[3].dstArrayElement = 0;
@@ -199,8 +209,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // solid meshes
         Ren::DebugMarker _m(cmd_buf, "STATIC-SOLID-SIMPLE");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_.handle();
         rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
@@ -231,8 +240,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving solid meshes (depth and velocity)
         Ren::DebugMarker _m(cmd_buf, "STATIC-SOLID-MOVING");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -280,8 +288,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // simple alpha-tested meshes (depth only)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-ALPHA-SIMPLE");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_.handle();
         rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
@@ -315,8 +322,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving alpha-tested meshes (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-ALPHA-MOVING");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -366,8 +372,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // static solid vegetation
         Ren::DebugMarker _m(cmd_buf, "VEGE-SOLID-SIMPLE");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -412,8 +417,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving solid vegetation (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-SOLID-MOVING");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -458,8 +462,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // static alpha-tested vegetation (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-ALPHA-SIMPLE");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -506,8 +509,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving alpha-tested vegetation (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-ALPHA-MOVING");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -554,8 +556,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // solid skinned meshes (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-SOLID-SIMPLE");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -602,8 +603,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving solid skinned (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-SOLID-MOVING");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -650,8 +650,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // static alpha-tested skinned (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-ALPHA-SIMPLE");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
@@ -700,8 +699,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving alpha-tested skinned (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-ALPHA-MOVING");
 
-        VkRenderPassBeginInfo rp_begin_info = {};
-        rp_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;

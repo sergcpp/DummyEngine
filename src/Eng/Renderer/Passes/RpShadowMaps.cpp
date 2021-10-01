@@ -5,10 +5,11 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, Ren::BufferRef vtx_buf1, Ren::BufferRef vtx_buf2,
-                         Ren::BufferRef ndx_buf, Ren::BufferRef materials_buf, const BindlessTextureData *bindless_tex,
+void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const Ren::BufferRef &vtx_buf1,
+                         const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
+                         const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex,
                          const char instances_buf[], const char shared_data_buf[], const char shadowmap_tex[],
-                         Ren::Tex2DRef noise_tex) {
+                         const Ren::Tex2DRef &noise_tex) {
     materials_ = list.materials;
     bindless_tex_ = bindless_tex;
     shadow_batches_ = list.shadow_batches;
@@ -16,17 +17,15 @@ void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, Ren::BufferRe
     shadow_lists_ = list.shadow_lists;
     shadow_regions_ = list.shadow_regions;
 
-    vtx_buf1_ =
-        builder.ReadBuffer(std::move(vtx_buf1), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    vtx_buf2_ =
-        builder.ReadBuffer(std::move(vtx_buf2), Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    ndx_buf_ = builder.ReadBuffer(std::move(ndx_buf), Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
+    ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    materials_buf_ = builder.ReadBuffer(std::move(materials_buf), Ren::eResState::ShaderResource,
-                                        Ren::eStageBits::VertexShader, *this);
+    materials_buf_ =
+        builder.ReadBuffer(materials_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
 #if defined(USE_GL_RENDER)
     textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
                                        Ren::eStageBits::VertexShader, *this);
@@ -133,7 +132,6 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
             rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
             rast_state.scissor.enabled = true;
 
-            
             if (!pi_solid_.Init(ctx.api_ctx(), rast_state, shadow_solid_prog, &vi_depth_pass_solid_, &rp_depth_only_,
                                 ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");

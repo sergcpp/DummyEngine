@@ -20,8 +20,7 @@ bool ProbeStorage::Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_a
     Destroy();
 
     { // create new image
-        VkImageCreateInfo img_info = {};
-        img_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
         img_info.imageType = VK_IMAGE_TYPE_2D;
         img_info.extent.width = uint32_t(res);
         img_info.extent.height = uint32_t(res);
@@ -48,8 +47,7 @@ bool ProbeStorage::Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_a
         }
 
 #ifdef ENABLE_OBJ_LABELS
-        VkDebugUtilsObjectNameInfoEXT name_info = {};
-        name_info.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = "Probe Storage";
@@ -74,8 +72,7 @@ bool ProbeStorage::Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_a
     }
 
     { // create default image view
-        VkImageViewCreateInfo view_info = {};
-        view_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+        VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
         view_info.format = Ren::VKFormatFromTexFormat(format);
@@ -120,7 +117,7 @@ bool ProbeStorage::Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_a
 
     { // src buffer barrier
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(temp_stage_buf.resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -135,7 +132,7 @@ bool ProbeStorage::Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_a
 
     { // dst image barrier
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
         new_barrier.oldLayout = Ren::VKImageLayoutForState(this->resource_state);
@@ -203,8 +200,7 @@ bool ProbeStorage::Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_a
     Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
 
     { // create new sampler
-        VkSamplerCreateInfo sampler_info = {};
-        sampler_info.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
         sampler_info.magFilter = VK_FILTER_LINEAR;
         sampler_info.minFilter = VK_FILTER_LINEAR;
         sampler_info.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
@@ -255,7 +251,7 @@ bool ProbeStorage::SetPixelData(const int level, const int layer, const int face
 
     { // src buffer barrier
         auto &new_barrier = buf_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(temp_stage_buf.resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -271,7 +267,7 @@ bool ProbeStorage::SetPixelData(const int level, const int layer, const int face
     // dst image barrier
     if (this->resource_state != Ren::eResState::CopyDst) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
         new_barrier.oldLayout = Ren::VKImageLayoutForState(this->resource_state);
@@ -363,7 +359,7 @@ void ProbeStorage::Finalize() {
     // dst image barrier
     if (this->resource_state != Ren::eResState::ShaderResource) {
         auto &new_barrier = img_barriers.emplace_back();
-        new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::ShaderResource);
         new_barrier.oldLayout = Ren::VKImageLayoutForState(this->resource_state);

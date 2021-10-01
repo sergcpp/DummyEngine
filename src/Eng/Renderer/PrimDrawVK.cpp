@@ -26,13 +26,8 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
 
     { // allocate and update descriptor set
         VkDescriptorImageInfo img_infos[16];
-        uint32_t img_infos_count = 0;
         VkDescriptorBufferInfo ubuf_infos[16];
-        uint32_t ubuf_infos_count = 0;
-        // VkDescriptorBufferInfo sbuf_infos[16];
-        uint32_t sbuf_infos_count = 0;
-        //VkBufferView tbuf_infos[16];
-        uint32_t tbuf_infos_count = 0;
+        Ren::DescrSizes descr_sizes;
 
         Ren::SmallVector<VkWriteDescriptorSet, 48> descr_writes;
 
@@ -40,7 +35,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             const auto &b = bindings[i];
 
             if (b.trg == Ren::eBindTarget::Tex2D) {
-                auto &info = img_infos[img_infos_count++];
+                auto &info = img_infos[descr_sizes.img_sampler_count++];
                 info.sampler = b.handle.tex->handle().sampler;
                 if (Ren::IsDepthStencilFormat(b.handle.tex->params.format)) {
                     // use depth-only image view
@@ -51,69 +46,56 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
                 info.imageLayout = Ren::VKImageLayoutForState(b.handle.tex->resource_state);
 
                 auto &new_write = descr_writes.emplace_back();
-                new_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
                 new_write.dstSet = {};
                 new_write.dstBinding = b.loc;
                 new_write.dstArrayElement = 0;
                 new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 new_write.descriptorCount = 1;
-                new_write.pBufferInfo = nullptr;
                 new_write.pImageInfo = &info;
-                new_write.pTexelBufferView = nullptr;
-                new_write.pNext = nullptr;
             } else if (b.trg == Ren::eBindTarget::UBuf) {
-                auto &ubuf = ubuf_infos[ubuf_infos_count++];
+                auto &ubuf = ubuf_infos[descr_sizes.ubuf_count++];
                 ubuf.buffer = b.handle.buf->handle().buf;
                 ubuf.offset = b.offset;
                 ubuf.range = b.offset ? b.size : VK_WHOLE_SIZE;
 
                 auto &new_write = descr_writes.emplace_back();
-                new_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
                 new_write.dstSet = {};
                 new_write.dstBinding = b.loc;
                 new_write.dstArrayElement = 0;
                 new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 new_write.descriptorCount = 1;
                 new_write.pBufferInfo = &ubuf;
-                new_write.pImageInfo = nullptr;
-                new_write.pTexelBufferView = nullptr;
-                new_write.pNext = nullptr;
             } else if (b.trg == Ren::eBindTarget::TexBuf) {
-                ++tbuf_infos_count;
+                ++descr_sizes.tbuf_count;
 
                 auto &new_write = descr_writes.emplace_back();
-                new_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
                 new_write.dstSet = {};
                 new_write.dstBinding = b.loc;
                 new_write.dstArrayElement = 0;
                 new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
                 new_write.descriptorCount = 1;
-                new_write.pBufferInfo = nullptr;
-                new_write.pImageInfo = nullptr;
                 new_write.pTexelBufferView = &b.handle.tex_buf->view();
-                new_write.pNext = nullptr;
             } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
-                auto &info = img_infos[img_infos_count++];
+                auto &info = img_infos[descr_sizes.img_sampler_count++];
                 info.sampler = b.handle.cube_arr->handle().sampler;
                 info.imageView = b.handle.cube_arr->handle().views[0];
                 info.imageLayout = Ren::VKImageLayoutForState(b.handle.cube_arr->resource_state);
 
                 auto &new_write = descr_writes.emplace_back();
-                new_write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
                 new_write.dstSet = {};
                 new_write.dstBinding = b.loc;
                 new_write.dstArrayElement = 0;
                 new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 new_write.descriptorCount = 1;
-                new_write.pBufferInfo = nullptr;
                 new_write.pImageInfo = &info;
-                new_write.pTexelBufferView = nullptr;
-                new_write.pNext = nullptr;
             }
         }
 
-        descr_set = ctx_->default_descr_alloc()->Alloc(img_infos_count, 0, ubuf_infos_count, sbuf_infos_count,
-                                                       tbuf_infos_count, descr_set_layout);
+        descr_set = ctx_->default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
         if (!descr_set) {
             ctx_->log()->Error("Failed to allocate descriptor set!");
             return;
@@ -139,7 +121,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             if (b.trg == Ren::eBindTarget::Tex2D) {
                 /*if (b.handle.tex->resource_state != Ren::eResState::ShaderResource) {
                     auto &new_barrier = img_barriers.emplace_back();
-                    new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                    new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                     new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(b.handle.tex->resource_state);
                     new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::ShaderResource);
                     new_barrier.oldLayout = Ren::VKImageLayoutForState(b.handle.tex->resource_state);
@@ -166,7 +148,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
         for (const auto &att : fb.color_attachments) {
             if (att.ref->resource_state != Ren::eResState::RenderTarget) {
                 auto &new_barrier = img_barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(att.ref->resource_state);
                 new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::RenderTarget);
                 new_barrier.oldLayout = Ren::VKImageLayoutForState(att.ref->resource_state);
@@ -191,7 +173,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             if (fb.depth_attachment.ref->resource_state != Ren::eResState::DepthWrite &&
                 fb.depth_attachment.ref->resource_state != Ren::eResState::DepthRead) {
                 auto &new_barrier = img_barriers.emplace_back();
-                new_barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(fb.depth_attachment.ref->resource_state);
                 new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::DepthWrite);
                 new_barrier.oldLayout = Ren::VKImageLayoutForState(fb.depth_attachment.ref->resource_state);
@@ -218,8 +200,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
         }
     }
 
-    VkRenderPassBeginInfo render_pass_begin_info = {};
-    render_pass_begin_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     render_pass_begin_info.renderPass = rp.handle();
     render_pass_begin_info.framebuffer = fb.handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(fb.w), uint32_t(fb.h)};

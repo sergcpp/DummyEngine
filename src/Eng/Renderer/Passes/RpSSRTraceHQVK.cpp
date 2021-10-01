@@ -22,9 +22,11 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkDescriptorSetLayout descr_set_layout = pi_ssr_trace_hq_.prog()->descr_set_layouts()[0];
-    VkDescriptorSet descr_set =
-        ctx.default_descr_alloc()->Alloc(7 /* img_sampler_count */, 0 /* store_img_count */, 1 /* ubuf_count */,
-                                         0 /* sbuf_count */, 0 /* tbuf_count */, descr_set_layout);
+    Ren::DescrSizes descr_sizes;
+    descr_sizes.img_sampler_count = 7;
+    descr_sizes.store_img_count = 1;
+    descr_sizes.ubuf_count = 1;
+    VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
         const VkDescriptorBufferInfo ubuf_info = {unif_sh_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
@@ -33,8 +35,8 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
         const VkDescriptorImageInfo norm_tex_info = normal_tex.ref->vk_desc_image_info();
         const VkDescriptorImageInfo output_img_info = output_tex.ref->vk_desc_image_info(0, VK_IMAGE_LAYOUT_GENERAL);
 
-        VkWriteDescriptorSet descr_writes[4] = {};
-        descr_writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        VkWriteDescriptorSet descr_writes[4];
+        descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = descr_set;
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
         descr_writes[0].dstArrayElement = 0;
@@ -42,7 +44,7 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
         descr_writes[0].descriptorCount = 1;
         descr_writes[0].pBufferInfo = &ubuf_info;
 
-        descr_writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = descr_set;
         descr_writes[1].dstBinding = SSRTraceHQ::DEPTH_TEX_SLOT;
         descr_writes[1].dstArrayElement = 0;
@@ -50,7 +52,7 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
         descr_writes[1].descriptorCount = 1;
         descr_writes[1].pImageInfo = &depth_tex_info;
 
-        descr_writes[2].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = descr_set;
         descr_writes[2].dstBinding = SSRTraceHQ::NORM_TEX_SLOT;
         descr_writes[2].dstArrayElement = 0;
@@ -58,7 +60,7 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pImageInfo = &norm_tex_info;
 
-        descr_writes[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = descr_set;
         descr_writes[3].dstBinding = SSRTraceHQ::OUTPUT_TEX_SLOT;
         descr_writes[3].dstArrayElement = 0;
