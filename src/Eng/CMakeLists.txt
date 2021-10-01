@@ -185,9 +185,11 @@ if(${RENDERER} STREQUAL "GL")
                         Scene/SceneManagerGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
                         Renderer/Passes/RpDebugTexturesGL.cpp
+                        Renderer/Passes/RpDebugRT_GL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp
                         Renderer/Passes/RpDepthHierarchyGL.cpp
                         Renderer/Passes/RpOpaqueGL.cpp
+                        Renderer/Passes/RpRTReflections_GL.cpp
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
