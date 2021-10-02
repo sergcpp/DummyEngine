@@ -6,12 +6,13 @@
 INTERFACE_START(RTDebug)
 
 struct Params {
-    IVEC4_TYPE depth_size;
-    VEC4_TYPE clip_info;
+    float pixel_spread_angle;
+    float _pad[3];
 };
 
 struct RayPayload {
-    VEC4_TYPE col;
+    VEC3_TYPE col;
+	float cone_width;
 };
 
 #ifdef __cplusplus
