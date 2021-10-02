@@ -77,10 +77,10 @@ void RpRTReflections::Execute(RpBuilder &builder) {
         const VkDescriptorBufferInfo vtx_buf1_info = {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo vtx_buf2_info = {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo ndx_buf_info = {ndx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        VkDescriptorImageInfo lm_infos[5];
-        for (int i = 0; i < 5; i++) {
-            lm_infos[i] = lm_tex[i]->ref->vk_desc_image_info();
-        }
+        const VkDescriptorImageInfo lm_infos[] = {
+            lm_tex[0]->ref->vk_desc_image_info(), lm_tex[1]->ref->vk_desc_image_info(),
+            lm_tex[2]->ref->vk_desc_image_info(), lm_tex[3]->ref->vk_desc_image_info(),
+            lm_tex[4]->ref->vk_desc_image_info()};
         const VkAccelerationStructureKHR tlas = acc_struct->vk_handle();
         const VkDescriptorImageInfo output_img_info = output_tex.ref->vk_desc_image_info(0, VK_IMAGE_LAYOUT_GENERAL);
 

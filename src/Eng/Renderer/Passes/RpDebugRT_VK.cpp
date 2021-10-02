@@ -62,10 +62,10 @@ void RpDebugRT::Execute(RpBuilder &builder) {
         const VkDescriptorBufferInfo vtx_buf1_info = {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo vtx_buf2_info = {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo ndx_buf_info = {ndx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        VkDescriptorImageInfo lm_infos[5];
-        for (int i = 0; i < 5; i++) {
-            lm_infos[i] = lm_tex[i]->ref->vk_desc_image_info();
-        }
+        const VkDescriptorImageInfo lm_infos[] = {
+            lm_tex[0]->ref->vk_desc_image_info(), lm_tex[1]->ref->vk_desc_image_info(),
+            lm_tex[2]->ref->vk_desc_image_info(), lm_tex[3]->ref->vk_desc_image_info(),
+            lm_tex[4]->ref->vk_desc_image_info()};
         const VkAccelerationStructureKHR tlas = acc_struct->vk_handle();
 
         VkDescriptorImageInfo output_img_info;
@@ -189,11 +189,11 @@ void RpDebugRT::Execute(RpBuilder &builder) {
                             nullptr);
 
     RTDebug::Params uniform_params;
-    uniform_params.pixel_spread_angle =
-        std::atan(2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
+    uniform_params.pixel_spread_angle = std::atan(
+        2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    vkCmdPushConstants(cmd_buf, pi_debug_rt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
-                       sizeof(uniform_params), &uniform_params);
+    vkCmdPushConstants(cmd_buf, pi_debug_rt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(uniform_params),
+                       &uniform_params);
 
     vkCmdTraceRaysKHR(cmd_buf, pi_debug_rt_.rgen_table(), pi_debug_rt_.miss_table(), pi_debug_rt_.hit_table(),
                       pi_debug_rt_.call_table(), uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]),
