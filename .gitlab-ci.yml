@@ -123,7 +123,7 @@ deploy-job:
     - ./DummyAppVK --prepare_assets pc --norun
     - 7z a -mx9 dummy_app.zip DummyAppGL.exe
     - 7z a -mx9 dummy_app.zip DummyAppVK.exe
-    - 7z a -mx9 dummy_app.zip assets_pc
+#    - 7z a -mx9 dummy_app.zip assets_pc
     - echo "Application successfully deployed."
   artifacts:
     paths:

@@ -4,10 +4,9 @@
 #include "_rt_common.glsl"
 #include "rt_reflections_interface.glsl"
 
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
+LAYOUT_PARAMS uniform UniformParams {
+    Params params;
+};
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -64,10 +63,10 @@ void main() {
     float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
     vec2 brdf = texture(brdf_lut_texture, vec2(N_dot_V, specular.a)).xy;
 
-    pld.col = vec4(0.0);
+    pld.cone_width = params.pixel_spread_angle * (-ray_origin_vs.z);
 
     if (ssr_uvs.b < 0.99) {   // trace through bvh if required
-        const uint ray_flags = /*gl_RayFlagsOpaqueEXT |*/ gl_RayFlagsCullBackFacingTrianglesEXT;
+        const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
         const float t_min = 0.001;
         const float t_max = 1000.0;
         
