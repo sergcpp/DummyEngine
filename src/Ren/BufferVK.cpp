@@ -3,34 +3,34 @@
 #include <algorithm>
 #include <cassert>
 
-//#include "GL.h"
 #include "Log.h"
 #include "VKCtx.h"
 
 namespace Ren {
-VkBufferUsageFlags GetVkBufferUsageFlags(const eBufType type) {
+VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufType type) {
     VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
     if (type == eBufType::VertexAttribs) {
-        flags |= (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                  VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
+        flags |= (VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     } else if (type == eBufType::VertexIndices) {
-        flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+        flags |= (VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     } else if (type == eBufType::Texture) {
         flags |= (VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     } else if (type == eBufType::Uniform) {
         flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     } else if (type == eBufType::Storage) {
-        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
-                 VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+        flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     } else if (type == eBufType::Stage) {
     } else if (type == eBufType::AccStructure) {
         flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
     } else if (type == eBufType::ShaderBinding) {
         flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    }
+
+    if ((type == eBufType::VertexAttribs || type == eBufType::VertexIndices || type == eBufType::Storage) &&
+        api_ctx->raytracing_supported) {
+        flags |= (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+                  VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
     }
 
     return flags;
@@ -230,13 +230,13 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
 
     VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     buf_create_info.size = VkDeviceSize(new_size);
-    buf_create_info.usage = GetVkBufferUsageFlags(type_);
+    buf_create_info.usage = GetVkBufferUsageFlags(api_ctx_, type_);
     buf_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VkBuffer new_buf = {};
     VkResult res = vkCreateBuffer(api_ctx_->device, &buf_create_info, nullptr, &new_buf);
     assert(res == VK_SUCCESS && "Failed to create vertex buffer!");
-
+    
 #ifdef ENABLE_OBJ_LABELS
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_BUFFER;
@@ -256,14 +256,14 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
     additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
 
-    if (type_ != eBufType::Stage) {
+    if (type_ != eBufType::Stage && api_ctx_->raytracing_supported) {
         buf_alloc_info.pNext = &additional_flags;
     }
 
     VkDeviceMemory buffer_mem = {};
     res = vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
     assert(res == VK_SUCCESS && "Failed to allocate memory!");
-
+    
     res = vkBindBufferMemory(api_ctx_->device, new_buf, buffer_mem, 0 /* offset */);
     assert(res == VK_SUCCESS && "Failed to bind memory!");
 

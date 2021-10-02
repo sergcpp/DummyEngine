@@ -45,6 +45,7 @@ struct ApiContext {
 
     uint32_t max_combined_image_samplers = 0;
 
+    bool raytracing_supported = false;
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR rt_props = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
