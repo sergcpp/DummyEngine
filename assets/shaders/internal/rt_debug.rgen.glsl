@@ -30,11 +30,11 @@ void main() {
     target /= target.w;
     vec4 direction = shrd_data.uInvViewMatrix * vec4(normalize(target.xyz), 0);
     
-    const uint ray_flags = /*gl_RayFlagsOpaqueEXT |*/ gl_RayFlagsCullBackFacingTrianglesEXT;
+    const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;
     const float t_max = 1000.0;
     
-    pld.col = vec4(0.0);
+    pld.cone_width = 0.0;
     
     traceRayEXT(tlas,           // topLevel
                 ray_flags,      // rayFlags
@@ -49,5 +49,5 @@ void main() {
                 0               // payload
                 );
     
-    imageStore(out_image, ivec2(gl_LaunchIDEXT.xy), pld.col);
+    imageStore(out_image, ivec2(gl_LaunchIDEXT.xy), vec4(pld.col, 1.0));
 }

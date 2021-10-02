@@ -384,6 +384,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     }
     assert(view_state_.act_res[0] <= view_state_.scr_res[0] && view_state_.act_res[1] <= view_state_.scr_res[1]);
 
+    view_state_.vertical_fov = list.draw_cam.angle();
+
     if ((list.render_flags & EnableTaa) != 0) {
         Ren::Vec2f jitter = HaltonSeq23[list.frame_index % TaaSampleCount];
         jitter = (jitter * 2.0f - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};

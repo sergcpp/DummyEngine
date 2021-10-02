@@ -405,7 +405,8 @@ void SceneManager::InitHWAccStructures() {
                             next_power_of_two(needed_build_scratch_size));
     VkDeviceAddress scratch_addr = scratch_buf.vk_device_address();
 
-    Ren::Buffer acc_structs_buf("BLAS Before-Compaction Buf", api_ctx, Ren::eBufType::AccStructure, needed_total_acc_struct_size);
+    Ren::Buffer acc_structs_buf("BLAS Before-Compaction Buf", api_ctx, Ren::eBufType::AccStructure,
+                                needed_total_acc_struct_size);
 
     //
 
@@ -570,8 +571,9 @@ void SceneManager::InitHWAccStructures() {
         new_instance.instanceCustomIndex = uint32_t(geo_instances.size());
         new_instance.mask = 0xff;
         new_instance.instanceShaderBindingTableRecordOffset = 0;
-        new_instance.flags =
-            0;//VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR; // VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+        new_instance.flags = 0;
+        // VK_GEOMETRY_INSTANCE_TRIANGLE_FRONT_COUNTERCLOCKWISE_BIT_KHR; //
+        // VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
         new_instance.accelerationStructureReference = static_cast<uint64_t>(vk_blas.vk_device_address());
 
         const uint32_t indices_start = acc.mesh->indices_buf().offset;
@@ -679,7 +681,7 @@ void SceneManager::InitHWAccStructures() {
         tlas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
         tlas_build_info.geometryCount = 1;
         tlas_build_info.pGeometries = &tlas_geo;
-        //tlas_build_info.ppGeometries = &p_tlas_geo;
+        // tlas_build_info.ppGeometries = &p_tlas_geo;
         tlas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
         tlas_build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
         tlas_build_info.srcAccelerationStructure = VK_NULL_HANDLE;

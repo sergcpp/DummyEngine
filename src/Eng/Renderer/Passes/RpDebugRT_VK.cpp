@@ -189,11 +189,11 @@ void RpDebugRT::Execute(RpBuilder &builder) {
                             nullptr);
 
     RTDebug::Params uniform_params;
-    uniform_params.depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], 0, 0};
-    uniform_params.clip_info = view_state_->clip_info;
+    uniform_params.pixel_spread_angle =
+        std::atan(2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    // vkCmdPushConstants(cmd_buf, pi_debug_rt_.layout(), VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, 0,
-    //                   sizeof(uniform_params), &uniform_params);
+    vkCmdPushConstants(cmd_buf, pi_debug_rt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
+                       sizeof(uniform_params), &uniform_params);
 
     vkCmdTraceRaysKHR(cmd_buf, pi_debug_rt_.rgen_table(), pi_debug_rt_.miss_table(), pi_debug_rt_.hit_table(),
                       pi_debug_rt_.call_table(), uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]),
