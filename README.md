@@ -1,4 +1,4 @@
-# DummyEngine [![Build status](https://ci.appveyor.com/api/projects/status/92u5cycd5kjrshja?svg=true)](https://ci.appveyor.com/project/SerhiiY/occdemo) [![Build Status](https://travis-ci.org/sergcpp/DummyEngine.svg?branch=master)](https://travis-ci.org/sergcpp/DummyEngine) [![Codacy Badge](https://api.codacy.com/project/badge/Grade/3495357939b0467f959b0f4e3f43a027)](https://www.codacy.com/manual/SerhiiY-94/DummyEngine?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=sergcpp/DummyEngine&amp;utm_campaign=Badge_Grade)
+# DummyEngine [![Build status](https://gitlab.com/sergcpp/DummyEngine/badges/master/pipeline.svg)](https://gitlab.com/sergcpp/DummyEngine)
 Small cross platform Vulkan/OpenGL 3d engine for personal experimentation.
 
 - (Old) Video: <https://youtu.be/ujMV9O58uqc>
