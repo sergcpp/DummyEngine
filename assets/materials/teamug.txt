@@ -3,4 +3,4 @@ gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag
 sw_program: main
 texture: grey_133.png srgb
 texture: default_normalmap.png
-texture: rough_spec2.png
+texture: rough_spec2.uncompressed.png

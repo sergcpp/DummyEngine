@@ -3,4 +3,4 @@ gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
 texture: wood_004_1.png srgb
 texture: default_normalmap.png
-texture: rough_spec.png
+texture: rough_spec.uncompressed.png

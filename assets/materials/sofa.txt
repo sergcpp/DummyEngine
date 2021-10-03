@@ -3,4 +3,4 @@ gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag
 sw_program: main
 texture: fabric08_col.png srgb
 texture: fabric08_norm.png
-texture: rough_spec.png
+texture: rough_spec.uncompressed.png
