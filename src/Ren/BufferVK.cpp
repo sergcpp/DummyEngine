@@ -256,7 +256,7 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
     additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
 
-    if (type_ != eBufType::Stage && api_ctx_->raytracing_supported) {
+    if (buf_create_info.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT != 0) {
         buf_alloc_info.pNext = &additional_flags;
     }
 
