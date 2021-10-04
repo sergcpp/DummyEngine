@@ -301,6 +301,8 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
 void SceneManager::InitHWAccStructures() {
     using namespace SceneManagerInternal;
 
+    const VkDeviceSize AccStructAlignment = 256;
+
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
     struct Blas {
@@ -335,6 +337,7 @@ void SceneManager::InitHWAccStructures() {
         tri_data.vertexStride = 16;
         tri_data.indexType = VK_INDEX_TYPE_UINT32;
         tri_data.indexData.deviceAddress = indices.buf->vk_device_address();
+        tri_data.maxVertex = attribs.size / 16;
 
         //
         // Gather geometries
@@ -390,7 +393,8 @@ void SceneManager::InitHWAccStructures() {
         new_blas.build_info.pGeometries = nullptr;
 
         needed_build_scratch_size = std::max(needed_build_scratch_size, uint32_t(new_blas.size_info.buildScratchSize));
-        needed_total_acc_struct_size += uint32_t(align_up(new_blas.size_info.accelerationStructureSize, 256));
+        needed_total_acc_struct_size +=
+            uint32_t(align_up(new_blas.size_info.accelerationStructureSize, AccStructAlignment));
 
         new_blas.acc = acc;
         acc->mesh->blas.reset(new Ren::AccStructureVK);
@@ -431,7 +435,7 @@ void SceneManager::InitHWAccStructures() {
             acc_create_info.buffer = acc_structs_buf.vk_handle();
             acc_create_info.offset = acc_buf_offset;
             acc_create_info.size = all_blases[i].size_info.accelerationStructureSize;
-            acc_buf_offset += align_up(acc_create_info.size, 256);
+            acc_buf_offset += align_up(acc_create_info.size, AccStructAlignment);
 
             VkAccelerationStructureKHR acc_struct;
             VkResult res = vkCreateAccelerationStructureKHR(api_ctx->device, &acc_create_info, nullptr, &acc_struct);
@@ -480,7 +484,7 @@ void SceneManager::InitHWAccStructures() {
 
     VkDeviceSize total_compacted_size = 0;
     for (int i = 0; i < int(compact_sizes.size()); ++i) {
-        total_compacted_size += align_up(compact_sizes[i], 256);
+        total_compacted_size += align_up(compact_sizes[i], AccStructAlignment);
     }
 
     scene_data_.persistent_data.rt_blas_buf =
@@ -498,7 +502,7 @@ void SceneManager::InitHWAccStructures() {
             acc_create_info.offset = compact_acc_buf_offset;
             acc_create_info.size = compact_sizes[i];
             assert(compact_acc_buf_offset + compact_sizes[i] <= total_compacted_size);
-            compact_acc_buf_offset += align_up(acc_create_info.size, 256);
+            compact_acc_buf_offset += align_up(acc_create_info.size, AccStructAlignment);
 
             VkAccelerationStructureKHR compact_acc_struct;
             const VkResult res =
