@@ -1,17 +1,17 @@
 #include "RpSSRCompose.h"
 
 #include <Ren/Context.h>
+#include <Ren/ProbeStorage.h>
 #include <Ren/Program.h>
 #include <Ren/RastState.h>
 
-#include "../../Scene/ProbeStorage.h"
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
 #include "../assets/shaders/internal/blit_ssr_compose_interface.glsl"
 
-void RpSSRCompose::Setup(RpBuilder &builder, const ViewState *view_state, const ProbeStorage *probe_storage,
+void RpSSRCompose::Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
                          Ren::WeakTex2DRef down_buf_4x_tex, Ren::Tex2DRef brdf_lut, const char shared_data_buf[],
                          const char cells_buf[], const char items_buf[], const char depth_tex[],
                          const char normal_tex[], const char spec_tex[], const char depth_down_2x[],
@@ -84,7 +84,7 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
         }
 
         // TODO: get rid of global binding slots
-        const PrimDraw::Binding bindings[] = {
+        const Ren::Binding bindings[] = {
             {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, *spec_tex.ref},
             {clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT, *depth_tex.ref},
             {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, *normal_tex.ref},
@@ -95,8 +95,8 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
             {Ren::eBindTarget::Tex2D, REN_REFL_PREV_TEX_SLOT, *down_buf_4x_tex.ref},
             {Ren::eBindTarget::Tex2D, REN_REFL_BRDF_TEX_SLOT, *brdf_lut.ref},
             //
-            {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-            {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT, *items_buf.tbos[0]},
+            {Ren::eBindTarget::TBuf, REN_CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+            {Ren::eBindTarget::TBuf, REN_ITEMS_BUF_SLOT, *items_buf.tbos[0]},
             {Ren::eBindTarget::TexCubeArray, REN_ENV_TEX_SLOT, *probe_storage_},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 

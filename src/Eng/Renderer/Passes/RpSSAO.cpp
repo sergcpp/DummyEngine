@@ -46,8 +46,8 @@ void RpSSAO::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->act_res[1] / 2;
 
     { // prepare ao buffer
-        const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
-                                              {Ren::eBindTarget::Tex2D, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
+                                         {Ren::eBindTarget::Tex2D, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
 
         SSAO::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_->act_res[0] / 2, view_state_->act_res[1] / 2};

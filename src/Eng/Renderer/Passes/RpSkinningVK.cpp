@@ -32,12 +32,12 @@ void RpSkinning::Execute(RpBuilder &builder) {
 
         { // update descriptor set
             const VkDescriptorBufferInfo buf_infos[6] = {
-                {skin_vtx_buf.ref->handle().buf, 0, VK_WHOLE_SIZE},        // input vertices binding
-                {skin_transforms_buf.ref->handle().buf, 0, VK_WHOLE_SIZE}, // input matrices binding
-                {shape_keys_buf.ref->handle().buf, 0, VK_WHOLE_SIZE},      // input shape keys binding
-                {delta_buf.ref->handle().buf, 0, VK_WHOLE_SIZE},           // input vertex deltas binding
-                {vtx_buf1.ref->handle().buf, 0, VK_WHOLE_SIZE},            // output vertices0 binding
-                {vtx_buf2.ref->handle().buf, 0, VK_WHOLE_SIZE}             // output vertices1 binding
+                {skin_vtx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE},        // input vertices binding
+                {skin_transforms_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE}, // input matrices binding
+                {shape_keys_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE},      // input shape keys binding
+                {delta_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE},           // input vertex deltas binding
+                {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE},            // output vertices0 binding
+                {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE}             // output vertices1 binding
             };
 
             VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};

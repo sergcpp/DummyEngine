@@ -32,7 +32,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     { // update descriptor set
         const VkDescriptorBufferInfo buf_infos[] = {
-            {unif_shared_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE} // shared data
+            {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE} // shared data
         };
 
         const VkDescriptorImageInfo img_infos[] = {env_tex.ref->handle().sampler, env_tex.ref->handle().views[0],

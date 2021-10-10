@@ -1131,7 +1131,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
         glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                          (GLuint)unif_shared_data_buf.ref->id());*/
 
-        const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *temp_tex_};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *temp_tex_};
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
 
         if (!down_tex_4x_fb_.Setup(ctx_.api_ctx(), {}, down_tex_4x_->params.w, down_tex_4x_->params.h, down_tex_4x_, {},
@@ -1361,7 +1361,7 @@ void Renderer::BlitTexture(const float px, const float py, const float sx, const
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 }
 
-void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &dst_store, const int face) {
+void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1462,7 +1462,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 }
 
-void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, const int probe_index) {
+void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1544,7 +1544,7 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store, const int pr
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 }
 
-bool Renderer::BlitProjectSH(const ProbeStorage &store, const int probe_index, const int iteration, LightProbe &probe) {
+bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration, LightProbe &probe) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),

@@ -128,13 +128,12 @@ class Context : public TaskExecutor {
     BufferRef default_indices_buf() const { return default_indices_buf_; }
     StageBufs &default_stage_bufs() { return default_stage_bufs_; }
     MemoryAllocators *default_mem_allocs() { return default_memory_allocs_.get(); }
-
-#if defined(USE_VK_RENDER)
     DescrMultiPoolAlloc *default_descr_alloc() const;
-#endif
 
     void BegSingleTimeCommands(void *cmd_buf);
+    void *BegTempSingleTimeCommands();
     SyncFence EndSingleTimeCommands(void *cmd_buf);
+    void EndTempSingleTimeCommands(void *cmd_buf);
 
     void *current_cmd_buf();
 

@@ -28,9 +28,7 @@
 #include "Scene/Comp/VegState.cpp"
 
 #if defined(USE_GL_RENDER)
-#include "Scene/ProbeStorageGL.cpp"
 #include "Scene/SceneManagerGL.cpp"
 #elif defined(USE_VK_RENDER)
-#include "Scene/ProbeStorageVK.cpp"
 #include "Scene/SceneManagerVK.cpp"
 #endif

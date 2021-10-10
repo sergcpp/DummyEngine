@@ -29,7 +29,7 @@ enum class eType : uint8_t {
     Int32,
     _Count
 };
-enum class eBufType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, Storage, Stage, AccStructure, ShaderBinding, _Count };
+enum class eBufType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, Storage, Stage, AccStructure, ShaderBinding, Indirect, _Count };
 
 const uint8_t BufMapRead = (1u << 0u);
 const uint8_t BufMapWrite = (1u << 1u);

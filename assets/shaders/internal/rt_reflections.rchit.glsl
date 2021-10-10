@@ -100,6 +100,7 @@ void main() {
                                               shrd_data.uProbes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
                                               shrd_data.uProbes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
     }
+	pld.cone_width = gl_HitTEXT;
 }
 
 

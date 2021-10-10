@@ -18,7 +18,7 @@ class RpSSRCompose : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    const ProbeStorage *probe_storage_ = nullptr;
+    const Ren::ProbeStorage *probe_storage_ = nullptr;
 
     RpResource shared_data_buf_;
     RpResource cells_buf_;
@@ -39,7 +39,7 @@ class RpSSRCompose : public RenderPassBase {
   public:
     RpSSRCompose(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const ProbeStorage *probe_storage,
+    void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
                Ren::WeakTex2DRef down_buf_4x_tex, Ren::Tex2DRef brdf_lut, const char shared_data_buf[],
                const char cells_buf[], const char items_buf[], const char depth_tex[], const char normal_tex[],
                const char spec_tex[], const char depth_down_2x[], const char ssr_tex_name[],

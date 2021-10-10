@@ -291,6 +291,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 #else
         shrd_data.uTaaInfo[1] = draw_cam_->px_offset()[1];
 #endif
+        shrd_data.uTaaInfo[2] = reinterpret_cast<const float &>(view_state_->frame_index);
 
         shrd_data.uProjMatrix[2][0] += draw_cam_->px_offset()[0];
         shrd_data.uProjMatrix[2][1] += draw_cam_->px_offset()[1];

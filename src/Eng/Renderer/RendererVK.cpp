@@ -165,8 +165,7 @@ uint64_t Renderer::GetGpuTimeBlockingUs() {
     return 0;
 }
 
-void Renderer::BlitPixels(const void *data, const int w, const int h,
-                          const Ren::eTexFormat format) {
+void Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 #if 0
     if (!temp_tex_ || temp_tex_->params().w != w || temp_tex_->params().h != h ||
@@ -207,8 +206,7 @@ void Renderer::BlitPixels(const void *data, const int w, const int h,
 #endif
 }
 
-void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
-                                 const Ren::eTexFormat format) {
+void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 #if 0
     if (!temp_tex_ || temp_tex_->params().w != w || temp_tex_->params().h != h ||
@@ -389,9 +387,8 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h,
 #endif
 }
 
-void Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy,
-                          const FrameBuf &buf, const int first_att, const int att_count,
-                          const float multiplier) {
+void Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
+                          const int first_att, const int att_count, const float multiplier) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -464,9 +461,8 @@ void Renderer::BlitBuffer(const float px, const float py, const float sx, const 
 #endif
 }
 
-void Renderer::BlitTexture(const float px, const float py, const float sx, const float sy,
-                           const Ren::Tex2DRef &tex, const float multiplier,
-                           const bool is_ms) {
+void Renderer::BlitTexture(const float px, const float py, const float sx, const float sy, const Ren::Tex2DRef &tex,
+                           const float multiplier, const bool is_ms) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -538,8 +534,7 @@ void Renderer::BlitTexture(const float px, const float py, const float sx, const
 #endif
 }
 
-void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &dst_store,
-                                   const int face) {
+void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -658,8 +653,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &
 #endif
 }
 
-void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store,
-                                     const int probe_index) {
+void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -748,8 +742,8 @@ void Renderer::BlitPrefilterFromTemp(const ProbeStorage &dst_store,
 #endif
 }
 
-bool Renderer::BlitProjectSH(const ProbeStorage &store, const int probe_index,
-                             const int iteration, LightProbe &probe) {
+bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
+                             LightProbe &probe) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),

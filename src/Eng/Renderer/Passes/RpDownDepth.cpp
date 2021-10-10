@@ -45,7 +45,7 @@ void RpDownDepth::Execute(RpBuilder &builder) {
     const Ren::ProgramRef &down_depth_prog =
         view_state_->is_multisampled ? blit_down_depth_ms_prog_ : blit_down_depth_prog_;
 
-    const PrimDraw::Binding bindings[] = {
+    const Ren::Binding bindings[] = {
         {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D, DownDepth::DEPTH_TEX_SLOT,
          *depth_tex.ref}};
 
