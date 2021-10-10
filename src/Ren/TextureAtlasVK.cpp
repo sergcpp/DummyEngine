@@ -364,7 +364,7 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
                 new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                new_barrier.buffer = sbuf.handle().buf;
+                new_barrier.buffer = sbuf.vk_handle();
                 new_barrier.offset = VkDeviceSize(data_off);
                 new_barrier.size = VkDeviceSize(data_len);
 
@@ -412,7 +412,7 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
             region.imageOffset = {int32_t(out_pos[0]), int32_t(out_pos[1]), 0};
             region.imageExtent = {uint32_t(res[0]), uint32_t(res[1]), 1};
 
-            vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, img_, VKImageLayoutForState(eResState::CopyDst), 1,
+            vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_, VKImageLayoutForState(eResState::CopyDst), 1,
                                    &region);
 
             sbuf.resource_state = eResState::CopySrc;

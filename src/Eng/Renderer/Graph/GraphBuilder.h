@@ -67,8 +67,8 @@ class RenderPassBase {
 };
 
 struct RpBufDesc {
-    uint32_t size;
     Ren::eBufType type;
+    uint32_t size;
 };
 
 inline bool operator==(const RpBufDesc &lhs, const RpBufDesc &rhs) {

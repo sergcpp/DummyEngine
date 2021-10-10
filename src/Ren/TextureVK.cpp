@@ -25,6 +25,7 @@ const VkFormat g_vk_formats[] = {
     VK_FORMAT_R32_SFLOAT,               // RawR32F
     VK_FORMAT_R16_SFLOAT,               // RawR16F
     VK_FORMAT_R8_UNORM,                 // RawR8
+    VK_FORMAT_R32_UINT,                 // RawR32UI
     VK_FORMAT_R8G8_UNORM,               // RawRG88
     VK_FORMAT_R32G32B32_SFLOAT,         // RawRGB32F
     VK_FORMAT_R32G32B32A32_SFLOAT,      // RawRGBA32F
@@ -620,7 +621,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
             new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.buffer = sbuf->handle().buf;
+            new_barrier.buffer = sbuf->vk_handle();
             new_barrier.offset = VkDeviceSize(data_off);
             new_barrier.size = VkDeviceSize(sbuf->size() - data_off);
 
@@ -670,7 +671,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         region.imageOffset = {0, 0, 0};
         region.imageExtent = {uint32_t(p.w), uint32_t(p.h), 1};
 
-        vkCmdCopyBufferToImage(cmd_buf, sbuf->handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+        vkCmdCopyBufferToImage(cmd_buf, sbuf->vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
                                &region);
 
         initialized_mips_ |= (1u << 0);
@@ -806,7 +807,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = 0;
         new_barrier.size = VkDeviceSize(bytes_left);
 
@@ -876,7 +877,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
         h = std::max(h / 2, 1);
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
+    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
                            regions);
 
     ApplySampling(p.sampling, log);
@@ -959,7 +960,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = 0;
         new_barrier.size = VkDeviceSize(size);
 
@@ -1038,7 +1039,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
         data_offset += pad;
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
+    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
                            regions);
 
     ApplySampling(p.sampling, log);
@@ -1139,7 +1140,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = VkDeviceSize(0);
         new_barrier.size = VkDeviceSize(sbuf.size());
 
@@ -1191,7 +1192,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         regions[i].imageExtent = {uint32_t(p.w), uint32_t(p.h), 1};
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, regions);
+    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, regions);
 
     initialized_mips_ |= (1u << 0);
 
@@ -1449,7 +1450,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = VkDeviceSize(0);
         new_barrier.size = VkDeviceSize(sbuf.size());
 
@@ -1523,7 +1524,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         }
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
+    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
                            regions);
 
     ApplySampling(p.sampling, log);
@@ -1661,7 +1662,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = VkDeviceSize(0);
         new_barrier.size = VkDeviceSize(sbuf.size());
 
@@ -1756,7 +1757,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         }
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
+    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
                            regions);
 
     ApplySampling(p.sampling, log);
@@ -1812,7 +1813,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = VkDeviceSize(0);
         new_barrier.size = VkDeviceSize(sbuf.size());
 
@@ -1863,7 +1864,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
     region.imageOffset = {int32_t(offsetx), int32_t(offsety), 0};
     region.imageExtent = {uint32_t(sizex), uint32_t(sizey), 1};
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.handle().buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     if (offsetx == 0 && offsety == 0 && sizex == std::max(params.w >> level, 1) &&
         sizey == std::max(params.h >> level, 1)) {
@@ -1950,7 +1951,7 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = sbuf.handle().buf;
+        new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = VkDeviceSize(0);
         new_barrier.size = VkDeviceSize(sbuf.size());
 
@@ -2041,7 +2042,7 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
     Free();
 
     VkBufferViewCreateInfo view_info = {VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO};
-    view_info.buffer = buf->handle().buf;
+    view_info.buffer = buf->vk_handle();
     view_info.format = g_vk_formats[size_t(format)];
     view_info.offset = VkDeviceSize(offset);
     view_info.range = VkDeviceSize(size);

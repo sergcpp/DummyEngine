@@ -243,6 +243,7 @@ bool Ren::InitGLExtentions() {
             glDrawElementsInstancedBaseVertex);
 
     ren_glDispatchCompute = (PFNGLDISPATCHCOMPUTEPROC)GetProcAddress(glDispatchCompute);
+    ren_glDispatchComputeIndirect = (PFNGLDISPATCHCOMPUTEINDIRECTPROC)GetProcAddress(glDispatchComputeIndirect);
     ren_glMemoryBarrier = (PFNGLMEMORYBARRIERPROC)GetProcAddress(glMemoryBarrier);
     ren_glGetBufferSubData =
         (PFNGLGETBUFFERSUBDATAPROC)GetProcAddress(glGetBufferSubData);
@@ -301,6 +302,9 @@ bool Ren::InitGLExtentions() {
 
     ren_glBlendFunci = (PFNGLBLENDFUNCIPROC)GetProcAddress(glBlendFunci);
     ren_glClearBufferfv = (PFNGLCLEARBUFFERFVPROC)GetProcAddress(glClearBufferfv);
+
+    ren_glClearBufferSubData = (PFNGLCLEARBUFFERSUBDATAPROC)GetProcAddress(glClearBufferSubData);
+    ren_glClearTexImage = (PFNGLCLEARTEXIMAGEPROC)GetProcAddress(glClearTexImage);
 
     ren_glBindImageTexture =
         (PFNGLBINDIMAGETEXTUREPROC)GetProcAddress(glBindImageTexture);

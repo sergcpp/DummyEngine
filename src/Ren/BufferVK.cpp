@@ -25,9 +25,12 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
         flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
     } else if (type == eBufType::ShaderBinding) {
         flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    } else if (type == eBufType::Indirect) {
+        flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     }
 
-    if ((type == eBufType::VertexAttribs || type == eBufType::VertexIndices || type == eBufType::Storage) &&
+    if ((type == eBufType::VertexAttribs || type == eBufType::VertexIndices || type == eBufType::Storage ||
+         type == eBufType::Indirect) &&
         api_ctx->raytracing_supported) {
         flags |= (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
                   VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR);
@@ -48,7 +51,8 @@ int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(const char *name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
                     const uint32_t suballoc_align)
-    : LinearAlloc(suballoc_align, initial_size), name_(name), api_ctx_(api_ctx), type_(type), size_(0) {
+    : LinearAlloc(std::min(suballoc_align, initial_size), initial_size), name_(name), api_ctx_(api_ctx), type_(type),
+      size_(0) {
     Resize(size());
 }
 
@@ -107,7 +111,7 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
                 new_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                new_barrier.buffer = init_buf->handle().buf;
+                new_barrier.buffer = init_buf->vk_handle();
                 new_barrier.offset = VkDeviceSize{init_off};
                 new_barrier.size = VkDeviceSize{req_size};
 
@@ -167,7 +171,7 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
         new_barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = init_buf.handle().buf;
+        new_barrier.buffer = init_buf.vk_handle();
         new_barrier.offset = VkDeviceSize{init_off};
         new_barrier.size = VkDeviceSize{size};
 
@@ -236,7 +240,7 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     VkBuffer new_buf = {};
     VkResult res = vkCreateBuffer(api_ctx_->device, &buf_create_info, nullptr, &new_buf);
     assert(res == VK_SUCCESS && "Failed to create vertex buffer!");
-    
+
 #ifdef ENABLE_OBJ_LABELS
     VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
     name_info.objectType = VK_OBJECT_TYPE_BUFFER;
@@ -263,7 +267,7 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     VkDeviceMemory buffer_mem = {};
     res = vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
     assert(res == VK_SUCCESS && "Failed to allocate memory!");
-    
+
     res = vkBindBufferMemory(api_ctx_->device, new_buf, buffer_mem, 0 /* offset */);
     assert(res == VK_SUCCESS && "Failed to bind memory!");
 
@@ -389,7 +393,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = src.handle().buf;
+        new_barrier.buffer = src.vk_handle();
         new_barrier.offset = VkDeviceSize{src_offset};
         new_barrier.size = VkDeviceSize{size};
 
@@ -404,7 +408,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = dst.handle().buf;
+        new_barrier.buffer = dst.vk_handle();
         new_barrier.offset = VkDeviceSize{dst_offset};
         new_barrier.size = VkDeviceSize{size};
 
@@ -422,7 +426,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
     region_to_copy.dstOffset = VkDeviceSize{dst_offset};
     region_to_copy.size = VkDeviceSize{size};
 
-    vkCmdCopyBuffer(cmd_buf, src.handle().buf, dst.handle().buf, 1, &region_to_copy);
+    vkCmdCopyBuffer(cmd_buf, src.vk_handle(), dst.vk_handle(), 1, &region_to_copy);
 
     src.resource_state = eResState::CopySrc;
     dst.resource_state = eResState::CopyDst;

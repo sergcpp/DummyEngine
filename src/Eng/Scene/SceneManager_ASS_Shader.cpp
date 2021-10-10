@@ -109,8 +109,12 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
         int line_counter = 0;
 
         while (std::getline(src_stream, line)) {
-            if (!line.empty() && line.back() == '\r') {
+            /*if (!line.empty() && line.back() == '\r') {
                 line = line.substr(0, line.size() - 1);
+            }*/
+
+            if (line == "#error 111") {
+                volatile int ii = 0;
             }
 
             if (line.rfind("#version ") == 0) {
@@ -134,16 +138,19 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
                     return false;
                 }
 
-                dst_stream << "\r\n#line " << line_counter << "\r\n";
+                dst_stream << "\r\n#line " << (line_counter + 2) << "\r\n";
             } else if (line.find("PERM ") == 0) { // NOLINT
                 permutations.emplace_back(line.substr(5));
             } else {
                 InlineShaderConstants(ctx, line);
 
+                if (line.back() == '\r') {
+                    line.pop_back();
+                }
                 dst_stream << line << "\r\n";
             }
 
-            line_counter++;
+            ++line_counter;
         }
     }
 
@@ -226,9 +233,11 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
                     compile_cmd += " -V ";
                     if (is_rt) {
                         compile_cmd += " --target-env spirv1.4 ";
+                    } else {
+                        compile_cmd += " --target-env spirv1.3 ";
                     }
                 } else {
-                    compile_cmd += " -G ";
+                    compile_cmd += " -G --target-env spirv1.3 ";
                 }
                 compile_cmd += out_file;
                 compile_cmd += " -o \"";

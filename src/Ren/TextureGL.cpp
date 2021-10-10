@@ -28,6 +28,7 @@ const uint32_t g_gl_formats[] = {
     GL_RED,                      // RawR32F
     GL_RED,                      // RawR16F
     GL_RED,                      // RawR8
+    GL_RED,                      // RawR32UI
     GL_RG,                       // RawRG88
     GL_RGB,                      // RawRGB32F
     GL_RGBA,                     // RawRGBA32F
@@ -64,6 +65,7 @@ const uint32_t g_gl_internal_formats[] = {
     GL_R32F,              // RawR32F
     GL_R16F,              // RawR16F
     GL_R8,                // RawR8
+    GL_R32UI,             // RawR32UI
     GL_RG8,               // RawRG88
     GL_RGB32F,            // RawRGB32F
     GL_RGBA32F,           // RawRGBA32F
@@ -100,6 +102,7 @@ const uint32_t g_gl_types[] = {
     GL_FLOAT,          // RawR32F
     GL_HALF_FLOAT,     // RawR16F
     GL_UNSIGNED_BYTE,  // RawR8
+    GL_UNSIGNED_INT,   // RawR32UI
     GL_UNSIGNED_BYTE,  // RawRG88
     GL_FLOAT,          // RawRGB32F
     GL_FLOAT,          // RawRGBA32F
@@ -139,15 +142,6 @@ const uint32_t g_gl_compare_func[] = {
     GL_NEVER,    // Never
 };
 static_assert(COUNT_OF(g_gl_compare_func) == size_t(eTexCompare::_Count), "!");
-
-const uint32_t gl_binding_targets[] = {
-    GL_TEXTURE_2D,             // Tex2D
-    GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
-    GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
-    GL_TEXTURE_BUFFER,         // TexBuf
-    GL_UNIFORM_BUFFER,         // UBuf
-};
-static_assert(COUNT_OF(gl_binding_targets) == size_t(eBindTarget::_Count), "!");
 
 uint32_t TextureHandleCounter = 0;
 
@@ -1309,8 +1303,6 @@ uint32_t Ren::GLInternalFormatFromTexFormat(const eTexFormat format, const bool 
 }
 
 uint32_t Ren::GLTypeFromTexFormat(const eTexFormat format) { return g_gl_types[size_t(format)]; }
-
-uint32_t Ren::GLBindTarget(const eBindTarget binding) { return gl_binding_targets[size_t(binding)]; }
 
 void Ren::GLUnbindTextureUnits(const int start, const int count) {
     for (int i = start; i < start + count; i++) {

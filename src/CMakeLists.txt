@@ -63,7 +63,7 @@ else()
     set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/arm64-v8a)
 endif()
 
-set(RENDERER "GL" CACHE STRING "Render backend")
+set(RENDERER "VK" CACHE STRING "Render backend")
 
 if(${RENDERER} STREQUAL "GL")
   add_definitions(-DUSE_GL_RENDER)

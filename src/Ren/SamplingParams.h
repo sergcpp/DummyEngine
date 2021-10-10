@@ -34,6 +34,4 @@ inline bool operator==(const SamplingParams lhs, const SamplingParams rhs) {
 }
 
 enum class eSamplerLoadStatus { Found, Created };
-
-enum class eBindTarget : uint16_t { Tex2D, Tex2DMs, TexCubeArray, TexBuf, UBuf, _Count };
 } // namespace Ren

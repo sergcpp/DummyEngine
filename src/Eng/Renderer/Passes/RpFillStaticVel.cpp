@@ -17,17 +17,17 @@ void RpFillStaticVel::Setup(RpBuilder &builder, const ViewState *view_state, con
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
 
-    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::DepthRead,
+    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::StencilTestDepthFetch,
                                      Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader, *this);
     velocity_tex_ =
-        builder.ReadTexture(velocity_tex, Ren::eResState::RenderTarget, Ren::eStageBits::FragmentShader, *this);
+        builder.WriteTexture(velocity_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
 void RpFillStaticVel::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
 
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    RpAllocTex &velocity_tex = builder.GetReadTexture(velocity_tex_);
+    RpAllocTex &velocity_tex = builder.GetWriteTexture(velocity_tex_);
 
     LazyInit(builder.ctx(), builder.sh(), depth_tex, velocity_tex);
 
@@ -42,7 +42,7 @@ void RpFillStaticVel::Execute(RpBuilder &builder) {
 
     Ren::Program *blit_prog = blit_static_vel_prog_.get();
 
-    const PrimDraw::Binding bindings[] = {
+    const Ren::Binding bindings[] = {
         {Ren::eBindTarget::Tex2D, BlitStaticVel::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
 

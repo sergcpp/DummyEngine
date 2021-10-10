@@ -114,8 +114,6 @@ const vec2 poisson_disk[16] = vec2[16](
     vec2(0.75, -0.81)
 );
 
-#define M_PI 3.1415926535897932384626433832795
-
 float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord) {
     // http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
 

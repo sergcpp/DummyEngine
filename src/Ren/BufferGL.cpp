@@ -16,7 +16,8 @@ const uint32_t g_gl_buf_targets[] = {
     GL_SHADER_STORAGE_BUFFER, // Storage
     GL_COPY_READ_BUFFER,      // Stage
     0xffffffff,               // AccStructure
-    0xffffffff                // ShaderBinding
+    0xffffffff,               // ShaderBinding
+    GL_DRAW_INDIRECT_BUFFER   // Indirect
 };
 static_assert(COUNT_OF(g_gl_buf_targets) == size_t(eBufType::_Count), "!");
 

@@ -131,3 +131,8 @@
 #define REN_OIT_MODE REN_OIT_DISABLED
 
 #define FLT_EPS 0.0000001
+
+// TODO: remove these
+#define GLOSSY_THRESHOLD 0.55f
+#define MIRROR_THRESHOLD 0.0001f
+#define VARIANCE_GUIDED 0

@@ -45,8 +45,8 @@ void RpBilateralBlur::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = res_[1];
 
     { // blur ao buffer
-        PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Bilateral::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                        {Ren::eBindTarget::Tex2D, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+        Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Bilateral::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                   {Ren::eBindTarget::Tex2D, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
 
         Bilateral::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};

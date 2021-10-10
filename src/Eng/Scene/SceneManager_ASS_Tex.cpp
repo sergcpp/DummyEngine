@@ -17,8 +17,7 @@
 #define _MAX(x, y) ((x) < (y) ? (y) : (x))
 
 namespace SceneManagerInternal {
-void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int channels,
-                             uint8_t out_color[4]) {
+void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int channels, uint8_t out_color[4]) {
     uint32_t sum[4] = {};
     for (int y = 0; y < h; y++) {
         uint32_t line_sum[4] = {};
@@ -52,8 +51,7 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *const image_data =
-        stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     GetTexturesAverageColor(image_data, width, height, channels, out_color);
 
@@ -62,8 +60,7 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
     return true;
 }
 
-std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width,
-                                              int height, int channels,
+std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width, int height, int channels,
                                               assets_context_t &ctx) {
     std::unique_ptr<uint8_t[]> _out_conemap(new uint8_t[width * height * 4]);
     // faster access in debug
@@ -77,13 +74,11 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
             { // x slope
                 int dx;
                 if (x == 0) {
-                    dx = (int(img_data[channels * (y * width + x + 1)]) -
-                          int(img_data[channels * (y * width + x)])) /
-                         2;
+                    dx =
+                        (int(img_data[channels * (y * width + x + 1)]) - int(img_data[channels * (y * width + x)])) / 2;
                 } else if (x == width - 1) {
-                    dx = (int(img_data[channels * (y * width + x)]) -
-                          int(img_data[channels * (y * width + x - 1)])) /
-                         2;
+                    dx =
+                        (int(img_data[channels * (y * width + x)]) - int(img_data[channels * (y * width + x - 1)])) / 2;
                 } else {
                     dx = (int(img_data[channels * (y * width + x + 1)]) -
                           int(img_data[channels * (y * width + x - 1)])) /
@@ -96,12 +91,10 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
             { // y slope
                 int dy;
                 if (y == 0) {
-                    dy = (int(img_data[channels * ((y + 1) * width + x)]) -
-                          int(img_data[channels * (y * width + x)])) /
+                    dy = (int(img_data[channels * ((y + 1) * width + x)]) - int(img_data[channels * (y * width + x)])) /
                          2;
                 } else if (y == height - 1) {
-                    dy = (int(img_data[channels * (y * width + x)]) -
-                          int(img_data[channels * ((y - 1) * width + x)])) /
+                    dy = (int(img_data[channels * (y * width + x)]) - int(img_data[channels * ((y - 1) * width + x)])) /
                          2;
                 } else {
                     dy = (int(img_data[channels * ((y + 1) * width + x)]) -
@@ -126,19 +119,13 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
         for (int y = y_start; y < y_start + TileSize; y++) {
             for (int x = x_start; x < x_start + TileSize; x++) {
                 const float h = out_conemap[4 * (y * width + x) + 0] / 255.0f;
-                const float dhdx =
-                    +(out_conemap[4 * (y * width + x) + 2] / 255.0f - 0.5f) *
-                    float(width);
-                const float dhdy =
-                    -(out_conemap[4 * (y * width + x) + 3] / 255.0f - 0.5f) *
-                    float(height);
+                const float dhdx = +(out_conemap[4 * (y * width + x) + 2] / 255.0f - 0.5f) * float(width);
+                const float dhdy = -(out_conemap[4 * (y * width + x) + 3] / 255.0f - 0.5f) * float(height);
 
                 float min_ratio2 = MaxRatio * MaxRatio;
 
-                for (int rad = 1; (rad * rad <= 1.1f * 1.1f * (1.0f - h) * (1.0f - h) *
-                                                    min_ratio2 * width * height) &&
-                                  (rad <= 1.1f * (1.0f - h) * width) &&
-                                  (rad <= 1.1f * (1.0f - h) * height);
+                for (int rad = 1; (rad * rad <= 1.1f * 1.1f * (1.0f - h) * (1.0f - h) * min_ratio2 * width * height) &&
+                                  (rad <= 1.1f * (1.0f - h) * width) && (rad <= 1.1f * (1.0f - h) * height);
                      rad++) {
                     { // west
                         int x1 = x - rad;
@@ -152,8 +139,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
                             for (int dy = y1; dy <= y2; dy++) {
                                 const float dely = (dy - y) * inv_height;
                                 const float r2 = delx * delx + dely * dely;
-                                const float h2 =
-                                    out_conemap[4 * (dy * width + x1)] / 255.0f - h;
+                                const float h2 = out_conemap[4 * (dy * width + x1)] / 255.0f - h;
                                 if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
                                     min_ratio2 = r2 / (h2 * h2);
                                 }
@@ -173,8 +159,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
                             for (int dy = y1; dy <= y2; dy++) {
                                 const float dely = (dy - y) * inv_height;
                                 const float r2 = delx * delx + dely * dely;
-                                const float h2 =
-                                    out_conemap[4 * (dy * width + x2)] / 255.0f - h;
+                                const float h2 = out_conemap[4 * (dy * width + x2)] / 255.0f - h;
                                 if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
                                     min_ratio2 = r2 / (h2 * h2);
                                 }
@@ -194,8 +179,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
                             for (int dx = x1; dx <= x2; dx++) {
                                 const float delx = (dx - x) * inv_width;
                                 const float r2 = delx * delx + dely * dely;
-                                const float h2 =
-                                    out_conemap[4 * (y1 * width + dx)] / 255.0f - h;
+                                const float h2 = out_conemap[4 * (y1 * width + dx)] / 255.0f - h;
                                 if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
                                     min_ratio2 = r2 / (h2 * h2);
                                 }
@@ -215,8 +199,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
                             for (int dx = x1; dx <= x2; dx++) {
                                 const float delx = (dx - x) * inv_width;
                                 const float r2 = delx * delx + dely * dely;
-                                const float h2 =
-                                    out_conemap[4 * (y2 * width + dx)] / 255.0f - h;
+                                const float h2 = out_conemap[4 * (y2 * width + dx)] / 255.0f - h;
                                 if ((h2 > 0.0f) && (h2 * h2 * min_ratio2 > r2)) {
                                     min_ratio2 = r2 / (h2 * h2);
                                 }
@@ -229,8 +212,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
                 ratio = std::sqrt(ratio / MaxRatio);
 
                 // store in green channel
-                out_conemap[4 * (y * width + x) + 1] =
-                    uint8_t(_MAX(255.0f * ratio + 0.5f, 1.0f));
+                out_conemap[4 * (y * width + x) + 1] = uint8_t(_MAX(255.0f * ratio + 0.5f, 1.0f));
             }
         }
     };
@@ -241,28 +223,24 @@ std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width
     for (int y = 0; y < height; y += TileSize) {
         for (int x = 0; x < width; x += TileSize) {
             if (ctx.p_threads) {
-                futures.emplace_back(
-                    ctx.p_threads->Enqueue(std::bind(compute_tile, x, y)));
+                futures.emplace_back(ctx.p_threads->Enqueue(std::bind(compute_tile, x, y)));
             } else {
                 compute_tile(x, y);
                 ctx.log->Info("Computing conemap %i%%",
-                              int(100.0f * float(++counter) /
-                                  float((width * height) / (TileSize * TileSize))));
+                              int(100.0f * float(++counter) / float((width * height) / (TileSize * TileSize))));
             }
         }
     }
 
     for (auto &f : futures) {
         f.wait();
-        ctx.log->Info("Computing conemap %i%%",
-                      int(100.0f * float(++counter) / float(futures.size())));
+        ctx.log->Info("Computing conemap %i%%", int(100.0f * float(++counter) / float(futures.size())));
     }
 
     return _out_conemap;
 }
 
-std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int width,
-                                                int height, int channels,
+std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int width, int height, int channels,
                                                 Ren::ILog *log) {
     std::unique_ptr<uint8_t[]> _out_normalmap(new uint8_t[width * height * 3]);
     // faster access in debug
@@ -277,24 +255,18 @@ std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int wid
             const int x_right = (x + 1 < width) ? (x + 1) : 0;
 
             const float h = img_data[(y * width + x) * channels + 0] / 255.0f;
-            const float h_top_left =
-                img_data[(y_top * width + x_left) * channels + 0] / 255.0f;
+            const float h_top_left = img_data[(y_top * width + x_left) * channels + 0] / 255.0f;
             const float h_top = img_data[(y_top * width + x) * channels + 0] / 255.0f;
-            const float h_top_right =
-                img_data[(y_top * width + x_right) * channels + 0] / 255.0f;
+            const float h_top_right = img_data[(y_top * width + x_right) * channels + 0] / 255.0f;
             const float h_left = img_data[(y * width + x_left) * channels + 0] / 255.0f;
             const float h_right = img_data[(y * width + x_right) * channels + 0] / 255.0f;
-            const float h_bot_left =
-                img_data[(y_bottom * width + x_left) * channels + 0] / 255.0f;
+            const float h_bot_left = img_data[(y_bottom * width + x_left) * channels + 0] / 255.0f;
             const float h_bot = img_data[(y_bottom * width + x) * channels + 0] / 255.0f;
-            const float h_bot_right =
-                img_data[(y_bottom * width + x_right) * channels + 0] / 255.0f;
+            const float h_bot_right = img_data[(y_bottom * width + x_right) * channels + 0] / 255.0f;
 
             Ren::Vec3f n;
-            n[0] = (h_top_right + 2.0f * h_right + h_bot_right) -
-                   (h_top_left + 2.0f * h_left + h_bot_left);
-            n[1] = (h_bot_left + 2.0f * h_bot + h_bot_right) -
-                   (h_top_left + 2.0f * h_top + h_top_right);
+            n[0] = (h_top_right + 2.0f * h_right + h_bot_right) - (h_top_left + 2.0f * h_left + h_bot_left);
+            n[1] = (h_bot_left + 2.0f * h_bot + h_bot_right) - (h_top_left + 2.0f * h_top + h_top_right);
             n[2] = 0.25f;
 
             n = Normalize(n);
@@ -311,9 +283,8 @@ std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int wid
     return _out_normalmap;
 }
 
-int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log,
-                        std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16],
-                        int heights[16]) {
+int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log, std::unique_ptr<uint8_t[]> mipmaps[16],
+                        int widths[16], int heights[16]) {
     mipmaps[0].reset(new uint8_t[4 * widths[0] * heights[0]]);
     for (int y = 0; y < heights[0]; y++) {
         for (int x = 0; x < widths[0]; x++) {
@@ -325,19 +296,15 @@ int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log,
         }
     }
 
-    const Ren::eMipOp ops[4] = {Ren::eMipOp::Zero, Ren::eMipOp::MinBilinear,
-                                Ren::eMipOp::Zero, Ren::eMipOp::Skip};
+    const Ren::eMipOp ops[4] = {Ren::eMipOp::Zero, Ren::eMipOp::MinBilinear, Ren::eMipOp::Zero, Ren::eMipOp::Skip};
     return Ren::InitMipMaps(mipmaps, widths, heights, 4, ops);
 }
 
-int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
-               bool is_rgbm, const char *name);
+int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 
 bool Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
-    std::unique_ptr<uint8_t[]> u8_data =
-        Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
-    return WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */,
-                      name) == 1;
+    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
+    return WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */, name) == 1;
 }
 
 bool Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
@@ -353,19 +320,17 @@ bool Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *nam
         }
     }
 
-    return WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, false /* is_rgbm */,
-                      name) == 1;
+    return WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, false /* is_rgbm */, name) == 1;
 }
 
-bool Write_RGBM(const float *out_data, const int w, const int h, const int channels,
-                const bool flip_y, const char *name) {
-    const std::unique_ptr<uint8_t[]> u8_data =
-        Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
+bool Write_RGBM(const float *out_data, const int w, const int h, const int channels, const bool flip_y,
+                const char *name) {
+    const std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
     return WriteImage(&u8_data[0], w, h, 4, flip_y, true /* is_rgbm */, name) == 1;
 }
 
-bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights,
-                    const int mip_count, const int channels, const char *out_file) {
+bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights, const int mip_count,
+                    const int channels, const char *out_file) {
     //
     // Compress mip images
     //
@@ -377,13 +342,11 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
         if (channels == 3) {
             dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
             dxt_data[i].reset(new uint8_t[dxt_size[i]]);
-            Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i],
-                                       dxt_data[i].get());
+            Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
         } else if (channels == 4) {
             dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
             dxt_data[i].reset(new uint8_t[dxt_size[i]]);
-            Ren::CompressImage_DXT5(mipmaps[i], widths[i], heights[i],
-                                    dxt_data[i].get());
+            Ren::CompressImage_DXT5(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
     }
@@ -392,12 +355,10 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     // Write out file
     //
     Ren::DDSHeader header = {};
-    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) |
-                     (unsigned('S') << 16u) | (unsigned(' ') << 24u);
+    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
     header.dwSize = 124;
-    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) |
-                     unsigned(DDSD_PIXELFORMAT) | unsigned(DDSD_LINEARSIZE) |
-                     unsigned(DDSD_MIPMAPCOUNT);
+    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) | unsigned(DDSD_PIXELFORMAT) |
+                     unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
     header.dwWidth = widths[0];
     header.dwHeight = heights[0];
     header.dwPitchOrLinearSize = dxt_size_total;
@@ -406,11 +367,11 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     header.sPixelFormat.dwFlags = DDPF_FOURCC;
 
     if (channels == 3) {
-        header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                       (unsigned('T') << 16u) | (unsigned('1') << 24u);
+        header.sPixelFormat.dwFourCC =
+            (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('1') << 24u);
     } else {
-        header.sPixelFormat.dwFourCC = (unsigned('D') << 0u) | (unsigned('X') << 8u) |
-                                       (unsigned('T') << 16u) | (unsigned('5') << 24u);
+        header.sPixelFormat.dwFourCC =
+            (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('5') << 24u);
     }
 
     header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
@@ -429,12 +390,10 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     return out_stream.good();
 }
 
-bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels,
-               const bool flip_y, const bool is_rgbm, const char *out_file,
-               uint8_t out_color[4]) {
+bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels, const bool flip_y,
+               const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
     // Check if resolution is power of two
-    const bool store_mipmaps =
-        (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
+    const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
@@ -442,8 +401,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
     mipmaps[0].reset(new uint8_t[w * h * channels]);
     if (flip_y) {
         for (int j = 0; j < h; j++) {
-            memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels],
-                   w * channels);
+            memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
         }
     } else {
         memcpy(&mipmaps[0][0], &image_data[0], w * h * channels);
@@ -457,8 +415,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
             assert(channels == 4);
             mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
         } else {
-            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg,
-                                        Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg};
             mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
 
@@ -485,8 +442,8 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
     return Write_DDS_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
 }
 
-bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
-                   const int channels, const bool is_rgbm, const char *out_file) {
+bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const int channels, const bool is_rgbm,
+                   const char *out_file) {
     // Check if power of two
     bool store_mipmaps = (w & (w - 1)) == 0 && (h & (h - 1)) == 0;
 
@@ -496,8 +453,7 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
     mipmaps[0].reset(new uint8_t[w * h * channels]);
     // mirror by y (????)
     for (int j = 0; j < h; j++) {
-        memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels],
-               w * channels);
+        memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
     }
     widths[0] = w;
     heights[0] = h;
@@ -508,8 +464,7 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
             assert(channels == 4);
             mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
         } else {
-            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg,
-                                        Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg};
             mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
     } else {
@@ -527,13 +482,11 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
         if (channels == 3) {
             dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
             dxt_data[i].reset(new uint8_t[dxt_size[i]]);
-            Ren::CompressImage_DXT1<3>(mipmaps[i].get(), widths[i], heights[i],
-                                       dxt_data[i].get());
+            Ren::CompressImage_DXT1<3>(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
         } else if (channels == 4) {
             dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
             dxt_data[i].reset(new uint8_t[dxt_size[i]]);
-            Ren::CompressImage_DXT5(mipmaps[i].get(), widths[i], heights[i],
-                                    dxt_data[i].get());
+            Ren::CompressImage_DXT5(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
     }
@@ -592,20 +545,17 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h,
     return out_stream.good();
 }
 
-int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels,
-                  float bitrate, std::unique_ptr<uint8_t[]> &out_buf);
-std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, int xdim,
-                                      int ydim, int width, int height);
-std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size,
-                                           int &width, int &height);
+int ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate,
+                  std::unique_ptr<uint8_t[]> &out_buf);
+std::unique_ptr<uint8_t[]> DecodeASTC(const uint8_t *image_data, int data_size, int xdim, int ydim, int width,
+                                      int height);
+std::unique_ptr<uint8_t[]> Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width, int &height);
 
-bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
-                         const int *heights, const int mip_count, const int channels,
-                         const char *out_file) {
+bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights, const int mip_count,
+                         const int channels, const char *out_file) {
 
     int quality = 0;
-    if (strstr(out_file, "_norm") || strstr(out_file, "/env/") ||
-        strstr(out_file, "\\env\\")) {
+    if (strstr(out_file, "_norm") || strstr(out_file, "/env/") || strstr(out_file, "\\env\\")) {
         quality = 1;
     } else if (strstr(out_file, "lightmaps") || strstr(out_file, "probes_cache")) {
         quality = 2;
@@ -619,8 +569,8 @@ bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
     int astc_size_total = 0;
 
     for (int i = 0; i < mip_count; i++) {
-        astc_size[i] = ConvertToASTC(mipmaps[i], widths[i], heights[i], channels,
-                                     bits_per_pixel_sel[quality], astc_data[i]);
+        astc_size[i] =
+            ConvertToASTC(mipmaps[i], widths[i], heights[i], channels, bits_per_pixel_sel[quality], astc_data[i]);
         astc_size_total += astc_size[i];
     }
 
@@ -631,8 +581,7 @@ bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
     const uint32_t gl_compressed_rgba_astc_6x6_khr = 0x93B4;
     const uint32_t gl_compressed_rgba_astc_8x8_khr = 0x93B7;
 
-    const uint32_t gl_format_sel[] = {gl_compressed_rgba_astc_8x8_khr,
-                                      gl_compressed_rgba_astc_6x6_khr,
+    const uint32_t gl_format_sel[] = {gl_compressed_rgba_astc_8x8_khr, gl_compressed_rgba_astc_6x6_khr,
                                       gl_compressed_rgba_astc_4x4_khr};
 
     Ren::KTXHeader header = {};
@@ -680,12 +629,10 @@ bool Write_KTX_ASTC_Mips(const uint8_t *const *mipmaps, const int *widths,
     return out_stream.good();
 }
 
-bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
-                    const int channels, const bool flip_y, const bool is_rgbm,
-                    const char *out_file) {
+bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h, const int channels, const bool flip_y,
+                    const bool is_rgbm, const char *out_file) {
     // Check if power of two
-    const bool store_mipmaps =
-        (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
+    const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
@@ -693,8 +640,7 @@ bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
     mipmaps[0].reset(new uint8_t[w * h * channels]);
     if (flip_y) {
         for (int j = 0; j < h; j++) {
-            memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels],
-                   w * channels);
+            memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
         }
     } else {
         memcpy(&mipmaps[0][0], &image_data[0], w * h * channels);
@@ -708,8 +654,7 @@ bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
             assert(channels == 4);
             mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
         } else {
-            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg,
-                                        Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg};
             mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
         }
     } else {
@@ -724,8 +669,8 @@ bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h,
     return Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
 }
 
-int WriteImage(const uint8_t *out_data, const int w, const int h, const int channels,
-               const bool flip_y, const bool is_rgbm, const char *name) {
+int WriteImage(const uint8_t *out_data, const int w, const int h, const int channels, const bool flip_y,
+               const bool is_rgbm, const char *name) {
     int res = 0;
     if (strstr(name, ".tga") || strstr(name, ".png")) {
         // TODO: check if negative stride can be used instead of this
@@ -733,8 +678,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
         if (flip_y) {
             temp_data.reset(new uint8_t[w * h * channels]);
             for (int j = 0; j < h; j++) {
-                memcpy(&temp_data[j * w * channels],
-                       &out_data[(h - j - 1) * w * channels], w * channels);
+                memcpy(&temp_data[j * w * channels], &out_data[(h - j - 1) * w * channels], w * channels);
             }
             out_data = &temp_data[0];
         }
@@ -759,8 +703,7 @@ bool CreateFolders(const char *out_file, Ren::ILog *log);
 extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
-bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
-                              const char *out_file) {
+bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -776,8 +719,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *const image_data =
-        stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     uint8_t average_color[4] = {};
 
@@ -796,8 +738,8 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
             }
         }
 
-        res &= Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */,
-                         false /* is_rgbm */, out_file, average_color);
+        res &= Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */, false /* is_rgbm */, out_file,
+                         average_color);
     } else if (strstr(in_file, "_bump")) {
         if (channels != 1) {
             ctx.log->Info("Bump map has too many channels (%i)", channels);
@@ -813,8 +755,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
         widths[0] = width;
         heights[0] = height;
 
-        const int mip_count =
-            ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
+        const int mip_count = ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
 
         // combine data into one image
         for (int y = 0; y < height; y++) {
@@ -854,8 +795,8 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
         res &= Write_DDS_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
     } else {
         const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
-        res &= Write_DDS(image_data, width, height, channels, false /* flip_y */,
-                         is_rgbm /* is_rgbm */, out_file, average_color);
+        res &= Write_DDS(image_data, width, height, channels, false /* flip_y */, is_rgbm /* is_rgbm */, out_file,
+                         average_color);
     }
     free(image_data);
 
@@ -864,8 +805,7 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file,
     return res;
 }
 
-bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
-                               const char *out_file) {
+bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -881,8 +821,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&src_buf[0], src_size);
 
     int width, height, channels;
-    unsigned char *const image_data =
-        stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
 
     bool res = true;
     if (strstr(in_file, "_norm")) {
@@ -899,8 +838,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
             }
         }
 
-        res &= Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */,
-                              false /* is_rgbm */, out_file);
+        res &= Write_KTX_ASTC(temp_data.get(), width, height, 4, false /* flip_y */, false /* is_rgbm */, out_file);
     } else if (strstr(in_file, "_bump")) {
         if (channels != 1) {
             ctx.log->Info("Bump map has too many channels (%i)", channels);
@@ -916,8 +854,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
         widths[0] = width;
         heights[0] = height;
 
-        const int mip_count =
-            ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
+        const int mip_count = ComputeBumpQuadtree(image_data, channels, ctx.log, mipmaps, widths, heights);
 
         // combine data into one image
         for (int y = 0; y < height; y++) {
@@ -948,8 +885,7 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
         }
         res &= Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
     } else {
-        res &= Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */,
-                              false /* is_rgbm */, out_file);
+        res &= Write_KTX_ASTC(image_data, width, height, channels, false /* flip_y */, false /* is_rgbm */, out_file);
     }
 
     free(image_data);
@@ -957,22 +893,19 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file,
     return res;
 }
 
-bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file,
-                                  const char *out_file) {
+bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     int width, height;
     const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
-    const std::unique_ptr<float[]> image_f32 =
-        Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
+    const std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
 
     return Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
 }
 
-bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
-                                 const char *out_file) {
+bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -990,8 +923,7 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&mips_count, sizeof(int));
     src_size -= sizeof(int);
 
-    std::unique_ptr<uint8_t[]> mipmaps[16],
-        compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
+    std::unique_ptr<uint8_t[]> mipmaps[16], compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
     uint8_t *_mipmaps[16];
     int widths[16], heights[16];
 
@@ -1005,8 +937,8 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
 
         mipmaps[i].reset(new uint8_t[orig_size]);
 
-        const int decompressed_size = Net::DecompressLZO(
-            &compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
+        const int decompressed_size =
+            Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
         assert(decompressed_size == orig_size);
 
         _mipmaps[i] = mipmaps[i].get();
@@ -1024,8 +956,7 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file,
     return Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
-bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
-                                  const char *out_file) {
+bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -1043,8 +974,7 @@ bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
     src_stream.read((char *)&mips_count, sizeof(int));
     src_size -= sizeof(int);
 
-    std::unique_ptr<uint8_t[]> mipmaps[16],
-        compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
+    std::unique_ptr<uint8_t[]> mipmaps[16], compressed_buf(new uint8_t[Net::CalcLZOOutSize(res * res * 4)]);
     uint8_t *_mipmaps[16];
     int widths[16], heights[16];
 
@@ -1058,8 +988,8 @@ bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
 
         mipmaps[i].reset(new uint8_t[orig_size]);
 
-        const int decompressed_size = Net::DecompressLZO(
-            &compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
+        const int decompressed_size =
+            Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
         assert(decompressed_size == orig_size);
 
         _mipmaps[i] = mipmaps[i].get();
@@ -1077,10 +1007,8 @@ bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file,
     return Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
-bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name,
-                                   const ProbeStorage &probes,
-                                   const CompStorage *light_probe_storage,
-                                   Ren::ILog *log) {
+bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name, const Ren::ProbeStorage &probes,
+                                   const CompStorage *light_probe_storage, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     const int res = probes.res();
@@ -1131,15 +1059,12 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
                     const int mip_res = int(unsigned(res) >> unsigned(k));
                     const int buf_size = mip_res * mip_res * 4;
 
-                    if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size,
-                                             &temp_buf[0], log)) {
-                        log->Error("Failed to read cubemap level %i layer %i face %i", k,
-                                   lprobe->layer_index, j);
+                    if (!probes.GetPixelData(k, lprobe->layer_index, j, buf_size, &temp_buf[0], log)) {
+                        log->Error("Failed to read cubemap level %i layer %i face %i", k, lprobe->layer_index, j);
                         return false;
                     }
 
-                    const int comp_size =
-                        Net::CompressLZO(&temp_buf[0], buf_size, &temp_comp_buf[0]);
+                    const int comp_size = Net::CompressLZO(&temp_buf[0], buf_size, &temp_comp_buf[0]);
                     out_file.write((char *)&comp_size, sizeof(int));
                     out_file.write((char *)&temp_comp_buf[0], comp_size);
                 }
@@ -1168,11 +1093,10 @@ int astc_main(int argc, char **argv);
 void test_inappropriate_extended_precision();
 void find_closest_blockdim_2d(float target_bitrate, int *x, int *y, int consider_illegal);
 
-void encode_astc_image(const astc_codec_image *input_image,
-                       astc_codec_image *output_image, int xdim, int ydim, int zdim,
-                       const error_weighting_params *ewp, astc_decode_mode decode_mode,
-                       swizzlepattern swz_encode, swizzlepattern swz_decode,
-                       uint8_t *buffer, int pack_and_unpack, int threadcount);
+void encode_astc_image(const astc_codec_image *input_image, astc_codec_image *output_image, int xdim, int ydim,
+                       int zdim, const error_weighting_params *ewp, astc_decode_mode decode_mode,
+                       swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t *buffer, int pack_and_unpack,
+                       int threadcount);
 
 void SceneManager::InitASTCCodec() {
     test_inappropriate_extended_precision();
@@ -1180,8 +1104,7 @@ void SceneManager::InitASTCCodec() {
     build_quantization_mode_table();
 }
 
-int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height,
-                                        int channels, float bitrate,
+int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, int height, int channels, float bitrate,
                                         std::unique_ptr<uint8_t[]> &out_buf) {
     const int padding = channels == 4 ? 1 : 0;
 
@@ -1193,14 +1116,10 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
             int y = j + padding;
             for (int i = 0; i < width; i++) {
                 int x = i + padding;
-                src_image->imagedata8[0][y][4 * x + 0] =
-                    image_data[4 * (j * width + i) + 0];
-                src_image->imagedata8[0][y][4 * x + 1] =
-                    image_data[4 * (j * width + i) + 1];
-                src_image->imagedata8[0][y][4 * x + 2] =
-                    image_data[4 * (j * width + i) + 2];
-                src_image->imagedata8[0][y][4 * x + 3] =
-                    image_data[4 * (j * width + i) + 3];
+                src_image->imagedata8[0][y][4 * x + 0] = image_data[4 * (j * width + i) + 0];
+                src_image->imagedata8[0][y][4 * x + 1] = image_data[4 * (j * width + i) + 1];
+                src_image->imagedata8[0][y][4 * x + 2] = image_data[4 * (j * width + i) + 2];
+                src_image->imagedata8[0][y][4 * x + 3] = image_data[4 * (j * width + i) + 3];
             }
         }
     } else {
@@ -1231,8 +1150,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         int plimit_autoset = 25;
         float oplimit_autoset = 1.2f;
         float mincorrel_autoset = 0.75f;
-        float dblimit_autoset_2d =
-            std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
+        float dblimit_autoset_2d = std::max(95 - 35 * log10_texels_2d, 70 - 19 * log10_texels_2d);
         float bmc_autoset = 75;
         int maxiters_autoset = 2;
 
@@ -1307,25 +1225,19 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         }
         ewp.partition_search_limit = partitions_to_test;
 
-        const float max_color_comp_weight =
-            std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
-                     std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
-        ewp.rgba_weights[0] =
-            std::max(ewp.rgba_weights[0], max_color_comp_weight / 1000.0f);
-        ewp.rgba_weights[1] =
-            std::max(ewp.rgba_weights[1], max_color_comp_weight / 1000.0f);
-        ewp.rgba_weights[2] =
-            std::max(ewp.rgba_weights[2], max_color_comp_weight / 1000.0f);
-        ewp.rgba_weights[3] =
-            std::max(ewp.rgba_weights[3], max_color_comp_weight / 1000.0f);
+        const float max_color_comp_weight = std::max(std::max(ewp.rgba_weights[0], ewp.rgba_weights[1]),
+                                                     std::max(ewp.rgba_weights[2], ewp.rgba_weights[3]));
+        ewp.rgba_weights[0] = std::max(ewp.rgba_weights[0], max_color_comp_weight / 1000.0f);
+        ewp.rgba_weights[1] = std::max(ewp.rgba_weights[1], max_color_comp_weight / 1000.0f);
+        ewp.rgba_weights[2] = std::max(ewp.rgba_weights[2], max_color_comp_weight / 1000.0f);
+        ewp.rgba_weights[3] = std::max(ewp.rgba_weights[3], max_color_comp_weight / 1000.0f);
 
         if (channels == 4) {
             ewp.enable_rgb_scale_with_alpha = 1;
             ewp.alpha_radius = 1;
         }
 
-        ewp.texel_avg_error_limit =
-            float(std::pow(0.1f, dblimit_2d * 0.1f)) * 65535.0f * 65535.0f;
+        ewp.texel_avg_error_limit = float(std::pow(0.1f, dblimit_2d * 0.1f)) * 65535.0f * 65535.0f;
 
         expand_block_artifact_suppression(xdim, ydim, 1, &ewp);
 
@@ -1334,9 +1246,8 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         // int padding = std::max(ewp.mean_stdev_radius, ewp.alpha_radius);
 
         if (channels == 4 /*ewp.rgb_mean_weight != 0.0f || ewp.rgb_stdev_weight != 0.0f || ewp.alpha_mean_weight != 0.0f || ewp.alpha_stdev_weight != 0.0f*/) {
-            compute_averages_and_variances(src_image, ewp.rgb_power, ewp.alpha_power,
-                                           ewp.mean_stdev_radius, ewp.alpha_radius,
-                                           swz_encode);
+            compute_averages_and_variances(src_image, ewp.rgb_power, ewp.alpha_power, ewp.mean_stdev_radius,
+                                           ewp.alpha_radius, swz_encode);
         }
 
         const int xsize = src_image->xsize;
@@ -1349,8 +1260,8 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         buf_size = xblocks * yblocks * zblocks * 16;
         out_buf.reset(new uint8_t[buf_size]);
 
-        encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_LDR, swz_encode,
-                          swz_encode, &out_buf[0], 0, 8);
+        encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_LDR, swz_encode, swz_encode, &out_buf[0], 0,
+                          8);
     }
 
     destroy_image(src_image);
@@ -1358,10 +1269,8 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
     return buf_size;
 }
 
-std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image_data,
-                                                            int data_size, int xdim,
-                                                            int ydim, int width,
-                                                            int height) {
+std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image_data, int data_size, int xdim,
+                                                            int ydim, int width, int height) {
     int xsize = width;
     int ysize = height;
     int zsize = 1;
@@ -1394,10 +1303,8 @@ std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image
 
                 symbolic_compressed_block scb;
                 physical_to_symbolic(xdim, ydim, 1, pcb, &scb);
-                decompress_symbolic_block(DECODE_LDR, xdim, ydim, 1, x * xdim, y * ydim,
-                                          z * 1, &scb, &pb);
-                write_imageblock(img, &pb, xdim, ydim, 1, x * xdim, y * ydim, z * 1,
-                                 swz_decode);
+                decompress_symbolic_block(DECODE_LDR, xdim, ydim, 1, x * xdim, y * ydim, z * 1, &scb, &pb);
+                write_imageblock(img, &pb, xdim, ydim, 1, x * xdim, y * ydim, z * 1, swz_decode);
             }
         }
     }
@@ -1412,9 +1319,8 @@ std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image
     return ret_data;
 }
 
-std::unique_ptr<uint8_t[]>
-SceneManagerInternal::Decode_KTX_ASTC(const uint8_t *image_data, int data_size,
-                                      int &width, int &height) {
+std::unique_ptr<uint8_t[]> SceneManagerInternal::Decode_KTX_ASTC(const uint8_t *image_data, int data_size, int &width,
+                                                                 int &height) {
     Ren::KTXHeader header;
     memcpy(&header, &image_data[0], sizeof(Ren::KTXHeader));
 

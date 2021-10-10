@@ -11,7 +11,7 @@ class RpDebugProbes : public RenderPassBase {
     float debug_roughness_ = 0.0f;
 
     // temp data (valid only between Setup and Execute calls)
-    const ProbeStorage *probe_storage_ = nullptr;
+    const Ren::ProbeStorage *probe_storage_ = nullptr;
     DynArrayConstRef<ProbeItem> probes_;
     const ViewState *view_state_ = nullptr;
 

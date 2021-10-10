@@ -101,7 +101,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     builder.rast_state() = rast_state;
 
     { // prepare coc buffer
-        const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_2x_tex.ref};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_2x_tex.ref};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}},
@@ -113,7 +113,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // blur coc buffer
-        PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *coc1_tex.ref};
+        Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *coc1_tex.ref};
 
         PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}, {1, 0.0f}};
 
@@ -128,7 +128,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // downsample depth (once more)
-        const PrimDraw::Binding bindings[] = {
+        const Ren::Binding bindings[] = {
             {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_2x_tex.ref},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
 
@@ -140,8 +140,8 @@ void RpDOF::Execute(RpBuilder &builder) {
 
     { // calc near coc
         // TODO: hdr buf is unnecessary here
-        const PrimDraw::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *coc1_tex.ref},
-                                               {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *coc2_tex.ref}};
+        const Ren::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *coc1_tex.ref},
+                                          {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *coc2_tex.ref}};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}};
 
@@ -150,7 +150,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // apply 3x3 blur to coc
-        const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *blur2_4x_tex.ref};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *blur2_4x_tex.ref};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}};
 
@@ -161,8 +161,8 @@ void RpDOF::Execute(RpBuilder &builder) {
     { // blur color buffer
         glUseProgram(blit_dof_bilateral_prog_->id());
 
-        PrimDraw::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_4x_tex.ref},
-                                         {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *down_buf_4x_}};
+        Ren::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_4x_tex.ref},
+                                    {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *down_buf_4x_}};
 
         PrimDraw::Uniform uniforms[3] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}, {1, 0.0f}, {2, draw_cam_->focus_distance}};
@@ -180,7 +180,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // apply 3x3 blur to color
-        const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_buf_4x_};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_buf_4x_};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}};
 
@@ -214,7 +214,7 @@ void RpDOF::Execute(RpBuilder &builder) {
             {2, dof_lerp_scale},
             {3, dof_lerp_bias}};
 
-        PrimDraw::Binding bindings[6];
+        Ren::Binding bindings[6];
 
         bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock),
                        *unif_shared_data_buf.ref};

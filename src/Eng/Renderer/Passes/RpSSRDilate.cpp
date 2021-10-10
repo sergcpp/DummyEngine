@@ -1,10 +1,10 @@
 #include "RpSSRDilate.h"
 
 #include <Ren/Context.h>
+#include <Ren/ProbeStorage.h>
 #include <Ren/Program.h>
 #include <Ren/RastState.h>
 
-#include "../../Scene/ProbeStorage.h"
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
@@ -47,7 +47,7 @@ void RpSSRDilate::Execute(RpBuilder &builder) {
     { // dilate ssr buffer
         Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
 
-        const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
 
         SSRDilate::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};

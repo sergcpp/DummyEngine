@@ -49,9 +49,9 @@ void RpUpscale::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = res_[1];
 
     { // upsample ao
-        PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Upscale::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                        {Ren::eBindTarget::Tex2D, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
-                                        {Ren::eBindTarget::Tex2D, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Upscale::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                         {Ren::eBindTarget::Tex2D, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
+                                         {Ren::eBindTarget::Tex2D, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
 
         Upscale::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};

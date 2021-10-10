@@ -253,6 +253,7 @@ struct ItemsInfo {
 struct ViewState {
     Ren::Vec2i act_res, scr_res;
     float vertical_fov;
+    int frame_index;
     Ren::Mat4f prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
     mutable Ren::Vec4f clip_info;
     bool is_multisampled = false;

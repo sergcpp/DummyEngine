@@ -99,10 +99,10 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         const VkBufferView cells_buf_view = cells_buf.tbos[0]->view();
         const VkBufferView items_buf_view = items_buf.tbos[0]->view();
 
-        const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
-        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         Ren::SmallVector<VkWriteDescriptorSet, 16> descr_writes;
 

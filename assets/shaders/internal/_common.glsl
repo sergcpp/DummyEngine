@@ -1,6 +1,9 @@
 
 #include "../../../src/Eng/Renderer/Renderer_GL_Defines.inl"
 
+#define M_PI 3.1415926535897932384626433832795
+#define GOLDEN_RATIO 1.61803398875
+
 struct ShadowMapRegion {
     vec4 transform;
     mat4 clip_from_world;
