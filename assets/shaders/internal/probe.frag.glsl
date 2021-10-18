@@ -2,8 +2,8 @@
 #extension GL_EXT_texture_cube_map_array : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -22,7 +22,7 @@ layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray env_textur
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     layout(offset = 64) float mip_level;
-						int probe_index;
+                        int probe_index;
 };
 #else
 layout(location = 1) uniform float mip_level;

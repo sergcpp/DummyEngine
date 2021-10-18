@@ -15,7 +15,8 @@ const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_BUFFER,         // TBuf
     GL_UNIFORM_BUFFER,         // UBuf
     GL_SHADER_STORAGE_BUFFER,  // SBuf
-    0xffffffff                 // Image
+    0xffffffff,                // Image
+    0xffffffff                 // AccStruct
 };
 static_assert(COUNT_OF(gl_binding_targets) == size_t(eBindTarget::_Count), "!");
 

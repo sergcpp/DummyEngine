@@ -2,8 +2,8 @@
 #extension GL_ARB_texture_multisample : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -23,7 +23,7 @@ layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D s_texture;
 layout(binding = BLURED_TEX_SLOT) uniform sampler2D s_blured_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-	Params params;
+    Params params;
 };
 
 LAYOUT(location = 0) in highp vec2 aVertexUVs_;

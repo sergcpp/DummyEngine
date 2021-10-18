@@ -1,8 +1,8 @@
 #version 310 es
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -24,26 +24,26 @@ uniform SharedDataBlock {
 };
 
 #ifdef TRANSPARENT_PERM
-	#if !defined(BINDLESS_TEXTURES)
-		layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alpha_texture;
-	#endif // BINDLESS_TEXTURES
-	#ifdef HASHED_TRANSPARENCY
-		layout(location = 3) uniform float hash_scale;
-	#endif // HASHED_TRANSPARENCY
+    #if !defined(BINDLESS_TEXTURES)
+        layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alpha_texture;
+    #endif // BINDLESS_TEXTURES
+    #ifdef HASHED_TRANSPARENCY
+        layout(location = 3) uniform float hash_scale;
+    #endif // HASHED_TRANSPARENCY
 #endif // TRANSPARENT_PERM
 
 #ifdef OUTPUT_VELOCITY
-	LAYOUT(location = 0) in highp vec3 aVertexCSCurr_;
-	LAYOUT(location = 1) in highp vec3 aVertexCSPrev_;
+    LAYOUT(location = 0) in highp vec3 aVertexCSCurr_;
+    LAYOUT(location = 1) in highp vec3 aVertexCSPrev_;
 #endif // OUTPUT_VELOCITY
 #ifdef TRANSPARENT_PERM
-	LAYOUT(location = 2) in highp vec2 aVertexUVs1_;
-	#ifdef HASHED_TRANSPARENCY
-		LAYOUT(location = 3) in highp vec3 aVertexObjCoord_;
-	#endif // HASHED_TRANSPARENCY
-	#if defined(BINDLESS_TEXTURES)
-		LAYOUT(location = 4) in flat highp TEX_HANDLE alpha_texture;
-	#endif // BINDLESS_TEXTURES
+    LAYOUT(location = 2) in highp vec2 aVertexUVs1_;
+    #ifdef HASHED_TRANSPARENCY
+        LAYOUT(location = 3) in highp vec3 aVertexObjCoord_;
+    #endif // HASHED_TRANSPARENCY
+    #if defined(BINDLESS_TEXTURES)
+        LAYOUT(location = 4) in flat highp TEX_HANDLE alpha_texture;
+    #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
 #ifdef OUTPUT_VELOCITY

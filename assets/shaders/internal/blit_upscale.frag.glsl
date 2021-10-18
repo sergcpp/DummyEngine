@@ -1,7 +1,7 @@
 #version 310 es
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision mediump float;
 #endif
 
@@ -25,8 +25,8 @@ LAYOUT(location = 0) in highp vec2 aVertexUVs_;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-	vec2 norm_uvs = aVertexUVs_;
-	vec2 texel_size_low = vec2(0.5) / params.resolution.zw;
+    vec2 norm_uvs = aVertexUVs_;
+    vec2 texel_size_low = vec2(0.5) / params.resolution.zw;
 
     float d0 = LinearizeDepth(textureLod(depth_texture, norm_uvs, 0.0).r, params.clip_info);
  

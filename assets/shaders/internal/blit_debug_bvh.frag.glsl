@@ -2,8 +2,8 @@
 #extension GL_EXT_texture_buffer : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"

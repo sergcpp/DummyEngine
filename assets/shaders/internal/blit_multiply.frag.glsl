@@ -3,8 +3,8 @@
 #extension GL_EXT_texture_cube_map_array : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
 
 /*

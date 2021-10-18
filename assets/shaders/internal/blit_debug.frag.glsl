@@ -3,8 +3,8 @@
 #extension GL_ARB_texture_multisample : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
 
 #include "_fs_common.glsl"
@@ -24,8 +24,8 @@ layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer items_buffer;
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     layout(offset = 16) vec4 uClipInfo;
-						ivec2 res;
-						float mode;
+                        ivec2 res;
+                        float mode;
 };
 #else
 layout(location = 17) uniform vec4 uClipInfo;

@@ -6,11 +6,11 @@
 INTERFACE_START(SSRWriteIndirRTDispatch)
 
 #ifdef __cplusplus
-	const int RAY_COUNTER_SLOT = 0;
-	const int INDIR_ARGS_SLOT = 1;
+    const int RAY_COUNTER_SLOT = 0;
+    const int INDIR_ARGS_SLOT = 1;
 #else
-	#define RAY_COUNTER_SLOT 0
-	#define INDIR_ARGS_SLOT 1
+    #define RAY_COUNTER_SLOT 0
+    #define INDIR_ARGS_SLOT 1
 #endif
 
 INTERFACE_END

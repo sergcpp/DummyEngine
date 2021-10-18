@@ -5,11 +5,11 @@ const uint RTGeoProbeBits = 0xff;
 const uint RTGeoLightmappedBit = (1u << 8u);
 
 struct RTGeoInstance {
-	uint indices_start;
-	uint vertices_start;
-	uint material_index;
-	uint flags;
-	vec4 lmap_transform;
+    uint indices_start;
+    uint vertices_start;
+    uint material_index;
+    uint flags;
+    vec4 lmap_transform;
 };
 
 vec3 EvalSHIrradiance_NonLinear(vec3 dir, vec4 sh_r, vec4 sh_g, vec4 sh_b) {

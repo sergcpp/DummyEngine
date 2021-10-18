@@ -39,7 +39,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BA
 layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
 
 layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
-	MaterialData materials[];
+    MaterialData materials[];
 };
 
 LAYOUT(location = 0) out highp vec3 aVertexPos_;
@@ -49,9 +49,9 @@ LAYOUT(location = 3) out mediump vec3 aVertexTangent_;
 LAYOUT(location = 4) out mediump vec4 aVertexOcclusion_;
 LAYOUT(location = 5) out highp vec3 aVertexShUVs_[4];
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 9) out flat TEX_HANDLE diff_texture;
-	LAYOUT(location = 10) out flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 11) out flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 9) out flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 10) out flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 11) out flat TEX_HANDLE spec_texture;
 #endif // BINDLESS_TEXTURES
 
 invariant gl_Position;
@@ -92,12 +92,12 @@ void main(void) {
     }
     
 #if defined(BINDLESS_TEXTURES)
-	MaterialData mat = materials[instance.y];
-	diff_texture = GET_HANDLE(mat.texture_indices[0]);
-	norm_texture = GET_HANDLE(mat.texture_indices[1]);
-	spec_texture = GET_HANDLE(mat.texture_indices[2]);
+    MaterialData mat = materials[instance.y];
+    diff_texture = GET_HANDLE(mat.texture_indices[0]);
+    norm_texture = GET_HANDLE(mat.texture_indices[1]);
+    spec_texture = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
-	
+    
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;

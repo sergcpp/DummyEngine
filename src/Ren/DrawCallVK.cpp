@@ -2,13 +2,13 @@
 
 #include "ProbeStorage.h"
 
-namespace Ren {
-VkDescriptorSet PrepareTempDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, const Binding bindings[],
-                                         const int bindings_count, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, const Binding bindings[],
+                                          const int bindings_count, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     VkDescriptorImageInfo img_sampler_infos[16];
     VkDescriptorImageInfo img_storage_infos[16];
     VkDescriptorBufferInfo ubuf_infos[16];
     VkDescriptorBufferInfo sbuf_infos[16];
+    VkWriteDescriptorSetAccelerationStructureKHR desc_tlas_infos[16];
     DescrSizes descr_sizes;
 
     SmallVector<VkWriteDescriptorSet, 48> descr_writes;
@@ -31,7 +31,7 @@ VkDescriptorSet PrepareTempDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLay
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             new_write.dstSet = {};
             new_write.dstBinding = b.loc;
-            new_write.dstArrayElement = 0;
+            new_write.dstArrayElement = b.offset;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             new_write.descriptorCount = 1;
             new_write.pImageInfo = &info;
@@ -107,6 +107,20 @@ VkDescriptorSet PrepareTempDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLay
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             new_write.descriptorCount = 1;
             new_write.pImageInfo = &info;
+        } else if (b.trg == eBindTarget::AccStruct) {
+            auto &info = desc_tlas_infos[descr_sizes.acc_count++];
+            info = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
+            info.pAccelerationStructures = &b.handle.acc_struct->vk_handle();
+            info.accelerationStructureCount = 1;
+
+            auto &new_write = descr_writes.emplace_back();
+            new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            new_write.dstSet = {};
+            new_write.dstBinding = b.loc;
+            new_write.dstArrayElement = 0;
+            new_write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+            new_write.descriptorCount = 1;
+            new_write.pNext = &info;
         }
     }
 
@@ -124,15 +138,14 @@ VkDescriptorSet PrepareTempDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLay
 
     return descr_set;
 }
-} // namespace Ren
 
 void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const Binding bindings[],
                           const int bindings_count, const void *uniform_data, int uniform_data_len,
                           DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
-    VkDescriptorSet descr_set = PrepareTempDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0],
-                                                         bindings, bindings_count, descr_alloc, log);
+    VkDescriptorSet descr_set = PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings,
+                                                     bindings_count, descr_alloc, log);
     if (!descr_set) {
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;
@@ -157,8 +170,8 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
                                   DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
-    VkDescriptorSet descr_set = PrepareTempDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0],
-                                                         bindings, bindings_count, descr_alloc, log);
+    VkDescriptorSet descr_set = PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings,
+                                                     bindings_count, descr_alloc, log);
     if (!descr_set) {
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;

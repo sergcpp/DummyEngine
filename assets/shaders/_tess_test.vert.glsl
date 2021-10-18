@@ -41,12 +41,12 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BA
 layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
 
 layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
-	MaterialData materials[];
+    MaterialData materials[];
 };
 
 #if defined(GL_ARB_bindless_texture)
 layout(binding = REN_BINDLESS_TEX_SLOT) readonly buffer TextureHandles {
-	uvec2 texture_handles[];
+    uvec2 texture_handles[];
 };
 #endif
 
@@ -106,12 +106,12 @@ void main(void) {
         aVertexShUVs_CS[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_CS[i].xy += offsets[i];
     }
-	
+    
 #if defined(GL_ARB_bindless_texture)
-	MaterialData mat = materials[instance.y];
-	diff_texture = texture_handles[mat.texture_indices[0]];
-	norm_texture = texture_handles[mat.texture_indices[1]];
-	spec_texture = texture_handles[mat.texture_indices[2]];
-	bump_texture = texture_handles[mat.texture_indices[3]];
+    MaterialData mat = materials[instance.y];
+    diff_texture = texture_handles[mat.texture_indices[0]];
+    norm_texture = texture_handles[mat.texture_indices[1]];
+    spec_texture = texture_handles[mat.texture_indices[2]];
+    bump_texture = texture_handles[mat.texture_indices[3]];
 #endif // GL_ARB_bindless_texture
 } 

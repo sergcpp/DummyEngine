@@ -40,7 +40,7 @@ layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
 layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D noise_texture;
 
 layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
-	MaterialData materials[];
+    MaterialData materials[];
 };
 
 LAYOUT(location = 0) out highp vec3 aVertexPos_;
@@ -51,10 +51,10 @@ LAYOUT(location = 4) out highp vec4 aVertexShUVs_0;
 LAYOUT(location = 5) out highp vec4 aVertexShUVs_1;
 LAYOUT(location = 6) out highp vec4 aVertexShUVs_2;
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 7) out flat TEX_HANDLE diff_texture;
-	LAYOUT(location = 8) out flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 9) out flat TEX_HANDLE spec_texture;
-	LAYOUT(location = 10) out flat TEX_HANDLE mat3_texture; // unused
+    LAYOUT(location = 7) out flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 8) out flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 9) out flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 10) out flat TEX_HANDLE mat3_texture; // unused
 #endif // BINDLESS_TEXTURES
 
 
@@ -77,12 +77,12 @@ void main(void) {
     
     vec3 vtx_pos_ls = TransformVegetation(aVertexPosition, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
     vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
-	
-	gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
+    
+    gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-	
+    
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
@@ -101,24 +101,24 @@ void main(void) {
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         vec3 shadow_uvs = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
 #if defined(VULKAN)
-		shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+        shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
 #else // VULKAN
-		shadow_uvs = 0.5 * shadow_uvs + 0.5;
+        shadow_uvs = 0.5 * shadow_uvs + 0.5;
 #endif // VULKAN
         shadow_uvs.xy *= vec2(0.25, 0.5);
         shadow_uvs.xy += offsets[i];
 #if defined(VULKAN)
-		shadow_uvs.y = 1.0 - shadow_uvs.y;
+        shadow_uvs.y = 1.0 - shadow_uvs.y;
 #endif // VULKAN
-		aVertexShUVs_0[i] = shadow_uvs[0];
-		aVertexShUVs_1[i] = shadow_uvs[1];
-		aVertexShUVs_2[i] = shadow_uvs[2];
+        aVertexShUVs_0[i] = shadow_uvs[0];
+        aVertexShUVs_1[i] = shadow_uvs[1];
+        aVertexShUVs_2[i] = shadow_uvs[2];
     }
-	
+    
 #if defined(BINDLESS_TEXTURES)
-	MaterialData mat = materials[instance.y];
-	diff_texture = GET_HANDLE(mat.texture_indices[0]);
-	norm_texture = GET_HANDLE(mat.texture_indices[1]);
-	spec_texture = GET_HANDLE(mat.texture_indices[2]);
+    MaterialData mat = materials[instance.y];
+    diff_texture = GET_HANDLE(mat.texture_indices[0]);
+    norm_texture = GET_HANDLE(mat.texture_indices[1]);
+    spec_texture = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
 } 

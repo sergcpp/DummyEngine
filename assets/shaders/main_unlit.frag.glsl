@@ -7,7 +7,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision highp float;
     precision mediump sampler2DShadow;
 #endif
@@ -45,7 +45,7 @@ uniform SharedDataBlock {
 LAYOUT(location = 1) in vec2 aVertexUVs_;
 LAYOUT(location = 2) in mediump vec3 aVertexNormal_;
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 8) in flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE diff_texture;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;

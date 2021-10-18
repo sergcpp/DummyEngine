@@ -7,7 +7,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif
@@ -39,18 +39,18 @@ layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
 
 void main(void) {
-	vec4 col = texture(SAMPLER2D(mat0_texture), aVertexUVs1_);
+    vec4 col = texture(SAMPLER2D(mat0_texture), aVertexUVs1_);
     
-	float scale = (col.b * (255.0 / 8.0)) + 1.0;
+    float scale = (col.b * (255.0 / 8.0)) + 1.0;
     float Y = col.a;
     float Co = (col.r - (0.5 * 256.0 / 255.0)) / scale;
     float Cg = (col.g - (0.5 * 256.0 / 255.0)) / scale;
     
-	vec3 col_rgb;
-	col_rgb.r = Y + Co - Cg;
-	col_rgb.g = Y + Cg;
-	col_rgb.b = Y - Co - Cg;
-	
+    vec3 col_rgb;
+    col_rgb.r = Y + Co - Cg;
+    col_rgb.g = Y + Cg;
+    col_rgb.b = Y - Co - Cg;
+    
     outColor = vec4(SRGBToLinear(col_rgb), 1.0);
     outNormal = vec4(0.0);
 }

@@ -44,13 +44,13 @@ shared uint g_shared_0[12][12];
 shared uint g_shared_1[12][12];
 
 void LoadFromSharedMemory(ivec2 idx, out /* mediump */ vec3 radiance, out /* mediump */ float roughness) {
-	uvec2 tmp0;
-	tmp0.x = g_shared_0[idx.x][idx.y];
-	tmp0.y = g_shared_1[idx.x][idx.y];
+    uvec2 tmp0;
+    tmp0.x = g_shared_0[idx.x][idx.y];
+    tmp0.y = g_shared_1[idx.x][idx.y];
 
-	/* mediump */ vec4 tmp1 = vec4(unpackHalf2x16(tmp0.x), unpackHalf2x16(tmp0.y));
-	radiance = tmp1.xyz;
-	roughness = tmp1.w;
+    /* mediump */ vec4 tmp1 = vec4(unpackHalf2x16(tmp0.x), unpackHalf2x16(tmp0.y));
+    radiance = tmp1.xyz;
+    roughness = tmp1.w;
 }
 
 void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 offset, out /* mediump */ vec3 radiance, out /* mediump */ float roughness) {
@@ -61,8 +61,8 @@ void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 offset, out /* mediump */ ve
 
 void StoreWithOffset(ivec2 group_thread_id, ivec2 offset, /* mediump */ vec3 radiance, /* mediump */ float roughness) {
     group_thread_id += offset;
-	g_shared_0[group_thread_id.x][group_thread_id.y] = packHalf2x16(radiance.rg);
-	g_shared_1[group_thread_id.x][group_thread_id.y] = packHalf2x16(vec2(radiance.b, roughness));
+    g_shared_0[group_thread_id.x][group_thread_id.y] = packHalf2x16(radiance.rg);
+    g_shared_1[group_thread_id.x][group_thread_id.y] = packHalf2x16(vec2(radiance.b, roughness));
 }
 
 void InitializeGroupSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id) {
@@ -148,8 +148,8 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     if (needs_denoiser) {
         InitializeGroupSharedMemory(dispatch_thread_id, group_thread_id);
         
-		groupMemoryBarrier();
-		barrier();
+        groupMemoryBarrier();
+        barrier();
 
         group_thread_id += 2; // Center threads in shared memory
 
@@ -162,10 +162,10 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         }
 
         /* mediump */ vec3 radiance = Resolve(group_thread_id, center_roughness, RoughnessSigmaMin, RoughnessSigmaMax);
-		imageStore(out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
+        imageStore(out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
     }
 }
 
 void main() {
-	Blur(ivec2(gl_GlobalInvocationID.xy), ivec2(gl_LocalInvocationID.xy), params.img_size.xy);
+    Blur(ivec2(gl_GlobalInvocationID.xy), ivec2(gl_LocalInvocationID.xy), params.img_size.xy);
 }

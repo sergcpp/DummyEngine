@@ -4,8 +4,8 @@
 #extension GL_EXT_texture_cube_map_array : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -60,10 +60,10 @@ void main() {
 
     {
 #if defined(VULKAN)
-		vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
-		ray_origin_cs.y = -ray_origin_cs.y;
+        vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
+        ray_origin_cs.y = -ray_origin_cs.y;
 #else // VULKAN
-		vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);	
+        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);    
 #endif // VULKAN
 
         vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
@@ -80,7 +80,7 @@ void main() {
     }
 
     vec3 kS = FresnelSchlickRoughness(N_dot_V, specular.rgb, specular.a);
-	vec3 refl_color = texelFetch(refl_texture, icoord, 0).rgb;
+    vec3 refl_color = texelFetch(refl_texture, icoord, 0).rgb;
 
     outColor = vec4(refl_color * (kS * brdf.x + brdf.y), 1.0);
 }

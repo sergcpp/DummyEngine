@@ -6,7 +6,7 @@ layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];
 };
 layout(std430, binding = INDIR_ARGS_SLOT) buffer IndirArgs {
-	uint g_intersect_args[];
+    uint g_intersect_args[];
 };
 
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;

@@ -37,21 +37,21 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BA
 #endif
 
 layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
-	MaterialData materials[];
+    MaterialData materials[];
 };
 
 #ifdef MOVING_PERM
-	LAYOUT(location = 0) out vec3 aVertexCSCurr_;
-	LAYOUT(location = 1) out vec3 aVertexCSPrev_;
+    LAYOUT(location = 0) out vec3 aVertexCSCurr_;
+    LAYOUT(location = 1) out vec3 aVertexCSPrev_;
 #endif // MOVING_PERM
 #ifdef TRANSPARENT_PERM
-	LAYOUT(location = 2) out vec2 aVertexUVs1_;
-	#ifdef HASHED_TRANSPARENCY
-		LAYOUT(location = 3) out vec3 aVertexObjCoord_;
-	#endif // HASHED_TRANSPARENCY
-	#if defined(BINDLESS_TEXTURES)
-		LAYOUT(location = 4) out flat TEX_HANDLE alpha_texture;
-	#endif // BINDLESS_TEXTURES
+    LAYOUT(location = 2) out vec2 aVertexUVs1_;
+    #ifdef HASHED_TRANSPARENCY
+        LAYOUT(location = 3) out vec3 aVertexObjCoord_;
+    #endif // HASHED_TRANSPARENCY
+    #if defined(BINDLESS_TEXTURES)
+        LAYOUT(location = 4) out flat TEX_HANDLE alpha_texture;
+    #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
 invariant gl_Position;
@@ -66,10 +66,10 @@ void main() {
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
-	
-	MaterialData mat = materials[instance.y];
+    
+    MaterialData mat = materials[instance.y];
 #if defined(BINDLESS_TEXTURES)
-	alpha_texture = GET_HANDLE(mat.texture_indices[0]);
+    alpha_texture = GET_HANDLE(mat.texture_indices[0]);
 #endif // BINDLESS_TEXTURES
 #ifdef HASHED_TRANSPARENCY
     aVertexObjCoord_ = aVertexPosition;

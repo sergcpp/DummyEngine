@@ -10,7 +10,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif
@@ -76,79 +76,79 @@ layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
 layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 
 vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
-	const float ParallaxScale = 0.008;// * fract(shrd_data.uTranspParamsAndTime.w);
-	
-	const float MinLayers = 4.0;
-	const float MaxLayers = 32.0;
-	float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
-	
-	float layer_height = 1.0 / layer_count;
-	float cur_layer_height = 1.0 - tex_height;
-	
-	vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
-	vec2 cur_uvs = uvs;
-	
-	float height = texture(bump_texture, cur_uvs).r;
-	
-	while (height > cur_layer_height) {
-		cur_layer_height += layer_height;
-		cur_uvs += duvs;
-		height = texture(bump_texture, cur_uvs).r;
-	}
-	
-	duvs = 0.5 * duvs;
-	layer_height = 0.5 * layer_height;
-	
-	cur_uvs -= duvs;
-	cur_layer_height -= layer_height;
-	
-	const int BinSearchInterations = 8;
-	for (int i = 0; i < BinSearchInterations; i++) {
-		duvs = 0.5 * duvs;
-		layer_height = 0.5 * layer_height;
-		height = texture(bump_texture, cur_uvs).r;
-		if (height > cur_layer_height) {
-			cur_uvs += duvs;
-			cur_layer_height += layer_height;
-		} else {
-			cur_uvs -= duvs;
-			cur_layer_height -= layer_height;
-		}
-	}
-	
-	return cur_uvs;
+    const float ParallaxScale = 0.008;// * fract(shrd_data.uTranspParamsAndTime.w);
+    
+    const float MinLayers = 4.0;
+    const float MaxLayers = 32.0;
+    float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
+    
+    float layer_height = 1.0 / layer_count;
+    float cur_layer_height = 1.0 - tex_height;
+    
+    vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
+    vec2 cur_uvs = uvs;
+    
+    float height = texture(bump_texture, cur_uvs).r;
+    
+    while (height > cur_layer_height) {
+        cur_layer_height += layer_height;
+        cur_uvs += duvs;
+        height = texture(bump_texture, cur_uvs).r;
+    }
+    
+    duvs = 0.5 * duvs;
+    layer_height = 0.5 * layer_height;
+    
+    cur_uvs -= duvs;
+    cur_layer_height -= layer_height;
+    
+    const int BinSearchInterations = 8;
+    for (int i = 0; i < BinSearchInterations; i++) {
+        duvs = 0.5 * duvs;
+        layer_height = 0.5 * layer_height;
+        height = texture(bump_texture, cur_uvs).r;
+        if (height > cur_layer_height) {
+            cur_uvs += duvs;
+            cur_layer_height += layer_height;
+        } else {
+            cur_uvs -= duvs;
+            cur_layer_height -= layer_height;
+        }
+    }
+    
+    return cur_uvs;
 }
 
 vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs) {
-	const float ParallaxScale = 0.008;
-	
-	const float MinLayers = 4.0;
-	const float MaxLayers = 16.0;
-	float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
-	
-	float layer_height = 1.0 / layer_count;
-	float cur_layer_height = 0.0;//1.0 - tex_height;
-	
-	vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
-	vec2 cur_uvs = uvs;
-	
-	float height = texture(bump_texture, cur_uvs).r;
-	
-	while (height > cur_layer_height) {
-		cur_layer_height += layer_height;
-		cur_uvs += duvs;
-		height = texture(bump_texture, cur_uvs).r;
-	}
-	
-	vec2 prev_uvs = cur_uvs - duvs;
-	
-	float next_height = height - cur_layer_height;
-	float prev_height = texture(bump_texture, prev_uvs).r - cur_layer_height + layer_height;
-	
-	float weight = next_height / (next_height - prev_height);
-	vec2 final_uvs = mix(cur_uvs, prev_uvs, weight);
-	
-	return final_uvs;
+    const float ParallaxScale = 0.008;
+    
+    const float MinLayers = 4.0;
+    const float MaxLayers = 16.0;
+    float layer_count = mix(MaxLayers, MinLayers, clamp(abs(dir.z), 0.0, 1.0));
+    
+    float layer_height = 1.0 / layer_count;
+    float cur_layer_height = 0.0;//1.0 - tex_height;
+    
+    vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
+    vec2 cur_uvs = uvs;
+    
+    float height = texture(bump_texture, cur_uvs).r;
+    
+    while (height > cur_layer_height) {
+        cur_layer_height += layer_height;
+        cur_uvs += duvs;
+        height = texture(bump_texture, cur_uvs).r;
+    }
+    
+    vec2 prev_uvs = cur_uvs - duvs;
+    
+    float next_height = height - cur_layer_height;
+    float prev_height = texture(bump_texture, prev_uvs).r - cur_layer_height + layer_height;
+    
+    float weight = next_height / (next_height - prev_height);
+    vec2 final_uvs = mix(cur_uvs, prev_uvs, weight);
+    
+    return final_uvs;
 }
 
 void main(void) {
@@ -164,16 +164,16 @@ void main(void) {
                                           bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
-										  
-	vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
-	vec3 view_ray_ts = vec3(
-		dot(view_ray_ws, cross(aVertexTangent_, aVertexNormal_)),
-		-dot(view_ray_ws, aVertexTangent_),
-		dot(view_ray_ws, aVertexNormal_)
-	);
+                                          
+    vec3 view_ray_ws = normalize(shrd_data.uCamPosAndGamma.xyz - aVertexPos_);
+    vec3 view_ray_ts = vec3(
+        dot(view_ray_ws, cross(aVertexTangent_, aVertexNormal_)),
+        -dot(view_ray_ws, aVertexTangent_),
+        dot(view_ray_ws, aVertexNormal_)
+    );
     //vec2 modified_uvs = aVertexUVs_;//ReliefParallaxMapping(view_ray_ts, aVertexUVs_);
-	vec2 modified_uvs = ParallaxOcclusionMapping(view_ray_ts, aVertexUVs_);
-	
+    vec2 modified_uvs = ParallaxOcclusionMapping(view_ray_ts, aVertexUVs_);
+    
     vec3 albedo_color = texture(diffuse_texture, modified_uvs).rgb;
     
     vec2 duv_dx = dFdx(modified_uvs), duv_dy = dFdy(modified_uvs);
@@ -334,8 +334,8 @@ void main(void) {
     outColor = vec4(diffuse_color * kD, 1.0);
     outNormal = vec4(normal * 0.5 + 0.5, 1.0);
     outSpecular = specular_color;
-	
-	//vec3 view_vec_rec = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_,
-	//							  aVertexNormal_) * view_ray_ts);
-	//outColor.rgb = 0.0001 * outColor.rgb + 100.0 * abs(view_vec_rec - view_ray_ws);
+    
+    //vec3 view_vec_rec = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_,
+    //                            aVertexNormal_) * view_ray_ts);
+    //outColor.rgb = 0.0001 * outColor.rgb + 100.0 * abs(view_vec_rec - view_ray_ws);
 }
