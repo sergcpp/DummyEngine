@@ -57,5 +57,5 @@ class RpRTReflections : public RenderPassBase {
                const char out_color_name[], const char out_raylen_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "DEBUG TEXTURES"; }
+    const char *name() const override { return "RT REFLECTIONS"; }
 };
