@@ -13,6 +13,7 @@ extern "C" {
 #include "Passes/RpBilateralBlur.h"
 #include "Passes/RpBlur.h"
 #include "Passes/RpCombine.h"
+#include "Passes/RpCopyTex.h"
 #include "Passes/RpDOF.h"
 #include "Passes/RpDebugEllipsoids.h"
 #include "Passes/RpDebugProbes.h"
@@ -33,12 +34,19 @@ extern "C" {
 #include "Passes/RpShadowMaps.h"
 #include "Passes/RpSkinning.h"
 #include "Passes/RpSkydome.h"
+#include "Passes/RpSSRBlur.h"
+#include "Passes/RpSSRClassifyTiles.h"
 #include "Passes/RpSSRCompose.h"
+#include "Passes/RpSSRCompose2.h"
 #include "Passes/RpSSRDilate.h"
+#include "Passes/RpSSRPrepare.h"
+#include "Passes/RpSSRResolveSpatial.h"
+#include "Passes/RpSSRResolveTemporal.h"
 #include "Passes/RpSSRTrace.h"
 #include "Passes/RpSSRTraceHQ.h"
+#include "Passes/RpSSRWriteIndirectArgs.h"
+#include "Passes/RpSSRWriteIndirectRTDispatch.h"
 #include "Passes/RpTAA.h"
-#include "Passes/RpTAACopyTex.h"
 #include "Passes/RpTransparent.h"
 #include "Passes/RpUpdateBuffers.h"
 #include "Passes/RpUpscale.h"
@@ -75,9 +83,9 @@ class Renderer {
     void BlitTexture(float px, float py, float sx, float sy, const Ren::Tex2DRef &tex, float multiplier = 1.0f,
                      bool is_ms = false);
 
-    void BlitToTempProbeFace(const FrameBuf &src_buf, const ProbeStorage &dst_store, int face);
-    void BlitPrefilterFromTemp(const ProbeStorage &dst_store, int probe_index);
-    bool BlitProjectSH(const ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
+    void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
+    void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
+    bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
 
   private:
     Ren::Context &ctx_;
@@ -88,9 +96,10 @@ class Renderer {
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, cone_rt_lut_, noise_tex_;
     Ren::BufferRef readback_buf_;
+    Ren::BufferRef sobol_seq_buf_, scrambling_tile_32spp_buf_, ranking_tile_32spp_buf_;
 
     FrameBuf probe_sample_buf_;
-    Ren::Tex2DRef history_tex_, down_tex_4x_;
+    Ren::Tex2DRef taa_history_tex_, norm_history_tex_, rough_history_tex_, refl_history_tex_, down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     bool taa_enabled_ = false, dof_enabled_ = false;
 
@@ -196,14 +205,24 @@ class Renderer {
     RpUpscale rp_ssao_upscale_ = {prim_draw_};
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
+    RpSSRPrepare rp_ssr_prepare_;
+    RpSSRClassifyTiles rp_ssr_classify_tiles_;
     RpSSRTrace rp_ssr_trace_ = {prim_draw_};
     RpSSRTraceHQ rp_ssr_trace_hq_;
+    RpSSRResolveSpatial rp_ssr_resolve_spatial_;
+    RpSSRResolveTemporal rp_ssr_resolve_temporal_;
+    RpSSRBlur rp_ssr_blur_;
+    RpCopyTex rp_ssr_copy_normals_ = {"COPY NORMALS"}, rp_ssr_copy_roughness_ = {"COPY ROUGHNESS"},
+              rp_ssr_copy_refl_ = {"COPY REFL"};
+    RpSSRWriteIndirectArgs rp_ssr_write_indir_args_;
+    RpSSRWriteIndirectRTDispatch rp_ssr_write_indir_rt_disp_;
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
+    RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTReflections rp_rt_reflections_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
-    RpTAACopyTex rp_taa_copy_tex_;
+    RpCopyTex rp_taa_copy_tex_ = {"TAA COPY TEX"};
     RpBlur rp_blur_h_ = {prim_draw_}, rp_blur_v_ = {prim_draw_};
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
     RpReadBrightness rp_read_brightness_;

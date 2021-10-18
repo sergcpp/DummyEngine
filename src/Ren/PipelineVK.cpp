@@ -483,7 +483,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
                 region_to_copy.dstOffset = VkDeviceSize{0};
                 region_to_copy.size = VkDeviceSize{sbt_stage_buf.size()};
 
-                vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.handle().buf, rt_sbt_buf_.handle().buf, 1, &region_to_copy);
+                vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.vk_handle(), rt_sbt_buf_.vk_handle(), 1, &region_to_copy);
 
                 sbt_stage_buf.resource_state = eResState::CopySrc;
                 rt_sbt_buf_.resource_state = eResState::CopyDst;

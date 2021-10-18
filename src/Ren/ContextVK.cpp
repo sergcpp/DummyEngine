@@ -125,7 +125,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
         }
     }
 #endif
-
+    
     // Create platform-specific surface
     if (!InitVkSurface(api_ctx_->surface, api_ctx_->instance, log)) {
         return false;
@@ -301,6 +301,10 @@ void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
     assert(res == VK_SUCCESS);
 }
 
+void *Ren::Context::BegTempSingleTimeCommands() {
+    return Ren::BegSingleTimeCommands(api_ctx_->device, api_ctx_->temp_command_pool);
+}
+
 Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
     VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     VkFence new_fence;
@@ -314,6 +318,11 @@ Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
                                api_ctx_->temp_command_pool, new_fence);
 
     return SyncFence{api_ctx_->device, new_fence};
+}
+
+void Ren::Context::EndTempSingleTimeCommands(void* cmd_buf) {
+    Ren::EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, reinterpret_cast<VkCommandBuffer>(cmd_buf),
+                               api_ctx_->temp_command_pool);
 }
 
 void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }

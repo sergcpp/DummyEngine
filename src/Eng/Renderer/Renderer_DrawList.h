@@ -139,7 +139,7 @@ struct DrawList {
 
     const Ren::MaterialStorage  *materials = nullptr;
     const Ren::TextureAtlas     *decals_atlas = nullptr;
-    const ProbeStorage          *probe_storage = nullptr;
+    const Ren::ProbeStorage     *probe_storage = nullptr;
 
     DynArray<ShadReg>           cached_shadow_regions;
 

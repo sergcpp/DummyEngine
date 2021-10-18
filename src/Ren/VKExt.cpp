@@ -189,12 +189,14 @@ bool Ren::LoadVulkan(ILog *log) {
     LOAD_VK_FUN(vkCmdCopyBufferToImage)
     LOAD_VK_FUN(vkCmdCopyImageToBuffer)
     LOAD_VK_FUN(vkCmdCopyBuffer)
+    LOAD_VK_FUN(vkCmdFillBuffer)
     LOAD_VK_FUN(vkCmdPushConstants)
     LOAD_VK_FUN(vkCmdBlitImage)
     LOAD_VK_FUN(vkCmdClearColorImage)
     LOAD_VK_FUN(vkCmdClearAttachments)
     LOAD_VK_FUN(vkCmdCopyImage)
     LOAD_VK_FUN(vkCmdDispatch)
+    LOAD_VK_FUN(vkCmdDispatchIndirect)
     LOAD_VK_FUN(vkCmdResetQueryPool)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
@@ -238,6 +240,7 @@ bool Ren::LoadVulkanExtensions(VkInstance instance, ILog *log) {
     LOAD_VK_FUN(vkCmdWriteAccelerationStructuresPropertiesKHR);
     LOAD_VK_FUN(vkCmdCopyAccelerationStructureKHR);
     LOAD_VK_FUN(vkCmdTraceRaysKHR);
+    LOAD_VK_FUN(vkCmdTraceRaysIndirectKHR);
 
     LOAD_VK_FUN(vkDeviceWaitIdle)
 

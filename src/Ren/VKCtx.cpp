@@ -370,6 +370,7 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rt_pipeline_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
     rt_pipeline_features.rayTracingPipeline = VK_TRUE;
+    rt_pipeline_features.rayTracingPipelineTraceRaysIndirect = VK_TRUE;
 
     VkPhysicalDeviceAccelerationStructureFeaturesKHR acc_struct_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};

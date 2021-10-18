@@ -29,6 +29,6 @@ void main() {
 
     outColor.rgb = clamp(RGBMDecode(texture(env_texture, view_dir_ws)), vec3(0.0), vec3(16.0));
     outColor.a = 1.0;
-    outSpecular = vec4(0.0, 0.0, 0.0, 0.0);
+    outSpecular = vec4(0.0, 0.0, 0.0, 1.0);
 }
 

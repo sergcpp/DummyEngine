@@ -68,7 +68,7 @@ void RpSampleBrightness::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = res_[1];
 
     { // Sample texture
-        const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Reduced::SRC_TEX_SLOT, *input_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Reduced::SRC_TEX_SLOT, *input_tex.ref}};
 
         Reduced::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};

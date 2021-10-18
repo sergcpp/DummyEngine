@@ -4,23 +4,23 @@
 
 struct ViewState;
 
-class RpTAACopyTex : public RenderPassBase {
+class RpCopyTex : public RenderPassBase {
+    std::string name_;
+
     // lazily initialized data
 
     // temp data (valid only between Setup and Execute calls)
-    const ViewState *view_state_ = nullptr;
-
-    RpResource shared_data_buf_;
+    Ren::Vec2i copy_res_;
 
     RpResource input_tex_;
     RpResource output_tex_;
 
   public:
-    RpTAACopyTex() {}
+    RpCopyTex(const char name[]) : name_(name) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char input_tex_name[],
+    void Setup(RpBuilder &builder, Ren::Vec2i copy_res, const char input_tex_name[],
                Ren::WeakTex2DRef output_tex);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "TAA COPY TEX"; }
+    const char *name() const override { return name_.c_str(); }
 };

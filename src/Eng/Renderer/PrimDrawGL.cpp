@@ -3,8 +3,7 @@
 #include <Ren/Context.h>
 #include <Ren/Framebuffer.h>
 #include <Ren/GL.h>
-
-#include "../Scene/ProbeStorage.h"
+#include <Ren/ProbeStorage.h>
 
 #include "Renderer_GL_Defines.inl"
 
@@ -14,7 +13,7 @@ extern const int SphereIndicesCount;
 
 PrimDraw::~PrimDraw() = default;
 
-void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *p, const Binding bindings[],
+void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *p, const Ren::Binding bindings[],
                         int bindings_count, const Uniform uniforms[], int uniforms_count) {
     using namespace PrimDrawInternal;
 
@@ -33,7 +32,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
         } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc),
                                        GLuint(b.handle.cube_arr ? b.handle.cube_arr->handle().id : 0));
-        } else if (b.trg == Ren::eBindTarget::TexBuf) {
+        } else if (b.trg == Ren::eBindTarget::TBuf) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
         } else {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
@@ -89,7 +88,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
 
 void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::Framebuffer &fb,
                         const Ren::RenderPass &rp, const Ren::RastState &new_rast_state,
-                        Ren::RastState &applied_rast_state, const Binding bindings[], const int bindings_count,
+                        Ren::RastState &applied_rast_state, const Ren::Binding bindings[], const int bindings_count,
                         const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
     using namespace PrimDrawInternal;
 
@@ -110,7 +109,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             }
         } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
-        } else if (b.trg == Ren::eBindTarget::TexBuf) {
+        } else if (b.trg == Ren::eBindTarget::TBuf) {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
         } else {
             ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
@@ -128,7 +127,8 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             temp_stage_buffer.FlushMappedRange(0, uniform_data_len);
             temp_stage_buffer.Unmap();
         }
-        temp_unif_buffer = Ren::Buffer("Temp uniform buf", ctx_->api_ctx(), Ren::eBufType::Uniform, uniform_data_len, 16);
+        temp_unif_buffer =
+            Ren::Buffer("Temp uniform buf", ctx_->api_ctx(), Ren::eBufType::Uniform, uniform_data_len, 16);
         Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);
 
         glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_UNIF_PARAM_LOC, temp_unif_buffer.id());

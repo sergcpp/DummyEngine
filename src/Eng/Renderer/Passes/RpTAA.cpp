@@ -22,7 +22,7 @@ void RpTAA::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakTex2
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
 
     clean_tex_ = builder.ReadTexture(color_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::DepthRead, Ren::eStageBits::FragmentShader, *this);
+    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     velocity_tex_ =
         builder.ReadTexture(velocity_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
     history_tex_ =
@@ -63,10 +63,10 @@ void RpTAA::Execute(RpBuilder &builder) {
         float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
         exposure = std::min(exposure, max_exposure_);
 
-        const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
-                                              {Ren::eBindTarget::Tex2D, TempAA::HIST_TEX_SLOT, *history_tex.ref},
-                                              {Ren::eBindTarget::Tex2D, TempAA::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                              {Ren::eBindTarget::Tex2D, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
+                                         {Ren::eBindTarget::Tex2D, TempAA::HIST_TEX_SLOT, *history_tex.ref},
+                                         {Ren::eBindTarget::Tex2D, TempAA::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                         {Ren::eBindTarget::Tex2D, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
 
         TempAA::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_->act_res[0], view_state_->act_res[1]};

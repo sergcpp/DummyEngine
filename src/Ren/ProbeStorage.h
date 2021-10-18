@@ -2,9 +2,11 @@
 
 #include <cstdint>
 
-#include <Ren/Texture.h>
-#include <Sys/SmallVector.h>
+#include "SmallVector.h"
+#include "Texture.h"
 
+namespace Ren {
+// TODO: Refactor this!
 class ProbeStorage {
   public:
     ProbeStorage();
@@ -17,34 +19,33 @@ class ProbeStorage {
     void Free(int i);
     void Clear();
 
-    Ren::eTexFormat format() const { return format_; }
+    eTexFormat format() const { return format_; }
     int res() const { return res_; }
     int size() const { return size_; }
     int capacity() const { return capacity_; }
     int max_level() const { return max_level_; }
     int reserved_temp_layer() const { return reserved_temp_layer_; }
 
-    Ren::TexHandle handle() const { return handle_; }
+    TexHandle handle() const { return handle_; }
 
-    bool Resize(Ren::ApiContext *api_ctx, Ren::MemoryAllocators *mem_allocs, Ren::eTexFormat format, int res,
-                int capacity, Ren::ILog *log);
+    bool Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs, eTexFormat format, int res, int capacity, ILog *log);
 
-    bool SetPixelData(int level, int layer, int face, Ren::eTexFormat format, const uint8_t *data, int data_len,
-                      Ren::ILog *log);
-    bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels, Ren::ILog *log) const;
+    bool SetPixelData(int level, int layer, int face, eTexFormat format, const uint8_t *data, int data_len, ILog *log);
+    bool GetPixelData(int level, int layer, int face, int buf_size, uint8_t *out_pixels, ILog *log) const;
 
     void Finalize();
 
-    mutable Ren::eResState resource_state = Ren::eResState::Undefined;
+    mutable eResState resource_state = eResState::Undefined;
+
   private:
-    Ren::ApiContext *api_ctx_ = nullptr;
-    Ren::eTexFormat format_ = Ren::eTexFormat::Undefined;
+    ApiContext *api_ctx_ = nullptr;
+    eTexFormat format_ = eTexFormat::Undefined;
     int res_ = 0, size_ = 0, capacity_ = 0, max_level_ = 0;
     int reserved_temp_layer_ = -1;
-    Sys::SmallVector<int, 32> free_indices_;
-    Ren::TexHandle handle_;
+    SmallVector<int, 32> free_indices_;
+    TexHandle handle_;
 #if defined(USE_VK_RENDER)
-    Ren::MemAllocation alloc_;
+    MemAllocation alloc_;
 #endif
 
     void Destroy();
@@ -76,3 +77,4 @@ inline void ProbeStorage::Clear() {
     size_ = 0;
     free_indices_.clear();
 }
+} // namespace Ren
