@@ -50,7 +50,7 @@ uint32_t Ren::LinearAlloc::Alloc(const uint32_t req_size, const char *tag) {
     }
 
 #if 1
-    const uint32_t loc_lim = (block_count_ - blocks_required + BitmapGranularity - 1) / BitmapGranularity;
+    const uint32_t loc_lim = (block_count_ - blocks_required) / BitmapGranularity + 1;
     unsigned long bit_beg = 0;
     while (loc_beg < loc_lim) {
         if (GetFirstBit(bitmap_[loc_beg] & ~((1ull << bit_beg) - 1), &bit_beg)) {
