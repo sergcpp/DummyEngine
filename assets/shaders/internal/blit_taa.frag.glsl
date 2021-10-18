@@ -29,7 +29,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D s_depth;
 layout(binding = VELOCITY_TEX_SLOT) uniform mediump sampler2D s_velocity;
 
 LAYOUT_PARAMS uniform UniformParams {
-	Params params;
+    Params params;
 };
 
 LAYOUT(location = 0) in highp vec2 aVertexUVs_;

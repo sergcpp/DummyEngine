@@ -1,8 +1,8 @@
 #version 310 es
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -17,7 +17,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
 layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D rand_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-	Params params;
+    Params params;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)

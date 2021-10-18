@@ -6,14 +6,14 @@
 INTERFACE_START(Probe)
 
 /*struct Params {
-	IVEC2_TYPE uInstanceIndices[REN_MAX_BATCH_SIZE][2];
-	MAT4_TYPE uShadowViewProjMatrix;
+    IVEC2_TYPE uInstanceIndices[REN_MAX_BATCH_SIZE][2];
+    MAT4_TYPE uShadowViewProjMatrix;
 };*/
 
 #ifdef __cplusplus
-	const int U_M_MATRIX_LOC = 0;
+    const int U_M_MATRIX_LOC = 0;
 #else
-	#define U_M_MATRIX_LOC 0
+    #define U_M_MATRIX_LOC 0
 #endif
 
 INTERFACE_END

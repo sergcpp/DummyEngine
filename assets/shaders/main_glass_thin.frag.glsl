@@ -7,7 +7,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision highp float;
     precision mediump sampler2DShadow;
 #endif
@@ -45,8 +45,8 @@ LAYOUT(location = 1) in mediump vec2 aVertexUVs_;
 LAYOUT(location = 2) in mediump vec3 aVertexNormal_;
 LAYOUT(location = 3) in mediump vec3 aVertexTangent_;
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 9) in flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 10) in flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 10) in flat TEX_HANDLE spec_texture;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
@@ -72,39 +72,39 @@ void main(void) {
     float factor = pow5(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0));
     float fresnel = clamp(R0 + (1.0 - R0) * factor, 0.0, 1.0);
     
-	highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
-	int slice = int(floor(k * float(REN_GRID_RES_X)));
-	
-	int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-	int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
-	
-	highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
-	highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
-	highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
-	
-	vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
-	vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-	
-	vec3 reflected_color = vec3(0.0);
-	float total_fade = 0.0;
-	
-	for (uint i = offset; i < offset + pcount; i++) {
-		highp uint item_data = texelFetch(items_buffer, int(i)).x;
-		int pi = int(bitfieldExtract(item_data, 24, 8));
-		
-		float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
-		float fade = 1.0 - smoothstep(0.9, 1.0,
-									  dist / shrd_data.uProbes[pi].pos_and_radius.w);
-		
-		reflected_color += fade * RGBMDecode(
-			textureLod(env_texture, vec4(refl_ray_ws,
-										 shrd_data.uProbes[pi].unused_and_layer.w), 0.0));
-		total_fade += fade;
-	}
-	
-	if (total_fade > 1.0) {
-		reflected_color /= total_fade;
-	}
-	
-	outColor = vec4(reflected_color * specular_color.rgb, fresnel);
+    highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
+    int slice = int(floor(k * float(REN_GRID_RES_X)));
+    
+    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
+    int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
+    
+    highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
+    highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
+    highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
+    
+    vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
+    vec3 refl_ray_ws = reflect(view_ray_ws, normal);
+    
+    vec3 reflected_color = vec3(0.0);
+    float total_fade = 0.0;
+    
+    for (uint i = offset; i < offset + pcount; i++) {
+        highp uint item_data = texelFetch(items_buffer, int(i)).x;
+        int pi = int(bitfieldExtract(item_data, 24, 8));
+        
+        float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
+        float fade = 1.0 - smoothstep(0.9, 1.0,
+                                      dist / shrd_data.uProbes[pi].pos_and_radius.w);
+        
+        reflected_color += fade * RGBMDecode(
+            textureLod(env_texture, vec4(refl_ray_ws,
+                                         shrd_data.uProbes[pi].unused_and_layer.w), 0.0));
+        total_fade += fade;
+    }
+    
+    if (total_fade > 1.0) {
+        reflected_color /= total_fade;
+    }
+    
+    outColor = vec4(reflected_color * specular_color.rgb, fresnel);
 }

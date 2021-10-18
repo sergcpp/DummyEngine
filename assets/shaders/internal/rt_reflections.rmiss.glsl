@@ -11,4 +11,3 @@ layout(location = 0) rayPayloadInEXT RayPayload pld;
 void main() {
     pld.col = clamp(RGBMDecode(textureLod(env_texture, gl_WorldRayDirectionEXT, 0.0)), vec3(0.0), vec3(1.0)); // clamp is temporary workaround
 }
-

@@ -1,8 +1,8 @@
 #version 310 es
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
         
 layout(binding = 0) uniform mediump sampler2D depth_texture;
@@ -11,7 +11,7 @@ layout(binding = 1) uniform lowp sampler2D source_texture;
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     layout(offset = 16) float vertical;
-						float ref_depth;
+                        float ref_depth;
 };
 #else
 layout(location = 1) uniform float vertical;

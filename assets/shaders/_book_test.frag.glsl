@@ -7,7 +7,7 @@
 $ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
+    precision highp int;
     precision mediump float;
     precision mediump sampler2DShadow;
 #endif

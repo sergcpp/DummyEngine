@@ -6,15 +6,15 @@
 INTERFACE_START(SSRTrace)
 
 struct Params {
-	VEC4_TYPE transform;
+    VEC4_TYPE transform;
 };
 
 #ifdef __cplusplus
-	const int DEPTH_TEX_SLOT = 0;
-	const int NORM_TEX_SLOT = 1;
+    const int DEPTH_TEX_SLOT = 0;
+    const int NORM_TEX_SLOT = 1;
 #else
-	#define DEPTH_TEX_SLOT 0
-	#define NORM_TEX_SLOT 1
+    #define DEPTH_TEX_SLOT 0
+    #define NORM_TEX_SLOT 1
 #endif
 
 INTERFACE_END

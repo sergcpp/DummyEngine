@@ -39,7 +39,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BA
 layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
 
 layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
-	MaterialData materials[];
+    MaterialData materials[];
 };
 
 LAYOUT(location = 0) out highp vec3 aVertexPos_;
@@ -48,11 +48,11 @@ LAYOUT(location = 2) out mediump vec3 aVertexNormal_;
 LAYOUT(location = 3) out mediump vec3 aVertexTangent_;
 LAYOUT(location = 4) out highp vec3 aVertexShUVs_[4];
 #if defined(BINDLESS_TEXTURES)
-	LAYOUT(location = 8) out flat TEX_HANDLE diff_texture;
-	LAYOUT(location = 9) out flat TEX_HANDLE norm_texture;
-	LAYOUT(location = 10) out flat TEX_HANDLE spec_texture;
-	LAYOUT(location = 11) out flat TEX_HANDLE sss_texture;
-	LAYOUT(location = 12) out flat TEX_HANDLE norm_detail_texture;
+    LAYOUT(location = 8) out flat TEX_HANDLE diff_texture;
+    LAYOUT(location = 9) out flat TEX_HANDLE norm_texture;
+    LAYOUT(location = 10) out flat TEX_HANDLE spec_texture;
+    LAYOUT(location = 11) out flat TEX_HANDLE sss_texture;
+    LAYOUT(location = 12) out flat TEX_HANDLE norm_detail_texture;
 #endif // BINDLESS_TEXTURES
 LAYOUT(location = 13) out flat vec4 material_params;
 
@@ -89,16 +89,16 @@ void main(void) {
         aVertexShUVs_[i].xy += offsets[i];
     }
     
-	MaterialData mat = materials[instance.y];
-	material_params = mat.params;
+    MaterialData mat = materials[instance.y];
+    material_params = mat.params;
 #if defined(BINDLESS_TEXTURES)
-	diff_texture = GET_HANDLE(mat.texture_indices[0]);
-	norm_texture = GET_HANDLE(mat.texture_indices[1]);
-	spec_texture = GET_HANDLE(mat.texture_indices[2]);
-	sss_texture = GET_HANDLE(mat.texture_indices[3]);
-	norm_detail_texture = GET_HANDLE(mat.texture_indices[4]);
+    diff_texture = GET_HANDLE(mat.texture_indices[0]);
+    norm_texture = GET_HANDLE(mat.texture_indices[1]);
+    spec_texture = GET_HANDLE(mat.texture_indices[2]);
+    sss_texture = GET_HANDLE(mat.texture_indices[3]);
+    norm_detail_texture = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
-	
+    
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;

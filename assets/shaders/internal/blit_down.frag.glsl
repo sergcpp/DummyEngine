@@ -1,8 +1,8 @@
 #version 310 es
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"

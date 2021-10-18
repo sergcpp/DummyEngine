@@ -12,7 +12,7 @@ struct Params {
 
 struct RayPayload {
     VEC3_TYPE col;
-	float cone_width;
+    float cone_width;
 };
 
 #ifdef __cplusplus

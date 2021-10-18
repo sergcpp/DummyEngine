@@ -4,8 +4,8 @@
 #include "blit_bilateral_interface.glsl"
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
 
 /*
@@ -25,7 +25,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     vec2 norm_uvs = aVertexUVs_;
-	vec2 texel_size = vec2(1.0) / params.resolution;
+    vec2 texel_size = vec2(1.0) / params.resolution;
 
     float center_depth = textureLod(depth_texture, norm_uvs, 0.0).r;
     float closeness = 1.0 / (0.075 + 0.0);

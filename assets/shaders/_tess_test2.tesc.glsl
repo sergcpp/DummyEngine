@@ -39,9 +39,9 @@ struct OutputPatch {
     vec3 aVertexPos_B210;
     vec3 aVertexPos_B120;
     vec3 aVertexPos_B111;
-	vec2 aVertexUVs[3];
+    vec2 aVertexUVs[3];
     vec3 aVertexNormal[3];
-	vec3 aVertexTangent[3];
+    vec3 aVertexTangent[3];
     //vec3 aVertexShUVs[3][4];
 };
 
@@ -58,7 +58,7 @@ uniform SharedDataBlock {
 
 float GetTessLevel(float Distance0, float Distance1) {
     float AvgDistance = (Distance0 + Distance1) / 1.0;
-	return min((2.0 * 1024.0) / (AvgDistance * AvgDistance), 8.0);
+    return min((2.0 * 1024.0) / (AvgDistance * AvgDistance), 8.0);
 }
 
 vec3 ProjectToPlane(vec3 Point, vec3 PlanePoint, vec3 PlaneNormal) {
@@ -109,24 +109,24 @@ void CalcPositions() {
 }
 
 void main(void) {
-	for (int i = 0; i < 3; i++) {
-		oPatch.aVertexUVs[i] = aVertexUVs_CS[i];
-		oPatch.aVertexNormal[i] = aVertexNormal_CS[i];
-		oPatch.aVertexTangent[i] = aVertexTangent_CS[i];
-		//oPatch.aVertexShUVs[i][0] = aVertexShUVs_CS[i][0];
-		//oPatch.aVertexShUVs[i][1] = aVertexShUVs_CS[i][1];
-		//oPatch.aVertexShUVs[i][2] = aVertexShUVs_CS[i][2];
-		//oPatch.aVertexShUVs[i][3] = aVertexShUVs_CS[i][3];
-	}
-	
-	CalcPositions();
-	
-	float EyeToVertexDistance0 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[0]);
+    for (int i = 0; i < 3; i++) {
+        oPatch.aVertexUVs[i] = aVertexUVs_CS[i];
+        oPatch.aVertexNormal[i] = aVertexNormal_CS[i];
+        oPatch.aVertexTangent[i] = aVertexTangent_CS[i];
+        //oPatch.aVertexShUVs[i][0] = aVertexShUVs_CS[i][0];
+        //oPatch.aVertexShUVs[i][1] = aVertexShUVs_CS[i][1];
+        //oPatch.aVertexShUVs[i][2] = aVertexShUVs_CS[i][2];
+        //oPatch.aVertexShUVs[i][3] = aVertexShUVs_CS[i][3];
+    }
+    
+    CalcPositions();
+    
+    float EyeToVertexDistance0 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[0]);
     float EyeToVertexDistance1 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[1]);
     float EyeToVertexDistance2 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[2]);
-	
-	gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
-	gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);
-	gl_TessLevelOuter[2] = GetTessLevel(EyeToVertexDistance0, EyeToVertexDistance1);
-	gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) * (1.0 / 3.0);
+    
+    gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
+    gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);
+    gl_TessLevelOuter[2] = GetTessLevel(EyeToVertexDistance0, EyeToVertexDistance1);
+    gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) * (1.0 / 3.0);
 } 

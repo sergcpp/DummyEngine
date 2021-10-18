@@ -2,8 +2,8 @@
 #extension GL_EXT_texture_cube_map_array : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
         
 layout(binding = 0) uniform mediump samplerCubeArray s_texture;
@@ -12,7 +12,7 @@ layout(binding = 1) uniform mediump sampler2D s_rand;
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     layout(offset = 16) float src_layer;
-						int iteration;
+                        int iteration;
 };
 #else
 layout(location = 1) uniform float src_layer;

@@ -4,8 +4,8 @@
 #extension GL_EXT_texture_cube_map_array : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision highp float;
+    precision highp int;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
@@ -73,16 +73,16 @@ void main() {
     float d0 = LinearizeDepth(depth, shrd_data.uClipInfo);
  
 #if defined(HALFRES)
-	ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
+    ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
 
-	float d1 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 0), 0).r);
+    float d1 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 0), 0).r);
     float d2 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 1), 0).r);
     float d3 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(1, 0), 0).r);
     float d4 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(1, 1), 0).r);
  
     float dmin = min(min(d1, d2), min(d3, d4));
 
-	vec3 ssr_uvs;
+    vec3 ssr_uvs;
     if (dmin < 0.05) {
         ssr_uvs = textureLod(ssr_texture, aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, 0.0).rgb;
     } else {
@@ -97,7 +97,7 @@ void main() {
         }
     }
 #else // HALFRES
-	vec3 ssr_uvs = texelFetch(ssr_texture, icoord, 0).rgb;
+    vec3 ssr_uvs = texelFetch(ssr_texture, icoord, 0).rgb;
 #endif // HALFRES
 
     vec3 normal = 2.0 * texelFetch(s_norm_texture, icoord, 0).xyz - 1.0;
@@ -110,10 +110,10 @@ void main() {
 
     {   // apply cubemap contribution
 #if defined(VULKAN)
-		vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
-		ray_origin_cs.y = -ray_origin_cs.y;
+        vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
+        ray_origin_cs.y = -ray_origin_cs.y;
 #else // VULKAN
-		vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);	
+        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);    
 #endif // VULKAN
 
         vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;

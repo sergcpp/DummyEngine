@@ -2,8 +2,8 @@
 #extension GL_ARB_texture_multisample : enable
 
 #if defined(GL_ES) || defined(VULKAN)
-	precision highp int;
-	precision mediump float;
+    precision highp int;
+    precision mediump float;
 #endif
         
 layout(binding = 0) uniform mediump sampler2DMS s_texture;

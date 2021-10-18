@@ -41,13 +41,13 @@ shared uint g_shared_3[16][16];
 shared float g_shared_depth[16][16];
 
 vec3 LoadRadianceFromSharedMemory(ivec2 idx) {
-	return vec3(unpackHalf2x16(g_shared_0[idx.y][idx.x]),
-				unpackHalf2x16(g_shared_1[idx.y][idx.x]).x);
+    return vec3(unpackHalf2x16(g_shared_0[idx.y][idx.x]),
+                unpackHalf2x16(g_shared_1[idx.y][idx.x]).x);
 }
 
 vec3 LoadNormalFromSharedMemory(ivec2 idx) {
     return vec3(unpackHalf2x16(g_shared_2[idx.y][idx.x]),
-				unpackHalf2x16(g_shared_3[idx.y][idx.x]).x);
+                unpackHalf2x16(g_shared_3[idx.y][idx.x]).x);
 }
 
 float LoadDepthFromSharedMemory(ivec2 idx) {
@@ -75,13 +75,13 @@ void StoreWithOffset(ivec2 group_thread_id, ivec2 _offset, vec3 radiance, vec3 n
 }
 
 void InitSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id) {
-	// Load 16x16 region into shared memory.
+    // Load 16x16 region into shared memory.
     ivec2 offset_0 = ivec2(0, 0);
     ivec2 offset_1 = ivec2(8, 0);
     ivec2 offset_2 = ivec2(0, 8);
     ivec2 offset_3 = ivec2(8, 8);
-	
-	/* mediump */ vec3 radiance_0;
+    
+    /* mediump */ vec3 radiance_0;
     /* mediump */ vec3 normal_0;
     float depth_0;
 
@@ -174,42 +174,42 @@ vec3 Resolve(ivec2 group_thread_id, vec3 center_radiance, vec3 center_normal, fl
 }
 
 void ResolveSpatial(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
-	uint tile_meta_data_index = GetTileMetaDataIndex(dispatch_thread_id, screen_size.x);
-	tile_meta_data_index = subgroupBroadcastFirst(tile_meta_data_index);
-	bool needs_denoiser = g_tile_metadata_mask[tile_meta_data_index] != 0u;
-	
-	if (needs_denoiser) {
-		float center_roughness = texelFetch(rough_texture, dispatch_thread_id, 0).r;
-		InitSharedMemory(dispatch_thread_id, group_thread_id);
-		
-		groupMemoryBarrier();
-		barrier();
-		
-		group_thread_id += 4; // center threads in shared memory
-		vec3 center_radiance = LoadRadianceFromSharedMemory(group_thread_id);
-		
-		if (!IsGlossyReflection(center_roughness) || IsMirrorReflection(center_roughness)) {
-			imageStore(out_denoised_img, dispatch_thread_id, vec4(center_radiance, 1.0));
-			return;
-		}
-		
-		vec3 center_normal = LoadNormalFromSharedMemory(group_thread_id);
-		float center_depth = LoadDepthFromSharedMemory(group_thread_id);
-		
-		vec3 resolved_radiance = Resolve(group_thread_id, center_radiance, center_normal, DepthSigma, center_depth);
-		imageStore(out_denoised_img, dispatch_thread_id, vec4(resolved_radiance, 1.0));
-	} else {
-		vec3 radiance = texelFetch(refl_texture, dispatch_thread_id, 0).rgb;
-		imageStore(out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
-	}
+    uint tile_meta_data_index = GetTileMetaDataIndex(dispatch_thread_id, screen_size.x);
+    tile_meta_data_index = subgroupBroadcastFirst(tile_meta_data_index);
+    bool needs_denoiser = g_tile_metadata_mask[tile_meta_data_index] != 0u;
+    
+    if (needs_denoiser) {
+        float center_roughness = texelFetch(rough_texture, dispatch_thread_id, 0).r;
+        InitSharedMemory(dispatch_thread_id, group_thread_id);
+        
+        groupMemoryBarrier();
+        barrier();
+        
+        group_thread_id += 4; // center threads in shared memory
+        vec3 center_radiance = LoadRadianceFromSharedMemory(group_thread_id);
+        
+        if (!IsGlossyReflection(center_roughness) || IsMirrorReflection(center_roughness)) {
+            imageStore(out_denoised_img, dispatch_thread_id, vec4(center_radiance, 1.0));
+            return;
+        }
+        
+        vec3 center_normal = LoadNormalFromSharedMemory(group_thread_id);
+        float center_depth = LoadDepthFromSharedMemory(group_thread_id);
+        
+        vec3 resolved_radiance = Resolve(group_thread_id, center_radiance, center_normal, DepthSigma, center_depth);
+        imageStore(out_denoised_img, dispatch_thread_id, vec4(resolved_radiance, 1.0));
+    } else {
+        vec3 radiance = texelFetch(refl_texture, dispatch_thread_id, 0).rgb;
+        imageStore(out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
+    }
 }
 
 
 void main() {
-	uvec2 group_id = gl_WorkGroupID.xy;
+    uvec2 group_id = gl_WorkGroupID.xy;
     uint group_index = gl_LocalInvocationIndex;
     uvec2 group_thread_id = RemapLane8x8(group_index);
     uvec2 dispatch_thread_id = group_id * 8 + group_thread_id;
 
-	ResolveSpatial(ivec2(dispatch_thread_id), ivec2(group_thread_id), params.img_size.xy);
+    ResolveSpatial(ivec2(dispatch_thread_id), ivec2(group_thread_id), params.img_size.xy);
 }
