@@ -1,5 +1,6 @@
 #pragma once
 
+#include <Ren/DrawCall.h>
 #include <Ren/Fwd.h>
 #include <Ren/MMat.h>
 #include <Ren/Pipeline.h>
@@ -42,7 +43,7 @@ class PrimDraw {
     Ren::SmallVector<Ren::Pipeline, 16> pipelines_;
 
     const Ren::Pipeline *FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp, const Ren::RastState *rs,
-                                              const Binding bindings[], const int bindings_count);
+                                              const Ren::Binding bindings[], const int bindings_count);
 #endif
   public:
     ~PrimDraw();
@@ -62,34 +63,6 @@ class PrimDraw {
 #endif
 
     const Ren::Mesh *skydome_mesh() const { return skydome_mesh_.get(); }
-
-    struct Handle {
-        union {
-            const Ren::Texture2D *tex;
-            const Ren::Buffer *buf;
-            const Ren::Texture1D *tex_buf;
-            const ProbeStorage *cube_arr;
-        };
-        Handle() = default;
-        Handle(const Ren::Texture2D &_tex) : tex(&_tex) {}
-        Handle(const Ren::Buffer &_buf) : buf(&_buf) {}
-        Handle(const Ren::Texture1D &_tex) : tex_buf(&_tex) {}
-        Handle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
-    };
-
-    struct Binding {
-        Ren::eBindTarget trg;
-        uint16_t loc = 0;
-        uint16_t offset = 0;
-        uint16_t size = 0;
-        Handle handle;
-
-        Binding() = default;
-        Binding(Ren::eBindTarget _trg, uint16_t _loc, Handle _handle) : trg(_trg), loc(_loc), handle(_handle) {}
-        Binding(Ren::eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, Handle _handle)
-            : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
-    };
-    static_assert(sizeof(Binding) == sizeof(void*) + 8, "!");
 
     struct Uniform {
         Ren::eType type;
@@ -128,10 +101,10 @@ class PrimDraw {
     };
 
     enum class ePrim { Quad, Sphere };
-    void DrawPrim(ePrim prim, const RenderTarget &rt, Ren::Program *p, const Binding bindings[], int bindings_count,
-                  const Uniform uniforms[], int uniforms_count);
+    void DrawPrim(ePrim prim, const RenderTarget &rt, Ren::Program *p, const Ren::Binding bindings[],
+                  int bindings_count, const Uniform uniforms[], int uniforms_count);
     void DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::Framebuffer &fb, const Ren::RenderPass &rp,
                   const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
-                  const Binding bindings[], int bindings_count, const void *uniform_data, int uniform_data_len,
+                  const Ren::Binding bindings[], int bindings_count, const void *uniform_data, int uniform_data_len,
                   int uniform_data_offset);
 };

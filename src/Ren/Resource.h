@@ -55,6 +55,7 @@ enum class eResState : uint8_t {
     UnorderedAccess,
     DepthRead,
     DepthWrite,
+    StencilTestDepthFetch,
     ShaderResource,
     IndirectArgument,
     CopyDst,

@@ -11,7 +11,7 @@
 #include "../assets/shaders/internal/blit_gauss_interface.glsl"
 
 void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertical, Ren::WeakTex2DRef input_tex,
-                    const char output_tex_name[]) {
+                   const char output_tex_name[]) {
     vertical_ = vertical;
     view_state_ = view_state;
 
@@ -31,7 +31,7 @@ void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertica
 }
 
 void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertical, const char input_tex_name[],
-                    const char output_tex_name[]) {
+                   const char output_tex_name[]) {
     vertical_ = vertical;
     view_state_ = view_state;
 
@@ -63,7 +63,7 @@ void RpBlur::Execute(RpBuilder &builder) {
     rast_state.viewport[2] = view_state_->act_res[0] / 4;
     rast_state.viewport[3] = view_state_->act_res[1] / 4;
 
-    const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Gauss::SRC_TEX_SLOT, *intput_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Gauss::SRC_TEX_SLOT, *intput_tex.ref}};
 
     Gauss::Params uniform_params;
     uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(rast_state.viewport[2]), float(rast_state.viewport[3])};

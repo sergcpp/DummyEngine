@@ -278,6 +278,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_ELEMENT_ARRAY_BUFFER             0x8893
 #define GL_UNIFORM_BUFFER                   0x8A11
 #define GL_SHADER_STORAGE_BUFFER            0x90D2
+#define GL_DRAW_INDIRECT_BUFFER             0x8F3F
+#define GL_DISPATCH_INDIRECT_BUFFER         0x90EE
 
 #define GL_ARRAY_BUFFER_BINDING             0x8894
 #define GL_ELEMENT_ARRAY_BUFFER_BINDING     0x8895
@@ -295,6 +297,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_READ_ONLY                        0x88B8
 #define GL_WRITE_ONLY                       0x88B9
+#define GL_READ_WRITE                       0x88BA
 
 #define GL_COPY_READ_BUFFER                 0x8f36
 #define GL_COPY_WRITE_BUFFER                0x8f37
@@ -684,7 +687,8 @@ typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDPROC)(GLenum mode, GLsizei cou
 typedef void (APIENTRY *PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices, GLsizei instancecount, GLint basevertex);
 
 typedef void (APIENTRY *PFNGLDISPATCHCOMPUTEPROC)(GLuint num_groups_x, GLuint num_groups_y, GLuint num_groups_z);
-typedef void (APIENTRY *PFNGLMEMORYBARRIERPROC)(GLbitfield barriers);
+typedef void (APIENTRY *PFNGLDISPATCHCOMPUTEINDIRECTPROC)(GLintptr indirect);
+typedef void(APIENTRY *PFNGLMEMORYBARRIERPROC)(GLbitfield barriers);
 typedef void (APIENTRY *PFNGLGETBUFFERSUBDATAPROC)(GLenum target, GLintptr offset, GLsizeiptr size, GLvoid * data);
 
 typedef void (APIENTRY *PFNGLTEXBUFFERPROC)(GLenum target, GLenum internalformat, GLuint buffer);
@@ -739,6 +743,9 @@ typedef void (APIENTRY *PFNGLDELETESYNCPROC)(GLsync sync);
 
 typedef void (APIENTRY *PFNGLBLENDFUNCIPROC)(GLuint buf, GLenum sfactor, GLenum dfactor);
 typedef void (APIENTRY *PFNGLCLEARBUFFERFVPROC)(GLenum buffer, GLint drawbuffer, const GLfloat * value);
+
+typedef void (APIENTRY *PFNGLCLEARBUFFERSUBDATAPROC)(GLenum target, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
+typedef void (APIENTRY *PFNGLCLEARTEXIMAGEPROC)(GLuint texture, GLint level, GLenum format, GLenum type, const void *data);
 
 typedef void (APIENTRY *PFNGLBINDIMAGETEXTUREPROC)(GLuint unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 
@@ -966,6 +973,7 @@ typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GL
 #define glDrawElementsInstancedBaseVertex ren_glDrawElementsInstancedBaseVertex
 
 #define glDispatchCompute           ren_glDispatchCompute
+#define glDispatchComputeIndirect   ren_glDispatchComputeIndirect
 #define glMemoryBarrier             ren_glMemoryBarrier
 #define glGetBufferSubData          ren_glGetBufferSubData
 
@@ -1013,6 +1021,9 @@ typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GL
 #define glBlendFunci                ren_glBlendFunci
 #define glBlendFunci                ren_glBlendFunci
 #define glClearBufferfv             ren_glClearBufferfv
+
+#define glClearBufferSubData        ren_glClearBufferSubData
+#define glClearTexImage             ren_glClearTexImage
 
 #define glBindImageTexture          ren_glBindImageTexture
 #endif
@@ -1205,6 +1216,7 @@ EXTERN_FUNC PFNGLDRAWELEMENTSINSTANCEDPROC      ren_glDrawElementsInstanced;
 EXTERN_FUNC PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC ren_glDrawElementsInstancedBaseVertex;
 
 EXTERN_FUNC PFNGLDISPATCHCOMPUTEPROC            ren_glDispatchCompute;
+EXTERN_FUNC PFNGLDISPATCHCOMPUTEINDIRECTPROC    ren_glDispatchComputeIndirect;
 EXTERN_FUNC PFNGLMEMORYBARRIERPROC              ren_glMemoryBarrier;
 EXTERN_FUNC PFNGLGETBUFFERSUBDATAPROC           ren_glGetBufferSubData;
 
@@ -1251,6 +1263,9 @@ EXTERN_FUNC PFNGLDELETESYNCPROC                 ren_glDeleteSync;
 
 EXTERN_FUNC PFNGLBLENDFUNCIPROC                 ren_glBlendFunci;
 EXTERN_FUNC PFNGLCLEARBUFFERFVPROC              ren_glClearBufferfv;
+
+EXTERN_FUNC PFNGLCLEARBUFFERSUBDATAPROC         ren_glClearBufferSubData;
+EXTERN_FUNC PFNGLCLEARTEXIMAGEPROC              ren_glClearTexImage;
 
 EXTERN_FUNC PFNGLBINDIMAGETEXTUREPROC           ren_glBindImageTexture;
 

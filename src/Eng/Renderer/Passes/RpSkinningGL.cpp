@@ -89,7 +89,5 @@ void RpSkinning::Execute(RpBuilder &builder) {
                     (sr.shape_keyed_vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
             }
         }
-
-        glMemoryBarrier(GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT);
     }
 }

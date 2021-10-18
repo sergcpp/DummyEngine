@@ -87,7 +87,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.buffer = vertex_buf_->handle().buf;
+            new_barrier.buffer = vertex_buf_->vk_handle();
             new_barrier.offset = 0;
             new_barrier.size = VK_WHOLE_SIZE;
 
@@ -103,7 +103,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::CopyDst);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-            new_barrier.buffer = index_buf_->handle().buf;
+            new_barrier.buffer = index_buf_->vk_handle();
             new_barrier.offset = 0;
             new_barrier.size = VK_WHOLE_SIZE;
 
@@ -129,7 +129,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         region_to_copy.dstOffset = 0;
         region_to_copy.size = vtx_data_size;
 
-        vkCmdCopyBuffer(cmd_buf, vertex_stage_buf_->handle().buf, vertex_buf_->handle().buf, 1, &region_to_copy);
+        vkCmdCopyBuffer(cmd_buf, vertex_stage_buf_->vk_handle(), vertex_buf_->vk_handle(), 1, &region_to_copy);
     }
 
     { // copy index data
@@ -141,7 +141,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         region_to_copy.dstOffset = 0;
         region_to_copy.size = ndx_data_size;
 
-        vkCmdCopyBuffer(cmd_buf, index_stage_buf_->handle().buf, index_buf_->handle().buf, 1, &region_to_copy);
+        vkCmdCopyBuffer(cmd_buf, index_stage_buf_->vk_handle(), index_buf_->vk_handle(), 1, &region_to_copy);
     }
 
     auto &atlas = ctx_.texture_atlas();
@@ -161,7 +161,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::VertexBuffer);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = vertex_buf_->handle().buf;
+        new_barrier.buffer = vertex_buf_->vk_handle();
         new_barrier.offset = 0;
         new_barrier.size = vtx_data_size;
 
@@ -176,7 +176,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::IndexBuffer);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = vertex_buf_->handle().buf;
+        new_barrier.buffer = vertex_buf_->vk_handle();
         new_barrier.offset = 0;
         new_barrier.size = ndx_data_size;
 

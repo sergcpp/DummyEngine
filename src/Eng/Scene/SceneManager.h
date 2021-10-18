@@ -146,7 +146,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     static void RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func);
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
                               Sys::ThreadPool *p_threads, Ren::ILog *log);
-    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const ProbeStorage &probes,
+    static bool WriteProbeCache(const char *out_folder, const char *scene_name, const Ren::ProbeStorage &probes,
                                 const CompStorage *light_probe_storage, Ren::ILog *log);
 
   private:

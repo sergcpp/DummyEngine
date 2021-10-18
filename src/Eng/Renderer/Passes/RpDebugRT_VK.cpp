@@ -54,7 +54,7 @@ void RpDebugRT::Execute(RpBuilder &builder) {
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
     { // update descriptor set
-        const VkDescriptorBufferInfo ubuf_info = {unif_sh_data_buf.ref->handle().buf, 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo ubuf_info = {unif_sh_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorImageInfo env_info = {env_tex.ref->handle().sampler, env_tex.ref->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}; // environment texture
         const VkDescriptorBufferInfo geo_data_info = {geo_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};

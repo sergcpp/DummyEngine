@@ -8,10 +8,9 @@
 #include <Ren/Mesh.h>
 #include <Ren/MMat.h>
 #include <Ren/Pipeline.h>
+#include <Ren/ProbeStorage.h>
 #include <Ren/Storage.h>
 #include <Ren/TextureAtlas.h>
-
-#include "ProbeStorage.h"
 
 #include "Comp/AccStructure.h"
 #include "Comp/AnimState.h"
@@ -189,7 +188,7 @@ struct SceneData {
     Ren::HashMap32<Ren::String, Ren::Vec4f> decals_textures;
     Ren::TextureAtlas                       decals_atlas;
     Ren::TextureSplitter                    lm_splitter;
-    ProbeStorage                            probe_storage;
+    Ren::ProbeStorage                       probe_storage;
 
     CompStorage                             *comp_store[MAX_COMPONENT_TYPES] = {};
 

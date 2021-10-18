@@ -2,9 +2,8 @@
 
 #include <Ren/Context.h>
 #include <Ren/Framebuffer.h>
+#include <Ren/ProbeStorage.h>
 #include <Ren/VKCtx.h>
-
-#include "../Scene/ProbeStorage.h"
 
 #include "Renderer_GL_Defines.inl"
 
@@ -14,7 +13,7 @@ void PrimDraw::Reset() {}
 
 void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::Framebuffer &fb,
                         const Ren::RenderPass &rp, const Ren::RastState &new_rast_state,
-                        Ren::RastState &applied_rast_state, const Binding bindings[], const int bindings_count,
+                        Ren::RastState &applied_rast_state, const Ren::Binding bindings[], const int bindings_count,
                         const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
 
@@ -55,7 +54,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
                 new_write.pImageInfo = &info;
             } else if (b.trg == Ren::eBindTarget::UBuf) {
                 auto &ubuf = ubuf_infos[descr_sizes.ubuf_count++];
-                ubuf.buffer = b.handle.buf->handle().buf;
+                ubuf.buffer = b.handle.buf->vk_handle();
                 ubuf.offset = b.offset;
                 ubuf.range = b.offset ? b.size : VK_WHOLE_SIZE;
 
@@ -67,7 +66,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
                 new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
                 new_write.descriptorCount = 1;
                 new_write.pBufferInfo = &ubuf;
-            } else if (b.trg == Ren::eBindTarget::TexBuf) {
+            } else if (b.trg == Ren::eBindTarget::TBuf) {
                 ++descr_sizes.tbuf_count;
 
                 auto &new_write = descr_writes.emplace_back();
@@ -141,7 +140,8 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
                     b.handle.tex->resource_state = Ren::eResState::ShaderResource;
                 }*/
                 assert(b.handle.tex->resource_state == Ren::eResState::ShaderResource ||
-                       b.handle.tex->resource_state == Ren::eResState::DepthRead);
+                       b.handle.tex->resource_state == Ren::eResState::DepthRead ||
+                       b.handle.tex->resource_state == Ren::eResState::StencilTestDepthFetch);
             }
         }
 
@@ -171,7 +171,8 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
 
         if (fb.depth_attachment.ref) {
             if (fb.depth_attachment.ref->resource_state != Ren::eResState::DepthWrite &&
-                fb.depth_attachment.ref->resource_state != Ren::eResState::DepthRead) {
+                fb.depth_attachment.ref->resource_state != Ren::eResState::DepthRead &&
+                fb.depth_attachment.ref->resource_state != Ren::eResState::StencilTestDepthFetch) {
                 auto &new_barrier = img_barriers.emplace_back();
                 new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(fb.depth_attachment.ref->resource_state);
@@ -237,7 +238,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
 }
 
 const Ren::Pipeline *PrimDraw::FindOrCreatePipeline(const Ren::ProgramRef p, const Ren::RenderPass *rp,
-                                                    const Ren::RastState *rs, const Binding bindings[],
+                                                    const Ren::RastState *rs, const Ren::Binding bindings[],
                                                     const int bindings_count) {
     for (size_t i = 0; i < pipelines_.size(); ++i) {
         if (pipelines_[i].prog() == p && pipelines_[i].render_pass() == rp && pipelines_[i].rast_state() == *rs) {

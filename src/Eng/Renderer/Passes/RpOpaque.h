@@ -23,7 +23,7 @@ class RpOpaque : public RenderPassBase {
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
-    const ProbeStorage *probe_storage_ = nullptr;
+    const Ren::ProbeStorage *probe_storage_ = nullptr;
 
     uint32_t render_flags_ = 0;
     const Ren::MaterialStorage *materials_ = nullptr;

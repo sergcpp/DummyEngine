@@ -177,8 +177,12 @@ void Ren::CheckError(const char *op, ILog *log) {
     }
 }
 
+Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const { return nullptr; }
+
 void Ren::Context::BegSingleTimeCommands(void *cmd_buf) {}
+void *Ren::Context::BegTempSingleTimeCommands() { return nullptr; }
 Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) { return MakeFence(); }
+void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {}
 void *Ren::Context::current_cmd_buf() { return nullptr; }
 
 #ifdef _MSC_VER

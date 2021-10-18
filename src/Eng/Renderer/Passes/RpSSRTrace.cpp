@@ -1,10 +1,10 @@
 #include "RpSSRTrace.h"
 
 #include <Ren/Context.h>
+#include <Ren/ProbeStorage.h>
 #include <Ren/Program.h>
 #include <Ren/RastState.h>
 
-#include "../../Scene/ProbeStorage.h"
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
@@ -59,7 +59,7 @@ void RpSSRTrace::Execute(RpBuilder &builder) {
     { // screen space tracing
         const Ren::ProgramRef ssr_program = view_state_->is_multisampled ? blit_ssr_ms_prog_ : blit_ssr_prog_;
 
-        const PrimDraw::Binding bindings[] = {
+        const Ren::Binding bindings[] = {
             {Ren::eBindTarget::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
             {clean_buf_bind_target, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
             {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};

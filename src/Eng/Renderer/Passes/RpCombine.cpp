@@ -76,8 +76,8 @@ void RpCombine::Execute(RpBuilder &builder) {
     uniform_params.exposure = tonemap_ ? exposure_ : 1.0f;
     uniform_params.fade = fade_;
 
-    const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
-                                          {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
+                                     {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
 
     prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_combine_prog_, output_fb_[builder.ctx().backend_frame()],
                         render_pass_[builder.ctx().backend_frame()], rast_state, builder.rast_state(), bindings, 2,

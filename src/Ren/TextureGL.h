@@ -172,7 +172,6 @@ class Texture1D : public RefCounter {
 uint32_t GLFormatFromTexFormat(eTexFormat format);
 uint32_t GLInternalFormatFromTexFormat(eTexFormat format, bool is_srgb);
 uint32_t GLTypeFromTexFormat(eTexFormat format);
-uint32_t GLBindTarget(eBindTarget binding);
 
 void GLUnbindTextureUnits(int start, int count);
 } // namespace Ren

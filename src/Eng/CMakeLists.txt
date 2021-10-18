@@ -77,6 +77,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/PrimDraw.cpp
                         Renderer/Renderer.h
                         Renderer/Renderer.cpp
+                        Renderer/Renderer_BN.cpp
                         Renderer/Renderer_DrawList.h
                         Renderer/Renderer_DrawList.cpp
                         Renderer/Renderer_Frontend.cpp
@@ -103,7 +104,6 @@ set(SCENE_SOURCES   Scene/__cam_rig.inl
                     Scene/SceneManager_BVH.cpp
                     Scene/SceneManager_PT.cpp
                     Scene/SceneManager_Tex.cpp
-                    Scene/ProbeStorage.h
                     Scene/TexUpdateFileBuf.h)
 
 set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
@@ -115,6 +115,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBlur.cpp
                     Renderer/Passes/RpCombine.h
                     Renderer/Passes/RpCombine.cpp
+                    Renderer/Passes/RpCopyTex.h
+                    Renderer/Passes/RpCopyTex.cpp
                     Renderer/Passes/RpDebugRT.h
                     Renderer/Passes/RpDebugRT.cpp
                     Renderer/Passes/RpDepthFill.h
@@ -143,18 +145,32 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpSkydome.cpp
                     Renderer/Passes/RpSSAO.h
                     Renderer/Passes/RpSSAO.cpp
+                    Renderer/Passes/RpSSRBlur.h
+                    Renderer/Passes/RpSSRBlur.cpp
+                    Renderer/Passes/RpSSRClassifyTiles.h
+                    Renderer/Passes/RpSSRClassifyTiles.cpp
                     Renderer/Passes/RpSSRCompose.h
                     Renderer/Passes/RpSSRCompose.cpp
+                    Renderer/Passes/RpSSRCompose2.h
+                    Renderer/Passes/RpSSRCompose2.cpp
                     Renderer/Passes/RpSSRDilate.h
                     Renderer/Passes/RpSSRDilate.cpp
+                    Renderer/Passes/RpSSRPrepare.h
+                    Renderer/Passes/RpSSRPrepare.cpp
+                    Renderer/Passes/RpSSRResolveSpatial.h
+                    Renderer/Passes/RpSSRResolveSpatial.cpp
+                    Renderer/Passes/RpSSRResolveTemporal.h
+                    Renderer/Passes/RpSSRResolveTemporal.cpp
                     Renderer/Passes/RpSSRTrace.h
                     Renderer/Passes/RpSSRTrace.cpp
                     Renderer/Passes/RpSSRTraceHQ.h
                     Renderer/Passes/RpSSRTraceHQ.cpp
+                    Renderer/Passes/RpSSRWriteIndirectArgs.h
+                    Renderer/Passes/RpSSRWriteIndirectArgs.cpp
+                    Renderer/Passes/RpSSRWriteIndirectRTDispatch.h
+                    Renderer/Passes/RpSSRWriteIndirectRTDispatch.cpp
                     Renderer/Passes/RpTAA.h
                     Renderer/Passes/RpTAA.cpp
-                    Renderer/Passes/RpTAACopyTex.h
-                    Renderer/Passes/RpTAACopyTex.cpp
                     Renderer/Passes/RpTransparent.h
                     Renderer/Passes/RpTransparent.cpp
                     Renderer/Passes/RpUpdateBuffers.h
@@ -181,7 +197,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpDebugTextures.h
                         Renderer/Passes/RpDebugTextures.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
-                        Scene/ProbeStorageGL.cpp
                         Scene/SceneManagerGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
                         Renderer/Passes/RpDebugTexturesGL.cpp
@@ -193,7 +208,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
-                        Renderer/Passes/RpSSRTraceHQGL.cpp
+                        Renderer/Passes/RpSSRPrepareGL.cpp
                         Renderer/Passes/RpTransparentGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
@@ -202,7 +217,6 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/RendererVK.cpp
                         Renderer/Renderer_GL_Defines.inl)
     set(SCENE_SOURCES ${SCENE_SOURCES}
-                        Scene/ProbeStorageVK.cpp
                         Scene/SceneManagerVK.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderVK.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
@@ -214,7 +228,7 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp
                         Renderer/Passes/RpSkydomeVK.cpp
-                        Renderer/Passes/RpSSRTraceHQVK.cpp
+                        Renderer/Passes/RpSSRPrepareVK.cpp
                         Renderer/Passes/RpTransparentVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
@@ -306,8 +320,8 @@ if(ENABLE_UNITYBUILD)
     set_source_files_properties(${SCENE_COMP_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
     set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
 
-    list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
-    source_group("src" FILES _Eng.cpp _Eng_Renderer.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
+    list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer0.cpp _Eng_Renderer1.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
+    source_group("src" FILES _Eng.cpp _Eng_Renderer0.cpp _Eng_Renderer1.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
 endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})

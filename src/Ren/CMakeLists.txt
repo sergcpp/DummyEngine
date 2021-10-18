@@ -42,6 +42,7 @@ set(SOURCE_FILES Anim.h
                  CPUFeatures.cpp
                  DebugMarker.h
                  DescriptorPool.h
+                 DrawCall.h
                  MemoryAllocator.h
                  Fence.h
                  Fixed.h
@@ -59,6 +60,7 @@ set(SOURCE_FILES Anim.h
                  MQuat.h
                  MVec.h
                  Pipeline.h
+                 ProbeStorage.h
                  Program.h
                  RastState.h
                  RenderPass.h
@@ -93,6 +95,7 @@ if(${RENDERER} STREQUAL "GL")
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferGL.cpp
                      ContextGL.cpp
+                     DrawCallGL.cpp
                      FramebufferGL.cpp
                      GL.h
                      GLCtx.h
@@ -101,11 +104,13 @@ if(${RENDERER} STREQUAL "GL")
                      GLExtDSAEmu.cpp
                      FenceGL.cpp
                      MemoryAllocatorGL.cpp
+                     ResourceGL.cpp
                      SamplerGL.h
                      SamplerGL.cpp
                      ShaderGL.h
                      ShaderGL.cpp
                      PipelineGL.cpp
+                     ProbeStorageGL.cpp
                      ProgramGL.h
                      ProgramGL.cpp
                      RastStateGL.cpp
@@ -135,10 +140,12 @@ elseif(${RENDERER} STREQUAL "VK")
                      BufferVK.cpp
                      ContextVK.cpp
                      DescriptorPoolVK.cpp
+                     DrawCallVK.cpp
                      FenceVK.cpp
                      FramebufferVK.cpp
                      MemoryAllocatorVK.cpp
                      PipelineVK.cpp
+                     ProbeStorageVK.cpp
                      ProgramVK.h
                      ProgramVK.cpp
                      RastStateVK.cpp

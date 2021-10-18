@@ -57,7 +57,7 @@ RpResource RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState d
         new_buf.write_count = 0;
         new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
-        new_buf.desc = RpBufDesc{ref->size(), ref->type()};
+        new_buf.desc = RpBufDesc{ref->type(), ref->size()};
 
         ret.index = buffers_.emplace(new_buf);
         name_to_buffer_[new_buf.name] = ret.index;
@@ -227,7 +227,7 @@ RpResource RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, Ren::
     }
 
     RpAllocBuf &buf = buffers_[ret.index];
-    assert(buf.desc == desc);
+    buf.desc = desc;
     ret._generation = buf._generation;
     ret.desired_state = desired_state;
     ret.stages = stages;
@@ -257,7 +257,7 @@ RpResource RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState 
         new_buf.write_count = 0;
         new_buf.used_in_stages = Ren::eStageBits::None;
         new_buf.name = ref->name().c_str();
-        new_buf.desc = RpBufDesc{ref->size(), ref->type()};
+        new_buf.desc = RpBufDesc{ref->type(), ref->size()};
 
         ret.index = buffers_.emplace(new_buf);
         name_to_buffer_[new_buf.name] = ret.index;
@@ -446,7 +446,7 @@ void RpBuilder::AllocateNeededResources(RenderPassBase *pass) {
         RpResource res = pass->output_[i];
         if (res.type == eRpResType::Buffer) {
             RpAllocBuf &buf = buffers_.at(res.index);
-            if (!buf.ref) {
+            if (!buf.ref || buf.desc.type != buf.ref->type() || buf.desc.size > buf.ref->size()) {
                 buf.strong_ref = ctx_.LoadBuffer(buf.name.c_str(), buf.desc.type, buf.desc.size);
                 buf.ref = buf.strong_ref;
             }
@@ -614,7 +614,8 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
                                          Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
     const RpResource *next_res = res.next_use;
     for (const RpResource *next_res = res.next_use; next_res; next_res = next_res->next_use) {
-        if (next_res->desired_state != res.desired_state) {
+        if (next_res->desired_state != res.desired_state ||
+            next_res->desired_state == Ren::eResState::UnorderedAccess) {
             break;
         }
         dst_stages |= next_res->stages;
@@ -622,7 +623,7 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
 
     if (res.type == eRpResType::Buffer) {
         RpAllocBuf &buf = buffers_.at(res.index);
-        if (buf.ref->resource_state != res.desired_state) {
+        if (buf.ref->resource_state != res.desired_state || buf.ref->resource_state == Ren::eResState::UnorderedAccess) {
             src_stages |= buf.used_in_stages;
             dst_stages |= res.stages;
             buf.used_in_stages = Ren::eStageBits::None;
@@ -631,7 +632,7 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
         buf.used_in_stages |= res.stages;
     } else if (res.type == eRpResType::Texture) {
         RpAllocTex &tex = textures_.at(res.index);
-        if (tex.ref->resource_state != res.desired_state) {
+        if (tex.ref->resource_state != res.desired_state || tex.ref->resource_state == Ren::eResState::UnorderedAccess) {
             src_stages |= tex.used_in_stages;
             dst_stages |= res.stages;
             tex.used_in_stages = Ren::eStageBits::None;
