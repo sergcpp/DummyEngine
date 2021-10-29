@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Ren/Fwd.h>
+
 #include "Common.h"
 
 struct AccStructure {

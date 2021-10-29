@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Ren/Pipeline.h>
+
 #include "../Graph/GraphBuilder.h"
 
 struct ViewState;

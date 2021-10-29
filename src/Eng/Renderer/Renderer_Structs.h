@@ -293,6 +293,8 @@ static_assert(sizeof(RTGeoInstance) == 32, "!");
 
 #if defined(USE_VK_RENDER)
 #include <Ren/VK.h>
+#include <Ren/Buffer.h>
+#include <Ren/Fwd.h>
 #elif defined(USE_GL_RENDER)
 #include <Ren/Buffer.h>
 #endif

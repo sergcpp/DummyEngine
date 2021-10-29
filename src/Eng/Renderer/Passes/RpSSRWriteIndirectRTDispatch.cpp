@@ -1,5 +1,8 @@
 #include "RpSSRWriteIndirectRTDispatch.h"
 
+#include <Ren/Context.h>
+#include <Ren/DrawCall.h>
+
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 

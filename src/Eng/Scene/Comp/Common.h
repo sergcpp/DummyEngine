@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 namespace Sys {
 template <typename T, typename FallBackAllocator>
 class MultiPoolAllocator;

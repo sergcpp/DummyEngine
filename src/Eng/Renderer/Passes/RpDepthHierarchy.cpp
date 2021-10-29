@@ -3,10 +3,11 @@
 #include <Ren/Context.h>
 #include <Ren/Program.h>
 
+#include "../Renderer_Structs.h"
 #include "../../Utils/ShaderLoader.h"
 
 namespace RpDepthHierarchyInternal {
-const int MipCount = 6;
+extern const int MipCount = 6;
 const int TileSize = 1 << (MipCount - 1);
 }
 
