@@ -3,7 +3,6 @@
 #include "../Graph/GraphBuilder.h"
 
 class PrimDraw;
-class ProbeStorage;
 struct ViewState;
 
 class RpSSRCompose : public RenderPassBase {

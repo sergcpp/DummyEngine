@@ -1,12 +1,17 @@
 #include "RpDepthHierarchy.h"
 
 #include <Ren/Context.h>
+#include <Ren/DescriptorPool.h>
 #include <Ren/Program.h>
 
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
 #include "../assets/shaders/internal/depth_hierarchy_interface.glsl"
+
+namespace RpDepthHierarchyInternal {
+extern const int MipCount;
+}
 
 void RpDepthHierarchy::Execute(RpBuilder &builder) {
     using namespace RpDepthHierarchyInternal;
