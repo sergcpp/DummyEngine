@@ -105,8 +105,8 @@ void RpSSRResolveTemporal::Execute(RpBuilder &builder) {
         {Ren::eBindTarget::Image, SSRResolveTemporal::OUT_DENOISED_IMG_SLOT, *out_denoised_tex.ref}};
 
     const auto grp_count = Ren::Vec3u{
-        (view_state_->act_res[0] + SSRResolveSpacial::LOCAL_GROUP_SIZE_X - 1u) / SSRResolveSpacial::LOCAL_GROUP_SIZE_X,
-        (view_state_->act_res[1] + SSRResolveSpacial::LOCAL_GROUP_SIZE_Y - 1u) / SSRResolveSpacial::LOCAL_GROUP_SIZE_Y,
+        (view_state_->act_res[0] + SSRResolveTemporal::LOCAL_GROUP_SIZE_X - 1u) / SSRResolveTemporal::LOCAL_GROUP_SIZE_X,
+        (view_state_->act_res[1] + SSRResolveTemporal::LOCAL_GROUP_SIZE_Y - 1u) / SSRResolveTemporal::LOCAL_GROUP_SIZE_Y,
         1u};
 
     SSRResolveTemporal::Params uniform_params;
