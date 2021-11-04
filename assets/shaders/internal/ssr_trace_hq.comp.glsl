@@ -105,7 +105,7 @@ vec3 SampleReflectionVector(vec3 view_direction, vec3 normal, float roughness, i
     
     vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y);
 #ifdef PERFECT_REFLECTIONS
-        sampled_normal_tbn = vec3(0.0, 0.0, 1.0); // Overwrite normal sample to produce perfect reflection.
+    sampled_normal_tbn = vec3(0.0, 0.0, 1.0); // Overwrite normal sample to produce perfect reflection.
 #endif
     
     vec3 reflected_direction_tbn = reflect(-view_direction_tbn, sampled_normal_tbn);

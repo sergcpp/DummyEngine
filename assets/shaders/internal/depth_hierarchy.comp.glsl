@@ -38,13 +38,13 @@ void WriteDstDepth(int index, ivec2 icoord, float v) {
     imageStore(depth_hierarchy[index], icoord, vec4(v));
 }
 
-shared float g_group_shared_depth[16][16];
+shared float g_shared_depth[16][16];
 
 float ReduceIntermediate(ivec2 i0, ivec2 i1, ivec2 i2, ivec2 i3) {
-    float v0 = g_group_shared_depth[i0.x][i0.y];
-    float v1 = g_group_shared_depth[i1.x][i1.y];
-    float v2 = g_group_shared_depth[i2.x][i2.y];
-    float v3 = g_group_shared_depth[i3.x][i3.y];
+    float v0 = g_shared_depth[i0.x][i0.y];
+    float v1 = g_shared_depth[i1.x][i1.y];
+    float v2 = g_shared_depth[i2.x][i2.y];
+    float v3 = g_shared_depth[i3.x][i3.y];
     return min(min(v0, v1), min(v2, v3));
 }
 
@@ -53,7 +53,7 @@ void main() {
     // Taken from https://github.com/GPUOpen-Effects/FidelityFX-SPD
     //
 
-    // Copy the first level and linearize it
+    // Copy the first level
     for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < 8; ++j) {
             ivec2 icoord = ivec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
@@ -104,7 +104,7 @@ void main() {
         WriteDstDepth(1, icoord, v[3]);
         
         for (int i = 0; i < 4; ++i) {
-            g_group_shared_depth[x][y] = v[i];
+            g_shared_depth[x][y] = v[i];
             barrier();
             if (gl_LocalInvocationIndex < 64) {
                 v[i] = ReduceIntermediate(ivec2(x * 2 + 0, y * 2 + 0), ivec2(x * 2 + 1, y * 2 + 0),
@@ -115,10 +115,10 @@ void main() {
         }
         
         if (gl_LocalInvocationIndex < 64) {
-            g_group_shared_depth[x + 0][y + 0] = v[0];
-            g_group_shared_depth[x + 8][y + 0] = v[1];
-            g_group_shared_depth[x + 0][y + 8] = v[2];
-            g_group_shared_depth[x + 8][y + 8] = v[3];
+            g_shared_depth[x + 0][y + 0] = v[0];
+            g_shared_depth[x + 8][y + 0] = v[1];
+            g_shared_depth[x + 0][y + 8] = v[2];
+            g_shared_depth[x + 8][y + 8] = v[3];
         }
         barrier();
     }
@@ -136,7 +136,7 @@ void main() {
             // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
             // ...
             // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
-            g_group_shared_depth[x * 2 + y % 2][y * 2] = v;
+            g_shared_depth[x * 2 + y % 2][y * 2] = v;
         }
         barrier();
     }
@@ -163,7 +163,7 @@ void main() {
             // ...
             // 0 0 0 x 0 0 0 x 0 0 0 x 0 0 0 x
             // ...
-            g_group_shared_depth[x * 4 + y][y * 4] = v;
+            g_shared_depth[x * 4 + y][y * 4] = v;
         }
         barrier();
     }
@@ -181,7 +181,7 @@ void main() {
             // store to LDS
             // x x x x 0 ...
             // 0 ...
-            g_group_shared_depth[x + y * 2][0] = v;
+            g_shared_depth[x + y * 2][0] = v;
         }
         barrier();
     }
