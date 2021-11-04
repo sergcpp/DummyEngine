@@ -93,7 +93,7 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
     VkApplicationInfo app_info = {VK_STRUCTURE_TYPE_APPLICATION_INFO};
     app_info.pApplicationName = "Dummy";
     app_info.engineVersion = 1;
-    app_info.apiVersion = VK_MAKE_VERSION(1, 0, 0);
+    app_info.apiVersion = VK_API_VERSION_1_1;
 
     VkInstanceCreateInfo instance_info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     instance_info.pApplicationInfo = &app_info;

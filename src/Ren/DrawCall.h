@@ -59,8 +59,8 @@ struct Binding {
     OpaqueHandle handle;
 
     Binding() = default;
-    Binding(eBindTarget _trg, uint16_t _loc, OpaqueHandle _handle) : trg(_trg), loc(_loc), handle(_handle) {}
-    Binding(eBindTarget _trg, uint16_t _loc, size_t _offset, OpaqueHandle _handle)
+    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle) : trg(_trg), loc(_loc), handle(_handle) {}
+    Binding(eBindTarget _trg, int _loc, size_t _offset, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), handle(_handle) {}
     Binding(eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}

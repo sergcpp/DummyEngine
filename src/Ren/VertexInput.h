@@ -11,9 +11,9 @@ struct VtxAttribDesc {
     uint8_t stride;
     uint32_t offset;
 
-    VtxAttribDesc(const BufHandle &_buf, uint8_t _loc, uint8_t _size, eType _type, uint8_t _stride, uint32_t _offset)
+    VtxAttribDesc(const BufHandle &_buf, int _loc, uint8_t _size, eType _type, int _stride, uint32_t _offset)
         : buf(_buf), loc(_loc), size(_size), type(_type), stride(_stride), offset(_offset) {}
-    VtxAttribDesc(const BufferRef &_buf, uint8_t _loc, uint8_t _size, eType _type, uint8_t _stride, uint32_t _offset)
+    VtxAttribDesc(const BufferRef &_buf, int _loc, uint8_t _size, eType _type, int _stride, uint32_t _offset)
         : buf(_buf->handle()), loc(_loc), size(_size), type(_type), stride(_stride), offset(_offset) {}
 };
 inline bool operator==(const VtxAttribDesc &lhs, const VtxAttribDesc &rhs) {

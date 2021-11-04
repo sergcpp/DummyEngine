@@ -1,3 +1,6 @@
+#ifdef _MSC_VER
+#define _ENABLE_EXTENDED_ALIGNED_STORAGE
+#endif
 #include "Viewer.h"
 
 #include <fstream>
