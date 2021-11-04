@@ -3,44 +3,39 @@
 #include "SWalloc.h"
 #include "SWintrin.inl"
 
-SWint _swProcessTrianglesIndexed_Ref(SWcull_ctx *ctx, const void *attribs,
-                                     const SWuint *indices, SWuint stride,
-                                     SWuint index_count, const SWfloat *xform,
-                                     SWint is_occluder);
-SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2],
-                             const SWfloat p_max[3], const SWfloat w_min);
+SWint _swProcessTrianglesIndexed_Ref(SWcull_ctx *ctx, const void *attribs, const SWuint *indices, SWuint stride,
+                                     SWuint index_count, const SWfloat *xform, SWint is_occluder);
+SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                             const SWfloat w_min);
 void _swCullCtxClearBuf_Ref(SWcull_ctx *ctx);
 void _swCullCtxDebugDepth_Ref(const SWcull_ctx *ctx, SWfloat *out_depth);
 
 #ifndef __ANDROID__
-SWint _swProcessTrianglesIndexed_SSE2(SWcull_ctx *ctx, const void *attribs,
-                                      const SWuint *indices, SWuint stride,
-                                      SWuint index_count, const SWfloat *xform,
-                                      SWint is_occluder);
-SWint _swProcessTrianglesIndexed_AVX2(SWcull_ctx *ctx, const void *attribs,
-                                      const SWuint *indices, SWuint stride,
-                                      SWuint index_count, const SWfloat *xform,
-                                      SWint is_occluder);
-SWint _swProcessTrianglesIndexed_AVX512(SWcull_ctx *ctx, const void *attribs,
-                                        const SWuint *indices, SWuint stride,
-                                        SWuint index_count, const SWfloat *xform,
-                                        SWint is_occluder);
+SWint _swProcessTrianglesIndexed_SSE2(SWcull_ctx *ctx, const void *attribs, const SWuint *indices, SWuint stride,
+                                      SWuint index_count, const SWfloat *xform, SWint is_occluder);
+SWint _swProcessTrianglesIndexed_AVX2(SWcull_ctx *ctx, const void *attribs, const SWuint *indices, SWuint stride,
+                                      SWuint index_count, const SWfloat *xform, SWint is_occluder);
 
-SWint _swCullCtxTestRect_SSE2(const SWcull_ctx *ctx, const SWfloat p_min[2],
-                              const SWfloat p_max[3], const SWfloat w_min);
-SWint _swCullCtxTestRect_AVX2(const SWcull_ctx *ctx, const SWfloat p_min[2],
-                              const SWfloat p_max[3], const SWfloat w_min);
-SWint _swCullCtxTestRect_AVX512(const SWcull_ctx *ctx, const SWfloat p_min[2],
-                                const SWfloat p_max[3], const SWfloat w_min);
+SWint _swCullCtxTestRect_SSE2(const SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                              const SWfloat w_min);
+SWint _swCullCtxTestRect_AVX2(const SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                              const SWfloat w_min);
 
 void _swCullCtxClearBuf_SSE2(SWcull_ctx *ctx);
 void _swCullCtxClearBuf_AVX2(SWcull_ctx *ctx);
-void _swCullCtxClearBuf_AVX512(SWcull_ctx *ctx);
 
 void _swCullCtxDebugDepth_SSE2(const SWcull_ctx *ctx, SWfloat *out_depth);
 void _swCullCtxDebugDepth_AVX2(const SWcull_ctx *ctx, SWfloat *out_depth);
+
+#if !defined(_MSC_VER) || _MSC_VER > 1916
+SWint _swProcessTrianglesIndexed_AVX512(SWcull_ctx *ctx, const void *attribs, const SWuint *indices, SWuint stride,
+                                        SWuint index_count, const SWfloat *xform, SWint is_occluder);
+SWint _swCullCtxTestRect_AVX512(const SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
+                                const SWfloat w_min);
+void _swCullCtxClearBuf_AVX512(SWcull_ctx *ctx);
 void _swCullCtxDebugDepth_AVX512(const SWcull_ctx *ctx, SWfloat *out_depth);
 #endif
+#endif // __ANDROID__
 
 void swCullCtxInit(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near_clip) {
     swCPUInfoInit(&ctx->cpu_info);
@@ -69,27 +64,27 @@ void swCullCtxResize(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near
     ctx->half_h = (SWfloat)h / 2;
 
 #ifndef __ANDROID__
+#if !defined(_MSC_VER) || _MSC_VER > 1916
     if (ctx->cpu_info.avx512_supported) {
         ctx->tile_size_y = 16;
         ctx->subtile_size_y = 4;
-        ctx->tri_indexed_proc =
-            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX512;
+        ctx->tri_indexed_proc = (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX512;
         ctx->test_rect_proc = &_swCullCtxTestRect_AVX512;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_AVX512;
         ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_AVX512;
-    } else if (ctx->cpu_info.avx2_supported) {
+    } else
+#endif
+	if (ctx->cpu_info.avx2_supported) {
         ctx->tile_size_y = 8;
         ctx->subtile_size_y = 4;
-        ctx->tri_indexed_proc =
-            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX2;
+        ctx->tri_indexed_proc = (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_AVX2;
         ctx->test_rect_proc = &_swCullCtxTestRect_AVX2;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_AVX2;
         ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_AVX2;
     } else if (ctx->cpu_info.sse2_supported) {
         ctx->tile_size_y = 4;
         ctx->subtile_size_y = 4;
-        ctx->tri_indexed_proc =
-            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_SSE2;
+        ctx->tri_indexed_proc = (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_SSE2;
         ctx->test_rect_proc = &_swCullCtxTestRect_SSE2;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_SSE2;
         ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_SSE2;
@@ -98,8 +93,7 @@ void swCullCtxResize(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near
     {
         ctx->tile_size_y = 1;
         ctx->subtile_size_y = 1;
-        ctx->tri_indexed_proc =
-            (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_Ref;
+        ctx->tri_indexed_proc = (SWCullTrianglesIndexedProcType)&_swProcessTrianglesIndexed_Ref;
         ctx->test_rect_proc = &_swCullCtxTestRect_Ref;
         ctx->clear_buf_proc = &_swCullCtxClearBuf_Ref;
         ctx->debug_depth_proc = (SWCullDebugDepthProcType)&_swCullCtxDebugDepth_Ref;
@@ -110,9 +104,9 @@ void swCullCtxResize(SWcull_ctx *ctx, const SWint w, const SWint h, SWfloat near
     ctx->tile_w = (w + (SW_CULL_TILE_SIZE_X - 1)) / SW_CULL_TILE_SIZE_X;
     ctx->tile_h = (h + (ctx->tile_size_y - 1)) / ctx->tile_size_y;
 
-    const int tile_size = SW_CULL_TILE_SIZE_X * ctx->tile_size_y / 8 +
-                          2 * sizeof(float) * (SW_CULL_TILE_SIZE_X / SW_CULL_SUBTILE_X) *
-                              (ctx->tile_size_y / ctx->subtile_size_y);
+    const int tile_size = SW_CULL_TILE_SIZE_X * ctx->tile_size_y / 8 + 2 * sizeof(float) *
+                                                                           (SW_CULL_TILE_SIZE_X / SW_CULL_SUBTILE_X) *
+                                                                           (ctx->tile_size_y / ctx->subtile_size_y);
 
     ctx->ztiles_mem_size = ctx->tile_w * ctx->tile_h * tile_size;
     sw_aligned_free(ctx->ztiles);
@@ -149,9 +143,8 @@ void swCullCtxSubmitCullSurfs(SWcull_ctx *ctx, SWcull_surf *surfs, const SWuint 
         if (s->indices) {
             if (s->prim_type == SW_TRIANGLES) {
                 if (s->index_type == SW_UNSIGNED_INT) {
-                    s->visible = (*ctx->tri_indexed_proc)(
-                        ctx, s->attribs, (const SWuint *)s->indices, s->stride, s->count,
-                        s->xform, (s->type == SW_OCCLUDER));
+                    s->visible = (*ctx->tri_indexed_proc)(ctx, s->attribs, (const SWuint *)s->indices, s->stride,
+                                                          s->count, s->xform, (s->type == SW_OCCLUDER));
                 } else {
                     assert(0);
                 }
@@ -161,13 +154,11 @@ void swCullCtxSubmitCullSurfs(SWcull_ctx *ctx, SWcull_surf *surfs, const SWuint 
     }
 }
 
-SWint swCullCtxTestRect(SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3],
-                        const SWfloat w_min) {
+SWint swCullCtxTestRect(SWcull_ctx *ctx, const SWfloat p_min[2], const SWfloat p_max[3], const SWfloat w_min) {
     return (*ctx->test_rect_proc)(ctx, p_min, p_max, w_min);
 }
 
-SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m128 plane,
-                     __m128 out_vtx[]) {
+SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m128 plane, __m128 out_vtx[]) {
     __m128 p0 = in_vtx[in_vtx_count - 1];
     __m128 dist0 = _mm128_dp4_ps(plane, p0);
 
@@ -198,6 +189,4 @@ SWint _swClipPolygon(const __m128 in_vtx[], const SWint in_vtx_count, const __m1
     return out_vtx_count;
 }
 
-void swCullCtxDebugDepth(SWcull_ctx *ctx, SWfloat *out_depth) {
-    (*ctx->debug_depth_proc)(ctx, out_depth);
-}
+void swCullCtxDebugDepth(SWcull_ctx *ctx, SWfloat *out_depth) { (*ctx->debug_depth_proc)(ctx, out_depth); }

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.1)
 project(Eng)
 
+OPTION(ENABLE_UNITYBUILD "Enable compilation of a few large cpp file" ON)
+
 IF(WIN32)
     set(VPX_LIB "vpxmd")
     set(ITT_LIB "libittnotify")
