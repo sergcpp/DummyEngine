@@ -29,7 +29,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = b.offset;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -43,7 +42,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -54,7 +52,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
@@ -68,7 +65,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -82,7 +78,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -101,7 +96,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
@@ -115,7 +109,6 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-            new_write.dstSet = {};
             new_write.dstBinding = b.loc;
             new_write.dstArrayElement = 0;
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
