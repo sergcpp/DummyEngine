@@ -7,18 +7,22 @@
 #include "../../Utils/ShaderLoader.h"
 
 namespace RpDepthHierarchyInternal {
-extern const int MipCount = 6;
+extern const int MipCount = 7;
 const int TileSize = 1 << (MipCount - 1);
 }
 
 void RpDepthHierarchy::Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex[],
-                             const char output_tex[]) {
+                             const char atomic_counter[], const char output_tex[]) {
     using namespace RpDepthHierarchyInternal;
 
     view_state_ = view_state;
 
     input_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
-    { // 32-bit linear depth hierarchy
+    { // global counter used to count active workgroups
+        atomic_buf_ =
+            builder.WriteBuffer(atomic_counter, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
+	}
+    { // 32-bit float depth hierarchy
         Ren::Tex2DParams params;
         params.w = ((view_state->scr_res[0] + TileSize - 1) / TileSize) * TileSize;
         params.h = ((view_state->scr_res[1] + TileSize - 1) / TileSize) * TileSize;

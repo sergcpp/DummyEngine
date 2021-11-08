@@ -8,7 +8,7 @@
 void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                             const char skin_transforms_buf[], const char shape_keys_buf[], const char instances_buf[],
                             const char cells_buf[], const char lights_buf[], const char decals_buf[],
-                            const char items_buf[], const char shared_data_buf[]) {
+                            const char items_buf[], const char shared_data_buf[], const char atomic_counter_buf[]) {
     assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
     assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
@@ -96,6 +96,13 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
         desc.size = SharedDataBlockSize;
         shared_data_buf_ =
             builder.WriteBuffer(shared_data_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
+    }
+    { // create atomic counter buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Storage;
+        desc.size = sizeof(uint32_t);
+        atomic_cnt_buf_ =
+            builder.WriteBuffer(atomic_counter_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
     }
 }
 
@@ -360,4 +367,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         Ren::CopyBufferToBuffer(*shared_data_stage_buf_, ctx.backend_frame() * SharedDataBlockSize,
                                 *unif_shared_data_buf.ref, 0, SharedDataBlockSize, ctx.current_cmd_buf());
     }
+
+	RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(atomic_cnt_buf_);
+    Ren::FillBuffer(*atomic_cnt_buf.ref, 0, sizeof(uint32_t), 0, ctx.current_cmd_buf());
 }

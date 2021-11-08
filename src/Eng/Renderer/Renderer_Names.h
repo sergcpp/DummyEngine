@@ -6,8 +6,9 @@ const char LIGHTS_BUF[] = "Lights Buffer";
 const char DECALS_BUF[] = "Decals Buffer";
 const char ITEMS_BUF[] = "Items Buffer";
 const char SHARED_DATA_BUF[] = "Shared Data Buffer";
+const char ATOMIC_CNT_BUF[] = "Atomi Counter Buffer";
 
-const char SKIN_TRANSFORMS_BUF[] = "Skin Transforms Buffer";
+    const char SKIN_TRANSFORMS_BUF[] = "Skin Transforms Buffer";
 const char SHAPE_KEYS_BUF[] = "Shape Keys Buffer";
 
 //

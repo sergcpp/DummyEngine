@@ -23,7 +23,7 @@ LAYOUT_PARAMS uniform UniformParams {
 #define Z_THICKNESS 0.02
 #define MAX_STEPS 256
 #define MOST_DETAILED_MIP 0
-#define LEAST_DETAILED_MIP 5
+#define LEAST_DETAILED_MIP 6
 
 #define FLOAT_MAX 3.402823466e+38
 

@@ -75,23 +75,23 @@ class PrimDraw {
             const int *pidata;
         };
 
-        Uniform(uint16_t _loc, const Ren::Mat4f *_pfdata)
+        Uniform(int _loc, const Ren::Mat4f *_pfdata)
             : type(Ren::eType::Float32), size(16), loc(_loc), pfdata(Ren::ValuePtr(_pfdata)) {}
-        Uniform(uint16_t _loc, const Ren::Vec4f &_fdata)
+        Uniform(int _loc, const Ren::Vec4f &_fdata)
             : type(Ren::eType::Float32), size(4), loc(_loc), fdata(_fdata) {}
-        Uniform(uint16_t _loc, const Ren::Vec3f &_fdata)
+        Uniform(int _loc, const Ren::Vec3f &_fdata)
             : type(Ren::eType::Float32), size(3), loc(_loc), fdata(_fdata[0], _fdata[1], _fdata[2], 0.0f) {}
-        Uniform(uint16_t _loc, const Ren::Vec2f _fdata)
+        Uniform(int _loc, const Ren::Vec2f _fdata)
             : type(Ren::eType::Float32), size(2), loc(_loc), fdata(_fdata[0], _fdata[1], 0.0f, 0.0f) {}
-        Uniform(uint16_t _loc, const float _fdata) : type(Ren::eType::Float32), size(1), loc(_loc), fdata(_fdata) {}
-        Uniform(uint16_t _loc, const Ren::Mat4i *_pidata)
+        Uniform(int _loc, const float _fdata) : type(Ren::eType::Float32), size(1), loc(_loc), fdata(_fdata) {}
+        Uniform(int _loc, const Ren::Mat4i *_pidata)
             : type(Ren::eType::Int32), size(16), loc(_loc), pidata(Ren::ValuePtr(_pidata)) {}
-        Uniform(uint16_t _loc, const Ren::Vec4i &_idata) : type(Ren::eType::Int32), size(4), loc(_loc), idata(_idata) {}
-        Uniform(uint16_t _loc, const Ren::Vec3i &_idata)
+        Uniform(int _loc, const Ren::Vec4i &_idata) : type(Ren::eType::Int32), size(4), loc(_loc), idata(_idata) {}
+        Uniform(int _loc, const Ren::Vec3i &_idata)
             : type(Ren::eType::Int32), size(3), loc(_loc), idata(_idata[0], _idata[1], _idata[2], 0) {}
-        Uniform(uint16_t _loc, const Ren::Vec2i _idata)
+        Uniform(int _loc, const Ren::Vec2i _idata)
             : type(Ren::eType::Int32), size(2), loc(_loc), idata(_idata[0], _idata[1], 0, 0) {}
-        Uniform(uint16_t _loc, const int _idata) : type(Ren::eType::Int32), size(1), loc(_loc), idata(_idata) {}
+        Uniform(int _loc, const int _idata) : type(Ren::eType::Int32), size(1), loc(_loc), idata(_idata) {}
     };
     static_assert(sizeof(Uniform) == 20 || sizeof(Uniform) == 24, "!");
 
