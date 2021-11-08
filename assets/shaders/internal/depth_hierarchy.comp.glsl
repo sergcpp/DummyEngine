@@ -18,7 +18,10 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
-layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[6];
+layout(std430, binding = ATOMIC_CNT_SLOT) highp buffer AtomicCounter {
+    uint atomic_counter;
+};
+layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[13];
 
 layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
@@ -26,12 +29,14 @@ ivec2 limit_coords(ivec2 icoord) {
     return clamp(icoord, ivec2(0), params.depth_size.xy - 1);
 }
 
+#define REDUCE_OP min
+
 float ReduceSrcDepth4(ivec2 base) {
     float v0 = texelFetch(depth_texture, limit_coords(base + ivec2(0, 0)), 0).r;
     float v1 = texelFetch(depth_texture, limit_coords(base + ivec2(0, 1)), 0).r;
     float v2 = texelFetch(depth_texture, limit_coords(base + ivec2(1, 0)), 0).r;
     float v3 = texelFetch(depth_texture, limit_coords(base + ivec2(1, 1)), 0).r;
-    return min(min(v0, v1), min(v2, v3));
+    return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
 void WriteDstDepth(int index, ivec2 icoord, float v) {
@@ -39,13 +44,103 @@ void WriteDstDepth(int index, ivec2 icoord, float v) {
 }
 
 shared float g_shared_depth[16][16];
+shared uint g_shared_counter;
 
 float ReduceIntermediate(ivec2 i0, ivec2 i1, ivec2 i2, ivec2 i3) {
     float v0 = g_shared_depth[i0.x][i0.y];
     float v1 = g_shared_depth[i1.x][i1.y];
     float v2 = g_shared_depth[i2.x][i2.y];
     float v3 = g_shared_depth[i3.x][i3.y];
-    return min(min(v0, v1), min(v2, v3));
+    return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
+}
+
+float ReduceLoad4(ivec2 base) {
+    float v0 = imageLoad(depth_hierarchy[6], base + ivec2(0, 0)).r;
+    float v1 = imageLoad(depth_hierarchy[6], base + ivec2(0, 1)).r;
+    float v2 = imageLoad(depth_hierarchy[6], base + ivec2(1, 0)).r;
+    float v3 = imageLoad(depth_hierarchy[6], base + ivec2(1, 1)).r;
+    return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
+}
+
+uint GetThreadgroupCount(ivec2 image_size){
+    // Each threadgroup works on 64x64 texels
+    return uint(((image_size.x + 63) / 64) * ((image_size.y + 63) / 64));
+}
+
+void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id, uint x, uint y) {
+    if (levels_total <= base_level) return;
+    { // Init mip level 3 or 
+        if (gl_LocalInvocationIndex < 64) {
+            float v = ReduceIntermediate(ivec2(x * 2 + 0, y * 2 + 0), ivec2(x * 2 + 1, y * 2 + 0),
+                                         ivec2(x * 2 + 0, y * 2 + 1), ivec2(x * 2 + 1, y * 2 + 1));
+            WriteDstDepth(base_level + 1, ivec2(work_group_id * 8) + ivec2(x, y), v);
+            // store to LDS, try to reduce bank conflicts
+            // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
+            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+            // 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0 x
+            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+            // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
+            // ...
+            // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
+            g_shared_depth[x * 2 + y % 2][y * 2] = v;
+        }
+        barrier();
+    }
+    if (levels_total <= base_level + 1) return;
+    { // Init mip level 4
+        if (gl_LocalInvocationIndex < 16) {
+            // x 0 x 0
+            // 0 0 0 0
+            // 0 x 0 x
+            // 0 0 0 0
+            float v = ReduceIntermediate(ivec2(x * 4 + 0 + 0, y * 4 + 0),
+                                         ivec2(x * 4 + 2 + 0, y * 4 + 0),
+                                         ivec2(x * 4 + 0 + 1, y * 4 + 2),
+                                         ivec2(x * 4 + 2 + 1, y * 4 + 2));
+            WriteDstDepth(base_level + 2, ivec2(work_group_id * 4) + ivec2(x, y), v);
+            // store to LDS
+            // x 0 0 0 x 0 0 0 x 0 0 0 x 0 0 0
+            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+            // 0 x 0 0 0 x 0 0 0 x 0 0 0 x 0 0
+            // ...
+            // 0 0 x 0 0 0 x 0 0 0 x 0 0 0 x 0
+            // ...
+            // 0 0 0 x 0 0 0 x 0 0 0 x 0 0 0 x
+            // ...
+            g_shared_depth[x * 4 + y][y * 4] = v;
+        }
+        barrier();
+    }
+    if (levels_total <= base_level + 2) return;
+    { // Init mip level 5
+        if (gl_LocalInvocationIndex < 4) {
+            // x 0 0 0 x 0 0 0
+            // ...
+            // 0 x 0 0 0 x 0 0
+            float v = ReduceIntermediate(ivec2(x * 8 + 0 + 0 + y * 2, y * 8 + 0),
+                                         ivec2(x * 8 + 4 + 0 + y * 2, y * 8 + 0),
+                                         ivec2(x * 8 + 0 + 1 + y * 2, y * 8 + 4),
+                                         ivec2(x * 8 + 4 + 1 + y * 2, y * 8 + 4));
+            WriteDstDepth(base_level + 3, ivec2(work_group_id * 2) + ivec2(x, y), v);
+            // store to LDS
+            // x x x x 0 ...
+            // 0 ...
+            g_shared_depth[x + y * 2][0] = v;
+        }
+        barrier();
+    }
+    if (levels_total <= base_level + 3) return;
+    { // Init mip level 6
+        if (gl_LocalInvocationIndex < 1) {
+            // x x x x 0 ...
+            // 0 ...
+            float v = ReduceIntermediate(ivec2(0, 0), ivec2(1, 0), ivec2(2, 0), ivec2(3, 0));
+            WriteDstDepth(base_level + 4, ivec2(work_group_id), v);
+        }
+        barrier();
+    }
 }
 
 void main() {
@@ -64,6 +159,8 @@ void main() {
             imageStore(depth_hierarchy[0], icoord, vec4(depth_val));
         }
     }
+    
+    int required_mips = params.depth_size.z;
     
     //
     // Remap index for easier reduction
@@ -123,66 +220,44 @@ void main() {
         barrier();
     }
     
-    { // Init mip level 3
-        if (gl_LocalInvocationIndex < 64) {
-            float v = ReduceIntermediate(ivec2(x * 2 + 0, y * 2 + 0), ivec2(x * 2 + 1, y * 2 + 0),
-                                         ivec2(x * 2 + 0, y * 2 + 1), ivec2(x * 2 + 1, y * 2 + 1));
-            WriteDstDepth(3, ivec2(gl_WorkGroupID.xy * 8) + ivec2(x, y), v);
-            // store to LDS, try to reduce bank conflicts
-            // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
-            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-            // 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0 x
-            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-            // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
-            // ...
-            // x 0 x 0 x 0 x 0 x 0 x 0 x 0 x 0
-            g_shared_depth[x * 2 + y % 2][y * 2] = v;
-        }
-        barrier();
+    DownsampleNext4Levels(2, required_mips, gl_WorkGroupID.xy, x, y);
+    
+    if (required_mips <= 7) return;
+    
+    // Only the last active workgroup should proceed
+    if (gl_LocalInvocationIndex == 0) {
+        g_shared_counter = atomicAdd(atomic_counter, 1);
+    }
+    barrier();
+    if (g_shared_counter != GetThreadgroupCount(params.depth_size.xy) - 1) {
+        return;
     }
     
-    { // Init mip level 4
-        if (gl_LocalInvocationIndex < 16) {
-            // x 0 x 0
-            // 0 0 0 0
-            // 0 x 0 x
-            // 0 0 0 0
-            float v = ReduceIntermediate(ivec2(x * 4 + 0 + 0, y * 4 + 0),
-                                         ivec2(x * 4 + 2 + 0, y * 4 + 0),
-                                         ivec2(x * 4 + 0 + 1, y * 4 + 2),
-                                         ivec2(x * 4 + 2 + 1, y * 4 + 2));
-            WriteDstDepth(4, ivec2(gl_WorkGroupID.xy * 4) + ivec2(x, y), v);
-            // store to LDS
-            // x 0 0 0 x 0 0 0 x 0 0 0 x 0 0 0
-            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-            // 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-            // 0 x 0 0 0 x 0 0 0 x 0 0 0 x 0 0
-            // ...
-            // 0 0 x 0 0 0 x 0 0 0 x 0 0 0 x 0
-            // ...
-            // 0 0 0 x 0 0 0 x 0 0 0 x 0 0 0 x
-            // ...
-            g_shared_depth[x * 4 + y][y * 4] = v;
-        }
-        barrier();
+    { // Init mip levels 7 and 8
+        float v[4];
+        ivec2 icoord;
+
+        icoord = ivec2(x * 2 + 0, y * 2 + 0);
+        v[0] = ReduceLoad4(icoord * 2);
+        WriteDstDepth(7, icoord, v[0]);
+        
+        icoord = ivec2(x * 2 + 1, y * 2 + 0);
+        v[1] = ReduceLoad4(icoord * 2);
+        WriteDstDepth(7, icoord, v[1]);
+        
+        icoord = ivec2(x * 2 + 0, y * 2 + 1);
+        v[2] = ReduceLoad4(icoord * 2);
+        WriteDstDepth(7, icoord, v[2]);
+        
+        icoord = ivec2(x * 2 + 1, y * 2 + 1);
+        v[3] = ReduceLoad4(icoord * 2);
+        WriteDstDepth(7, icoord, v[3]);
+        
+        if (required_mips <= 8) return;
+        
+        float vv = REDUCE_OP(REDUCE_OP(v[0], v[1]), REDUCE_OP(v[2], v[3]));
+        WriteDstDepth(8, ivec2(x, y), vv);
     }
     
-    { // Init mip level 5
-        if (gl_LocalInvocationIndex < 4) {
-            // x 0 0 0 x 0 0 0
-            // ...
-            // 0 x 0 0 0 x 0 0
-            float v = ReduceIntermediate(ivec2(x * 8 + 0 + 0 + y * 2, y * 8 + 0),
-                                         ivec2(x * 8 + 4 + 0 + y * 2, y * 8 + 0),
-                                         ivec2(x * 8 + 0 + 1 + y * 2, y * 8 + 4),
-                                         ivec2(x * 8 + 4 + 1 + y * 2, y * 8 + 4));
-            WriteDstDepth(5, ivec2(gl_WorkGroupID.xy * 2) + ivec2(x, y), v);
-            // store to LDS
-            // x x x x 0 ...
-            // 0 ...
-            g_shared_depth[x + y * 2][0] = v;
-        }
-        barrier();
-    }
+    DownsampleNext4Levels(8, required_mips, uvec2(0, 0), x, y);
 }

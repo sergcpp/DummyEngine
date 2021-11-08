@@ -16,12 +16,14 @@ class RpDepthHierarchy : public RenderPassBase {
     const ViewState *view_state_ = nullptr;
 
     RpResource input_tex_;
+    RpResource atomic_buf_;
     RpResource output_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex[], const char output_tex[]);
+    void Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex[], const char atomic_counter[],
+               const char output_tex[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "DEPTH HIERARCHY"; }

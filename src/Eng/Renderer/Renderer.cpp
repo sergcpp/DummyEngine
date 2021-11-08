@@ -510,7 +510,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // Update buffers
         //
         rp_update_buffers_.Setup(rp_builder_, list, &view_state_, SKIN_TRANSFORMS_BUF, SHAPE_KEYS_BUF, INSTANCES_BUF,
-                                 CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF);
+                                 CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF, ATOMIC_CNT_BUF);
         RenderPassBase *rp_head = &rp_update_buffers_;
         RenderPassBase *rp_tail = &rp_update_buffers_;
 
@@ -566,7 +566,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail->p_next = &rp_down_depth_;
             rp_tail = rp_tail->p_next;
 
-            rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, DEPTH_HIERARCHY_TEX);
+            rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, ATOMIC_CNT_BUF, DEPTH_HIERARCHY_TEX);
             rp_tail->p_next = &rp_depth_hierarchy_;
             rp_tail = rp_tail->p_next;
         }

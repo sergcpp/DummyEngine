@@ -39,11 +39,12 @@ class RpUpdateBuffers : public RenderPassBase {
     RpResource decals_buf_;
     RpResource items_buf_;
     RpResource shared_data_buf_;
+    RpResource atomic_cnt_buf_;
 
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const char skin_transforms_buf[],
                const char shape_keys_buf[], const char instances_buf[], const char cells_buf[], const char lights_buf[],
-               const char decals_buf[], const char items_buf[], const char shared_data_buf[]);
+               const char decals_buf[], const char items_buf[], const char shared_data_buf[], const char atomic_counter_buf[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "UPDATE BUFFERS"; }
