@@ -35,9 +35,7 @@ struct TexHandle {
     VkSampler sampler = VK_NULL_HANDLE;
     uint32_t generation = 0; // used to identify unique texture (name can be reused)
 
-    TexHandle() {
-        views.push_back(VK_NULL_HANDLE);
-    }
+    TexHandle() { views.push_back(VK_NULL_HANDLE); }
     TexHandle(VkImage _img, VkImageView _view0, VkImageView _view1, VkSampler _sampler, uint32_t _generation)
         : img(_img), sampler(_sampler), generation(_generation) {
         assert(_view0 != VK_NULL_HANDLE);
@@ -127,6 +125,11 @@ class Texture2D : public RefCounter {
     Texture2D &operator=(Texture2D &&rhs) noexcept;
 
     void Init(const Tex2DParams &params, MemoryAllocators *mem_allocs, ILog *log);
+	void Init(VkImage img, VkImageView view, VkSampler sampler, const Tex2DParams &_params, ILog *log) {
+        handle_ = {img, view, VK_NULL_HANDLE, sampler, 0};
+		params = _params;
+        ready_ = true;
+	}
     void Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
     void Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
@@ -140,7 +143,8 @@ class Texture2D : public RefCounter {
     VkSampler vk_sampler() const { return handle_.sampler; }
     uint16_t initialized_mips() const { return initialized_mips_; }
 
-    VkDescriptorImageInfo vk_desc_image_info(const int view_index = 0, VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
+    VkDescriptorImageInfo vk_desc_image_info(const int view_index = 0,
+                                             VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) const {
         VkDescriptorImageInfo ret;
         ret.sampler = handle_.sampler;
         ret.imageView = handle_.views[view_index];

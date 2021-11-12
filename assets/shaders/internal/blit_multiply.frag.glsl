@@ -12,7 +12,7 @@ UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
 PERM @MSAA_4
 */
-        
+
 #include "_fs_common.glsl"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -101,7 +101,7 @@ void main() {
 
         ssr_uvs.b += uvs.b * weight;
         weight_sum1 += weight;
-        
+
         if (uvs.b > 0.0001) {
             ssr_uvs.rg += uvs.rg * weight;
             weight_sum += weight;
@@ -134,10 +134,10 @@ void main() {
 
         highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
         int slice = int(floor(k * float(REN_GRID_RES_Z)));
-    
+
         int ix = int(aVertexUVs_.x), iy = int(aVertexUVs_.y);
         int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x));
-        
+
         highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);

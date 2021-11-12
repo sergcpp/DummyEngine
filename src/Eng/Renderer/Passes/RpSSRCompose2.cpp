@@ -35,6 +35,30 @@ void RpSSRCompose2::Setup(RpBuilder &builder, const ViewState *view_state, const
         builder.WriteTexture(output_tex_name, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
+void RpSSRCompose2::Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
+                          Ren::Tex2DRef brdf_lut, const char shared_data_buf[], const char depth_tex_name[],
+                          const char normal_tex_name[], const char spec_tex_name[], Ren::WeakTex2DRef refl_tex,
+                          const char output_tex_name[]) {
+    view_state_ = view_state;
+
+    probe_storage_ = probe_storage;
+
+    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
+                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
+    depth_tex_ =
+        builder.ReadTexture(depth_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    normal_tex_ =
+        builder.ReadTexture(normal_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    spec_tex_ =
+        builder.ReadTexture(spec_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    refl_tex_ =
+        builder.ReadTexture(refl_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+    brdf_lut_ = builder.ReadTexture(brdf_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
+
+    output_tex_ =
+        builder.WriteTexture(output_tex_name, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
+}
+
 void RpSSRCompose2::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);

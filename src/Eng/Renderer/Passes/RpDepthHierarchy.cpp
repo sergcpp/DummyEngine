@@ -27,6 +27,7 @@ void RpDepthHierarchy::Setup(RpBuilder &builder, const ViewState *view_state, co
         params.w = ((view_state->scr_res[0] + TileSize - 1) / TileSize) * TileSize;
         params.h = ((view_state->scr_res[1] + TileSize - 1) / TileSize) * TileSize;
         params.format = Ren::eTexFormat::RawR32F;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
         params.mip_count = MipCount;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.sampling.filter = Ren::eTexFilter::NearestMipmap;

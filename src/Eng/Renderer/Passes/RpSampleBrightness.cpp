@@ -42,6 +42,7 @@ void RpSampleBrightness::Setup(RpBuilder &builder, Ren::WeakTex2DRef tex_to_samp
         params.w = 16;
         params.h = 8;
         params.format = Ren::eTexFormat::RawR32F;
+        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

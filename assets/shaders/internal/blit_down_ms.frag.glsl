@@ -5,7 +5,7 @@
     precision highp int;
     precision mediump float;
 #endif
-        
+
 layout(binding = 0) uniform mediump sampler2DMS s_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)

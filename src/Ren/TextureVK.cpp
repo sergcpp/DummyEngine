@@ -111,6 +111,29 @@ VkFormat ToSRGBFormat(const VkFormat format) {
     }
     return VK_FORMAT_UNDEFINED;
 }
+
+VkImageUsageFlags to_vk_image_usage(const eTexUsage usage, const eTexFormat format) {
+    VkImageUsageFlags ret = 0;
+    if (uint8_t(usage & eTexUsage::Transfer)) {
+        ret |= (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    }
+    if (uint8_t(usage & eTexUsage::Sampled)) {
+        ret |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+    if (uint8_t(usage & eTexUsage::Storage)) {
+        assert(!IsCompressedFormat(format));
+        ret |= VK_IMAGE_USAGE_STORAGE_BIT;
+    }
+    if (uint8_t(usage & eTexUsage::RenderTarget)) {
+        assert(!IsCompressedFormat(format));
+        if (IsDepthFormat(format)) {
+            ret |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        } else {
+            ret |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        }
+    }
+    return ret;
+}
 } // namespace Ren
 
 Ren::Texture2D::Texture2D(const char *name, ApiContext *api_ctx, const Tex2DParams &p, MemoryAllocators *mem_allocs,
@@ -305,11 +328,8 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-
-        if (!IsCompressedFormat(format)) {
-            img_info.usage |= (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-        }
+        assert(uint8_t(params.usage) != 0);
+        img_info.usage = to_vk_image_usage(params.usage, format);
 
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VkSampleCountFlagBits(samples);
@@ -365,6 +385,14 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             log->Error("Failed to create image view!");
             return false;
         }
+
+#ifdef ENABLE_OBJ_LABELS
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+        name_info.objectHandle = uint64_t(new_image_view);
+        name_info.pObjectName = name_.c_str();
+        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
     }
 
 #ifdef TEX_VERBOSE_LOGGING
@@ -526,12 +554,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         img_info.format = g_vk_formats[size_t(p.format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-        if (IsDepthFormat(p.format)) {
-            img_info.usage |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        } else if (!IsCompressedFormat(p.format)) {
-            img_info.usage |= (VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-        }
+        assert(uint8_t(p.usage) != 0);
+        img_info.usage = to_vk_image_usage(p.usage, p.format);
+
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VkSampleCountFlagBits(p.samples);
         img_info.flags = 0;
@@ -601,6 +626,16 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
             }
             handle_.views.push_back(depth_only_view);
         }
+
+#ifdef ENABLE_OBJ_LABELS
+        for (VkImageView view : handle_.views) {
+            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+            name_info.objectHandle = uint64_t(view);
+            name_info.pObjectName = name_.c_str();
+            vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        }
+#endif
     }
 
     this->resource_state = eResState::Undefined;
@@ -1067,11 +1102,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         img_info.format = g_vk_formats[size_t(p.format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
-                         VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        if (!IsCompressedFormat(p.format)) {
-            img_info.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
-        }
+        assert(uint8_t(p.usage) != 0);
+        img_info.usage = to_vk_image_usage(p.usage, p.format);
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VkSampleCountFlagBits(p.samples);
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -1123,6 +1155,14 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
             log->Error("Failed to create image view!");
             return;
         }
+
+#ifdef ENABLE_OBJ_LABELS
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+        name_info.objectHandle = uint64_t(handle_.views[0]);
+        name_info.pObjectName = name_.c_str();
+        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
     }
 
     assert(p.samples == 1);
@@ -1381,7 +1421,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         img_info.format = g_vk_formats[size_t(first_format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        assert(uint8_t(p.usage) != 0);
+        img_info.usage = to_vk_image_usage(p.usage, first_format);
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VK_SAMPLE_COUNT_1_BIT;
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -1433,6 +1474,14 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
             log->Error("Failed to create image view!");
             return;
         }
+
+#ifdef ENABLE_OBJ_LABELS
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+        name_info.objectHandle = uint64_t(handle_.views[0]);
+        name_info.pObjectName = name_.c_str();
+        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
     }
 
     assert(p.samples == 1);
@@ -1593,7 +1642,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         img_info.format = g_vk_formats[size_t(params.format)];
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        img_info.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+        assert(uint8_t(p.usage) != 0);
+        img_info.usage = to_vk_image_usage(p.usage, params.format);
         img_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
         img_info.samples = VK_SAMPLE_COUNT_1_BIT;
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
@@ -1645,6 +1695,14 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
             log->Error("Failed to create image view!");
             return;
         }
+
+#ifdef ENABLE_OBJ_LABELS
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+        name_info.objectHandle = uint64_t(handle_.views[0]);
+        name_info.pObjectName = name_.c_str();
+        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
     }
 
     assert(p.samples == 1);
@@ -1994,12 +2052,20 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
     assert(dst_tex.resource_state == Ren::eResState::CopyDst);
 
     VkImageCopy reg;
-    reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (IsDepthFormat(src_tex.params.format)) {
+        reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    } else {
+        reg.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
     reg.srcSubresource.baseArrayLayer = 0;
     reg.srcSubresource.layerCount = 1;
     reg.srcSubresource.mipLevel = src_level;
     reg.srcOffset = {int32_t(src_x), int32_t(src_y), 0};
-    reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    if (IsDepthFormat(dst_tex.params.format)) {
+        reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    } else {
+        reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
     reg.dstSubresource.baseArrayLayer = 0;
     reg.dstSubresource.layerCount = 1;
     reg.dstSubresource.mipLevel = dst_level;

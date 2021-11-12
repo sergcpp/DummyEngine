@@ -24,8 +24,6 @@ void RpRTReflections::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
     RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &spec_tex = builder.GetReadTexture(spec_tex_);
-    RpAllocTex &rough_tex = builder.GetReadTexture(rough_tex_);
     RpAllocTex &env_tex = builder.GetReadTexture(env_tex_);
     RpAllocBuf &ray_list_buf = builder.GetReadBuffer(ray_list_buf_);
     RpAllocBuf &indir_args_buf = builder.GetReadBuffer(indir_args_buf_);
@@ -39,7 +37,7 @@ void RpRTReflections::Execute(RpBuilder &builder) {
         }
     }
 
-    RpAllocTex &out_color_tex = builder.GetWriteTexture(out_color_tex_);
+    RpAllocTex &out_refl_tex = builder.GetWriteTexture(out_refl_tex_);
     RpAllocTex &out_raylen_tex = builder.GetWriteTexture(out_raylen_tex_);
 
     Ren::Context &ctx = builder.ctx();
@@ -53,8 +51,6 @@ void RpRTReflections::Execute(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::SPEC_TEX_SLOT, *spec_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::ROUGH_TEX_SLOT, *rough_tex.ref},
         {Ren::eBindTarget::TBuf, RTReflections::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
@@ -71,7 +67,7 @@ void RpRTReflections::Execute(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
-        {Ren::eBindTarget::Image, RTReflections::OUT_COLOR_IMG_SLOT, *out_color_tex.ref},
+        {Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
 
     VkDescriptorSet descr_sets[2];

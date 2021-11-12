@@ -49,9 +49,33 @@ void SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &lin
             throw std::runtime_error("Unknown variable!");
         }
     }
+
+    if (line.find("DEF_CONST_INT(") == 0) {
+        line = line.substr(14);
+        const size_t n1 = line.find(',');
+        if (n1 != std::string::npos) {
+            const std::string binding_name = line.substr(0, n1);
+
+            line = line.substr(n1 + 1);
+            while (!line.empty() && line[0] == ' ') {
+                line = line.substr(1);
+            }
+
+            const size_t n2 = line.find(')');
+            if (n2 != std::string::npos) {
+                const std::string binding_index = line.substr(0, n2);
+
+                line = "#define ";
+                line += binding_name;
+                line += " ";
+                line += binding_index;
+            }
+        }
+    }
 }
 
-bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream) {
+bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
+                                   Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::ifstream src_stream(in_file, std::ios::binary);
     if (!src_stream) {
         ctx.log->Error("Failed to open %s", in_file);
@@ -77,7 +101,12 @@ bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, s
 
             dst_stream << "#line 0\r\n";
 
-            if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream)) {
+            auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
+            if (it == std::end(out_dependencies)) {
+                out_dependencies.emplace_back(full_path);
+            }
+            
+            if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream, out_dependencies)) {
                 return false;
             }
 
@@ -92,7 +121,8 @@ bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, s
     return true;
 }
 
-bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                     Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::remove(out_file);
 
     std::vector<std::string> permutations;
@@ -113,10 +143,6 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
                 line = line.substr(0, line.size() - 1);
             }*/
 
-            if (line == "#error 111") {
-                volatile int ii = 0;
-            }
-
             if (line.rfind("#version ") == 0) {
                 if (strcmp(ctx.platform, "pc") == 0 && line.rfind("es") != std::string::npos) {
                     line = "#version 430";
@@ -133,7 +159,12 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
                 dst_stream << "#line 0\r\n";
 
-                if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream)) {
+                auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
+                if (it == std::end(out_dependencies)) {
+                    out_dependencies.emplace_back(full_path);
+                }
+
+                if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream, out_dependencies)) {
                     ctx.log->Error("Failed to preprocess %s", full_path.c_str());
                     return false;
                 }

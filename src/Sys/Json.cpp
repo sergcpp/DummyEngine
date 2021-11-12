@@ -275,22 +275,22 @@ template <typename Alloc> bool JsObjectT<Alloc>::operator==(const JsObjectT &rhs
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
 }
 
-template <typename Alloc> bool JsObjectT<Alloc>::Has(const char *s) const {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            return true;
+template <typename Alloc> size_t JsObjectT<Alloc>::IndexOf(const char *s) const {
+    for (auto it = elements.begin(); it != elements.end(); ++it) {
+        if (it->first == s) {
+            return std::distance(elements.begin(), it);
         }
     }
-    return false;
+    return elements.size();
 }
 
-template <typename Alloc> bool JsObjectT<Alloc>::Has(const StdString<Alloc> &s) const {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            return true;
+template <typename Alloc> size_t JsObjectT<Alloc>::IndexOf(const StdString<Alloc> &s) const {
+    for (auto it = elements.begin(); it != elements.end(); ++it) {
+        if (it->first == s) {
+            return std::distance(elements.begin(), it);
         }
     }
-    return false;
+    return elements.size();
 }
 
 template <typename Alloc>

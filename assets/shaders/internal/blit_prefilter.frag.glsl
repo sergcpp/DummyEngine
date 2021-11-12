@@ -5,7 +5,7 @@
     precision highp int;
     precision mediump float;
 #endif
-        
+
 layout(binding = 0) uniform mediump samplerCubeArray s_texture;
 
 #if defined(VULKAN)
@@ -80,11 +80,11 @@ vec3 ImportanceSampleGGX(vec2 Xi, float roughness, vec3 N) {
 float DistributionGGX(float NdotH, float a) {
     float a2     = a * a;
     float NdotH2 = NdotH*NdotH;
-    
+
     float nom    = a2;
     float denom  = (NdotH2 * (a2 - 1.0) + 1.0);
     denom        = M_PI * denom * denom;
-    
+
     return nom / denom;
 }
 

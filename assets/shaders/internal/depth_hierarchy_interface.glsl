@@ -10,21 +10,12 @@ struct Params {
     VEC4_TYPE clip_info;
 };
 
-#ifdef __cplusplus
-    const int LOCAL_GROUP_SIZE_X = 64;
-    const int LOCAL_GROUP_SIZE_Y = 64;
+DEF_CONST_INT(LOCAL_GROUP_SIZE_X, 64)
+DEF_CONST_INT(LOCAL_GROUP_SIZE_Y, 64)
 
-    const int DEPTH_TEX_SLOT = 0;
-    const int ATOMIC_CNT_SLOT = 1;
-    const int DEPTH_IMG_SLOT = 2;
-#else
-    #define LOCAL_GROUP_SIZE_X 64
-    #define LOCAL_GROUP_SIZE_Y 64
-
-    #define DEPTH_TEX_SLOT 0
-    #define ATOMIC_CNT_SLOT 1
-    #define DEPTH_IMG_SLOT 2
-#endif
+DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
+DEF_CONST_INT(ATOMIC_CNT_SLOT, 1)
+DEF_CONST_INT(DEPTH_IMG_SLOT, 2)
 
 INTERFACE_END
 

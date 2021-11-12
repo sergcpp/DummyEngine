@@ -182,7 +182,7 @@ template <typename T> class SparseArray {
         capacity_ = new_capacity;
     }
 
-    template <class... Args> uint32_t emplace(Args &&...args) {
+    template <class... Args> uint32_t emplace(Args &&... args) {
         if (size_ + 1 > capacity_) {
             reserve(capacity_ ? (capacity_ * 2) : 8);
         }
@@ -353,6 +353,12 @@ template <typename T> class SparseArray {
     iterator iter_at(uint32_t i) { return iterator(this, i); }
 
     const_iterator citer_at(uint32_t i) const { return const_iterator(this, i); }
+
+    iterator erase(iterator it) {
+        const uint32_t next_index = NextOccupied(it.index());
+        erase(it.index());
+        return iterator(this, next_index);
+    }
 
     uint32_t FindOccupiedInRange(uint32_t start, uint32_t end) const {
         for (uint32_t i = start; i < end; i++) {

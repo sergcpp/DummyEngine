@@ -44,8 +44,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
 
     Ren::eTexFormat format;
     int _w, _h;
-    std::unique_ptr<uint8_t[]> pixels =
-        Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
+    std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
 
     if (_w != w || _h != h)
         return;
@@ -54,8 +53,7 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = {pixels[3ull * (y * w + x)],
-                                 pixels[3ull * (y * w + x) + 1],
+                out_data[i++] = {pixels[3ull * (y * w + x)], pixels[3ull * (y * w + x) + 1],
                                  pixels[3ull * (y * w + x) + 2], 255};
             }
         }
@@ -63,9 +61,8 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = {
-                    pixels[4ull * (y * w + x)], pixels[4ull * (y * w + x) + 1],
-                    pixels[4ull * (y * w + x) + 2], pixels[4ull * (y * w + x) + 3]};
+                out_data[i++] = {pixels[4ull * (y * w + x)], pixels[4ull * (y * w + x) + 1],
+                                 pixels[4ull * (y * w + x) + 2], pixels[4ull * (y * w + x) + 3]};
             }
         }
     } else {
@@ -73,15 +70,12 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_dat
     }
 }
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width,
-                                           int height, float invalid_threshold,
-                                           int filter_size) {
-    std::vector<Ray::pixel_color_t> temp_pixels1{pixels, pixels + width * height},
-        temp_pixels2{(size_t)width * height};
+std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height,
+                                           float invalid_threshold, int filter_size) {
+    std::vector<Ray::pixel_color_t> temp_pixels1{pixels, pixels + width * height}, temp_pixels2{(size_t)width * height};
 
     // Avoid bound checks in debug
-    Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(),
-                       *_temp_pixels2 = temp_pixels2.data();
+    Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(), *_temp_pixels2 = temp_pixels2.data();
 
     // apply dilation filter
     for (int i = 0; i < filter_size; i++) {
@@ -145,15 +139,12 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
     return temp_pixels1;
 }
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
-                                                      const bool flip_y) {
+std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bool flip_y) {
     const Ren::Tex2DParams &params = tex_ref->params;
 
-    std::unique_ptr<Ray::pixel_color8_t[]> tex_data(
-        new Ray::pixel_color8_t[params.w * params.h]);
+    std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
 #if defined(__ANDROID__)
-    Sys::AssetFile in_file(
-        (std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
+    Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
 #else
     tex_ref->DownloadTextureData(Ren::eTexFormat::RawRGBA8888, (void *)&tex_data[0]);
@@ -161,15 +152,14 @@ std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_r
 
     for (int y = 0; y < params.h / 2 && flip_y; y++) {
         std::swap_ranges(&tex_data[y * params.w], &tex_data[(y + 1) * params.w],
-                            &tex_data[(params.h - y - 1) * params.w]);
+                         &tex_data[(params.h - y - 1) * params.w]);
     }
 
     return tex_data;
 }
 
-void ReadAllFiles_r(
-    assets_context_t &ctx, const char *in_folder,
-    const std::function<void(assets_context_t &ctx, const char *)> &callback) {
+void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder,
+                    const std::function<void(assets_context_t &ctx, const char *)> &callback) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
         ctx.log->Error("Cannot open folder %s", in_folder);
@@ -199,10 +189,9 @@ void ReadAllFiles_r(
     closedir(in_dir);
 }
 
-void ReadAllFiles_MT_r(
-    assets_context_t &ctx, const char *in_folder,
-    const std::function<void(assets_context_t &ctx, const char *)> &callback,
-    Sys::ThreadPool *threads, std::vector<std::future<void>> &events) {
+void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder,
+                       const std::function<void(assets_context_t &ctx, const char *)> &callback,
+                       Sys::ThreadPool *threads, std::vector<std::future<void>> &events) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
         ctx.log->Error("Cannot open folder %s", in_folder);
@@ -225,8 +214,7 @@ void ReadAllFiles_MT_r(
             path += '/';
             path += in_ent->d_name;
 
-            events.push_back(threads->Enqueue(
-                [path, &ctx, &callback]() { callback(ctx, path.c_str()); }));
+            events.push_back(threads->Enqueue([path, &ctx, &callback]() { callback(ctx, path.c_str()); }));
         }
     }
 
@@ -261,8 +249,7 @@ uint32_t HashFile(const char *in_file, Ren::ILog *log) {
     return hash;
 }
 
-bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx,
-                       bool report_error) {
+bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx, bool report_error) {
 #ifdef _WIN32
     auto filetime_to_uint64 = [](const FILETIME &ft) -> uint64_t {
         ULARGE_INTEGER ull;
@@ -303,11 +290,12 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
     return true;
 }
 
-bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context_t &ctx) {
+bool CheckAssetChanged(const char *in_file, const char *out_file, assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
-    if (strstr(in_file, ".glsl"))
-        return false;
+    if (strstr(in_file, ".glsl")) {
+        return true;
+    }
 #endif
 
     char in_t[32] = "", out_t[32] = "";
@@ -318,64 +306,102 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
 
     const int *in_ndx = ctx.cache->db_map.Find(in_file);
     if (in_ndx) {
+        bool file_has_changed = true;
+
         JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
         if (js_in_file.Has("in_time") && js_in_file.Has("out_time")) {
             const JsStringP &js_in_file_time = js_in_file.at("in_time").as_str();
             const JsStringP &js_out_file_time = js_in_file.at("out_time").as_str();
-            if (strncmp(js_in_file_time.val.c_str(), in_t, 32) == 0 &&
-                strncmp(js_out_file_time.val.c_str(), out_t, 32) == 0) {
-                // can skip
-                return true;
-            }
+            file_has_changed = (strncmp(js_in_file_time.val.c_str(), in_t, 32) != 0 ||
+                                strncmp(js_out_file_time.val.c_str(), out_t, 32) != 0);
         }
 
-        const uint32_t in_hash = HashFile(in_file, ctx.log);
-        const std::string in_hash_str = std::to_string(in_hash);
+        if (file_has_changed) {
+            const uint32_t in_hash = HashFile(in_file, ctx.log);
+            const std::string in_hash_str = std::to_string(in_hash);
 
-        if (js_in_file.Has("in_hash") && js_in_file.Has("out_hash")) {
-            const JsStringP &js_in_file_hash = js_in_file.at("in_hash").as_str();
-            if (js_in_file_hash.val == in_hash_str) {
-                const uint32_t out_hash = HashFile(out_file, ctx.log);
-                const std::string out_hash_str = std::to_string(out_hash);
+            if (js_in_file.Has("in_hash") && js_in_file.Has("out_hash")) {
+                const JsStringP &js_in_file_hash = js_in_file.at("in_hash").as_str();
+                if (js_in_file_hash.val == in_hash_str) {
+                    const uint32_t out_hash = HashFile(out_file, ctx.log);
+                    const std::string out_hash_str = std::to_string(out_hash);
 
-                const JsStringP &js_out_file_hash = js_in_file.at("out_hash").as_str();
-                if (js_out_file_hash.val == out_hash_str) {
-                    // write new time
-                    if (!js_in_file.Has("in_time")) {
-                        js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
-                    } else {
-                        JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
-                        js_in_file_time.val = in_t;
+                    const JsStringP &js_out_file_hash = js_in_file.at("out_hash").as_str();
+                    if (js_out_file_hash.val == out_hash_str) {
+                        // write new time
+                        if (!js_in_file.Has("in_time")) {
+                            js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
+                        } else {
+                            JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
+                            js_in_file_time.val = in_t;
+                        }
+
+                        if (!js_in_file.Has("out_time")) {
+                            js_in_file.Push("out_time", JsStringP(out_t, *ctx.mp_alloc));
+                        } else {
+                            JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
+                            js_out_file_time.val = out_t;
+                        }
+
+                        // can skip
+                        file_has_changed = false;
                     }
+                }
+            }
 
-                    if (!js_in_file.Has("out_time")) {
-                        js_in_file.Push("out_time", JsStringP(out_t, *ctx.mp_alloc));
-                    } else {
-                        JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
-                        js_out_file_time.val = out_t;
-                    }
+            if (file_has_changed) {
+                // store new hash and time value
+                if (!js_in_file.Has("in_hash")) {
+                    js_in_file.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
+                } else {
+                    JsStringP &js_in_file_hash = js_in_file["in_hash"].as_str();
+                    js_in_file_hash.val = in_hash_str.c_str();
+                }
 
-                    // can skip
-                    return true;
+                // write new time
+                if (!js_in_file.Has("in_time")) {
+                    js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
+                } else {
+                    JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
+                    js_in_file_time.val = in_t;
                 }
             }
         }
 
-        // store new hash and time value
-        if (!js_in_file.Has("in_hash")) {
-            js_in_file.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
-        } else {
-            JsStringP &js_in_file_hash = js_in_file["in_hash"].as_str();
-            js_in_file_hash.val = in_hash_str.c_str();
+        bool dependencies_have_changed = false;
+
+        if (js_in_file.Has("deps")) {
+            const JsObjectP &js_deps = js_in_file.at("deps").as_obj();
+            for (const auto &dep : js_deps.elements) {
+                const JsObjectP &js_dep = dep.second.as_obj();
+                if (!js_dep.Has("in_time") || !js_dep.Has("in_hash")) {
+                    dependencies_have_changed = true;
+                    break;
+                }
+
+                const JsStringP &js_dep_time = js_dep.at("in_time").as_str();
+
+                char dep_t[32] = "";
+                GetFileModifyTime(dep.first.c_str(), dep_t, ctx, true /* report_error */);
+
+                if (strncmp(js_dep_time.val.c_str(), dep_t, 32) != 0) {
+                    const uint32_t dep_hash = HashFile(dep.first.c_str(), ctx.log);
+                    const std::string dep_hash_str = std::to_string(dep_hash);
+
+                    const JsStringP &js_dep_hash = js_dep.at("in_hash").as_str();
+                    if (js_dep_hash.val != dep_hash_str) {
+                        dependencies_have_changed = true;
+                        break;
+                    }
+                }
+            }
         }
 
-        // write new time
-        if (!js_in_file.Has("in_time")) {
-            js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
-        } else {
-            JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
-            js_in_file_time.val = in_t;
+        if (!file_has_changed && !dependencies_have_changed) {
+            // can skip
+            return false;
         }
+
     } else {
         const uint32_t in_hash = HashFile(in_file, ctx.log);
         const std::string in_hash_str = std::to_string(in_hash);
@@ -387,7 +413,7 @@ bool CheckCanSkipAsset(const char *in_file, const char *out_file, assets_context
         ctx.cache->db_map[in_file] = int(new_ndx);
     }
 
-    return false;
+    return true;
 }
 
 bool CreateFolders(const char *out_file, Ren::ILog *log) {
@@ -425,8 +451,7 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
             } else if (strcmp(platform, "android") == 0) {
                 tex.replace(n + 1, 3, "ktx");
             }
-        } else if ((n = tex.find(".png")) != std::string::npos ||
-                   (n = tex.find(".img")) != std::string::npos) {
+        } else if ((n = tex.find(".png")) != std::string::npos || (n = tex.find(".img")) != std::string::npos) {
             if (strcmp(platform, "pc") == 0) {
                 tex.replace(n + 1, 3, "dds");
             } else if (strcmp(platform, "android") == 0) {
@@ -495,8 +520,7 @@ bool WriteDB(const JsObjectP &js_db, const char *out_folder) {
     return write_successful;
 }
 
-std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file,
-                            std::string &out_caption) {
+std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file, std::string &out_caption) {
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     const int file_size = int(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
@@ -568,14 +592,12 @@ bool g_astc_initialized = false;
 
 Ren::HashMap32<std::string, SceneManager::Handler> SceneManager::g_asset_handlers;
 
-void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext,
-                                 const ConvertAssetFunc &convert_func) {
+void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func) {
     g_asset_handlers[in_ext] = {out_ext, convert_func};
 }
 
-bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
-                                 const char *platform, Sys::ThreadPool *p_threads,
-                                 Ren::ILog *log) {
+bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
+                                 Sys::ThreadPool *p_threads, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     // for astc codec
@@ -625,8 +647,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};
 
     double last_db_write = Sys::GetTimeS();
-    auto convert_file = [out_folder, &last_db_write](assets_context_t &ctx,
-                                                     const char *in_file) {
+    auto convert_file = [out_folder, &last_db_write](assets_context_t &ctx, const char *in_file) {
         const char *base_path = strchr(in_file, '/');
         if (!base_path) {
             return;
@@ -645,20 +666,19 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
         }
 
         const std::string out_file =
-            out_folder + std::string(base_path, strlen(base_path) - strlen(ext)) +
-            handler->ext;
+            out_folder + std::string(base_path, strlen(base_path) - strlen(ext)) + handler->ext;
 
-        if (CheckCanSkipAsset(in_file, out_file.c_str(), ctx)) {
+        if (!CheckAssetChanged(in_file, out_file.c_str(), ctx)) {
             return;
         }
 
         if (!CreateFolders(out_file.c_str(), ctx.log)) {
-            ctx.log->Info("[PrepareAssets] Failed to create directories for %s",
-                          out_file.c_str());
+            ctx.log->Info("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
             return;
         }
 
-        const bool res = handler->convert(ctx, in_file, out_file.c_str());
+        Ren::SmallVector<std::string, 32> dependencies;
+        const bool res = handler->convert(ctx, in_file, out_file.c_str(), dependencies);
         if (res) {
             const uint32_t out_hash = HashFile(out_file.c_str(), ctx.log);
             const std::string out_hash_str = std::to_string(out_hash);
@@ -686,18 +706,53 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
                     JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                     js_out_file_time.val = out_t;
                 }
+
+                // store new dependencies list
+                if (!dependencies.empty()) {
+                    size_t ndx;
+                    if ((ndx = js_in_file.IndexOf("deps")) == js_in_file.Size()) {
+                        js_in_file.Push("deps", JsObjectP{*ctx.mp_alloc});
+                    }
+
+                    JsObjectP &js_deps = js_in_file.elements[ndx].second.as_obj();
+                    for (size_t i = 0; i < dependencies.size(); ++i) {
+                        char dep_t[32];
+                        GetFileModifyTime(dependencies[i].c_str(), dep_t, ctx, true /* report_error */);
+
+                        const uint32_t dep_hash = HashFile(dependencies[i].c_str(), ctx.log);
+                        const std::string dep_hash_str = std::to_string(out_hash);
+
+                        JsObjectP js_dep(*ctx.mp_alloc);
+                        js_dep.Push("in_time", JsStringP(dep_t, *ctx.mp_alloc));
+                        js_dep.Push("in_hash", JsStringP(dep_hash_str.c_str(), *ctx.mp_alloc));
+
+                        if (i < js_deps.Size()) {
+                            js_deps[i].first = dependencies[i].c_str();
+                            js_deps[i].second = std::move(js_dep);
+                        } else {
+                            js_deps.Push(dependencies[i].c_str(), std::move(js_dep));
+                        }
+                    }
+                    if (js_deps.elements.size() > dependencies.size()) {
+                        js_deps.elements.erase(js_deps.elements.begin() + dependencies.size(),
+                                               js_deps.elements.begin() + js_deps.elements.size());
+                    }
+                } else {
+                    size_t ndx;
+                    if ((ndx = js_in_file.IndexOf("deps")) < js_in_file.Size()) {
+                        js_in_file.elements.erase(js_in_file.elements.begin() + ndx);
+                    }
+                }
             }
 
-            if (Sys::GetTimeS() - last_db_write > 5.0 &&
-                WriteDB(ctx.cache->js_db, out_folder)) {
+            if (Sys::GetTimeS() - last_db_write > 5.0 && WriteDB(ctx.cache->js_db, out_folder)) {
                 last_db_write = Sys::GetTimeS();
             }
         }
     };
 
 #ifdef __linux__
-    if (system("chmod +x src/libs/spirv/glslangValidator") ||
-        system("chmod +x src/libs/spirv/spirv-opt") ||
+    if (system("chmod +x src/libs/spirv/glslangValidator") || system("chmod +x src/libs/spirv/spirv-opt") ||
         system("chmod +x src/libs/spirv/spirv-cross")) {
         log->Info("[PrepareAssets] Failed to chmod executables!");
     }
@@ -716,8 +771,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
             ctx.cache->db_map[key] = i;
 
             if (js_files.elements[i].second.as_obj().Has("color")) {
-                const JsNumber &js_color =
-                    js_files.elements[i].second.as_obj().at("color").as_num();
+                const JsNumber &js_color = js_files.elements[i].second.as_obj().at("color").as_num();
                 ctx.cache->texture_averages[key] = uint32_t(js_color.val);
             }
         }
@@ -741,14 +795,14 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder,
     return true;
 }
 
-bool SceneManager::HSkip(assets_context_t &ctx, const char *in_file,
-                         const char *out_file) {
+bool SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
+                         Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("[PrepareAssets] Skip %s", out_file);
     return true;
 }
 
-bool SceneManager::HCopy(assets_context_t &ctx, const char *in_file,
-                         const char *out_file) {
+bool SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
+                         Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("[PrepareAssets] Copy %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -768,8 +822,8 @@ bool SceneManager::HCopy(assets_context_t &ctx, const char *in_file,
     return dst_stream.good();
 }
 
-bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file,
-                                       const char *out_file) {
+bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                       Ren::SmallVectorImpl<std::string> &out_dependencies) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -791,21 +845,21 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
             if (line.rfind("texture:", 0) == 0) {
                 const size_t n1 = line.find(' ');
                 const size_t n2 = line.find(' ', n1 + 1);
-                const std::string tex_name =
-                    "assets/textures/" + line.substr(n1 + 1, n2 - n1 - 1);
+                const std::string tex_name = "assets/textures/" + line.substr(n1 + 1, n2 - n1 - 1);
+
+                auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), tex_name);
+                if (it == std::end(out_dependencies)) {
+                    out_dependencies.emplace_back(tex_name);
+                }
 
                 uint8_t average_color[4] = {0, 255, 255, 255};
 
-                const uint32_t *cached_color =
-                    ctx.cache->texture_averages.Find(tex_name.c_str());
+                const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str());
                 if (cached_color) {
                     memcpy(average_color, cached_color, 4);
                 } else {
-                    if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(),
-                                                                       average_color)) {
-                        ctx.log->Error(
-                            "[PrepareAssets] Failed to get average color of %s",
-                            tex_name.c_str());
+                    if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(), average_color)) {
+                        ctx.log->Error("[PrepareAssets] Failed to get average color of %s", tex_name.c_str());
                     } else {
                         ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
                     }
@@ -813,9 +867,8 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
 
                 SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
 
-                static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5',
-                                                   '6', '7', '8', '9', 'A', 'B',
-                                                   'C', 'D', 'E', 'F'};
+                static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
                 line += " #";
                 for (int i = 0; i < 4; i++) {
                     line += hex_chars[average_color[i] / 16];
@@ -829,8 +882,8 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
     return true;
 }
 
-bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
-                                   const char *out_file) {
+bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                   Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
@@ -863,18 +916,15 @@ bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
                 JsObject &js_decal = js_obj.at("decal").as_obj();
                 if (js_decal.Has("diff")) {
                     JsString &js_diff_tex = js_decal.at("diff").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform,
-                                                                  js_diff_tex.val);
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_diff_tex.val);
                 }
                 if (js_decal.Has("norm")) {
                     JsString &js_norm_tex = js_decal.at("norm").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform,
-                                                                  js_norm_tex.val);
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_norm_tex.val);
                 }
                 if (js_decal.Has("spec")) {
                     JsString &js_spec_tex = js_decal.at("spec").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform,
-                                                                  js_spec_tex.val);
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
                 }
             }
         }
@@ -905,14 +955,12 @@ bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file,
             if (js_chapter.Has("html_src")) {
                 JsObject &js_html_src = js_chapter.at("html_src").as_obj();
                 for (auto &js_src_pair : js_html_src.elements) {
-                    const std::string &js_lang = js_src_pair.first,
-                                      &js_file_path = js_src_pair.second.as_str().val;
+                    const std::string &js_lang = js_src_pair.first, &js_file_path = js_src_pair.second.as_str().val;
 
                     const std::string html_file_path = base_path + js_file_path;
 
                     std::string caption;
-                    std::string html_body =
-                        ExtractHTMLData(ctx, html_file_path.c_str(), caption);
+                    std::string html_body = ExtractHTMLData(ctx, html_file_path.c_str(), caption);
 
                     caption = std::regex_replace(caption, std::regex("\n"), "");
                     caption = std::regex_replace(caption, std::regex("\r"), "");

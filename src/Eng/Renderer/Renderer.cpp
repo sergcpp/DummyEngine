@@ -106,6 +106,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         Ren::Tex2DParams p;
         p.w = p.h = 1;
         p.format = Ren::eTexFormat::RawRGBA8888;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
@@ -122,6 +123,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         Ren::Tex2DParams p;
         p.w = p.h = 8;
         p.format = Ren::eTexFormat::RawRG32F;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
         rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0][0], sizeof(HaltonSeq23), p,
@@ -133,6 +135,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         Ren::Tex2DParams p;
         p.w = p.h = 4;
         p.format = Ren::eTexFormat::RawRG16;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
         rand2d_dirs_4x4_ = ctx_.LoadTexture2D("rand2d_dirs_4x4", &__rand_dirs[0], sizeof(__rand_dirs), p,
@@ -166,6 +169,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         p.w = __cone_rt_lut_res;
         p.h = __cone_rt_lut_res;
         p.format = Ren::eTexFormat::RawRGBA8888;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -186,6 +190,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         Ren::Tex2DParams p;
         p.w = p.h = RendererInternal::__brdf_lut_res;
         p.format = Ren::eTexFormat::RawRG16;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -205,6 +210,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         Ren::Tex2DParams p;
         p.w = p.h = __noise_res;
         p.format = Ren::eTexFormat::RawRGBA8888Snorm;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
 
         Ren::eTexLoadStatus status;
@@ -253,33 +259,33 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
         Ren::CopyBufferToBuffer(sobol_seq_buf_stage, 0, *sobol_seq_buf_, 0, 256 * 256 * sizeof(int), cmd_buf);
 
         // Scrambling tile
-        scrambling_tile_32spp_buf_ =
+        scrambling_tile_1spp_buf_ =
             ctx_.LoadBuffer("ScramblingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        Ren::Buffer scrambling_tile_buf_stage("ScramblingTile32SppBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
-                                              scrambling_tile_32spp_buf_->size());
+        Ren::Buffer scrambling_tile_buf_stage("ScramblingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
+                                              scrambling_tile_1spp_buf_->size());
 
         { // init stage buf
             uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map(Ren::BufMapWrite);
-            memcpy(mapped_ptr, g_scrambling_tile_32spp, 128 * 128 * 8 * sizeof(int));
+            memcpy(mapped_ptr, g_scrambling_tile_1spp, 128 * 128 * 8 * sizeof(int));
             scrambling_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_32spp_buf_, 0,
+        Ren::CopyBufferToBuffer(scrambling_tile_buf_stage, 0, *scrambling_tile_1spp_buf_, 0,
                                 128 * 128 * 8 * sizeof(int), cmd_buf);
 
         // Ranking tile
-        ranking_tile_32spp_buf_ =
+        ranking_tile_1spp_buf_ =
             ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        Ren::Buffer ranking_tile_buf_stage("RankingTile32SppBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
-                                           ranking_tile_32spp_buf_->size());
+        Ren::Buffer ranking_tile_buf_stage("RankingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
+                                           ranking_tile_1spp_buf_->size());
 
         { // init stage buf
             uint8_t *mapped_ptr = ranking_tile_buf_stage.Map(Ren::BufMapWrite);
-            memcpy(mapped_ptr, g_ranking_tile_32spp, 128 * 128 * 8 * sizeof(int));
+            memcpy(mapped_ptr, g_ranking_tile_1spp, 128 * 128 * 8 * sizeof(int));
             ranking_tile_buf_stage.Unmap();
         }
 
-        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_32spp_buf_, 0, 128 * 128 * 8 * sizeof(int),
+        Ren::CopyBufferToBuffer(ranking_tile_buf_stage, 0, *ranking_tile_1spp_buf_, 0, 128 * 128 * 8 * sizeof(int),
                                 cmd_buf);
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);
@@ -374,6 +380,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             params.w = cur_scr_w;
             params.h = cur_scr_h;
             params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -417,6 +424,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             params.w = cur_scr_w / 4;
             params.h = cur_scr_h / 4;
             params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -430,27 +438,89 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             Ren::Tex2DParams params;
             params.w = cur_scr_w;
             params.h = cur_scr_h;
-            params.format = Ren::eTexFormat::RawRGB10_A2;
+            params.format = ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
+                                                                      : Ren::eTexFormat::Depth32Stencil8;
+            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             Ren::eTexLoadStatus status;
+            depth_history_tex_ = ctx_.LoadTexture2D("Depth History tex", params, ctx_.default_mem_allocs(), &status);
+            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                   status == Ren::eTexLoadStatus::Reinitialized);
+
+            params.format = Ren::eTexFormat::RawRGBA8888;
             norm_history_tex_ = ctx_.LoadTexture2D("Normal History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Reinitialized);
+            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                   status == Ren::eTexLoadStatus::Reinitialized);
 
-            params.format = Ren::eTexFormat::RawR8;
-            rough_history_tex_ =
-                ctx_.LoadTexture2D("Roughness History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Reinitialized);
+            {
+                Ren::Tex2DParams refl_tex_params;
+                refl_tex_params.w = cur_scr_w;
+                refl_tex_params.h = cur_scr_h;
+                refl_tex_params.format = Ren::eTexFormat::RawRG11F_B10F;
+                refl_tex_params.usage =
+                    (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Storage);
+                refl_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                refl_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
-            refl_history_tex_ =
-                ctx_.LoadTexture2D("Reflections History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Reinitialized);
+                refl_history_tex_ =
+                    ctx_.LoadTexture2D("Reflection History tex", refl_tex_params, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                       status == Ren::eTexLoadStatus::Reinitialized);
+            }
+
+            for (int i = 0; i < 2; ++i) {
+                char temp_buf[32];
+                snprintf(temp_buf, sizeof(temp_buf), "Variance History tex [%i]", i);
+
+                Ren::Tex2DParams variance_tex_params;
+                variance_tex_params.w = cur_scr_w;
+                variance_tex_params.h = cur_scr_h;
+                variance_tex_params.format = Ren::eTexFormat::RawR16F;
+                variance_tex_params.usage =
+                    (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Storage);
+                variance_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                variance_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                variance_tex_[i] =
+                    ctx_.LoadTexture2D(temp_buf, variance_tex_params, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                       status == Ren::eTexLoadStatus::Reinitialized);
+
+                snprintf(temp_buf, sizeof(temp_buf), "Sample Count tex [%i]", i);
+
+                Ren::Tex2DParams sample_count_tex_params;
+                sample_count_tex_params.w = cur_scr_w;
+                sample_count_tex_params.h = cur_scr_h;
+                sample_count_tex_params.format = Ren::eTexFormat::RawR16F;
+                sample_count_tex_params.usage =
+                    (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Storage);
+                sample_count_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                sample_count_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                sample_count_tex_[i] =
+                    ctx_.LoadTexture2D(temp_buf, sample_count_tex_params, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                       status == Ren::eTexLoadStatus::Reinitialized);
+            }
+
+            params.format = Ren::eTexFormat::RawRG32UI;
+            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
+            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            refl_aux_history_tex_ =
+                ctx_.LoadTexture2D("Reflections Aux History tex", params, ctx_.default_mem_allocs(), &status);
+            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                   status == Ren::eTexLoadStatus::Reinitialized);
         } else {
+            depth_history_tex_ = {};
             norm_history_tex_ = {};
-            rough_history_tex_ = {};
             refl_history_tex_ = {};
+            for (int i = 0; i < 2; ++i) {
+                variance_tex_[i] = {};
+                sample_count_tex_[i] = {};
+            }
+            refl_aux_history_tex_ = {};
         }
 
         view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
@@ -637,15 +707,22 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // Reflections pass
         //
 
+        if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
+            assert(!view_state_.is_multisampled);
+            rp_fill_static_vel_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
+            rp_tail->p_next = &rp_fill_static_vel_;
+            rp_tail = rp_tail->p_next;
+        }
+
         const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
 
         if (list.render_flags & EnableSSR_HQ) {
-            rp_ssr_prepare_.Setup(rp_builder_, &view_state_, "Temporal Variance Mask", "Ray Counter", "SSR Denoised 3");
+            rp_ssr_prepare_.Setup(rp_builder_, &view_state_, "Ray Counter", "Refl Ray Length");
             rp_tail->p_next = &rp_ssr_prepare_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_classify_tiles_.Setup(rp_builder_, &view_state_, MAIN_SPEC_TEX, "Temporal Variance Mask",
-                                         "Tile Metadata Mask", "Ray Counter", "Ray List", "Roughness Tex");
+            rp_ssr_classify_tiles_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, variance_tex_[0],
+                                         "Ray Counter", "Ray List", "Tile List", "SSR Temp 2");
             rp_tail->p_next = &rp_ssr_classify_tiles_;
             rp_tail = rp_tail->p_next;
 
@@ -653,10 +730,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail->p_next = &rp_ssr_write_indir_args_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_trace_hq_.Setup(rp_builder_, &view_state_, sobol_seq_buf_, scrambling_tile_32spp_buf_,
-                                   ranking_tile_32spp_buf_, SHARED_DATA_BUF, MAIN_NORMAL_TEX, "Roughness Tex",
-                                   DEPTH_HIERARCHY_TEX, taa_history_tex_, "Ray Counter", "Ray List", "Intersect Args",
-                                   "SSR Temp 2", "Refl Ray Length", "Ray RT List");
+            rp_ssr_trace_hq_.Setup(rp_builder_, &view_state_, sobol_seq_buf_, scrambling_tile_1spp_buf_,
+                                   ranking_tile_1spp_buf_, SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_NORMAL_TEX,
+                                   DEPTH_HIERARCHY_TEX, "Ray Counter", "Ray List", "Intersect Args", "SSR Temp 2",
+                                   "Refl Ray Length", "Ray RT List");
             rp_tail->p_next = &rp_ssr_trace_hq_;
             rp_tail = rp_tail->p_next;
 
@@ -665,51 +742,65 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 rp_tail->p_next = &rp_ssr_write_indir_rt_disp_;
                 rp_tail = rp_tail->p_next;
 
-                rp_rt_reflections_.Setup(rp_builder_, &view_state_, sobol_seq_buf_, scrambling_tile_32spp_buf_,
-                                         ranking_tile_32spp_buf_, list, ctx_.default_vertex_buf1(),
+                rp_rt_reflections_.Setup(rp_builder_, &view_state_, sobol_seq_buf_, scrambling_tile_1spp_buf_,
+                                         ranking_tile_1spp_buf_, list, ctx_.default_vertex_buf1(),
                                          ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), &acc_struct_data,
-                                         &bindless_tex, persistent_data.materials_buf, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
-                                         MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "Roughness Tex", dummy_black_, "Ray RT List",
+                                         &bindless_tex, persistent_data.materials_buf, SHARED_DATA_BUF,
+                                         DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX, dummy_black_, "Ray RT List",
                                          "RT Dispatch Args", "SSR Temp 2", "Refl Ray Length");
                 rp_tail->p_next = &rp_rt_reflections_;
                 rp_tail = rp_tail->p_next;
             }
 
-            rp_ssr_resolve_spatial_.Setup(rp_builder_, &view_state_, DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX,
-                                          "Roughness Tex", "SSR Temp 2", "Tile Metadata Mask", "SSR Denoised 1");
-            rp_tail->p_next = &rp_ssr_resolve_spatial_;
+            // TODO: maybe try to avoid this?
+            // rp_ssr_vs_depth_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, SHARED_DATA_BUF, "VS Depth");
+            // rp_tail->p_next = &rp_ssr_vs_depth_;
+            // rp_tail = rp_tail->p_next;
+
+            rp_ssr_reproject_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX,
+                                    depth_history_tex_, norm_history_tex_, "SSR Temp 2", "Refl Ray Length",
+                                    refl_history_tex_, MAIN_VELOCITY_TEX, variance_tex_[0], sample_count_tex_[1],
+                                    "Tile List", "Intersect Args", 3 * sizeof(uint32_t), "SSR Reprojected",
+                                    "Average Refl", variance_tex_[1], sample_count_tex_[0]);
+            rp_tail->p_next = &rp_ssr_reproject_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_resolve_temporal_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, DEPTH_HIERARCHY_TEX,
-                                           MAIN_NORMAL_TEX, "Roughness Tex", norm_history_tex_, rough_history_tex_,
-                                           MAIN_VELOCITY_TEX, "SSR Denoised 1", refl_history_tex_, "Refl Ray Length",
-                                           "Tile Metadata Mask", "Temporal Variance Mask", "SSR Denoised 2");
+            rp_ssr_prefilter_.Setup(rp_builder_, &view_state_, DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX, "Average Refl",
+                                    "SSR Temp 2", variance_tex_[1], sample_count_tex_[0], "Tile List", "Intersect Args",
+                                    3 * sizeof(uint32_t), "SSR Denoised 1", variance_tex_[0]);
+            rp_tail->p_next = &rp_ssr_prefilter_;
+            rp_tail = rp_tail->p_next;
+
+            rp_ssr_resolve_temporal_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_NORMAL_TEX, "Average Refl",
+                                           "SSR Denoised 1", "SSR Reprojected", variance_tex_[0],
+                                           sample_count_tex_[0], "Tile List", "Intersect Args", 3 * sizeof(uint32_t),
+                                           refl_history_tex_, variance_tex_[1]);
             rp_tail->p_next = &rp_ssr_resolve_temporal_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_blur_.Setup(rp_builder_, &view_state_, "Roughness Tex", "SSR Denoised 2", "Tile Metadata Mask",
-                               "SSR Denoised 3");
-            rp_tail->p_next = &rp_ssr_blur_;
+            if (list.render_flags & DebugDenoise) {
+                rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
+                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2", refl_out_name);
+            } else {
+                rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
+                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, refl_history_tex_,
+                                       refl_out_name);
+            }
+            rp_tail->p_next = &rp_ssr_compose2_;
             rp_tail = rp_tail->p_next;
 
             { // copy history textures
+                rp_ssr_copy_depth_.Setup(rp_builder_, view_state_.act_res, MAIN_DEPTH_TEX, depth_history_tex_);
+                rp_tail->p_next = &rp_ssr_copy_depth_;
+                rp_tail = rp_tail->p_next;
+
                 rp_ssr_copy_normals_.Setup(rp_builder_, view_state_.act_res, MAIN_NORMAL_TEX, norm_history_tex_);
                 rp_tail->p_next = &rp_ssr_copy_normals_;
                 rp_tail = rp_tail->p_next;
 
-                rp_ssr_copy_roughness_.Setup(rp_builder_, view_state_.act_res, "Roughness Tex", rough_history_tex_);
-                rp_tail->p_next = &rp_ssr_copy_roughness_;
-                rp_tail = rp_tail->p_next;
-
-                rp_ssr_copy_refl_.Setup(rp_builder_, view_state_.act_res, "SSR Denoised 2", refl_history_tex_);
-                rp_tail->p_next = &rp_ssr_copy_refl_;
-                rp_tail = rp_tail->p_next;
+                std::swap(variance_tex_[0], variance_tex_[1]);
+                std::swap(sample_count_tex_[0], sample_count_tex_[1]);
             }
-
-            rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
-                                   MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Denoised 3", refl_out_name);
-            rp_tail->p_next = &rp_ssr_compose2_;
-            rp_tail = rp_tail->p_next;
         } else {
             rp_ssr_trace_.Setup(rp_builder_, &view_state_, brdf_lut_, SHARED_DATA_BUF, MAIN_NORMAL_TEX,
                                 DEPTH_DOWN_2X_TEX, "SSR Temp 1");
@@ -723,7 +814,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
                                   (list.render_flags & EnableSSR_HQ) ? taa_history_tex_ : down_tex_4x_, brdf_lut_,
                                   SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                                  DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
+                                  DEPTH_DOWN_2X_TEX, "SSR Denoised 1", refl_out_name);
             rp_tail->p_next = &rp_ssr_compose_;
             rp_tail = rp_tail->p_next;
         }
@@ -758,12 +849,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Temporal resolve
         //
-        if (list.render_flags & EnableTaa && list.env.env_map) {
+        if ((list.render_flags & EnableTaa) && list.env.env_map) {
             assert(!view_state_.is_multisampled);
-            rp_fill_static_vel_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
-            rp_tail->p_next = &rp_fill_static_vel_;
-            rp_tail = rp_tail->p_next;
-
             rp_taa_.Setup(rp_builder_, &view_state_, taa_history_tex_, reduced_average_, list.draw_cam.max_exposure,
                           SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX, RESOLVED_COLOR_TEX);
             rp_tail->p_next = &rp_taa_;
@@ -940,6 +1027,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
     { // store matrix to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
+        view_state_.prev_cam_pos = list.draw_cam.world_position();
         view_state_.prev_clip_from_world = list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
         view_state_.prev_clip_from_view = list.draw_cam.proj_matrix_offset();
     }

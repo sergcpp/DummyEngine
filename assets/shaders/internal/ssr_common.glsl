@@ -3,15 +3,15 @@
 
 //  LANE TO 8x8 MAPPING
 //  ===================
-//  00 01 08 09 10 11 18 19 
+//  00 01 08 09 10 11 18 19
 //  02 03 0a 0b 12 13 1a 1b
 //  04 05 0c 0d 14 15 1c 1d
-//  06 07 0e 0f 16 17 1e 1f 
-//  20 21 28 29 30 31 38 39 
+//  06 07 0e 0f 16 17 1e 1f
+//  20 21 28 29 30 31 38 39
 //  22 23 2a 2b 32 33 3a 3b
 //  24 25 2c 2d 34 35 3c 3d
-//  26 27 2e 2f 36 37 3e 3f 
-uvec2 RemapLane8x8(uint lane) { 
+//  26 27 2e 2f 36 37 3e 3f
+uvec2 RemapLane8x8(uint lane) {
     return uvec2(bitfieldInsert(bitfieldExtract(lane, 2, 3), lane, 0, 1),
                  bitfieldInsert(bitfieldExtract(lane, 3, 3), bitfieldExtract(lane, 1, 2), 0, 2));
 }
@@ -37,7 +37,7 @@ const float RoughnessSigmaMax = 0.01;
 const float DepthSigma = 0.02;
 
 float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
-    return pow(max(dot(normal_p, normal_q), 0.0), sigma);
+    return pow(clamp(dot(normal_p, normal_q), 0.0, 1.0), sigma);
 }
 
 float GetEdgeStoppingRoughnessWeight(float roughness_p, float roughness_q, float sigma_min, float sigma_max) {
@@ -117,6 +117,15 @@ mat3 CreateTBN(vec3 N) {
     TBN[1] = cross(N, U);
     TBN[2] = N;
     return transpose(TBN);
+}
+
+/* mediump */ float Luminance(/* mediump */ vec3 color) { return max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
+
+/* mediump */ float ComputeTemporalVariance(/* mediump */ vec3 history_radiance, /* mediump */ vec3 radiance) {
+    /* mediump */ float history_luminance = Luminance(history_radiance);
+    /* mediump */ float luminance = Luminance(radiance);
+    /* mediump */ float diff = abs(history_luminance - luminance) / max(max(history_luminance, luminance), 0.5);
+    return diff * diff;
 }
 
 #endif // SSR_COMMON_GLSL

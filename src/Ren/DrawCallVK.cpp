@@ -158,9 +158,10 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const 
     vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);
 }
 
-void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, const Binding bindings[],
-                                  const int bindings_count, const void *uniform_data, int uniform_data_len,
-                                  DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
+                                  const uint32_t indir_buf_offset, const Binding bindings[], const int bindings_count,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
     VkDescriptorSet descr_set = PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings,
@@ -181,5 +182,5 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
                            uniform_data);
     }
 
-    vkCmdDispatchIndirect(cmd_buf, indir_buf.vk_handle(), 0);
+    vkCmdDispatchIndirect(cmd_buf, indir_buf.vk_handle(), VkDeviceSize(indir_buf_offset));
 }

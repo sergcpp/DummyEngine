@@ -142,7 +142,8 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void Serve(int texture_budget = 1);
 
-    using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file)>;
+    using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                                Ren::SmallVectorImpl<std::string> &out_dependencies)>;
     static void RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func);
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
                               Sys::ThreadPool *p_threads, Ren::ILog *log);
@@ -278,31 +279,44 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     static void InitASTCCodec();
     static void WriteCommonShaderIncludes(const char *in_folder);
 
-    static bool HSkip(assets_context_t &ctx, const char *in_file, const char *out_file);
-    static bool HCopy(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
+                      Ren::SmallVectorImpl<std::string> &);
+    static bool HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
+                      Ren::SmallVectorImpl<std::string> &);
 
     // image textures
-    static bool HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file);
-    static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
+                            Ren::SmallVectorImpl<std::string> &);
+    static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                           Ren::SmallVectorImpl<std::string> &);
 
-    static bool HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file);
-    static bool HPreprocessHeightmap(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string> &);
+    static bool HPreprocessHeightmap(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                     Ren::SmallVectorImpl<std::string> &);
 
     // probe textures
-    static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file);
-    static bool HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                              Ren::SmallVectorImpl<std::string> &);
+    static bool HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string> &);
 
     // shaders
     static void InlineShaderConstants(assets_context_t &ctx, std::string &line);
-    static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream);
-    static bool HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
+                                Ren::SmallVectorImpl<std::string> &out_dependencies);
+    static bool HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                  Ren::SmallVectorImpl<std::string> &out_dependencies);
 
     // materials
-    static bool HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                    Ren::SmallVectorImpl<std::string> &out_dependencies);
 
     // scenes
-    static bool HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                Ren::SmallVectorImpl<std::string> &);
 
     // fonts
-    static bool HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string> &);
 };

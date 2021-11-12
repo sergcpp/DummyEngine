@@ -9,12 +9,6 @@
     (slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(res.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(res.x))
 #endif
 
-#define LinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
-
-#define DelinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
-
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
     return vec3(1.0) - r * r;
@@ -62,7 +56,7 @@ vec3 SRGBToLinear(vec3 sRGB) {
 
 vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
                       vec3 sh_l_12) {
-    return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z + 
+    return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z +
                        sh_l_12 * normal.x)) * sh_l_00 * 2.0, vec3(0.0));
 }
 

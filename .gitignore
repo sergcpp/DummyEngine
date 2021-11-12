@@ -6,6 +6,7 @@ assets_android
 build-*
 check*
 DummyApp*.exe
+DummyAppVK
 libDummyApp*.so
 ModlApp.exe
 DummyApp.apk
@@ -21,3 +22,4 @@ test.mesh
 *.json7
 *.json8
 cmake-build*
+.DS_Store

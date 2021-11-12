@@ -432,7 +432,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
     dst.resource_state = eResState::CopyDst;
 }
 
-void Ren::FillBuffer(Buffer &dst, uint32_t dst_offset, uint32_t size, uint32_t data, void *_cmd_buf) {
+void Ren::FillBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;

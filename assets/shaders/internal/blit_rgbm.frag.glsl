@@ -3,7 +3,7 @@
 #ifdef GL_ES
     precision mediump float;
 #endif
-        
+
 layout(binding = 0) uniform sampler2D s_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)

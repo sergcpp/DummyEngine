@@ -38,7 +38,6 @@ class PrimDraw {
     Ren::VertexInput fs_quad_vtx_input_, sphere_vtx_input_;
 
     Ren::Context *ctx_ = nullptr;
-    Ren::ILog *log_ = nullptr;
 #if defined(USE_VK_RENDER)
     Ren::SmallVector<Ren::Pipeline, 16> pipelines_;
 

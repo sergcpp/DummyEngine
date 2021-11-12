@@ -9,12 +9,6 @@
     (slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(res.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(res.x))
 #endif
 
-#define LinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / ((z) * ((clip_info)[1] - (clip_info)[2]) + (clip_info)[2])))
-
-#define DelinearizeDepth(z, clip_info) \
-    (((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
-
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
     return vec3(1.0) - r * r;
@@ -62,7 +56,7 @@ vec3 SRGBToLinear(vec3 sRGB) {
 
 vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
                       vec3 sh_l_12) {
-    return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z + 
+    return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z +
                        sh_l_12 * normal.x)) * sh_l_00 * 2.0, vec3(0.0));
 }
 
@@ -102,12 +96,12 @@ const vec2 poisson_disk[16] = vec2[16](
     vec2(-0.1, -0.32),
     vec2(0.17, 0.31),
     vec2(0.35, 0.04),
-    
+
     vec2(0.07, 0.7),
     vec2(-0.72, 0.09),
     vec2(0.73, 0.05),
     vec2(0.1, -0.71),
-    
+
     vec2(0.72, 0.8),
     vec2(-0.75, 0.74),
     vec2(-0.8, -0.73),
@@ -119,7 +113,7 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord
 
     const highp vec2 shadow_size = vec2(float(REN_SHAD_RES), float(REN_SHAD_RES) / 2.0);
     const highp vec2 shadow_size_inv = vec2(1.0) / shadow_size;
-    
+
     float z = shadow_coord.z;
     highp vec2 uv = shadow_coord.xy * shadow_size;
     highp vec2 base_uv = floor(uv + 0.5);
@@ -174,99 +168,99 @@ float SampleShadowPCF5x5(sampler2DShadow shadow_texture, highp vec3 shadow_coord
 
 float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, in highp vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
-    
+
     /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE0_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[0]);
-        
+
 #if REN_SHAD_CASCADE_SOFT
         /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE0_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
-            
+
             float k = 10.0 * (frag_depth / REN_SHAD_CASCADE0_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE1_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
-        
+
 #if REN_SHAD_CASCADE_SOFT
         /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE1_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
-            
+
             float k = 10.0 * (frag_depth / REN_SHAD_CASCADE1_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE2_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
-        
+
 #if REN_SHAD_CASCADE_SOFT
         /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE2_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
-            
+
             float k = 10.0 * (frag_depth / REN_SHAD_CASCADE2_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE3_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
-        
+
         float t = smoothstep(0.95 * REN_SHAD_CASCADE3_DIST, REN_SHAD_CASCADE3_DIST, frag_depth);
         visibility = mix(visibility, 1.0, t);
     } else {
         // use direct sun lightmap?
         visibility = 1.0;
     }
-    
+
     return visibility;
 }
 
 float GetSunVisibility(float frag_depth, sampler2DShadow shadow_texture, in highp mat4x3 aVertexShUVs) {
     float visibility = 0.0;
-    
+
     /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE0_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[0]);
-        
+
 #if REN_SHAD_CASCADE_SOFT
         /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE0_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
-            
+
             float k = 10.0 * (frag_depth / REN_SHAD_CASCADE0_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE1_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[1]);
-        
+
 #if REN_SHAD_CASCADE_SOFT
         /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE1_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
-            
+
             float k = 10.0 * (frag_depth / REN_SHAD_CASCADE1_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE2_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[2]);
-        
+
 #if REN_SHAD_CASCADE_SOFT
         /*[[branch]]*/ if (frag_depth > 0.9 * REN_SHAD_CASCADE2_DIST) {
             float v2 = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
-            
+
             float k = 10.0 * (frag_depth / REN_SHAD_CASCADE2_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else /*[[branch]]*/ if (frag_depth < REN_SHAD_CASCADE3_DIST) {
         visibility = SampleShadowPCF5x5(shadow_texture, aVertexShUVs[3]);
-        
+
         float t = smoothstep(0.95 * REN_SHAD_CASCADE3_DIST, REN_SHAD_CASCADE3_DIST, frag_depth);
         visibility = mix(visibility, 1.0, t);
     } else {
         // use direct sun lightmap?
         visibility = 1.0;
     }
-    
+
     return visibility;
 }
 
@@ -315,7 +309,7 @@ float ComputeTransmittanceAtDepthFrom4PowerMoments(float b_0, vec4 b, float dept
     // Backward substitution to solve L^T*c3=c2
     c[1] -= L21 * c[2];
     c[0] -= dot(c.yz, b.xy);
-    // Solve the quadratic equation c[0]+c[1]*z+c[2]*z^2 to obtain solutions 
+    // Solve the quadratic equation c[0]+c[1]*z+c[2]*z^2 to obtain solutions
     // z[1] and z[2]
     float InvC2 = 1.0 / c[2];
     float p = c[1] * InvC2;
@@ -347,10 +341,10 @@ float ComputeTransmittanceAtDepthFrom4PowerMoments(float b_0, vec4 b, float dept
 void ResolveMoments(float depth, float b0, vec4 b_1234, out float transmittance_at_depth, out float total_transmittance) {
     transmittance_at_depth = 1.0;
     total_transmittance = 1.0;
-    
+
     if (b0 - 0.00100050033 < 0.0) discard;
     total_transmittance = exp(-b0);
-    
+
     b_1234 /= b0;
 
     const vec4 bias_vector = vec4(0.0, 0.628, 0.0, 0.628);

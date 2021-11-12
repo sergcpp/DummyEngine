@@ -20,7 +20,7 @@ layout (std140)
 uniform SharedDataBlock {
     SharedData shrd_data;
 };
- 
+
 layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
 
 #if defined(VULKAN)
@@ -55,7 +55,7 @@ vec4 FxaaPixelShader(vec2 pos,
         posM.y = pos.y;
         vec4 rgbyM = texture(tex, posM);
         rgbyM.w = FxaaLuma(rgbyM);
-        
+
         float lumaS = FxaaLuma(texture(tex, posM + (vec2(0.0, 1.0) * fxaaQualityRcpFrame)));
         float lumaE = FxaaLuma(texture(tex, posM + (vec2(1.0, 0.0) * fxaaQualityRcpFrame)));
         float lumaN = FxaaLuma(texture(tex, posM + (vec2(0.0, -1.0) * fxaaQualityRcpFrame)));
@@ -75,8 +75,8 @@ vec4 FxaaPixelShader(vec2 pos,
         bool earlyExit = range < rangeMaxClamped;
         if(earlyExit)
                 return rgbyM;
-        
-        
+
+
         float lumaNW = FxaaLuma(texture(tex, posM + (vec2(-1.0, -1.0) * fxaaQualityRcpFrame)));
         float lumaSE = FxaaLuma(texture(tex, posM + (vec2(1.0, 1.0) * fxaaQualityRcpFrame)));
         float lumaNE = FxaaLuma(texture(tex, posM + (vec2(1.0, -1.0) * fxaaQualityRcpFrame)));

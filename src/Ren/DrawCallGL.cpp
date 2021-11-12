@@ -72,9 +72,10 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const 
     glDispatchCompute(grp_count[0], grp_count[1], grp_count[2]);
 }
 
-void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, const Binding bindings[],
-                                  const int bindings_count, const void *uniform_data, int uniform_data_len,
-                                  DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
+                                  const uint32_t indir_buf_offset, const Binding bindings[], const int bindings_count,
+                                  const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                                  ILog *log) {
     for (int i = 0; i < bindings_count; ++i) {
         const auto &b = bindings[i];
 
@@ -115,6 +116,6 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     glUseProgram(comp_pipeline.prog()->id());
 
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, indir_buf.id());
-    glDispatchComputeIndirect(0);
+    glDispatchComputeIndirect(GLintptr(indir_buf_offset));
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, 0);
 }

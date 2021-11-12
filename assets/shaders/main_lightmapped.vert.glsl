@@ -65,7 +65,7 @@ void main(void) {
 
     // load lightmap transform
     vec4 LightmapTr = texelFetch(instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
-    
+
     vec3 vtx_pos_ws = (model_matrix * vec4(aVertexPosition, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
@@ -81,7 +81,7 @@ void main(void) {
         vec2(0.0, 0.5),
         vec2(0.25, 0.5)
     );
-    
+
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         vec3 shadow_uvs = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
 #if defined(VULKAN)
@@ -98,16 +98,16 @@ void main(void) {
         aVertexShUVs_1[i] = shadow_uvs[1];
         aVertexShUVs_2[i] = shadow_uvs[2];
     }
-    
+
     MaterialData mat = materials[instance.y];
 #if defined(BINDLESS_TEXTURES)
     diff_texture = GET_HANDLE(mat.texture_indices[0]);
     norm_texture = GET_HANDLE(mat.texture_indices[1]);
     spec_texture = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-} 
+}

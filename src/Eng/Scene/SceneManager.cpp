@@ -195,13 +195,12 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
     std::istream in_mesh(&buf);
 
     Ren::eMeshLoadStatus status;
-    cam_rig_ = ren_ctx.LoadMesh(
-        "__cam_rig", &in_mesh,
-        [this](const char *name) -> Ren::MaterialRef {
-            Ren::eMatLoadStatus status;
-            return ren_ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
-        },
-        &status);
+    cam_rig_ = ren_ctx.LoadMesh("__cam_rig", &in_mesh,
+                                [this](const char *name) -> Ren::MaterialRef {
+                                    Ren::eMatLoadStatus status;
+                                    return ren_ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
+                                },
+                                &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
     { // load error texture
@@ -216,6 +215,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
             in_file.Read((char *)&in_file_data[0], in_file_size);
 
             Ren::Tex2DParams p;
+            p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
             p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
 
             Ren::eTexLoadStatus status;
@@ -265,7 +265,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         const Ren::RenderTargetInfo color_rts[] = {
             {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-            {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -484,6 +484,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
             p.w = res;
             p.h = res;
             p.format = Ren::DefaultCompressedRGBA;
+            p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
             p.sampling.filter = Ren::eTexFilter::Bilinear;
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -529,7 +530,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
         InitHWAccStructures();
 #endif
     } else {
-        //InitSWAccStructures();
+        // InitSWAccStructures();
     }
 
     __itt_task_end(__g_itt_domain);
@@ -1189,6 +1190,7 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
     } else {
         p.sampling.wrap = Ren::eTexWrap::Repeat;
     }
+    p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
     p.sampling.min_lod.from_float(-1.0f);
 
     Ren::eTexLoadStatus status;

@@ -87,7 +87,7 @@ void main() {
     vec3 ray_dir_ws = ray_end_ws.xyz - ray_start_ws.xyz;
     float ray_length = length(ray_dir_ws);
     ray_dir_ws /= ray_length;
-    
+
     vec3 inv_dir = 1.0 / ray_dir_ws;
 
     int stack[32];

@@ -213,17 +213,17 @@ enum eRenderFlags : uint32_t {
     DebugWireframe = (1u << 18u),
     DebugCulling = (1u << 19u),
     DebugShadow = (1u << 20u),
-    DebugReduce = (1u << 21u),
-    DebugLights = (1u << 22u),
-    DebugDeferred = (1u << 23u),
-    DebugBlur = (1u << 24u),
-    DebugDecals = (1u << 25u),
-    DebugSSAO = (1u << 26u),
-    DebugTimings = (1u << 27u),
-    DebugBVH = (1u << 28u),
-    DebugProbes = (1u << 29u),
-    DebugEllipsoids = (1u << 30u),
-    DebugRT = (1u << 31u)
+    DebugLights = (1u << 21u),
+    DebugDeferred = (1u << 22u),
+    DebugBlur = (1u << 23u),
+    DebugDecals = (1u << 24u),
+    DebugSSAO = (1u << 25u),
+    DebugTimings = (1u << 26u),
+    DebugBVH = (1u << 27u),
+    DebugProbes = (1u << 28u),
+    DebugEllipsoids = (1u << 29u),
+    DebugRT = (1u << 30u),
+    DebugDenoise = (1u << 31u)
 };
 
 struct FrontendInfo {
@@ -254,6 +254,7 @@ struct ViewState {
     Ren::Vec2i act_res, scr_res;
     float vertical_fov;
     int frame_index;
+    Ren::Vec3f prev_cam_pos;
     Ren::Mat4f prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
     mutable Ren::Vec4f clip_info;
     bool is_multisampled = false;
@@ -263,14 +264,14 @@ struct SharedDataBlock {
     Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
     Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
     ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
-    Ren::Vec4f uSunDir, uSunCol, uTaaInfo;
-    Ren::Vec4f uClipInfo, uCamPosAndGamma;
+    Ren::Vec4f uSunDir, uSunCol, uTaaInfo, uFrustumInfo;
+    Ren::Vec4f uClipInfo, uCamPosAndGamma, uCamDelta;
     Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
     Ren::Vec4f uWindScroll, uWindScrollPrev;
     ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
     EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
 };
-static_assert(sizeof(SharedDataBlock) == 7824, "!");
+static_assert(sizeof(SharedDataBlock) == 7856, "!");
 
 struct MaterialData {
     uint32_t texture_indices[5];

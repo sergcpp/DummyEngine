@@ -44,13 +44,13 @@ layout(location = 0) out vec4 outColor;
 void main() {
     float depth = texelFetch(s_texture, ivec2(aVertexUVs_), 0).r;
     depth = uClipInfo[0] / (depth * (uClipInfo[1] - uClipInfo[2]) + uClipInfo[2]);
-    
+
     float k = log2(depth / uClipInfo[1]) / uClipInfo[3];
     int slice = int(floor(k * float(REN_GRID_RES_Z)));
-    
+
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / res.y) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / res.x);
-    
+
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));

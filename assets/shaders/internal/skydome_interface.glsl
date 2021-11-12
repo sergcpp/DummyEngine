@@ -10,13 +10,8 @@ INTERFACE_START(Skydome)
     MAT4_TYPE uShadowViewProjMatrix;
 };*/
 
-#ifdef __cplusplus
-    const int U_M_MATRIX_LOC = 0;
-    const int ENV_TEX_SLOT = 1;
-#else
-    #define U_M_MATRIX_LOC 0
-    #define ENV_TEX_SLOT 1
-#endif
+DEF_CONST_INT(U_M_MATRIX_LOC, 0)
+DEF_CONST_INT(ENV_TEX_SLOT, 1)
 
 INTERFACE_END
 

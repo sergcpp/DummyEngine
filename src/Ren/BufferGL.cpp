@@ -211,7 +211,7 @@ uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const u
     return ret;
 }
 
-void Ren::Buffer::FlushMappedRange(uint32_t offset, uint32_t size) {
+void Ren::Buffer::FlushMappedRange(const uint32_t offset, const uint32_t size) {
     assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
     glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
     glFlushMappedBufferRange(g_gl_buf_targets[int(type_)], GLintptr(offset), GLsizeiptr(size));
@@ -242,8 +242,8 @@ void Ren::Buffer::Print(ILog *log) {
 
 uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) { return offset; }
 
-void Ren::CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t dst_offset, uint32_t size,
-                             void *cmd_buf) {
+void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
+                             const uint32_t size, void *cmd_buf) {
     glBindBuffer(GL_COPY_READ_BUFFER, GLuint(src.id()));
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
     glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset /* readOffset */,
@@ -252,14 +252,14 @@ void Ren::CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-void Ren::FillBuffer(Buffer &dst, uint32_t dst_offset, uint32_t size, uint32_t data, void *_cmd_buf) {
+void Ren::FillBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
     glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_R, GL_UNSIGNED_INT,
                          &data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-void Ren::GLUnbindBufferUnits(int start, int count) {
+void Ren::GLUnbindBufferUnits(const int start, const int count) {
     for (int i = start; i < start + count; i++) {
         glBindBufferBase(GL_UNIFORM_BUFFER, i, 0);
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, 0);

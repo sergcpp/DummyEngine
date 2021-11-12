@@ -26,26 +26,28 @@ extern "C" {
 #include "Passes/RpFXAA.h"
 #include "Passes/RpFillStaticVel.h"
 #include "Passes/RpOpaque.h"
+#include "Passes/RpRTReflections.h"
+#include "Passes/RpReadBrightness.h"
 #include "Passes/RpResolve.h"
 #include "Passes/RpSSAO.h"
-#include "Passes/RpSampleBrightness.h"
-#include "Passes/RpReadBrightness.h"
-#include "Passes/RpRTReflections.h"
-#include "Passes/RpShadowMaps.h"
-#include "Passes/RpSkinning.h"
-#include "Passes/RpSkydome.h"
 #include "Passes/RpSSRBlur.h"
 #include "Passes/RpSSRClassifyTiles.h"
 #include "Passes/RpSSRCompose.h"
 #include "Passes/RpSSRCompose2.h"
 #include "Passes/RpSSRDilate.h"
+#include "Passes/RpSSRPrefilter.h"
 #include "Passes/RpSSRPrepare.h"
-#include "Passes/RpSSRResolveSpatial.h"
+#include "Passes/RpSSRReproject.h"
 #include "Passes/RpSSRResolveTemporal.h"
 #include "Passes/RpSSRTrace.h"
 #include "Passes/RpSSRTraceHQ.h"
+#include "Passes/RpSSRVSDepth.h"
 #include "Passes/RpSSRWriteIndirectArgs.h"
 #include "Passes/RpSSRWriteIndirectRTDispatch.h"
+#include "Passes/RpSampleBrightness.h"
+#include "Passes/RpShadowMaps.h"
+#include "Passes/RpSkinning.h"
+#include "Passes/RpSkydome.h"
 #include "Passes/RpTAA.h"
 #include "Passes/RpTransparent.h"
 #include "Passes/RpUpdateBuffers.h"
@@ -96,10 +98,11 @@ class Renderer {
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, cone_rt_lut_, noise_tex_;
     Ren::BufferRef readback_buf_;
-    Ren::BufferRef sobol_seq_buf_, scrambling_tile_32spp_buf_, ranking_tile_32spp_buf_;
+    Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
 
     FrameBuf probe_sample_buf_;
-    Ren::Tex2DRef taa_history_tex_, norm_history_tex_, rough_history_tex_, refl_history_tex_, down_tex_4x_;
+    Ren::Tex2DRef taa_history_tex_, depth_history_tex_, norm_history_tex_, refl_history_tex_, sample_count_tex_[2],
+        variance_tex_[2], refl_aux_history_tex_, down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     bool taa_enabled_ = false, dof_enabled_ = false;
 
@@ -209,11 +212,12 @@ class Renderer {
     RpSSRClassifyTiles rp_ssr_classify_tiles_;
     RpSSRTrace rp_ssr_trace_ = {prim_draw_};
     RpSSRTraceHQ rp_ssr_trace_hq_;
-    RpSSRResolveSpatial rp_ssr_resolve_spatial_;
+    RpSSRVSDepth rp_ssr_vs_depth_;
+    RpSSRReproject rp_ssr_reproject_;
+    RpSSRPrefilter rp_ssr_prefilter_;
     RpSSRResolveTemporal rp_ssr_resolve_temporal_;
     RpSSRBlur rp_ssr_blur_;
-    RpCopyTex rp_ssr_copy_normals_ = {"COPY NORMALS"}, rp_ssr_copy_roughness_ = {"COPY ROUGHNESS"},
-              rp_ssr_copy_refl_ = {"COPY REFL"};
+    RpCopyTex rp_ssr_copy_depth_ = {"COPY DEPTH"}, rp_ssr_copy_normals_ = {"COPY NORMALS"};
     RpSSRWriteIndirectArgs rp_ssr_write_indir_args_;
     RpSSRWriteIndirectRTDispatch rp_ssr_write_indir_rt_disp_;
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};

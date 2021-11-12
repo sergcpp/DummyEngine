@@ -38,4 +38,4 @@ void main() {
     aVertexPos_ = vertex_position_ws;
 
     gl_Position = shrd_data.uViewProjMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
-} 
+}

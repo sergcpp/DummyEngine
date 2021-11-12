@@ -37,6 +37,7 @@ void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, const Ren
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGB888;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

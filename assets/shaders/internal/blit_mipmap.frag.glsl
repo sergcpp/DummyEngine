@@ -5,7 +5,7 @@
     precision highp int;
     precision mediump float;
 #endif
-        
+
 layout(binding = 0) uniform mediump samplerCubeArray s_texture;
 
 #if defined(VULKAN)
