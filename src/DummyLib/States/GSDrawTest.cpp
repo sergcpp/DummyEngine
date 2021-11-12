@@ -27,10 +27,10 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           //"test_skin.json";
                           "living_room_gumroad.json";
-                          //"bistro.json";
-                          //"pbr_test.json";
-                          //"zenith.json";
-                          //"test_vegetation.json";
+//"bistro.json";
+//"pbr_test.json";
+//"zenith.json";
+//"test_vegetation.json";
 //"test_vegetation_night.json";
 //"test_decals.json";
 //"courtroom.json";
@@ -52,6 +52,20 @@ void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
 
     GSBaseState::Enter();
+
+    std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
+    std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager->Peek());
+
+    cmdline_->RegisterCommand("r_printCam", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->log_->Info("View Origin: { %f, %f, %f }", shrd_this->view_origin_[0], shrd_this->view_origin_[1],
+                                  shrd_this->view_origin_[2]);
+            shrd_this->log_->Info("View Direction: { %f, %f, %f }", shrd_this->view_dir_[0], shrd_this->view_dir_[1],
+                                  shrd_this->view_dir_[2]);
+        }
+        return true;
+    });
 
     log_->Info("GSDrawTest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
@@ -653,7 +667,7 @@ void GSDrawTest::UpdateAnim(uint64_t dt_us) {
     scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
                               max_exposure_);
 
-    //log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
+    // log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
     //           view_dir_[2]);
 }
 
@@ -731,7 +745,7 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
                 {
                     Ren::Mat4f xform;
-                    //xform = Ren::Rotate(xform, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    // xform = Ren::Rotate(xform, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
                     xform = Ren::Translate(xform, delta_time_s * Ren::Vec3f{0.1f, 0.0f, 0.0f});
 
                     tr->world_from_object_prev = tr->world_from_object;

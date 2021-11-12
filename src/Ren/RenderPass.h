@@ -21,8 +21,8 @@ enum class eImageLayout : uint8_t {
     _Count
 };
 
-enum class eLoadOp : uint8_t { Load, Clear, DontCare, _Count };
-enum class eStoreOp : uint8_t { Store, DontCare, _Count };
+enum class eLoadOp : uint8_t { Load, Clear, DontCare, None, _Count };
+enum class eStoreOp : uint8_t { Store, DontCare, None, _Count };
 
 struct RenderTarget {
     WeakTex2DRef ref;

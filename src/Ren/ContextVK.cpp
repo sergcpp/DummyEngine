@@ -98,8 +98,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     api_ctx_.reset(new ApiContext);
 
 #ifndef NDEBUG
-    const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation"};
-    const int enabled_layers_count = 1;
+    const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
+    const int enabled_layers_count = 2;
 #else
     const char **enabled_layers = nullptr;
     const int enabled_layers_count = 0;
@@ -125,7 +125,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
         }
     }
 #endif
-    
+
     // Create platform-specific surface
     if (!InitVkSurface(api_ctx_->surface, api_ctx_->instance, log)) {
         return false;
@@ -269,9 +269,15 @@ void Ren::Context::Resize(int w, int h) {
         }
         params.flags = eTexFlags::TexNoOwnership;
 
-        api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i],
-                                                                api_ctx_->present_image_views[i], VkSampler{}, params,
-                                                                log_));
+        Tex2DRef ref = textures_.FindByName(name_buf);
+        if (ref) {
+            ref->Init(api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkSampler{}, params, log_);
+            api_ctx_->present_image_refs.emplace_back(std::move(ref));
+        } else {
+            api_ctx_->present_image_refs.emplace_back(
+                textures_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i], api_ctx_->present_image_views[i],
+                              VkSampler{}, params, log_));
+        }
     }
 }
 
@@ -320,7 +326,7 @@ Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
     return SyncFence{api_ctx_->device, new_fence};
 }
 
-void Ren::Context::EndTempSingleTimeCommands(void* cmd_buf) {
+void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
     Ren::EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, reinterpret_cast<VkCommandBuffer>(cmd_buf),
                                api_ctx_->temp_command_pool);
 }

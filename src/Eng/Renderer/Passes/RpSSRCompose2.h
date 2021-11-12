@@ -36,6 +36,12 @@ class RpSSRCompose2 : public RenderPassBase {
                Ren::Tex2DRef brdf_lut, const char shared_data_buf[], const char depth_tex_name[],
                const char normal_tex_name[], const char spec_tex_name[], const char refl_tex_name[],
                const char output_tex_name[]);
+
+    void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
+               Ren::Tex2DRef brdf_lut, const char shared_data_buf[], const char depth_tex_name[],
+               const char normal_tex_name[], const char spec_tex_name[], Ren::WeakTex2DRef refl_tex,
+               const char output_tex_name[]);
+
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SSR COMPOSE"; }

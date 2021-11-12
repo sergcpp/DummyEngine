@@ -5,7 +5,7 @@
     precision highp int;
     precision highp float;
 #endif
-        
+
 layout(binding = 0) uniform mediump samplerCubeArray s_texture;
 layout(binding = 1) uniform mediump sampler2D s_rand;
 

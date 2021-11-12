@@ -66,14 +66,14 @@ void main(void) {
     aVertexNormal_ = vtx_nor_ws;
     aVertexTangent_ = vtx_tan_ws;
     aVertexUVs_ = aVertexUVs1;
-    
+
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
         vec2(0.25, 0.0),
         vec2(0.0, 0.5),
         vec2(0.25, 0.5)
     );
-    
+
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
                                 vec4(vtx_pos_ws, 1.0)).xyz;
@@ -81,6 +81,6 @@ void main(void) {
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];
     }
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
-} 
+}

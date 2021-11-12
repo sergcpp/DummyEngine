@@ -29,7 +29,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D s_depth;
 layout(binding = VELOCITY_TEX_SLOT) uniform mediump sampler2D s_velocity;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 LAYOUT(location = 0) in highp vec2 aVertexUVs_;
@@ -39,7 +39,7 @@ layout(location = 0) out vec3 outColor;
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
 #if defined(USE_TONEMAP)
-    c *= params.exposure;
+    c *= g_params.exposure;
     return c * rcp(max3(c.r, c.g, c.b) + 1.0);
 #else
     return c;
@@ -48,7 +48,7 @@ vec3 Tonemap(in vec3 c) {
 
 vec3 TonemapInvert(in vec3 c) {
 #if defined(USE_TONEMAP)
-    return (c / max(params.exposure, 0.001)) * rcp(1.0 - max3(c.r, c.g, c.b));
+    return (c / max(g_params.exposure, 0.001)) * rcp(1.0 - max3(c.r, c.g, c.b));
 #else
     return c;
 #endif
@@ -111,8 +111,8 @@ vec3 find_closest_fragment_3x3(sampler2D dtex, vec2 uv, vec2 texel_size) {
 
 void main() {
     ivec2 uvs_px = ivec2(aVertexUVs_);
-    vec2 texel_size = vec2(1.0) / params.tex_size;
-    vec2 norm_uvs = aVertexUVs_ / params.tex_size;
+    vec2 texel_size = vec2(1.0) / g_params.tex_size;
+    vec2 norm_uvs = aVertexUVs_ / g_params.tex_size;
 
     vec3 col_curr = FetchColor(s_color_curr, uvs_px);
 
@@ -139,15 +139,15 @@ void main() {
         col_avg += col;
         col_var += col * col;
     }
-    
+
     col_avg /= 9.0;
     col_var /= 9.0;
-    
+
     vec3 sigma = sqrt(max(col_var - col_avg * col_avg, vec3(0.0)));
     vec3 col_min = col_avg - 1.25 * sigma;
     vec3 col_max = col_avg + 1.25 * sigma;
-    
-    vec2 closest_vel = texelFetch(s_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(params.tex_size - vec2(1))), 0).rg;
+
+    vec2 closest_vel = texelFetch(s_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).rg;
 #else
     vec3 col_tl = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, -texel_size.y));
     vec3 col_tc = SampleColor(s_color_curr, norm_uvs + vec2(0, -texel_size.y));
@@ -158,16 +158,16 @@ void main() {
     vec3 col_bl = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, texel_size.y));
     vec3 col_bc = SampleColor(s_color_curr, norm_uvs + vec2(0, texel_size.y));
     vec3 col_br = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, texel_size.y));
-    
+
     vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
                         min3(col_ml, col_mc, col_mr),
                         min3(col_bl, col_bc, col_br));
     vec3 col_max = max3(max3(col_tl, col_tc, col_tr),
                         max3(col_ml, col_mc, col_mr),
                         max3(col_bl, col_bc, col_br));
-    
+
     vec3 col_avg = (col_tl + col_tc + col_tr + col_ml + col_mc + col_mr + col_bl + col_bc + col_br) / 9.0;
-    
+
     #if defined(USE_ROUNDED_NEIBOURHOOD)
         vec3 col_min5 = min(col_tc, min(col_ml, min(col_mc, min(col_mr, col_bc))));
         vec3 col_max5 = max(col_tc, max(col_ml, max(col_mc, max(col_mr, col_bc))));
@@ -176,7 +176,7 @@ void main() {
         col_max = 0.5 * (col_max + col_max5);
         col_avg = 0.5 * (col_avg + col_avg5);
     #endif
-    
+
     #if defined(USE_YCoCg)
         vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
         vec2 chroma_center = col_curr.gb;
@@ -184,7 +184,7 @@ void main() {
         col_max.yz = chroma_center + chroma_extent;
         col_avg.yz = chroma_center;
     #endif
-    
+
     vec3 closest_frag = find_closest_fragment_3x3(s_depth, norm_uvs, texel_size);
     vec2 closest_vel = textureLod(s_velocity, closest_frag.xy, 0.0).rg;
 #endif
@@ -199,15 +199,15 @@ void main() {
 
     const float HistoryWeightMin = 0.88;
     const float HistoryWeightMax = 0.97;
-    
+
     float lum_curr = Luma(col_curr);
     float lum_hist = Luma(col_hist);
-    
+
     float unbiased_diff = abs(lum_curr - lum_hist) / max3(lum_curr, lum_hist, 0.2);
     float unbiased_weight = 1.0 - unbiased_diff;
     float unbiased_weight_sqr = unbiased_weight * unbiased_weight;
     float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
-    
+
     vec3 col = mix(col_curr, col_hist, history_weight);
 #if defined(USE_YCoCg)
     col = YCoCg_to_RGB(col);

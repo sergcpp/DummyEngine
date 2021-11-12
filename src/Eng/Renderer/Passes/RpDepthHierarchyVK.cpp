@@ -87,22 +87,22 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
         vkUpdateDescriptorSets(api_ctx->device, 3, descr_writes, 0, nullptr);
     }
 
-    vkCmdFillBuffer(cmd_buf, atomic_buf.ref->vk_handle(), 0, sizeof(uint32_t), 0);
-
     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.handle());
     vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.layout(), 0, 1, &descr_set, 0,
                             nullptr);
 
+    const int grp_x =
+        (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X;
+    const int grp_y =
+        (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y;
+
     DepthHierarchy::Params uniform_params;
     uniform_params.depth_size =
-        Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], output_tex.ref->params.mip_count, 0};
+        Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], output_tex.ref->params.mip_count, grp_x * grp_y};
     uniform_params.clip_info = view_state_->clip_info;
 
     vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
                        &uniform_params);
 
-    vkCmdDispatch(
-        cmd_buf,
-        (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X,
-        (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y, 1);
+    vkCmdDispatch(cmd_buf, grp_x, grp_y, 1);
 }

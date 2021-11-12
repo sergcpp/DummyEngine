@@ -56,18 +56,18 @@ layout(std430, binding = OUT_VERTICES1) writeonly buffer Output1 {
 } out_data1;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 layout (local_size_x = LOCAL_GROUP_SIZE, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    if (gl_GlobalInvocationID.x >= params.uSkinParams.y) {
+    if (gl_GlobalInvocationID.x >= g_params.uSkinParams.y) {
         return;
     }
 
-    highp uint in_ndx = params.uSkinParams.x + gl_GlobalInvocationID.x;
-    mediump uint xform_offset = params.uSkinParams.z;
+    highp uint in_ndx = g_params.uSkinParams.x + gl_GlobalInvocationID.x;
+    mediump uint xform_offset = g_params.uSkinParams.z;
 
     highp vec3 p = in_data0.vertices[in_ndx].p_and_nxy.xyz;
 
@@ -84,12 +84,12 @@ void main() {
 
     highp vec3 p2 = p;
 
-    for (uint j = params.uShapeParamsCurr.x; j < params.uShapeParamsCurr.x + params.uShapeParamsCurr.y; j++) {
+    for (uint j = g_params.uShapeParamsCurr.x; j < g_params.uShapeParamsCurr.x + g_params.uShapeParamsCurr.y; j++) {
         highp uint shape_data = in_data2.shape_keys[j];
         mediump uint shape_index = bitfieldExtract(shape_data, 0, 16);
         mediump float shape_weight = unpackUnorm2x16(shape_data).y;
 
-        int sh_i = int(params.uShapeParamsCurr.z + shape_index * params.uSkinParams.y + gl_GlobalInvocationID.x);
+        int sh_i = int(g_params.uShapeParamsCurr.z + shape_index * g_params.uSkinParams.y + gl_GlobalInvocationID.x);
         p += shape_weight * vec3(in_data3.deltas[sh_i].dpxy, in_data3.deltas[sh_i].dpz_dnxy.x);
         highp uint _dnxy = floatBitsToUint(in_data3.deltas[sh_i].dpz_dnxy.y);
         mediump vec2 _dnz_and_dbx = unpackSnorm2x16(in_data3.deltas[sh_i].dnz_and_db.x);
@@ -98,12 +98,12 @@ void main() {
         b += shape_weight * vec3(_dnz_and_dbx.y, _dbyz);
     }
 
-    for (uint j = params.uShapeParamsPrev.x; j < params.uShapeParamsPrev.x + params.uShapeParamsPrev.y; j++) {
+    for (uint j = g_params.uShapeParamsPrev.x; j < g_params.uShapeParamsPrev.x + g_params.uShapeParamsPrev.y; j++) {
         highp uint shape_data = in_data2.shape_keys[j];
         mediump uint shape_index = bitfieldExtract(shape_data, 0, 16);
         mediump float shape_weight = unpackUnorm2x16(shape_data).y;
 
-        int sh_i = int(params.uShapeParamsPrev.z + shape_index * params.uSkinParams.y + gl_GlobalInvocationID.x);
+        int sh_i = int(g_params.uShapeParamsPrev.z + shape_index * g_params.uSkinParams.y + gl_GlobalInvocationID.x);
         p2 += shape_weight * vec3(in_data3.deltas[sh_i].dpxy, in_data3.deltas[sh_i].dpz_dnxy.x);
     }
 
@@ -134,7 +134,7 @@ void main() {
     mediump vec3 n_curr = tr_mat_curr * vec4(n, 0.0);
     mediump vec3 b_curr = tr_mat_curr * vec4(b, 0.0);
 
-    highp uint out_ndx_curr = params.uSkinParams.w + gl_GlobalInvocationID.x;
+    highp uint out_ndx_curr = g_params.uSkinParams.w + gl_GlobalInvocationID.x;
 
     out_data0.vertices[out_ndx_curr].p_and_t0.xyz = p_curr;
     // copy texture coordinates unchanged

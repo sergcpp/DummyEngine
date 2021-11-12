@@ -83,13 +83,11 @@ stages:
   stage: build_and_test
   script:
     - echo "Running unit tests..."
-    - build_vk/src/Eng/_tests/Release/test_Eng
+    - build_vk/src/Eng/tests/Release/test_Eng
     - build_vk/src/Ray/tests/Release/test_Ray
     #- build_vk/src/Ren/tests/Release/test_Ren
     - build_vk/src/Ren/SW/tests/Release/test_SW
     - build_vk/src/Sys/tests/Release/test_Sys
-    - build_vk/src/Net/tests/Release/test_Net
-    - build_vk/src/DummyLib/tests/Release/test_DummyLib
 
 windows-build-and-test-job:
   extends:

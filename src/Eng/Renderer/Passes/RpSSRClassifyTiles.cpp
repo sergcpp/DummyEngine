@@ -8,15 +8,18 @@
 
 #include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
 
-void RpSSRClassifyTiles::Setup(RpBuilder &builder, const ViewState *view_state, const char spec_tex_name[],
-                               const char temp_variance_mask_name[], const char tile_metadata_mask_name[],
-                               const char ray_counter_name[], const char ray_list_name[], const char rough_tex_name[]) {
+void RpSSRClassifyTiles::Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex_name[],
+                               const char norm_tex_name[], Ren::WeakTex2DRef variance_history_tex,
+                               const char ray_counter_name[], const char ray_list_name[], const char tile_list_name[],
+                               const char refl_tex_name[]) {
     view_state_ = view_state;
 
-    spec_tex_ =
-        builder.ReadTexture(spec_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
-    temp_variance_mask_buf_ = builder.ReadBuffer(temp_variance_mask_name, Ren::eResState::UnorderedAccess,
-                                                 Ren::eStageBits::ComputeShader, *this);
+    depth_tex_ =
+        builder.ReadTexture(depth_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    norm_tex_ =
+        builder.ReadTexture(norm_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    variance_history_tex_ = builder.ReadTexture(variance_history_tex, Ren::eResState::ShaderResource,
+                                                Ren::eStageBits::ComputeShader, *this);
     ray_counter_buf_ =
         builder.WriteBuffer(ray_counter_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
 
@@ -28,23 +31,24 @@ void RpSSRClassifyTiles::Setup(RpBuilder &builder, const ViewState *view_state, 
         ray_list_buf_ = builder.WriteBuffer(ray_list_name, desc, Ren::eResState::UnorderedAccess,
                                             Ren::eStageBits::ComputeShader, *this);
     }
-    { // tile metadata mask
+    { // tile list
         RpBufDesc desc;
         desc.type = Ren::eBufType::Storage;
         desc.size = ((view_state->scr_res[0] + 7) / 8) * ((view_state->scr_res[1] + 7) / 8) * sizeof(uint32_t);
 
-        tile_metadata_mask_buf_ = builder.WriteBuffer(tile_metadata_mask_name, desc, Ren::eResState::UnorderedAccess,
-                                                      Ren::eStageBits::ComputeShader, *this);
+        tile_list_buf_ = builder.WriteBuffer(tile_list_name, desc, Ren::eResState::UnorderedAccess,
+                                             Ren::eStageBits::ComputeShader, *this);
     }
-    { // roughness texture
+    { // reflections texture
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawR8;
+        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        rough_tex_ = builder.WriteTexture(rough_tex_name, params, Ren::eResState::UnorderedAccess,
-                                          Ren::eStageBits::ComputeShader, *this);
+        refl_tex_ = builder.WriteTexture(refl_tex_name, params, Ren::eResState::UnorderedAccess,
+                                         Ren::eStageBits::ComputeShader, *this);
     }
 }
 
@@ -67,21 +71,22 @@ void RpSSRClassifyTiles::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
 void RpSSRClassifyTiles::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocTex &spec_tex = builder.GetReadTexture(spec_tex_);
-    RpAllocBuf &temp_variance_mask_buf = builder.GetReadBuffer(temp_variance_mask_buf_);
+    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
+    RpAllocTex &norm_tex = builder.GetReadTexture(norm_tex_);
+    RpAllocTex &variance_tex = builder.GetReadTexture(variance_history_tex_);
 
-    RpAllocBuf &tile_metadata_mask_buf = builder.GetWriteBuffer(tile_metadata_mask_buf_);
     RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(ray_counter_buf_);
     RpAllocBuf &ray_list_buf = builder.GetWriteBuffer(ray_list_buf_);
-    RpAllocTex &rough_tex = builder.GetWriteTexture(rough_tex_);
+    RpAllocBuf &tile_list_buf = builder.GetWriteBuffer(tile_list_buf_);
+    RpAllocTex &refl_tex = builder.GetWriteTexture(refl_tex_);
 
-    const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::Tex2D, SSRClassifyTiles::SPEC_TEX_SLOT, *spec_tex.ref},
-        {Ren::eBindTarget::SBuf, SSRClassifyTiles::TEMP_VARIANCE_MASK_SLOT, *temp_variance_mask_buf.ref},
-        {Ren::eBindTarget::SBuf, SSRClassifyTiles::TILE_METADATA_MASK_SLOT, *tile_metadata_mask_buf.ref},
-        {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-        {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Image, SSRClassifyTiles::ROUGH_IMG_SLOT, *rough_tex.ref}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                     {Ren::eBindTarget::Tex2D, SSRClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
+                                     {Ren::eBindTarget::Tex2D, SSRClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                     {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                                     {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
+                                     {Ren::eBindTarget::SBuf, SSRClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
+                                     {Ren::eBindTarget::Image, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref}};
 
     const Ren::Vec3u grp_count = Ren::Vec3u{
         (view_state_->act_res[0] + SSRClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) / SSRClassifyTiles::LOCAL_GROUP_SIZE_X,

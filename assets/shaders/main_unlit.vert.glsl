@@ -61,14 +61,14 @@ void main(void) {
 
     aVertexUVs_ = aVertexUVs1;
     aVertexNormal_ = vtx_nor_ws;
-    
+
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = materials[instance.y];
     diff_texture = GET_HANDLE(mat.texture_indices[0]);
 #endif // BINDLESS_TEXTURES
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-} 
+}

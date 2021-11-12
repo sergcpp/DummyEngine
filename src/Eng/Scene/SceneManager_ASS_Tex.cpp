@@ -703,7 +703,8 @@ bool CreateFolders(const char *out_file, Ren::ILog *log);
 extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
-bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                              Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -805,7 +806,8 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const 
     return res;
 }
 
-bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -893,7 +895,8 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const
     return res;
 }
 
-bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                  Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -905,7 +908,8 @@ bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, co
     return Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
 }
 
-bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                 Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -956,7 +960,8 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, con
     return Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
-bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                  Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);

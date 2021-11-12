@@ -6,18 +6,18 @@ const eStageBits g_stage_bits_per_state[] = {
     eStageBits::VertexInput,   // VertexBuffer
     eStageBits::VertexShader | /* eStageBits::TessCtrlShader | eStageBits::TessEvalShader | eStageBits::GeometryShader
                                   |*/
-        eStageBits::FragmentShader | eStageBits::ComputeShader, // UniformBuffer
+        eStageBits::FragmentShader | eStageBits::ComputeShader | eStageBits::RayTracingShader, // UniformBuffer
     eStageBits::VertexInput,                                    // IndexBuffer
     eStageBits::ColorAttachment,                                // RenderTarget
     eStageBits::VertexShader | /* eStageBits::TessCtrlShader | eStageBits::TessEvalShader | eStageBits::GeometryShader
                                   |*/
-        eStageBits::FragmentShader | eStageBits::ComputeShader, // UnorderedAccess
+        eStageBits::FragmentShader | eStageBits::ComputeShader | eStageBits::RayTracingShader, // UnorderedAccess
     eStageBits::DepthAttachment,                                // DepthRead
     eStageBits::DepthAttachment,                                // DepthWrite
     eStageBits::DepthAttachment | eStageBits::FragmentShader,   // StencilTestDepthFetch
     eStageBits::VertexShader | /* eStageBits::TessCtrlShader | eStageBits::TessEvalShader | eStageBits::GeometryShader
                                   |*/
-        eStageBits::FragmentShader | eStageBits::ComputeShader, // ShaderResource
+        eStageBits::FragmentShader | eStageBits::ComputeShader | eStageBits::RayTracingShader, // ShaderResource
     eStageBits::DrawIndirect,                                   // IndirectArgument
     eStageBits::Transfer,                                       // CopyDst
     eStageBits::Transfer,                                       // CopySrc

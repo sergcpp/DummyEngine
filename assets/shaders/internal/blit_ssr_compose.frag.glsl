@@ -71,7 +71,7 @@ void main() {
 
     float depth = texelFetch(s_depth_texture, icoord, 0).r;
     float d0 = LinearizeDepth(depth, shrd_data.uClipInfo);
- 
+
 #if defined(HALFRES)
     ivec2 icoord_low = ivec2(gl_FragCoord.xy) / 2;
 
@@ -79,7 +79,7 @@ void main() {
     float d2 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(0, 1), 0).r);
     float d3 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(1, 0), 0).r);
     float d4 = abs(d0 - texelFetch(depth_low_texture, icoord_low + ivec2(1, 1), 0).r);
- 
+
     float dmin = min(min(d1, d2), min(d3, d4));
 
     vec3 ssr_uvs;
@@ -113,7 +113,7 @@ void main() {
         vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
         ray_origin_cs.y = -ray_origin_cs.y;
 #else // VULKAN
-        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);    
+        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);
 #endif // VULKAN
 
         vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
@@ -127,10 +127,10 @@ void main() {
 
         highp float k = log2(d0 / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
         int slice = int(floor(k * float(REN_GRID_RES_Z)));
-    
+
         int ix = icoord.x, iy = icoord.y;
         int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(shrd_data.uResAndFRes.y)) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / int(shrd_data.uResAndFRes.x));
-        
+
         highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);

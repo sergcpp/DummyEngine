@@ -18,7 +18,7 @@ UNIFORM_BLOCKS
 */
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 layout(binding = ROUGH_TEX_SLOT) uniform sampler2D rough_texture;
@@ -33,11 +33,11 @@ layout(binding = OUT_DENOISED_IMG_SLOT, r11f_g11f_b10f) uniform image2D out_deno
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 bool IsGlossyReflection(float roughness) {
-    return roughness < params.thresholds.x;
+    return roughness < g_params.thresholds.x;
 }
 
 bool IsMirrorReflection(float roughness) {
-    return roughness < params.thresholds.y; //0.0001;
+    return roughness < g_params.thresholds.y; //0.0001;
 }
 
 shared uint g_shared_0[12][12];
@@ -99,7 +99,7 @@ void InitializeGroupSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id
     LoadWithOffset(dispatch_thread_id, ivec2(0, 0), radiance_0, roughness_0); // X
     LoadWithOffset(dispatch_thread_id, offset_0, radiance_1, roughness_1); // A & C
     LoadWithOffset(dispatch_thread_id, offset_1, radiance_2, roughness_2); // B
-    
+
     StoreWithOffset(group_thread_id, ivec2(0, 0), radiance_0, roughness_0); // X
     if (group_thread_id.x < 4 || group_thread_id.y >= 4) {
         StoreWithOffset(group_thread_id, offset_0, radiance_1, roughness_1); // A & C
@@ -147,7 +147,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     if (needs_denoiser) {
         InitializeGroupSharedMemory(dispatch_thread_id, group_thread_id);
-        
+
         groupMemoryBarrier();
         barrier();
 
@@ -167,5 +167,5 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 }
 
 void main() {
-    Blur(ivec2(gl_GlobalInvocationID.xy), ivec2(gl_LocalInvocationID.xy), params.img_size.xy);
+    Blur(ivec2(gl_GlobalInvocationID.xy), ivec2(gl_LocalInvocationID.xy), g_params.img_size.xy);
 }

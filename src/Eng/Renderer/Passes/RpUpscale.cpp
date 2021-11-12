@@ -26,6 +26,7 @@ void RpUpscale::Setup(RpBuilder &builder, const Ren::Vec4i &res, const Ren::Vec4
         params.w = res_[2];
         params.h = res_[3];
         params.format = Ren::eTexFormat::RawR8;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

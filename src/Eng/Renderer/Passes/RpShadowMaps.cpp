@@ -38,6 +38,7 @@ void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const Ren::Bu
         params.w = w_;
         params.h = h_;
         params.format = Ren::eTexFormat::Depth16;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.min_lod.from_float(0.0f);
         params.sampling.max_lod.from_float(0.0f);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;

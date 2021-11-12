@@ -75,7 +75,7 @@ const VkAccessFlags g_access_flags_per_state_vk[] = {
     VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT,                                     // UnorderedAccess,
     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                                                // DepthRead
     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // DepthWrite
-    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,                                                // StencilTestDepthFetch
+    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT,                    // StencilTestDepthFetch
     VK_ACCESS_SHADER_READ_BIT,                                                                  // ShaderResource
     VK_ACCESS_INDIRECT_COMMAND_READ_BIT,                                                        // IndirectArgument
     VK_ACCESS_TRANSFER_WRITE_BIT,                                                               // CopyDst
@@ -91,11 +91,12 @@ const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,   // VertexBuffer
     VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | /*VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
         VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |*/
-        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, // UniformBuffer
-    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,                                               // IndexBuffer
-    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,                                    // RenderTarget
-    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | /*VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
-        VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |*/
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
+        VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, // UniformBuffer
+    VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,               // IndexBuffer
+    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,    // RenderTarget
+    VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |             /*VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT |
+                    VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT | VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT |*/
         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
         VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,                                       // UnorderedAccess
     VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // DepthRead

@@ -120,7 +120,7 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     hit_pixel = vec2(-1.0, -1.0);
 
     const float max_steps = MAX_STEPS;
-        
+
     for (vec2 P = P0;
         ((P.x * step_dir) <= end) && (step_count < max_steps);
          P += dP, Q.z += dQ.z, k += dk, step_count += 1.0) {
@@ -157,9 +157,9 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
             vec2 pixel = permute ? hit_pixel.yx : hit_pixel;
             float scene_z = -LinearDepthTexelFetch(ivec2(pixel));
             float ray_z = Q.z / k;
-    
+
             float depth_diff = ray_z - scene_z;
-        
+
             dQ *= 0.5;
             dP *= 0.5;
             dk *= 0.5;
@@ -183,7 +183,7 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     hit_pixel = permute ? hit_pixel.yx : hit_pixel;
     hit_point = Q * (1.0 / k);
 #endif
-    
+
     return res;
 }
 
@@ -216,11 +216,11 @@ void main() {
     vec3 refl_ray_vs = reflect(view_ray_vs, normal_vs);
 
     ivec2 c = pix_uvs;
-    float jitter = float((c.x + c.y) & 1) * 0.5;    
+    float jitter = float((c.x + c.y) & 1) * 0.5;
 
     vec2 hit_pixel;
     vec3 hit_point;
-    
+
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, jitter, hit_pixel, hit_point)) {
         hit_pixel /= shrd_data.uResAndFRes.xy;
 

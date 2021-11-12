@@ -23,7 +23,7 @@ layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D s_texture;
 layout(binding = BLURED_TEX_SLOT) uniform sampler2D s_blured_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 LAYOUT(location = 0) in highp vec2 aVertexUVs_;
@@ -51,12 +51,12 @@ vec3 BilinearTexelFetch(mediump sampler2DMS texture, vec2 texcoord, int s) {
     vec3 texel10 = texelFetch(texture, coord + ivec2(1, 0), s).rgb;
     vec3 texel11 = texelFetch(texture, coord + ivec2(1, 1), s).rgb;
     vec3 texel01 = texelFetch(texture, coord + ivec2(0, 1), s).rgb;
-            
+
     vec2 sample_coord = fract(texcoord.xy);
-            
+
     vec3 texel0 = mix(texel00, texel01, sample_coord.y);
     vec3 texel1 = mix(texel10, texel11, sample_coord.y);
-            
+
     return mix(texel0, texel1, sample_coord.x);
 }
 #else
@@ -67,19 +67,19 @@ vec3 BilinearTexelFetch(sampler2D texture, vec2 texcoord) {
     vec3 texel10 = texelFetch(texture, coord + ivec2(1, 0), 0).rgb;
     vec3 texel11 = texelFetch(texture, coord + ivec2(1, 1), 0).rgb;
     vec3 texel01 = texelFetch(texture, coord + ivec2(0, 1), 0).rgb;
-            
+
     vec2 sample_coord = fract(texcoord);
-            
+
     vec3 texel0 = mix(texel00, texel01, sample_coord.y);
     vec3 texel1 = mix(texel10, texel11, sample_coord.y);
-            
+
     return mix(texel0, texel1, sample_coord.x);
 }
 #endif
 
 void main() {
     vec2 uvs = aVertexUVs_ - vec2(0.5, 0.5);
-    vec2 norm_uvs = uvs / params.tex_size;
+    vec2 norm_uvs = uvs / g_params.tex_size;
 
     vec3 col;
 
@@ -95,20 +95,20 @@ void main() {
     col = BilinearTexelFetch(s_texture, uvs) + 0.1 * texture(s_blured_texture, norm_uvs).xyz;
 #endif
 
-    if (params.tonemap > 0.5) {
-        col = Unch2Tonemap(params.exposure * col);
+    if (g_params.tonemap > 0.5) {
+        col = Unch2Tonemap(g_params.exposure * col);
 
         const highp float W = 11.2;
         vec3 white = Unch2Tonemap(vec3(W));
 
         // white is vec3(0.834032297)
 
-        vec3 inv_gamma = vec3(1.0 / params.gamma);
+        vec3 inv_gamma = vec3(1.0 / g_params.gamma);
 
         col = pow(col / white, inv_gamma);
     }
 
-    col = mix(col, vec3(0.0), params.fade);
+    col = mix(col, vec3(0.0), g_params.fade);
     outColor = vec4(col, 1.0);
 }
 

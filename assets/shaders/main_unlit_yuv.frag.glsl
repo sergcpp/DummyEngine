@@ -45,12 +45,12 @@ void main(void) {
     col_yuv.x = texture(SAMPLER2D(mat0_texture), aVertexUVs1_).r;
     col_yuv.yz = texture(SAMPLER2D(mat1_texture), aVertexUVs1_).rg;
     col_yuv += vec3(-0.0627451017, -0.501960814, -0.501960814);
-    
+
     vec3 col_rgb;
     col_rgb.r = dot(col_yuv, vec3(1.164,  0.000,  1.596));
     col_rgb.g = dot(col_yuv, vec3(1.164, -0.391, -0.813));
     col_rgb.b = dot(col_yuv, vec3(1.164,  2.018,  0.000));
-    
+
     outColor = vec4(SRGBToLinear(col_rgb), 1.0);
     outNormal = vec4(0.0);
 }

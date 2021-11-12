@@ -16,7 +16,7 @@ UNIFORM_BLOCKS
 layout(binding = SRC_TEX_SLOT) uniform sampler2D s_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 LAYOUT(location = 0) in vec2 aVertexUVs_;
@@ -26,7 +26,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
     outColor = vec4(0.0);
 
-    if(params.vertical.x < 0.5) {
+    if(g_params.vertical.x < 0.5) {
         outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.0162162162;
         outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.0540540541;
         outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(2, 0), 0) * 0.1216216216;

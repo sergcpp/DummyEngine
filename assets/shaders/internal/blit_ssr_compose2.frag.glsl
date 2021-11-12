@@ -49,8 +49,8 @@ void main() {
 
     float depth = texelFetch(depth_texture, icoord, 0).r;
     float d0 = LinearizeDepth(depth, shrd_data.uClipInfo);
- 
-    vec3 normal = 2.0 * texelFetch(norm_texture, icoord, 0).xyz - 1.0;
+
+    vec3 normal = UnpackNormalAndRoughness(texelFetch(norm_texture, icoord, 0)).xyz;
 
     float tex_lod = 6.0 * specular.a;
     float N_dot_V;
@@ -63,7 +63,7 @@ void main() {
         vec4 ray_origin_cs = vec4(2.0 * aVertexUVs_.xy - 1.0, depth, 1.0);
         ray_origin_cs.y = -ray_origin_cs.y;
 #else // VULKAN
-        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);    
+        vec4 ray_origin_cs = vec4(2.0 * vec3(aVertexUVs_.xy, depth) - 1.0, 1.0);
 #endif // VULKAN
 
         vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;

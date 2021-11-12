@@ -33,28 +33,39 @@ class RpRTReflections : public RenderPassBase {
     RpResource shared_data_buf_;
     RpResource depth_tex_;
     RpResource normal_tex_;
-    RpResource spec_tex_;
-    RpResource rough_tex_;
     RpResource env_tex_;
     RpResource lm_tex_[5];
     RpResource dummy_black_;
     RpResource ray_list_buf_;
     RpResource indir_args_buf_;
 
-    RpResource out_color_tex_;
+    RpResource out_refl_tex_;
     RpResource out_raylen_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
+    void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
+               Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf, const DrawList &list,
+               const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
+               const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
+               const Ren::BufferRef &materials_buf, const char shared_data_buf_name[], const char depth_tex[],
+               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_list_name[],
+               const char indir_args_name[], const char out_raylen_name[]);
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
                Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf, const DrawList &list,
                const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
                const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
                const Ren::BufferRef &materials_buf, const char shared_data_buf_name[], const char depth_tex[],
-               const char normal_tex[], const char spec_tex[], const char rough_tex_name[],
-               const Ren::Tex2DRef &dummy_black, const char ray_list_name[], const char indir_args_name[],
-               const char out_color_name[], const char out_raylen_name[]);
+               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_list_name[],
+               const char indir_args_name[], const char out_refl_tex_name[], const char out_raylen_name[]);
+    void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
+               Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf, const DrawList &list,
+               const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
+               const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
+               const Ren::BufferRef &materials_buf, const char shared_data_buf_name[], const char depth_tex[],
+               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_list_name[],
+               const char indir_args_name[], Ren::WeakTex2DRef out_refl_tex, const char out_raylen_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "RT REFLECTIONS"; }

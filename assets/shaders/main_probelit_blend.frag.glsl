@@ -63,32 +63,32 @@ void main(void) {
     highp float lin_depth = LinearizeDepth(gl_FragCoord.z, shrd_data.uClipInfo);
     highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
     int slice = int(floor(k * float(REN_GRID_RES_Z)));
-    
+
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
-    
+
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
-    
+
     vec4 diff_color = texture(SAMPLER2D(diff_texture), aVertexUVs_);
-    
+
     vec2 duv_dx = dFdx(aVertexUVs_), duv_dy = dFdy(aVertexUVs_);
     vec3 normal_color = texture(SAMPLER2D(norm_texture), aVertexUVs_).wyz;
     vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
-    
+
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(cross(aVertexTangent_, aVertexNormal_), aVertexTangent_,
                             aVertexNormal_) * normal);
-                            
+
     if (!gl_FrontFacing) {
         normal = -normal;
     }
-    
+
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
-    
+
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
@@ -96,33 +96,33 @@ void main(void) {
         vec4 pos_and_radius = texelFetch(lights_buffer, li * 3 + 0);
         highp vec4 col_and_index = texelFetch(lights_buffer, li * 3 + 1);
         vec4 dir_and_spot = texelFetch(lights_buffer, li * 3 + 2);
-        
+
         vec3 L = pos_and_radius.xyz - aVertexPos_;
         float dist = length(L);
         float d = max(dist - pos_and_radius.w, 0.0);
         L /= dist;
-        
+
         highp float denom = d / pos_and_radius.w + 1.0;
         highp float atten = 1.0 / (denom * denom);
-        
+
         highp float brightness = max(col_and_index.x, max(col_and_index.y, col_and_index.z));
-        
+
         highp float factor = LIGHT_ATTEN_CUTOFF / brightness;
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
-        
+
         float _dot1 = max(dot(L, normal), 0.0);
         float _dot2 = dot(L, dir_and_spot.xyz);
-        
+
         atten = _dot1 * atten;
         if (_dot2 > dir_and_spot.w && (brightness * atten) > FLT_EPS) {
             int shadowreg_index = floatBitsToInt(col_and_index.w);
             if (shadowreg_index != -1) {
                 vec4 reg_tr = shrd_data.uShadowMapRegions[shadowreg_index].transform;
-                
+
                 highp vec4 pp = shrd_data.uShadowMapRegions[shadowreg_index].clip_from_world * vec4(aVertexPos_, 1.0);
                 pp /= pp.w;
-                
+
 #if defined(VULKAN)
                 pp.xy = pp.xy * 0.5 + vec2(0.5);
 #else // VULKAN
@@ -134,28 +134,28 @@ void main(void) {
 #endif // VULKAN
                 atten *= SampleShadowPCF5x5(shadow_texture, pp.xyz);
             }
-            
+
             additional_light += col_and_index.xyz * atten *
                 smoothstep(dir_and_spot.w, dir_and_spot.w + 0.2, _dot2);
         }
     }
-    
+
     vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
     vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-    
+
     float refl_lod = 6.0 * specular_color.a;
-    
+
     vec3 indirect_col = vec3(0.0);
     vec3 reflected_col = vec3(0.0);
     float total_fade = 0.0;
-    
+
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
-        
+
         float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / shrd_data.uProbes[pi].pos_and_radius.w);
-        
+
         indirect_col += fade * EvalSHIrradiance_NonLinear(normal,
                                                           shrd_data.uProbes[pi].sh_coeffs[0],
                                                           shrd_data.uProbes[pi].sh_coeffs[1],
@@ -165,25 +165,25 @@ void main(void) {
                                              shrd_data.uProbes[pi].unused_and_layer.w), refl_lod));
         total_fade += fade;
     }
-    
+
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(indirect_col, vec3(0.0));
     reflected_col /= max(total_fade, 1.0);
-    
+
     float lambert = clamp(dot(normal, shrd_data.uSunDir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
         visibility = GetSunVisibility(lin_depth, shadow_texture, transpose(mat3x4(aVertexShUVs_0, aVertexShUVs_1, aVertexShUVs_2)));
     }
-    
+
     vec2 ao_uvs = vec2(ix, iy) / shrd_data.uResAndFRes.zw;
     float ambient_occlusion = textureLod(ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = diff_color.rgb * (shrd_data.uSunCol.xyz * lambert * visibility +
                                              ambient_occlusion * ambient_occlusion * indirect_col +
                                              additional_light);
-    
+
     float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
-    
+
     vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
     vec2 brdf = texture(brdf_lut_texture, vec2(N_dot_V, specular_color.a)).xy;
 

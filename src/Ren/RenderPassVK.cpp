@@ -14,15 +14,17 @@ static_assert(int(eImageLayout::TransferSrcOptimal) == VK_IMAGE_LAYOUT_TRANSFER_
 static_assert(int(eImageLayout::TransferDstOptimal) == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, "!");
 
 const VkAttachmentLoadOp vk_load_ops[] = {
-    VK_ATTACHMENT_LOAD_OP_LOAD,     // Load
-    VK_ATTACHMENT_LOAD_OP_CLEAR,    // Clear
-    VK_ATTACHMENT_LOAD_OP_DONT_CARE // DontCare
+    VK_ATTACHMENT_LOAD_OP_LOAD,      // Load
+    VK_ATTACHMENT_LOAD_OP_CLEAR,     // Clear
+    VK_ATTACHMENT_LOAD_OP_DONT_CARE, // DontCare
+    VK_ATTACHMENT_LOAD_OP_NONE_EXT   // None
 };
 static_assert((sizeof(vk_load_ops) / sizeof(vk_load_ops[0])) == int(eLoadOp::_Count), "!");
 
 const VkAttachmentStoreOp vk_store_ops[] = {
-    VK_ATTACHMENT_STORE_OP_STORE,    // Store
-    VK_ATTACHMENT_STORE_OP_DONT_CARE // DontCare
+    VK_ATTACHMENT_STORE_OP_STORE,     // Store
+    VK_ATTACHMENT_STORE_OP_DONT_CARE, // DontCare
+    VK_ATTACHMENT_STORE_OP_NONE_EXT   // None
 };
 static_assert((sizeof(vk_store_ops) / sizeof(vk_store_ops[0])) == int(eStoreOp::_Count), "!");
 

@@ -6,7 +6,7 @@
 #include "rt_debug_interface.glsl"
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -62,30 +62,30 @@ void main() {
     vec2 uv2 = unpackHalf2x16(vtx_data0[geo.vertices_start + i2].w);
 
     vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-    
+
     vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
     float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
-    
+
     vec3 tri_normal = cross(p1 - p0, p2 - p0);
     float pa = length(tri_normal);
     tri_normal /= pa;
-    
-    float cone_width = params.pixel_spread_angle * gl_HitTEXT;
-    
+
+    float cone_width = g_params.pixel_spread_angle * gl_HitTEXT;
+
     float tex_lod = 0.5 * log2(ta/pa);
     tex_lod += log2(cone_width);
     tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
     tex_lod -= log2(abs(dot(gl_ObjectRayDirectionEXT, tri_normal)));
     pld.col = textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod).xyz;
-    
+
     if ((geo.flags & RTGeoLightmappedBit) != 0u) {
         vec2 lm_uv0 = unpackHalf2x16(vtx_data1[geo.vertices_start + i0].w);
         vec2 lm_uv1 = unpackHalf2x16(vtx_data1[geo.vertices_start + i1].w);
         vec2 lm_uv2 = unpackHalf2x16(vtx_data1[geo.vertices_start + i2].w);
-    
+
         vec2 lm_uv = lm_uv0 * (1.0 - bary_coord.x - bary_coord.y) + lm_uv1 * bary_coord.x + lm_uv2 * bary_coord.y;
         lm_uv = geo.lmap_transform.xy + geo.lmap_transform.zw * lm_uv;
-        
+
         vec3 direct_lm = RGBMDecode(textureLod(lm_textures[0], lm_uv, 0.0));
         vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(lm_textures[1], lm_uv, 0.0));
         pld.col *= (direct_lm + indirect_lm);
@@ -95,7 +95,7 @@ void main() {
         vec3 normal2 = vec3(unpackSnorm2x16(vtx_data1[geo.vertices_start + i2].x), unpackSnorm2x16(vtx_data1[geo.vertices_start + i2].y).x);
 
         vec3 normal = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
-    
+
         pld.col *= EvalSHIrradiance_NonLinear(normal,
                                               shrd_data.uProbes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
                                               shrd_data.uProbes[geo.flags & RTGeoProbeBits].sh_coeffs[1],

@@ -10,11 +10,7 @@ struct Params {
     VEC4_TYPE resolution;
 };
 
-#ifdef __cplusplus
-    const int SRC_TEX_SLOT = 0;
-#else
-    #define SRC_TEX_SLOT 0
-#endif
+DEF_CONST_INT(SRC_TEX_SLOT, 0)
 
 INTERFACE_END
 

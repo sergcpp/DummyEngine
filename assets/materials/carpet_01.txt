@@ -2,6 +2,6 @@ gl_program: main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.gl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
 texture: carpet_01.png srgb
-texture: carpet_01_nor.png
+texture: carpet_01_norm.png
 texture: default_specular.png
 

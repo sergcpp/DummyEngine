@@ -12,13 +12,8 @@ struct Params {
     float vertical;
 };
 
-#ifdef __cplusplus
-    const int DEPTH_TEX_SLOT = 0;
-    const int INPUT_TEX_SLOT = 1;
-#else
-    #define DEPTH_TEX_SLOT 0
-    #define INPUT_TEX_SLOT 1
-#endif
+DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
+DEF_CONST_INT(INPUT_TEX_SLOT, 1);
 
 INTERFACE_END
 

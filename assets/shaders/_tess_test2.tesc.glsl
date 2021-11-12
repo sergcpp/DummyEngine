@@ -118,15 +118,15 @@ void main(void) {
         //oPatch.aVertexShUVs[i][2] = aVertexShUVs_CS[i][2];
         //oPatch.aVertexShUVs[i][3] = aVertexShUVs_CS[i][3];
     }
-    
+
     CalcPositions();
-    
+
     float EyeToVertexDistance0 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[0]);
     float EyeToVertexDistance1 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[1]);
     float EyeToVertexDistance2 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[2]);
-    
+
     gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
     gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);
     gl_TessLevelOuter[2] = GetTessLevel(EyeToVertexDistance0, EyeToVertexDistance1);
     gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) * (1.0 / 3.0);
-} 
+}

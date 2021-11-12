@@ -10,7 +10,7 @@ UNIFORMS
     s_texture : 3
     vertical : 4
 */
-        
+
 layout(binding = 0) uniform sampler2D s_texture;
 
 #if defined(VULKAN)
