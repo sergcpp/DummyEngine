@@ -1,4 +1,4 @@
-﻿#include "GSVideoTest.h"
+#include "GSVideoTest.h"
 
 #include <fstream>
 #include <memory>
@@ -639,7 +639,7 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
             const int range_offset = frame_index * w * h;
             uint8_t *y_out = y_sbuf_[tex_index].mapped_ptr() + range_offset;
 
-#if !defined(__ANDROID__)
+#if !defined(__aarch64__)
             if (w % 32 == 0 && Ren::g_CpuFeatures.avx_supported) {
                 Ren::CopyYChannel_32px(y_img, stride, w, h, y_out);
             } else if (w % 16 == 0 && Ren::g_CpuFeatures.sse2_supported) {

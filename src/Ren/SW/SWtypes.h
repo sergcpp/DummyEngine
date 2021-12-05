@@ -31,7 +31,7 @@ typedef struct SWuniform {
 
 /* Check GCC */
 #ifdef __GNUC__
-#if __x86_64__ || __ppc64__
+#if __x86_64__ || __ppc64__ || __aarch64__
 #define ENVIRONMENT64
 #else
 #define ENVIRONMENT32

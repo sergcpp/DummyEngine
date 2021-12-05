@@ -18,7 +18,7 @@
 #include "internal/RendererNEON.cpp"
 #endif
 
-#if defined(__ANDROID__) || defined(DISABLE_OCL)
+#if defined(__aarch64__) || defined(DISABLE_OCL)
 #else
 #include "internal/RendererOCL.cpp"
 #include "internal/SceneOCL.cpp"

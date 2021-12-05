@@ -925,7 +925,7 @@ SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2],
         return 0;
     }
 
-    __m128 px_bbox = _mm128_fmadd_ps(_mm_setr_ps(p_min[0], p_max[0], p_min[1], p_max[1]),
+    __m128 px_bbox = _mm128_fmadd_ps(_mm128_setr_ps(p_min[0], p_max[0], p_min[1], p_max[1]),
                                      (*half_size), (*half_size));
 
     __m128i px_bboxi = _mm128_cvtps_epi32(px_bbox);
