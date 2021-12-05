@@ -1748,6 +1748,7 @@ template <bool Is_YCoCg> void EmitDXT5Block_Ref(uint8_t block[64], uint8_t *&out
     EmitColorIndices_Ref(block, min_color, max_color, out_data);
 }
 
+#if !defined(__aarch64__)
 void EmitDXT1Block_SSE2(const uint8_t block[64], uint8_t *&out_data) {
     alignas(16) uint8_t min_color[4], max_color[4];
     GetMinMaxColorByBBox_SSE2(block, min_color, max_color);
@@ -1785,6 +1786,7 @@ template <bool Is_YCoCg> void EmitDXT5Block_SSE2(uint8_t block[64], uint8_t *&ou
 
     EmitColorIndices_SSE2(block, min_color, max_color, out_data);
 }
+#endif
 
 // clang-format off
 
@@ -1812,6 +1814,7 @@ void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h, 
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
+#if !defined(__aarch64__)
     if (g_CpuFeatures.sse2_supported && g_CpuFeatures.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
             const int w_limited = (Channels == 3 && j == h_aligned - 4 && h_aligned == h) ? w_aligned - 4 : w_aligned;
@@ -1835,7 +1838,9 @@ void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h, 
             ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, _MIN(4, w - i), h % 4, block);
             EmitDXT1Block_SSE2(block, p_out);
         }
-    } else {
+    } else
+#endif
+    {
         for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
             for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, block);
@@ -1866,6 +1871,7 @@ void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h, 
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
+#if !defined(__aarch64__)
     if (g_CpuFeatures.sse2_supported && g_CpuFeatures.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
             for (int i = 0; i < w_aligned; i += 4) {
@@ -1883,7 +1889,9 @@ void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h, 
             ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
             EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
         }
-    } else {
+    } else
+#endif
+    {
         for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
             for (int i = 0; i < w_aligned; i += 4) {
                 Extract4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, block);
