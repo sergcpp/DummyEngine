@@ -644,11 +644,9 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
                 Ren::CopyYChannel_32px(y_img, stride, w, h, y_out);
             } else if (w % 16 == 0 && Ren::g_CpuFeatures.sse2_supported) {
                 Ren::CopyYChannel_16px(y_img, stride, w, h, y_out);
-#else
-            if (w % 16 == 0) {
-                Ren::CopyYChannel_16px(y_img, stride, w, h, y_out);
+            } else
 #endif
-            } else {
+            {
                 for (int y = 0; y < h; y++) {
                     memcpy(&y_out[y * w], &y_img[y * stride], w);
                 }

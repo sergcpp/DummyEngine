@@ -1,4 +1,5 @@
-#if !defined(__ANDROID__) && !defined(__aarch64__)
+#if defined(_M_X86) || defined(_M_X64) || defined(__i386__) || defined(__x86_64__)
+
 #ifdef __GNUC__
 #pragma GCC push_options
 #pragma GCC target ("avx2")
