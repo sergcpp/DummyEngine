@@ -65,12 +65,12 @@ void main(void) {
     aVertexShUVs_ES[gl_InvocationID][1] = aVertexShUVs_CS[gl_InvocationID][1];
     aVertexShUVs_ES[gl_InvocationID][2] = aVertexShUVs_CS[gl_InvocationID][2];
     aVertexShUVs_ES[gl_InvocationID][3] = aVertexShUVs_CS[gl_InvocationID][3];
-    
+
 #if 1
     float EyeToVertexDistance0 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_ES[0]);
     float EyeToVertexDistance1 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_ES[1]);
     float EyeToVertexDistance2 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_ES[2]);
-    
+
     gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
     gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);
     gl_TessLevelOuter[2] = GetTessLevel(EyeToVertexDistance0, EyeToVertexDistance1);
@@ -82,7 +82,7 @@ void main(void) {
     vec3 v0 = shrd_data.uCamPosAndGamma.xyz - aVertexPos_ES[0];
     vec3 v1 = shrd_data.uCamPosAndGamma.xyz - aVertexPos_ES[1];
     vec3 v2 = shrd_data.uCamPosAndGamma.xyz - aVertexPos_ES[2];
-    
+
     float d0 = length(v0);
     float d1 = length(v1);
     float d2 = length(v2);
@@ -90,10 +90,10 @@ void main(void) {
     float t0 = (1.0 - abs(dot(aVertexNormal_ES[0], v0) / d0)) * GetTessLevel(d1, d2);
     float t1 = (1.0 - abs(dot(aVertexNormal_ES[1], v1) / d1)) * GetTessLevel(d2, d0);
     float t2 = (1.0 - abs(dot(aVertexNormal_ES[2], v2) / d2)) * GetTessLevel(d0, d1);
-    
+
     gl_TessLevelOuter[0] = t0;
     gl_TessLevelOuter[1] = t1;
     gl_TessLevelOuter[2] = t2;
     gl_TessLevelInner[0] = (gl_TessLevelOuter[0] + gl_TessLevelOuter[1] + gl_TessLevelOuter[2]) * (1.0 / 3.0);
 #endif
-} 
+}

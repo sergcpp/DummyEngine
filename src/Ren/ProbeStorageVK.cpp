@@ -158,22 +158,25 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
     temp_stage_buf.resource_state = eResState::CopySrc;
     this->resource_state = eResState::CopyDst;
 
-    VkBufferImageCopy region = {};
-    region.bufferOffset = VkDeviceSize(0);
-    region.bufferRowLength = 0;
-    region.bufferImageHeight = 0;
+	std::vector<VkBufferImageCopy> all_regions;
 
-    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    region.imageSubresource.layerCount = 1;
+    VkBufferImageCopy proto_region = {};
+    proto_region.bufferOffset = VkDeviceSize(0);
+    proto_region.bufferRowLength = 0;
+    proto_region.bufferImageHeight = 0;
 
+    proto_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    proto_region.imageSubresource.layerCount = 1;
+
+	
     // set texture color to black
     for (int level = 0; level < mip_count; level++) {
-        region.imageSubresource.mipLevel = uint32_t(level);
+        proto_region.imageSubresource.mipLevel = uint32_t(level);
 
         const uint32_t _res = (unsigned(res) >> unsigned(level)), _init_res = std::min(BlankBlockRes, _res);
         for (int layer = 0; layer < capacity; layer++) {
             for (uint32_t face = 0; face < 6; face++) {
-                region.imageSubresource.baseArrayLayer = layer * 6 + face;
+                proto_region.imageSubresource.baseArrayLayer = layer * 6 + face;
 
                 for (uint32_t y_off = 0; y_off < _res; y_off += BlankBlockRes) {
                     const int buf_len =
@@ -185,16 +188,18 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
 #endif
 
                     for (uint32_t x_off = 0; x_off < _res; x_off += BlankBlockRes) {
-                        region.imageOffset = {int32_t(x_off), int32_t(y_off), 0};
-                        region.imageExtent = {_init_res, _init_res, 1};
+                        proto_region.imageOffset = {int32_t(x_off), int32_t(y_off), 0};
+                        proto_region.imageExtent = {_init_res, _init_res, 1};
 
-                        vkCmdCopyBufferToImage(cmd_buf, temp_stage_buf.vk_handle(), handle_.img,
-                                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+                        all_regions.push_back(proto_region);
                     }
                 }
             }
         }
     }
+
+	vkCmdCopyBufferToImage(cmd_buf, temp_stage_buf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           uint32_t(all_regions.size()), all_regions.data());
 
     EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
 

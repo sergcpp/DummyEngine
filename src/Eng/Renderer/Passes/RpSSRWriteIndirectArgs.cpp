@@ -23,7 +23,7 @@ void RpSSRWriteIndirectArgs::Setup(RpBuilder &builder, const ViewState *view_sta
 
         RpBufDesc desc = {};
         desc.type = Ren::eBufType::Indirect;
-        desc.size = sizeof(DispatchIndirectCommand);
+        desc.size = 2 * sizeof(DispatchIndirectCommand);
 
         indir_disp_buf_ = builder.WriteBuffer(indir_disp_name, desc, Ren::eResState::UnorderedAccess,
                                               Ren::eStageBits::ComputeShader, *this);

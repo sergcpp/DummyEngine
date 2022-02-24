@@ -148,10 +148,6 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, down_tex_4x_, 1.0f);
     }
 
-    if (render_flags_ & DebugReduce) {
-        x_offset += BlitTex(builder.rast_state(), x_offset, 0, 256, 128, reduced_tex.ref, 10.0f);
-    }
-
     if (render_flags_ & DebugBlur) {
         x_offset += BlitTex(builder.rast_state(), x_offset, 0, 384, -1, blur_tex.ref, 1.0f);
     }

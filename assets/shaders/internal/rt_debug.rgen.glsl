@@ -23,19 +23,19 @@ void main() {
     const vec2 in_uv = px_center / vec2(gl_LaunchSizeEXT.xy);
     vec2 d = in_uv * 2.0 - 1.0;
     d.y = -d.y;
-    
+
     vec4 origin = shrd_data.uInvViewMatrix * vec4(0, 0, 0, 1);
     origin /= origin.w;
     vec4 target = shrd_data.uInvProjMatrix * vec4(d.xy, 1, 1);
     target /= target.w;
     vec4 direction = shrd_data.uInvViewMatrix * vec4(normalize(target.xyz), 0);
-    
+
     const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;
     const float t_max = 1000.0;
-    
+
     pld.cone_width = 0.0;
-    
+
     traceRayEXT(tlas,           // topLevel
                 ray_flags,      // rayFlags
                 0xff,           // cullMask
@@ -48,6 +48,6 @@ void main() {
                 t_max,          // Tmax
                 0               // payload
                 );
-    
+
     imageStore(out_image, ivec2(gl_LaunchIDEXT.xy), vec4(pld.col, 1.0));
 }

@@ -14,7 +14,7 @@ template <typename T> class Storage : public SparseArray<T> {
 
     Storage(const Storage &rhs) = delete;
 
-    template <class... Args> StrongRef<T, Storage> Add(Args &&...args) {
+    template <class... Args> StrongRef<T, Storage> Add(Args &&... args) {
         const uint32_t index = SparseArray<T>::emplace(args...);
 
         bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
@@ -44,25 +44,51 @@ template <typename T> class Storage : public SparseArray<T> {
 
 class RefCounter {
   public:
-    unsigned ref_count() const { return counter_; }
+    unsigned ref_count() const { return ctrl_->strong_refs; }
 
   protected:
     template <typename T, typename StorageType> friend class StrongRef;
+    template <typename T, typename StorageType> friend class WeakRef;
 
-    void add_ref() { ++counter_; }
-    bool release() { return --counter_ == 0; }
-
-    RefCounter() : counter_(0) {}
-    RefCounter(const RefCounter &) : counter_(0) {}
+    RefCounter() {
+        ctrl_ = new CtrlBlock;
+        ctrl_->strong_refs = ctrl_->weak_refs = 0;
+    }
+    RefCounter(const RefCounter &) {
+        ctrl_ = new CtrlBlock;
+        ctrl_->strong_refs = ctrl_->weak_refs = 0;
+    }
     RefCounter &operator=(const RefCounter &) { return *this; }
-    RefCounter(RefCounter &&rhs) noexcept : counter_(rhs.counter_) { rhs.counter_ = 0; }
+    RefCounter(RefCounter &&rhs) noexcept {
+        ctrl_ = exchange(rhs.ctrl_, nullptr);
+    }
     RefCounter &operator=(RefCounter &&rhs) noexcept {
-        counter_ = exchange(rhs.counter_, 0);
+        if (ctrl_) {
+            assert(ctrl_->strong_refs == 0);
+            if (ctrl_->weak_refs == 0) {
+                delete ctrl_;
+            }
+        }
+
+        ctrl_ = exchange(rhs.ctrl_, nullptr);
         return (*this);
+    }
+    ~RefCounter() {
+        if (ctrl_) {
+            assert(ctrl_->strong_refs == 0);
+            if (ctrl_->weak_refs == 0) {
+                delete ctrl_;
+            }
+        }
     }
 
   private:
-    mutable unsigned counter_;
+    struct CtrlBlock {
+        uint32_t strong_refs;
+        uint32_t weak_refs;
+    };
+
+    mutable CtrlBlock *ctrl_;
 };
 
 template <typename T, typename StorageType> class WeakRef;
@@ -77,8 +103,8 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
     StrongRef() : storage_(nullptr), index_(0) {}
     StrongRef(StorageType *storage, uint32_t index) : storage_(storage), index_(index) {
         if (storage_) {
-            T &p = storage_->at(index_);
-            p.add_ref();
+            const T &p = storage_->at(index_);
+            ++p.ctrl_->strong_refs;
         }
     }
     ~StrongRef() { Release(); }
@@ -88,8 +114,8 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
         index_ = rhs.index_;
 
         if (storage_) {
-            T &p = storage_->at(index_);
-            p.add_ref();
+            const T &p = storage_->at(index_);
+            ++p.ctrl_->strong_refs;
         }
     }
 
@@ -97,10 +123,9 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
         storage_ = rhs.storage_;
         index_ = rhs.index_;
 
-        if (storage_) {
-            T &p = storage_->at(index_);
-            p.add_ref();
-        }
+        assert(storage_);
+        const T &p = storage_->at(index_);
+        ++p.ctrl_->strong_refs;
     }
 
     StrongRef(StrongRef &&rhs) noexcept {
@@ -115,11 +140,11 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
         index_ = rhs.index_;
 
         if (storage_) {
-            T &p = storage_->at(index_);
-            p.add_ref();
+            const T &p = storage_->at(index_);
+            ++p.ctrl_->strong_refs;
         }
 
-        return *this;
+        return (*this);
     }
 
     StrongRef &operator=(StrongRef &&rhs) noexcept {
@@ -132,7 +157,7 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
         storage_ = exchange(rhs.storage_, nullptr);
         index_ = exchange(rhs.index_, 0);
 
-        return *this;
+        return (*this);
     }
 
     T *operator->() {
@@ -173,8 +198,8 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
     void Release() {
         if (storage_) {
-            T *p = &storage_->at(index_);
-            if (p->release()) {
+            const T &p = storage_->at(index_);
+            if (--p.ctrl_->strong_refs == 0) {
                 storage_->erase(index_);
             }
             storage_ = nullptr;
@@ -185,31 +210,92 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
 template <typename T, typename StorageType = Storage<T>> class WeakRef {
     StorageType *storage_;
+    RefCounter::CtrlBlock *ctrl_;
     uint32_t index_;
 
-    friend class StrongRef<T>;
+    friend class StrongRef<T, StorageType>;
 
   public:
-    WeakRef() : storage_(nullptr), index_(0) {}
-    WeakRef(StorageType *storage, uint32_t index) : storage_(storage), index_(index) {}
+    WeakRef() : storage_(nullptr), ctrl_(nullptr), index_(0) {}
+    WeakRef(StorageType *storage, uint32_t index) : storage_(storage), ctrl_(nullptr), index_(index) {
+        assert(storage);
+        const T &p = storage_->at(index_);
+        ctrl_ = p.ctrl_;
+        ++ctrl_->weak_refs;
+    }
+    ~WeakRef() { Release(); }
 
-    WeakRef(const WeakRef &rhs) = default;
+    WeakRef(const WeakRef &rhs) {
+        storage_ = rhs.storage_;
+        ctrl_ = rhs.ctrl_;
+        index_ = rhs.index_;
+
+        if (ctrl_) {
+            ++ctrl_->weak_refs;
+        }
+    }
+
     WeakRef(const StrongRef<T> &rhs) {
         storage_ = rhs.storage_;
+        ctrl_ = nullptr;
         index_ = rhs.index_;
+
+        if (storage_) {
+            const T &p = storage_->at(index_);
+            ctrl_ = p.ctrl_;
+            ++ctrl_->weak_refs;
+        }
     }
 
-    WeakRef(WeakRef &&rhs) noexcept = default;
+    WeakRef(WeakRef &&rhs) noexcept {
+        storage_ = exchange(rhs.storage_, nullptr);
+        ctrl_ = exchange(rhs.ctrl_, nullptr);
+        index_ = exchange(rhs.index_, 0);
+    }
 
-    WeakRef &operator=(const WeakRef &rhs) = default;
-    WeakRef &operator=(const StrongRef<T> &rhs) {
+    WeakRef &operator=(const WeakRef &rhs) {
+        Release();
+
         storage_ = rhs.storage_;
+        ctrl_ = rhs.ctrl_;
         index_ = rhs.index_;
 
-        return (*this);
+        if (ctrl_) {
+            ++ctrl_->weak_refs;
+        }
+
+        return *this;
     }
 
-    WeakRef &operator=(WeakRef &&rhs) noexcept = default;
+    WeakRef &operator=(const StrongRef<T> &rhs) {
+        Release();
+
+        storage_ = rhs.storage_;
+        ctrl_ = nullptr;
+        index_ = rhs.index_;
+
+        if (storage_) {
+            const T &p = storage_->at(index_);
+            ctrl_ = p.ctrl_;
+            ++ctrl_->weak_refs;
+        }
+
+        return *this;
+    }
+
+    WeakRef &operator=(WeakRef &&rhs) noexcept {
+        if (&rhs == this) {
+            return (*this);
+        }
+
+        Release();
+
+        storage_ = exchange(rhs.storage_, nullptr);
+        ctrl_ = exchange(rhs.ctrl_, nullptr);
+        index_ = exchange(rhs.index_, 0);
+
+        return *this;
+    }
 
     T *operator->() {
         assert(storage_);
@@ -241,11 +327,23 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
         return &storage_->at(index_);
     }
 
-    explicit operator bool() const { return storage_ != nullptr; }
+    explicit operator bool() const { return ctrl_ && ctrl_->strong_refs != 0; }
 
     uint32_t index() const { return index_; }
 
-    bool operator==(const WeakRef &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
+    bool operator==(const WeakRef &rhs) const { return ctrl_ == rhs.ctrl_ && index_ == rhs.index_; }
     bool operator==(const StrongRef<T> &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
+
+    void Release() {
+        if (ctrl_) {
+            if (--ctrl_->weak_refs == 0 && ctrl_->strong_refs == 0) {
+                delete ctrl_;
+            }
+            storage_ = nullptr;
+            ctrl_ = nullptr;
+            index_ = 0;
+        }
+    }
 };
+
 } // namespace Ren

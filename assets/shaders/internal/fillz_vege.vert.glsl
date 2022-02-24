@@ -84,7 +84,7 @@ void main() {
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
-    
+
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = materials[instance.y];
     alpha_texture = GET_HANDLE(mat.texture_indices[0]);
@@ -95,7 +95,7 @@ void main() {
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-    
+
 #ifdef OUTPUT_VELOCITY
     vec4 wind_scroll_prev = shrd_data.uWindScrollPrev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
     vec3 vtx_pos_ls_prev = TransformVegetation(aVertexPosition, vtx_color, wind_scroll_prev, wind_params, wind_vec_ls, noise_texture);
@@ -111,5 +111,5 @@ void main() {
     aVertexCSPrev_.y = -aVertexCSPrev_.y;
 #endif // VULKAN
 #endif // OUTPUT_VELOCITY
-} 
+}
 

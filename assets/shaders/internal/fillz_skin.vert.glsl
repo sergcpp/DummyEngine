@@ -71,7 +71,7 @@ void main() {
 
 #ifdef TRANSPARENT_PERM
     aVertexUVs1_ = aVertexUVs1;
-    
+
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = materials[instance.y];
     alpha_texture = GET_HANDLE(mat.texture_indices[0]);
@@ -99,5 +99,5 @@ void main() {
     aVertexCSPrev_.y = -aVertexCSPrev_.y;
 #endif
 #endif
-} 
+}
 

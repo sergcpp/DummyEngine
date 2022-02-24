@@ -65,7 +65,7 @@ void main(void) {
 
     vec3 vtx_pos_ls = aVertexPosition;
     float vtx_curvature = unpackUnorm4x8(aVertexColorPacked).r;
-    
+
     vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
@@ -74,21 +74,21 @@ void main(void) {
     aVertexNormal_ = vtx_nor_ws;
     aVertexTangent_ = vtx_tan_ws;
     aVertexUVAndCurvature_ = vec3(aVertexUVs1, vtx_curvature);
-    
+
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
         vec2(0.25, 0.0),
         vec2(0.0, 0.5),
         vec2(0.25, 0.5)
     );
-    
+
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         aVertexShUVs_[i] = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
         aVertexShUVs_[i] = 0.5 * aVertexShUVs_[i] + 0.5;
         aVertexShUVs_[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_[i].xy += offsets[i];
     }
-    
+
     MaterialData mat = materials[instance.y];
     material_params = mat.params;
 #if defined(BINDLESS_TEXTURES)
@@ -98,9 +98,9 @@ void main(void) {
     sss_texture = GET_HANDLE(mat.texture_indices[3]);
     norm_detail_texture = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-} 
+}

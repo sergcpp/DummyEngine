@@ -55,56 +55,56 @@ layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 
 void main(void) {
     highp float lin_depth = LinearizeDepth(gl_FragCoord.z, shrd_data.uClipInfo);
-    
+
     // remapped depth in [-1; 1] range used for moments calculation
     highp float transp_z = 2.0 * (log(lin_depth) - shrd_data.uTranspParamsAndTime[0]) /
                            shrd_data.uTranspParamsAndTime[1] - 1.0;
-    
+
     vec3 normal_color = texture(SAMPLER2D(norm_texture), aVertexUVs_).wyz;
-    
+
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(aVertexTangent_, cross(aVertexNormal_, aVertexTangent_),
                             aVertexNormal_) * normal);
-    
+
     vec3 view_ray_ws = normalize(aVertexPos_ - shrd_data.uCamPosAndGamma.xyz);
-    
+
     const float R0 = 0.04f;
     float factor = pow5(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0));
     float fresnel = clamp(R0 + (1.0 - R0) * factor, 0.0, 1.0);
-    
+
     highp float k = log2(lin_depth / shrd_data.uClipInfo[1]) / shrd_data.uClipInfo[3];
     int slice = int(floor(k * float(REN_GRID_RES_X)));
-    
+
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, shrd_data.uResAndFRes.xy);
-    
+
     highp uvec2 cell_data = texelFetch(cells_buffer, cell_index).xy;
     highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
     highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
-    
+
     vec4 specular_color = texture(SAMPLER2D(spec_texture), aVertexUVs_);
     vec3 refl_ray_ws = reflect(view_ray_ws, normal);
-    
+
     vec3 reflected_color = vec3(0.0);
     float total_fade = 0.0;
-    
+
     for (uint i = offset; i < offset + pcount; i++) {
         highp uint item_data = texelFetch(items_buffer, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
-        
+
         float dist = distance(shrd_data.uProbes[pi].pos_and_radius.xyz, aVertexPos_);
         float fade = 1.0 - smoothstep(0.9, 1.0,
                                       dist / shrd_data.uProbes[pi].pos_and_radius.w);
-        
+
         reflected_color += fade * RGBMDecode(
             textureLod(env_texture, vec4(refl_ray_ws,
                                          shrd_data.uProbes[pi].unused_and_layer.w), 0.0));
         total_fade += fade;
     }
-    
+
     if (total_fade > 1.0) {
         reflected_color /= total_fade;
     }
-    
+
     outColor = vec4(reflected_color * specular_color.rgb, fresnel);
 }

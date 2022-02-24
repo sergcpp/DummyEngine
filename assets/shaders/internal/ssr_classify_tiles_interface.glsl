@@ -11,29 +11,17 @@ struct Params {
     UVEC2_TYPE samples_and_guided;
 };
 
-#ifdef __cplusplus
-    const int LOCAL_GROUP_SIZE_X = 8;
-    const int LOCAL_GROUP_SIZE_Y = 8;
+DEF_CONST_INT(LOCAL_GROUP_SIZE_X, 8)
+DEF_CONST_INT(LOCAL_GROUP_SIZE_Y, 8)
 
-    const int SPEC_TEX_SLOT = 0;
-    const int TEMP_VARIANCE_MASK_SLOT = 1;
-    const int RAY_COUNTER_SLOT = 2;
-    const int RAY_LIST_SLOT = 3;
-    const int TILE_METADATA_MASK_SLOT = 4;
-    
-    const int ROUGH_IMG_SLOT = 5;
-#else
-    #define LOCAL_GROUP_SIZE_X 8
-    #define LOCAL_GROUP_SIZE_Y 8
+DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
+DEF_CONST_INT(NORM_TEX_SLOT, 1)
+DEF_CONST_INT(VARIANCE_TEX_SLOT, 2)
+DEF_CONST_INT(RAY_COUNTER_SLOT, 3)
+DEF_CONST_INT(RAY_LIST_SLOT, 4)
+DEF_CONST_INT(TILE_LIST_SLOT, 5)
 
-    #define SPEC_TEX_SLOT 0
-    #define TEMP_VARIANCE_MASK_SLOT 1
-    #define RAY_COUNTER_SLOT 2
-    #define RAY_LIST_SLOT 3
-    #define TILE_METADATA_MASK_SLOT 4
-    
-    #define ROUGH_IMG_SLOT 5
-#endif
+DEF_CONST_INT(REFL_IMG_SLOT, 6)
 
 INTERFACE_END
 

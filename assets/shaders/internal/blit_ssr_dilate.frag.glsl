@@ -7,7 +7,7 @@
 
 #include "_fs_common.glsl"
 #include "blit_ssr_dilate_interface.glsl"
-        
+
 /*
 UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc

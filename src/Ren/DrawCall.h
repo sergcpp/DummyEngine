@@ -74,7 +74,7 @@ VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout 
 
 void DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const Binding bindings[], const int bindings_count,
                      const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
-void DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, const Binding bindings[],
-                             const int bindings_count, const void *uniform_data, int uniform_data_len,
-                             DescrMultiPoolAlloc *descr_alloc, ILog *log);
+void DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, uint32_t indir_buf_offset,
+                             const Binding bindings[], const int bindings_count, const void *uniform_data,
+                             int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
 } // namespace Ren

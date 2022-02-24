@@ -2,7 +2,7 @@
 
 #include "internal/RendererRef.h"
 
-#if !defined(__ANDROID__)
+#if !defined(__aarch64__)
 #include "internal/RendererSSE2.h"
 #include "internal/RendererAVX.h"
 #include "internal/RendererAVX2.h"
@@ -34,7 +34,7 @@ std::shared_ptr<Ray::RendererBase> Ray::CreateRenderer(const settings_t &s, uint
     }
 #endif
 
-#if !defined(__ANDROID__)
+#if !defined(__aarch64__)
     if ((flags & RendererAVX2) && features.avx2_supported) {
         log_stream << "Ray: Creating AVX2 renderer " << s.w << "x" << s.h << std::endl;
         return std::make_shared<Avx2::Renderer>(s);

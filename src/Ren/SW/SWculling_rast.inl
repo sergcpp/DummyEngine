@@ -213,13 +213,13 @@ void NAME(_swComputeDepthPlane)(const __mXXX vX[3], const __mXXX vY[3],
         _mmXXX_mul_ps(_mmXXX_sub_ps(_mmXXX_mul_ps(x10, z20), _mmXXX_mul_ps(z10, x20)), d);
 }
 
-#if defined(USE_SSE2)
+#if defined(USE_SSE2) || defined(USE_NEON)
 #define SIMD_SUB_TILE_COL_OFFSET_I                                                       \
-    _mm_setr_epi32(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+    _mmXXX_setr_epi32(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
 #define SIMD_SUB_TILE_COL_OFFSET_F                                                       \
-    _mm_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
-#define SIMD_SUB_TILE_ROW_OFFSET_I _mm_setzero_si128()
-#define SIMD_SUB_TILE_ROW_OFFSET_F _mm_setzero_ps()
+    _mmXXX_setr_ps(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2, SW_CULL_SUBTILE_X * 3)
+#define SIMD_SUB_TILE_ROW_OFFSET_I _mmXXX_setzero_siXXX()
+#define SIMD_SUB_TILE_ROW_OFFSET_F _mmXXX_setzero_ps()
 #elif defined(USE_AVX2)
 #define SIMD_SUB_TILE_COL_OFFSET_I                                                       \
     _mm256_setr_epi32(0, SW_CULL_SUBTILE_X, SW_CULL_SUBTILE_X * 2,                       \
@@ -815,7 +815,7 @@ SWint NAME(_swCullCtxTestRect)(const SWcull_ctx *ctx, const SWfloat p_min[2],
         return 0;
     }
 
-    __m128 px_bbox = _mm128_fmadd_ps(_mm_setr_ps(p_min[0], p_max[0], p_min[1], p_max[1]),
+    __m128 px_bbox = _mm128_fmadd_ps(_mm128_setr_ps(p_min[0], p_max[0], p_min[1], p_max[1]),
                                      (*half_size), (*half_size));
 
     __m128i px_bboxi = _mm128_cvtps_epi32(px_bbox);

@@ -50,7 +50,7 @@ void main(void) {
     aVertexUVs_ = gl_TessCoord[0] * aVertexUVs_ES[0] + gl_TessCoord[1] * aVertexUVs_ES[1] + gl_TessCoord[2] * aVertexUVs_ES[2];
     aVertexNormal_ = gl_TessCoord[0] * aVertexNormal_ES[0] + gl_TessCoord[1] * aVertexNormal_ES[1] + gl_TessCoord[2] * aVertexNormal_ES[2];
     aVertexTangent_ = gl_TessCoord[0] * aVertexTangent_ES[0] + gl_TessCoord[1] * aVertexTangent_ES[1] + gl_TessCoord[2] * aVertexTangent_ES[2];
-    
+
     aVertexShUVs_[0] = gl_TessCoord[0] * aVertexShUVs_ES[0][0] + gl_TessCoord[1] * aVertexShUVs_ES[1][0] + gl_TessCoord[2] * aVertexShUVs_ES[2][0];
     aVertexShUVs_[1] = gl_TessCoord[0] * aVertexShUVs_ES[0][1] + gl_TessCoord[1] * aVertexShUVs_ES[1][1] + gl_TessCoord[2] * aVertexShUVs_ES[2][1];
     aVertexShUVs_[2] = gl_TessCoord[0] * aVertexShUVs_ES[0][2] + gl_TessCoord[1] * aVertexShUVs_ES[1][2] + gl_TessCoord[2] * aVertexShUVs_ES[2][2];
@@ -66,4 +66,4 @@ void main(void) {
     aVertexPos_ += 1.0 * 0.05 * normalize(aVertexNormal_) * tex_height * k;
 
     gl_Position = shrd_data.uViewProjMatrix * vec4(aVertexPos_, 1.0);
-} 
+}

@@ -17,7 +17,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
 layout(binding = INPUT_TEX_SLOT) uniform lowp sampler2D input_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 LAYOUT(location = 0) in highp vec2 aVertexUVs_;
@@ -25,7 +25,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     vec2 norm_uvs = aVertexUVs_;
-    vec2 texel_size = vec2(1.0) / params.resolution;
+    vec2 texel_size = vec2(1.0) / g_params.resolution;
 
     float center_depth = textureLod(depth_texture, norm_uvs, 0.0).r;
     float closeness = 1.0 / (0.075 + 0.0);
@@ -35,7 +35,7 @@ void main() {
 
     float normalization = weight;
 
-    if(params.vertical < 0.5) {
+    if(g_params.vertical < 0.5) {
         float depth;
 
         // 0.071303 0.131514 0.189879 0.214607

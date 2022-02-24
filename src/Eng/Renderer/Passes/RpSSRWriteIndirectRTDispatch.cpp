@@ -15,15 +15,9 @@ void RpSSRWriteIndirectRTDispatch::Setup(RpBuilder &builder, const ViewState *vi
     ray_counter_buf_ =
         builder.WriteBuffer(ray_counter_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
     { //
-        struct TraceRaysIndirectCommand {
-            uint32_t width;
-            uint32_t height;
-            uint32_t depth;
-        };
-
         RpBufDesc desc = {};
         desc.type = Ren::eBufType::Indirect;
-        desc.size = sizeof(TraceRaysIndirectCommand);
+        desc.size = sizeof(VkTraceRaysIndirectCommandKHR);
 
         indir_disp_buf_ = builder.WriteBuffer(indir_disp_name, desc, Ren::eResState::UnorderedAccess,
                                               Ren::eStageBits::ComputeShader, *this);

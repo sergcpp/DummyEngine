@@ -4,7 +4,7 @@
     precision highp int;
     precision mediump float;
 #endif
-        
+
 layout(binding = 0) uniform mediump sampler2D depth_texture;
 layout(binding = 1) uniform lowp sampler2D source_texture;
 

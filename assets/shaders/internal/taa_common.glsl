@@ -1,10 +1,6 @@
 #ifndef TAA_COMMON_GLSL
 #define TAA_COMMON_GLSL
 
-#define min3(x, y, z) min((x), min((y), (z)))
-#define max3(x, y, z) max((x), max((y), (z)))
-float rcp(float x) { return 1.0 / x; }
-
 // http://twvideo01.ubm-us.net/o1/vault/gdc2016/Presentations/Pedersen_LasseJonFuglsang_TemporalReprojectionAntiAliasing.pdf
 vec3 clip_aabb(vec3 aabb_min, vec3 aabb_max, vec3 q) {
     vec3 p_clip = 0.5 * (aabb_max + aabb_min);

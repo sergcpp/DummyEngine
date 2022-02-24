@@ -54,7 +54,7 @@ layout(location = REN_OUT_SPEC_INDEX) out vec4 outSpecular;
 
 void main(void) {
     vec3 albedo_color = texture(SAMPLER2D(diff_texture), aVertexUVs_).rgb;
-    
+
     outColor = vec4(albedo_color, 1.0);
     outNormal = vec4(0.5 * aVertexNormal_ + 0.5, 0.0);
 }

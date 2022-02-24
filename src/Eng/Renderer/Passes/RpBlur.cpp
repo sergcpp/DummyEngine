@@ -22,6 +22,7 @@ void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertica
         params.w = view_state->scr_res[0] / 4;
         params.h = view_state->scr_res[1] / 4;
         params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -43,6 +44,7 @@ void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertica
         params.w = view_state->scr_res[0] / 4;
         params.h = view_state->scr_res[1] / 4;
         params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

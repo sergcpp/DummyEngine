@@ -11,11 +11,7 @@ struct Params {
     float linearize;
 };
 
-#ifdef __cplusplus
-    const int DEPTH_TEX_SLOT = 0;
-#else
-    #define DEPTH_TEX_SLOT 0
-#endif
+DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
 
 INTERFACE_END
 

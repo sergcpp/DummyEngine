@@ -23,6 +23,7 @@ void RpBilateralBlur::Setup(RpBuilder &builder, const Ren::Vec2i res, const bool
         params.w = res_[0];
         params.h = res_[1];
         params.format = Ren::eTexFormat::RawR8;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

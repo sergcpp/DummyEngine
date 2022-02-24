@@ -14,7 +14,7 @@ UNIFORM_BLOCKS
 */
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 layout(binding = SRC_TEX_SLOT) uniform sampler2D s_texture;
@@ -25,7 +25,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     vec2 norm_uvs = aVertexUVs_;
-    vec2 px_offset = 1.0 / params.resolution.xy;
+    vec2 px_offset = 1.0 / g_params.resolution.xy;
 
     vec2 sample_positions[4];
     sample_positions[0] = norm_uvs - px_offset;

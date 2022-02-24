@@ -17,6 +17,7 @@ set(SOURCE_FILES    SW.h
                     SWculling_Ref.c
                     SWculling_AVX2.c
                     SWculling_AVX512.c
+                    SWculling_NEON.c
                     SWculling_SSE2.c
                     SWculling_rast.inl
                     SWculling_rast_scanline.inl
@@ -46,8 +47,8 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY 1)
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c)
-source_group("src" FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c)
+list(APPEND ALL_SOURCE_FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c _SW_NEON.c)
+source_group("src" FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c _SW_NEON.c)
 
 STRING (REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
 

@@ -32,6 +32,7 @@ void RpSkydome::Setup(RpBuilder &builder, const DrawList &list, const ViewState 
 #else
         params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
@@ -43,6 +44,7 @@ void RpSkydome::Setup(RpBuilder &builder, const DrawList &list, const ViewState 
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGBA8888;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 
@@ -55,6 +57,7 @@ void RpSkydome::Setup(RpBuilder &builder, const DrawList &list, const ViewState 
         params.h = view_state->scr_res[1];
         params.format = builder.ctx().capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
                                                                            : Ren::eTexFormat::Depth32Stencil8;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 

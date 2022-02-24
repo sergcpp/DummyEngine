@@ -169,30 +169,28 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
             }
         }
 
-        if (fb.depth_attachment.ref) {
-            if (fb.depth_attachment.ref->resource_state != Ren::eResState::DepthWrite &&
-                fb.depth_attachment.ref->resource_state != Ren::eResState::DepthRead &&
-                fb.depth_attachment.ref->resource_state != Ren::eResState::StencilTestDepthFetch) {
-                auto &new_barrier = img_barriers.emplace_back();
-                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-                new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(fb.depth_attachment.ref->resource_state);
-                new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::DepthWrite);
-                new_barrier.oldLayout = Ren::VKImageLayoutForState(fb.depth_attachment.ref->resource_state);
-                new_barrier.newLayout = Ren::VKImageLayoutForState(Ren::eResState::DepthWrite);
-                new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-                new_barrier.image = fb.depth_attachment.ref->handle().img;
-                new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
-                new_barrier.subresourceRange.baseMipLevel = 0;
-                new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-                new_barrier.subresourceRange.baseArrayLayer = 0;
-                new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+        if (fb.depth_attachment.ref && fb.depth_attachment.ref->resource_state != Ren::eResState::DepthWrite &&
+            fb.depth_attachment.ref->resource_state != Ren::eResState::DepthRead &&
+            fb.depth_attachment.ref->resource_state != Ren::eResState::StencilTestDepthFetch) {
+            auto &new_barrier = img_barriers.emplace_back();
+            new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(fb.depth_attachment.ref->resource_state);
+            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::DepthWrite);
+            new_barrier.oldLayout = Ren::VKImageLayoutForState(fb.depth_attachment.ref->resource_state);
+            new_barrier.newLayout = Ren::VKImageLayoutForState(Ren::eResState::DepthWrite);
+            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.image = fb.depth_attachment.ref->handle().img;
+            new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            new_barrier.subresourceRange.baseMipLevel = 0;
+            new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+            new_barrier.subresourceRange.baseArrayLayer = 0;
+            new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
-                src_stages |= Ren::VKPipelineStagesForState(fb.depth_attachment.ref->resource_state);
-                dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::DepthWrite);
+            src_stages |= Ren::VKPipelineStagesForState(fb.depth_attachment.ref->resource_state);
+            dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::DepthWrite);
 
-                fb.depth_attachment.ref->resource_state = Ren::eResState::DepthWrite;
-            }
+            fb.depth_attachment.ref->resource_state = Ren::eResState::DepthWrite;
         }
 
         if (!img_barriers.empty()) {
@@ -221,10 +219,6 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::F
                        uniform_data_len, uniform_data);
 
     if (prim == ePrim::Quad) {
-        // const VkDeviceSize offset = {quad_vtx1_offset_};
-        // vkCmdBindVertexBuffers(cmd_buf, 0, 1, &vtx_buf, &offset);
-        // vkCmdBindIndexBuffer(cmd_buf, ndx_buf, VkDeviceSize(quad_ndx_offset_), VK_INDEX_TYPE_UINT16);
-
         pipeline->vtx_input()->BindBuffers(cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
 
         vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
@@ -250,7 +244,7 @@ const Ren::Pipeline *PrimDraw::FindOrCreatePipeline(const Ren::ProgramRef p, con
     Ren::Pipeline &new_pipeline = pipelines_.emplace_back();
 
     if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, rp, ctx_->log())) {
-        log_->Error("Failed to initialize pipeline!");
+        ctx_->log()->Error("Failed to initialize pipeline!");
         pipelines_.pop_back();
         return nullptr;
     }
