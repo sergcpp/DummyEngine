@@ -8,7 +8,7 @@ IF(WIN32)
     set(ITT_LIB "libittnotify")
 ELSE(WIN32)
     set(VPX_LIB "vpx")
-    if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
+    if(NOT CMAKE_SYSTEM_NAME MATCHES "Android" AND NOT CMAKE_APPLE_SILICON_PROCESSOR MATCHES "arm64")
         set(ITT_LIB "ittnotify")
     endif()
     set(CMAKE_CXX_STANDARD 11)
@@ -157,16 +157,20 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpSSRCompose2.cpp
                     Renderer/Passes/RpSSRDilate.h
                     Renderer/Passes/RpSSRDilate.cpp
+                    Renderer/Passes/RpSSRPrefilter.h
+                    Renderer/Passes/RpSSRPrefilter.cpp
                     Renderer/Passes/RpSSRPrepare.h
                     Renderer/Passes/RpSSRPrepare.cpp
-                    Renderer/Passes/RpSSRResolveSpatial.h
-                    Renderer/Passes/RpSSRResolveSpatial.cpp
+                    Renderer/Passes/RpSSRReproject.h
+                    Renderer/Passes/RpSSRReproject.cpp
                     Renderer/Passes/RpSSRResolveTemporal.h
                     Renderer/Passes/RpSSRResolveTemporal.cpp
                     Renderer/Passes/RpSSRTrace.h
                     Renderer/Passes/RpSSRTrace.cpp
                     Renderer/Passes/RpSSRTraceHQ.h
                     Renderer/Passes/RpSSRTraceHQ.cpp
+                    Renderer/Passes/RpSSRVSDepth.h
+                    Renderer/Passes/RpSSRVSDepth.cpp
                     Renderer/Passes/RpSSRWriteIndirectArgs.h
                     Renderer/Passes/RpSSRWriteIndirectArgs.cpp
                     Renderer/Passes/RpSSRWriteIndirectRTDispatch.h

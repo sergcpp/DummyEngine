@@ -28,6 +28,7 @@ void RpSSRBlur::Setup(RpBuilder &builder, const ViewState *view_state, const cha
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);  
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

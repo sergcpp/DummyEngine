@@ -14,13 +14,8 @@ struct Params {
     float fade;
 };
 
-#ifdef __cplusplus
-    const int HDR_TEX_SLOT = 0;
-    const int BLURED_TEX_SLOT = 1;
-#else
-    #define HDR_TEX_SLOT 0
-    #define BLURED_TEX_SLOT 1
-#endif
+DEF_CONST_INT(HDR_TEX_SLOT, 0)
+DEF_CONST_INT(BLURED_TEX_SLOT, 1)
 
 INTERFACE_END
 

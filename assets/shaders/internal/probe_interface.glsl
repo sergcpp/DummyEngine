@@ -10,11 +10,7 @@ INTERFACE_START(Probe)
     MAT4_TYPE uShadowViewProjMatrix;
 };*/
 
-#ifdef __cplusplus
-    const int U_M_MATRIX_LOC = 0;
-#else
-    #define U_M_MATRIX_LOC 0
-#endif
+DEF_CONST_INT(U_M_MATRIX_LOC, 0)
 
 INTERFACE_END
 

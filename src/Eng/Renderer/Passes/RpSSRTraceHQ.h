@@ -22,16 +22,15 @@ class RpSSRTraceHQ : public RenderPassBase {
     RpResource scrambling_tile_buf_;
     RpResource ranking_tile_buf_;
     RpResource shared_data_buf_;
+    RpResource color_tex_;
     RpResource normal_tex_;
-    RpResource rough_tex_;
     RpResource depth_hierarchy_tex_;
-    RpResource prev_tex_;
-    RpResource ray_counter_buf_;
     RpResource in_ray_list_buf_;
     RpResource indir_args_buf_;
 
-    RpResource out_color_tex_;
+    RpResource out_refl_tex_;
     RpResource out_raylen_tex_;
+    RpResource out_ray_counter_buf_;
     RpResource out_ray_list_buf_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
@@ -39,10 +38,16 @@ class RpSSRTraceHQ : public RenderPassBase {
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
                Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
-               const char shared_data_buf_name[], const char normal_tex_name[], const char rough_tex_name[],
-               const char depth_hierarchy_name[], Ren::WeakTex2DRef prev_tex, const char ray_counter_name[],
-               const char in_ray_list_name[], const char indir_args_name[], const char out_color_name[],
-               const char out_raylen_name[], const char out_ray_list_name[]);
+               const char shared_data_buf_name[], const char color_tex_name[], const char normal_tex_name[],
+               const char depth_hierarchy_name[], const char ray_counter_name[], const char in_ray_list_name[],
+               const char indir_args_name[], const char out_refl_tex_name[], const char out_raylen_name[],
+               const char out_ray_list_name[]);
+    void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
+               Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
+               const char shared_data_buf_name[], const char color_tex_name[], const char normal_tex_name[],
+               const char depth_hierarchy_name[], const char ray_counter_name[], const char in_ray_list_name[],
+               const char indir_args_name[], Ren::WeakTex2DRef out_refl_tex, const char out_raylen_name[],
+               const char out_ray_list_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SSR TRACE HQ"; }

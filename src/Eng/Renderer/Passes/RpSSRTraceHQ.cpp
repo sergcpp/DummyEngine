@@ -13,9 +13,9 @@
 
 void RpSSRTraceHQ::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
                          Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
-                         const char shared_data_buf_name[], const char normal_tex_name[], const char rough_tex_name[],
-                         const char depth_hierarchy_name[], Ren::WeakTex2DRef prev_tex, const char ray_counter_name[],
-                         const char in_ray_list_name[], const char indir_args_name[], const char out_color_name[],
+                         const char shared_data_buf_name[], const char color_tex_name[], const char normal_tex_name[],
+                         const char depth_hierarchy_name[], const char ray_counter_name[],
+                         const char in_ray_list_name[], const char indir_args_name[], const char out_refl_tex_name[],
                          const char out_raylen_name[], const char out_ray_list_name[]) {
     view_state_ = view_state;
 
@@ -26,37 +26,83 @@ void RpSSRTraceHQ::Setup(RpBuilder &builder, const ViewState *view_state, Ren::W
         builder.ReadBuffer(ranking_tile_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
     shared_data_buf_ =
         builder.ReadBuffer(shared_data_buf_name, Ren::eResState::UniformBuffer, Ren::eStageBits::ComputeShader, *this);
+    color_tex_ =
+        builder.ReadTexture(color_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
     normal_tex_ =
         builder.ReadTexture(normal_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
-    rough_tex_ =
-        builder.ReadTexture(rough_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
     depth_hierarchy_tex_ = builder.ReadTexture(depth_hierarchy_name, Ren::eResState::ShaderResource,
                                                Ren::eStageBits::ComputeShader, *this);
-    prev_tex_ = builder.ReadTexture(prev_tex, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
 
-    ray_counter_buf_ =
-        builder.ReadBuffer(ray_counter_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
     in_ray_list_buf_ =
         builder.ReadBuffer(in_ray_list_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
     indir_args_buf_ =
         builder.ReadBuffer(indir_args_name, Ren::eResState::IndirectArgument, Ren::eStageBits::DrawIndirect, *this);
 
-    { // Reflection color texture
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0];
-        params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+    out_ray_counter_buf_ =
+        builder.WriteBuffer(ray_counter_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
+    out_refl_tex_ =
+        builder.WriteTexture(out_refl_tex_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
 
-        out_color_tex_ = builder.WriteTexture(out_color_name, params, Ren::eResState::UnorderedAccess,
-                                              Ren::eStageBits::ComputeShader, *this);
-    }
     { // Ray length texture
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawR16F;
+        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        out_raylen_tex_ = builder.WriteTexture(out_raylen_name, params, Ren::eResState::UnorderedAccess,
+                                               Ren::eStageBits::ComputeShader, *this);
+    }
+    { // packed ray list
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Storage;
+        desc.size = view_state->scr_res[0] * view_state->scr_res[1] * sizeof(uint32_t);
+
+        out_ray_list_buf_ = builder.WriteBuffer(out_ray_list_name, desc, Ren::eResState::UnorderedAccess,
+                                                Ren::eStageBits::ComputeShader, *this);
+    }
+}
+
+void RpSSRTraceHQ::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
+                         Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
+                         const char shared_data_buf_name[], const char color_tex_name[], const char normal_tex_name[],
+                         const char depth_hierarchy_name[], const char ray_counter_name[],
+                         const char in_ray_list_name[], const char indir_args_name[], Ren::WeakTex2DRef out_refl_tex,
+                         const char out_raylen_name[], const char out_ray_list_name[]) {
+    view_state_ = view_state;
+
+    sobol_buf_ = builder.ReadBuffer(sobol_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    scrambling_tile_buf_ =
+        builder.ReadBuffer(scrambling_tile_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    ranking_tile_buf_ =
+        builder.ReadBuffer(ranking_tile_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    shared_data_buf_ =
+        builder.ReadBuffer(shared_data_buf_name, Ren::eResState::UniformBuffer, Ren::eStageBits::ComputeShader, *this);
+    color_tex_ =
+        builder.ReadTexture(color_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    normal_tex_ =
+        builder.ReadTexture(normal_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    depth_hierarchy_tex_ = builder.ReadTexture(depth_hierarchy_name, Ren::eResState::ShaderResource,
+                                               Ren::eStageBits::ComputeShader, *this);
+
+    in_ray_list_buf_ =
+        builder.ReadBuffer(in_ray_list_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    indir_args_buf_ =
+        builder.ReadBuffer(indir_args_name, Ren::eResState::IndirectArgument, Ren::eStageBits::DrawIndirect, *this);
+
+    out_ray_counter_buf_ =
+        builder.WriteBuffer(ray_counter_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
+    out_refl_tex_ =
+        builder.WriteTexture(out_refl_tex, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
+
+    { // Ray length texture
+        Ren::Tex2DParams params;
+        params.w = view_state->scr_res[0];
+        params.h = view_state->scr_res[1];
+        params.format = Ren::eTexFormat::RawR16F;
+        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -91,16 +137,15 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
     RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(scrambling_tile_buf_);
     RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(ranking_tile_buf_);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
+    RpAllocTex &color_tex = builder.GetReadTexture(color_tex_);
     RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &rough_tex = builder.GetReadTexture(rough_tex_);
     RpAllocTex &depth_hierarchy_tex = builder.GetReadTexture(depth_hierarchy_tex_);
-    RpAllocTex &prev_tex = builder.GetReadTexture(prev_tex_);
-    RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(ray_counter_buf_);
     RpAllocBuf &in_ray_list_buf = builder.GetReadBuffer(in_ray_list_buf_);
     RpAllocBuf &indir_args_buf = builder.GetReadBuffer(indir_args_buf_);
 
-    RpAllocTex &out_color_tex = builder.GetWriteTexture(out_color_tex_);
+    RpAllocTex &out_refl_tex = builder.GetWriteTexture(out_refl_tex_);
     RpAllocTex &out_raylen_tex = builder.GetWriteTexture(out_raylen_tex_);
+    RpAllocBuf &out_ray_counter_buf = builder.GetWriteBuffer(out_ray_counter_buf_);
     RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(out_ray_list_buf_);
 
     LazyInit(builder.ctx(), builder.sh());
@@ -126,21 +171,21 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+        {Ren::eBindTarget::Tex2D, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
         {Ren::eBindTarget::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::Tex2D, SSRTraceHQ::ROUGH_TEX_SLOT, *rough_tex.ref},
-        {Ren::eBindTarget::Tex2D, SSRTraceHQ::PREV_TEX_SLOT, *prev_tex.ref},
-        {Ren::eBindTarget::SBuf, SSRTraceHQ::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
         {Ren::eBindTarget::TBuf, SSRTraceHQ::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, SSRTraceHQ::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, SSRTraceHQ::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
-        {Ren::eBindTarget::Image, SSRTraceHQ::OUT_COLOR_IMG_SLOT, *out_color_tex.ref},
+        {Ren::eBindTarget::Image, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
+        {Ren::eBindTarget::SBuf, SSRTraceHQ::RAY_COUNTER_SLOT, *out_ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
     SSRTraceHQ::Params uniform_params;
     uniform_params.resolution = Ren::Vec4u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1]), 0, 0};
 
-    Ren::DispatchComputeIndirect(pi_ssr_trace_hq_, *indir_args_buf.ref, bindings, COUNT_OF(bindings), &uniform_params,
-                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+    Ren::DispatchComputeIndirect(pi_ssr_trace_hq_, *indir_args_buf.ref, 0, bindings, COUNT_OF(bindings),
+                                 &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                 builder.ctx().log());
 }

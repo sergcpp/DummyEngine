@@ -133,6 +133,7 @@
 #define FLT_EPS 0.0000001
 
 // TODO: remove these
-#define GLOSSY_THRESHOLD 0.55f
+//#define GLOSSY_THRESHOLD 0.55f
+#define GLOSSY_THRESHOLD 1.0f
 #define MIRROR_THRESHOLD 0.0001f
 #define VARIANCE_GUIDED 0

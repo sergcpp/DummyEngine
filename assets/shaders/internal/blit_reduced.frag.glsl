@@ -16,7 +16,7 @@ UNIFORM_BLOCKS
 layout(binding = SRC_TEX_SLOT) uniform sampler2D s_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 LAYOUT(location = 0) in vec2 aVertexUVs_;
@@ -24,6 +24,6 @@ LAYOUT(location = 0) in vec2 aVertexUVs_;
 layout(location = 0) out vec4 outColor;
 
 void main() {
-    vec3 c0 = texture(s_texture, aVertexUVs_ + params.offset.xy).xyz;
+    vec3 c0 = texture(s_texture, aVertexUVs_ + g_params.offset.xy).xyz;
     outColor.r = dot(c0, vec3(0.299, 0.587, 0.114));
 }

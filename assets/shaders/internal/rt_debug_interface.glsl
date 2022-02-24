@@ -15,27 +15,15 @@ struct RayPayload {
     float cone_width;
 };
 
-#ifdef __cplusplus
-    const int TLAS_SLOT = 0;
-    const int ENV_TEX_SLOT = 1;
-    const int GEO_DATA_BUF_SLOT = 2;
-    const int MATERIAL_BUF_SLOT = 3;
-    const int VTX_BUF1_SLOT = 4;
-    const int VTX_BUF2_SLOT = 5;
-    const int NDX_BUF_SLOT = 6;
-    const int LMAP_TEX_SLOTS = 7;
-    const int OUT_IMG_SLOT = 12;
-#else
-    #define TLAS_SLOT 0
-    #define ENV_TEX_SLOT 1
-    #define GEO_DATA_BUF_SLOT 2
-    #define MATERIAL_BUF_SLOT 3
-    #define VTX_BUF1_SLOT 4
-    #define VTX_BUF2_SLOT 5
-    #define NDX_BUF_SLOT 6
-    #define LMAP_TEX_SLOTS 7
-    #define OUT_IMG_SLOT 12
-#endif
+DEF_CONST_INT(TLAS_SLOT, 0)
+DEF_CONST_INT(ENV_TEX_SLOT, 1)
+DEF_CONST_INT(GEO_DATA_BUF_SLOT, 2)
+DEF_CONST_INT(MATERIAL_BUF_SLOT, 3)
+DEF_CONST_INT(VTX_BUF1_SLOT, 4)
+DEF_CONST_INT(VTX_BUF2_SLOT, 5)
+DEF_CONST_INT(NDX_BUF_SLOT, 6)
+DEF_CONST_INT(LMAP_TEX_SLOTS, 7)
+DEF_CONST_INT(OUT_IMG_SLOT, 12)
 
 INTERFACE_END
 

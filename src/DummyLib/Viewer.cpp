@@ -203,9 +203,8 @@ void Viewer::Frame() {
 #if defined(USE_VK_RENDER)
     { // change layout from  attachment_optimal to present_src
         VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-        layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        layout_transition_barrier.dstAccessMask =
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+        layout_transition_barrier.dstAccessMask = 0;
         layout_transition_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         layout_transition_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         layout_transition_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -214,8 +213,8 @@ void Viewer::Frame() {
         VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
         layout_transition_barrier.subresourceRange = resource_range;
 
-        vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
+        vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
                              &layout_transition_barrier);
     }
 
@@ -286,7 +285,8 @@ void Viewer::PrepareAssets(const char *platform) {
     log.Info("Assets processed in %fs", t2 - t1);
 }
 
-bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file) {
+bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file,
+                            Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     struct dict_link_t {

@@ -72,14 +72,14 @@ void main(void) {
     aVertexNormal_ = vtx_nor_ws;
     aVertexTangent_ = vtx_tan_ws;
     aVertexUVs_ = aVertexUVs1;
-    
+
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
         vec2(0.25, 0.0),
         vec2(0.0, 0.5),
         vec2(0.25, 0.5)
     );
-    
+
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         vec3 shadow_uvs = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
 #if defined(VULKAN)
@@ -96,7 +96,7 @@ void main(void) {
         aVertexShUVs_1[i] = shadow_uvs[1];
         aVertexShUVs_2[i] = shadow_uvs[2];
     }
-    
+
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = materials[instance.y];
     diff_texture = GET_HANDLE(mat.texture_indices[0]);
@@ -104,9 +104,9 @@ void main(void) {
     spec_texture = GET_HANDLE(mat.texture_indices[2]);
     mat3_texture = GET_HANDLE(mat.texture_indices[3]);
 #endif // BINDLESS_TEXTURES
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-} 
+}

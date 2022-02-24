@@ -91,14 +91,14 @@ void main(void) {
     aVertexNormal_CS = vtx_nor_ws;
     aVertexTangent_CS = vtx_tan_ws;
     aVertexUVs_CS = aVertexUVs1;
-    
+
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
         vec2(0.25, 0.0),
         vec2(0.0, 0.5),
         vec2(0.25, 0.5)
     );
-    
+
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         aVertexShUVs_CS[i] = (shrd_data.uShadowMapRegions[i].clip_from_world *
                             vec4(vtx_pos_ws, 1.0)).xyz;
@@ -106,7 +106,7 @@ void main(void) {
         aVertexShUVs_CS[i].xy *= vec2(0.25, 0.5);
         aVertexShUVs_CS[i].xy += offsets[i];
     }
-    
+
 #if defined(GL_ARB_bindless_texture)
     MaterialData mat = materials[instance.y];
     diff_texture = texture_handles[mat.texture_indices[0]];
@@ -114,4 +114,4 @@ void main(void) {
     spec_texture = texture_handles[mat.texture_indices[2]];
     bump_texture = texture_handles[mat.texture_indices[3]];
 #endif // GL_ARB_bindless_texture
-} 
+}

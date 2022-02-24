@@ -366,7 +366,7 @@ RpResource RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, 
 }
 
 RpResource RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-    RenderPassBase& pass) {
+                                   RenderPassBase &pass) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -453,6 +453,11 @@ void RpBuilder::AllocateNeededResources(RenderPassBase *pass) {
         } else if (res.type == eRpResType::Texture) {
             RpAllocTex &tex = textures_.at(res.index);
             if (!tex.ref || tex.desc != tex.ref->params) {
+#ifndef NDEBUG
+                if (tex.ref && tex.desc.usage != tex.ref->params.usage) {
+                    ctx_.log()->Error("Conflicting usage flags detected: %s", tex.name.c_str());
+                }
+#endif
                 Ren::eTexLoadStatus status;
                 tex.strong_ref = ctx_.LoadTexture2D(tex.name.c_str(), tex.desc, ctx_.default_mem_allocs(), &status);
                 tex.ref = tex.strong_ref;
@@ -526,16 +531,14 @@ void RpBuilder::Compile(RenderPassBase *first_pass) {
                 RpResource *r = &cur_pass->input_[i];
 
                 auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r,
-                                           [](RpResource *lhs, RpResource *rhs) {
-                                               if (lhs->type < rhs->type) {
-                                                   return true;
-                                               }
-                                               return lhs->index < rhs->index;
+                                           [](const RpResource *lhs, const RpResource *rhs) {
+                                               return RpResource::LessThanTypeAndIndex(*lhs, *rhs);
                                            });
-                if (it != std::end(all_resources) && !(r < (*it))) {
+                if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
                     (*it)->next_use = r;
                     (*it) = r;
                 } else {
+                    r->next_use = nullptr;
                     all_resources.insert(it, r);
                 }
             }
@@ -544,16 +547,14 @@ void RpBuilder::Compile(RenderPassBase *first_pass) {
                 RpResource *r = &cur_pass->output_[i];
 
                 auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r,
-                                           [](RpResource *lhs, RpResource *rhs) {
-                                               if (lhs->type < rhs->type) {
-                                                   return true;
-                                               }
-                                               return lhs->index < rhs->index;
+                                           [](const RpResource *lhs, const RpResource *rhs) {
+                                               return RpResource::LessThanTypeAndIndex(*lhs, *rhs);
                                            });
-                if (it != std::end(all_resources) && !(r < (*it))) {
+                if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
                     (*it)->next_use = r;
                     (*it) = r;
                 } else {
+                    r->next_use = nullptr;
                     all_resources.insert(it, r);
                 }
             }
@@ -623,7 +624,8 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
 
     if (res.type == eRpResType::Buffer) {
         RpAllocBuf &buf = buffers_.at(res.index);
-        if (buf.ref->resource_state != res.desired_state || buf.ref->resource_state == Ren::eResState::UnorderedAccess) {
+        if (buf.ref->resource_state != res.desired_state ||
+            buf.ref->resource_state == Ren::eResState::UnorderedAccess) {
             src_stages |= buf.used_in_stages;
             dst_stages |= res.stages;
             buf.used_in_stages = Ren::eStageBits::None;
@@ -632,7 +634,8 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
         buf.used_in_stages |= res.stages;
     } else if (res.type == eRpResType::Texture) {
         RpAllocTex &tex = textures_.at(res.index);
-        if (tex.ref->resource_state != res.desired_state || tex.ref->resource_state == Ren::eResState::UnorderedAccess) {
+        if (tex.ref->resource_state != res.desired_state ||
+            tex.ref->resource_state == Ren::eResState::UnorderedAccess) {
             src_stages |= tex.used_in_stages;
             dst_stages |= res.stages;
             tex.used_in_stages = Ren::eStageBits::None;

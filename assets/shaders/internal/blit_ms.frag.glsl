@@ -7,7 +7,7 @@
 #endif
 
 #include "_fs_common.glsl"
-    
+
 layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_texture;
 
 #if defined(VULKAN)

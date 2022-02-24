@@ -9,25 +9,25 @@
 #include "../Renderer_Structs.h"
 
 void RpRTReflections::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
-                             Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
-                             const DrawList &list, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
-                             const Ren::BufferRef &ndx_buf, const AccelerationStructureData *acc_struct_data,
-                             const BindlessTextureData *bindless_tex, const Ren::BufferRef &materials_buf,
-                             const char shared_data_buf_name[], const char depth_tex[], const char normal_tex[],
-                             const char spec_tex[], const char rough_tex_name[], const Ren::Tex2DRef &dummy_black,
-                             const char ray_list_name[], const char indir_args_name[], const char out_color_name[],
-                             const char out_raylen_name[]) {
+                            Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
+                            const DrawList &list, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
+                            const Ren::BufferRef &ndx_buf, const AccelerationStructureData *acc_struct_data,
+                            const BindlessTextureData *bindless_tex, const Ren::BufferRef &materials_buf,
+                            const char shared_data_buf_name[], const char depth_tex[], const char normal_tex[],
+                            const Ren::Tex2DRef &dummy_black, const char ray_list_name[], const char indir_args_name[],
+                            const char out_raylen_name[]) {
     render_flags_ = list.render_flags;
     view_state_ = view_state;
     draw_cam_ = &list.draw_cam;
     acc_struct_data_ = acc_struct_data;
     bindless_tex_ = bindless_tex;
 
-    sobol_buf_ = builder.ReadBuffer(sobol_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
-    scrambling_tile_buf_ =
-        builder.ReadBuffer(scrambling_tile_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+    sobol_buf_ =
+        builder.ReadBuffer(sobol_buf, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
+    scrambling_tile_buf_ = builder.ReadBuffer(scrambling_tile_buf, Ren::eResState::ShaderResource,
+                                              Ren::eStageBits::RayTracingShader, *this);
     ranking_tile_buf_ =
-        builder.ReadBuffer(ranking_tile_buf, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
+        builder.ReadBuffer(ranking_tile_buf, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
     geo_data_buf_ = builder.ReadBuffer(acc_struct_data->rt_geo_data_buf, Ren::eResState::ShaderResource,
                                        Ren::eStageBits::RayTracingShader, *this);
     materials_buf_ =
@@ -41,9 +41,6 @@ void RpRTReflections::Setup(RpBuilder &builder, const ViewState *view_state, Ren
         builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
     normal_tex_ =
         builder.ReadTexture(normal_tex, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
-    spec_tex_ = builder.ReadTexture(spec_tex, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
-    rough_tex_ =
-        builder.ReadTexture(rough_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
     env_tex_ =
         builder.ReadTexture(list.env.env_map, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
     ray_list_buf_ =
@@ -70,8 +67,38 @@ void RpRTReflections::Setup(RpBuilder &builder, const ViewState *view_state, Ren
     dummy_black_ =
         builder.ReadTexture(dummy_black, Ren::eResState::ShaderResource, Ren::eStageBits::RayTracingShader, *this);
 
-    out_color_tex_ =
-        builder.WriteTexture(out_color_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::RayTracingShader, *this);
     out_raylen_tex_ = builder.WriteTexture(out_raylen_name, Ren::eResState::UnorderedAccess,
                                            Ren::eStageBits::RayTracingShader, *this);
+}
+
+void RpRTReflections::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
+                            Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
+                            const DrawList &list, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
+                            const Ren::BufferRef &ndx_buf, const AccelerationStructureData *acc_struct_data,
+                            const BindlessTextureData *bindless_tex, const Ren::BufferRef &materials_buf,
+                            const char shared_data_buf_name[], const char depth_tex[], const char normal_tex[],
+                            const Ren::Tex2DRef &dummy_black, const char ray_list_name[], const char indir_args_name[],
+                            const char out_refl_tex_name[], const char out_raylen_name[]) {
+    Setup(builder, view_state, sobol_buf, scrambling_tile_buf, ranking_tile_buf, list, vtx_buf1, vtx_buf2, ndx_buf,
+          acc_struct_data, bindless_tex, materials_buf, shared_data_buf_name, depth_tex, normal_tex, dummy_black,
+          ray_list_name, indir_args_name, out_raylen_name);
+
+    out_refl_tex_ = builder.WriteTexture(out_refl_tex_name, Ren::eResState::UnorderedAccess,
+                                         Ren::eStageBits::RayTracingShader, *this);
+}
+
+void RpRTReflections::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
+                            Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf,
+                            const DrawList &list, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
+                            const Ren::BufferRef &ndx_buf, const AccelerationStructureData *acc_struct_data,
+                            const BindlessTextureData *bindless_tex, const Ren::BufferRef &materials_buf,
+                            const char shared_data_buf_name[], const char depth_tex[], const char normal_tex[],
+                            const Ren::Tex2DRef &dummy_black, const char ray_list_name[], const char indir_args_name[],
+                            Ren::WeakTex2DRef out_refl_tex, const char out_raylen_name[]) {
+    Setup(builder, view_state, sobol_buf, scrambling_tile_buf, ranking_tile_buf, list, vtx_buf1, vtx_buf2, ndx_buf,
+          acc_struct_data, bindless_tex, materials_buf, shared_data_buf_name, depth_tex, normal_tex, dummy_black,
+          ray_list_name, indir_args_name, out_raylen_name);
+
+    out_refl_tex_ =
+        builder.WriteTexture(out_refl_tex, Ren::eResState::UnorderedAccess, Ren::eStageBits::RayTracingShader, *this);
 }

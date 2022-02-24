@@ -10,11 +10,7 @@ struct Params {
     IVEC2_TYPE uInstanceIndices[REN_MAX_BATCH_SIZE];
 };
 
-#ifdef __cplusplus
-    const int U_M_MATRIX_LOC = 12;
-#else
-    #define U_M_MATRIX_LOC 12
-#endif
+DEF_CONST_INT(U_M_MATRIX_LOC, 12)
 
 INTERFACE_END
 

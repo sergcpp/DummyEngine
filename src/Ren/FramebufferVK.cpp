@@ -142,7 +142,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 
     if (_stencil_target) {
         stencil_attachment = {_stencil_target.ref, _stencil_target.ref->handle()};
-        if (_stencil_target.ref->handle().views[0] != _depth_target.ref->handle().views[0]) {
+        if (!_depth_target || _stencil_target.ref->handle().views[0] != _depth_target.ref->handle().views[0]) {
             image_views.push_back(_stencil_target.ref->handle().views[0]);
         }
     }

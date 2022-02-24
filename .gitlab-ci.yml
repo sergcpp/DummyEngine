@@ -1,9 +1,10 @@
 stages:
-  - build_and_test
+  - build
+  - test
   - deploy
 
 .windows-build-job:
-  stage: build_and_test
+  stage: build
   tags:
     - windows
   script:
@@ -11,23 +12,40 @@ stages:
     - mkdir build_gl
     - mkdir build_vk
     - cd build_gl
-    - cmake .. -G "Visual Studio 16 2019" -A x64 -DENABLE_OPENCL=ON -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
     - cd build_vk
-    - cmake .. -G "Visual Studio 16 2019" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - cmake --build build_gl --target ALL_BUILD --config Release --parallel 4
-    - cmake --build build_vk --target DummyApp --config Release --parallel 4
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release --parallel 4
     - echo "Compile complete."
+    - mkdir win64_gl
+    - copy build_gl/src/Eng/_tests/Release/test_Eng.exe win64_gl
+    - copy build_gl/src/Ray/tests/Release/test_Ray.exe win64_gl
+    - copy build_gl/src/Ren/tests/Release/test_Ren.exe win64_gl
+    - copy build_gl/src/Ren/SW/tests/Release/test_SW.exe win64_gl
+    - copy build_gl/src/Sys/tests/Release/test_Sys.exe win64_gl
+    - copy build_gl/src/Net/tests/Release/test_Net.exe win64_gl
+    - copy build_gl/src/DummyLib/tests/Release/test_DummyLib.exe win64_gl
+    - copy DummyAppGL.exe win64_gl
+    - mkdir win64_vk
+    - copy build_vk/src/Eng/_tests/Release/test_Eng.exe win64_vk
+    - copy build_vk/src/Ray/tests/Release/test_Ray.exe win64_vk
+#    - copy build_vk/src/Ren/tests/Release/test_Ren.exe win64_vk
+    - copy build_vk/src/Ren/SW/tests/Release/test_SW.exe win64_vk
+    - copy build_vk/src/Sys/tests/Release/test_Sys.exe win64_vk
+    - copy build_vk/src/Net/tests/Release/test_Net.exe win64_vk
+    - copy build_vk/src/DummyLib/tests/Release/test_DummyLib.exe win64_vk
+    - copy DummyAppVK.exe win64_vk
   artifacts:
+    name: win64
     paths:
-      - build_gl/
-      - DummyAppGL.exe
-      - build_vk/
-      - DummyAppVK.exe
+      - win64_gl/
+      - win64_vk/
     
 .linux-build-job:
-  stage: build_and_test
+  stage: build
   tags:
     - linux
   script:
@@ -51,7 +69,7 @@ stages:
       - ./DummyAppVK
     
 .macos-build-job:
-  stage: build_and_test
+  stage: build
   tags:
     - macos
   script:
@@ -67,52 +85,76 @@ stages:
 #      - build_vk/
 #      - DummyAppVK
 
-.test-job-gl:
-  stage: build_and_test
+.test-job-common:
+  stage: test
   script:
-    - echo "Running unit tests..."
-    - build_gl/src/Eng/_tests/Release/test_Eng
-    - build_gl/src/Ray/tests/Release/test_Ray
-    - build_gl/src/Ren/tests/Release/test_Ren
-    - build_gl/src/Ren/SW/tests/Release/test_SW
-    - build_gl/src/Sys/tests/Release/test_Sys
-    - build_gl/src/Net/tests/Release/test_Net
-    - build_gl/src/DummyLib/tests/Release/test_DummyLib
+    - echo "Running common tests..."
+    - win64_vk/test_Ray
+    - win64_vk/test_SW
+    - win64_vk/test_Sys
+    - win64_vk/test_Net
+
+.test-job-gl:
+  stage: test
+  script:
+    - echo "Running GL tests..."
+    - win64_gl/test_Eng
+    - win64_gl/test_Ren
+    - win64_gl/test_DummyLib
 
 .test-job-vk:
-  stage: build_and_test
+  stage: test
   script:
-    - echo "Running unit tests..."
-    - build_vk/src/Eng/_tests/Release/test_Eng
-    - build_vk/src/Ray/tests/Release/test_Ray
-    #- build_vk/src/Ren/tests/Release/test_Ren
-    - build_vk/src/Ren/SW/tests/Release/test_SW
-    - build_vk/src/Sys/tests/Release/test_Sys
-    - build_vk/src/Net/tests/Release/test_Net
-    - build_vk/src/DummyLib/tests/Release/test_DummyLib
+    - echo "Running VK tests..."
+    - win64_vk/test_Eng
+#    - win64_vk/test_Ren
+    - win64_vk/test_DummyLib
 
-windows-build-and-test-job:
+windows-build-job:
   extends:
-    - .test-job-vk
-    - .test-job-gl
     - .windows-build-job
   tags:
     - windows
     
-linux-build-and-test-job:
+linux-build-job:
   extends:
-    - .test-job-vk
-    - .test-job-gl
     - .linux-build-job
   tags:
     - linux
     
-macos-build-and-test-job:
+#macos-build-and-test-job:
+#  extends:
+#    - .test-job-vk
+#    - .macos-build-job
+#  tags:
+#    - macos
+
+windows-x86_64-test-job-common:
+  stage: test
+  extends:
+    - .test-job-common
+  dependencies:
+    - windows-build-job
+  tags:
+    - windows,x86_64
+
+windows-x86_64-test-job-gl:
+  stage: test
+  extends:
+    - .test-job-gl
+  dependencies:
+    - windows-build-job
+  tags:
+    - windows,x86_64
+
+windows-x86_64-test-job-vk:
+  stage: test
   extends:
     - .test-job-vk
-    - .macos-build-job
+  dependencies:
+    - windows-build-job
   tags:
-    - macos
+    - windows,x86_64
 
 deploy-job:
   stage: deploy
@@ -120,9 +162,9 @@ deploy-job:
     GIT_STRATEGY: none
   script:
     - echo "Deploying application..."
-    - ./DummyAppVK --prepare_assets pc --norun
-    - 7z a -mx9 dummy_app.zip DummyAppGL.exe
-    - 7z a -mx9 dummy_app.zip DummyAppVK.exe
+#    - ./DummyAppVK --prepare_assets pc --norun
+#    - 7z a -mx9 dummy_app.zip DummyAppGL.exe
+#    - 7z a -mx9 dummy_app.zip DummyAppVK.exe
 #    - 7z a -mx9 dummy_app.zip assets_pc
     - echo "Application successfully deployed."
   artifacts:

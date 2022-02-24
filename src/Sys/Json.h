@@ -53,17 +53,14 @@ struct JsNumber {
     static const JsType type = JsType::Number;
 };
 
-template <typename Alloc>
-using StdString = std::basic_string<char, std::char_traits<char>, Alloc>;
+template <typename Alloc> using StdString = std::basic_string<char, std::char_traits<char>, Alloc>;
 using StdStringP = StdString<Sys::MultiPoolAllocator<char>>;
 
-inline bool operator==(const std::string &lhs, const StdStringP &rhs) {
-    return lhs.compare(rhs.c_str()) == 0;
-}
+inline bool operator==(const std::string &lhs, const StdStringP &rhs) { return lhs.compare(rhs.c_str()) == 0; }
+inline bool operator!=(const std::string &lhs, const StdStringP &rhs) { return !operator==(lhs, rhs); }
 
-inline bool operator==(const StdStringP &lhs, const std::string &rhs) {
-    return lhs.compare(rhs.c_str()) == 0;
-}
+inline bool operator==(const StdStringP &lhs, const std::string &rhs) { return lhs.compare(rhs.c_str()) == 0; }
+inline bool operator!=(const StdStringP &lhs, const std::string &rhs) { return !operator==(lhs, rhs); }
 
 template <typename Alloc> struct JsStringT {
     StdString<Alloc> val;
@@ -76,8 +73,7 @@ template <typename Alloc> struct JsStringT {
     JsStringT &operator=(JsStringT &&rhs) = default;
 
     explicit JsStringT(const char *s, const Alloc &alloc = Alloc()) : val(s, alloc) {}
-    explicit JsStringT(StdString<Alloc> s, const Alloc &alloc = Alloc())
-        : val(std::move(s), alloc) {}
+    explicit JsStringT(StdString<Alloc> s, const Alloc &alloc = Alloc()) : val(std::move(s), alloc) {}
 
     bool operator==(const JsStringT &rhs) const { return val == rhs.val; }
 
@@ -139,8 +135,11 @@ template <typename Alloc> struct JsObjectT {
     bool operator==(const JsObjectT<Alloc> &rhs) const;
     bool operator!=(const JsObjectT<Alloc> &rhs) const { return !operator==(rhs); }
 
-    bool Has(const char *s) const;
-    bool Has(const StdString<Alloc> &s) const;
+    bool Has(const char *s) const { return IndexOf(s) < Size(); }
+    bool Has(const StdString<Alloc> &s) const { return IndexOf(s) < Size(); }
+
+    size_t IndexOf(const char *s) const;
+    size_t IndexOf(const StdString<Alloc> &s) const;
 
     size_t Size() const { return elements.size(); }
 
@@ -163,15 +162,12 @@ extern template struct JsObjectT<Sys::MultiPoolAllocator<char>>;
 
 template <typename Alloc> struct JsElementT {
   private:
-    static const size_t
-        data_size =
-            Sys::_compile_time_max<sizeof(JsLiteral), sizeof(JsNumber),
-                                   sizeof(JsStringT<Alloc>), sizeof(JsArrayT<Alloc>),
-                                   sizeof(JsObjectT<Alloc>)>::value,
-        data_align =
-            Sys::_compile_time_max<alignof(JsLiteral), alignof(JsNumber),
-                                   alignof(JsStringT<Alloc>), alignof(JsArrayT<Alloc>),
-                                   alignof(JsObjectT<Alloc>)>::value;
+    static const size_t data_size =
+                            Sys::_compile_time_max<sizeof(JsLiteral), sizeof(JsNumber), sizeof(JsStringT<Alloc>),
+                                                   sizeof(JsArrayT<Alloc>), sizeof(JsObjectT<Alloc>)>::value,
+                        data_align =
+                            Sys::_compile_time_max<alignof(JsLiteral), alignof(JsNumber), alignof(JsStringT<Alloc>),
+                                                   alignof(JsArrayT<Alloc>), alignof(JsObjectT<Alloc>)>::value;
     using data_t = typename std::aligned_storage<data_size, data_align>::type;
 
     JsType type_;

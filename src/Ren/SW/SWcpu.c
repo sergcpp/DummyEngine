@@ -158,7 +158,7 @@ void swCPUInfoInit(SWcpu_info *info) {
 #endif
 #endif
 
-#if !defined(__ANDROID__)
+#if !defined(__aarch64__)
     int cpu_info[4];
     cpuid(cpu_info, 0);
     int ids_count = cpu_info[0];

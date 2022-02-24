@@ -66,15 +66,15 @@ void main(void) {
     aVertexNormal_ = vtx_nor_ws;
     aVertexTangent_ = vtx_tan_ws;
     aVertexUVs_ = aVertexUVs1;
-    
+
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = materials[instance.y];
     norm_texture = GET_HANDLE(mat.texture_indices[1]);
     spec_texture = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-} 
+}

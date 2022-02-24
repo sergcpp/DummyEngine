@@ -102,7 +102,18 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
     instance_info.enabledExtensionCount = number_required_extensions + number_optional_extensions;
     instance_info.ppEnabledExtensionNames = desired_extensions;
 
-    VkResult res = vkCreateInstance(&instance_info, nullptr, &instance);
+#ifndef NDEBUG
+    const VkValidationFeatureEnableEXT enabled_validation_features[] = {
+        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+
+    VkValidationFeaturesEXT validation_features = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
+    validation_features.enabledValidationFeatureCount = 1;
+    validation_features.pEnabledValidationFeatures = enabled_validation_features;
+
+    instance_info.pNext = &validation_features;
+#endif
+
+    const VkResult res = vkCreateInstance(&instance_info, nullptr, &instance);
     if (res != VK_SUCCESS) {
         log->Error("Failed to create vulkan instance");
         return false;
@@ -322,7 +333,7 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
 
     device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
-    //device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    // device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
     device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
@@ -354,7 +365,7 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
     feat2.features.imageCubeArray = VK_TRUE;
     device_info.pNext = &feat2;
     void **pp_next = const_cast<void **>(&feat2.pNext);*/
-    
+
     VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexing_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
     indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
@@ -612,6 +623,19 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
 
     present_images.resize(image_count);
     vkGetSwapchainImagesKHR(device, swapchain, &image_count, &present_images[0]);
+
+#ifdef ENABLE_OBJ_LABELS
+    for (uint32_t i = 0; i < image_count; ++i) {
+        char name_buf[32];
+        sprintf(name_buf, "PresentImage[%u]", i);
+
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_IMAGE;
+        name_info.objectHandle = uint64_t(present_images[i]);
+        name_info.pObjectName = name_buf;
+        vkSetDebugUtilsObjectNameEXT(device, &name_info);
+    }
+#endif
 
     VkImageViewCreateInfo present_images_view_create_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
     present_images_view_create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;

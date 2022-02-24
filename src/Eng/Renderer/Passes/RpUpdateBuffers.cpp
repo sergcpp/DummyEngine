@@ -300,6 +300,27 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 #endif
         shrd_data.uTaaInfo[2] = reinterpret_cast<const float &>(view_state_->frame_index);
 
+        { // Ray Tracing Gems II, Listing 49-1
+            const Ren::Plane &l = draw_cam_->frustum_plane(Ren::eCamPlane::Left);
+            const Ren::Plane &r = draw_cam_->frustum_plane(Ren::eCamPlane::Right);
+            const Ren::Plane &b = draw_cam_->frustum_plane(Ren::eCamPlane::Bottom);
+            const Ren::Plane &t = draw_cam_->frustum_plane(Ren::eCamPlane::Top);
+
+            const float x0 = l.n[2] / l.n[0];
+            const float x1 = r.n[2] / r.n[0];
+            const float y0 = b.n[2] / b.n[1];
+            const float y1 = t.n[2] / t.n[1];
+
+            // View space position from screen space uv [0, 1]
+            //          ray.xy = (uFrustumInfo.zw * uv + uFrustumInfo.xy) * mix(zDistanceNeg, -1.0, bIsOrtho)
+            //          ray.z = 1.0 * zDistanceNeg
+
+            shrd_data.uFrustumInfo[0] = -x0;
+            shrd_data.uFrustumInfo[1] = -y0;
+            shrd_data.uFrustumInfo[2] = x0 - x1;
+            shrd_data.uFrustumInfo[3] = y0 - y1;
+        }
+
         shrd_data.uProjMatrix[2][0] += draw_cam_->px_offset()[0];
         shrd_data.uProjMatrix[2][1] += draw_cam_->px_offset()[1];
 
@@ -344,8 +365,10 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         shrd_data.uClipInfo = Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
         view_state_->clip_info = shrd_data.uClipInfo;
 
-        const Ren::Vec3f &pos = draw_cam_->world_position();
-        shrd_data.uCamPosAndGamma = Ren::Vec4f{pos[0], pos[1], pos[2], 2.2f};
+        const Ren::Vec3f &cam_pos = draw_cam_->world_position();
+        const Ren::Vec3f cam_delta = cam_pos - view_state_->prev_cam_pos;
+        shrd_data.uCamDelta = Ren::Vec4f{cam_delta[0], cam_delta[1], cam_delta[2], 0.0f};
+        shrd_data.uCamPosAndGamma = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 2.2f};
         shrd_data.uWindScroll = Ren::Vec4f{env_->curr_wind_scroll_lf[0], env_->curr_wind_scroll_lf[1],
                                            env_->curr_wind_scroll_hf[0], env_->curr_wind_scroll_hf[1]};
         shrd_data.uWindScrollPrev = Ren::Vec4f{env_->prev_wind_scroll_lf[0], env_->prev_wind_scroll_lf[1],
@@ -368,6 +391,6 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
                                 *unif_shared_data_buf.ref, 0, SharedDataBlockSize, ctx.current_cmd_buf());
     }
 
-	RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(atomic_cnt_buf_);
+    RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(atomic_cnt_buf_);
     Ren::FillBuffer(*atomic_cnt_buf.ref, 0, sizeof(uint32_t), 0, ctx.current_cmd_buf());
 }

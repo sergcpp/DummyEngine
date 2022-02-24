@@ -4,10 +4,10 @@
 
 #include <vector>
 
-#include <Ren/Fwd.h>
-#include <Ren/Common.h>
 #include <Ren/Buffer.h>
+#include <Ren/Common.h>
 #include <Ren/Framebuffer.h>
+#include <Ren/Fwd.h>
 #include <Ren/HashMap32.h>
 #include <Ren/Log.h>
 #include <Ren/RastState.h>
@@ -44,6 +44,13 @@ struct RpResource {
         : type(_type), _generation(__generation), desired_state(_desired_state), stages(_stages), index(_index) {}
 
     operator bool() { return type != eRpResType::Undefined; }
+
+    static bool LessThanTypeAndIndex(const RpResource &lhs, const RpResource &rhs) {
+        if (lhs.type != rhs.type) {
+            return lhs.type < rhs.type;
+		}
+        return lhs.index < rhs.index;
+    }
 };
 
 class RpBuilder;

@@ -9,19 +9,11 @@ struct Params {
     VEC4_TYPE transform;
 };
 
-#ifdef __cplusplus
-    const int SPEC_TEX_SLOT = 0;
-    const int DEPTH_TEX_SLOT = 1;
-    const int NORM_TEX_SLOT = 2;
-    const int REFL_TEX_SLOT = 3;
-    const int BRDF_TEX_SLOT = 4;
-#else
-    #define SPEC_TEX_SLOT 0
-    #define DEPTH_TEX_SLOT 1
-    #define NORM_TEX_SLOT 2
-    #define REFL_TEX_SLOT 3
-    #define BRDF_TEX_SLOT 4
-#endif
+DEF_CONST_INT(SPEC_TEX_SLOT, 0)
+DEF_CONST_INT(DEPTH_TEX_SLOT, 1)
+DEF_CONST_INT(NORM_TEX_SLOT, 2)
+DEF_CONST_INT(REFL_TEX_SLOT, 3)
+DEF_CONST_INT(BRDF_TEX_SLOT, 4)
 
 INTERFACE_END
 

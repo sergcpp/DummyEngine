@@ -17,7 +17,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
 layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D rand_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -69,7 +69,7 @@ void main() {
 
         vec2 sample_point = transform * sample_points[i];
 
-        vec2 coord_offset = 0.5 * ss_radius * sample_point * params.resolution;
+        vec2 coord_offset = 0.5 * ss_radius * sample_point * g_params.resolution;
 
         vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + coord_offset),
                                  SampleDepthTexel(aVertexUVs_ - coord_offset));

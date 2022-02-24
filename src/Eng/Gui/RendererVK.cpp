@@ -176,7 +176,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::IndexBuffer);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = vertex_buf_->vk_handle();
+        new_barrier.buffer = index_buf_->vk_handle();
         new_barrier.offset = 0;
         new_barrier.size = ndx_data_size;
 

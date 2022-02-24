@@ -19,31 +19,35 @@ UNIFORM_BLOCKS
 */
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
-layout(binding = SPEC_TEX_SLOT) uniform sampler2D spec_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
 
-layout(std430, binding = TEMP_VARIANCE_MASK_SLOT) readonly buffer TempVarianceMask {
-    uint g_temporal_variance_mask[];
-};
 layout(std430, binding = RAY_COUNTER_SLOT) coherent buffer RayCounter {
     uint g_ray_counter[];
 };
 layout(std430, binding = RAY_LIST_SLOT) writeonly buffer RayList {
     uint g_ray_list[];
 };
-layout(std430, binding = TILE_METADATA_MASK_SLOT) writeonly buffer TileMetadataMask {
-    uint g_tile_metadata_mask[];
+layout(std430, binding = TILE_LIST_SLOT) writeonly buffer TileList {
+    uint g_tile_list[];
 };
-layout(binding = ROUGH_IMG_SLOT, r8) uniform writeonly image2D roughness_image;
+layout(binding = REFL_IMG_SLOT, r11f_g11f_b10f) uniform writeonly image2D g_refl_img;
+
+bool IsReflectiveSurface(ivec2 px_coords) {
+    float depth = texelFetch(g_depth_tex, px_coords, 0).r;
+    return depth < 1.0;
+}
 
 bool IsGlossyReflection(float roughness) {
-    return roughness < params.thresholds.x;
+    return roughness <= g_params.thresholds.x;
 }
 
 bool IsMirrorReflection(float roughness) {
-    return roughness < params.thresholds.y; //0.0001;
+    return roughness <= g_params.thresholds.y; //0.0001;
 }
 
 bool IsBaseRay(uvec2 dispatch_thread_id, uint samples_per_quad) {
@@ -62,24 +66,34 @@ uint GetBitMaskFromPixelPosition(uvec2 pixel_pos) {
     return (1u << lane_index);
 }
 
-uint LoadTemporalVarianceMask(uint index) {
-    return g_temporal_variance_mask[index];
-}
-
-uint IncrementRayCounter(uint value) {
-    return atomicAdd(g_ray_counter[0], value);
-}
-
 void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
     g_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
 }
 
-void StoreTileMetaDataMask(uint mask_index, uint mask) {
-    g_tile_metadata_mask[mask_index] = mask;
-}
-
 shared uint g_tile_count;
 
+// From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
+/**********************************************************************
+Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+********************************************************************/
 void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughness, uvec2 screen_size, uint samples_per_quad,
                    bool enable_temporal_variance_guided_tracing) {
     g_tile_count = 0;
@@ -89,7 +103,9 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     bool needs_ray = (dispatch_thread_id.x < screen_size.x && dispatch_thread_id.y < screen_size.y); // disable offscreen pixels
 
     // Dont shoot a ray on very rough surfaces.
-    needs_ray = needs_ray && IsGlossyReflection(roughness);
+    bool is_reflective_surface = IsReflectiveSurface(ivec2(dispatch_thread_id));
+    bool is_glossy_reflection = IsGlossyReflection(roughness);
+    needs_ray = needs_ray && is_glossy_reflection && is_reflective_surface;
 
     // Also we dont need to run the denoiser on mirror reflections.
     bool needs_denoiser = needs_ray && !IsMirrorReflection(roughness);
@@ -99,15 +115,8 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     needs_ray = needs_ray && (!needs_denoiser || is_base_ray); // Make sure to not deactivate mirror reflection rays.
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
-        uint lane_mask = GetBitMaskFromPixelPosition(dispatch_thread_id);
-        uint base_mask_index = GetTemporalVarianceIndex(dispatch_thread_id & (~7u), screen_size.x); // 0b111
-        base_mask_index = subgroupBroadcastFirst(base_mask_index);
-
-        uint temporal_variance_mask_upper = LoadTemporalVarianceMask(base_mask_index);
-        uint temporal_variance_mask_lower = LoadTemporalVarianceMask(base_mask_index + 1);
-        uint temporal_variance_mask = group_thread_id.y < 4 ? temporal_variance_mask_upper : temporal_variance_mask_lower;
-
-        bool has_temporal_variance = (temporal_variance_mask & lane_mask) != 0u;
+        const float TemporalVarianceThreshold = 0.0f;
+        bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
         needs_ray = needs_ray || has_temporal_variance;
     }
 
@@ -115,7 +124,11 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     barrier();
 
     // Now we know for each thread if it needs to shoot a ray and wether or not a denoiser pass has to run on this pixel.
-    
+
+    if (is_glossy_reflection && is_reflective_surface) {
+        atomicAdd(g_tile_count, 1u);
+    }
+
     // Next we have to figure out which pixels that ray is creating the values for. Thus, if we have to copy its value horizontal, vertical or across.
     bool require_copy = !needs_ray && needs_denoiser; // Our pixel only requires a copy if we want to run a denoiser on it but don't want to shoot a ray for it.
     bool copy_horizontal = (samples_per_quad != 4) && is_base_ray && subgroupShuffle(require_copy, gl_SubgroupInvocationID ^ 1u); // 0b01 QuadReadAcrossX
@@ -126,10 +139,11 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
     uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
     uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);
-    
+
     uint base_ray_index = 0; // leaving this uninitialized causes problems in opengl (???)
     if (is_first_lane_of_wave) {
-        base_ray_index = IncrementRayCounter(wave_ray_count);
+        // increment ray counter
+        base_ray_index = atomicAdd(g_ray_counter[0], wave_ray_count);
     }
     base_ray_index = subgroupBroadcastFirst(base_ray_index);
     if (needs_ray) {
@@ -137,36 +151,33 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
         StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 
-    // Write tile meta data masks
-    bool wave_needs_denoiser = subgroupAny(needs_denoiser);
-    if (subgroupElect() && wave_needs_denoiser) {
-        atomicAdd(g_tile_count, 1u);
+    vec4 refl_output = vec4(0.0);
+    if (is_reflective_surface && !is_glossy_reflection) {
+        // TODO: Fall back to diffuse probes
     }
+    imageStore(g_refl_img, ivec2(dispatch_thread_id), refl_output);
 
-    groupMemoryBarrier(); // Wait until all waves wrote into g_tile_count
+    groupMemoryBarrier(); // Wait until all waves write into g_tile_count
     barrier();
 
-    if (group_thread_id.x == 0u && group_thread_id.y == 0u) {
-        uint tile_meta_data_index = GetTileMetaDataIndex(subgroupBroadcastFirst(dispatch_thread_id), screen_size.x);
-        StoreTileMetaDataMask(tile_meta_data_index, g_tile_count);
+    if (group_thread_id.x == 0u && group_thread_id.y == 0u && g_tile_count > 0) {
+        uint tile_index = atomicAdd(g_ray_counter[2], 1);
+        g_tile_list[tile_index] = ((dispatch_thread_id.y & 0xffffu) << 16u) | (dispatch_thread_id.x & 0xffffu);
     }
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    if (gl_GlobalInvocationID.x >= params.img_size.x || gl_GlobalInvocationID.y >= params.img_size.y) {
-        return;
-    }
-    
     uvec2 group_id = gl_WorkGroupID.xy;
     uint group_index = gl_LocalInvocationIndex;
     uvec2 group_thread_id = RemapLane8x8(group_index);
     uvec2 dispatch_thread_id = group_id * 8 + group_thread_id;
-    
-    float roughness = texelFetch(spec_texture, ivec2(dispatch_thread_id), 0).w;
-    
-    ClassifyTiles(dispatch_thread_id, group_thread_id, roughness, params.img_size, params.samples_and_guided.x, params.samples_and_guided.y != 0u);
-    
-    imageStore(roughness_image, ivec2(dispatch_thread_id), vec4(roughness));
+    if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
+        return;
+    }
+
+    float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0)).w;
+    ClassifyTiles(dispatch_thread_id, group_thread_id, roughness, g_params.img_size,
+                  g_params.samples_and_guided.x, g_params.samples_and_guided.y != 0u);
 }

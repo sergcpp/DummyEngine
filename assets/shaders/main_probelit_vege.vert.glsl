@@ -69,20 +69,20 @@ void main(void) {
     vec4 veg_params = texelFetch(instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
 
     vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
-    
+
     vec3 obj_pos_ws = model_matrix[3].xyz;
     vec4 wind_scroll = shrd_data.uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
     vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
     vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
-    
+
     vec3 vtx_pos_ls = TransformVegetation(aVertexPosition, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
     vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
-    
+
     gl_Position = shrd_data.uViewProjMatrix * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
-    
+
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(aVertexNormal.xyz, 0.0)).xyz);
     vec3 vtx_tan_ws = normalize((model_matrix * vec4(aVertexNormal.w, aVertexTangent, 0.0)).xyz);
 
@@ -90,14 +90,14 @@ void main(void) {
     aVertexNormal_ = vtx_nor_ws;
     aVertexTangent_ = vtx_tan_ws;
     aVertexUVs_ = aVertexUVs1;
-    
+
     const vec2 offsets[4] = vec2[4](
         vec2(0.0, 0.0),
         vec2(0.25, 0.0),
         vec2(0.0, 0.5),
         vec2(0.25, 0.5)
     );
-    
+
     /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
         vec3 shadow_uvs = (shrd_data.uShadowMapRegions[i].clip_from_world * vec4(vtx_pos_ws, 1.0)).xyz;
 #if defined(VULKAN)
@@ -114,11 +114,11 @@ void main(void) {
         aVertexShUVs_1[i] = shadow_uvs[1];
         aVertexShUVs_2[i] = shadow_uvs[2];
     }
-    
+
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = materials[instance.y];
     diff_texture = GET_HANDLE(mat.texture_indices[0]);
     norm_texture = GET_HANDLE(mat.texture_indices[1]);
     spec_texture = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
-} 
+}

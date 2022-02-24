@@ -24,6 +24,10 @@ const char ASSETS_BASE_PATH[] = "assets_pc";
 
 struct assets_context_t;
 
+namespace Ren {
+template <typename T, int AlignmentOfT> class SmallVectorImpl;
+}
+
 namespace Sys {
 class ThreadWorker;
 }
@@ -38,5 +42,6 @@ class Viewer : public GameBase {
     void Frame() override;
 
     static void PrepareAssets(const char *platform = "all");
-    static bool HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file);
+    static bool HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string, alignof(std::string)> &);
 };

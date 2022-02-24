@@ -22,7 +22,7 @@ layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
-    Params params;
+    Params g_params;
 };
 
 LAYOUT(location = 0) in highp vec2 aVertexUVs_;
@@ -39,8 +39,8 @@ void main() {
 
     //highp float res_depth = max(max(d1, d2), max(d3, d4));
     highp float res_depth = min(min(d1, d2), min(d3, d4));
-    if (params.linearize > 0.5) {
-        outColor = LinearizeDepth(res_depth, params.clip_info);
+    if (g_params.linearize > 0.5) {
+        outColor = LinearizeDepth(res_depth, g_params.clip_info);
     } else {
         outColor = res_depth;
     }

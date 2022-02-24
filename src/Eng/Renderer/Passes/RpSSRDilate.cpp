@@ -23,6 +23,7 @@ void RpSSRDilate::Setup(RpBuilder &builder, const ViewState *view_state, const c
         params.w = view_state->scr_res[0] / 2;
         params.h = view_state->scr_res[1] / 2;
         params.format = Ren::eTexFormat::RawRGB10_A2;
+        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

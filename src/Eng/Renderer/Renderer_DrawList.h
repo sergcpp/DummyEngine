@@ -97,7 +97,7 @@ struct EnvironmentWeak {
         env_map_name_pt = env.env_map_name_pt;
     }
 };
-static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
+//static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
 
 struct DrawList {
     uint32_t                    render_flags = 0;
