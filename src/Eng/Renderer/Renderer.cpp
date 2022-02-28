@@ -365,6 +365,12 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     const bool cur_hq_ssr_enabled = (list.render_flags & EnableSSR_HQ) != 0;
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
 
+    // Reflection settings
+    const float GlossyThreshold = 1.0f;
+    const float MirrorThreshold = 0.0001f;
+    const int SamplesPerQuad = 4;
+    const bool VarianceGuided = true;
+
     uint64_t gpu_draw_start = 0;
     if (list.render_flags & DebugTimings) {
         gpu_draw_start = GetGpuTimeBlockingUs();
@@ -712,7 +718,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail->p_next = &rp_ssr_prepare_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_classify_tiles_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, variance_tex_[0],
+            rp_ssr_classify_tiles_.Setup(rp_builder_, &view_state_, GlossyThreshold, MirrorThreshold, SamplesPerQuad,
+                                         VarianceGuided, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, variance_tex_[0],
                                          "Ray Counter", "Ray List", "Tile List", "SSR Temp 2");
             rp_tail->p_next = &rp_ssr_classify_tiles_;
             rp_tail = rp_tail->p_next;
@@ -748,24 +755,25 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             // rp_tail->p_next = &rp_ssr_vs_depth_;
             // rp_tail = rp_tail->p_next;
 
-            rp_ssr_reproject_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX,
-                                    depth_history_tex_, norm_history_tex_, "SSR Temp 2", "Refl Ray Length",
-                                    refl_history_tex_, MAIN_VELOCITY_TEX, variance_tex_[0], sample_count_tex_[1],
-                                    "Tile List", "Intersect Args", 3 * sizeof(uint32_t), "SSR Reprojected",
-                                    "Average Refl", variance_tex_[1], sample_count_tex_[0]);
+            rp_ssr_reproject_.Setup(rp_builder_, &view_state_, GlossyThreshold, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
+                                    MAIN_NORMAL_TEX, depth_history_tex_, norm_history_tex_, "SSR Temp 2",
+                                    "Refl Ray Length", refl_history_tex_, MAIN_VELOCITY_TEX, variance_tex_[0],
+                                    sample_count_tex_[1], "Tile List", "Intersect Args", 3 * sizeof(uint32_t),
+                                    "SSR Reprojected", "Average Refl", variance_tex_[1], sample_count_tex_[0]);
             rp_tail->p_next = &rp_ssr_reproject_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_prefilter_.Setup(rp_builder_, &view_state_, DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX, "Average Refl",
-                                    "SSR Temp 2", variance_tex_[1], sample_count_tex_[0], "Tile List", "Intersect Args",
-                                    3 * sizeof(uint32_t), "SSR Denoised 1", variance_tex_[0]);
+            rp_ssr_prefilter_.Setup(rp_builder_, &view_state_, GlossyThreshold, MirrorThreshold, DEPTH_HIERARCHY_TEX,
+                                    MAIN_NORMAL_TEX, "Average Refl", "SSR Temp 2", variance_tex_[1],
+                                    sample_count_tex_[0], "Tile List", "Intersect Args", 3 * sizeof(uint32_t),
+                                    "SSR Denoised 1", variance_tex_[0]);
             rp_tail->p_next = &rp_ssr_prefilter_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_resolve_temporal_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_NORMAL_TEX, "Average Refl",
-                                           "SSR Denoised 1", "SSR Reprojected", variance_tex_[0],
-                                           sample_count_tex_[0], "Tile List", "Intersect Args", 3 * sizeof(uint32_t),
-                                           refl_history_tex_, variance_tex_[1]);
+            rp_ssr_resolve_temporal_.Setup(rp_builder_, &view_state_, GlossyThreshold, MirrorThreshold, SHARED_DATA_BUF,
+                                           MAIN_NORMAL_TEX, "Average Refl", "SSR Denoised 1", "SSR Reprojected",
+                                           variance_tex_[0], sample_count_tex_[0], "Tile List", "Intersect Args",
+                                           3 * sizeof(uint32_t), refl_history_tex_, variance_tex_[1]);
             rp_tail->p_next = &rp_ssr_resolve_temporal_;
             rp_tail = rp_tail->p_next;
 

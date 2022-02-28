@@ -16,6 +16,7 @@ class RpSSRReproject : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
+    float glossy_thres_ = 1.0f;
     // Ren::WeakBufferRef sobol_buf_, scrambling_tile_buf_, ranking_tile_buf_;
 
     RpResource shared_data_buf_;
@@ -41,7 +42,7 @@ class RpSSRReproject : public RenderPassBase {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf_name[],
+    void Setup(RpBuilder &builder, const ViewState *view_state, float glossy_thres, const char shared_data_buf_name[],
                const char depth_tex_name[], const char norm_tex_name[], Ren::WeakTex2DRef depth_history_tex,
                Ren::WeakTex2DRef norm_history_tex, const char refl_tex_name[], const char raylen_tex_name[],
                Ren::WeakTex2DRef refl_history_tex, const char velocity_tex_name[],
