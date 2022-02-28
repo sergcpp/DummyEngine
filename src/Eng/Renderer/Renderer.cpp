@@ -504,14 +504,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                        status == Ren::eTexLoadStatus::Reinitialized);
             }
-
-            params.format = Ren::eTexFormat::RawRG32UI;
-            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
-            params.sampling.filter = Ren::eTexFilter::NoFilter;
-            refl_aux_history_tex_ =
-                ctx_.LoadTexture2D("Reflections Aux History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                   status == Ren::eTexLoadStatus::Reinitialized);
         } else {
             depth_history_tex_ = {};
             norm_history_tex_ = {};
@@ -520,7 +512,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 variance_tex_[i] = {};
                 sample_count_tex_[i] = {};
             }
-            refl_aux_history_tex_ = {};
         }
 
         view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};

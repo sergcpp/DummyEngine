@@ -86,7 +86,8 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *
 #else
         params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+        // Ren::eTexUsage::Storage is needed for rt debugging, consider removing this
+        params.usage = (Ren::eTexUsage::Storage | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
 

@@ -102,7 +102,7 @@ class Renderer {
 
     FrameBuf probe_sample_buf_;
     Ren::Tex2DRef taa_history_tex_, depth_history_tex_, norm_history_tex_, refl_history_tex_, sample_count_tex_[2],
-        variance_tex_[2], refl_aux_history_tex_, down_tex_4x_;
+        variance_tex_[2], down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     bool taa_enabled_ = false, dof_enabled_ = false;
 
