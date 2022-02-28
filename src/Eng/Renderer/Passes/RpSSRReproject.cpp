@@ -11,15 +11,17 @@
 
 #include "../assets/shaders/internal/ssr_reproject_interface.glsl"
 
-void RpSSRReproject::Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf_name[],
-                           const char depth_tex_name[], const char norm_tex_name[], Ren::WeakTex2DRef depth_history_tex,
-                           Ren::WeakTex2DRef norm_history_tex, const char refl_tex_name[], const char raylen_tex_name[],
-                           Ren::WeakTex2DRef refl_history_tex, const char velocity_tex_name[],
-                           Ren::WeakTex2DRef variance_history_tex, Ren::WeakTex2DRef sample_count_history_tex,
-                           const char tile_list_buf_name[], const char indir_args_name[], uint32_t indir_args_off,
+void RpSSRReproject::Setup(RpBuilder &builder, const ViewState *view_state, const float glossy_thres,
+                           const char shared_data_buf_name[], const char depth_tex_name[], const char norm_tex_name[],
+                           Ren::WeakTex2DRef depth_history_tex, Ren::WeakTex2DRef norm_history_tex,
+                           const char refl_tex_name[], const char raylen_tex_name[], Ren::WeakTex2DRef refl_history_tex,
+                           const char velocity_tex_name[], Ren::WeakTex2DRef variance_history_tex,
+                           Ren::WeakTex2DRef sample_count_history_tex, const char tile_list_buf_name[],
+                           const char indir_args_name[], uint32_t indir_args_off,
                            const char out_reprojected_refl_tex_name[], const char out_avg_refl_tex_name[],
                            Ren::WeakTex2DRef out_variance_tex, Ren::WeakTex2DRef out_sample_count_tex) {
     view_state_ = view_state;
+    glossy_thres_ = glossy_thres;
 
     shared_data_buf_ =
         builder.ReadBuffer(shared_data_buf_name, Ren::eResState::UniformBuffer, Ren::eStageBits::ComputeShader, *this);
@@ -137,7 +139,7 @@ void RpSSRReproject::Execute(RpBuilder &builder) {
 
     SSRReproject::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.thresholds = Ren::Vec2f{GLOSSY_THRESHOLD, MIRROR_THRESHOLD};
+    uniform_params.thresholds = Ren::Vec2f{glossy_thres_, 0.0f};
 
     Ren::DispatchComputeIndirect(pi_ssr_reproject_, *indir_args_buf.ref, indir_args_off_, bindings, COUNT_OF(bindings),
                                  &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
