@@ -368,7 +368,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     // Reflection settings
     const float GlossyThreshold = 1.0f;
     const float MirrorThreshold = 0.0001f;
-    const int SamplesPerQuad = 4;
+    const int SamplesPerQuad = 1;
     const bool VarianceGuided = true;
 
     uint64_t gpu_draw_start = 0;
