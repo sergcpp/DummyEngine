@@ -3,7 +3,8 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpSSRPrepare::Setup(RpBuilder &builder, const ViewState *view_state, const char ray_counter_tex_name[], const char raylen_tex_name[]) {
+void RpSSRPrepare::Setup(RpBuilder &builder, const ViewState *view_state, const char ray_counter_buf_name[],
+                         const char raylen_tex_name[]) {
     view_state_ = view_state;
 
     { // ray counter
@@ -12,7 +13,7 @@ void RpSSRPrepare::Setup(RpBuilder &builder, const ViewState *view_state, const 
         desc.size = 6 * sizeof(uint32_t);
 
         ray_counter_buf_ =
-            builder.WriteBuffer(ray_counter_tex_name, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
+            builder.WriteBuffer(ray_counter_buf_name, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
     }
     { // Ray length texture
         Ren::Tex2DParams params;

@@ -558,6 +558,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 #if defined(USE_VK_RENDER)
     bindless_tex.textures_descr_sets = &persistent_data.textures_descr_sets[ctx_.backend_frame()];
     bindless_tex.rt_textures_descr_set = persistent_data.rt_textures_descr_sets[ctx_.backend_frame()];
+    bindless_tex.rt_inline_textures_descr_set = persistent_data.rt_inline_textures_descr_sets[ctx_.backend_frame()];
 #elif defined(USE_GL_RENDER)
     bindless_tex.textures_buf = persistent_data.textures_buf;
 #endif
@@ -744,8 +745,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                                          ranking_tile_1spp_buf_, list, ctx_.default_vertex_buf1(),
                                          ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), &acc_struct_data,
                                          &bindless_tex, persistent_data.materials_buf, SHARED_DATA_BUF,
-                                         DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX, dummy_black_, "Ray RT List",
-                                         "RT Dispatch Args", "SSR Temp 2", "Refl Ray Length");
+                                         DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX, dummy_black_, "Ray Counter",
+                                         "Ray RT List", "RT Dispatch Args", "SSR Temp 2", "Refl Ray Length");
                 rp_tail->p_next = &rp_rt_reflections_;
                 rp_tail = rp_tail->p_next;
             }
@@ -779,7 +780,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             if (list.render_flags & DebugDenoise) {
                 rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
-                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2", refl_out_name);
+                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2",
+                                       refl_out_name);
             } else {
                 rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
                                        MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, refl_history_tex_,

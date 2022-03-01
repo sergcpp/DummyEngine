@@ -151,6 +151,7 @@ void Viewer::Frame() {
 
 #if defined(USE_VK_RENDER)
     vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE, UINT64_MAX);
+    vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
     Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
@@ -224,8 +225,8 @@ void Viewer::Frame() {
 
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 
-    VkSemaphore wait_semaphores[] = {api_ctx->image_avail_semaphores[api_ctx->backend_frame]};
-    VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    const VkSemaphore wait_semaphores[] = {api_ctx->image_avail_semaphores[api_ctx->backend_frame]};
+    const VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 
     submit_info.waitSemaphoreCount = 1;
     submit_info.pWaitSemaphores = wait_semaphores;
@@ -234,11 +235,8 @@ void Viewer::Frame() {
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    VkSemaphore signal_semaphores[] = {api_ctx->render_finished_semaphores[api_ctx->backend_frame]};
     submit_info.signalSemaphoreCount = 1;
-    submit_info.pSignalSemaphores = signal_semaphores;
-
-    vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
+    submit_info.pSignalSemaphores = &api_ctx->render_finished_semaphores[api_ctx->backend_frame];
 
     res = vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, api_ctx->in_flight_fences[api_ctx->backend_frame]);
     if (res != VK_SUCCESS) {
@@ -248,7 +246,7 @@ void Viewer::Frame() {
     VkPresentInfoKHR present_info = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 
     present_info.waitSemaphoreCount = 1;
-    present_info.pWaitSemaphores = signal_semaphores;
+    present_info.pWaitSemaphores = &api_ctx->render_finished_semaphores[api_ctx->backend_frame];
 
     present_info.swapchainCount = 1;
     present_info.pSwapchains = &api_ctx->swapchain;

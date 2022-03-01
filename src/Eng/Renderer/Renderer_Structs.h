@@ -303,7 +303,7 @@ static_assert(sizeof(RTGeoInstance) == 32, "!");
 struct BindlessTextureData {
 #if defined(USE_VK_RENDER)
     const Ren::SmallVectorImpl<VkDescriptorSet> *textures_descr_sets;
-    VkDescriptorSet rt_textures_descr_set;
+    VkDescriptorSet rt_textures_descr_set, rt_inline_textures_descr_set;
 #elif defined(USE_GL_RENDER)
     Ren::WeakBufferRef textures_buf;
 #endif
