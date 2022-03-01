@@ -99,7 +99,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
 #ifndef NDEBUG
     const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
-    const int enabled_layers_count = 2;
+    const int enabled_layers_count = COUNT_OF(enabled_layers);
 #else
     const char **enabled_layers = nullptr;
     const int enabled_layers_count = 0;
@@ -133,14 +133,14 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     if (!ChooseVkPhysicalDevice(api_ctx_->physical_device, api_ctx_->device_properties, api_ctx_->mem_properties,
                                 api_ctx_->present_family_index, api_ctx_->graphics_family_index,
-                                api_ctx_->raytracing_supported, preferred_device, api_ctx_->instance, api_ctx_->surface,
-                                log)) {
+                                api_ctx_->raytracing_supported, api_ctx_->ray_query_supported, preferred_device,
+                                api_ctx_->instance, api_ctx_->surface, log)) {
         return false;
     }
 
     if (!InitVkDevice(api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
-                      api_ctx_->graphics_family_index, api_ctx_->raytracing_supported, enabled_layers,
-                      enabled_layers_count, log)) {
+                      api_ctx_->graphics_family_index, api_ctx_->raytracing_supported, api_ctx_->ray_query_supported,
+                      enabled_layers, enabled_layers_count, log)) {
         return false;
     }
 
@@ -183,6 +183,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     log_->Info("===========================================");
 
     capabilities.raytracing = api_ctx_->raytracing_supported;
+    capabilities.ray_query = api_ctx_->ray_query_supported;
     CheckDeviceCapabilities();
 
     default_memory_allocs_.reset(new MemoryAllocators(

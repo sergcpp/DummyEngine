@@ -40,12 +40,10 @@ layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform writeonly restrict image2D o
 
 layout(location = 0) rayPayloadEXT RayPayload pld;
 
-
 //
 // https://eheitzresearch.wordpress.com/762-2/
 //
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension)
-{
+float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
     // wrap arguments
     uint pixel_i = pixel.x & 127u;
     uint pixel_j = pixel.y & 127u;
@@ -132,18 +130,18 @@ void main() {
         const float t_min = 0.001;
         const float t_max = 1000.0;
 
-        traceRayEXT(tlas,           // topLevel
-                ray_flags,          // rayFlags
-                0xff,               // cullMask
-                0,                  // sbtRecordOffset
-                0,                  // sbtRecordStride
-                0,                  // missIndex
-                ray_origin_ws.xyz,  // origin
-                t_min,              // Tmin
-                refl_ray_ws.xyz,    // direction
-                t_max,              // Tmax
-                0                   // payload
-                );
+        traceRayEXT(tlas,               // topLevel
+                    ray_flags,          // rayFlags
+                    0xff,               // cullMask
+                    0,                  // sbtRecordOffset
+                    0,                  // sbtRecordStride
+                    0,                  // missIndex
+                    ray_origin_ws.xyz,  // origin
+                    t_min,              // Tmin
+                    refl_ray_ws.xyz,    // direction
+                    t_max,              // Tmax
+                    0                   // payload
+                    );
     }
 
     imageStore(out_color_img, icoord, vec4(pld.col.rgb, 1.0));
