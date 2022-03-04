@@ -1043,4 +1043,16 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     __itt_task_end(__g_itt_domain);
 }
 
+void Renderer::InitBackendInfo() {
+    backend_info_.pass_timings.clear();
+    for (auto &t : rp_builder_.pass_timings_[ctx_.backend_frame()]) {
+        PassTiming &new_t = backend_info_.pass_timings.emplace_back();
+        new_t.name = t.name;
+        new_t.duration = ctx_.GetTimestampIntervalDuration(t.query_beg, t.query_end);
+    }
+
+    backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
+    backend_info_.cpu_end_timepoint_us = backend_cpu_end_;
+}
+
 #undef BBOX_POINTS

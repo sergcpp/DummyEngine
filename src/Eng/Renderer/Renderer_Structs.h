@@ -232,13 +232,17 @@ struct FrontendInfo {
              items_assignment_time_us = 0;
 };
 
+struct PassTiming {
+    std::string name;
+    uint64_t duration;
+};
+
 struct BackendInfo {
     uint64_t cpu_start_timepoint_us = 0, cpu_end_timepoint_us = 0;
     uint64_t gpu_start_timepoint_us = 0, gpu_end_timepoint_us = 0;
-    uint32_t skinning_time_us = 0, shadow_time_us = 0, depth_opaque_pass_time_us = 0, ao_pass_time_us = 0,
-             opaque_pass_time_us = 0, transp_pass_time_us = 0, refl_pass_time_us = 0, taa_pass_time_us = 0,
-             blur_pass_time_us = 0, blit_pass_time_us = 0;
     int64_t gpu_cpu_time_diff_us = 0;
+
+    Ren::SmallVector<PassTiming, 256> pass_timings;
 
     uint32_t shadow_draw_calls_count = 0, depth_fill_draw_calls_count = 0, opaque_draw_calls_count = 0;
 

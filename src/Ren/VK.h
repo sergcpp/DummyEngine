@@ -187,6 +187,9 @@
 
 #define vkCreateRayTracingPipelinesKHR ren_vkCreateRayTracingPipelinesKHR
 
+#define vkCreateQueryPool ren_vkCreateQueryPool
+#define vkCmdWriteTimestamp ren_vkCmdWriteTimestamp
+
 extern "C" {
 EXTERN_FUNC PFN_vkCreateInstance ren_vkCreateInstance;
 EXTERN_FUNC PFN_vkDestroyInstance ren_vkDestroyInstance;
@@ -341,6 +344,7 @@ EXTERN_FUNC PFN_vkCmdCopyImage ren_vkCmdCopyImage;
 EXTERN_FUNC PFN_vkCmdDispatch ren_vkCmdDispatch;
 EXTERN_FUNC PFN_vkCmdDispatchIndirect ren_vkCmdDispatchIndirect;
 EXTERN_FUNC PFN_vkCmdResetQueryPool ren_vkCmdResetQueryPool;
+EXTERN_FUNC PFN_vkCmdWriteTimestamp ren_vkCmdWriteTimestamp;
 
 EXTERN_FUNC PFN_vkCmdBuildAccelerationStructuresKHR ren_vkCmdBuildAccelerationStructuresKHR;
 EXTERN_FUNC PFN_vkCmdWriteAccelerationStructuresPropertiesKHR ren_vkCmdWriteAccelerationStructuresPropertiesKHR;

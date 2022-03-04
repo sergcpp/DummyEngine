@@ -198,6 +198,7 @@ bool Ren::LoadVulkan(ILog *log) {
     LOAD_VK_FUN(vkCmdDispatch)
     LOAD_VK_FUN(vkCmdDispatchIndirect)
     LOAD_VK_FUN(vkCmdResetQueryPool)
+    LOAD_VK_FUN(vkCmdWriteTimestamp)
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     LOAD_VK_FUN(vkCreateWin32SurfaceKHR)

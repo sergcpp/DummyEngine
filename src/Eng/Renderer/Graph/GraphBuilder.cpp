@@ -571,6 +571,10 @@ void RpBuilder::Execute(RenderPassBase *first_pass) {
     rast_state_.Apply();
 #endif
 
+    pass_timings_[ctx_.backend_frame()].clear();
+    // Write timestamp at the beginning of execution
+    const int query_beg = WriteTimestamp(true);
+
     RenderPassBase *cur_pass = first_pass;
     while (cur_pass) {
 #if !defined(NDEBUG) && defined(USE_GL_RENDER)
@@ -579,6 +583,11 @@ void RpBuilder::Execute(RenderPassBase *first_pass) {
 
         Ren::DebugMarker _(ctx_.current_cmd_buf(), cur_pass->name());
 
+        // Start timestamp
+        pass_timing_t &pass_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
+        pass_interval.name = cur_pass->name();
+        pass_interval.query_beg = WriteTimestamp(true);
+
         AllocateNeededResources(cur_pass);
         InsertResourceTransitions(cur_pass);
 
@@ -586,7 +595,16 @@ void RpBuilder::Execute(RenderPassBase *first_pass) {
         cur_pass->input_.clear();
         cur_pass->output_.clear();
         cur_pass = cur_pass->p_next;
+
+        // End timestamp
+        pass_interval.query_end = WriteTimestamp(false);
     }
+
+    // Write timestamp at the end of execution
+    pass_timing_t &initial_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
+    initial_interval.name = "GRAPH TOTAL";
+    initial_interval.query_beg = query_beg;
+    initial_interval.query_end = WriteTimestamp(false);
 }
 
 void RpBuilder::InsertResourceTransitions(RenderPassBase *pass) {
