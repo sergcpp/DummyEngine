@@ -557,8 +557,9 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
                              VkCommandBuffer &setup_cmd_buf, VkCommandBuffer draw_cmd_bufs[MaxFramesInFlight],
                              VkSemaphore image_avail_semaphores[MaxFramesInFlight],
                              VkSemaphore render_finished_semaphores[MaxFramesInFlight],
-                             VkFence in_flight_fences[MaxFramesInFlight], VkQueue &present_queue,
-                             VkQueue &graphics_queue, VkDevice device, uint32_t present_family_index, ILog *log) {
+                             VkFence in_flight_fences[MaxFramesInFlight], VkQueryPool query_pools[MaxFramesInFlight],
+                             VkQueue &present_queue, VkQueue &graphics_queue, VkDevice device,
+                             uint32_t present_family_index, ILog *log) {
     vkGetDeviceQueue(device, present_family_index, 0, &present_queue);
     graphics_queue = present_queue;
 
@@ -622,6 +623,20 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
             res = vkCreateFence(device, &fence_info, nullptr, &in_flight_fences[i]);
             if (res != VK_SUCCESS) {
                 log->Error("Failed to create fence!");
+                return false;
+            }
+        }
+    }
+
+    { // create query pools
+        VkQueryPoolCreateInfo pool_info = {VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO};
+        pool_info.queryCount = MaxTimestampQueries;
+        pool_info.queryType = VK_QUERY_TYPE_TIMESTAMP;
+
+        for (int i = 0; i < MaxFramesInFlight; ++i) {
+            res = vkCreateQueryPool(device, &pool_info, nullptr, &query_pools[i]);
+            if (res != VK_SUCCESS) {
+                log->Error("Failed to create query pool!");
                 return false;
             }
         }
@@ -771,6 +786,22 @@ void Ren::EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuf
 
 void Ren::FreeSingleTimeCommandBuffer(VkDevice device, VkCommandPool temp_command_pool, VkCommandBuffer command_buf) {
     vkFreeCommandBuffers(device, temp_command_pool, 1, &command_buf);
+}
+
+bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {
+    VkQueryPool query_pool = api_ctx->query_pools[i];
+    const uint32_t query_count = uint32_t(api_ctx->query_counts[i]);
+    if (!query_count) {
+        // nothing to readback
+        return true;
+    }
+
+    const VkResult res = vkGetQueryPoolResults(api_ctx->device, query_pool, 0, query_count,
+                                               query_count * sizeof(uint64_t), api_ctx->query_results[i],
+                                               sizeof(uint64_t), VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_64_BIT);
+    api_ctx->query_counts[api_ctx->backend_frame] = 0;
+
+    return (res == VK_SUCCESS);
 }
 
 void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {

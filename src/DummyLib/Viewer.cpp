@@ -153,6 +153,7 @@ void Viewer::Frame() {
     vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE, UINT64_MAX);
     vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
+    Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
     Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
     uint32_t next_image_index = 0;
@@ -174,6 +175,9 @@ void Viewer::Frame() {
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+
+    vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame], api_ctx->query_pools[api_ctx->backend_frame], 0,
+                        Ren::MaxTimestampQueries);
 
     { // change layout from present_src to attachment_optimal
         VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};

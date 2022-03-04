@@ -25,10 +25,9 @@ class DebugInfoUI : public Gui::BaseElement {
     } front_info_smooth_;
 
     struct {
-        float skinning_time_ms = 0.0f, vegetation_time_ms = 0.0f, shadow_time_ms = 0.0f,
-              depth_opaque_pass_time_ms = 0.0f, ao_pass_time_ms = 0.0f, opaque_pass_time_ms = 0.0f,
-              transp_pass_time_ms = 0.0f, refl_pass_time_ms = 0.0f, taa_pass_time_ms = 0.0f, blur_pass_time_ms = 0.0f,
-              blit_pass_time_ms = 0.0f;
+        std::string pass_names[256];
+        float pass_timings_ms[256] = {};
+        int pass_timings_count = 0;
 
         float cpu_total_ms = 0.0f, gpu_total_ms = 0.0f;
 

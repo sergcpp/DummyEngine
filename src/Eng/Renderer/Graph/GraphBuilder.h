@@ -134,6 +134,8 @@ class RpBuilder {
     void HandleResourceTransition(const RpResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
                                   Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
 
+    int WriteTimestamp(bool start);
+
   public:
     RpBuilder(Ren::Context &ctx, ShaderLoader &sh) : ctx_(ctx), sh_(sh) {}
 
@@ -185,4 +187,11 @@ class RpBuilder {
     void Execute(RenderPassBase *first_pass);
 
     Ren::SmallVector<Ren::SamplerRef, 64> temp_samplers;
+
+    struct pass_timing_t {
+        std::string name;
+        int query_beg, query_end;
+    };
+
+    Ren::SmallVector<pass_timing_t, 256> pass_timings_[Ren::MaxFramesInFlight];
 };

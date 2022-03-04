@@ -43,5 +43,5 @@ class RpSSRResolveTemporal : public RenderPassBase {
                uint32_t indir_args_off, Ren::WeakTex2DRef out_refl_tex, Ren::WeakTex2DRef out_variance_tex);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "SSR RESOLVE TEMPORAL"; }
+    const char *name() const override { return "SSR TEMPORAL"; }
 };

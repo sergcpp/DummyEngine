@@ -34,5 +34,5 @@ class RpSSRClassifyTiles : public RenderPassBase {
                const char tile_list_name[], const char refl_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "SSR CLASSIFY TILES"; }
+    const char *name() const override { return "SSR CLASSIFY"; }
 };

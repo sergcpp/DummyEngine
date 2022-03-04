@@ -78,5 +78,5 @@ class RpOpaque : public RenderPassBase {
     // TODO: remove this
     int alpha_blend_start_index_ = -1;
 
-    const char *name() const override { return "OPAQUE PASS"; }
+    const char *name() const override { return "OPAQUE"; }
 };

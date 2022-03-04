@@ -45,6 +45,8 @@ Ren::Context::~Context() {
             vkDestroyFence(api_ctx_->device, api_ctx_->in_flight_fences[i], nullptr);
             vkDestroySemaphore(api_ctx_->device, api_ctx_->render_finished_semaphores[i], nullptr);
             vkDestroySemaphore(api_ctx_->device, api_ctx_->image_avail_semaphores[i], nullptr);
+
+            vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[i], nullptr);
         }
 
         default_memory_allocs_.reset();
@@ -152,8 +154,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     if (!InitCommandBuffers(api_ctx_->command_pool, api_ctx_->temp_command_pool, api_ctx_->setup_cmd_buf,
                             api_ctx_->draw_cmd_buf, api_ctx_->image_avail_semaphores,
-                            api_ctx_->render_finished_semaphores, api_ctx_->in_flight_fences, api_ctx_->present_queue,
-                            api_ctx_->graphics_queue, api_ctx_->device, api_ctx_->present_family_index, log)) {
+                            api_ctx_->render_finished_semaphores, api_ctx_->in_flight_fences, api_ctx_->query_pools,
+                            api_ctx_->present_queue, api_ctx_->graphics_queue, api_ctx_->device,
+                            api_ctx_->present_family_index, log)) {
         return false;
     }
 
@@ -333,6 +336,11 @@ void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
 }
 
 void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
+
+uint64_t Ren::Context::GetTimestampIntervalDuration(const int query_beg, const int query_end) const {
+    return api_ctx_->query_results[api_ctx_->backend_frame][query_end] -
+           api_ctx_->query_results[api_ctx_->backend_frame][query_beg];
+}
 
 #ifdef _MSC_VER
 #pragma warning(pop)
