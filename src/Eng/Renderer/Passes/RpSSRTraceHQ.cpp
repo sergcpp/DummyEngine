@@ -38,7 +38,7 @@ void RpSSRTraceHQ::Setup(RpBuilder &builder, const ViewState *view_state, Ren::W
     indir_args_buf_ =
         builder.ReadBuffer(indir_args_name, Ren::eResState::IndirectArgument, Ren::eStageBits::DrawIndirect, *this);
 
-    out_ray_counter_buf_ =
+    inout_ray_counter_buf_ =
         builder.WriteBuffer(ray_counter_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
     out_refl_tex_ =
         builder.WriteTexture(out_refl_tex_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
@@ -92,7 +92,7 @@ void RpSSRTraceHQ::Setup(RpBuilder &builder, const ViewState *view_state, Ren::W
     indir_args_buf_ =
         builder.ReadBuffer(indir_args_name, Ren::eResState::IndirectArgument, Ren::eStageBits::DrawIndirect, *this);
 
-    out_ray_counter_buf_ =
+    inout_ray_counter_buf_ =
         builder.WriteBuffer(ray_counter_name, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
     out_refl_tex_ =
         builder.WriteTexture(out_refl_tex, Ren::eResState::UnorderedAccess, Ren::eStageBits::ComputeShader, *this);
@@ -145,7 +145,7 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
 
     RpAllocTex &out_refl_tex = builder.GetWriteTexture(out_refl_tex_);
     RpAllocTex &out_raylen_tex = builder.GetWriteTexture(out_raylen_tex_);
-    RpAllocBuf &out_ray_counter_buf = builder.GetWriteBuffer(out_ray_counter_buf_);
+    RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(inout_ray_counter_buf_);
     RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(out_ray_list_buf_);
 
     LazyInit(builder.ctx(), builder.sh());
@@ -153,7 +153,7 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    // Initialize texel buffers
+    // Initialize texel buffers if needed
     if (!sobol_buf.tbos[0]) {
         sobol_buf.tbos[0] =
             ctx.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::RawR32UI, 0, sobol_buf.ref->size());
@@ -179,7 +179,7 @@ void RpSSRTraceHQ::Execute(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, SSRTraceHQ::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
         {Ren::eBindTarget::Image, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
-        {Ren::eBindTarget::SBuf, SSRTraceHQ::RAY_COUNTER_SLOT, *out_ray_counter_buf.ref},
+        {Ren::eBindTarget::SBuf, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
     SSRTraceHQ::Params uniform_params;

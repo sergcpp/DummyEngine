@@ -104,10 +104,13 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
 #ifndef NDEBUG
     const VkValidationFeatureEnableEXT enabled_validation_features[] = {
-        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+        // VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
+        //  VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
+    };
 
     VkValidationFeaturesEXT validation_features = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
-    validation_features.enabledValidationFeatureCount = 1;
+    validation_features.enabledValidationFeatureCount = COUNT_OF(enabled_validation_features);
     validation_features.pEnabledValidationFeatures = enabled_validation_features;
 
     instance_info.pNext = &validation_features;
@@ -171,8 +174,8 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
 bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &out_device_properties,
                                  VkPhysicalDeviceMemoryProperties &out_mem_properties,
                                  uint32_t &out_present_family_index, uint32_t &out_graphics_family_index,
-                                 bool &out_raytracing_supported, const char *preferred_device, VkInstance instance,
-                                 VkSurfaceKHR surface, ILog *log) {
+                                 bool &out_raytracing_supported, bool &out_ray_query_supported,
+                                 const char *preferred_device, VkInstance instance, VkSurfaceKHR surface, ILog *log) {
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
 
@@ -185,7 +188,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
         VkPhysicalDeviceProperties device_properties = {};
         vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
 
-        bool acc_struct_supported = false, raytracing_supported = false;
+        bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -206,6 +209,8 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                     acc_struct_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME) == 0) {
                     raytracing_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME) == 0) {
+                    ray_query_supported = true;
                 }
 
                 if (swapchain_supported && acc_struct_supported && raytracing_supported) {
@@ -283,6 +288,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 out_present_family_index = present_family_index;
                 out_graphics_family_index = graphics_family_index;
                 out_raytracing_supported = (acc_struct_supported && raytracing_supported);
+                out_ray_query_supported = ray_query_supported;
             }
         }
     }
@@ -298,8 +304,8 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
 }
 
 bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint32_t present_family_index,
-                       uint32_t graphics_family_index, bool enable_raytracing, const char *enabled_layers[],
-                       int enabled_layers_count, ILog *log) {
+                       uint32_t graphics_family_index, bool enable_raytracing, bool enable_ray_query,
+                       const char *enabled_layers[], int enabled_layers_count, ILog *log) {
     VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
     const float queue_priorities[] = {1.0f};
 
@@ -347,6 +353,9 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
         device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
         device_extensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
         device_extensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
+        if (enable_ray_query) {
+            device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+        }
     }
 
     device_info.enabledExtensionCount = uint32_t(device_extensions.size());
@@ -383,6 +392,9 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
     rt_pipeline_features.rayTracingPipeline = VK_TRUE;
     rt_pipeline_features.rayTracingPipelineTraceRaysIndirect = VK_TRUE;
 
+    VkPhysicalDeviceRayQueryFeaturesKHR rt_query_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+    rt_query_features.rayQuery = VK_TRUE;
+
     VkPhysicalDeviceAccelerationStructureFeaturesKHR acc_struct_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
     acc_struct_features.accelerationStructure = VK_TRUE;
@@ -396,6 +408,11 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
 
         (*pp_next) = &acc_struct_features;
         pp_next = &acc_struct_features.pNext;
+
+        if (enable_ray_query) {
+            (*pp_next) = &rt_query_features;
+            pp_next = &rt_query_features.pNext;
+        }
     }
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
@@ -537,7 +554,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
 }
 
 bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_command_pool,
-                             VkCommandBuffer &setup_cmd_buf, VkCommandBuffer draw_cmd_buf[MaxFramesInFlight],
+                             VkCommandBuffer &setup_cmd_buf, VkCommandBuffer draw_cmd_bufs[MaxFramesInFlight],
                              VkSemaphore image_avail_semaphores[MaxFramesInFlight],
                              VkSemaphore render_finished_semaphores[MaxFramesInFlight],
                              VkFence in_flight_fences[MaxFramesInFlight], VkQueue &present_queue,
@@ -578,12 +595,11 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
         return false;
     }
 
-    for (int i = 0; i < MaxFramesInFlight; i++) {
-        res = vkAllocateCommandBuffers(device, &cmd_buf_alloc_info, &draw_cmd_buf[i]);
-        if (res != VK_SUCCESS) {
-            log->Error("Failed to create command buffer!");
-            return false;
-        }
+    cmd_buf_alloc_info.commandBufferCount = MaxFramesInFlight;
+    res = vkAllocateCommandBuffers(device, &cmd_buf_alloc_info, draw_cmd_bufs);
+    if (res != VK_SUCCESS) {
+        log->Error("Failed to create command buffer!");
+        return false;
     }
 
     { // create fences
@@ -817,3 +833,27 @@ void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {
     }
     api_ctx->acc_structs_to_destroy[i].clear();
 }
+
+void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(Ren::ApiContext *api_ctx) {
+    // Finish command buffer
+    vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
+
+    { // Submit commands
+        VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+
+        submit_info.commandBufferCount = 1;
+        submit_info.pCommandBuffers = &api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+
+        VkResult res = vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+        assert(res == VK_SUCCESS);
+    }
+
+    // Wait for completion
+    vkDeviceWaitIdle(api_ctx->device);
+
+    // Restart command buffer
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+};

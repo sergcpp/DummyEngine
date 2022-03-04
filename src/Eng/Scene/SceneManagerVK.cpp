@@ -33,48 +33,54 @@ void SceneManager::UpdateMaterialsBuffer() {
     using namespace SceneManagerInternal;
 
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
-    auto &persistant_data = scene_data_.persistent_data;
+    auto &pers_data = scene_data_.persistent_data;
 
     const uint32_t max_mat_count = scene_data_.materials.capacity();
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
-    if (!persistant_data.materials_buf) {
-        persistant_data.materials_buf =
-            ren_ctx_.LoadBuffer("Materials Buffer", Ren::eBufType::Storage, req_mat_buf_size);
+    if (!pers_data.materials_buf) {
+        pers_data.materials_buf = ren_ctx_.LoadBuffer("Materials Buffer", Ren::eBufType::Storage, req_mat_buf_size);
     }
 
-    if (persistant_data.materials_buf->size() < req_mat_buf_size) {
-        persistant_data.materials_buf->Resize(req_mat_buf_size);
+    if (pers_data.materials_buf->size() < req_mat_buf_size) {
+        pers_data.materials_buf->Resize(req_mat_buf_size);
     }
 
     const uint32_t max_tex_count = std::max(1u, REN_MAX_TEX_PER_MATERIAL * max_mat_count);
     // const uint32_t req_tex_buf_size = max_tex_count * sizeof(GLuint64);
 
-    if (!persistant_data.textures_descr_pool) {
-        persistant_data.textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
+    if (!pers_data.textures_descr_pool) {
+        pers_data.textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
     }
 
     const int materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
-    if (persistant_data.textures_descr_pool->descr_count(Ren::eDescrType::CombinedImageSampler) < max_tex_count) {
+    if (pers_data.textures_descr_pool->descr_count(Ren::eDescrType::CombinedImageSampler) < max_tex_count) {
         assert(materials_per_descriptor > 0);
         const int needed_descriptors_count = (max_mat_count + materials_per_descriptor - 1) / materials_per_descriptor;
 
         Ren::DescrSizes descr_sizes;
         descr_sizes.img_sampler_count =
             Ren::MaxFramesInFlight * needed_descriptors_count * api_ctx->max_combined_image_samplers;
-        persistant_data.textures_descr_pool->Init(descr_sizes,
-                                                  Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
+        pers_data.textures_descr_pool->Init(descr_sizes,
+                                            Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
 
         if (ren_ctx_.capabilities.raytracing) {
             assert(needed_descriptors_count == 1); // we have to be able to bind all textures at once
-            if (!persistant_data.rt_textures_descr_pool) {
-                persistant_data.rt_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
+            if (!pers_data.rt_textures_descr_pool) {
+                pers_data.rt_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
             }
-            persistant_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
+            pers_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
+
+            if (ren_ctx_.capabilities.ray_query) {
+                if (!pers_data.rt_inline_textures_descr_pool) {
+                    pers_data.rt_inline_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
+                }
+                pers_data.rt_inline_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
+            }
         }
 
-        if (!persistant_data.textures_descr_layout) {
+        if (!pers_data.textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
             textures_binding.binding = REN_BINDLESS_TEX_SLOT;
             textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -93,44 +99,73 @@ void SceneManager::UpdateMaterialsBuffer() {
             extended_info.pBindingFlags = &bind_flag;
             layout_info.pNext = &extended_info;
 
-            const VkResult res = vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
-                                                             &persistant_data.textures_descr_layout);
+            const VkResult res =
+                vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr, &pers_data.textures_descr_layout);
             assert(res == VK_SUCCESS);
         }
 
-        if (ren_ctx_.capabilities.raytracing && !persistant_data.rt_textures_descr_layout) {
-            VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = REN_BINDLESS_TEX_SLOT;
-            textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
-            textures_binding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+        if (ren_ctx_.capabilities.raytracing) {
+            if (!pers_data.rt_textures_descr_layout) {
+                VkDescriptorSetLayoutBinding textures_binding = {};
+                textures_binding.binding = REN_BINDLESS_TEX_SLOT;
+                textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
+                textures_binding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
 
-            VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-            layout_info.bindingCount = 1;
-            layout_info.pBindings = &textures_binding;
+                VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+                layout_info.bindingCount = 1;
+                layout_info.pBindings = &textures_binding;
 
-            VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+                VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
 
-            VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
-                VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
-            extended_info.bindingCount = 1u;
-            extended_info.pBindingFlags = &bind_flag;
-            layout_info.pNext = &extended_info;
+                VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
+                    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
+                extended_info.bindingCount = 1u;
+                extended_info.pBindingFlags = &bind_flag;
+                layout_info.pNext = &extended_info;
 
-            const VkResult res = vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
-                                                             &persistant_data.rt_textures_descr_layout);
-            assert(res == VK_SUCCESS);
+                const VkResult res = vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
+                                                                 &pers_data.rt_textures_descr_layout);
+                assert(res == VK_SUCCESS);
+            }
+            if (ren_ctx_.capabilities.ray_query) {
+                VkDescriptorSetLayoutBinding textures_binding = {};
+                textures_binding.binding = REN_BINDLESS_TEX_SLOT;
+                textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
+                textures_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+                VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+                layout_info.bindingCount = 1;
+                layout_info.pBindings = &textures_binding;
+
+                VkDescriptorBindingFlagsEXT bind_flag = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT_EXT;
+
+                VkDescriptorSetLayoutBindingFlagsCreateInfoEXT extended_info = {
+                    VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO_EXT};
+                extended_info.bindingCount = 1u;
+                extended_info.pBindingFlags = &bind_flag;
+                layout_info.pNext = &extended_info;
+
+                const VkResult res = vkCreateDescriptorSetLayout(api_ctx->device, &layout_info, nullptr,
+                                                                 &pers_data.rt_inline_textures_descr_layout);
+                assert(res == VK_SUCCESS);
+            }
         }
 
         for (int j = 0; j < Ren::MaxFramesInFlight; ++j) {
             for (int k = 0; k < needed_descriptors_count; ++k) {
-                persistant_data.textures_descr_sets[j].push_back(
-                    persistant_data.textures_descr_pool->Alloc(persistant_data.textures_descr_layout));
-                assert(persistant_data.textures_descr_sets[j].back());
+                pers_data.textures_descr_sets[j].push_back(
+                    pers_data.textures_descr_pool->Alloc(pers_data.textures_descr_layout));
+                assert(pers_data.textures_descr_sets[j].back());
             }
             if (ren_ctx_.capabilities.raytracing) {
-                persistant_data.rt_textures_descr_sets[j] =
-                    persistant_data.rt_textures_descr_pool->Alloc(persistant_data.rt_textures_descr_layout);
+                pers_data.rt_textures_descr_sets[j] =
+                    pers_data.rt_textures_descr_pool->Alloc(pers_data.rt_textures_descr_layout);
+                if (ren_ctx_.capabilities.ray_query) {
+                    pers_data.rt_inline_textures_descr_sets[j] =
+                        pers_data.rt_inline_textures_descr_pool->Alloc(pers_data.rt_inline_textures_descr_layout);
+                }
             }
         }
     }
@@ -220,6 +255,11 @@ void SceneManager::UpdateMaterialsBuffer() {
             if (ren_ctx_.capabilities.raytracing) {
                 descr_write.dstSet = scene_data_.persistent_data.rt_textures_descr_sets[ren_ctx_.backend_frame()];
                 vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
+                if (ren_ctx_.capabilities.ray_query) {
+                    descr_write.dstSet =
+                        scene_data_.persistent_data.rt_inline_textures_descr_sets[ren_ctx_.backend_frame()];
+                    vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
+                }
             }
         }
 

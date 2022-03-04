@@ -14,6 +14,7 @@ class RpRTReflections : public RenderPassBase {
 
     // lazily initialized data
     Ren::Pipeline pi_rt_reflections_;
+    Ren::Pipeline pi_rt_reflections_inline_;
 
     // temp data (valid only between Setup and Execute calls)
     uint32_t render_flags_ = 0;
@@ -36,6 +37,7 @@ class RpRTReflections : public RenderPassBase {
     RpResource env_tex_;
     RpResource lm_tex_[5];
     RpResource dummy_black_;
+    RpResource ray_counter_buf_;
     RpResource ray_list_buf_;
     RpResource indir_args_buf_;
 
@@ -49,23 +51,29 @@ class RpRTReflections : public RenderPassBase {
                const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
                const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
                const Ren::BufferRef &materials_buf, const char shared_data_buf_name[], const char depth_tex[],
-               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_list_name[],
-               const char indir_args_name[], const char out_raylen_name[]);
+               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_counter_name[],
+               const char ray_list_name[], const char indir_args_name[], const char out_raylen_name[]);
+
+    void ExecuteRTPipeline(RpBuilder &builder);
+    void ExecuteRTInline(RpBuilder &builder);
+
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
                Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf, const DrawList &list,
                const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
                const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
                const Ren::BufferRef &materials_buf, const char shared_data_buf_name[], const char depth_tex[],
-               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_list_name[],
-               const char indir_args_name[], const char out_refl_tex_name[], const char out_raylen_name[]);
+               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_counter_name[],
+               const char ray_list_name[], const char indir_args_name[], const char out_refl_tex_name[],
+               const char out_raylen_name[]);
     void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakBufferRef sobol_buf,
                Ren::WeakBufferRef scrambling_tile_buf, Ren::WeakBufferRef ranking_tile_buf, const DrawList &list,
                const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
                const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
                const Ren::BufferRef &materials_buf, const char shared_data_buf_name[], const char depth_tex[],
-               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_list_name[],
-               const char indir_args_name[], Ren::WeakTex2DRef out_refl_tex, const char out_raylen_name[]);
+               const char normal_tex[], const Ren::Tex2DRef &dummy_black, const char ray_counter_name[],
+               const char ray_list_name[], const char indir_args_name[], Ren::WeakTex2DRef out_refl_tex,
+               const char out_raylen_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "RT REFLECTIONS"; }

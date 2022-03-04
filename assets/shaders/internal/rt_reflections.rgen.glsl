@@ -40,12 +40,10 @@ layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform writeonly restrict image2D o
 
 layout(location = 0) rayPayloadEXT RayPayload pld;
 
-
 //
 // https://eheitzresearch.wordpress.com/762-2/
 //
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension)
-{
+float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
     // wrap arguments
     uint pixel_i = pixel.x & 127u;
     uint pixel_j = pixel.y & 127u;
@@ -132,20 +130,37 @@ void main() {
         const float t_min = 0.001;
         const float t_max = 1000.0;
 
-        traceRayEXT(tlas,           // topLevel
-                ray_flags,          // rayFlags
-                0xff,               // cullMask
-                0,                  // sbtRecordOffset
-                0,                  // sbtRecordStride
-                0,                  // missIndex
-                ray_origin_ws.xyz,  // origin
-                t_min,              // Tmin
-                refl_ray_ws.xyz,    // direction
-                t_max,              // Tmax
-                0                   // payload
-                );
+        traceRayEXT(tlas,               // topLevel
+                    ray_flags,          // rayFlags
+                    0xff,               // cullMask
+                    0,                  // sbtRecordOffset
+                    0,                  // sbtRecordStride
+                    0,                  // missIndex
+                    ray_origin_ws.xyz,  // origin
+                    t_min,              // Tmin
+                    refl_ray_ws.xyz,    // direction
+                    t_max,              // Tmax
+                    0                   // payload
+                    );
     }
 
     imageStore(out_color_img, icoord, vec4(pld.col.rgb, 1.0));
     imageStore(out_raylen_img, icoord, vec4(pld.cone_width));
+
+    ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
+    if (copy_horizontal) {
+        ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
+        imageStore(out_color_img, copy_coords, vec4(pld.col.rgb, 0.0));
+        imageStore(out_raylen_img, copy_coords, vec4(pld.cone_width));
+    }
+    if (copy_vertical) {
+        ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
+        imageStore(out_color_img, copy_coords, vec4(pld.col.rgb, 0.0));
+        imageStore(out_raylen_img, copy_coords, vec4(pld.cone_width));
+    }
+    if (copy_diagonal) {
+        ivec2 copy_coords = copy_target;
+        imageStore(out_color_img, copy_coords, vec4(pld.col.rgb, 0.0));
+        imageStore(out_raylen_img, copy_coords, vec4(pld.cone_width));
+    }
 }

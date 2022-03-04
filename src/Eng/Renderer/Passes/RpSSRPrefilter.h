@@ -16,6 +16,7 @@ class RpSSRPrefilter : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
+    float glossy_thres_ = 1.0f, mirror_thres_ = 0.0f;
     // Ren::WeakBufferRef sobol_buf_, scrambling_tile_buf_, ranking_tile_buf_;
 
     RpResource depth_tex_;
@@ -34,10 +35,11 @@ class RpSSRPrefilter : public RenderPassBase {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex_name[], const char norm_tex_name[],
-               const char avg_refl_tex_name[], const char refl_tex_name[], Ren::WeakTex2DRef variance_tex,
-               Ren::WeakTex2DRef sample_count_tex, const char tile_list_buf_name[], const char indir_args_name[],
-               uint32_t indir_args_off, const char out_refl_tex_name[], Ren::WeakTex2DRef out_variance_tex);
+    void Setup(RpBuilder &builder, const ViewState *view_state, float glossy_thres, float mirror_thres,
+               const char depth_tex_name[], const char norm_tex_name[], const char avg_refl_tex_name[],
+               const char refl_tex_name[], Ren::WeakTex2DRef variance_tex, Ren::WeakTex2DRef sample_count_tex,
+               const char tile_list_buf_name[], const char indir_args_name[], uint32_t indir_args_off,
+               const char out_refl_tex_name[], Ren::WeakTex2DRef out_variance_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SSR PREFILTER"; }

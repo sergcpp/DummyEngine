@@ -117,28 +117,28 @@ const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
 static_assert(COUNT_OF(g_pipeline_stages_per_state_vk) == int(eResState::_Count), "!");
 } // namespace Ren
 
-VkImageLayout Ren::VKImageLayoutForState(eResState state) { return g_image_layout_per_state_vk[int(state)]; }
+VkImageLayout Ren::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)]; }
 
-uint32_t Ren::VKAccessFlagsForState(eResState state) { return g_access_flags_per_state_vk[int(state)]; }
+uint32_t Ren::VKAccessFlagsForState(const eResState state) { return g_access_flags_per_state_vk[int(state)]; }
 
-uint32_t Ren::VKPipelineStagesForState(eResState state) { return g_pipeline_stages_per_state_vk[int(state)]; }
+uint32_t Ren::VKPipelineStagesForState(const eResState state) { return g_pipeline_stages_per_state_vk[int(state)]; }
 
 void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_mask, const eStageBits dst_stages_mask,
                                    const TransitionInfo *transitions, const int transitions_count) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-    Ren::SmallVector<VkBufferMemoryBarrier, 32> buf_barriers;
-    Ren::SmallVector<VkImageMemoryBarrier, 32> img_barriers;
+    SmallVector<VkBufferMemoryBarrier, 32> buf_barriers;
+    SmallVector<VkImageMemoryBarrier, 32> img_barriers;
 
     for (int i = 0; i < transitions_count; i++) {
         if (transitions[i].p_tex) {
             eResState old_state = transitions[i].old_state;
-            if (old_state == Ren::eResState::Undefined) {
+            if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = transitions[i].p_tex->resource_state;
                 if (old_state != eResState::Undefined && old_state == transitions[i].new_state &&
-                    old_state != Ren::eResState::UnorderedAccess) {
+                    old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
@@ -146,10 +146,10 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
 
             auto &new_barrier = img_barriers.emplace_back();
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(transitions[i].new_state);
-            new_barrier.oldLayout = Ren::VKImageLayoutForState(old_state);
-            new_barrier.newLayout = Ren::VKImageLayoutForState(transitions[i].new_state);
+            new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(transitions[i].new_state);
+            new_barrier.oldLayout = VKImageLayoutForState(old_state);
+            new_barrier.newLayout = VKImageLayoutForState(transitions[i].new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.image = transitions[i].p_tex->handle().img;
@@ -166,18 +166,18 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
             new_barrier.subresourceRange.baseArrayLayer = 0;
             new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
-            src_stages |= Ren::VKPipelineStagesForState(old_state);
-            dst_stages |= Ren::VKPipelineStagesForState(transitions[i].new_state);
+            src_stages |= VKPipelineStagesForState(old_state);
+            dst_stages |= VKPipelineStagesForState(transitions[i].new_state);
 
             if (transitions[i].update_internal_state) {
                 transitions[i].p_tex->resource_state = transitions[i].new_state;
             }
         } else if (transitions[i].p_buf) {
             eResState old_state = transitions[i].old_state;
-            if (old_state == Ren::eResState::Undefined) {
+            if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = transitions[i].p_buf->resource_state;
-                if (old_state == transitions[i].new_state && old_state != Ren::eResState::UnorderedAccess) {
+                if (old_state == transitions[i].new_state && old_state != eResState::UnorderedAccess) {
                     // transition is not needed
                     continue;
                 }
@@ -185,8 +185,8 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
 
             auto &new_barrier = buf_barriers.emplace_back();
             new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(old_state);
-            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(transitions[i].new_state);
+            new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(transitions[i].new_state);
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.buffer = transitions[i].p_buf->vk_handle();
@@ -194,8 +194,8 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
             new_barrier.offset = 0;
             new_barrier.size = VK_WHOLE_SIZE;
 
-            src_stages |= Ren::VKPipelineStagesForState(old_state);
-            dst_stages |= Ren::VKPipelineStagesForState(transitions[i].new_state);
+            src_stages |= VKPipelineStagesForState(old_state);
+            dst_stages |= VKPipelineStagesForState(transitions[i].new_state);
 
             if (transitions[i].update_internal_state) {
                 transitions[i].p_buf->resource_state = transitions[i].new_state;

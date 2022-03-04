@@ -613,7 +613,6 @@ void RpBuilder::InsertResourceTransitions(RenderPassBase *pass) {
 void RpBuilder::HandleResourceTransition(const RpResource &res,
                                          Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
                                          Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
-    const RpResource *next_res = res.next_use;
     for (const RpResource *next_res = res.next_use; next_res; next_res = next_res->next_use) {
         if (next_res->desired_state != res.desired_state ||
             next_res->desired_state == Ren::eResState::UnorderedAccess) {

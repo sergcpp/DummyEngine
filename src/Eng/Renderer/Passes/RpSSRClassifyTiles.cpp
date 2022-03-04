@@ -8,11 +8,16 @@
 
 #include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
 
-void RpSSRClassifyTiles::Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex_name[],
-                               const char norm_tex_name[], Ren::WeakTex2DRef variance_history_tex,
-                               const char ray_counter_name[], const char ray_list_name[], const char tile_list_name[],
-                               const char refl_tex_name[]) {
+void RpSSRClassifyTiles::Setup(RpBuilder &builder, const ViewState *view_state, const float glossy_thres,
+                               const float mirror_thres, const int sample_count, const bool variance_guided,
+                               const char depth_tex_name[], const char norm_tex_name[],
+                               Ren::WeakTex2DRef variance_history_tex, const char ray_counter_name[],
+                               const char ray_list_name[], const char tile_list_name[], const char refl_tex_name[]) {
     view_state_ = view_state;
+    glossy_thres_ = glossy_thres;
+    mirror_thres_ = mirror_thres;
+    sample_count_ = sample_count;
+    variance_guided_ = variance_guided;
 
     depth_tex_ =
         builder.ReadTexture(depth_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
@@ -95,8 +100,8 @@ void RpSSRClassifyTiles::Execute(RpBuilder &builder) {
 
     SSRClassifyTiles::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.thresholds = Ren::Vec2f{GLOSSY_THRESHOLD, MIRROR_THRESHOLD};
-    uniform_params.samples_and_guided = Ren::Vec2u{4, VARIANCE_GUIDED};
+    uniform_params.thresholds = Ren::Vec2f{glossy_thres_, mirror_thres_};
+    uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(sample_count_), variance_guided_ ? 1u : 0u};
 
     Ren::DispatchCompute(pi_classify_tiles_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
                          sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());

@@ -117,7 +117,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             Ren::BufMapWrite, ctx.backend_frame() * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize);
         const uint32_t skin_transforms_mem_size = skin_transforms_.count * sizeof(SkinTransform);
         if (stage_mem) {
-            std::memcpy(stage_mem, skin_transforms_.data, skin_transforms_mem_size);
+            memcpy(stage_mem, skin_transforms_.data, skin_transforms_mem_size);
             skin_transforms_stage_buf_->FlushMappedRange(
                 0, skin_transforms_stage_buf_->AlignMapOffset(skin_transforms_mem_size));
             skin_transforms_stage_buf_->Unmap();
@@ -136,7 +136,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             Ren::BufMapWrite, ctx.backend_frame() * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize);
         const uint32_t shape_keys_mem_size = shape_keys_.count * sizeof(ShapeKeyData);
         if (stage_mem) {
-            std::memcpy(stage_mem, shape_keys_.data, shape_keys_mem_size);
+            memcpy(stage_mem, shape_keys_.data, shape_keys_mem_size);
             shape_keys_stage_buf_->FlushMappedRange(0, shape_keys_stage_buf_->AlignMapOffset(shape_keys_mem_size));
             shape_keys_stage_buf_->Unmap();
         } else {
@@ -160,7 +160,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             Ren::BufMapWrite, ctx.backend_frame() * InstanceDataBufChunkSize, InstanceDataBufChunkSize);
         const uint32_t instance_mem_size = instances_.count * sizeof(InstanceData);
         if (stage_mem) {
-            std::memcpy(stage_mem, instances_.data, instance_mem_size);
+            memcpy(stage_mem, instances_.data, instance_mem_size);
             instances_stage_buf_->FlushMappedRange(0, instances_stage_buf_->AlignMapOffset(instance_mem_size));
             instances_stage_buf_->Unmap();
         } else {
@@ -184,7 +184,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             cells_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize);
         const uint32_t cells_mem_size = cells_.count * sizeof(CellData);
         if (stage_mem) {
-            std::memcpy(stage_mem, cells_.data, cells_mem_size);
+            memcpy(stage_mem, cells_.data, cells_mem_size);
             cells_stage_buf_->FlushMappedRange(0, cells_stage_buf_->AlignMapOffset(cells_mem_size));
             cells_stage_buf_->Unmap();
         } else {
@@ -208,7 +208,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             lights_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * LightsBufChunkSize, LightsBufChunkSize);
         const uint32_t lights_mem_size = light_sources_.count * sizeof(LightSourceItem);
         if (stage_mem) {
-            std::memcpy(stage_mem, light_sources_.data, lights_mem_size);
+            memcpy(stage_mem, light_sources_.data, lights_mem_size);
             lights_stage_buf_->FlushMappedRange(0, lights_stage_buf_->AlignMapOffset(lights_mem_size));
             lights_stage_buf_->Unmap();
         } else {
@@ -232,7 +232,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             decals_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * DecalsBufChunkSize, DecalsBufChunkSize);
         const uint32_t decals_mem_size = decals_.count * sizeof(DecalItem);
         if (stage_mem) {
-            std::memcpy(stage_mem, decals_.data, decals_mem_size);
+            memcpy(stage_mem, decals_.data, decals_mem_size);
             decals_stage_buf_->FlushMappedRange(0, decals_stage_buf_->AlignMapOffset(decals_mem_size));
             decals_stage_buf_->Unmap();
         } else {
@@ -256,7 +256,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             items_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize);
         const uint32_t items_mem_size = items_.count * sizeof(ItemData);
         if (stage_mem) {
-            std::memcpy(stage_mem, items_.data, items_mem_size);
+            memcpy(stage_mem, items_.data, items_mem_size);
             items_stage_buf_->FlushMappedRange(0, items_stage_buf_->AlignMapOffset(items_mem_size));
             items_stage_buf_->Unmap();
         } else {
@@ -270,7 +270,7 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             items_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize);
         if (stage_mem) {
             ItemData dummy = {};
-            std::memcpy(stage_mem, &dummy, sizeof(ItemData));
+            memcpy(stage_mem, &dummy, sizeof(ItemData));
             items_stage_buf_->FlushMappedRange(0, items_stage_buf_->AlignMapOffset(sizeof(ItemData)));
             items_stage_buf_->Unmap();
         } else {
@@ -335,8 +335,8 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         if (shadow_regions_.count) {
             assert(shadow_regions_.count <= REN_MAX_SHADOWMAPS_TOTAL);
-            std::memcpy(&shrd_data.uShadowMapRegions[0], &shadow_regions_.data[0],
-                        sizeof(ShadowMapRegion) * shadow_regions_.count);
+            memcpy(&shrd_data.uShadowMapRegions[0], &shadow_regions_.data[0],
+                   sizeof(ShadowMapRegion) * shadow_regions_.count);
         }
 
         shrd_data.uSunDir = Ren::Vec4f{env_->sun_dir[0], env_->sun_dir[1], env_->sun_dir[2], 0.0f};
@@ -374,14 +374,14 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
         shrd_data.uWindScrollPrev = Ren::Vec4f{env_->prev_wind_scroll_lf[0], env_->prev_wind_scroll_lf[1],
                                                env_->prev_wind_scroll_hf[0], env_->prev_wind_scroll_hf[1]};
 
-        std::memcpy(&shrd_data.uProbes[0], probes_.data, sizeof(ProbeItem) * probes_.count);
-        std::memcpy(&shrd_data.uEllipsoids[0], ellipsoids_.data, sizeof(EllipsItem) * ellipsoids_.count);
+        memcpy(&shrd_data.uProbes[0], probes_.data, sizeof(ProbeItem) * probes_.count);
+        memcpy(&shrd_data.uEllipsoids[0], ellipsoids_.data, sizeof(EllipsItem) * ellipsoids_.count);
 
         uint8_t *stage_mem =
             shared_data_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * SharedDataBlockSize,
                                              shared_data_stage_buf_->AlignMapOffset(sizeof(SharedDataBlock)));
         if (stage_mem) {
-            std::memcpy(stage_mem, &shrd_data, sizeof(SharedDataBlock));
+            memcpy(stage_mem, &shrd_data, sizeof(SharedDataBlock));
             shared_data_stage_buf_->FlushMappedRange(0,
                                                      shared_data_stage_buf_->AlignMapOffset(sizeof(SharedDataBlock)));
             shared_data_stage_buf_->Unmap();

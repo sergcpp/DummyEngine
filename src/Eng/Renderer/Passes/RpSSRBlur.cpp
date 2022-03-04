@@ -11,10 +11,12 @@
 
 #include "../assets/shaders/internal/ssr_blur_interface.glsl"
 
-void RpSSRBlur::Setup(RpBuilder &builder, const ViewState *view_state, const char rough_tex_name[],
-                      const char refl_tex_name[], const char tile_metadata_mask_name[],
-                      const char out_denoised_img_name[]) {
+void RpSSRBlur::Setup(RpBuilder &builder, const ViewState *view_state, const float glossy_thres,
+                      const float mirror_thres, const char rough_tex_name[], const char refl_tex_name[],
+                      const char tile_metadata_mask_name[], const char out_denoised_img_name[]) {
     view_state_ = view_state;
+    glossy_thres_ = glossy_thres;
+    mirror_thres_ = mirror_thres;
 
     rough_tex_ =
         builder.ReadTexture(rough_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
@@ -28,7 +30,7 @@ void RpSSRBlur::Setup(RpBuilder &builder, const ViewState *view_state, const cha
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);  
+        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -71,7 +73,7 @@ void RpSSRBlur::Execute(RpBuilder &builder) {
 
     SSRBlur::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.thresholds = Ren::Vec2f{GLOSSY_THRESHOLD, MIRROR_THRESHOLD};
+    uniform_params.thresholds = Ren::Vec2f{glossy_thres_, mirror_thres_};
 
     Ren::DispatchCompute(pi_ssr_blur_, grp_count, bindings, COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
                          builder.ctx().default_descr_alloc(), builder.ctx().log());
