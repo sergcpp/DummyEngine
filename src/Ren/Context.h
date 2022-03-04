@@ -241,6 +241,7 @@ class Context : public TaskExecutor {
         bool persistent_buf_mapping = false;
         bool bindless_texture = false;
         bool raytracing = false;
+        bool ray_query = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;
@@ -256,6 +257,7 @@ class Context : public TaskExecutor {
         bool persistent_buf_mapping = true;
         bool bindless_texture = false;
         bool raytracing = false;
+        bool ray_query = false;
         int max_compute_work_group_size[3] = {};
         int tex_buf_offset_alignment = 1;
         int unif_buf_offset_alignment = 1;

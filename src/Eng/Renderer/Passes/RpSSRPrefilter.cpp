@@ -11,12 +11,15 @@
 
 #include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
 
-void RpSSRPrefilter::Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex_name[],
-                           const char norm_tex_name[], const char avg_refl_tex_name[], const char refl_tex_name[],
-                           Ren::WeakTex2DRef variance_tex, Ren::WeakTex2DRef sample_count_tex,
-                           const char tile_list_buf_name[], const char indir_args_name[], uint32_t indir_args_off,
-                           const char out_refl_tex_name[], Ren::WeakTex2DRef out_variance_tex) {
+void RpSSRPrefilter::Setup(RpBuilder &builder, const ViewState *view_state, const float glossy_thres,
+                           const float mirror_thres, const char depth_tex_name[], const char norm_tex_name[],
+                           const char avg_refl_tex_name[], const char refl_tex_name[], Ren::WeakTex2DRef variance_tex,
+                           Ren::WeakTex2DRef sample_count_tex, const char tile_list_buf_name[],
+                           const char indir_args_name[], uint32_t indir_args_off, const char out_refl_tex_name[],
+                           Ren::WeakTex2DRef out_variance_tex) {
     view_state_ = view_state;
+    glossy_thres_ = glossy_thres;
+    mirror_thres_ = mirror_thres;
 
     depth_tex_ =
         builder.ReadTexture(depth_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::ComputeShader, *this);
@@ -99,7 +102,7 @@ void RpSSRPrefilter::Execute(RpBuilder &builder) {
 
     SSRPrefilter::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.thresholds = Ren::Vec2f{GLOSSY_THRESHOLD, MIRROR_THRESHOLD};
+    uniform_params.thresholds = Ren::Vec2f{glossy_thres_, mirror_thres_};
 
     Ren::DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, indir_args_off_, bindings, COUNT_OF(bindings),
                                  &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),

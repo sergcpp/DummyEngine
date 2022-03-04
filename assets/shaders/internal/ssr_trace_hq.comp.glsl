@@ -40,9 +40,6 @@ layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
 layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_texture;
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D norm_texture;
 
-layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
-    uint g_ray_counter[];
-};
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
     uint g_in_ray_list[];
 };
@@ -56,10 +53,9 @@ layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform image2D out_raylen_img;
 layout(std430, binding = OUT_RAY_LIST_SLOT) writeonly buffer OutRayList {
     uint g_out_ray_list[];
 };
-
-uint IncrementRayCounter(uint value) {
-    return atomicAdd(g_ray_counter[4], value);
-}
+layout(std430, binding = INOUT_RAY_COUNTER_SLOT) coherent buffer RayCounter {
+    uint g_inout_ray_counter[];
+};
 
 void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
     g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
@@ -232,7 +228,7 @@ layout(local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, loc
 
 void main() {
     uint ray_index = gl_WorkGroupID.x * 64 + gl_LocalInvocationIndex;
-    if (ray_index >= g_ray_counter[1]) return;
+    if (ray_index >= g_inout_ray_counter[1]) return;
     uint packed_coords = g_in_ray_list[ray_index];
 
     uvec2 ray_coords;
@@ -285,7 +281,7 @@ void main() {
 
         uint base_ray_index = 0;
         if (subgroupElect()) {
-            base_ray_index = IncrementRayCounter(wave_ray_count);
+            base_ray_index = atomicAdd(g_inout_ray_counter[4], wave_ray_count);
         }
         base_ray_index = subgroupBroadcastFirst(base_ray_index);
         if (needs_ray) {

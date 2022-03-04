@@ -18,7 +18,7 @@ class RpSSRPrepare : public RenderPassBase {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char ray_counter_tex_name[],
+    void Setup(RpBuilder &builder, const ViewState *view_state, const char ray_counter_buf_name[],
                const char raylen_tex_name[]);
     void Execute(RpBuilder &builder) override;
 

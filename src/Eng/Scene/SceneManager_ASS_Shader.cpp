@@ -105,7 +105,7 @@ bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, s
             if (it == std::end(out_dependencies)) {
                 out_dependencies.emplace_back(full_path);
             }
-            
+
             if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream, out_dependencies)) {
                 return false;
             }
@@ -187,9 +187,10 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
     if (strcmp(ctx.platform, "pc") == 0) {
         for (const bool is_vk : {false, true}) {
-            const bool is_rt = (strstr(in_file, ".rgen") || strstr(in_file, ".rint") || strstr(in_file, ".rahit") ||
-                                strstr(in_file, ".rchit") || strstr(in_file, ".rmiss") || strstr(in_file, ".rcall"));
-            if (!is_vk && is_rt) {
+            const bool use_spv14 = (strstr(in_file, ".rgen") || strstr(in_file, ".rint") || strstr(in_file, ".rahit") ||
+                                    strstr(in_file, ".rchit") || strstr(in_file, ".rmiss") ||
+                                    strstr(in_file, ".rcall") || strstr(in_file, "spirv14"));
+            if (!is_vk && use_spv14) {
                 continue;
             }
             for (const std::string &perm : permutations) {
@@ -262,7 +263,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
                 if (is_vk) {
                     compile_cmd += " -V ";
-                    if (is_rt) {
+                    if (use_spv14) {
                         compile_cmd += " --target-env spirv1.4 ";
                     } else {
                         compile_cmd += " --target-env spirv1.3 ";

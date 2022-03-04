@@ -10,9 +10,11 @@
 
 #include "../assets/shaders/internal/rt_reflections_interface.glsl"
 
-void RpRTReflections::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
+void RpRTReflections::ExecuteRTPipeline(RpBuilder& builder) {
+    // TODO: software fallback for raytracing
+}
 
+void RpRTReflections::ExecuteRTInline(RpBuilder& builder) {
     // TODO: software fallback for raytracing
 }
 

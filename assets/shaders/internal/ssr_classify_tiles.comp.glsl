@@ -115,7 +115,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     needs_ray = needs_ray && (!needs_denoiser || is_base_ray); // Make sure to not deactivate mirror reflection rays.
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
-        const float TemporalVarianceThreshold = 0.0f;
+        const float TemporalVarianceThreshold = 0.005;
         bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
         needs_ray = needs_ray || has_temporal_variance;
     }
@@ -131,9 +131,10 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 
     // Next we have to figure out which pixels that ray is creating the values for. Thus, if we have to copy its value horizontal, vertical or across.
     bool require_copy = !needs_ray && needs_denoiser; // Our pixel only requires a copy if we want to run a denoiser on it but don't want to shoot a ray for it.
-    bool copy_horizontal = (samples_per_quad != 4) && is_base_ray && subgroupShuffle(require_copy, gl_SubgroupInvocationID ^ 1u); // 0b01 QuadReadAcrossX
-    bool copy_vertical = (samples_per_quad == 1) && is_base_ray && subgroupShuffle(require_copy, gl_SubgroupInvocationID ^ 2u); // 0b10 QuadReadAcrossY
-    bool copy_diagonal = (samples_per_quad == 1) && is_base_ray && subgroupShuffle(require_copy, gl_SubgroupInvocationID ^ 3u); // 0b11 QuadReadAcrossDiagonal
+     // Subgroup reads need to be unconditional (should be first), probably a compiler bug!!!
+    bool copy_horizontal = subgroupShuffleXor(require_copy, 1u) && (samples_per_quad != 4u) && is_base_ray; // 0b01 QuadReadAcrossX
+    bool copy_vertical = subgroupShuffleXor(require_copy, 2u) && (samples_per_quad == 1u) && is_base_ray; // 0b10 QuadReadAcrossY
+    bool copy_diagonal = subgroupShuffleXor(require_copy, 3u) && (samples_per_quad == 1u) && is_base_ray; // 0b11 QuadReadAcrossDiagonal
 
     // Thus, we need to compact the rays and append them all at once to the ray list.
     uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
@@ -172,7 +173,7 @@ void main() {
     uvec2 group_id = gl_WorkGroupID.xy;
     uint group_index = gl_LocalInvocationIndex;
     uvec2 group_thread_id = RemapLane8x8(group_index);
-    uvec2 dispatch_thread_id = group_id * 8 + group_thread_id;
+    uvec2 dispatch_thread_id = group_id * 8u + group_thread_id;
     if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
         return;
     }

@@ -30,7 +30,7 @@ class RpSSRTraceHQ : public RenderPassBase {
 
     RpResource out_refl_tex_;
     RpResource out_raylen_tex_;
-    RpResource out_ray_counter_buf_;
+    RpResource inout_ray_counter_buf_;
     RpResource out_ray_list_buf_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);

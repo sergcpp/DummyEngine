@@ -6,7 +6,7 @@
 
 Ren::TextureRegion::TextureRegion(const char *name, TextureAtlasArray *atlas, const int texture_pos[3])
     : name_(name), atlas_(atlas) {
-    std::memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
+    memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
 }
 
 Ren::TextureRegion::TextureRegion(const char *name, const void *data, int size, Buffer &stage_buf, void *cmd_buf,
@@ -36,7 +36,7 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
 
     name_ = std::move(rhs.name_);
     atlas_ = exchange(rhs.atlas_, nullptr);
-    std::memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
+    memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
     params_ = rhs.params_;
     ready_ = rhs.ready_;
 

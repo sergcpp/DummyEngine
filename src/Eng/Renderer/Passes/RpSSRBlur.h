@@ -16,6 +16,7 @@ class RpSSRBlur : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
+    float glossy_thres_ = 1.0f, mirror_thres_ = 0.0f;
 
     RpResource rough_tex_;
     RpResource refl_tex_;
@@ -26,8 +27,9 @@ class RpSSRBlur : public RenderPassBase {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char rough_tex_name[], const char refl_tex_name[],
-               const char tile_metadata_mask_name[], const char out_denoised_img_name[]);
+    void Setup(RpBuilder &builder, const ViewState *view_state, float glossy_thres, float mirror_thres,
+               const char rough_tex_name[], const char refl_tex_name[], const char tile_metadata_mask_name[],
+               const char out_denoised_img_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SSR BLUR"; }
