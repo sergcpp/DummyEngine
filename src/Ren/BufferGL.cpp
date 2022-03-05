@@ -254,7 +254,7 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
 
 void Ren::FillBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
-    glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_R, GL_UNSIGNED_INT,
+    glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED, GL_UNSIGNED_INT,
                          &data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }

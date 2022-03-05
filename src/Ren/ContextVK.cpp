@@ -337,10 +337,6 @@ void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
 
 void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
 
-uint64_t Ren::Context::GetTimestampIntervalDuration(const int query_beg, const int query_end) const {
-    return api_ctx_->query_results[api_ctx_->backend_frame][query_end] -
-           api_ctx_->query_results[api_ctx_->backend_frame][query_beg];
-}
 
 #ifdef _MSC_VER
 #pragma warning(pop)

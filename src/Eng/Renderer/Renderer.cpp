@@ -813,9 +813,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
 
             rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
-                                  (list.render_flags & EnableSSR_HQ) ? taa_history_tex_ : down_tex_4x_, brdf_lut_,
+                                  down_tex_4x_, brdf_lut_,
                                   SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                                  DEPTH_DOWN_2X_TEX, "SSR Denoised 1", refl_out_name);
+                                  DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
             rp_tail->p_next = &rp_ssr_compose_;
             rp_tail = rp_tail->p_next;
         }

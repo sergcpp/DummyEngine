@@ -124,6 +124,8 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
         return;
     }
 
+    type_ = type;
+
 #ifdef ENABLE_OBJ_LABELS
     glObjectLabel(GL_SHADER, id_, -1, name_.c_str());
 #endif

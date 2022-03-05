@@ -19,5 +19,5 @@ void RpSSRPrepare::Execute(RpBuilder &builder) {
                          &zero);
 
     const float zero_col[3] = {0.0f, 0.0f, 0.0f};
-    glClearTexImage(raylen_tex.ref->id(), 0, GL_R32UI, GL_UNSIGNED_INT, zero_col);
+    glClearTexImage(raylen_tex.ref->id(), 0, GL_RED, GL_FLOAT, zero_col);
 }

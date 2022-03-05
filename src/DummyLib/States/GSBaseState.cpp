@@ -754,6 +754,7 @@ void GSBaseState::Draw() {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
+            renderer_->InitBackendInfo();
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
             // Gather drawables for list 0
