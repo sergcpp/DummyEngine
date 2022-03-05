@@ -27,7 +27,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BA
 layout(location = U_M_MATRIX_LOC) uniform mat4 uShadowViewProjMatrix;
 #endif
 
-layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
+layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData materials[];
 };
 
