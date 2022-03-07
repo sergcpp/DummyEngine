@@ -27,6 +27,7 @@ extern "C" {
 #include "VertexInputVK.cpp"
 #elif defined(USE_GL_RENDER)
 #include "GLExt.cpp"
+#include "GLCtx.cpp"
 #include "GLExtDSAEmu.cpp"
 #include "BufferGL.cpp"
 #include "ContextGL.cpp"
