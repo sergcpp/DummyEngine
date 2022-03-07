@@ -99,6 +99,7 @@ if(${RENDERER} STREQUAL "GL")
                      FramebufferGL.cpp
                      GL.h
                      GLCtx.h
+                     GLCtx.cpp
                      GLExt.cpp
                      GLExtDSAEmu.h
                      GLExtDSAEmu.cpp

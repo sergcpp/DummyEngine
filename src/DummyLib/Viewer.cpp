@@ -200,6 +200,8 @@ void Viewer::Frame() {
     // Make sure all operations have finished
     api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
     api_ctx->in_flight_fences[api_ctx->backend_frame] = {};
+
+    Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
