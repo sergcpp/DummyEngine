@@ -41,6 +41,10 @@ struct ApiContext {
     VkSemaphore render_finished_semaphores[MaxFramesInFlight] = {};
     VkFence in_flight_fences[MaxFramesInFlight] = {};
 
+    VkQueryPool query_pools[MaxFramesInFlight] = {};
+    uint32_t query_counts[MaxFramesInFlight] = {};
+    uint64_t query_results[MaxFramesInFlight][MaxTimestampQueries] = {};
+
     int backend_frame = 0;
 
     uint32_t max_combined_image_samplers = 0;
@@ -89,8 +93,9 @@ bool InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_command
                         VkCommandBuffer draw_cmd_bufs[MaxFramesInFlight],
                         VkSemaphore image_avail_semaphores[MaxFramesInFlight],
                         VkSemaphore render_finished_semaphores[MaxFramesInFlight],
-                        VkFence in_flight_fences[MaxFramesInFlight], VkQueue &present_queue, VkQueue &graphics_queue,
-                        VkDevice device, uint32_t present_family_index, ILog *log);
+                        VkFence in_flight_fences[MaxFramesInFlight], VkQueryPool query_pools[MaxFramesInFlight],
+                        VkQueue &present_queue, VkQueue &graphics_queue, VkDevice device, uint32_t present_family_index,
+                        ILog *log);
 bool InitPresentImageViews(SmallVectorImpl<VkImage> &present_images, SmallVectorImpl<VkImageView> &present_image_views,
                            VkDevice device, VkSwapchainKHR swapchain, VkSurfaceFormatKHR surface_format,
                            VkCommandBuffer setup_cmd_buf, VkQueue present_queue, ILog *log);
@@ -101,6 +106,8 @@ void EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuffer c
 void EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuffer command_buf,
                            VkCommandPool temp_command_pool, VkFence fence_to_insert);
 void FreeSingleTimeCommandBuffer(VkDevice device, VkCommandPool temp_command_pool, VkCommandBuffer command_buf);
+
+bool ReadbackTimestampQueries(ApiContext *api_ctx, int i);
 
 void DestroyDeferredResources(ApiContext *api_ctx, int i);
 

@@ -242,6 +242,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_MAX_VERTEX_ATTRIBS               0x8869
 #define GL_MAX_VERTEX_OUTPUT_COMPONENTS     0x9122
 
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 0x8b4d
+
 #define GL_FRAGMENT_SHADER                  0x8B30
 #define GL_VERTEX_SHADER                    0x8B31
 #define GL_TESS_EVALUATION_SHADER           0x8E87

@@ -119,41 +119,6 @@ void Renderer::DestroyRendererInternal() {
     Ren::ILog *log = ctx_.log();
 
     log->Info("DestroyRendererInternal");
-
-#if 0
-    Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-                   vtx_buf2 = ctx_.default_vertex_buf2(),
-                   ndx_buf = ctx_.default_indices_buf();
-
-    static_assert(sizeof(GLuint) == sizeof(uint32_t), "!");
-
-    {
-        auto temp_framebuf = GLuint(temp_framebuf_);
-        glDeleteFramebuffers(1, &temp_framebuf);
-    }
-
-    {
-        auto probe_sample_pbo = GLuint(probe_sample_pbo_);
-        glDeleteBuffers(1, &probe_sample_pbo);
-    }
-
-    {
-        assert(vtx_buf1->FreeRegion(temp_buf1_vtx_offset_));
-        assert(vtx_buf2->FreeRegion(temp_buf2_vtx_offset_));
-        assert(ndx_buf->FreeRegion(temp_buf_ndx_offset_));
-    }
-
-    for (int i = 0; i < FrameSyncWindow; i++) {
-        static_assert(sizeof(queries_[0][0]) == sizeof(GLuint), "!");
-        glDeleteQueries(TimersCount, queries_[i]);
-
-        if (buf_range_fences_[i]) {
-            auto sync = reinterpret_cast<GLsync>(buf_range_fences_[i]);
-            glDeleteSync(sync);
-            buf_range_fences_[i] = nullptr;
-        }
-    }
-#endif
 }
 
 uint64_t Renderer::GetGpuTimeBlockingUs() {

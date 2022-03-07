@@ -1,8 +1,10 @@
 #version 310 es
-#extension GL_KHR_shader_subgroup_basic : require
-#extension GL_KHR_shader_subgroup_ballot : require
-#extension GL_KHR_shader_subgroup_shuffle : require
-#extension GL_KHR_shader_subgroup_vote : require
+#ifndef NO_SUBGROUP_EXTENSIONS
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_KHR_shader_subgroup_shuffle : enable
+#extension GL_KHR_shader_subgroup_vote : enable
+#endif
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;
@@ -16,7 +18,12 @@
 /*
 UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
+PERM @NO_SUBGROUP_EXTENSIONS
 */
+
+#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
+#define NO_SUBGROUP_EXTENSIONS
+#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -72,6 +79,8 @@ void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_v
 
 shared uint g_tile_count;
 
+shared bool g_requires_copy[LOCAL_GROUP_SIZE_Y][LOCAL_GROUP_SIZE_X];
+
 // From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
 /**********************************************************************
 Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
@@ -98,7 +107,9 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
                    bool enable_temporal_variance_guided_tracing) {
     g_tile_count = 0;
 
+#ifndef NO_SUBGROUP_EXTENSIONS
     bool is_first_lane_of_wave = subgroupElect();
+#endif
 
     bool needs_ray = (dispatch_thread_id.x < screen_size.x && dispatch_thread_id.y < screen_size.y); // disable offscreen pixels
 
@@ -131,6 +142,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 
     // Next we have to figure out which pixels that ray is creating the values for. Thus, if we have to copy its value horizontal, vertical or across.
     bool require_copy = !needs_ray && needs_denoiser; // Our pixel only requires a copy if we want to run a denoiser on it but don't want to shoot a ray for it.
+#ifndef NO_SUBGROUP_EXTENSIONS
      // Subgroup reads need to be unconditional (should be first), probably a compiler bug!!!
     bool copy_horizontal = subgroupShuffleXor(require_copy, 1u) && (samples_per_quad != 4u) && is_base_ray; // 0b01 QuadReadAcrossX
     bool copy_vertical = subgroupShuffleXor(require_copy, 2u) && (samples_per_quad == 1u) && is_base_ray; // 0b10 QuadReadAcrossY
@@ -151,6 +163,22 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
         uint ray_index = base_ray_index + local_ray_index_in_wave;
         StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
+#else
+    // Fallback to using shared memory
+    //g_requires_copy[group_thread_id.y][group_thread_id.x] = require_copy;
+
+    //groupMemoryBarrier();
+    //barrier();
+
+    bool copy_horizontal = /*[group_thread_id.y][group_thread_id.x ^ 1u] &&*/ (samples_per_quad != 4u) && is_base_ray;
+    bool copy_vertical = /*subgroupShuffleXor(require_copy, 2u) &&*/ (samples_per_quad == 1u) && is_base_ray;
+    bool copy_diagonal = /*subgroupShuffleXor(require_copy, 3u) &&*/ (samples_per_quad == 1u) && is_base_ray;
+
+    if (needs_ray) {
+        uint ray_index = atomicAdd(g_ray_counter[0], 1);
+        StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
+    }
+#endif
 
     vec4 refl_output = vec4(0.0);
     if (is_reflective_surface && !is_glossy_reflection) {

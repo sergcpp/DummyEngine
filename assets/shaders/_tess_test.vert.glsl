@@ -40,7 +40,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BA
 
 layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer instances_buffer;
 
-layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
+layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData materials[];
 };
 

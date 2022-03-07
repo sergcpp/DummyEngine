@@ -59,7 +59,7 @@ LAYOUT(location = 6) in highp vec4 aVertexShUVs_2;
 LAYOUT(location = 7) in flat TEX_HANDLE diff_texture;
 LAYOUT(location = 8) in flat TEX_HANDLE norm_texture;
 LAYOUT(location = 9) in flat TEX_HANDLE spec_texture;
-#endif // GL_ARB_bindless_texture
+#endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
 layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;

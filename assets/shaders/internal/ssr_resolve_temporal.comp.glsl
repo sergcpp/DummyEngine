@@ -1,7 +1,9 @@
 #version 310 es
-#extension GL_KHR_shader_subgroup_basic : require
-#extension GL_KHR_shader_subgroup_ballot : require
-#extension GL_KHR_shader_subgroup_arithmetic : require
+#ifndef NO_SUBGROUP_EXTENSIONS
+#extension GL_KHR_shader_subgroup_basic : enable
+#extension GL_KHR_shader_subgroup_ballot : enable
+#extension GL_KHR_shader_subgroup_arithmetic : enable
+#endif
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;
@@ -17,7 +19,12 @@
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
     UniformParams : $ubUnifParamLoc
+PERM @NO_SUBGROUP_EXTENSIONS
 */
+
+#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_arithmetic))
+#define NO_SUBGROUP_EXTENSIONS
+#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -166,6 +173,7 @@ void WriteTemporalVariance(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec
     uint lane_mask = GetBitMaskFromPixelPosition(dispatch_thread_id);
     uint has_temporal_variance_mask = has_temporal_variance ? lane_mask : 0;
 
+#ifndef NO_SUBGROUP_EXTENSIONS
     if (gl_SubgroupSize == 32) {
         WriteTemporalVarianceMask(mask_write_index, has_temporal_variance_mask);
     } else if (gl_SubgroupSize == 64) { // The lower 32 lanes write to a different index than the upper 32 lanes.
@@ -174,7 +182,9 @@ void WriteTemporalVariance(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec
         } else {
             WriteTemporalVarianceMask(mask_write_index, has_temporal_variance_mask); // Write upper
         }
-    } else { // Use shared memory for all other wave sizes
+    } else
+#endif // NO_SUBGROUP_EXTENSIONS
+    { // Use shared memory for all other wave sizes
         uint mask_index = group_thread_id.y / 4;
         g_shared_temp_variance_mask[mask_index] = 0;
 

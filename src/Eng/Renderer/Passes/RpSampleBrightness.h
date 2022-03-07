@@ -32,7 +32,7 @@ class RpSampleBrightness : public RenderPassBase {
     void Setup(RpBuilder &builder, Ren::WeakTex2DRef tex_to_sample, const char reduced_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "SAMPLE BRIGHTNESS"; }
+    const char *name() const override { return "LUM SAMPLE"; }
 
     Ren::Vec2i res() const { return res_; }
 };

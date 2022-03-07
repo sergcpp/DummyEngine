@@ -15,6 +15,7 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
     const float k = (1.0f - alpha);
 
     auto us_to_ms = [](uint64_t v) -> float { return 0.001f * v; };
+    auto ns_to_ms = [](uint64_t v) -> float { return float(0.000001 * double(v)); };
 
     render_flags_ = render_flags;
 
@@ -31,40 +32,20 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
     front_info_smooth_.total_time_ms *= alpha;
     front_info_smooth_.total_time_ms += k * us_to_ms(frontend_info.end_timepoint_us - frontend_info.start_timepoint_us);
 
-    back_info_smooth_.skinning_time_ms *= alpha;
-    back_info_smooth_.skinning_time_ms += k * us_to_ms(backend_info.skinning_time_us);
-    back_info_smooth_.shadow_time_ms *= alpha;
-    back_info_smooth_.shadow_time_ms += k * us_to_ms(backend_info.shadow_time_us);
-    back_info_smooth_.depth_opaque_pass_time_ms *= alpha;
-    back_info_smooth_.depth_opaque_pass_time_ms += k * us_to_ms(backend_info.depth_opaque_pass_time_us);
-    back_info_smooth_.ao_pass_time_ms *= alpha;
-    back_info_smooth_.ao_pass_time_ms += k * us_to_ms(backend_info.ao_pass_time_us);
-    back_info_smooth_.opaque_pass_time_ms *= alpha;
-    back_info_smooth_.opaque_pass_time_ms += k * us_to_ms(backend_info.opaque_pass_time_us);
-    back_info_smooth_.transp_pass_time_ms *= alpha;
-    back_info_smooth_.transp_pass_time_ms += k * us_to_ms(backend_info.transp_pass_time_us);
-    back_info_smooth_.refl_pass_time_ms *= alpha;
-    back_info_smooth_.refl_pass_time_ms += k * us_to_ms(backend_info.refl_pass_time_us);
-    back_info_smooth_.taa_pass_time_ms *= alpha;
-    back_info_smooth_.taa_pass_time_ms += k * us_to_ms(backend_info.taa_pass_time_us);
-    back_info_smooth_.blur_pass_time_ms *= alpha;
-    back_info_smooth_.blur_pass_time_ms += k * us_to_ms(backend_info.blur_pass_time_us);
-    back_info_smooth_.blit_pass_time_ms *= alpha;
-    back_info_smooth_.blit_pass_time_ms += k * us_to_ms(backend_info.blit_pass_time_us);
+    back_info_smooth_.pass_timings_count = int(backend_info.pass_timings.size());
+    for (int i = 0; i < int(backend_info.pass_timings.size()); ++i) {
+        if (back_info_smooth_.pass_names[i] == backend_info.pass_timings[i].name) {
+            back_info_smooth_.pass_timings_ms[i] *= alpha;
+            back_info_smooth_.pass_timings_ms[i] += k * ns_to_ms(backend_info.pass_timings[i].duration);
+        } else {
+            back_info_smooth_.pass_names[i] = backend_info.pass_timings[i].name;
+            back_info_smooth_.pass_timings_ms[i] = ns_to_ms(backend_info.pass_timings[i].duration);
+        }
+    }
+
     back_info_smooth_.cpu_total_ms *= alpha;
     back_info_smooth_.cpu_total_ms +=
         k * us_to_ms(backend_info.cpu_end_timepoint_us - backend_info.cpu_start_timepoint_us);
-    back_info_smooth_.gpu_total_ms *= alpha;
-    back_info_smooth_.gpu_total_ms +=
-        k * us_to_ms(backend_info.gpu_end_timepoint_us - backend_info.gpu_start_timepoint_us);
-    back_info_smooth_.shadow_draw_calls_count *= alpha;
-    back_info_smooth_.shadow_draw_calls_count += k * backend_info.shadow_draw_calls_count;
-    back_info_smooth_.depth_fill_draw_calls_count *= alpha;
-    back_info_smooth_.depth_fill_draw_calls_count += k * backend_info.depth_fill_draw_calls_count;
-    back_info_smooth_.opaque_draw_calls_count *= alpha;
-    back_info_smooth_.opaque_draw_calls_count += k * backend_info.opaque_draw_calls_count;
-    back_info_smooth_.tris_rendered *= alpha;
-    back_info_smooth_.tris_rendered += k * 0.000001f * backend_info.tris_rendered;
 
     items_info_smooth_.light_sources_count *= alpha;
     items_info_smooth_.light_sources_count += k * items_info.light_sources_count;
@@ -89,7 +70,7 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
 void DebugInfoUI::Draw(Gui::Renderer *r) {
     const float font_height = font_->height(parent_);
 
-    const char delimiter[] = "------------------";
+    const char delimiter[] = "-------------------------------";
     char text_buffer[256];
 
     float vertical_offset = 0.75f;
@@ -105,7 +86,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         const double alpha = 0.025;
         cur_frame_dur_ = alpha * last_frame_dur + (1.0 - alpha) * cur_frame_dur_;
 
-        sprintf(text_buffer, "        fps: %.1f", (1000.0 / cur_frame_dur_));
+        sprintf(text_buffer, "              FPS: %.1f", (1000.0 / cur_frame_dur_));
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
@@ -114,27 +95,27 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "   occ_rast: %.3f ms", front_info_smooth_.occluders_time_ms);
+        sprintf(text_buffer, "   OCCLUDERS RAST: %.3f ms", front_info_smooth_.occluders_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "main_gather: %.3f ms", front_info_smooth_.main_gather_time_ms);
+        sprintf(text_buffer, "      MAIN GATHER: %.3f ms", front_info_smooth_.main_gather_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "shad_gather: %.3f ms", front_info_smooth_.shadow_gather_time_ms);
+        sprintf(text_buffer, "    SHADOW GATHER: %.3f ms", front_info_smooth_.shadow_gather_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "    sorting: %.3f ms", front_info_smooth_.drawables_sort_time_ms);
+        sprintf(text_buffer, "          SORTING: %.3f ms", front_info_smooth_.drawables_sort_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "item_assign: %.3f ms", front_info_smooth_.items_assignment_time_ms);
+        sprintf(text_buffer, "      ITEM ASSIGN: %.3f ms", front_info_smooth_.items_assignment_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "front_total: %.3f ms", front_info_smooth_.total_time_ms);
+        sprintf(text_buffer, "      FRONT TOTAL: %.3f ms", front_info_smooth_.total_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
@@ -142,61 +123,28 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         vertical_offset -= font_height;
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
-        vertical_offset -= font_height;
-        sprintf(text_buffer, " draw_calls: [%.1f, %.1f, %.1f]", back_info_smooth_.shadow_draw_calls_count,
+        /*vertical_offset -= font_height;
+        sprintf(text_buffer, "           DRAW CALLS: [%.1f, %.1f, %.1f]", back_info_smooth_.shadow_draw_calls_count,
                 back_info_smooth_.depth_fill_draw_calls_count, back_info_smooth_.opaque_draw_calls_count);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "  triangles: %.2f M", back_info_smooth_.tris_rendered);
+        sprintf(text_buffer, "            TRIANGLES: %.2f M", back_info_smooth_.tris_rendered);
+        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);*/
+
+        for (int i = 0; i < back_info_smooth_.pass_timings_count; ++i) {
+            vertical_offset -= font_height;
+            sprintf(text_buffer, " %16s: %.3f ms", back_info_smooth_.pass_names[i].c_str(),
+                    back_info_smooth_.pass_timings_ms[i]);
+            font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        }
+
+        vertical_offset -= font_height;
+        sprintf(text_buffer, "   BACK CPU TOTAL: %.3f ms", back_info_smooth_.cpu_total_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "   skinning: %.3f ms", back_info_smooth_.skinning_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "shadow_maps: %.3f ms", back_info_smooth_.shadow_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, " depth_fill: %.3f ms", back_info_smooth_.depth_opaque_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "       ssao: %.3f ms", back_info_smooth_.ao_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "opaque_pass: %.3f ms", back_info_smooth_.opaque_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "transp_pass: %.3f ms", back_info_smooth_.transp_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "  refl_pass: %.3f ms", back_info_smooth_.refl_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "   taa_pass: %.3f ms", back_info_smooth_.taa_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "  blur_pass: %.3f ms", back_info_smooth_.blur_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "  blit_pass: %.3f ms", back_info_smooth_.blit_pass_time_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "  cpu_total: %.3f ms", back_info_smooth_.cpu_total_ms);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-
-        vertical_offset -= font_height;
-        sprintf(text_buffer, "  gpu_total: %.3f ms", back_info_smooth_.gpu_total_ms);
+        sprintf(text_buffer, "   BACK GPU TOTAL: %.3f ms", back_info_smooth_.gpu_total_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
@@ -205,28 +153,28 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, " lights_cnt: %.3f", items_info_smooth_.light_sources_count);
+        sprintf(text_buffer, "     LIGHTS COUNT: %.3f", items_info_smooth_.light_sources_count);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "lights_data: %.3f kb",
+        sprintf(text_buffer, "      LIGHTS DATA: %.3f kb",
                 items_info_smooth_.light_sources_count * sizeof(LightSourceItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, " decals_cnt: %.3f", items_info_smooth_.decals_count);
+        sprintf(text_buffer, "     DECALS COUNT: %.3f", items_info_smooth_.decals_count);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "decals_data: %.3f kb", items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
+        sprintf(text_buffer, "      DECALS DATA: %.3f kb", items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, " cells_data: %.3f kb", REN_CELLS_COUNT * sizeof(CellData) / 1024.0f);
+        sprintf(text_buffer, "       CELLS DATA: %.3f kb", REN_CELLS_COUNT * sizeof(CellData) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, " items_data: %.3f kb", items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
+        sprintf(text_buffer, "       ITEMS DATA: %.3f kb", items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
