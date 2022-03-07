@@ -9,10 +9,6 @@
 extern __itt_domain *__g_itt_domain;
 
 namespace RendererInternal {
-// 'nabe' is short for 'neighbourhood'
-const float CamNabeRadius = 100.0f;
-const float CamNabeRadius2 = CamNabeRadius * CamNabeRadius;
-
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
     return p[0] > bbox_min[0] && p[0] < bbox_max[0] && p[1] > bbox_min[1] && p[1] < bbox_max[1] && p[2] > bbox_min[2] &&
            p[2] < bbox_max[2];
@@ -177,7 +173,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
-    std::memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+    memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+
+    const float ExtendedFrustumOffset = 100.0f;
+    const float ExtendedFrustumFrontOffset = 200.0f;
+
+    Ren::Frustum ext_frustum = list.draw_cam.frustum();
+    for (int i = 0; i < 6; ++i) {
+        ext_frustum.planes[i].d += ExtendedFrustumOffset;
+    }
+    ext_frustum.planes[int(Ren::eCamPlane::Far)].d =
+        -ext_frustum.planes[int(Ren::eCamPlane::Near)].d + (ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
@@ -245,8 +251,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    // Node has slightly enlarged bounds, so we need to check object's
-                    // bounding box here
+                    // Node has slightly enlarged bounds, so we need to check object's bounding box here
                     if (!skip_frustum_check &&
                         list.draw_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == eVisResult::Invisible) {
                         continue;
@@ -335,7 +340,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
             }
 
-            if (cam_visibility == eVisResult::Invisible && cam_dist2 > CamNabeRadius2) {
+            if (cam_visibility == eVisResult::Invisible &&
+                ext_frustum.CheckVisibility(bbox_points) == eVisResult::Invisible) {
                 continue;
             }
 
@@ -347,23 +353,21 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 if (cam_visibility != eVisResult::Invisible && (obj.comp_mask & CompTransformBit) &&
                     (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) { // NOLINT
-                    const uint16_t cam_dist_u16 = uint16_t(0xffffu * (std::sqrt(cam_dist2) / CamNabeRadius));
+                    const uint16_t cam_dist_u16 = uint16_t(0xffffu * (std::sqrt(cam_dist2) / 500.0f));
 
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
                     const float bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
 
                     if (!skip_frustum_check) {
-                        // Node has slightly enlarged bounds, so we need to check object's
-                        // bounding box here
+                        // Node has slightly enlarged bounds, so we need to check object's bounding box here
                         if (list.draw_cam.CheckFrustumVisibility(bbox_points) == eVisResult::Invisible) {
                             continue;
                         }
                     }
 
                     if (culling_enabled) {
-                        // do not question visibility of the object in which we are
-                        // inside
+                        // do not question visibility of the object in which we are inside
                         if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f || cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
                             cam_pos[2] < tr.bbox_min_ws[2] - 0.5f || cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
                             cam_pos[1] > tr.bbox_max_ws[1] + 0.5f || cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
@@ -412,7 +416,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Mesh *mesh = dr.mesh.get();
 
                         const auto dist =
-                            (uint8_t)_MIN(255 * Distance(tr.bbox_min_ws, cam.world_position()) / CamNabeRadius, 255);
+                            (uint8_t)_MIN(255 * Distance(tr.bbox_min_ws, cam.world_position()) / 500.0f, 255);
 
                         uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
