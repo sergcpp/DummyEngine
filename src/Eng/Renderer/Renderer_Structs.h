@@ -296,6 +296,15 @@ struct RTGeoInstance {
 };
 static_assert(sizeof(RTGeoInstance) == 32, "!");
 
+struct RTObjInstance {
+    float xform[3][4];
+    uint32_t custom_index : 24;
+    uint32_t mask : 8;
+    uint32_t _pad;
+    uint64_t blas_ref;
+};
+static_assert(sizeof(RTObjInstance) == 64, "!");
+
 #if defined(USE_VK_RENDER)
 #include <Ren/VK.h>
 #include <Ren/Buffer.h>

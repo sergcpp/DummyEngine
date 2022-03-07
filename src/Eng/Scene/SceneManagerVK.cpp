@@ -27,6 +27,16 @@ uint32_t next_power_of_two(uint32_t v) {
 VkDeviceSize align_up(const VkDeviceSize size, const VkDeviceSize alignment) {
     return (size + alignment - 1) & ~(alignment - 1);
 }
+
+void to_khr_xform(const Ren::Mat4f &xform, float matrix[3][4]) {
+    // transpose
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            matrix[i][j] = xform[j][i];
+        }
+    }
+};
+
 } // namespace SceneManagerInternal
 
 void SceneManager::UpdateMaterialsBuffer() {
@@ -582,15 +592,6 @@ void SceneManager::InitHWAccStructures() {
     std::vector<RTGeoInstance> geo_instances;
     std::vector<VkAccelerationStructureInstanceKHR> tlas_instances;
 
-    auto to_khr_xform = [](const Ren::Mat4f &xform) -> VkTransformMatrixKHR {
-        const Ren::Mat4f transposed = Ren::Transpose(xform);
-
-        VkTransformMatrixKHR ret;
-        memcpy(&ret.matrix[0][0], Ren::ValuePtr(transposed), 12 * sizeof(float));
-
-        return ret;
-    };
-
     for (const auto &obj : scene_data_.objects) {
         if ((obj.comp_mask & (CompTransformBit | CompAccStructureBit)) != (CompTransformBit | CompAccStructureBit)) {
             continue;
@@ -611,7 +612,7 @@ void SceneManager::InitHWAccStructures() {
 
         tlas_instances.emplace_back();
         auto &new_instance = tlas_instances.back();
-        new_instance.transform = to_khr_xform(tr.world_from_object);
+        to_khr_xform(tr.world_from_object, new_instance.transform.matrix);
         new_instance.instanceCustomIndex = uint32_t(geo_instances.size());
         new_instance.mask = 0xff;
         new_instance.instanceShaderBindingTableRecordOffset = 0;
@@ -699,7 +700,7 @@ void SceneManager::InitHWAccStructures() {
     Ren::CopyBufferToBuffer(instance_stage_buf, 0, *scene_data_.persistent_data.rt_instance_buf, 0,
                             instance_stage_buf.size(), cmd_buf);
 
-    { // Make sure compaction copying has finished
+    { // Make sure compaction copying of BLASes has finished
         VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
         mem_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         mem_barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
@@ -722,7 +723,8 @@ void SceneManager::InitHWAccStructures() {
 
         VkAccelerationStructureBuildGeometryInfoKHR tlas_build_info = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
-        tlas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR;
+        tlas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV;
         tlas_build_info.geometryCount = 1;
         tlas_build_info.pGeometries = &tlas_geo;
         // tlas_build_info.ppGeometries = &p_tlas_geo;
@@ -777,4 +779,226 @@ void SceneManager::InitHWAccStructures() {
     }
 
     Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+}
+
+void SceneManager::UpdateHWAccStructures() {
+    using namespace SceneManagerInternal;
+
+    // retrieve pointers to components for fast access
+    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *probes = (LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
+    const CompStorage *probe_store = scene_data_.comp_store[CompProbe];
+
+    std::vector<RTGeoInstance> geo_instances;
+    std::vector<RTObjInstance> obj_instances;
+
+    for (const auto &obj : scene_data_.objects) {
+        if ((obj.comp_mask & (CompTransformBit | CompAccStructureBit)) != (CompTransformBit | CompAccStructureBit)) {
+            continue;
+        }
+
+        const Transform &tr = transforms[obj.components[CompTransform]];
+        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+        const Lightmap *lm = nullptr;
+        if (obj.comp_mask & CompLightmapBit) {
+            lm = &lightmaps[obj.components[CompLightmap]];
+        }
+        uint32_t closest_probe = 0xffffffff;
+        if (obj.comp_mask & CompProbeBit) {
+            closest_probe = probes[obj.components[CompProbe]].layer_index;
+        }
+
+        auto &vk_blas = static_cast<Ren::AccStructureVK &>(*acc.mesh->blas);
+
+        obj_instances.emplace_back();
+        auto &obj_instance = obj_instances.back();
+        to_khr_xform(tr.world_from_object, obj_instance.xform);
+        obj_instance.custom_index = uint32_t(geo_instances.size());
+        obj_instance.mask = 0xff;
+        obj_instance.blas_ref = static_cast<uint64_t>(vk_blas.vk_device_address());
+
+        const uint32_t indices_start = acc.mesh->indices_buf().offset;
+        for (const Ren::TriGroup &grp : acc.mesh->groups()) {
+            const Ren::Material *mat = grp.mat.get();
+            const uint32_t mat_flags = mat->flags();
+            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) != 0) {
+                // Include only opaque surfaces
+                continue;
+            }
+
+            geo_instances.emplace_back();
+            auto &geo = geo_instances.back();
+            geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
+            geo.vertices_start = acc.mesh->attribs_buf1().offset / 16;
+            geo.material_index = grp.mat.index();
+            geo.flags = 0;
+            if (lm) {
+                geo.flags |= RTGeoLightmappedBit;
+                memcpy(&geo.lmap_transform[0], Ren::ValuePtr(lm->xform), 4 * sizeof(float));
+            } else {
+                if (closest_probe == 0xffffffff) {
+                    // find closest probe
+                    float min_dist2 = std::numeric_limits<float>::max();
+                    for (const auto &probe : scene_data_.objects) {
+                        if ((probe.comp_mask & (CompTransformBit | CompProbeBit)) !=
+                            (CompTransformBit | CompProbeBit)) {
+                            continue;
+                        }
+
+                        const Transform &probe_tr = transforms[probe.components[CompTransform]];
+                        const LightProbe &probe_pr = probes[probe.components[CompProbe]];
+
+                        const float dist2 =
+                            Ren::Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),
+                                           0.5f * (probe_tr.bbox_min_ws + probe_tr.bbox_max_ws) + probe_pr.offset);
+                        if (dist2 < min_dist2) {
+                            closest_probe = probe_pr.layer_index;
+                            min_dist2 = dist2;
+                        }
+                    }
+                }
+                geo.flags |= (closest_probe & 0xff);
+            }
+        }
+    }
+
+    Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
+
+    if (!scene_data_.persistent_data.rt_geo_data_buf ||
+        scene_data_.persistent_data.rt_geo_data_buf->size() < uint32_t(geo_instances.size() * sizeof(RTGeoInstance))) {
+        scene_data_.persistent_data.rt_geo_data_buf = ren_ctx_.LoadBuffer(
+            "RT Geo Data Buf", Ren::eBufType::Storage, uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
+    }
+
+    Ren::Buffer geo_data_stage_buf("RT Geo Data Stage Buf", api_ctx, Ren::eBufType::Stage,
+                                   uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
+
+    {
+        uint8_t *geo_data_stage = geo_data_stage_buf.Map(Ren::BufMapWrite);
+        memcpy(geo_data_stage, geo_instances.data(), geo_instances.size() * sizeof(RTGeoInstance));
+        geo_data_stage_buf.Unmap();
+    }
+
+    if (!scene_data_.persistent_data.rt_instance_buf ||
+        scene_data_.persistent_data.rt_instance_buf->size() <
+            uint32_t(obj_instances.size() * sizeof(VkAccelerationStructureInstanceKHR))) {
+
+        scene_data_.persistent_data.rt_instance_buf =
+            ren_ctx_.LoadBuffer("RT Instance Buf", Ren::eBufType::Storage,
+                                uint32_t(obj_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
+    }
+
+    Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
+                                   uint32_t(obj_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
+
+    {
+        auto *instance_stage =
+            reinterpret_cast<VkAccelerationStructureInstanceKHR *>(instance_stage_buf.Map(Ren::BufMapWrite));
+
+        for (int i = 0; i < int(obj_instances.size()); ++i) {
+            auto &new_instance = instance_stage[i];
+            memcpy(new_instance.transform.matrix, obj_instances[i].xform, 12 * sizeof(float));
+            new_instance.instanceCustomIndex = obj_instances[i].custom_index;
+            new_instance.mask = obj_instances[i].mask;
+            new_instance.instanceShaderBindingTableRecordOffset = 0;
+            new_instance.flags = 0;
+            new_instance.accelerationStructureReference = obj_instances[i].blas_ref;
+        }
+
+        instance_stage_buf.Unmap();
+    }
+
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+
+    Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
+                            geo_data_stage_buf.size(), cmd_buf);
+
+    Ren::CopyBufferToBuffer(instance_stage_buf, 0, *scene_data_.persistent_data.rt_instance_buf, 0,
+                            instance_stage_buf.size(), cmd_buf);
+
+    if (!scene_data_.persistent_data.rt_tlas) {
+        scene_data_.persistent_data.rt_tlas.reset(new Ren::AccStructureVK);
+    }
+
+    Ren::AccStructureVK *vk_tlas = reinterpret_cast<Ren::AccStructureVK *>(scene_data_.persistent_data.rt_tlas.get());
+
+    { //
+        VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
+        instances_data.data.deviceAddress = scene_data_.persistent_data.rt_instance_buf->vk_device_address();
+
+        VkAccelerationStructureGeometryKHR tlas_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+        tlas_geo.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+        tlas_geo.geometry.instances = instances_data;
+
+        VkAccelerationStructureGeometryKHR *p_tlas_geo = &tlas_geo;
+
+        VkAccelerationStructureBuildGeometryInfoKHR tlas_build_info = {
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
+        tlas_build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
+                                VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV;
+        tlas_build_info.geometryCount = 1;
+        tlas_build_info.pGeometries = &tlas_geo;
+        if (vk_tlas->vk_handle() == VK_NULL_HANDLE) {
+            tlas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+        } else {
+            tlas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR;
+        }
+        tlas_build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+
+        const uint32_t instance_count = uint32_t(obj_instances.size());
+
+        VkAccelerationStructureBuildSizesInfoKHR size_info = {
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+        vkGetAccelerationStructureBuildSizesKHR(api_ctx->device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                                &tlas_build_info, &instance_count, &size_info);
+
+        if (!scene_data_.persistent_data.rt_tlas_buf ||
+            scene_data_.persistent_data.rt_tlas_buf->size() < uint32_t(size_info.accelerationStructureSize)) {
+            scene_data_.persistent_data.rt_tlas_buf = ren_ctx_.LoadBuffer(
+                "TLAS Buf", Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
+        }
+
+        VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+        create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        create_info.buffer = scene_data_.persistent_data.rt_tlas_buf->vk_handle();
+        create_info.offset = 0;
+        create_info.size = size_info.accelerationStructureSize;
+
+        tlas_build_info.srcAccelerationStructure = vk_tlas->vk_handle();
+
+        if (vk_tlas->vk_handle() == VK_NULL_HANDLE) {
+            VkAccelerationStructureKHR tlas_handle;
+            VkResult res = vkCreateAccelerationStructureKHR(api_ctx->device, &create_info, nullptr, &tlas_handle);
+            if (res != VK_SUCCESS) {
+                ren_ctx_.log()->Error("[SceneManager::InitHWAccStructures]: Failed to create acceleration structure!");
+            }
+
+            tlas_build_info.dstAccelerationStructure = tlas_handle;
+
+            if (!vk_tlas->Init(api_ctx, tlas_handle)) {
+                ren_ctx_.log()->Error("[SceneManager::InitHWAccStructures]: Failed to init TLAS!");
+            }
+        } else {
+            // update in-place
+            tlas_build_info.dstAccelerationStructure = tlas_build_info.srcAccelerationStructure;
+        }
+
+        Ren::BufferRef tlas_scratch_buf =
+            ren_ctx_.LoadBuffer("TLAS Scratch Buf", Ren::eBufType::Storage, uint32_t(size_info.buildScratchSize));
+        VkDeviceAddress tlas_scratch_buf_addr = tlas_scratch_buf->vk_device_address();
+
+        tlas_build_info.scratchData.deviceAddress = tlas_scratch_buf_addr;
+
+        VkAccelerationStructureBuildRangeInfoKHR range_info = {};
+        range_info.primitiveOffset = 0;
+        range_info.primitiveCount = instance_count;
+        range_info.firstVertex = 0;
+        range_info.transformOffset = 0;
+
+        const VkAccelerationStructureBuildRangeInfoKHR *build_range = &range_info;
+        vkCmdBuildAccelerationStructuresKHR(cmd_buf, 1, &tlas_build_info, &build_range);
+    }
 }
