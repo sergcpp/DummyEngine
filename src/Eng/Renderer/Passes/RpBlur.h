@@ -33,5 +33,5 @@ class RpBlur : public RenderPassBase {
                const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "BLUR PASS"; }
+    const char *name() const override { return "BLUR"; }
 };

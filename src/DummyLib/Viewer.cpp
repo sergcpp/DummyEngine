@@ -153,6 +153,7 @@ void Viewer::Frame() {
     vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE, UINT64_MAX);
     vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
+    Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
     Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
     uint32_t next_image_index = 0;
@@ -175,6 +176,9 @@ void Viewer::Frame() {
 
     vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 
+    vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame], api_ctx->query_pools[api_ctx->backend_frame], 0,
+                        Ren::MaxTimestampQueries);
+
     { // change layout from present_src to attachment_optimal
         VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
@@ -196,6 +200,8 @@ void Viewer::Frame() {
     // Make sure all operations have finished
     api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
     api_ctx->in_flight_fences[api_ctx->backend_frame] = {};
+
+    Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);

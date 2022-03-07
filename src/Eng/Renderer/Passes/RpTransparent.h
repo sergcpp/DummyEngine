@@ -93,5 +93,5 @@ class RpTransparent : public RenderPassBase {
                const char transparent_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "TRANSPARENT PASS"; }
+    const char *name() const override { return "TRANSPARENT"; }
 };

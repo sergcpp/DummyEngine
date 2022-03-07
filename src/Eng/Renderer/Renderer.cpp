@@ -813,9 +813,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
 
             rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
-                                  (list.render_flags & EnableSSR_HQ) ? taa_history_tex_ : down_tex_4x_, brdf_lut_,
+                                  down_tex_4x_, brdf_lut_,
                                   SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                                  DEPTH_DOWN_2X_TEX, "SSR Denoised 1", refl_out_name);
+                                  DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
             rp_tail->p_next = &rp_ssr_compose_;
             rp_tail = rp_tail->p_next;
         }
@@ -1041,6 +1041,18 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
 
     __itt_task_end(__g_itt_domain);
+}
+
+void Renderer::InitBackendInfo() {
+    backend_info_.pass_timings.clear();
+    for (auto &t : rp_builder_.pass_timings_[ctx_.backend_frame()]) {
+        PassTiming &new_t = backend_info_.pass_timings.emplace_back();
+        new_t.name = t.name;
+        new_t.duration = ctx_.GetTimestampIntervalDuration(t.query_beg, t.query_end);
+    }
+
+    backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
+    backend_info_.cpu_end_timepoint_us = backend_cpu_end_;
 }
 
 #undef BBOX_POINTS

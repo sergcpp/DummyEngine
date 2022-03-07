@@ -31,5 +31,5 @@ class RpSSAO : public RenderPassBase {
                const char depth_down_2x[], const char output_tex[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "SSAO PASS"; }
+    const char *name() const override { return "SSAO"; }
 };

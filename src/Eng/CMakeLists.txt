@@ -204,6 +204,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpDebugTextures.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         Scene/SceneManagerGL.cpp)
+    set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
                         Renderer/Passes/RpDebugTexturesGL.cpp
                         Renderer/Passes/RpDebugRT_GL.cpp

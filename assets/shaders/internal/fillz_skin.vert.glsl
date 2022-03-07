@@ -41,7 +41,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
 #endif
 
-layout(binding = REN_MATERIALS_SLOT) readonly buffer Materials {
+layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData materials[];
 };
 

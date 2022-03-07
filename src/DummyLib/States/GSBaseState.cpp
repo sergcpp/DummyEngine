@@ -675,6 +675,8 @@ void GSBaseState::Draw() {
                 thr_done_.wait(lock);
             }
 
+            renderer_->InitBackendInfo();
+
             if (use_lm_) {
                 int w, h;
                 const float *preview_pixels = nullptr;
@@ -752,6 +754,7 @@ void GSBaseState::Draw() {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
+            renderer_->InitBackendInfo();
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
             // Gather drawables for list 0
@@ -803,7 +806,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
         uint32_t render_flags = renderer_->render_flags();
         FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
-        BackendInfo back_info = renderer_->backend_info();
+        const BackendInfo &back_info = renderer_->backend_info();
 
         /*const uint64_t
             front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,

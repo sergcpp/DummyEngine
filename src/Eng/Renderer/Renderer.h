@@ -72,7 +72,9 @@ class Renderer {
 
     void set_render_flags(const uint32_t f) { render_flags_ = f; }
 
-    BackendInfo backend_info() const { return backend_info_; }
+    const BackendInfo &backend_info() const { return backend_info_; }
+
+    void InitBackendInfo();
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
     void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,

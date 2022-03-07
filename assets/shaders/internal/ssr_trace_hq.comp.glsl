@@ -1,5 +1,7 @@
 #version 310 es
-#extension GL_KHR_shader_subgroup_ballot : require
+#ifndef NO_SUBGROUP_EXTENSIONS
+#extension GL_KHR_shader_subgroup_ballot : enable
+#endif
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;
@@ -14,7 +16,12 @@
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
     UniformParams : $ubUnifParamLoc
+PERM @NO_SUBGROUP_EXTENSIONS
 */
+
+#if !defined(GL_KHR_shader_subgroup_ballot) && !defined(NO_SUBGROUP_EXTENSIONS)
+#define NO_SUBGROUP_EXTENSIONS
+#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -275,6 +282,7 @@ void main() {
 
     { // schedule rt rays
         bool needs_ray = !hit_found;
+#ifndef NO_SUBGROUP_EXTENSIONS
         uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
         uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
         uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);
@@ -288,6 +296,12 @@ void main() {
             uint ray_index = base_ray_index + local_ray_index_in_wave;
             StoreRay(ray_index, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
         }
+#else
+        if (needs_ray) {
+            uint ray_index = atomicAdd(g_inout_ray_counter[4], 1);
+            StoreRay(ray_index, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
+        }
+#endif
     }
 
     float ray_len = hit_found ? distance(hit_point, ray_origin_vs.xyz) : 0.0;

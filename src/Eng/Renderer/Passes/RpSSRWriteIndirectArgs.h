@@ -23,5 +23,5 @@ class RpSSRWriteIndirectArgs : public RenderPassBase {
                const char indir_disp_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "SSR WRITE INDIRECT ARGS"; }
+    const char *name() const override { return "SSR INDIR ARGS"; }
 };

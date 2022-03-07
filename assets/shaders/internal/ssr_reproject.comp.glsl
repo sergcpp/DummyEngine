@@ -1,6 +1,4 @@
 #version 310 es
-#extension GL_KHR_shader_subgroup_basic : require
-#extension GL_KHR_shader_subgroup_ballot : require
 #extension GL_ARB_shading_language_packing : require
 
 #if defined(GL_ES) || defined(VULKAN)

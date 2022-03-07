@@ -37,5 +37,5 @@ class RpCombine : public RenderPassBase {
                const char output_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "COMBINE PASS"; }
+    const char *name() const override { return "COMBINE"; }
 };

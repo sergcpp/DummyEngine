@@ -27,6 +27,9 @@ Ren::Context::Context() = default;
 
 Ren::Context::~Context() {
     api_ctx_->present_image_refs.clear();
+    for (int i = 0; i < MaxFramesInFlight; i++) {
+        glDeleteQueries(MaxTimestampQueries, api_ctx_->queries[i]);
+    }
     ReleaseAll();
 }
 
@@ -41,6 +44,7 @@ bool Ren::Context::Init(int w, int h, ILog *log, const char *) {
     api_ctx_.reset(new ApiContext);
     for (int i = 0; i < MaxFramesInFlight; i++) {
         api_ctx_->in_flight_fences.emplace_back(MakeFence());
+        glGenQueries(MaxTimestampQueries, api_ctx_->queries[i]);
     }
 
     log_->Info("===========================================");

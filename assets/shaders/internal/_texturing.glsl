@@ -19,7 +19,7 @@
         #define SAMPLER2D(ndx) sampler2D(ndx)
         #define GET_HANDLE(ndx) texture_handles[ndx]
 
-        layout(binding = REN_BINDLESS_TEX_SLOT) readonly buffer TextureHandles {
+        layout(binding = REN_BINDLESS_TEX_SLOT, std430) readonly buffer TextureHandles {
             uvec2 texture_handles[];
         };
     #else // GL_ARB_bindless_texture
