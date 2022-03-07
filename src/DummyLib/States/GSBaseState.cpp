@@ -766,6 +766,11 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
+
+            const uint64_t dt = scene_manager_->GetAccStructsUpdateTime();
+            log_->Info("AccUpdate: %fms", dt * 0.000001);
+
+            scene_manager_->UpdateAccStructures();
             renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data());
         }
     }

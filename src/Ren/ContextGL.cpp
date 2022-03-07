@@ -189,6 +189,14 @@ Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) { return MakeF
 void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {}
 void *Ren::Context::current_cmd_buf() { return nullptr; }
 
+int Ren::Context::WriteTimestamp(const bool) {
+    const uint32_t query_index = api_ctx_->query_counts[api_ctx_->backend_frame]++;
+    glQueryCounter(api_ctx_->queries[api_ctx_->backend_frame][query_index], GL_TIMESTAMP);
+
+    return int(query_index);
+}
+
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif

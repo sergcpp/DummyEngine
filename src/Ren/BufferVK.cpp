@@ -216,7 +216,7 @@ bool Ren::Buffer::FreeSubRegion(const uint32_t offset, const uint32_t size) {
     return true;
 }
 
-void Ren::Buffer::Resize(const uint32_t new_size) {
+void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
     if (size_ >= new_size) {
         return;
     }
@@ -272,7 +272,7 @@ void Ren::Buffer::Resize(const uint32_t new_size) {
     assert(res == VK_SUCCESS && "Failed to bind memory!");
 
     if (handle_.buf != VK_NULL_HANDLE) {
-        { // copy previous buffer contents
+        if (keep_content) {
             VkCommandBuffer cmd_buf = BegSingleTimeCommands(api_ctx_->device, api_ctx_->temp_command_pool);
 
             VkBufferCopy region_to_copy = {};

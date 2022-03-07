@@ -423,7 +423,7 @@ Ren::BufferRef Ren::Context::LoadBuffer(const char *name, const eBufType type, c
         ref = buffers_.Add(name, api_ctx_.get(), type, initial_size, suballoc_align);
     } else if (ref->size() < initial_size) {
         assert(ref->type() == type);
-        ref->Resize(initial_size);
+        ref->Resize(initial_size, false /* keep_content */);
     }
     return ref;
 }

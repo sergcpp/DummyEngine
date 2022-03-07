@@ -120,7 +120,7 @@ class Buffer : public RefCounter, public LinearAlloc {
                          void *cmd_buf = nullptr);
     bool FreeSubRegion(uint32_t offset, uint32_t size);
 
-    void Resize(uint32_t new_size);
+    void Resize(uint32_t new_size, bool keep_content = true);
     void Free();
 
     uint32_t AlignMapOffset(uint32_t offset);

@@ -134,8 +134,6 @@ class RpBuilder {
     void HandleResourceTransition(const RpResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
                                   Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
 
-    int WriteTimestamp(bool start);
-
   public:
     RpBuilder(Ren::Context &ctx, ShaderLoader &sh) : ctx_(ctx), sh_(sh) {}
 
