@@ -80,6 +80,8 @@ class Camera {
     float near() const { return near_; }
     float far() const { return far_; }
 
+    const Frustum &frustum() const { return frustum_; }
+
     const Plane &frustum_plane(const int i) const { return frustum_.planes[i]; }
     const Plane &frustum_plane(const eCamPlane i) const { return frustum_.planes[int(i)]; }
 
