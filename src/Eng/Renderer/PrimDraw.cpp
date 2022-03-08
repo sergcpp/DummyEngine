@@ -70,7 +70,7 @@ bool PrimDraw::LazyInit(Ren::Context &ctx) {
 
             { // copy sphere positions
                 uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::BufMapWrite);
-                memcpy(mapped_ptr, __sphere_positions, SphereVerticesSize);
+                memcpy(mapped_ptr, __sphere_positions, sizeof(__sphere_positions));
                 temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(SphereVerticesSize));
                 temp_stage_buf.Unmap();
             }
