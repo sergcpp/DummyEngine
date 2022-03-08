@@ -4,15 +4,15 @@
     precision mediump float;
 #endif
 
-layout(binding = 0) uniform sampler2D s_texture;
+layout(binding = 0) uniform sampler2D g_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 vec4 RGBMEncode(vec3 color) {
     vec4 rgbm;
@@ -24,5 +24,5 @@ vec4 RGBMEncode(vec3 color) {
 }
 
 void main() {
-    outColor = RGBMEncode(texelFetch(s_texture, ivec2(aVertexUVs_), 0).rgb);
+    g_out_color = RGBMEncode(texelFetch(g_texture, ivec2(g_vtx_uvs), 0).rgb);
 }

@@ -2,8 +2,8 @@
 
 #include "_vs_common.glsl"
 
-layout(location = REN_VTX_POS_LOC) in vec2 aVertexPosition;
-layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs;
+layout(location = REN_VTX_POS_LOC) in vec2 g_in_vtx_pos;
+layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -16,10 +16,10 @@ layout(location = 0) uniform vec4 uTransform;
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0)
 #endif
-out vec2 aVertexUVs_;
+out vec2 g_vtx_uvs;
 
 
 void main() {
-    aVertexUVs_ = uTransform.xy + aVertexUVs * uTransform.zw;
-    gl_Position = vec4(aVertexPosition, 0.5, 1.0);
+    g_vtx_uvs = uTransform.xy + g_in_vtx_uvs * uTransform.zw;
+    gl_Position = vec4(g_in_vtx_pos, 0.5, 1.0);
 }

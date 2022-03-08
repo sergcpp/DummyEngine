@@ -10,13 +10,13 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(binding = TLAS_SLOT) uniform accelerationStructureEXT tlas;
-layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D out_image;
+layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
+layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_image;
 
-layout(location = 0) rayPayloadEXT RayPayload pld;
+layout(location = 0) rayPayloadEXT RayPayload g_pld;
 
 void main() {
     const vec2 px_center = vec2(gl_LaunchIDEXT.xy) + vec2(0.5);
@@ -24,19 +24,19 @@ void main() {
     vec2 d = in_uv * 2.0 - 1.0;
     d.y = -d.y;
 
-    vec4 origin = shrd_data.uInvViewMatrix * vec4(0, 0, 0, 1);
+    vec4 origin = g_shrd_data.inv_view_matrix * vec4(0, 0, 0, 1);
     origin /= origin.w;
-    vec4 target = shrd_data.uInvProjMatrix * vec4(d.xy, 1, 1);
+    vec4 target = g_shrd_data.inv_proj_matrix * vec4(d.xy, 1, 1);
     target /= target.w;
-    vec4 direction = shrd_data.uInvViewMatrix * vec4(normalize(target.xyz), 0);
+    vec4 direction = g_shrd_data.inv_view_matrix * vec4(normalize(target.xyz), 0);
 
     const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;
     const float t_max = 1000.0;
 
-    pld.cone_width = 0.0;
+    g_pld.cone_width = 0.0;
 
-    traceRayEXT(tlas,           // topLevel
+    traceRayEXT(g_tlas,         // topLevel
                 ray_flags,      // rayFlags
                 0xff,           // cullMask
                 0,              // sbtRecordOffset
@@ -49,5 +49,5 @@ void main() {
                 0               // payload
                 );
 
-    imageStore(out_image, ivec2(gl_LaunchIDEXT.xy), vec4(pld.col, 1.0));
+    imageStore(g_out_image, ivec2(gl_LaunchIDEXT.xy), vec4(g_pld.col, 1.0));
 }

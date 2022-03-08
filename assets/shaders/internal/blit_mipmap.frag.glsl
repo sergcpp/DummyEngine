@@ -6,7 +6,7 @@
     precision mediump float;
 #endif
 
-layout(binding = 0) uniform mediump samplerCubeArray s_texture;
+layout(binding = 0) uniform mediump samplerCubeArray g_texture;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -21,17 +21,16 @@ layout(location = 3) uniform float src_level;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 vec3 gen_cubemap_coord(in vec2 txc, in int face) {
     vec3 v;
-    switch(face)
-    {
+    switch(face) {
         case 0: v = vec3( 1.0,   -txc.x,  txc.y); break; // +X
         case 1: v = vec3(-1.0,   -txc.x, -txc.y); break; // -X
         case 2: v = vec3(-txc.y,  1.0,    txc.x); break; // +Y
@@ -43,5 +42,5 @@ vec3 gen_cubemap_coord(in vec2 txc, in int face) {
 }
 
 void main() {
-    outColor = textureLod(s_texture, vec4(gen_cubemap_coord(aVertexUVs_, src_face), src_layer), src_level);
+    g_out_color = textureLod(g_texture, vec4(gen_cubemap_coord(g_vtx_uvs, src_face), src_layer), src_level);
 }

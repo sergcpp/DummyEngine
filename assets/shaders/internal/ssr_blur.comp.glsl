@@ -21,14 +21,14 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = ROUGH_TEX_SLOT) uniform sampler2D rough_texture;
-layout(binding = REFL_TEX_SLOT) uniform sampler2D refl_texture;
+layout(binding = ROUGH_TEX_SLOT) uniform sampler2D g_rough_texture;
+layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_texture;
 
 layout(std430, binding = TILE_METADATA_MASK_SLOT) readonly buffer TileMetadataMask {
     uint g_tile_metadata_mask[];
 };
 
-layout(binding = OUT_DENOISED_IMG_SLOT, r11f_g11f_b10f) uniform image2D out_denoised_img;
+layout(binding = OUT_DENOISED_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_denoised_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
@@ -55,8 +55,8 @@ void LoadFromSharedMemory(ivec2 idx, out /* mediump */ vec3 radiance, out /* med
 
 void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 offset, out /* mediump */ vec3 radiance, out /* mediump */ float roughness) {
     dispatch_thread_id += offset;
-    radiance = texelFetch(refl_texture, dispatch_thread_id, 0).rgb;
-    roughness = texelFetch(rough_texture, dispatch_thread_id, 0).r;
+    radiance = texelFetch(g_refl_texture, dispatch_thread_id, 0).rgb;
+    roughness = texelFetch(g_rough_texture, dispatch_thread_id, 0).r;
 }
 
 void StoreWithOffset(ivec2 group_thread_id, ivec2 offset, /* mediump */ vec3 radiance, /* mediump */ float roughness) {
@@ -162,7 +162,7 @@ void Blur(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         }
 
         /* mediump */ vec3 radiance = Resolve(group_thread_id, center_roughness, RoughnessSigmaMin, RoughnessSigmaMax);
-        imageStore(out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
+        imageStore(g_out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
     }
 }
 

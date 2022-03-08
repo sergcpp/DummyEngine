@@ -9,13 +9,13 @@
 #include "_fs_common.glsl"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec3 aVertexPos_;
+layout(location = 0) in vec3 g_vtx_pos;
 #else
-in vec3 aVertexPos_;
+in vec3 g_vtx_pos;
 #endif
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
+layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
 
 void main() {
-    outColor = vec4(1.0, 0.0, 0.0, 1.0);
+    g_out_color = vec4(1.0, 0.0, 0.0, 1.0);
 }

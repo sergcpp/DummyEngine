@@ -178,7 +178,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.uShadowViewProjMatrix = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
@@ -190,7 +190,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                     }
 
                     vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, uInstanceIndices),
+                                       offsetof(Shadow::Params, g_instance_indices),
                                        batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
 
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
@@ -224,7 +224,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.uShadowViewProjMatrix = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
@@ -236,7 +236,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                     }
 
                     vkCmdPushConstants(cmd_buf, pi_vege_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, uInstanceIndices),
+                                       offsetof(Shadow::Params, g_instance_indices),
                                        batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
 
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
@@ -271,7 +271,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.uShadowViewProjMatrix = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
@@ -290,7 +290,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                     }
 
                     vkCmdPushConstants(cmd_buf, pi_transp_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, uInstanceIndices),
+                                       offsetof(Shadow::Params, g_instance_indices),
                                        batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                                      batch.instance_count,         // instance count
@@ -324,7 +324,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.uShadowViewProjMatrix = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
@@ -343,7 +343,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                     }
 
                     vkCmdPushConstants(cmd_buf, pi_vege_transp_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, uInstanceIndices),
+                                       offsetof(Shadow::Params, g_instance_indices),
                                        batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                                      batch.instance_count,         // instance count

@@ -19,15 +19,15 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
 layout(std430, binding = ATOMIC_CNT_SLOT) highp buffer AtomicCounter {
-    uint atomic_counter;
+    uint g_atomic_counter;
 };
 
 #ifdef MIPS_7 // simplified version
-layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[7];
+layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D g_depth_hierarchy[7];
 #else
-layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[13];
+layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D g_depth_hierarchy[13];
 #endif
 
 layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
@@ -39,10 +39,10 @@ ivec2 limit_coords(ivec2 icoord) {
 #define REDUCE_OP min
 
 float ReduceSrcDepth4(ivec2 base) {
-    float v0 = texelFetch(depth_texture, limit_coords(base + ivec2(0, 0)), 0).r;
-    float v1 = texelFetch(depth_texture, limit_coords(base + ivec2(0, 1)), 0).r;
-    float v2 = texelFetch(depth_texture, limit_coords(base + ivec2(1, 0)), 0).r;
-    float v3 = texelFetch(depth_texture, limit_coords(base + ivec2(1, 1)), 0).r;
+    float v0 = texelFetch(g_depth_texture, limit_coords(base + ivec2(0, 0)), 0).r;
+    float v1 = texelFetch(g_depth_texture, limit_coords(base + ivec2(0, 1)), 0).r;
+    float v2 = texelFetch(g_depth_texture, limit_coords(base + ivec2(1, 0)), 0).r;
+    float v3 = texelFetch(g_depth_texture, limit_coords(base + ivec2(1, 1)), 0).r;
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
@@ -57,7 +57,7 @@ float ReduceQuad(float v) {
 #endif
 
 void WriteDstDepth(int index, ivec2 icoord, float v) {
-    imageStore(depth_hierarchy[index], icoord, vec4(v));
+    imageStore(g_depth_hierarchy[index], icoord, vec4(v));
 }
 
 shared float g_shared_depth[16][16];
@@ -72,10 +72,10 @@ float ReduceIntermediate(ivec2 i0, ivec2 i1, ivec2 i2, ivec2 i3) {
 }
 
 float ReduceLoad4(ivec2 base) {
-    float v0 = imageLoad(depth_hierarchy[6], base + ivec2(0, 0)).r;
-    float v1 = imageLoad(depth_hierarchy[6], base + ivec2(0, 1)).r;
-    float v2 = imageLoad(depth_hierarchy[6], base + ivec2(1, 0)).r;
-    float v3 = imageLoad(depth_hierarchy[6], base + ivec2(1, 1)).r;
+    float v0 = imageLoad(g_depth_hierarchy[6], base + ivec2(0, 0)).r;
+    float v1 = imageLoad(g_depth_hierarchy[6], base + ivec2(0, 1)).r;
+    float v2 = imageLoad(g_depth_hierarchy[6], base + ivec2(1, 0)).r;
+    float v3 = imageLoad(g_depth_hierarchy[6], base + ivec2(1, 1)).r;
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
@@ -207,9 +207,9 @@ void main() {
             ivec2 icoord = ivec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
             float depth_val = 0.0;
             if (icoord.x < g_params.depth_size.x && icoord.y < g_params.depth_size.y) {
-                depth_val = texelFetch(depth_texture, icoord, 0).r;
+                depth_val = texelFetch(g_depth_texture, icoord, 0).r;
             }
-            imageStore(depth_hierarchy[0], icoord, vec4(depth_val));
+            imageStore(g_depth_hierarchy[0], icoord, vec4(depth_val));
         }
     }
 
@@ -304,13 +304,13 @@ void main() {
 
     // Only the last active workgroup should proceed
     if (gl_LocalInvocationIndex == 0) {
-        g_shared_counter = atomicAdd(atomic_counter, 1);
+        g_shared_counter = atomicAdd(g_atomic_counter, 1);
     }
     barrier();
     if (g_shared_counter != (g_params.depth_size.w - 1)) {
         return;
     }
-    atomic_counter = 0;
+    g_atomic_counter = 0;
 
     { // Init mip levels 7 and 8
         float v[4];

@@ -14,25 +14,25 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
+layout(location = REN_VTX_POS_LOC) in vec3 g_in_vtx_pos;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
-    mat4 uMMatrix;
+    mat4 g_mmatrix;
 };
 #else
-layout(location = U_M_MATRIX_LOC) uniform mat4 uMMatrix;
+layout(location = U_M_MATRIX_LOC) uniform mat4 g_mmatrix;
 #endif
 
-LAYOUT(location = 0) out vec3 aVertexPos_;
+LAYOUT(location = 0) out vec3 g_vtx_pos;
 
 void main() {
-    vec3 vertex_position_ws = (uMMatrix * vec4(aVertexPosition, 1.0)).xyz;
-    aVertexPos_ = vertex_position_ws;
-    gl_Position = shrd_data.uViewProjMatrix * vec4(vertex_position_ws, 1.0);
+    vec3 vertex_position_ws = (g_mmatrix * vec4(g_in_vtx_pos, 1.0)).xyz;
+    g_vtx_pos = vertex_position_ws;
+    gl_Position = g_shrd_data.view_proj_matrix * vec4(vertex_position_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

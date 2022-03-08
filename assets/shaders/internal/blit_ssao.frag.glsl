@@ -13,24 +13,24 @@ UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
 */
 
-layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D depth_texture;
-layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D rand_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_texture;
+layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D g_rand_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 float SampleDepthTexel(vec2 texcoord) {
     ivec2 coord = ivec2(texcoord);
-    return texelFetch(depth_texture, coord, 0).r;
+    return texelFetch(g_depth_texture, coord, 0).r;
 }
 
 void main() {
@@ -47,9 +47,9 @@ void main() {
     const float fadeout_start = 16.0;
     const float fadeout_end = 64.0;
 
-    float lin_depth = SampleDepthTexel(aVertexUVs_);
+    float lin_depth = SampleDepthTexel(g_vtx_uvs);
     if (lin_depth > fadeout_end) {
-        outColor = vec4(1.0, 1.0, 1.0, 1.0);
+        g_out_color = vec4(1.0, 1.0, 1.0, 1.0);
         return;
     }
 
@@ -64,15 +64,15 @@ void main() {
 
     for (int i = 0; i < 3; i++) {
         mat2 transform;
-        transform[0] = texelFetch(rand_texture, rcoords, 0).xy;
+        transform[0] = texelFetch(g_rand_texture, rcoords, 0).xy;
         transform[1] = vec2(-transform[0].y, transform[0].x);
 
         vec2 sample_point = transform * sample_points[i];
 
         vec2 coord_offset = 0.5 * ss_radius * sample_point * g_params.resolution;
 
-        vec2 depth_values = vec2(SampleDepthTexel(aVertexUVs_ + coord_offset),
-                                 SampleDepthTexel(aVertexUVs_ - coord_offset));
+        vec2 depth_values = vec2(SampleDepthTexel(g_vtx_uvs + coord_offset),
+                                 SampleDepthTexel(g_vtx_uvs - coord_offset));
         float sphere_width = initial_radius * sphere_widths[i];
 
         vec2 depth_diff = vec2(lin_depth) - depth_values;
@@ -95,5 +95,5 @@ void main() {
     float k = max((lin_depth - fadeout_start) / (fadeout_end - fadeout_start), 0.0);
     occlusion = mix(occlusion, 1.0, k);
 
-    outColor = vec4(occlusion, occlusion, occlusion, 1.0);
+    g_out_color = vec4(occlusion, occlusion, occlusion, 1.0);
 }

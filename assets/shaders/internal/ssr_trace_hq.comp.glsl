@@ -40,23 +40,23 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
 layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_texture;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_texture;
 
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
     uint g_in_ray_list[];
 };
 
-layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer sobol_seq_tex;
-layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer scrambling_tile_tex;
-layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer ranking_tile_tex;
+layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
+layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
+layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
 
-layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D out_color_img;
-layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform image2D out_raylen_img;
+layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
+layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform image2D g_out_raylen_img;
 layout(std430, binding = OUT_RAY_LIST_SLOT) writeonly buffer OutRayList {
     uint g_out_ray_list[];
 };
@@ -79,20 +79,20 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    uint ranked_sample_index = sample_index ^ texelFetch(ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
 
     // fetch value in sequence
-    uint value = texelFetch(sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
+    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
 
     // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
 
     // convert to float and return
     return (float(value) + 0.5) / 256.0;
 }
 
 vec2 SampleRandomVector2D(uvec2 pixel) {
-    uint frame_index = floatBitsToUint(shrd_data.uTaaInfo[2]);
+    uint frame_index = floatBitsToUint(g_shrd_data.taa_info[2]);
     vec2 u = vec2(mod(SampleRandomNumber(pixel, 0, 0u) + float(frame_index & 0xFFu) * GOLDEN_RATIO, 1.0),
                   mod(SampleRandomNumber(pixel, 0, 1u) + float(frame_index & 0xFFu) * GOLDEN_RATIO, 1.0));
     return u;
@@ -120,7 +120,7 @@ vec3 SampleReflectionVector(vec3 view_direction, vec3 normal, float roughness, i
 // https://github.com/GPUOpen-Effects/FidelityFX-SSSR
 //
 bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out vec3 out_hit_point) {
-    vec4 ray_offsetet_ss = shrd_data.uProjMatrix * vec4(ray_origin_vs + ray_dir_vs, 1.0);
+    vec4 ray_offsetet_ss = g_shrd_data.proj_matrix * vec4(ray_origin_vs + ray_dir_vs, 1.0);
     ray_offsetet_ss.xyz /= ray_offsetet_ss.w;
 
 #if defined(VULKAN)
@@ -135,10 +135,10 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
 
     int cur_mip = MOST_DETAILED_MIP;
 
-    vec2 cur_mip_res = shrd_data.uResAndFRes.xy / exp2(MOST_DETAILED_MIP);
+    vec2 cur_mip_res = g_shrd_data.res_and_fres.xy / exp2(MOST_DETAILED_MIP);
     vec2 cur_mip_res_inv = 1.0 / cur_mip_res;
 
-    vec2 uv_offset = 0.005 * exp2(MOST_DETAILED_MIP) / shrd_data.uResAndFRes.xy;
+    vec2 uv_offset = 0.005 * exp2(MOST_DETAILED_MIP) / g_shrd_data.res_and_fres.xy;
     uv_offset = mix(uv_offset, -uv_offset, lessThan(ray_dir_ss.xy, vec2(0.0)));
 
     vec2 floor_offset = mix(vec2(1.0), vec2(0.0), lessThan(ray_dir_ss.xy, vec2(0.0)));
@@ -160,7 +160,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
     int iter = 0;
     while (iter++ < MAX_STEPS && cur_mip >= MOST_DETAILED_MIP) {
         vec2 cur_pos_px = cur_mip_res * cur_pos_ss.xy;
-        float surf_z = texelFetch(depth_texture, clamp(ivec2(cur_pos_px), ivec2(0), ivec2(cur_mip_res - 1)), cur_mip).r;
+        float surf_z = texelFetch(g_depth_texture, clamp(ivec2(cur_pos_px), ivec2(0), ivec2(cur_mip_res - 1)), cur_mip).r;
         bool increment_mip = cur_mip < LEAST_DETAILED_MIP;
 
         { // advance ray
@@ -199,8 +199,8 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
     }
 
     // Reject if we hit surface from the back
-    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(norm_texture, cur_pos_ss.xy, 0.0)).xyz;
-    vec3 hit_normal_vs = (shrd_data.uViewMatrix * vec4(hit_normal_ws, 0.0)).xyz;
+    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_texture, cur_pos_ss.xy, 0.0)).xyz;
+    vec3 hit_normal_vs = (g_shrd_data.view_matrix * vec4(hit_normal_ws, 0.0)).xyz;
     if (dot(hit_normal_vs, ray_dir_vs) > 0.0) {
         return false;
     }
@@ -215,16 +215,16 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
 
     out_hit_point = hit_point_cs.xyz;
 
-    vec4 hit_point_vs = shrd_data.uInvProjMatrix * vec4(hit_point_cs, 1.0);
+    vec4 hit_point_vs = g_shrd_data.inv_proj_matrix * vec4(hit_point_cs, 1.0);
     hit_point_vs.xyz /= hit_point_vs.w;
 
-    float hit_depth_fetch = texelFetch(depth_texture, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
+    float hit_depth_fetch = texelFetch(g_depth_texture, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
     vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);
 #if !defined(VULKAN)
     hit_surf_cs.z = 2.0 * hit_surf_cs.z - 1.0;
 #endif // VULKAN
 
-    vec4 hit_surf_vs = shrd_data.uInvProjMatrix * hit_surf_cs;
+    vec4 hit_surf_vs = g_shrd_data.inv_proj_matrix * hit_surf_cs;
     hit_surf_vs.xyz /= hit_surf_vs.w;
     float dist_vs = distance(hit_point_vs.xyz, hit_surf_vs.xyz);
 
@@ -243,15 +243,15 @@ void main() {
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
     ivec2 pix_uvs = ivec2(ray_coords);
-    vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / shrd_data.uResAndFRes.xy;
+    vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_fetch = texelFetch(norm_texture, pix_uvs, 0);
+    vec4 normal_fetch = texelFetch(g_norm_texture, pix_uvs, 0);
     float roughness = normal_fetch.w;
 
-    float depth = texelFetch(depth_texture, pix_uvs, 0).r;
+    float depth = texelFetch(g_depth_texture, pix_uvs, 0).r;
 
     vec3 normal_ws = UnpackNormalAndRoughness(normal_fetch).xyz;
-    vec3 normal_vs = normalize((shrd_data.uViewMatrix * vec4(normal_ws, 0.0)).xyz);
+    vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
 
     vec3 ray_origin_ss = vec3(norm_uvs, depth);
     vec4 ray_origin_cs = vec4(ray_origin_ss, 1.0);
@@ -262,7 +262,7 @@ void main() {
     ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - 1.0;
 #endif // VULKAN
 
-    vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
+    vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
@@ -306,24 +306,24 @@ void main() {
 
     float ray_len = hit_found ? distance(hit_point, ray_origin_vs.xyz) : 0.0;
 
-    imageStore(out_color_img, pix_uvs, vec4(out_color, 0.0));
-    imageStore(out_raylen_img, pix_uvs, vec4(ray_len));
+    imageStore(g_out_color_img, pix_uvs, vec4(out_color, 0.0));
+    imageStore(g_out_raylen_img, pix_uvs, vec4(ray_len));
 
     ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         ivec2 copy_coords = ivec2(copy_target.x, pix_uvs.y);
-        imageStore(out_color_img, copy_coords, vec4(out_color, 0.0));
-        imageStore(out_raylen_img, copy_coords, vec4(ray_len));
+        imageStore(g_out_color_img, copy_coords, vec4(out_color, 0.0));
+        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_vertical) {
         ivec2 copy_coords = ivec2(pix_uvs.x, copy_target.y);
-        imageStore(out_color_img, copy_coords, vec4(out_color, 0.0));
-        imageStore(out_raylen_img, copy_coords, vec4(ray_len));
+        imageStore(g_out_color_img, copy_coords, vec4(out_color, 0.0));
+        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_diagonal) {
         ivec2 copy_coords = copy_target;
-        imageStore(out_color_img, copy_coords, vec4(out_color, 0.0));
-        imageStore(out_raylen_img, copy_coords, vec4(ray_len));
+        imageStore(g_out_color_img, copy_coords, vec4(out_color, 0.0));
+        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
 }
 
