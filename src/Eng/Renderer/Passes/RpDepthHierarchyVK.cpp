@@ -54,7 +54,7 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
         const VkDescriptorImageInfo depth_tex_info = input_tex.ref->vk_desc_image_info(1);
         const VkDescriptorBufferInfo atomic_buf_info = {atomic_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         Ren::SmallVector<VkDescriptorImageInfo, 16> depth_img_infos;
-        for (int i = 0; i < 13; ++i) {
+        for (int i = 0; i < 7; ++i) {
             depth_img_infos.push_back(output_tex.ref->vk_desc_image_info(
                 std::min(i, output_tex.ref->params.mip_count - 1) + 1, VK_IMAGE_LAYOUT_GENERAL));
         }

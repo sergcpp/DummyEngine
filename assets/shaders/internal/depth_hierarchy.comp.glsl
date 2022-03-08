@@ -12,6 +12,7 @@
 /*
 UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
+PERM @MIPS_7
 */
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -22,7 +23,12 @@ layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
 layout(std430, binding = ATOMIC_CNT_SLOT) highp buffer AtomicCounter {
     uint atomic_counter;
 };
+
+#ifdef MIPS_7 // simplified version
+layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[7];
+#else
 layout(binding = DEPTH_IMG_SLOT, r32f) uniform image2D depth_hierarchy[13];
+#endif
 
 layout(local_size_x = 32, local_size_y = 8, local_size_z = 1) in;
 
@@ -293,6 +299,7 @@ void main() {
 
     DownsampleNext4Levels(2, required_mips, gl_WorkGroupID.xy, x, y);
 
+#ifndef MIPS_7
     if (required_mips <= 7) return;
 
     // Only the last active workgroup should proceed
@@ -334,4 +341,5 @@ void main() {
     }
 
     DownsampleNext4Levels(8, required_mips, uvec2(0, 0), x, y);
+#endif
 }

@@ -40,7 +40,7 @@ void RpDepthHierarchy::Setup(RpBuilder &builder, const ViewState *view_state, co
 void RpDepthHierarchy::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef depth_hierarchy_prog =
-            sh.LoadProgram(ctx, "depth_hierarchy", "internal/depth_hierarchy.comp.glsl");
+            sh.LoadProgram(ctx, "depth_hierarchy", "internal/depth_hierarchy.comp.glsl@MIPS_7");
         assert(depth_hierarchy_prog->ready());
 
         if (!pi_depth_hierarchy_.Init(ctx.api_ctx(), std::move(depth_hierarchy_prog), ctx.log())) {
