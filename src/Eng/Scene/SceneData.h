@@ -160,6 +160,7 @@ struct PersistentGpuData {
     Ren::PipelineStorage                    pipelines;
 
     Ren::BufferRef                          rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_blas_buf;
+    uint32_t                                rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure>     rt_tlas;
 
     PersistentGpuData();

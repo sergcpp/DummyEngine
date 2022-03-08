@@ -115,6 +115,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBilateralBlur.cpp
                     Renderer/Passes/RpBlur.h
                     Renderer/Passes/RpBlur.cpp
+                    Renderer/Passes/RpBuildAccStructures.h
+                    Renderer/Passes/RpBuildAccStructures.cpp
                     Renderer/Passes/RpCombine.h
                     Renderer/Passes/RpCombine.cpp
                     Renderer/Passes/RpCopyTex.h
@@ -179,6 +181,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpTAA.cpp
                     Renderer/Passes/RpTransparent.h
                     Renderer/Passes/RpTransparent.cpp
+                    Renderer/Passes/RpUpdateAccBuffers.h
+                    Renderer/Passes/RpUpdateAccBuffers.cpp
                     Renderer/Passes/RpUpdateBuffers.h
                     Renderer/Passes/RpUpdateBuffers.cpp
                     Renderer/Passes/RpUpscale.h
@@ -206,6 +210,7 @@ if(${RENDERER} STREQUAL "GL")
                         Scene/SceneManagerGL.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
+                        Renderer/Passes/RpBuildAccStructuresGL.cpp
                         Renderer/Passes/RpDebugTexturesGL.cpp
                         Renderer/Passes/RpDebugRT_GL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp
@@ -216,7 +221,8 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
                         Renderer/Passes/RpSSRPrepareGL.cpp
-                        Renderer/Passes/RpTransparentGL.cpp)
+                        Renderer/Passes/RpTransparentGL.cpp
+                        Renderer/Passes/RpUpdateAccBuffersGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufVK.cpp
@@ -227,6 +233,7 @@ elseif(${RENDERER} STREQUAL "VK")
                         Scene/SceneManagerVK.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderVK.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
+                        Renderer/Passes/RpBuildAccStructuresVK.cpp
                         Renderer/Passes/RpDebugRT_VK.cpp
                         Renderer/Passes/RpDepthFillVK.cpp
                         Renderer/Passes/RpDepthHierarchyVK.cpp
@@ -236,7 +243,8 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/Passes/RpSkinningVK.cpp
                         Renderer/Passes/RpSkydomeVK.cpp
                         Renderer/Passes/RpSSRPrepareVK.cpp
-                        Renderer/Passes/RpTransparentVK.cpp)
+                        Renderer/Passes/RpTransparentVK.cpp
+                        Renderer/Passes/RpUpdateAccBuffersVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/RendererSW.cpp)

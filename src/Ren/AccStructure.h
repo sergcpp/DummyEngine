@@ -8,6 +8,8 @@ namespace Ren {
 class IAccStructure {
   public:
     virtual ~IAccStructure() {}
+
+    uint32_t geo_index = 0, geo_count = 0;
 };
 
 #if defined(USE_VK_RENDER)

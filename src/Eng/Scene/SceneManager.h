@@ -142,10 +142,6 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void Serve(int texture_budget = 1);
 
-    void UpdateAccStructures();
-
-    uint64_t GetAccStructsUpdateTime() const;
-
     using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file,
                                                 Ren::SmallVectorImpl<std::string> &out_dependencies)>;
     static void RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func);
@@ -193,7 +189,6 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags,
                                  Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     void InitHWAccStructures();
-    void UpdateHWAccStructures();
 
     void RebuildSceneBVH();
     void RemoveNode(uint32_t node_index);
@@ -261,8 +256,6 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     TextureRequestPending io_pending_tex_[MaxSimultaneousRequests];
 
     Ren::RingBuffer<Ren::Tex2DRef> lod_transit_textures_;
-
-    int tlas_update_query_indices_[2] = {};
 
     void TextureLoaderProc();
 

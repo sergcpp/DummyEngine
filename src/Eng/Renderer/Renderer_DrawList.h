@@ -132,6 +132,10 @@ struct DrawList {
     DynArray<ItemData>          items;
     Ren::BufferRef              items_stage_buf;
 
+    DynArray<RTGeoInstance>     rt_geo_instances;
+    DynArray<RTObjInstance>     rt_obj_instances;
+    Ren::BufferRef              rt_obj_instances_stage_buf;
+
     Ren::BufferRef              shared_data_stage_buf;
 
     DynArray<TexEntry>          visible_textures;
@@ -153,6 +157,6 @@ struct DrawList {
     void Init(Ren::BufferRef shared_data_stage_buf, Ren::BufferRef instatnces_stage_buf,
               Ren::BufferRef skin_transforms_stage_buf, Ren::BufferRef shape_keys_stage_buf,
               Ren::BufferRef cells_stage_buf, Ren::BufferRef items_stage_buf, Ren::BufferRef lights_stage_buf,
-              Ren::BufferRef decals_stage_buf);
+              Ren::BufferRef decals_stage_buf, Ren::BufferRef rt_obj_instances_stage_buf);
     void Clear();
 };
