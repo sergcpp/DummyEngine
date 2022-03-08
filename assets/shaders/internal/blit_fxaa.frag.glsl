@@ -18,10 +18,10 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D s_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_texture;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -32,12 +32,12 @@ layout(location = 12) uniform vec2 texcoord_offset;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 float FxaaLuma(vec4 rgba) {
         const vec3 luma = vec3(0.299, 0.587, 0.114);
@@ -226,6 +226,6 @@ vec4 FxaaPixelShader(vec2 pos,
 }
 
 void main() {
-    outColor = FxaaPixelShader(aVertexUVs_ * shrd_data.uResAndFRes.xy / shrd_data.uResAndFRes.zw, s_texture, texcoord_offset, 0.75, 0.125, 0.0625);
-    outColor.a = 1.0;
+    g_out_color = FxaaPixelShader(g_vtx_uvs * g_shrd_data.res_and_fres.xy / g_shrd_data.res_and_fres.zw, g_texture, texcoord_offset, 0.75, 0.125, 0.0625);
+    g_out_color.a = 1.0;
 }

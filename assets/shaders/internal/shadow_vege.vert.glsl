@@ -21,67 +21,67 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(location = REN_VTX_POS_LOC) in vec3 aVertexPosition;
+layout(location = REN_VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef TRANSPARENT_PERM
-layout(location = REN_VTX_UV1_LOC) in vec2 aVertexUVs1;
+layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
-layout(location = REN_VTX_AUX_LOC) in uint aVertexColorPacked;
+layout(location = REN_VTX_AUX_LOC) in uint g_in_vtx_color_packed;
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer instances_buffer;
-layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D noise_texture;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
+layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_texture;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
-    mat4 uShadowViewProjMatrix;
-    ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
+    mat4 g_shadow_view_proj_mat;
+    ivec2 g_instance_indices[REN_MAX_BATCH_SIZE];
 };
 #else // VULKAN
-layout(location = REN_U_INSTANCES_LOC) uniform ivec2 uInstanceIndices[REN_MAX_BATCH_SIZE];
-layout(location = U_M_MATRIX_LOC) uniform mat4 uShadowViewProjMatrix;
+layout(location = REN_U_INSTANCES_LOC) uniform ivec2 g_instance_indices[REN_MAX_BATCH_SIZE];
+layout(location = U_M_MATRIX_LOC) uniform mat4 g_shadow_view_proj_mat;
 #endif // VULKAN
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
-    MaterialData materials[];
+    MaterialData g_materials[];
 };
 
 #ifdef TRANSPARENT_PERM
-    LAYOUT(location = 0) out vec2 aVertexUVs1_;
+    LAYOUT(location = 0) out vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 1) out flat TEX_HANDLE alpha_texture;
+        LAYOUT(location = 1) out flat TEX_HANDLE g_alpha_texture;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
 void main() {
-    ivec2 instance = uInstanceIndices[gl_InstanceIndex];
-    mat4 MMatrix = FetchModelMatrix(instances_buffer, instance.x);
+    ivec2 instance = g_instance_indices[gl_InstanceIndex];
+    mat4 MMatrix = FetchModelMatrix(g_instances_buffer, instance.x);
 
-    vec4 veg_params = texelFetch(instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
+    vec4 veg_params = texelFetch(g_instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
 
-    vec3 vtx_pos_ls = aVertexPosition;
-    vec4 vtx_color = unpackUnorm4x8(aVertexColorPacked);
+    vec3 vtx_pos_ls = g_in_vtx_pos;
+    vec4 vtx_color = unpackUnorm4x8(g_in_vtx_color_packed);
 
     vec3 obj_pos_ws = MMatrix[3].xyz;
-    vec4 wind_scroll = shrd_data.uWindScroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
+    vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
     vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
     vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
 
-    vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params, wind_vec_ls, noise_texture);
+    vtx_pos_ls = TransformVegetation(vtx_pos_ls, vtx_color, wind_scroll, wind_params, wind_vec_ls, g_noise_texture);
 
     vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
 #ifdef TRANSPARENT_PERM
-    aVertexUVs1_ = aVertexUVs1;
+    g_vtx_uvs0 = g_in_vtx_uvs0;
 
 #if defined(BINDLESS_TEXTURES)
-    MaterialData mat = materials[instance.y];
-    alpha_texture = GET_HANDLE(mat.texture_indices[0]);
+    MaterialData mat = g_materials[instance.y];
+    g_alpha_texture = GET_HANDLE(mat.texture_indices[0]);
 #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
-    gl_Position = uShadowViewProjMatrix * vec4(vtx_pos_ws, 1.0);
+    gl_Position = g_shadow_view_proj_mat * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

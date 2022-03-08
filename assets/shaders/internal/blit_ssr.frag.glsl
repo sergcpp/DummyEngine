@@ -28,17 +28,17 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
 #if defined(MSAA_4)
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS g_norm_texture;
 #else
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_texture;
 #endif
 
-LAYOUT(location = 0) in vec2 aVertexUVs_;
+LAYOUT(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 out_color;
 
@@ -48,7 +48,7 @@ float distance2(vec2 P0, vec2 P1) {
 }
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    return texelFetch(depth_texture, hit_pixel / 2, 0).r;
+    return texelFetch(g_depth_texture, hit_pixel / 2, 0).r;
 }
 
 bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hit_pixel, out vec3 hit_point) {
@@ -57,15 +57,15 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     // from "Efficient GPU Screen-Space Ray Tracing"
 
     // Clip ray length to camera near plane
-    float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > - shrd_data.uClipInfo[1] ?
-                       (-ray_origin_vs.z - shrd_data.uClipInfo[1]) / ray_dir_vs.z :
+    float ray_length = (ray_origin_vs.z + ray_dir_vs.z * max_dist) > - g_shrd_data.clip_info[1] ?
+                       (-ray_origin_vs.z - g_shrd_data.clip_info[1]) / ray_dir_vs.z :
                        max_dist;
 
     vec3 ray_end_vs = ray_origin_vs + ray_length * ray_dir_vs;
 
     // Project into screen space
-    vec4 H0 = shrd_data.uProjMatrix * vec4(ray_origin_vs, 1.0),
-         H1 = shrd_data.uProjMatrix * vec4(ray_end_vs, 1.0);
+    vec4 H0 = g_shrd_data.proj_matrix * vec4(ray_origin_vs, 1.0),
+         H1 = g_shrd_data.proj_matrix * vec4(ray_end_vs, 1.0);
     float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
 
 #if defined(VULKAN)
@@ -83,8 +83,8 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     P0 = 0.5 * P0 + 0.5;
     P1 = 0.5 * P1 + 0.5;
 
-    P0 *= shrd_data.uResAndFRes.xy;
-    P1 *= shrd_data.uResAndFRes.xy;
+    P0 *= g_shrd_data.res_and_fres.xy;
+    P1 *= g_shrd_data.res_and_fres.xy;
 
     vec2 delta = P1 - P0;
 
@@ -103,7 +103,7 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     vec3 dQ = (Q1 - Q0) * inv_dx;
     float dk = (k1 - k0) * inv_dx;
 
-    float stride = STRIDE * shrd_data.uResAndFRes.x;
+    float stride = STRIDE * g_shrd_data.res_and_fres.x;
     dP *= stride;
     dQ *= stride;
     dk *= stride;
@@ -146,7 +146,7 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     }
 
     vec2 test_pixel = permute ? hit_pixel.yx : hit_pixel;
-    bool res = all(lessThanEqual(abs(test_pixel - (shrd_data.uResAndFRes.xy * 0.5)), shrd_data.uResAndFRes.xy * 0.5));
+    bool res = all(lessThanEqual(abs(test_pixel - (g_shrd_data.res_and_fres.xy * 0.5)), g_shrd_data.res_and_fres.xy * 0.5));
 
 #if BSEARCH_STEPS != 0
     if (res) {
@@ -190,16 +190,16 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
 void main() {
     out_color = vec4(0.0);
 
-    ivec2 pix_uvs = ivec2(aVertexUVs_ + vec2(0.5));
-    vec2 norm_uvs = 2.0 * aVertexUVs_ / shrd_data.uResAndFRes.xy;
+    ivec2 pix_uvs = ivec2(g_vtx_uvs + vec2(0.5));
+    vec2 norm_uvs = 2.0 * g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_tex = texelFetch(norm_texture, 2 * pix_uvs, 0);
+    vec4 normal_tex = texelFetch(g_norm_texture, 2 * pix_uvs, 0);
     if (normal_tex.w < 0.0001) return;
 
-    float depth = DelinearizeDepth(texelFetch(depth_texture, pix_uvs, 0).r, shrd_data.uClipInfo);
+    float depth = DelinearizeDepth(texelFetch(g_depth_texture, pix_uvs, 0).r, g_shrd_data.clip_info);
 
     vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
-    vec3 normal_vs = (shrd_data.uViewMatrix * vec4(normal_ws, 0.0)).xyz;
+    vec3 normal_vs = (g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz;
 
     vec4 ray_origin_cs = vec4(norm_uvs, depth, 1.0);
 #if defined(VULKAN)
@@ -209,7 +209,7 @@ void main() {
     ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - vec3(1.0);
 #endif // VULKAN
 
-    vec4 ray_origin_vs = shrd_data.uInvProjMatrix * ray_origin_cs;
+    vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
@@ -222,10 +222,10 @@ void main() {
     vec3 hit_point;
 
     if (IntersectRay(ray_origin_vs.xyz, refl_ray_vs, jitter, hit_pixel, hit_point)) {
-        hit_pixel /= shrd_data.uResAndFRes.xy;
+        hit_pixel /= g_shrd_data.res_and_fres.xy;
 
         // reproject hitpoint into a clip space of previous frame
-        vec4 hit_prev = shrd_data.uDeltaMatrix * vec4(hit_point, 1.0);
+        vec4 hit_prev = g_shrd_data.delta_matrix * vec4(hit_point, 1.0);
 #if defined(VULKAN)
         hit_prev.y = -hit_prev.y;
 #endif // VULKAN

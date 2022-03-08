@@ -6,22 +6,22 @@
     precision mediump float;
 #endif
 
-layout(binding = 0) uniform mediump sampler2DMS s_texture;
+layout(binding = 0) uniform mediump sampler2DMS g_texture;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 void main() {
     vec3 col = vec3(0.0);
     for (float j = -1.5; j < 2.0; j += 1.0) {
         for (float i = -1.5; i < 2.0; i += 1.0) {
-            col += texelFetch(s_texture, ivec2(aVertexUVs_ + vec2(i, j)), 0).xyz;
+            col += texelFetch(g_texture, ivec2(g_vtx_uvs + vec2(i, j)), 0).xyz;
         }
     }
-    outColor = vec4((1.0/16.0) * col, 1.0);
+    g_out_color = vec4((1.0/16.0) * col, 1.0);
 }

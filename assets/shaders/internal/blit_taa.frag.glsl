@@ -22,19 +22,19 @@ PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD
 PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD;USE_TONEMAP;USE_YCoCg
 */
 
-layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D s_color_curr;
-layout(binding = HIST_TEX_SLOT) uniform mediump sampler2D s_color_hist;
+layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D g_color_curr;
+layout(binding = HIST_TEX_SLOT) uniform mediump sampler2D g_color_hist;
 
-layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D s_depth;
-layout(binding = VELOCITY_TEX_SLOT) uniform mediump sampler2D s_velocity;
+layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth;
+layout(binding = VELOCITY_TEX_SLOT) uniform mediump sampler2D g_velocity;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-LAYOUT(location = 0) in highp vec2 aVertexUVs_;
+LAYOUT(location = 0) in highp vec2 g_vtx_uvs;
 
-layout(location = 0) out vec3 outColor;
+layout(location = 0) out vec3 g_out_color;
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
@@ -110,13 +110,13 @@ vec3 find_closest_fragment_3x3(sampler2D dtex, vec2 uv, vec2 texel_size) {
 }
 
 void main() {
-    ivec2 uvs_px = ivec2(aVertexUVs_);
+    ivec2 uvs_px = ivec2(g_vtx_uvs);
     vec2 texel_size = vec2(1.0) / g_params.tex_size;
-    vec2 norm_uvs = aVertexUVs_ / g_params.tex_size;
+    vec2 norm_uvs = g_vtx_uvs / g_params.tex_size;
 
-    vec3 col_curr = FetchColor(s_color_curr, uvs_px);
+    vec3 col_curr = FetchColor(g_color_curr, uvs_px);
 
-    float min_depth = texelFetch(s_depth, uvs_px, 0).r;
+    float min_depth = texelFetch(g_depth, uvs_px, 0).r;
 
     const ivec2 offsets[8] = ivec2[8](
         ivec2(-1, 1),   ivec2(0, 1),    ivec2(1, 1),
@@ -129,13 +129,13 @@ void main() {
     ivec2 closest_frag = ivec2(0, 0);
 
     for (int i = 0; i < 8; i++) {
-        float depth = texelFetch(s_depth, uvs_px + offsets[i], 0).r;
+        float depth = texelFetch(g_depth, uvs_px + offsets[i], 0).r;
         if (depth < min_depth) {
             closest_frag = offsets[i];
             min_depth = depth;
         }
 
-        vec3 col = FetchColor(s_color_curr, uvs_px + offsets[i]);
+        vec3 col = FetchColor(g_color_curr, uvs_px + offsets[i]);
         col_avg += col;
         col_var += col * col;
     }
@@ -147,17 +147,17 @@ void main() {
     vec3 col_min = col_avg - 1.25 * sigma;
     vec3 col_max = col_avg + 1.25 * sigma;
 
-    vec2 closest_vel = texelFetch(s_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).rg;
+    vec2 closest_vel = texelFetch(g_velocity, clamp(uvs_px + closest_frag, ivec2(0), ivec2(g_params.tex_size - vec2(1))), 0).rg;
 #else
-    vec3 col_tl = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, -texel_size.y));
-    vec3 col_tc = SampleColor(s_color_curr, norm_uvs + vec2(0, -texel_size.y));
-    vec3 col_tr = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, -texel_size.y));
-    vec3 col_ml = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, 0));
+    vec3 col_tl = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, -texel_size.y));
+    vec3 col_tc = SampleColor(g_color_curr, norm_uvs + vec2(0, -texel_size.y));
+    vec3 col_tr = SampleColor(g_color_curr, norm_uvs + vec2(texel_size.x, -texel_size.y));
+    vec3 col_ml = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, 0));
     vec3 col_mc = col_curr;
-    vec3 col_mr = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, 0));
-    vec3 col_bl = SampleColor(s_color_curr, norm_uvs + vec2(-texel_size.x, texel_size.y));
-    vec3 col_bc = SampleColor(s_color_curr, norm_uvs + vec2(0, texel_size.y));
-    vec3 col_br = SampleColor(s_color_curr, norm_uvs + vec2(texel_size.x, texel_size.y));
+    vec3 col_mr = SampleColor(g_color_curr, norm_uvs + vec2(texel_size.x, 0));
+    vec3 col_bl = SampleColor(g_color_curr, norm_uvs + vec2(-texel_size.x, texel_size.y));
+    vec3 col_bc = SampleColor(g_color_curr, norm_uvs + vec2(0, texel_size.y));
+    vec3 col_br = SampleColor(g_color_curr, norm_uvs + vec2(texel_size.x, texel_size.y));
 
     vec3 col_min = min3(min3(col_tl, col_tc, col_tr),
                         min3(col_ml, col_mc, col_mr),
@@ -185,11 +185,11 @@ void main() {
         col_avg.yz = chroma_center;
     #endif
 
-    vec3 closest_frag = find_closest_fragment_3x3(s_depth, norm_uvs, texel_size);
-    vec2 closest_vel = textureLod(s_velocity, closest_frag.xy, 0.0).rg;
+    vec3 closest_frag = find_closest_fragment_3x3(g_depth, norm_uvs, texel_size);
+    vec2 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).rg;
 #endif
 
-    vec3 col_hist = SampleColor(s_color_hist, norm_uvs - closest_vel);
+    vec3 col_hist = SampleColor(g_color_hist, norm_uvs - closest_vel);
 
 #if defined(USE_CLIPPING)
     col_hist = clip_aabb(col_min, col_max, col_hist);
@@ -212,5 +212,5 @@ void main() {
 #if defined(USE_YCoCg)
     col = YCoCg_to_RGB(col);
 #endif
-    outColor = TonemapInvert(col);
+    g_out_color = TonemapInvert(col);
 }

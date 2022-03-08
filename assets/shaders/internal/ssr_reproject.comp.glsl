@@ -22,7 +22,7 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -164,7 +164,7 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     float z = texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
     vec3 ray_vs = vec3(uv, z);
 
-    vec2 unjitter = shrd_data.uTaaInfo.xy;
+    vec2 unjitter = g_shrd_data.taa_info.xy;
 #if defined(VULKAN)
     unjitter.y = -unjitter.y;
 #endif
@@ -173,7 +173,7 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
         ray_vs.y = (1.0 - ray_vs.y);
         ray_vs.xy = 2.0 * ray_vs.xy - 1.0;
         ray_vs.xy -= unjitter;
-        vec4 projected = shrd_data.uInvProjMatrix * vec4(ray_vs, 1.0);
+        vec4 projected = g_shrd_data.inv_proj_matrix * vec4(ray_vs, 1.0);
         ray_vs = projected.xyz / projected.w;
     }
 
@@ -187,13 +187,13 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     ray_vs *= ray_length;
     vec3 hit_position_ws; // This is the "fake" hit position if we would follow the ray straight through the surface.
     { // project from view space to world space
-        vec4 projected = shrd_data.uInvViewMatrix * vec4(ray_vs, 1.0);
+        vec4 projected = g_shrd_data.inv_view_matrix * vec4(ray_vs, 1.0);
         hit_position_ws = projected.xyz;
     }
 
     vec2 prev_hit_position;
     { // project to screen space of previous frame
-        vec4 projected = shrd_data.uViewProjPrevMatrix * vec4(hit_position_ws, 1.0);
+        vec4 projected = g_shrd_data.view_proj_prev_matrix * vec4(hit_position_ws, 1.0);
         projected.xyz /= projected.w;
         projected.xy = 0.5 * projected.xy + 0.5;
         projected.y = (1.0 - projected.y);
@@ -244,7 +244,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             // Mirror reflection
             history_normal = hit_normal;
             float hit_history_depth = textureLod(g_depth_hist_tex, hit_repr_uv, 0.0).x;
-            history_linear_depth = LinearizeDepth(hit_history_depth, shrd_data.uClipInfo);
+            history_linear_depth = LinearizeDepth(hit_history_depth, g_shrd_data.clip_info);
             reprojection_uv = hit_repr_uv;
             reprojection = hit_history;
         } else {
@@ -254,7 +254,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                 // Surface reflection
                 history_normal = surf_normal;
                 float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
-                history_linear_depth = LinearizeDepth(surf_history_depth, shrd_data.uClipInfo);
+                history_linear_depth = LinearizeDepth(surf_history_depth, g_shrd_data.clip_info);
                 reprojection_uv = surf_repr_uv;
                 reprojection = surf_history;
             } else {
@@ -264,7 +264,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         }
 
         float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
-        float linear_depth  = LinearizeDepth(depth, shrd_data.uClipInfo);
+        float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
         // Determine disocclusion factor based on history
         disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 
@@ -283,7 +283,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
                     vec2 uv = reprojection_uv + vec2(x, y) * dudv;
                     /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0)).xyz;
                     float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
-                    float history_linear_depth = LinearizeDepth(history_depth, shrd_data.uClipInfo);
+                    float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
                     /* mediump */ float weight = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
                     if (weight > disocclusion_factor) {
                         disocclusion_factor = weight;
@@ -313,10 +313,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             /* mediump */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0)).xyz;
             /* mediump */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0)).xyz;
 
-            float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, shrd_data.uClipInfo);
-            float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, shrd_data.uClipInfo);
-            float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, shrd_data.uClipInfo);
-            float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, shrd_data.uClipInfo);
+            float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
+            float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
+            float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
+            float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
 
             /* mediump */ vec4 w;
             // Initialize with occlusion weights
