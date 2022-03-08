@@ -301,7 +301,7 @@ struct RTObjInstance {
     uint32_t custom_index : 24;
     uint32_t mask : 8;
     uint32_t _pad;
-    uint64_t blas_ref;
+    const Ren::IAccStructure *blas_ref;
 };
 static_assert(sizeof(RTObjInstance) == 64, "!");
 
@@ -324,6 +324,7 @@ struct BindlessTextureData {
 
 struct AccelerationStructureData {
     Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf;
+    uint32_t rt_tlas_build_scratch_size = 0;
     Ren::IAccStructure *rt_tlas = nullptr;
 };
 
@@ -336,6 +337,7 @@ const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
+const size_t RTObjInstancesBufChunkSize = sizeof(VkAccelerationStructureInstanceKHR) * REN_MAX_RT_OBJ_INSTANCES;
 const size_t SharedDataBlockSize = 8 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");

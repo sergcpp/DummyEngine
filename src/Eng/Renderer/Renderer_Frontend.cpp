@@ -149,6 +149,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.shape_keys_data.count = 0;
     list.skin_vertices_count = 0;
 
+    list.rt_geo_instances.count = 0;
+    list.rt_obj_instances.count = 0;
+
     list.visible_textures.count = 0;
     list.desired_textures.count = 0;
 
@@ -195,6 +198,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->SequentialData();
     const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
     const auto *vegs = (VegState *)scene.comp_store[CompVegState]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene.comp_store[CompAccStructure]->SequentialData();
 
     const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16;
 
@@ -340,8 +344,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
             }
 
-            if (cam_visibility == eVisResult::Invisible &&
-                ext_frustum.CheckVisibility(bbox_points) == eVisResult::Invisible) {
+            eVisResult ext_frustum_visibility = ext_frustum.CheckVisibility(bbox_points);
+            if (cam_visibility == eVisResult::Invisible && ext_frustum_visibility == eVisResult::Invisible) {
                 continue;
             }
 
@@ -351,7 +355,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const SceneObject &obj = scene.objects[n->prim_index];
 
-                if (cam_visibility != eVisResult::Invisible && (obj.comp_mask & CompTransformBit) &&
+                if ((obj.comp_mask & CompTransformBit) &&
                     (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) { // NOLINT
                     const uint16_t cam_dist_u16 = uint16_t(0xffffu * (std::sqrt(cam_dist2) / 500.0f));
 
@@ -361,12 +365,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     if (!skip_frustum_check) {
                         // Node has slightly enlarged bounds, so we need to check object's bounding box here
-                        if (list.draw_cam.CheckFrustumVisibility(bbox_points) == eVisResult::Invisible) {
+                        cam_visibility = list.draw_cam.CheckFrustumVisibility(bbox_points);
+                        ext_frustum_visibility = ext_frustum.CheckVisibility(bbox_points);
+                        if (cam_visibility == eVisResult::Invisible &&
+                            ext_frustum_visibility == eVisResult::Invisible) {
                             continue;
                         }
                     }
 
-                    if (culling_enabled) {
+                    if (culling_enabled && cam_visibility != eVisResult::Invisible) {
                         // do not question visibility of the object in which we are inside
                         if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f || cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
                             cam_pos[2] < tr.bbox_min_ws[2] - 0.5f || cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
@@ -385,7 +392,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
                             if (surf.visible == 0) {
-                                continue;
+                                cam_visibility = eVisResult::Invisible;
                             }
                         }
                     }
@@ -428,6 +435,18 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         __push_ellipsoids(dr, tr.world_from_object, list);
 
+                        if (ext_frustum_visibility != eVisResult::Invisible && (obj.comp_mask & CompAccStructureBit)) {
+                            const Ren::IAccStructure *acc =
+                                acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+                            if (acc) {
+                                RTObjInstance &new_instance = list.rt_obj_instances.data[list.rt_obj_instances.count++];
+                                memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                                new_instance.custom_index = acc->geo_index;
+                                new_instance.mask = 0xff;
+                                new_instance.blas_ref = acc;
+                            }
+                        }
+
                         const uint32_t indices_start = mesh->indices_buf().offset;
                         for (const auto &grp : mesh->groups()) {
                             const Material *mat = grp.mat.get();
@@ -436,62 +455,62 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             if (cam_visibility != eVisResult::Invisible) {
                                 __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
+
+                                MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
+
+                                main_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
+                                main_batch.pipe_id = mat->pipelines[pipeline_index].index();
+                                main_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                main_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
+                                main_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                if (!ctx_.capabilities.bindless_texture) {
+                                    main_batch.mat_id = uint32_t(grp.mat.index());
+                                } else {
+                                    main_batch.mat_id = 0;
+                                }
+                                main_batch.cam_dist =
+                                    (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
+                                main_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                                main_batch.base_vertex = base_vertex;
+                                main_batch.indices_count = grp.num_indices;
+                                main_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
+                                main_batch.instance_indices[0][1] = int32_t(grp.mat.index());
+                                main_batch.instance_count = 1;
+
+                                if (zfill_enabled && (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
+                                                      ((mat->flags() & uint32_t(eMatFlags::AlphaBlend)) &&
+                                                       (mat->flags() & uint32_t(eMatFlags::AlphaTest))))) {
+                                    DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
+
+                                    zfill_batch.type_bits = DepthDrawBatch::TypeSimple;
+
+                                    if (obj.comp_mask & CompAnimStateBit) {
+                                        zfill_batch.type_bits = DepthDrawBatch::TypeSkinned;
+                                    } else if (obj.comp_mask & CompVegStateBit) {
+                                        zfill_batch.type_bits = DepthDrawBatch::TypeVege;
+                                    }
+
+                                    zfill_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                    zfill_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
+                                    zfill_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                    zfill_batch.indices_offset = main_batch.indices_offset;
+                                    zfill_batch.base_vertex = base_vertex;
+                                    zfill_batch.indices_count = grp.num_indices;
+                                    zfill_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
+                                    zfill_batch.instance_indices[0][1] =
+                                        (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
+                                    zfill_batch.instance_count = 1;
+                                }
                             } else {
                                 __record_textures(list.desired_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
-                            }
-
-                            MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
-
-                            main_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
-                            main_batch.pipe_id = mat->pipelines[pipeline_index].index();
-                            main_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                            main_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
-                            main_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                            if (!ctx_.capabilities.bindless_texture) {
-                                main_batch.mat_id = uint32_t(grp.mat.index());
-                            } else {
-                                main_batch.mat_id = 0;
-                            }
-                            main_batch.cam_dist = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
-                            main_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                            main_batch.base_vertex = base_vertex;
-                            main_batch.indices_count = grp.num_indices;
-                            main_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
-                            main_batch.instance_indices[0][1] = int32_t(grp.mat.index());
-                            main_batch.instance_count = 1;
-
-                            if (zfill_enabled && (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
-                                                  ((mat->flags() & uint32_t(eMatFlags::AlphaBlend)) &&
-                                                   (mat->flags() & uint32_t(eMatFlags::AlphaTest))))) {
-                                DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
-
-                                zfill_batch.type_bits = DepthDrawBatch::TypeSimple;
-
-                                if (obj.comp_mask & CompAnimStateBit) {
-                                    zfill_batch.type_bits = DepthDrawBatch::TypeSkinned;
-                                } else if (obj.comp_mask & CompVegStateBit) {
-                                    zfill_batch.type_bits = DepthDrawBatch::TypeVege;
-                                }
-
-                                zfill_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                zfill_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                                zfill_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                zfill_batch.indices_offset = main_batch.indices_offset;
-                                zfill_batch.base_vertex = base_vertex;
-                                zfill_batch.indices_count = grp.num_indices;
-                                zfill_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
-                                zfill_batch.instance_indices[0][1] =
-                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
-                                zfill_batch.instance_count = 1;
                             }
                         }
 
                         if (obj.last_change_mask & CompTransformBit) {
                             const Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
 
-                            // moving objects need 2 transform matrices (for velocity
-                            // calculation)
+                            // moving objects require 2 transform matrices (for velocity calculation)
                             InstanceData &prev_instance = list.instances.data[list.instances.count++];
                             memcpy(&prev_instance.model_matrix[0][0], ValuePtr(prev_world_from_object_trans),
                                    12 * sizeof(float));

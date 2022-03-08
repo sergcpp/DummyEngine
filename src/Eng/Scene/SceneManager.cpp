@@ -1408,21 +1408,3 @@ void SceneManager::Serve(const int texture_budget) {
 
     __itt_task_end(__g_itt_domain);
 }
-
-void SceneManager::UpdateAccStructures() {
-    tlas_update_query_indices_[0] = ren_ctx_.WriteTimestamp(true);
-
-    if (ren_ctx_.capabilities.raytracing) {
-#if !defined(USE_GL_RENDER)
-        UpdateHWAccStructures();
-#endif
-    } else {
-        // InitSWAccStructures();
-    }
-
-    tlas_update_query_indices_[1] = ren_ctx_.WriteTimestamp(false);
-}
-
-uint64_t SceneManager::GetAccStructsUpdateTime() const {
-    return ren_ctx_.GetTimestampIntervalDuration(tlas_update_query_indices_[0], tlas_update_query_indices_[1]);
-}

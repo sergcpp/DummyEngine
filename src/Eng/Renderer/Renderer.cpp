@@ -567,6 +567,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     acc_struct_data.rt_instance_buf = persistent_data.rt_instance_buf;
     acc_struct_data.rt_geo_data_buf = persistent_data.rt_geo_data_buf;
     acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
+    acc_struct_data.rt_tlas_build_scratch_size = persistent_data.rt_tlas_build_scratch_size;
     if (persistent_data.rt_tlas) {
         acc_struct_data.rt_tlas = persistent_data.rt_tlas.get();
     }
@@ -590,6 +591,20 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                            SHAPE_KEYS_BUF);
         rp_tail->p_next = &rp_skinning_;
         rp_tail = rp_tail->p_next;
+
+        //
+        // RT acceleration structures
+        //
+        if (ctx_.capabilities.raytracing) {
+            rp_update_acc_bufs_.Setup(rp_builder_, list, "RT Obj Instances");
+            rp_tail->p_next = &rp_update_acc_bufs_;
+            rp_tail = rp_tail->p_next;
+
+            rp_build_acc_structs_.Setup(rp_builder_, "RT Obj Instances", list.rt_obj_instances.count,
+                                        "TLAS Scratch Buf", &acc_struct_data);
+            rp_tail->p_next = &rp_build_acc_structs_;
+            rp_tail = rp_tail->p_next;
+        }
 
         //
         // Shadow maps
@@ -780,8 +795,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             if (list.render_flags & DebugDenoise) {
                 rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
-                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2",
-                                       refl_out_name);
+                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2", refl_out_name);
             } else {
                 rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
                                        MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, refl_history_tex_,
@@ -812,8 +826,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail->p_next = &rp_ssr_dilate_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
-                                  down_tex_4x_, brdf_lut_,
+            rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage, down_tex_4x_, brdf_lut_,
                                   SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
                                   DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
             rp_tail->p_next = &rp_ssr_compose_;

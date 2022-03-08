@@ -84,6 +84,8 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
         ren_ctx_->LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
         ren_ctx_->LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, DecalsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer(
+        "RT Obj Instances (Stage)", Ren::eBufType::Stage, RTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
 
     Ren::BufferRef shared_data_stage_buf =
         ren_ctx_->LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage, SharedDataBlockSize * Ren::MaxFramesInFlight);
@@ -94,7 +96,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     for (int i = 0; i < 2; i++) {
         main_view_lists_[i].Init(shared_data_stage_buf, instances_stage_buf, skin_transforms_stage_buf,
                                  shape_keys_stage_buf, cells_stage_buf, items_stage_buf, lights_stage_buf,
-                                 decals_stage_buf);
+                                 decals_stage_buf, rt_obj_instances_stage_buf);
     }
 }
 
@@ -766,11 +768,6 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
-
-            const uint64_t dt = scene_manager_->GetAccStructsUpdateTime();
-            log_->Info("AccUpdate: %fms", dt * 0.000001);
-
-            scene_manager_->UpdateAccStructures();
             renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data());
         }
     }
