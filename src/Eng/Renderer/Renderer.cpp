@@ -366,7 +366,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
 
     // Reflection settings
-    const float GlossyThreshold = 1.0f;
+    const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
     const float MirrorThreshold = 0.0001f;
     const int SamplesPerQuad = 1;
     const bool VarianceGuided = true;

@@ -124,7 +124,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     needs_ray = needs_ray && (!needs_denoiser || is_base_ray); // Make sure to not deactivate mirror reflection rays.
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
-        const float TemporalVarianceThreshold = 0.005;
+        const float TemporalVarianceThreshold = 0.001;
         bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
         needs_ray = needs_ray || has_temporal_variance;
     }
