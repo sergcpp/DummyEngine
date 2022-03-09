@@ -25,6 +25,7 @@ layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_sss_texture;
 layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D g_norm_detail_texture;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
+layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4];
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
