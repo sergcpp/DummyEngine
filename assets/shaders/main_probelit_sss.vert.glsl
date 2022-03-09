@@ -37,6 +37,7 @@ layout(location = REN_U_INSTANCES_LOC) uniform ivec2 g_instance_indices[REN_MAX_
 #endif
 
 layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
+layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_texture;
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData g_materials[];

@@ -23,10 +23,10 @@ layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
+layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4];
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
-layout(binding = REN_BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_texture;
 layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer g_lights_buffer;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
@@ -53,6 +53,7 @@ LAYOUT(location = 6) in highp vec4 g_vtx_sh_uvs2;
     LAYOUT(location = 7) in flat TEX_HANDLE g_diff_texture;
     LAYOUT(location = 8) in flat TEX_HANDLE g_norm_texture;
     LAYOUT(location = 9) in flat TEX_HANDLE g_spec_texture;
+    LAYOUT(location = 10) in flat TEX_HANDLE g_mat3_texture;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
@@ -184,10 +185,9 @@ void main(void) {
 
     float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
 
-    vec3 kS = FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
-    vec2 brdf = texture(g_brdf_lut_texture, vec2(N_dot_V, specular_color.a)).xy;
+    vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
 
-    g_out_color = vec4(diffuse_color * (1.0 - kS) + reflected_col * (kS * brdf.x + brdf.y), diff_color.a);
+    g_out_color = vec4(diffuse_color * kD, diff_color.a);
     //g_out_normal = vec4(normal * 0.5 + 0.5, 1.0);
     g_out_specular = vec4(0.0);
 }
