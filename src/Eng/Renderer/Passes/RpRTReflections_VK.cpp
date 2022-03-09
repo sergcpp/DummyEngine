@@ -44,8 +44,6 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(api_ctx);
-
     // Initialize texel buffers if needed
     if (!sobol_buf.tbos[0]) {
         sobol_buf.tbos[0] =
@@ -145,8 +143,6 @@ void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
-
-    Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(api_ctx);
 
     // Initialize texel buffers if needed
     if (!sobol_buf.tbos[0]) {
