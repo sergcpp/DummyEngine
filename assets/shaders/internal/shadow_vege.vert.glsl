@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 
 #include "_vs_common.glsl"
+#include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
 #include "shadow_interface.glsl"
@@ -33,13 +34,15 @@ layout(location = REN_VTX_AUX_LOC) in uint g_in_vtx_color_packed;
 layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
 layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_texture;
 
+layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndices {
+    ivec2 g_instance_indices[];
+};
+
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
     mat4 g_shadow_view_proj_mat;
-    ivec2 g_instance_indices[REN_MAX_BATCH_SIZE];
 };
 #else // VULKAN
-layout(location = REN_U_INSTANCES_LOC) uniform ivec2 g_instance_indices[REN_MAX_BATCH_SIZE];
 layout(location = U_M_MATRIX_LOC) uniform mat4 g_shadow_view_proj_mat;
 #endif // VULKAN
 

@@ -26,7 +26,7 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
                                    BackendInfo &backend_info);*/
 } // namespace RpSharedInternal
 
-void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
+void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf, RpAllocBuf &instance_indices_buf,
                                            RpAllocBuf &unif_shared_data_buf, RpAllocBuf &materials_buf,
                                            RpAllocBuf &cells_buf, RpAllocBuf &items_buf, RpAllocBuf &lights_buf,
                                            RpAllocBuf &decals_buf, RpAllocTex &shad_tex, RpAllocTex &color_tex,
@@ -62,7 +62,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 10;
     descr_sizes.ubuf_count = 1;
-    descr_sizes.sbuf_count = 2;
+    descr_sizes.sbuf_count = 3;
     descr_sizes.tbuf_count = 4;
     const VkDescriptorSet res_descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout_);
 
@@ -102,6 +102,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         Ren::SmallVector<VkWriteDescriptorSet, 16> descr_writes;
@@ -236,6 +237,16 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
             descr_write.descriptorCount = 1;
             descr_write.pTexelBufferView = &instances_buf_view;
         }
+        { // instance indices sbuf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            descr_write.dstSet = res_descr_set;
+            descr_write.dstBinding = REN_INST_INDICES_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pBufferInfo = &instance_indices_buf_info;
+        }
         { // shared data ubuf
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -314,20 +325,18 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
                 cur_mat_id = batch.mat_id;
             }
 
-            const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+            const uint32_t descr_id = batch.material_index / materials_per_descriptor;
             if (descr_id != bound_descr_id) {
                 vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[batch.pipe_id].layout(), 1,
                                         1, &texture_descr_sets[descr_id], 0, nullptr);
                 bound_descr_id = descr_id;
             }
 
-            vkCmdPushConstants(cmd_buf, pipelines_[batch.pipe_id].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                               2 * batch.instance_count * sizeof(int), &batch.instance_indices[0][0]);
             vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                              batch.instance_count,         // instance count
                              batch.indices_offset,         // first index
                              batch.base_vertex,            // vertex offset
-                             0);                           // first instance
+                             batch.instance_start);        // first instance
 
             backend_info.opaque_draw_calls_count += 2;
             backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
@@ -355,20 +364,18 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
                 cur_mat_id = batch.mat_id;
             }
 
-            const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+            const uint32_t descr_id = batch.material_index / materials_per_descriptor;
             if (descr_id != bound_descr_id) {
                 vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[batch.pipe_id].layout(), 1,
                                         1, &texture_descr_sets[descr_id], 0, nullptr);
                 bound_descr_id = descr_id;
             }
 
-            vkCmdPushConstants(cmd_buf, pipelines_[batch.pipe_id].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                               2 * batch.instance_count * sizeof(int), &batch.instance_indices[0][0]);
             vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                              batch.instance_count,         // instance count
                              batch.indices_offset,         // first index
                              batch.base_vertex,            // vertex offset
-                             0);                           // first instance
+                             batch.instance_start);        // first instance
 
             backend_info.opaque_draw_calls_count += 2;
             backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
@@ -403,7 +410,8 @@ void RpTransparent::InitDescrSetLayout() {
         {REN_UB_SHARED_DATA_LOC, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
          VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
         // storage buffers (2)
-        {REN_MATERIALS_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+        {REN_MATERIALS_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        {REN_INST_INDICES_BUF_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
     VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layout_info.bindingCount = COUNT_OF(bindings);

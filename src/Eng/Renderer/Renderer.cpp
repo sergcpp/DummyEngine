@@ -579,7 +579,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // Update buffers
         //
         rp_update_buffers_.Setup(rp_builder_, list, &view_state_, SKIN_TRANSFORMS_BUF, SHAPE_KEYS_BUF, INSTANCES_BUF,
-                                 CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF, ATOMIC_CNT_BUF);
+                                 INSTANCE_INDICES_BUF, CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF,
+                                 ATOMIC_CNT_BUF);
         RenderPassBase *rp_head = &rp_update_buffers_;
         RenderPassBase *rp_tail = &rp_update_buffers_;
 
@@ -611,7 +612,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         rp_shadow_maps_.Setup(rp_builder_, list, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
                               ctx_.default_indices_buf(), persistent_data.materials_buf, &bindless_tex, INSTANCES_BUF,
-                              SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_);
+                              INSTANCE_INDICES_BUF, SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_);
         rp_tail->p_next = &rp_shadow_maps_;
         rp_tail = rp_tail->p_next;
 
@@ -634,8 +635,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
             rp_depth_fill_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), persistent_data.materials_buf,
-                                 &bindless_tex, INSTANCES_BUF, SHARED_DATA_BUF, noise_tex_, MAIN_DEPTH_TEX,
-                                 MAIN_VELOCITY_TEX);
+                                 &bindless_tex, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF, noise_tex_,
+                                 MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
             rp_tail->p_next = &rp_depth_fill_;
             rp_tail = rp_tail->p_next;
         }
@@ -689,8 +690,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
                          ctx_.default_indices_buf(), persistent_data.materials_buf, persistent_data.pipelines.data(),
                          &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF,
-                         SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES,
-                         MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+                         INSTANCE_INDICES_BUF, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF,
+                         SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
         rp_tail->p_next = &rp_opaque_;
         rp_tail = rp_tail->p_next;
 
@@ -710,9 +711,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_transparent_.Setup(rp_builder_, list, &rp_opaque_.alpha_blend_start_index_, &view_state_,
                               ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
                               persistent_data.materials_buf, persistent_data.pipelines.data(), &bindless_tex, brdf_lut_,
-                              noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF, SHARED_DATA_BUF,
-                              CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
-                              MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
+                              noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF,
+                              SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES,
+                              MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
         rp_tail->p_next = &rp_transparent_;
         rp_tail = rp_tail->p_next;
 

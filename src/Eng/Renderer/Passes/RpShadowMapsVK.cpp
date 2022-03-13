@@ -48,6 +48,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
 
@@ -69,9 +70,11 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     { // update descriptor set
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
+                                                                  VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
-        VkWriteDescriptorSet descr_writes[2];
+        VkWriteDescriptorSet descr_writes[3];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = simple_descr_sets[0];
         descr_writes[0].dstBinding = REN_INST_BUF_SLOT;
@@ -82,13 +85,21 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
         descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = simple_descr_sets[0];
-        descr_writes[1].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[1].dstBinding = REN_INST_INDICES_BUF_SLOT;
         descr_writes[1].dstArrayElement = 0;
         descr_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[1].descriptorCount = 1;
-        descr_writes[1].pBufferInfo = &mat_buf_info;
+        descr_writes[1].pBufferInfo = &instance_indices_buf_info;
 
-        vkUpdateDescriptorSets(api_ctx->device, 2, descr_writes, 0, nullptr);
+        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descr_writes[2].dstSet = simple_descr_sets[0];
+        descr_writes[2].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[2].dstArrayElement = 0;
+        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[2].descriptorCount = 1;
+        descr_writes[2].pBufferInfo = &mat_buf_info;
+
+        vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
@@ -106,10 +117,12 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
     { // update descriptor set
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
+                                                                  VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorImageInfo img_info = noise_tex.ref->vk_desc_image_info();
 
-        VkWriteDescriptorSet descr_writes[4];
+        VkWriteDescriptorSet descr_writes[5];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = vege_descr_sets[0];
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
@@ -127,22 +140,30 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         descr_writes[1].pTexelBufferView = &instances_buf_view;
 
         descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[2].dstSet = vege_descr_sets[0];
-        descr_writes[2].dstBinding = REN_NOISE_TEX_SLOT;
+        descr_writes[2].dstSet = simple_descr_sets[0];
+        descr_writes[2].dstBinding = REN_INST_INDICES_BUF_SLOT;
         descr_writes[2].dstArrayElement = 0;
-        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[2].descriptorCount = 1;
-        descr_writes[2].pImageInfo = &img_info;
+        descr_writes[2].pBufferInfo = &instance_indices_buf_info;
 
         descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = vege_descr_sets[0];
-        descr_writes[3].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[3].dstBinding = REN_NOISE_TEX_SLOT;
         descr_writes[3].dstArrayElement = 0;
-        descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descr_writes[3].descriptorCount = 1;
-        descr_writes[3].pBufferInfo = &mat_buf_info;
+        descr_writes[3].pImageInfo = &img_info;
 
-        vkUpdateDescriptorSets(api_ctx->device, 4, descr_writes, 0, nullptr);
+        descr_writes[4] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descr_writes[4].dstSet = vege_descr_sets[0];
+        descr_writes[4].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[4].dstArrayElement = 0;
+        descr_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[4].descriptorCount = 1;
+        descr_writes[4].pBufferInfo = &mat_buf_info;
+
+        vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
     bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
@@ -189,15 +210,11 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                         continue;
                     }
 
-                    vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, g_instance_indices),
-                                       batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
-
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                                      batch.instance_count,         // instance count
                                      batch.indices_offset,         // first index
                                      batch.base_vertex,            // vertex offset
-                                     0);                           // first instance
+                                     batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
@@ -235,15 +252,11 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                         continue;
                     }
 
-                    vkCmdPushConstants(cmd_buf, pi_vege_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, g_instance_indices),
-                                       batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
-
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                                      batch.instance_count,         // instance count
                                      batch.indices_offset,         // first index
                                      batch.base_vertex,            // vertex offset
-                                     0);                           // first instance
+                                     batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
@@ -282,21 +295,18 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                         continue;
                     }
 
-                    const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+                    const uint32_t descr_id = batch.material_index / materials_per_descriptor;
                     if (descr_id != bound_descr_id) {
                         vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.layout(), 1, 1,
                                                 &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
                         bound_descr_id = descr_id;
                     }
 
-                    vkCmdPushConstants(cmd_buf, pi_transp_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, g_instance_indices),
-                                       batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                                      batch.instance_count,         // instance count
                                      batch.indices_offset,         // first index
                                      batch.base_vertex,            // vertex offset
-                                     0);                           // first instance
+                                     batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
@@ -335,21 +345,18 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                         continue;
                     }
 
-                    const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+                    const uint32_t descr_id = batch.material_index / materials_per_descriptor;
                     if (descr_id != bound_descr_id) {
                         vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_transp_.layout(), 1,
                                                 1, &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
                         bound_descr_id = descr_id;
                     }
 
-                    vkCmdPushConstants(cmd_buf, pi_vege_transp_.layout(), VK_SHADER_STAGE_VERTEX_BIT,
-                                       offsetof(Shadow::Params, g_instance_indices),
-                                       batch.instance_count * sizeof(Ren::Vec2i), &batch.instance_indices[0][0]);
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                                      batch.instance_count,         // instance count
                                      batch.indices_offset,         // first index
                                      batch.base_vertex,            // vertex offset
-                                     0);                           // first instance
+                                     batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }

@@ -1,6 +1,7 @@
 #pragma once
 
 const char INSTANCES_BUF[] = "Instances Buffer";
+const char INSTANCE_INDICES_BUF[] = "Instance Indices Buffer";
 const char CELLS_BUF[] = "Cells Buffer";
 const char LIGHTS_BUF[] = "Lights Buffer";
 const char DECALS_BUF[] = "Decals Buffer";

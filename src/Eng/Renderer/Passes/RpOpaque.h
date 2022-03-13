@@ -34,6 +34,7 @@ class RpOpaque : public RenderPassBase {
     RpResource vtx_buf2_;
     RpResource ndx_buf_;
     RpResource instances_buf_;
+    RpResource instance_indices_buf_;
     RpResource shared_data_buf_;
     RpResource materials_buf_;
     RpResource textures_buf_;
@@ -69,10 +70,10 @@ class RpOpaque : public RenderPassBase {
                const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
                const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
                const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
-               const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char shared_data_buf[],
-               const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
-               const char shadowmap_tex[], const char ssao_tex[], const char out_color[], const char out_normals[],
-               const char out_spec[], const char out_depth[]);
+               const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char instance_indices_buf[],
+               const char shared_data_buf[], const char cells_buf[], const char items_buf[], const char lights_buf[],
+               const char decals_buf[], const char shadowmap_tex[], const char ssao_tex[], const char out_color[],
+               const char out_normals[], const char out_spec[], const char out_depth[]);
     void Execute(RpBuilder &builder) override;
 
     // TODO: remove this

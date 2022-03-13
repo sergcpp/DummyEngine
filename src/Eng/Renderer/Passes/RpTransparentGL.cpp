@@ -26,10 +26,10 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
 } // namespace RpSharedInternal
 
 void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
-                                           RpAllocBuf &unif_shared_data_buf, RpAllocBuf &materials_buf,
-                                           RpAllocBuf &cells_buf, RpAllocBuf &items_buf, RpAllocBuf &lights_buf,
-                                           RpAllocBuf &decals_buf, RpAllocTex &shad_tex, RpAllocTex &color_tex,
-                                           RpAllocTex &ssao_tex) {
+                                           RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
+                                           RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
+                                           RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
+                                           RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
     using namespace RpSharedInternal;
 
     Ren::RastState rast_state;
@@ -123,6 +123,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
     }
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
 
     uint64_t cur_pipe_id = 0xffffffffffffffff;
     uint64_t cur_prog_id = 0xffffffffffffffff;
@@ -163,7 +164,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         cur_pipe_id = batch.pipe_id;
         cur_mat_id = batch.mat_id;
 
-        glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -207,7 +208,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         cur_pipe_id = batch.pipe_id;
         cur_mat_id = batch.mat_id;
 
-        glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
