@@ -34,19 +34,14 @@
 #define REN_CELLS_BUF_SLOT  15
 #define REN_ITEMS_BUF_SLOT  16
 #define REN_INST_BUF_SLOT   17
-#define REN_ENV_TEX_SLOT    18
-#define REN_MOMENTS0_TEX_SLOT 6 // shares slot with lightmap 0
-#define REN_MOMENTS1_TEX_SLOT 7 // shares slot with lightmap 1
-#define REN_MOMENTS2_TEX_SLOT 8 // shares slot with lightmap 2
-#define REN_MOMENTS0_MS_TEX_SLOT 9 // shares slot with lightmap 3
-#define REN_MOMENTS1_MS_TEX_SLOT 11 // shares slot with ssao texture
-#define REN_MOMENTS2_MS_TEX_SLOT 19
-#define REN_NOISE_TEX_SLOT 19
-#define REN_CONE_RT_LUT_SLOT 20
+#define REN_INST_INDICES_BUF_SLOT 18
+#define REN_ENV_TEX_SLOT    19
+#define REN_NOISE_TEX_SLOT 20
+#define REN_CONE_RT_LUT_SLOT 21
 
 #define REN_SET_SCENETEXTURES 1
 
-#define REN_MATERIALS_SLOT 23
+#define REN_MATERIALS_SLOT 24
 #define REN_BINDLESS_TEX_SLOT 0 // shares slot with material slot 0
 
 #define REN_BASE0_TEX_SLOT 0
@@ -62,11 +57,10 @@
 #define REN_REFL_BRDF_TEX_SLOT  6
 #define REN_REFL_DEPTH_LOW_TEX_SLOT 7
 
-#define REN_U_INSTANCES_LOC 1
-#define REN_U_MAT_PARAM_LOC 3
+#define REN_U_BASE_INSTANCE_LOC 2
 
-#define REN_UB_SHARED_DATA_LOC  21
-#define REN_UB_UNIF_PARAM_LOC    22
+#define REN_UB_SHARED_DATA_LOC  22
+#define REN_UB_UNIF_PARAM_LOC    23
 
 // Shader output location
 #define REN_OUT_COLOR_INDEX 0
@@ -93,7 +87,6 @@
 
 #define REN_MAX_OBJ_COUNT			4194304
 #define REN_MAX_TEX_COUNT           262144
-#define REN_MAX_BATCH_SIZE			8
 
 #define REN_MAX_TEX_PER_MATERIAL    5
 #define REN_MAX_MATERIALS           262144

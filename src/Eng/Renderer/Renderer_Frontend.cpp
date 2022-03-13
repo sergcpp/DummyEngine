@@ -137,6 +137,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.ellipsoids.count = 0;
 
     list.instances.count = 0;
+    list.instance_indices.count = 0;
     list.shadow_batches.count = 0;
     list.zfill_batches.count = 0;
     list.main_batches.count = 0;
@@ -473,8 +474,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 main_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
                                 main_batch.base_vertex = base_vertex;
                                 main_batch.indices_count = grp.num_indices;
-                                main_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
-                                main_batch.instance_indices[0][1] = int32_t(grp.mat.index());
+                                main_batch.instance_index = int32_t(list.instances.count - 1);
+                                main_batch.material_index = int32_t(grp.mat.index());
                                 main_batch.instance_count = 1;
 
                                 if (zfill_enabled && (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
@@ -496,8 +497,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     zfill_batch.indices_offset = main_batch.indices_offset;
                                     zfill_batch.base_vertex = base_vertex;
                                     zfill_batch.indices_count = grp.num_indices;
-                                    zfill_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
-                                    zfill_batch.instance_indices[0][1] =
+                                    zfill_batch.instance_index = int32_t(list.instances.count - 1);
+                                    zfill_batch.material_index =
                                         (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
                                     zfill_batch.instance_count = 1;
                                 }
@@ -1022,8 +1023,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
                                 batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
-                                batch.instance_indices[0][0] = proc_objects_.data[n->prim_index].instance_index;
-                                batch.instance_indices[0][1] =
+                                batch.instance_index = proc_objects_.data[n->prim_index].instance_index;
+                                batch.material_index =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
                                 batch.instance_count = 1;
                             }
@@ -1236,8 +1237,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
                                 batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
-                                batch.instance_indices[0][0] = proc_objects_.data[n->prim_index].instance_index;
-                                batch.instance_indices[0][1] =
+                                batch.instance_index = proc_objects_.data[n->prim_index].instance_index;
+                                batch.material_index =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? uint32_t(grp.mat.index()) : 0;
                                 batch.instance_count = 1;
                             }
@@ -1314,18 +1315,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
         // Merge similar batches
         for (uint32_t start = 0, end = 1; end <= list.zfill_batch_indices.count; end++) {
-            if ((end - start) >= REN_MAX_BATCH_SIZE || end == list.zfill_batch_indices.count ||
+            if (end == list.zfill_batch_indices.count ||
                 list.zfill_batches.data[list.zfill_batch_indices.data[start]].sort_key !=
                     list.zfill_batches.data[list.zfill_batch_indices.data[end]].sort_key) {
 
                 DepthDrawBatch &b1 = list.zfill_batches.data[list.zfill_batch_indices.data[start]];
+                b1.instance_start = list.instance_indices.count;
+                for (uint32_t j = 0; j < b1.instance_count; ++j) {
+                    list.instance_indices.data[list.instance_indices.count++] =
+                        Ren::Vec2i{b1.instance_index, b1.material_index};
+                }
+
                 for (uint32_t i = start + 1; i < end; i++) {
                     DepthDrawBatch &b2 = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+                    b2.instance_start = list.instance_indices.count;
+                    for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                        list.instance_indices.data[list.instance_indices.count++] =
+                            Ren::Vec2i{b2.instance_index, b2.material_index};
+                    }
 
-                    if (b1.base_vertex == b2.base_vertex &&
-                        b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
-                        memcpy(&b1.instance_indices[b1.instance_count][0], &b2.instance_indices[0][0],
-                               b2.instance_count * 2 * sizeof(uint32_t));
+                    if (b1.base_vertex == b2.base_vertex) {
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
                     }
@@ -1365,17 +1374,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     // Merge similar batches
     for (uint32_t start = 0, end = 1; end <= list.main_batch_indices.count; end++) {
-        if ((end - start) >= REN_MAX_BATCH_SIZE || end == list.main_batch_indices.count ||
+        if (end == list.main_batch_indices.count ||
             list.main_batches.data[list.main_batch_indices.data[start]].sort_key !=
                 list.main_batches.data[list.main_batch_indices.data[end]].sort_key) {
 
             MainDrawBatch &b1 = list.main_batches.data[list.main_batch_indices.data[start]];
+            b1.instance_start = list.instance_indices.count;
+            for (uint32_t j = 0; j < b1.instance_count; ++j) {
+                list.instance_indices.data[list.instance_indices.count++] =
+                    Ren::Vec2i{b1.instance_index, b1.material_index};
+            }
             for (uint32_t i = start + 1; i < end; i++) {
                 MainDrawBatch &b2 = list.main_batches.data[list.main_batch_indices.data[i]];
+                b2.instance_start = list.instance_indices.count;
+                for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                    list.instance_indices.data[list.instance_indices.count++] =
+                        Ren::Vec2i{b2.instance_index, b2.material_index};
+                }
 
-                if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
-                    memcpy(&b1.instance_indices[b1.instance_count][0], &b2.instance_indices[0][0],
-                           b2.instance_count * 2 * sizeof(uint32_t));
+                if (b1.base_vertex == b2.base_vertex) {
                     b1.instance_count += b2.instance_count;
                     b2.instance_count = 0;
                 }
@@ -1424,18 +1441,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         // Merge similar batches
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end;
              end++) {
-            if ((end - start) >= REN_MAX_BATCH_SIZE || end == shadow_batch_end ||
-                list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key !=
-                    list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
+            if (end == shadow_batch_end || list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key !=
+                                               list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
 
                 DepthDrawBatch &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
+                b1.instance_start = list.instance_indices.count;
+                for (uint32_t j = 0; j < b1.instance_count; ++j) {
+                    list.instance_indices.data[list.instance_indices.count++] =
+                        Ren::Vec2i{b1.instance_index, b1.material_index};
+                }
+
                 for (uint32_t i = start + 1; i < end; i++) {
                     DepthDrawBatch &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
+                    b2.instance_start = list.instance_indices.count;
+                    for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                        list.instance_indices.data[list.instance_indices.count++] =
+                            Ren::Vec2i{b2.instance_index, b2.material_index};
+                    }
 
-                    if (b1.base_vertex == b2.base_vertex &&
-                        b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
-                        memcpy(&b1.instance_indices[b1.instance_count][0], &b2.instance_indices[0][0],
-                               b2.instance_count * 2 * sizeof(uint32_t));
+                    if (b1.base_vertex == b2.base_vertex) {
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
                     }

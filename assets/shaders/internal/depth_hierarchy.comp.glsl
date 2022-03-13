@@ -1,5 +1,7 @@
 #version 310 es
+#ifndef NO_SUBGROUP_EXTENSIONS
 #extension GL_KHR_shader_subgroup_quad : enable
+#endif
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;
@@ -13,14 +15,20 @@
 UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
 PERM @MIPS_7
+PERM @NO_SUBGROUP_EXTENSIONS
+PERM @MIPS_7@NO_SUBGROUP_EXTENSIONS
 */
+
+#if !defined(NO_SUBGROUP_EXTENSIONS) && !defined(GL_KHR_shader_subgroup_quad)
+#define NO_SUBGROUP_EXTENSIONS
+#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
-layout(std430, binding = ATOMIC_CNT_SLOT) highp buffer AtomicCounter {
+layout(std430, binding = ATOMIC_CNT_SLOT) buffer AtomicCounter {
     uint g_atomic_counter;
 };
 
@@ -46,7 +54,7 @@ float ReduceSrcDepth4(ivec2 base) {
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
-#if defined(GL_KHR_shader_subgroup_quad)
+#if !defined(NO_SUBGROUP_EXTENSIONS)
 float ReduceQuad(float v) {
     float v0 = v;
     float v1 = subgroupQuadSwapHorizontal(v);
@@ -82,7 +90,7 @@ float ReduceLoad4(ivec2 base) {
 void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id, uint x, uint y) {
     if (levels_total <= base_level + 1) return;
     { // Init mip level 3 or
-#if !defined(GL_KHR_shader_subgroup_quad)
+#if defined(NO_SUBGROUP_EXTENSIONS)
         if (gl_LocalInvocationIndex < 64) {
             float v = ReduceIntermediate(ivec2(x * 2 + 0, y * 2 + 0), ivec2(x * 2 + 1, y * 2 + 0),
                                          ivec2(x * 2 + 0, y * 2 + 1), ivec2(x * 2 + 1, y * 2 + 1));
@@ -109,7 +117,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
     }
     if (levels_total <= base_level + 2) return;
     { // Init mip level 4
-#if !defined(GL_KHR_shader_subgroup_quad)
+#if defined(NO_SUBGROUP_EXTENSIONS)
         if (gl_LocalInvocationIndex < 16) {
             // x 0 x 0
             // 0 0 0 0
@@ -147,7 +155,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
     }
     if (levels_total <= base_level + 3) return;
     { // Init mip level 5
-#if !defined(GL_KHR_shader_subgroup_quad)
+#if defined(NO_SUBGROUP_EXTENSIONS)
         if (gl_LocalInvocationIndex < 4) {
             // x 0 0 0 x 0 0 0
             // ...
@@ -176,7 +184,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
     }
     if (levels_total <= base_level + 4) return;
     { // Init mip level 6
-#if !defined(GL_KHR_shader_subgroup_quad)
+#if defined(NO_SUBGROUP_EXTENSIONS)
         if (gl_LocalInvocationIndex < 1) {
             // x x x x 0 ...
             // 0 ...
@@ -256,7 +264,7 @@ void main() {
 
         if (required_mips <= 2) return;
 
-#if !defined(GL_KHR_shader_subgroup_quad)
+#if defined(NO_SUBGROUP_EXTENSIONS)
         for (int i = 0; i < 4; ++i) {
             g_shared_depth[x][y] = v[i];
             barrier();

@@ -2,6 +2,7 @@
 #extension GL_EXT_texture_buffer : enable
 
 #include "_vs_common.glsl"
+#include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
 /*
@@ -28,13 +29,9 @@ uniform SharedDataBlock {
 
 layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
 
-#if defined(VULKAN)
-layout(push_constant) uniform PushConstants {
-    ivec2 g_instance_indices[REN_MAX_BATCH_SIZE];
+layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndices {
+    ivec2 g_instance_indices[];
 };
-#else
-layout(location = REN_U_INSTANCES_LOC) uniform ivec2 g_instance_indices[REN_MAX_BATCH_SIZE];
-#endif
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData g_materials[];

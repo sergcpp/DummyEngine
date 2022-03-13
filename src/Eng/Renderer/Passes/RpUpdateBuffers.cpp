@@ -7,9 +7,11 @@
 
 void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                             const char skin_transforms_buf[], const char shape_keys_buf[], const char instances_buf[],
-                            const char cells_buf[], const char lights_buf[], const char decals_buf[],
-                            const char items_buf[], const char shared_data_buf[], const char atomic_counter_buf[]) {
+                            const char instance_indices_buf[], const char cells_buf[], const char lights_buf[],
+                            const char decals_buf[], const char items_buf[], const char shared_data_buf[],
+                            const char atomic_counter_buf[]) {
     assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
+    assert(list.instance_indices.count < REN_MAX_INSTANCES_TOTAL);
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
     assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
     assert(list.skin_vertices_count < REN_MAX_SKIN_VERTICES_TOTAL);
@@ -24,7 +26,9 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
     shape_keys_ = list.shape_keys_data;
     shape_keys_stage_buf_ = list.shape_keys_stage_buf;
     instances_ = list.instances;
-    instances_stage_buf_ = list.instatnces_stage_buf;
+    instances_stage_buf_ = list.instances_stage_buf;
+    instance_indices_ = list.instance_indices;
+    instance_indices_stage_buf_ = list.instance_indices_stage_buf;
     cells_ = list.cells;
     cells_stage_buf_ = list.cells_stage_buf;
     light_sources_ = list.light_sources;
@@ -65,6 +69,13 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
         desc.size = InstanceDataBufChunkSize;
         instances_buf_ =
             builder.WriteBuffer(instances_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
+    }
+    { // create instance indices buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Texture;
+        desc.size = InstanceIndicesBufChunkSize;
+        instance_indices_buf_ =
+            builder.WriteBuffer(instance_indices_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
     }
     { // create cells buffer
         RpBufDesc desc;
@@ -148,7 +159,6 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
     }
 
     RpAllocBuf &instances_buf = builder.GetWriteBuffer(instances_buf_);
-
     if (!instances_buf.tbos[0]) {
         instances_buf.tbos[0] = ctx.CreateTexture1D("Instances TBO", instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
                                                     InstanceDataBufChunkSize);
@@ -169,6 +179,30 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*instances_stage_buf_, ctx.backend_frame() * InstanceDataBufChunkSize,
                                 *instances_buf.ref, 0, instance_mem_size, ctx.current_cmd_buf());
+    }
+
+    RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(instance_indices_buf_);
+    if (!instance_indices_buf.tbos[0]) {
+        instance_indices_buf.tbos[0] = ctx.CreateTexture1D("Instance Indices TBO", instance_indices_buf.ref,
+                                                           Ren::eTexFormat::RawRG32UI, 0, InstanceIndicesBufChunkSize);
+    }
+
+    // Update instance indices buffer
+    if (instance_indices_.count) {
+        uint8_t *stage_mem = instance_indices_stage_buf_->MapRange(
+            Ren::BufMapWrite, ctx.backend_frame() * InstanceIndicesBufChunkSize, InstanceIndicesBufChunkSize);
+        const uint32_t instance_indices_mem_size = instance_indices_.count * sizeof(Ren::Vec2i);
+        if (stage_mem) {
+            memcpy(stage_mem, instance_indices_.data, instance_indices_mem_size);
+            instance_indices_stage_buf_->FlushMappedRange(
+                0, instance_indices_stage_buf_->AlignMapOffset(instance_indices_mem_size));
+            instance_indices_stage_buf_->Unmap();
+        } else {
+            builder.log()->Error("RpUpdateBuffers: Failed to map instance indices buffer!");
+        }
+
+        Ren::CopyBufferToBuffer(*instance_indices_stage_buf_, ctx.backend_frame() * InstanceIndicesBufChunkSize,
+                                *instance_indices_buf.ref, 0, instance_indices_mem_size, ctx.current_cmd_buf());
     }
 
     RpAllocBuf &cells_buf = builder.GetWriteBuffer(cells_buf_);

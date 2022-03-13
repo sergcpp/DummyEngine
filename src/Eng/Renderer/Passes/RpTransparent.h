@@ -40,6 +40,7 @@ class RpTransparent : public RenderPassBase {
     RpResource vtx_buf2_;
     RpResource ndx_buf_;
     RpResource instances_buf_;
+    RpResource instance_indices_buf_;
     RpResource shared_data_buf_;
     RpResource cells_buf_;
     RpResource items_buf_;
@@ -67,10 +68,10 @@ class RpTransparent : public RenderPassBase {
                   RpAllocTex &transparent_tex);
     void DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex);
 
-    void DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf, RpAllocBuf &unif_shared_data_buf,
-                                RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
-                                RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
-                                RpAllocTex &color_tex, RpAllocTex &ssao_tex);
+    void DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf, RpAllocBuf &instance_indices_buf,
+                                RpAllocBuf &unif_shared_data_buf, RpAllocBuf &materials_buf, RpAllocBuf &cells_buf,
+                                RpAllocBuf &items_buf, RpAllocBuf &lights_buf, RpAllocBuf &decals_buf,
+                                RpAllocTex &shad_tex, RpAllocTex &color_tex, RpAllocTex &ssao_tex);
     void DrawTransparent_OIT_MomentBased(RpBuilder &builder);
     void DrawTransparent_OIT_WeightedBlended(RpBuilder &builder);
 
@@ -87,10 +88,10 @@ class RpTransparent : public RenderPassBase {
                const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf, const Ren::Pipeline pipelines[],
                const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut, const Ren::Tex2DRef &noise_tex,
                const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black, const Ren::Tex2DRef &dummy_white,
-               const char instances_buf[], const char shared_data_buf[], const char cells_buf[], const char items_buf[],
-               const char lights_buf[], const char decals_buf[], const char shad_tex[], const char ssao_tex[],
-               const char color_tex[], const char normal_tex[], const char spec_tex[], const char depth_tex[],
-               const char transparent_tex_name[]);
+               const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
+               const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
+               const char shad_tex[], const char ssao_tex[], const char color_tex[], const char normal_tex[],
+               const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "TRANSPARENT"; }

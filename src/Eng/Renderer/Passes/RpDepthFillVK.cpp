@@ -23,14 +23,11 @@ uint32_t _depth_draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipelin
             continue;
         }
 
-        vkCmdPushConstants(cmd_buf, pipeline.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           2 * batch.instance_count * sizeof(int), &batch.instance_indices[0][0]);
-
         vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                          batch.instance_count,         // instance count
                          batch.indices_offset,         // first index
                          batch.base_vertex,            // vertex offset
-                         0);                           // first instance
+                         batch.instance_start);        // first instance
 
         backend_info.depth_fill_draw_calls_count++;
     }
@@ -53,21 +50,18 @@ uint32_t _depth_draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pip
             continue;
         }
 
-        const uint32_t descr_id = batch.instance_indices[0][1] / materials_per_descriptor;
+        const uint32_t descr_id = batch.material_index / materials_per_descriptor;
         if (descr_id != bound_descr_id) {
             vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.layout(), 1, 1,
                                     &descr_sets[descr_id], 0, nullptr);
             bound_descr_id = descr_id;
         }
 
-        vkCmdPushConstants(cmd_buf, pipeline.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           2 * batch.instance_count * sizeof(int), &batch.instance_indices[0][0]);
-
         vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
                          batch.instance_count,         // instance count
                          batch.indices_offset,         // first index
                          batch.base_vertex,            // vertex offset
-                         0);                           // first instance
+                         batch.instance_start);        // first instance
 
         backend_info.depth_fill_draw_calls_count++;
     }
@@ -80,6 +74,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
 
@@ -121,10 +116,12 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     { // update descriptor sets
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
+                                                                  VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
-        VkWriteDescriptorSet descr_writes[3];
+        VkWriteDescriptorSet descr_writes[4];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = simple_descr_sets[0];
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
@@ -143,13 +140,21 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
         descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = simple_descr_sets[0];
-        descr_writes[2].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[2].dstBinding = REN_INST_INDICES_BUF_SLOT;
         descr_writes[2].dstArrayElement = 0;
         descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[2].descriptorCount = 1;
-        descr_writes[2].pBufferInfo = &mat_buf_info;
+        descr_writes[2].pBufferInfo = &instance_indices_buf_info;
 
-        vkUpdateDescriptorSets(api_ctx->device, 3, descr_writes, 0, nullptr);
+        descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descr_writes[3].dstSet = simple_descr_sets[0];
+        descr_writes[3].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[3].dstArrayElement = 0;
+        descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[3].descriptorCount = 1;
+        descr_writes[3].pBufferInfo = &mat_buf_info;
+
+        vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_vel_[0].prog()->descr_set_layouts()[0];
@@ -166,9 +171,10 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     { // update descriptor set
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
-        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorImageInfo img_info = noise_tex.ref->vk_desc_image_info();
+        const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         VkWriteDescriptorSet descr_writes[4];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -189,6 +195,14 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
         descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = vege_descr_sets[0];
+        descr_writes[2].dstBinding = REN_INST_INDICES_BUF_SLOT;
+        descr_writes[2].dstArrayElement = 0;
+        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[2].descriptorCount = 1;
+        descr_writes[2].pBufferInfo = &instance_indices_buf_info;
+
+        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descr_writes[2].dstSet = vege_descr_sets[0];
         descr_writes[2].dstBinding = REN_NOISE_TEX_SLOT;
         descr_writes[2].dstArrayElement = 0;
         descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -203,7 +217,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[3].descriptorCount = 1;
         descr_writes[3].pBufferInfo = &mat_buf_info;
 
-        vkUpdateDescriptorSets(api_ctx->device, 4, descr_writes, 0, nullptr);
+        vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
     { // solid meshes

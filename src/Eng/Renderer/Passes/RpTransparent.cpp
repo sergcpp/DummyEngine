@@ -11,11 +11,11 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *a
                           const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
                           const Ren::Tex2DRef &brdf_lut, const Ren::Tex2DRef &noise_tex,
                           const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
-                          const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char shared_data_buf[],
-                          const char cells_buf[], const char items_buf[], const char lights_buf[],
-                          const char decals_buf[], const char shad_tex[], const char ssao_tex[], const char color_tex[],
-                          const char normal_tex[], const char spec_tex[], const char depth_tex[],
-                          const char transparent_tex_name[]) {
+                          const Ren::Tex2DRef &dummy_white, const char instances_buf[],
+                          const char instance_indices_buf[], const char shared_data_buf[], const char cells_buf[],
+                          const char items_buf[], const char lights_buf[], const char decals_buf[],
+                          const char shad_tex[], const char ssao_tex[], const char color_tex[], const char normal_tex[],
+                          const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]) {
     view_state_ = view_state;
     pipelines_ = pipelines;
     bindless_tex_ = bindless_tex;
@@ -35,6 +35,8 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *a
     ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
+    instance_indices_buf_ =
+        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
     cells_buf_ = builder.ReadBuffer(cells_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
@@ -110,6 +112,7 @@ void RpTransparent::Execute(RpBuilder &builder) {
 
 void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
     RpAllocBuf &cells_buf = builder.GetReadBuffer(cells_buf_);
@@ -128,8 +131,8 @@ void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
     DrawTransparent_Moments(builder);
 #elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
 #else
-    DrawTransparent_Simple(builder, instances_buf, unif_shared_data_buf, materials_buf, cells_buf, items_buf,
-                           lights_buf, decals_buf, shad_tex, color_tex, ssao_tex);
+    DrawTransparent_Simple(builder, instances_buf, instance_indices_buf, unif_shared_data_buf, materials_buf, cells_buf,
+                           items_buf, lights_buf, decals_buf, shad_tex, color_tex, ssao_tex);
 #endif
 }
 

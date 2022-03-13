@@ -104,7 +104,8 @@ struct DepthDrawBatch {                        // NOLINT
 
     uint32_t indices_count;
     int32_t base_vertex;
-    int32_t instance_indices[REN_MAX_BATCH_SIZE][2];
+    int32_t instance_index, material_index;
+    uint32_t instance_start;
     uint32_t instance_count;
 };
 static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
@@ -136,7 +137,8 @@ struct MainDrawBatch { // NOLINT
 
     uint32_t indices_count;
     int32_t base_vertex;
-    int32_t instance_indices[REN_MAX_BATCH_SIZE][2];
+    int32_t instance_index, material_index;
+    uint32_t instance_start;
     uint32_t instance_count;
 };
 static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
@@ -333,6 +335,7 @@ const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_X
 const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
 const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
 const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
+const size_t InstanceIndicesBufChunkSize = sizeof(Ren::Vec2i) * REN_MAX_INSTANCES_TOTAL;
 const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;

@@ -8,8 +8,8 @@
 void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const Ren::BufferRef &vtx_buf1,
                          const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
                          const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex,
-                         const char instances_buf[], const char shared_data_buf[], const char shadowmap_tex[],
-                         const Ren::Tex2DRef &noise_tex) {
+                         const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
+                         const char shadowmap_tex[], const Ren::Tex2DRef &noise_tex) {
     materials_ = list.materials;
     bindless_tex_ = bindless_tex;
     shadow_batches_ = list.shadow_batches;
@@ -22,6 +22,8 @@ void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const Ren::Bu
     ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
+    instance_indices_buf_ =
+        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
     materials_buf_ =
