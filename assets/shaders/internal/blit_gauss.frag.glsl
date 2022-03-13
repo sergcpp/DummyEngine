@@ -13,39 +13,39 @@ UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
 */
 
-layout(binding = SRC_TEX_SLOT) uniform sampler2D s_texture;
+layout(binding = SRC_TEX_SLOT) uniform sampler2D g_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-LAYOUT(location = 0) in vec2 aVertexUVs_;
+LAYOUT(location = 0) in vec2 g_vtx_uvs;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    outColor = vec4(0.0);
+    g_out_color = vec4(0.0);
 
     if(g_params.vertical.x < 0.5) {
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(4, 0), 0) * 0.0162162162;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(3, 0), 0) * 0.0540540541;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(2, 0), 0) * 0.1216216216;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(1, 0), 0) * 0.1945945946;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.2270270270;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(1, 0), 0) * 0.1945945946;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(2, 0), 0) * 0.1216216216;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(3, 0), 0) * 0.0540540541;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(4, 0), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(4, 0), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(3, 0), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(2, 0), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(1, 0), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs), 0) * 0.2270270270;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(1, 0), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(2, 0), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(3, 0), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(4, 0), 0) * 0.0162162162;
     } else {
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 4), 0) * 0.0162162162;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 3), 0) * 0.0540540541;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 2), 0) * 0.1216216216;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) - ivec2(0, 1), 0) * 0.1945945946;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_), 0) * 0.2270270270;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 1), 0) * 0.1945945946;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 2), 0) * 0.1216216216;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 3), 0) * 0.0540540541;
-        outColor += texelFetch(s_texture, ivec2(aVertexUVs_) + ivec2(0, 4), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 4), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 3), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 2), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 1), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs), 0) * 0.2270270270;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 1), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 2), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 3), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 4), 0) * 0.0162162162;
     }
 }
 

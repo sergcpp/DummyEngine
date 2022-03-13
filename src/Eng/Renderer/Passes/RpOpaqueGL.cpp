@@ -64,7 +64,7 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
         cur_pipe_id = batch.pipe_id;
         cur_mat_id = batch.mat_id;
 
-        glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(cur_primitive, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -111,7 +111,7 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
         cur_pipe_id = batch.pipe_id;
         cur_mat_id = batch.mat_id;
 
-        glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -167,6 +167,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     // Bind resources (shadow atlas, lightmap, cells item data)
     //
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
     RpAllocBuf &textures_buf = builder.GetReadBuffer(textures_buf_);
@@ -230,6 +231,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT, cone_rt_lut.ref->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
 
     BackendInfo _dummy = {};
 

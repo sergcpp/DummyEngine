@@ -195,12 +195,13 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
     std::istream in_mesh(&buf);
 
     Ren::eMeshLoadStatus status;
-    cam_rig_ = ren_ctx.LoadMesh("__cam_rig", &in_mesh,
-                                [this](const char *name) -> Ren::MaterialRef {
-                                    Ren::eMatLoadStatus status;
-                                    return ren_ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
-                                },
-                                &status);
+    cam_rig_ = ren_ctx.LoadMesh(
+        "__cam_rig", &in_mesh,
+        [this](const char *name) -> Ren::MaterialRef {
+            Ren::eMatLoadStatus status;
+            return ren_ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
+        },
+        &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
     { // load error texture
@@ -1113,8 +1114,13 @@ void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp
 
     const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
+    const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
+    if (js_comp_obj.Has("mesh_name")) {
+        js_mesh_lookup_name = js_comp_obj.at("mesh_name").as_str().val.c_str();
+    }
+
     Ren::eMeshLoadStatus status;
-    acc->mesh = LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
+    acc->mesh = LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
 
     if (status != Ren::eMeshLoadStatus::Found) {
         const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
@@ -1129,9 +1135,22 @@ void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp
         std::istream in_file_stream(&mem);
 
         using namespace std::placeholders;
-        acc->mesh = LoadMesh(js_mesh_file_name.val.c_str(), &in_file_stream,
-                             std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+        acc->mesh =
+            LoadMesh(js_mesh_lookup_name, &in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
         assert(status == Ren::eMeshLoadStatus::CreatedFromData);
+    }
+
+    if (js_comp_obj.Has("material_override")) {
+        const JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
+
+        int index = 0;
+        for (const JsElementP &js_mat_el : js_materials.elements) {
+            if (js_mat_el.type() == JsType::String) {
+                const Ren::TriGroup &grp = acc->mesh->groups()[index];
+                const_cast<Ren::TriGroup &>(grp).mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
+            }
+            index++;
+        }
     }
 
     obj_bbox[0] = Ren::Min(obj_bbox[0], acc->mesh->bbox_min());

@@ -6,8 +6,8 @@
     precision highp float;
 #endif
 
-layout(binding = 0) uniform mediump samplerCubeArray s_texture;
-layout(binding = 1) uniform mediump sampler2D s_rand;
+layout(binding = 0) uniform mediump samplerCubeArray g_texture;
+layout(binding = 1) uniform mediump sampler2D g_rand;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -20,12 +20,12 @@ layout(location = 2) uniform int iteration;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
@@ -34,10 +34,10 @@ vec3 RGBMDecode(vec4 rgbm) {
 #define M_PI 3.1415926535897932384626433832795
 
 void main() {
-    int x = int(aVertexUVs_.x);
-    int y = int(aVertexUVs_.y);
+    int x = int(g_vtx_uvs.x);
+    int y = int(g_vtx_uvs.y);
 
-    vec2 rand2d = texelFetch(s_rand, ivec2(x % 8, y), 0).xy + texelFetch(s_rand, ivec2(iteration % 8, iteration / 8), 0).xy;
+    vec2 rand2d = texelFetch(g_rand, ivec2(x % 8, y), 0).xy + texelFetch(g_rand, ivec2(iteration % 8, iteration / 8), 0).xy;
     rand2d = fract(rand2d);
 
     float theta = acos(-1.0 + 2.0 * rand2d.x);
@@ -52,7 +52,7 @@ void main() {
     sh.z = rand_vec.z;
     sh.w = rand_vec.x;
 
-    vec3 color = RGBMDecode(textureLod(s_texture, vec4(rand_vec, src_layer), 0.0));
+    vec3 color = RGBMDecode(textureLod(g_texture, vec4(rand_vec, src_layer), 0.0));
 
     if (x < 8) {
         // red channel
@@ -65,5 +65,5 @@ void main() {
         sh *= color.b;
     }
 
-    outColor = sh;
+    g_out_color = sh;
 }

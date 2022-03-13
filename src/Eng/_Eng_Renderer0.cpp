@@ -12,6 +12,7 @@
 #include "Renderer/Graph/GraphBuilder.cpp"
 #include "Renderer/Passes/RpBilateralBlur.cpp"
 #include "Renderer/Passes/RpBlur.cpp"
+#include "Renderer/Passes/RpBuildAccStructures.cpp"
 #include "Renderer/Passes/RpCombine.cpp"
 #include "Renderer/Passes/RpCopyTex.cpp"
 #include "Renderer/Passes/RpDebugRT.cpp"
@@ -44,6 +45,7 @@
 #include "Renderer/Passes/RpTAA.cpp"
 #include "Renderer/Passes/RpSSAO.cpp"
 #include "Renderer/Passes/RpTransparent.cpp"
+#include "Renderer/Passes/RpUpdateAccBuffers.cpp"
 #include "Renderer/Passes/RpUpdateBuffers.cpp"
 #include "Renderer/Passes/RpUpscale.cpp"
 #if defined(USE_GL_RENDER) // temporarily gl-only
@@ -59,6 +61,7 @@
 #include "Renderer/FrameBufGL.cpp"
 #include "Renderer/PrimDrawGL.cpp"
 #include "Renderer/RendererGL.cpp"
+#include "Renderer/Passes/RpBuildAccStructuresGL.cpp"
 #include "Renderer/Passes/RpDebugTexturesGL.cpp"
 #include "Renderer/Passes/RpDebugRT_GL.cpp"
 #include "Renderer/Passes/RpDepthFillGL.cpp"
@@ -70,12 +73,14 @@
 #include "Renderer/Passes/RpSkydomeGL.cpp"
 #include "Renderer/Passes/RpSSRPrepareGL.cpp"
 #include "Renderer/Passes/RpTransparentGL.cpp"
+#include "Renderer/Passes/RpUpdateAccBuffersGL.cpp"
 
 #include "Renderer/Graph/GraphBuilderGL.cpp"
 #elif defined(USE_VK_RENDER)
 #include "Renderer/FrameBufVK.cpp"
 #include "Renderer/PrimDrawVK.cpp"
 #include "Renderer/RendererVK.cpp"
+#include "Renderer/Passes/RpBuildAccStructuresVK.cpp"
 #include "Renderer/Passes/RpDebugRT_VK.cpp"
 #include "Renderer/Passes/RpDepthFillVK.cpp"
 #include "Renderer/Passes/RpDepthHierarchyVK.cpp"
@@ -86,6 +91,7 @@
 #include "Renderer/Passes/RpSkydomeVK.cpp"
 #include "Renderer/Passes/RpSSRPrepareVK.cpp"
 #include "Renderer/Passes/RpTransparentVK.cpp"
+#include "Renderer/Passes/RpUpdateAccBuffersVK.cpp"
 
 #include "Renderer/Graph/GraphBuilderVK.cpp"
 

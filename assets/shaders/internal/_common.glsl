@@ -81,15 +81,15 @@ struct EllipsItem {
 };
 
 struct SharedData {
-    mat4 uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    mat4 uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
-    vec4 uSunDir, uSunCol, uTaaInfo, uFrustumInfo;
-    vec4 uClipInfo, uCamPosAndGamma, uCamDelta;
-    vec4 uResAndFRes, uTranspParamsAndTime;
-    vec4 uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[REN_MAX_PROBES_TOTAL];
-    EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL];
+    mat4 view_matrix, proj_matrix, view_proj_matrix, view_proj_prev_matrix;
+    mat4 inv_view_matrix, inv_proj_matrix, inv_view_proj_matrix, delta_matrix;
+    ShadowMapRegion shadowmap_regions[REN_MAX_SHADOWMAPS_TOTAL];
+    vec4 sun_dir, sun_col, taa_info, frustum_info;
+    vec4 clip_info, cam_pos_and_gamma, cam_delta;
+    vec4 res_and_fres, transp_params_and_time;
+    vec4 wind_scroll, wind_scroll_prev;
+    ProbeItem probes[REN_MAX_PROBES_TOTAL];
+    EllipsItem ellipsoids[REN_MAX_ELLIPSES_TOTAL];
 };
 
 struct MaterialData {

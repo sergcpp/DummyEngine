@@ -1,10 +1,6 @@
 
 #include "_common.glsl"
 
-#if !defined(VULKAN)
-#define gl_InstanceIndex gl_InstanceID
-#endif
-
 #define INSTANCE_BUF_STRIDE 8
 
 #define FetchModelMatrix(instance_buf, instance)                                    \

@@ -18,7 +18,7 @@ $ModifyWarning
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D mat0_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_mat0_texture;
 #endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -27,19 +27,19 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-LAYOUT(location = 4) in vec2 aVertexUVs1_;
+LAYOUT(location = 4) in vec2 g_vtx_uvs0;
 #if defined(BINDLESS_TEXTURES)
-LAYOUT(location = 8) in flat TEX_HANDLE mat0_texture;
+LAYOUT(location = 8) in flat TEX_HANDLE g_mat0_texture;
 #endif // BINDLESS_TEXTURES
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
-layout(location = REN_OUT_NORM_INDEX) out vec4 outNormal;
+layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
+layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
 
 void main(void) {
-    vec4 col = texture(SAMPLER2D(mat0_texture), aVertexUVs1_);
+    vec4 col = texture(SAMPLER2D(g_mat0_texture), g_vtx_uvs0);
 
     float scale = (col.b * (255.0 / 8.0)) + 1.0;
     float Y = col.a;
@@ -51,6 +51,6 @@ void main(void) {
     col_rgb.g = Y + Cg;
     col_rgb.b = Y - Co - Cg;
 
-    outColor = vec4(SRGBToLinear(col_rgb), 1.0);
-    outNormal = vec4(0.0);
+    g_out_color = vec4(SRGBToLinear(col_rgb), 1.0);
+    g_out_normal = vec4(0.0);
 }

@@ -16,19 +16,19 @@ PERM @MSAA_4
 */
 
 #if defined(MSAA_4)
-layout(binding = HDR_TEX_SLOT) uniform mediump sampler2DMS s_texture;
+layout(binding = HDR_TEX_SLOT) uniform mediump sampler2DMS g_texture;
 #else
-layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D s_texture;
+layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D g_texture;
 #endif
-layout(binding = BLURED_TEX_SLOT) uniform sampler2D s_blured_texture;
+layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-LAYOUT(location = 0) in highp vec2 aVertexUVs_;
+LAYOUT(location = 0) in highp vec2 g_vtx_uvs;
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 vec3 Unch2Tonemap(vec3 x) {
     const highp float A = 0.22; // shoulder strength
@@ -78,21 +78,21 @@ vec3 BilinearTexelFetch(sampler2D texture, vec2 texcoord) {
 #endif
 
 void main() {
-    vec2 uvs = aVertexUVs_ - vec2(0.5, 0.5);
+    vec2 uvs = g_vtx_uvs - vec2(0.5, 0.5);
     vec2 norm_uvs = uvs / g_params.tex_size;
 
     vec3 col;
 
 #if defined(MSAA_4)
-    vec3 c0 = BilinearTexelFetch(s_texture, uvs, 0);
-    vec3 c1 = BilinearTexelFetch(s_texture, uvs, 1);
-    vec3 c2 = BilinearTexelFetch(s_texture, uvs, 2);
-    vec3 c3 = BilinearTexelFetch(s_texture, uvs, 3);
-    vec3 c4 = texture(s_blured_texture, norm_uvs).xyz;
+    vec3 c0 = BilinearTexelFetch(g_texture, uvs, 0);
+    vec3 c1 = BilinearTexelFetch(g_texture, uvs, 1);
+    vec3 c2 = BilinearTexelFetch(g_texture, uvs, 2);
+    vec3 c3 = BilinearTexelFetch(g_texture, uvs, 3);
+    vec3 c4 = texture(g_blured_texture, norm_uvs).xyz;
 
     col = 0.25 * (c0 + c1 + c2 + c3) + 0.1 * c4;
 #else
-    col = BilinearTexelFetch(s_texture, uvs) + 0.1 * texture(s_blured_texture, norm_uvs).xyz;
+    col = BilinearTexelFetch(g_texture, uvs) + 0.1 * texture(g_blured_texture, norm_uvs).xyz;
 #endif
 
     if (g_params.tonemap > 0.5) {
@@ -109,6 +109,6 @@ void main() {
     }
 
     col = mix(col, vec3(0.0), g_params.fade);
-    outColor = vec4(col, 1.0);
+    g_out_color = vec4(col, 1.0);
 }
 

@@ -11,6 +11,8 @@ class RpUpdateBuffers : public RenderPassBase {
     Ren::WeakBufferRef shape_keys_stage_buf_;
     DynArrayConstRef<InstanceData> instances_;
     Ren::WeakBufferRef instances_stage_buf_;
+    DynArrayConstRef<Ren::Vec2i> instance_indices_;
+    Ren::WeakBufferRef instance_indices_stage_buf_;
     DynArrayConstRef<CellData> cells_;
     Ren::WeakBufferRef cells_stage_buf_;
     DynArrayConstRef<LightSourceItem> light_sources_;
@@ -34,6 +36,7 @@ class RpUpdateBuffers : public RenderPassBase {
     RpResource skin_transforms_buf_;
     RpResource shape_keys_buf_;
     RpResource instances_buf_;
+    RpResource instance_indices_buf_;
     RpResource cells_buf_;
     RpResource lights_buf_;
     RpResource decals_buf_;
@@ -43,8 +46,9 @@ class RpUpdateBuffers : public RenderPassBase {
 
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const char skin_transforms_buf[],
-               const char shape_keys_buf[], const char instances_buf[], const char cells_buf[], const char lights_buf[],
-               const char decals_buf[], const char items_buf[], const char shared_data_buf[], const char atomic_counter_buf[]);
+               const char shape_keys_buf[], const char instances_buf[], const char instance_indices_buf[],
+               const char cells_buf[], const char lights_buf[], const char decals_buf[], const char items_buf[],
+               const char shared_data_buf[], const char atomic_counter_buf[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "UPDATE BUFFERS"; }

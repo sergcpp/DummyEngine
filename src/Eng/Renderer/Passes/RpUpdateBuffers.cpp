@@ -7,9 +7,11 @@
 
 void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                             const char skin_transforms_buf[], const char shape_keys_buf[], const char instances_buf[],
-                            const char cells_buf[], const char lights_buf[], const char decals_buf[],
-                            const char items_buf[], const char shared_data_buf[], const char atomic_counter_buf[]) {
+                            const char instance_indices_buf[], const char cells_buf[], const char lights_buf[],
+                            const char decals_buf[], const char items_buf[], const char shared_data_buf[],
+                            const char atomic_counter_buf[]) {
     assert(list.instances.count < REN_MAX_INSTANCES_TOTAL);
+    assert(list.instance_indices.count < REN_MAX_INSTANCES_TOTAL);
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
     assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
     assert(list.skin_vertices_count < REN_MAX_SKIN_VERTICES_TOTAL);
@@ -24,7 +26,9 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
     shape_keys_ = list.shape_keys_data;
     shape_keys_stage_buf_ = list.shape_keys_stage_buf;
     instances_ = list.instances;
-    instances_stage_buf_ = list.instatnces_stage_buf;
+    instances_stage_buf_ = list.instances_stage_buf;
+    instance_indices_ = list.instance_indices;
+    instance_indices_stage_buf_ = list.instance_indices_stage_buf;
     cells_ = list.cells;
     cells_stage_buf_ = list.cells_stage_buf;
     light_sources_ = list.light_sources;
@@ -65,6 +69,13 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
         desc.size = InstanceDataBufChunkSize;
         instances_buf_ =
             builder.WriteBuffer(instances_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
+    }
+    { // create instance indices buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Texture;
+        desc.size = InstanceIndicesBufChunkSize;
+        instance_indices_buf_ =
+            builder.WriteBuffer(instance_indices_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
     }
     { // create cells buffer
         RpBufDesc desc;
@@ -148,7 +159,6 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
     }
 
     RpAllocBuf &instances_buf = builder.GetWriteBuffer(instances_buf_);
-
     if (!instances_buf.tbos[0]) {
         instances_buf.tbos[0] = ctx.CreateTexture1D("Instances TBO", instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
                                                     InstanceDataBufChunkSize);
@@ -169,6 +179,30 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*instances_stage_buf_, ctx.backend_frame() * InstanceDataBufChunkSize,
                                 *instances_buf.ref, 0, instance_mem_size, ctx.current_cmd_buf());
+    }
+
+    RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(instance_indices_buf_);
+    if (!instance_indices_buf.tbos[0]) {
+        instance_indices_buf.tbos[0] = ctx.CreateTexture1D("Instance Indices TBO", instance_indices_buf.ref,
+                                                           Ren::eTexFormat::RawRG32UI, 0, InstanceIndicesBufChunkSize);
+    }
+
+    // Update instance indices buffer
+    if (instance_indices_.count) {
+        uint8_t *stage_mem = instance_indices_stage_buf_->MapRange(
+            Ren::BufMapWrite, ctx.backend_frame() * InstanceIndicesBufChunkSize, InstanceIndicesBufChunkSize);
+        const uint32_t instance_indices_mem_size = instance_indices_.count * sizeof(Ren::Vec2i);
+        if (stage_mem) {
+            memcpy(stage_mem, instance_indices_.data, instance_indices_mem_size);
+            instance_indices_stage_buf_->FlushMappedRange(
+                0, instance_indices_stage_buf_->AlignMapOffset(instance_indices_mem_size));
+            instance_indices_stage_buf_->Unmap();
+        } else {
+            builder.log()->Error("RpUpdateBuffers: Failed to map instance indices buffer!");
+        }
+
+        Ren::CopyBufferToBuffer(*instance_indices_stage_buf_, ctx.backend_frame() * InstanceIndicesBufChunkSize,
+                                *instance_indices_buf.ref, 0, instance_indices_mem_size, ctx.current_cmd_buf());
     }
 
     RpAllocBuf &cells_buf = builder.GetWriteBuffer(cells_buf_);
@@ -289,8 +323,8 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
     { // Prepare data that is shared for all instances
         SharedDataBlock shrd_data;
 
-        shrd_data.uViewMatrix = draw_cam_->view_matrix();
-        shrd_data.uProjMatrix = draw_cam_->proj_matrix();
+        shrd_data.view_matrix = draw_cam_->view_matrix();
+        shrd_data.proj_matrix = draw_cam_->proj_matrix();
 
         shrd_data.uTaaInfo[0] = draw_cam_->px_offset()[0];
 #if defined(USE_VK_RENDER)
@@ -321,30 +355,30 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             shrd_data.uFrustumInfo[3] = y0 - y1;
         }
 
-        shrd_data.uProjMatrix[2][0] += draw_cam_->px_offset()[0];
-        shrd_data.uProjMatrix[2][1] += draw_cam_->px_offset()[1];
+        shrd_data.proj_matrix[2][0] += draw_cam_->px_offset()[0];
+        shrd_data.proj_matrix[2][1] += draw_cam_->px_offset()[1];
 
-        shrd_data.uViewProjMatrix = shrd_data.uProjMatrix * shrd_data.uViewMatrix;
-        shrd_data.uViewProjPrevMatrix = view_state_->prev_clip_from_world;
-        shrd_data.uInvViewMatrix = Ren::Inverse(shrd_data.uViewMatrix);
-        shrd_data.uInvProjMatrix = Ren::Inverse(shrd_data.uProjMatrix);
-        shrd_data.uInvViewProjMatrix = Ren::Inverse(shrd_data.uViewProjMatrix);
+        shrd_data.view_proj_matrix = shrd_data.proj_matrix * shrd_data.view_matrix;
+        shrd_data.view_proj_prev_matrix = view_state_->prev_clip_from_world;
+        shrd_data.inv_view_matrix = Ren::Inverse(shrd_data.view_matrix);
+        shrd_data.inv_proj_matrix = Ren::Inverse(shrd_data.proj_matrix);
+        shrd_data.inv_view_proj_matrix = Ren::Inverse(shrd_data.view_proj_matrix);
         // delta matrix between current and previous frame
-        shrd_data.uDeltaMatrix =
-            view_state_->prev_clip_from_view * (view_state_->down_buf_view_from_world * shrd_data.uInvViewMatrix);
+        shrd_data.delta_matrix =
+            view_state_->prev_clip_from_view * (view_state_->down_buf_view_from_world * shrd_data.inv_view_matrix);
 
         if (shadow_regions_.count) {
             assert(shadow_regions_.count <= REN_MAX_SHADOWMAPS_TOTAL);
-            memcpy(&shrd_data.uShadowMapRegions[0], &shadow_regions_.data[0],
+            memcpy(&shrd_data.shadowmap_regions[0], &shadow_regions_.data[0],
                    sizeof(ShadowMapRegion) * shadow_regions_.count);
         }
 
-        shrd_data.uSunDir = Ren::Vec4f{env_->sun_dir[0], env_->sun_dir[1], env_->sun_dir[2], 0.0f};
-        shrd_data.uSunCol = Ren::Vec4f{env_->sun_col[0], env_->sun_col[1], env_->sun_col[2], 0.0f};
+        shrd_data.sun_dir = Ren::Vec4f{env_->sun_dir[0], env_->sun_dir[1], env_->sun_dir[2], 0.0f};
+        shrd_data.sun_col = Ren::Vec4f{env_->sun_col[0], env_->sun_col[1], env_->sun_col[2], 0.0f};
 
         // actual resolution and full resolution
-        shrd_data.uResAndFRes = Ren::Vec4f{float(view_state_->act_res[0]), float(view_state_->act_res[1]),
-                                           float(view_state_->scr_res[0]), float(view_state_->scr_res[1])};
+        shrd_data.res_and_fres = Ren::Vec4f{float(view_state_->act_res[0]), float(view_state_->act_res[1]),
+                                            float(view_state_->scr_res[0]), float(view_state_->scr_res[1])};
 
         const float near = draw_cam_->near(), far = draw_cam_->far();
         const float time_s = 0.001f * Sys::GetTimeMs();
@@ -359,23 +393,23 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
             0;
 #endif
 
-        shrd_data.uTranspParamsAndTime =
+        shrd_data.transp_params_and_time =
             Ren::Vec4f{std::log(transparent_near), std::log(transparent_far) - std::log(transparent_near),
                        float(transparent_mode), time_s};
-        shrd_data.uClipInfo = Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
-        view_state_->clip_info = shrd_data.uClipInfo;
+        shrd_data.clip_info = Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
+        view_state_->clip_info = shrd_data.clip_info;
 
         const Ren::Vec3f &cam_pos = draw_cam_->world_position();
         const Ren::Vec3f cam_delta = cam_pos - view_state_->prev_cam_pos;
-        shrd_data.uCamDelta = Ren::Vec4f{cam_delta[0], cam_delta[1], cam_delta[2], 0.0f};
-        shrd_data.uCamPosAndGamma = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 2.2f};
-        shrd_data.uWindScroll = Ren::Vec4f{env_->curr_wind_scroll_lf[0], env_->curr_wind_scroll_lf[1],
+        shrd_data.cam_delta = Ren::Vec4f{cam_delta[0], cam_delta[1], cam_delta[2], 0.0f};
+        shrd_data.cam_pos_and_gamma = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 2.2f};
+        shrd_data.wind_scroll = Ren::Vec4f{env_->curr_wind_scroll_lf[0], env_->curr_wind_scroll_lf[1],
                                            env_->curr_wind_scroll_hf[0], env_->curr_wind_scroll_hf[1]};
-        shrd_data.uWindScrollPrev = Ren::Vec4f{env_->prev_wind_scroll_lf[0], env_->prev_wind_scroll_lf[1],
-                                               env_->prev_wind_scroll_hf[0], env_->prev_wind_scroll_hf[1]};
+        shrd_data.wind_scroll_prev = Ren::Vec4f{env_->prev_wind_scroll_lf[0], env_->prev_wind_scroll_lf[1],
+                                                env_->prev_wind_scroll_hf[0], env_->prev_wind_scroll_hf[1]};
 
-        memcpy(&shrd_data.uProbes[0], probes_.data, sizeof(ProbeItem) * probes_.count);
-        memcpy(&shrd_data.uEllipsoids[0], ellipsoids_.data, sizeof(EllipsItem) * ellipsoids_.count);
+        memcpy(&shrd_data.probes[0], probes_.data, sizeof(ProbeItem) * probes_.count);
+        memcpy(&shrd_data.ellipsoids[0], ellipsoids_.data, sizeof(EllipsItem) * ellipsoids_.count);
 
         uint8_t *stage_mem =
             shared_data_stage_buf_->MapRange(Ren::BufMapWrite, ctx.backend_frame() * SharedDataBlockSize,

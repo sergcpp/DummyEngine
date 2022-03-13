@@ -14,41 +14,41 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray env_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
-    layout(offset = 64) float mip_level;
-                        int probe_index;
+    layout(offset = 64) float g_mip_level;
+                        int g_probe_index;
 };
 #else
-layout(location = 1) uniform float mip_level;
-layout(location = 2) uniform int probe_index;
+layout(location = 1) uniform float g_mip_level;
+layout(location = 2) uniform int g_probe_index;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec3 aVertexPos_;
+layout(location = 0) in vec3 g_vtx_pos;
 #else
-in vec3 aVertexPos_;
+in vec3 g_vtx_pos;
 #endif
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 outColor;
+layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
 
 void main() {
-    vec3 view_dir_ws = normalize(aVertexPos_ - shrd_data.uProbes[probe_index].pos_and_radius.xyz);
+    vec3 view_dir_ws = normalize(g_vtx_pos - g_shrd_data.probes[g_probe_index].pos_and_radius.xyz);
 
-    if (mip_level < 5.0) {
+    if (g_mip_level < 5.0) {
         // debug environment map
-        outColor.rgb = RGBMDecode(textureLod(env_texture, vec4(view_dir_ws, shrd_data.uProbes[probe_index].unused_and_layer.w), mip_level));
+        g_out_color.rgb = RGBMDecode(textureLod(g_env_texture, vec4(view_dir_ws, g_shrd_data.probes[g_probe_index].unused_and_layer.w), g_mip_level));
     } else {
-        outColor.rgb = EvalSHIrradiance_NonLinear(view_dir_ws,
-                                                  shrd_data.uProbes[probe_index].sh_coeffs[0],
-                                                  shrd_data.uProbes[probe_index].sh_coeffs[1],
-                                                  shrd_data.uProbes[probe_index].sh_coeffs[2]);
+        g_out_color.rgb = EvalSHIrradiance_NonLinear(view_dir_ws,
+                                                  g_shrd_data.probes[g_probe_index].sh_coeffs[0],
+                                                  g_shrd_data.probes[g_probe_index].sh_coeffs[1],
+                                                  g_shrd_data.probes[g_probe_index].sh_coeffs[2]);
     }
 
-    outColor.a = 1.0;
+    g_out_color.a = 1.0;
 }

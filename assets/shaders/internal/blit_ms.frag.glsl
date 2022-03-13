@@ -8,7 +8,7 @@
 
 #include "_fs_common.glsl"
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS g_texture;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -19,13 +19,13 @@ layout(location = 4) uniform float multiplier;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    outColor = vec4(multiplier, multiplier, multiplier, 1.0) * texelFetch(s_texture, ivec2(aVertexUVs_), 0);
+    g_out_color = vec4(multiplier, multiplier, multiplier, 1.0) * texelFetch(g_texture, ivec2(g_vtx_uvs), 0);
 }

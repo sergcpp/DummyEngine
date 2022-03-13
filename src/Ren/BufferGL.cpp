@@ -112,7 +112,7 @@ bool Ren::Buffer::FreeSubRegion(const uint32_t offset, const uint32_t size) {
     return true;
 }
 
-void Ren::Buffer::Resize(uint32_t new_size) {
+void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     if (size_ >= new_size) {
         return;
     }
@@ -141,7 +141,9 @@ void Ren::Buffer::Resize(uint32_t new_size) {
         glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
         glBindBuffer(GL_COPY_WRITE_BUFFER, gl_buffer);
 
-        glCopyBufferSubData(g_gl_buf_targets[int(type_)], GL_COPY_WRITE_BUFFER, 0, 0, old_size);
+        if (keep_content) {
+            glCopyBufferSubData(g_gl_buf_targets[int(type_)], GL_COPY_WRITE_BUFFER, 0, 0, old_size);
+        }
 
         auto old_buffer = GLuint(handle_.id);
         glDeleteBuffers(1, &old_buffer);

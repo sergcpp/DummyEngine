@@ -20,12 +20,12 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
 #ifdef TRANSPARENT_PERM
     #if !defined(BINDLESS_TEXTURES)
-        layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D alpha_texture;
+        layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_alpha_texture;
     #endif // BINDLESS_TEXTURES
     #ifdef HASHED_TRANSPARENCY
         layout(location = 3) uniform float hash_scale;
@@ -33,21 +33,21 @@ uniform SharedDataBlock {
 #endif // TRANSPARENT_PERM
 
 #ifdef OUTPUT_VELOCITY
-    LAYOUT(location = 0) in highp vec3 aVertexCSCurr_;
-    LAYOUT(location = 1) in highp vec3 aVertexCSPrev_;
+    LAYOUT(location = 0) in highp vec3 g_vtx_pos_cs_curr;
+    LAYOUT(location = 1) in highp vec3 g_vtx_pos_cs_prev;
 #endif // OUTPUT_VELOCITY
 #ifdef TRANSPARENT_PERM
-    LAYOUT(location = 2) in highp vec2 aVertexUVs1_;
+    LAYOUT(location = 2) in highp vec2 g_vtx_uvs0;
     #ifdef HASHED_TRANSPARENCY
-        LAYOUT(location = 3) in highp vec3 aVertexObjCoord_;
+        LAYOUT(location = 3) in highp vec3 g_vtx_pos_ls;
     #endif // HASHED_TRANSPARENCY
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 4) in flat highp TEX_HANDLE alpha_texture;
+        LAYOUT(location = 4) in flat highp TEX_HANDLE g_alpha_texture;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
 #ifdef OUTPUT_VELOCITY
-layout(location = 0) out vec2 outVelocity;
+layout(location = 0) out vec2 g_out_velocity;
 #endif
 
 float hash(vec2 v) {
@@ -60,17 +60,17 @@ float hash3D(vec3 v) {
 
 void main() {
 #ifdef TRANSPARENT_PERM
-    float tx_alpha = texture(SAMPLER2D(alpha_texture), aVertexUVs1_).a;
+    float tx_alpha = texture(SAMPLER2D(g_alpha_texture), g_vtx_uvs0).a;
 #ifndef HASHED_TRANSPARENCY
     if (tx_alpha < 0.9) discard;
 #else // HASHED_TRANSPARENCY
-    float max_deriv = max(length(dFdx(aVertexObjCoord_)), length(dFdy(aVertexObjCoord_)));
+    float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
     float pix_scale = 1.0 / (hash_scale * max_deriv);
 
     vec2 pix_scales = vec2(exp2(floor(log2(pix_scale))), exp2(ceil(log2(pix_scale))));
 
-    vec2 alpha = vec2(hash3D(floor(pix_scales.x * aVertexObjCoord_)),
-                      hash3D(floor(pix_scales.y * aVertexObjCoord_)));
+    vec2 alpha = vec2(hash3D(floor(pix_scales.x * g_vtx_pos_ls)),
+                      hash3D(floor(pix_scales.y * g_vtx_pos_ls)));
 
     float lerp_factor = fract(log2(pix_scale));
 
@@ -90,9 +90,9 @@ void main() {
 #endif // TRANSPARENT_PERM
 
 #ifdef OUTPUT_VELOCITY
-    highp vec2 curr = aVertexCSCurr_.xy / aVertexCSCurr_.z;
-    highp vec2 prev = aVertexCSPrev_.xy / aVertexCSPrev_.z;
-    outVelocity = 0.5 * (curr + shrd_data.uTaaInfo.xy - prev);
+    highp vec2 curr = g_vtx_pos_cs_curr.xy / g_vtx_pos_cs_curr.z;
+    highp vec2 prev = g_vtx_pos_cs_prev.xy / g_vtx_pos_cs_prev.z;
+    g_out_velocity = 0.5 * (curr + g_shrd_data.taa_info.xy - prev);
 #endif // OUTPUT_VELOCITY
 }
 

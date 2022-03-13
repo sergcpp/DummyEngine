@@ -79,8 +79,6 @@ void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_v
 
 shared uint g_tile_count;
 
-shared bool g_requires_copy[LOCAL_GROUP_SIZE_Y][LOCAL_GROUP_SIZE_X];
-
 // From https://github.com/GPUOpen-Effects/FidelityFX-Denoiser
 /**********************************************************************
 Copyright (c) 2021 Advanced Micro Devices, Inc. All rights reserved.
@@ -126,7 +124,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     needs_ray = needs_ray && (!needs_denoiser || is_base_ray); // Make sure to not deactivate mirror reflection rays.
 
     if (enable_temporal_variance_guided_tracing && needs_denoiser && !needs_ray) {
-        const float TemporalVarianceThreshold = 0.005;
+        const float TemporalVarianceThreshold = 0.001;
         bool has_temporal_variance = texelFetch(g_variance_hist_tex, ivec2(dispatch_thread_id), 0).r > TemporalVarianceThreshold;
         needs_ray = needs_ray || has_temporal_variance;
     }
@@ -164,12 +162,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
         StoreRay(ray_index, dispatch_thread_id, copy_horizontal, copy_vertical, copy_diagonal);
     }
 #else
-    // Fallback to using shared memory
-    //g_requires_copy[group_thread_id.y][group_thread_id.x] = require_copy;
-
-    //groupMemoryBarrier();
-    //barrier();
-
+    // TODO: Fallback using shared memory
     bool copy_horizontal = /*[group_thread_id.y][group_thread_id.x ^ 1u] &&*/ (samples_per_quad != 4u) && is_base_ray;
     bool copy_vertical = /*subgroupShuffleXor(require_copy, 2u) &&*/ (samples_per_quad == 1u) && is_base_ray;
     bool copy_diagonal = /*subgroupShuffleXor(require_copy, 3u) &&*/ (samples_per_quad == 1u) && is_base_ray;

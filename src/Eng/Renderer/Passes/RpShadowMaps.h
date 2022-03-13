@@ -31,6 +31,7 @@ class RpShadowMaps : public RenderPassBase {
     RpResource vtx_buf2_;
     RpResource ndx_buf_;
     RpResource instances_buf_;
+    RpResource instance_indices_buf_;
     RpResource shared_data_buf_;
     RpResource materials_buf_;
     RpResource textures_buf_;
@@ -48,8 +49,8 @@ class RpShadowMaps : public RenderPassBase {
 
     void Setup(RpBuilder &builder, const DrawList &list, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
                const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
-               const BindlessTextureData *bindless_tex, const char instances_buf[], const char shared_data_buf[],
-               const char shadowmap_tex[], const Ren::Tex2DRef &noise_tex);
+               const BindlessTextureData *bindless_tex, const char instances_buf[], const char instance_indices_buf[],
+               const char shared_data_buf[], const char shadowmap_tex[], const Ren::Tex2DRef &noise_tex);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "SHADOW MAPS"; }

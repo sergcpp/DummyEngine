@@ -8,7 +8,8 @@
 void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                         const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
                         const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex,
-                        const char instances_buf[], const char shared_data_buf[], const Ren::Tex2DRef &noise_tex,
+                        const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
+                        const Ren::Tex2DRef &noise_tex,
                         const char main_depth_tex[], const char main_velocity_tex[]) {
     view_state_ = view_state;
     bindless_tex_ = bindless_tex;
@@ -23,6 +24,8 @@ void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewStat
     ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
+    instance_indices_buf_ =
+        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
     materials_buf_ =

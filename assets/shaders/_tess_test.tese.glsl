@@ -16,24 +16,24 @@ UNIFORM_BLOCKS
 layout(triangles, fractional_odd_spacing, ccw) in;
 //layout(triangles, equal_spacing, ccw) in;
 
-LAYOUT(location = 0) in highp vec3 aVertexPos_ES[];
-LAYOUT(location = 1) in mediump vec2 aVertexUVs_ES[];
-LAYOUT(location = 2) in mediump vec3 aVertexNormal_ES[];
-LAYOUT(location = 3) in mediump vec3 aVertexTangent_ES[];
-LAYOUT(location = 4) in highp vec3 aVertexShUVs_ES[][4];
+LAYOUT(location = 0) in highp vec3 g_vtx_pos_es[];
+LAYOUT(location = 1) in mediump vec2 g_vtx_uvs_es[];
+LAYOUT(location = 2) in mediump vec3 g_vtx_norm_es[];
+LAYOUT(location = 3) in mediump vec3 g_vtx_tangent_es[];
+LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs_es[][4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 12) out flat TEX_HANDLE bump_texture;
+    LAYOUT(location = 12) out flat TEX_HANDLE g_bump_texture;
 #endif // BINDLESS_TEXTURES
 
-LAYOUT(location = 0) out highp vec3 aVertexPos_;
-LAYOUT(location = 1) out mediump vec2 aVertexUVs_;
-LAYOUT(location = 2) out mediump vec3 aVertexNormal_;
-LAYOUT(location = 3) out mediump vec3 aVertexTangent_;
-LAYOUT(location = 4) out highp vec3 aVertexShUVs_[4];
-LAYOUT(location = 8) out lowp float tex_height;
+LAYOUT(location = 0) out highp vec3 g_vtx_pos;
+LAYOUT(location = 1) out mediump vec2 g_vtx_uvs;
+LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
+LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
+LAYOUT(location = 4) out highp vec3 g_vtx_sh_uvs[4];
+LAYOUT(location = 8) out lowp float g_tex_height;
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D bump_texture;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_texture;
 #endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -42,28 +42,28 @@ layout (binding = 0, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
 void main(void) {
-    aVertexPos_ = gl_TessCoord[0] * aVertexPos_ES[0] + gl_TessCoord[1] * aVertexPos_ES[1] + gl_TessCoord[2] * aVertexPos_ES[2];
-    aVertexUVs_ = gl_TessCoord[0] * aVertexUVs_ES[0] + gl_TessCoord[1] * aVertexUVs_ES[1] + gl_TessCoord[2] * aVertexUVs_ES[2];
-    aVertexNormal_ = gl_TessCoord[0] * aVertexNormal_ES[0] + gl_TessCoord[1] * aVertexNormal_ES[1] + gl_TessCoord[2] * aVertexNormal_ES[2];
-    aVertexTangent_ = gl_TessCoord[0] * aVertexTangent_ES[0] + gl_TessCoord[1] * aVertexTangent_ES[1] + gl_TessCoord[2] * aVertexTangent_ES[2];
+    g_vtx_pos = gl_TessCoord[0] * g_vtx_pos_es[0] + gl_TessCoord[1] * g_vtx_pos_es[1] + gl_TessCoord[2] * g_vtx_pos_es[2];
+    g_vtx_uvs = gl_TessCoord[0] * g_vtx_uvs_es[0] + gl_TessCoord[1] * g_vtx_uvs_es[1] + gl_TessCoord[2] * g_vtx_uvs_es[2];
+    g_vtx_normal = gl_TessCoord[0] * g_vtx_norm_es[0] + gl_TessCoord[1] * g_vtx_norm_es[1] + gl_TessCoord[2] * g_vtx_norm_es[2];
+    g_vtx_tangent = gl_TessCoord[0] * g_vtx_tangent_es[0] + gl_TessCoord[1] * g_vtx_tangent_es[1] + gl_TessCoord[2] * g_vtx_tangent_es[2];
 
-    aVertexShUVs_[0] = gl_TessCoord[0] * aVertexShUVs_ES[0][0] + gl_TessCoord[1] * aVertexShUVs_ES[1][0] + gl_TessCoord[2] * aVertexShUVs_ES[2][0];
-    aVertexShUVs_[1] = gl_TessCoord[0] * aVertexShUVs_ES[0][1] + gl_TessCoord[1] * aVertexShUVs_ES[1][1] + gl_TessCoord[2] * aVertexShUVs_ES[2][1];
-    aVertexShUVs_[2] = gl_TessCoord[0] * aVertexShUVs_ES[0][2] + gl_TessCoord[1] * aVertexShUVs_ES[1][2] + gl_TessCoord[2] * aVertexShUVs_ES[2][2];
-    aVertexShUVs_[3] = gl_TessCoord[0] * aVertexShUVs_ES[0][3] + gl_TessCoord[1] * aVertexShUVs_ES[1][3] + gl_TessCoord[2] * aVertexShUVs_ES[2][3];
+    g_vtx_sh_uvs[0] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][0] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][0] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][0];
+    g_vtx_sh_uvs[1] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][1] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][1] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][1];
+    g_vtx_sh_uvs[2] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][2] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][2] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][2];
+    g_vtx_sh_uvs[3] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][3] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][3] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][3];
 
-    float k = clamp((32.0 - distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_)) / 32.0, 0.0, 1.0);
+    float k = clamp((32.0 - distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos)) / 32.0, 0.0, 1.0);
     k *= k;
     k = 1.0;
     //float k = gl_TessLevelInner[0] / 64.0;
 
-    //aVertexPos_.y += 4.0 * sin(aVertexPos_.x * 0.1);
-    tex_height = 0.5 * texture(SAMPLER2D(bump_texture), aVertexUVs_).r * k;
-    aVertexPos_ += 1.0 * 0.05 * normalize(aVertexNormal_) * tex_height * k;
+    //g_vtx_pos.y += 4.0 * sin(g_vtx_pos.x * 0.1);
+    g_tex_height = 0.5 * texture(SAMPLER2D(g_bump_texture), g_vtx_uvs).r * k;
+    g_vtx_pos += 1.0 * 0.05 * normalize(g_vtx_normal) * g_tex_height * k;
 
-    gl_Position = shrd_data.uViewProjMatrix * vec4(aVertexPos_, 1.0);
+    gl_Position = g_shrd_data.view_proj_matrix * vec4(g_vtx_pos, 1.0);
 }

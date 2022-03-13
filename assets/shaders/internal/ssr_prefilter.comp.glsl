@@ -30,8 +30,8 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
 };
 
-layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D out_refl_img;
-layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D out_variance_img;
+layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_refl_img;
+layout(binding = OUT_VARIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
 
 shared uint g_shared_0[16][16];
 shared uint g_shared_1[16][16];
@@ -238,8 +238,8 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }
 
-    imageStore(out_refl_img, dispatch_thread_id, vec4(resolved_radiance, 1.0));
-    imageStore(out_variance_img, dispatch_thread_id, vec4(resolved_variance));
+    imageStore(g_out_refl_img, dispatch_thread_id, vec4(resolved_radiance, 1.0));
+    imageStore(g_out_variance_img, dispatch_thread_id, vec4(resolved_variance));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

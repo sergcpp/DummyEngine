@@ -12,6 +12,7 @@ extern "C" {
 #include "FrameBuf.h"
 #include "Passes/RpBilateralBlur.h"
 #include "Passes/RpBlur.h"
+#include "Passes/RpBuildAccStructures.h"
 #include "Passes/RpCombine.h"
 #include "Passes/RpCopyTex.h"
 #include "Passes/RpDOF.h"
@@ -50,6 +51,7 @@ extern "C" {
 #include "Passes/RpSkydome.h"
 #include "Passes/RpTAA.h"
 #include "Passes/RpTransparent.h"
+#include "Passes/RpUpdateAccBuffers.h"
 #include "Passes/RpUpdateBuffers.h"
 #include "Passes/RpUpscale.h"
 #include "PrimDraw.h"
@@ -199,6 +201,8 @@ class Renderer {
 
     RpUpdateBuffers rp_update_buffers_;
     RpSkinning rp_skinning_;
+    RpUpdateAccBuffers rp_update_acc_bufs_;
+    RpBuildAccStructures rp_build_acc_structs_;
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydome rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
