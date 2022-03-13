@@ -13,13 +13,13 @@ void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
+                               const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
                                const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                BackendInfo &backend_info);
 
 uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
+                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
                                    const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    BackendInfo &backend_info);
@@ -131,8 +131,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
     BackendInfo backend_info;
 
-    for (int j = int(main_batch_indices_.count) - 1; j >= *alpha_blend_start_index_; j--) {
-        const MainDrawBatch &batch = main_batches_.data[main_batch_indices_.data[j]];
+    for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
+        const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
         if (!batch.alpha_blend_bit || !batch.two_sided_bit) {
             continue;
         }
@@ -179,8 +179,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
 
-    for (int j = int(main_batch_indices_.count) - 1; j >= *alpha_blend_start_index_; j--) {
-        const MainDrawBatch &batch = main_batches_.data[main_batch_indices_.data[j]];
+    for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
+        const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
         if (!batch.instance_count) {
             continue;
         }

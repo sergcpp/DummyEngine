@@ -1,0 +1,10 @@
+#ifndef GBUFFER_FILL_INTERFACE_GLSL
+#define GBUFFER_FILL_INTERFACE_GLSL
+
+#include "_interface_common.glsl"
+
+INTERFACE_START(GBufferFill)
+
+INTERFACE_END
+
+#endif // GBUFFER_FILL_INTERFACE_GLSL

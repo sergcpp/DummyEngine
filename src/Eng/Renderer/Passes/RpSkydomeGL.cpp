@@ -10,7 +10,9 @@
 
 void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                             RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
-    Ren::RastState rast_state = pipeline_.rast_state();
+    const int rp_index = clear_ ? 1 : 0;
+
+    Ren::RastState rast_state = pipeline_[rp_index].rast_state();
     rast_state.viewport[2] = view_state_->act_res[0];
     rast_state.viewport[3] = view_state_->act_res[1];
     rast_state.ApplyChanged(builder.rast_state());
@@ -26,9 +28,9 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 #else
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(framebuf_[builder.ctx().backend_frame()].id()));
 #endif
-    glUseProgram(pipeline_.prog()->id());
+    glUseProgram(pipeline_[rp_index].prog()->id());
 
-    glBindVertexArray(pipeline_.vtx_input()->gl_vao());
+    glBindVertexArray(pipeline_[rp_index].vtx_input()->gl_vao());
 
     Ren::Mat4f translate_matrix;
     translate_matrix = Ren::Translate(translate_matrix, draw_cam_pos_);

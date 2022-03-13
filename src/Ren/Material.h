@@ -22,7 +22,7 @@ enum class eMatFlags {
     AlphaBlend = (1u << 1u),
     DepthWrite = (1u << 2u),
     TwoSided = (1u << 3u),
-    TaaResponsive = (1u << 4u)
+    CustomShaded = (1u << 4u),
 };
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };

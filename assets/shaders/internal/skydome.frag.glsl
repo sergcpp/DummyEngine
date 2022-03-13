@@ -8,6 +8,10 @@
 #include "_fs_common.glsl"
 #include "skydome_interface.glsl"
 
+/*
+PERM @COLOR_ONLY
+*/
+
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 #else
@@ -22,13 +26,17 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_texture;
 LAYOUT(location = 0) in highp vec3 g_vtx_pos;
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
+#if !defined(COLOR_ONLY)
 layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
+#endif
 
 void main() {
     vec3 view_dir_ws = normalize(g_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz);
 
     g_out_color.rgb = clamp(RGBMDecode(texture(g_env_texture, view_dir_ws)), vec3(0.0), vec3(16.0));
     g_out_color.a = 1.0;
+#if !defined(COLOR_ONLY)
     g_out_specular = vec4(0.0, 0.0, 0.0, 1.0);
+#endif
 }
 

@@ -440,11 +440,11 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
         uint32_t format_count = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
 
-        SmallVector<VkSurfaceFormatKHR, 8> surface_formats(format_count);
+        SmallVector<VkSurfaceFormatKHR, 32> surface_formats(format_count);
         vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, &surface_formats[0]);
 
         if (format_count == 1 && surface_formats[0].format == VK_FORMAT_UNDEFINED) {
-            surface_format.format = VK_FORMAT_R8G8B8A8_UNORM;
+            surface_format.format = VK_FORMAT_B8G8R8A8_UNORM; // VK_FORMAT_R8G8B8A8_UNORM;
             surface_format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
         } else {
             surface_format = surface_formats[0];
@@ -452,7 +452,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
             for (uint32_t i = 0; i < format_count; i++) {
                 const VkSurfaceFormatKHR &fmt = surface_formats[i];
 
-                if (fmt.format == VK_FORMAT_R8G8B8A8_UNORM && fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+                if (fmt.format == VK_FORMAT_B8G8R8A8_UNORM && fmt.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
                     surface_format = fmt;
                     break;
                 }
@@ -526,7 +526,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
     swap_chain_create_info.imageExtent = extent;
     swap_chain_create_info.imageArrayLayers = 1;
     swap_chain_create_info.imageUsage =
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT /*| VK_IMAGE_USAGE_STORAGE_BIT*/;
 
     uint32_t queue_fam_indices[] = {present_family_index, graphics_family_index};
 

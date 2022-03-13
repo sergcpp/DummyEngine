@@ -5,17 +5,17 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
-                          const ViewState *view_state, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
-                          const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
-                          const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
-                          const Ren::Tex2DRef &brdf_lut, const Ren::Tex2DRef &noise_tex,
-                          const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
-                          const Ren::Tex2DRef &dummy_white, const char instances_buf[],
-                          const char instance_indices_buf[], const char shared_data_buf[], const char cells_buf[],
-                          const char items_buf[], const char lights_buf[], const char decals_buf[],
-                          const char shad_tex[], const char ssao_tex[], const char color_tex[], const char normal_tex[],
-                          const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]) {
+void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
+                          const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
+                          const Ren::BufferRef &materials_buf, const Ren::Pipeline pipelines[],
+                          const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
+                          const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut,
+                          const Ren::Tex2DRef &dummy_black, const Ren::Tex2DRef &dummy_white,
+                          const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
+                          const char cells_buf[], const char items_buf[], const char lights_buf[],
+                          const char decals_buf[], const char shad_tex[], const char ssao_tex[], const char color_tex[],
+                          const char normal_tex[], const char spec_tex[], const char depth_tex[],
+                          const char transparent_tex_name[]) {
     view_state_ = view_state;
     pipelines_ = pipelines;
     bindless_tex_ = bindless_tex;
@@ -26,9 +26,9 @@ void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const int *a
     probe_storage_ = list.probe_storage;
 
     render_flags_ = list.render_flags;
-    main_batches_ = list.main_batches;
-    main_batch_indices_ = list.main_batch_indices;
-    alpha_blend_start_index_ = alpha_blend_start_index;
+    main_batches_ = list.custom_batches;
+    main_batch_indices_ = list.custom_batch_indices;
+    alpha_blend_start_index_ = list.alpha_blend_start_index;
 
     vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
     vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
@@ -123,10 +123,6 @@ void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
     RpAllocTex &shad_tex = builder.GetReadTexture(shad_tex_);
     RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
-    if (alpha_blend_start_index_ == nullptr) {
-        return;
-    }
-
 #if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
     DrawTransparent_Moments(builder);
 #elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
@@ -180,8 +176,8 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
     }
 
     if (!transparent_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_transparent_, color_tex.desc.w,
-                                                         color_tex.desc.h, color_targets, 3, depth_target,
-                                                         depth_target)) {
+                                                         color_tex.desc.h, depth_target, depth_target, color_targets,
+                                                         3)) {
         ctx.log()->Error("RpTransparent: transparent_draw_fb_ init failed!");
     }
 

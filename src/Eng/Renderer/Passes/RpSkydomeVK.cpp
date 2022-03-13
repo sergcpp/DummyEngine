@@ -24,7 +24,9 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    VkDescriptorSetLayout descr_set_layout = pipeline_.prog()->descr_set_layouts()[0];
+    const int rp_index = clear_ ? 1 : 0;
+
+    VkDescriptorSetLayout descr_set_layout = pipeline_[rp_index].prog()->descr_set_layouts()[0];
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 1;
     descr_sizes.ubuf_count = 1;
@@ -61,7 +63,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
-    render_pass_begin_info.renderPass = render_pass_.handle();
+    render_pass_begin_info.renderPass = render_pass_[rp_index].handle();
     render_pass_begin_info.framebuffer = framebuf_[ctx.backend_frame()].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     VkClearValue clear_values[3] = {{}, {}, {}};
@@ -69,7 +71,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     render_pass_begin_info.clearValueCount = 3;
 
     vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.handle());
+    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_[rp_index].handle());
 
     const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
                                  0.0f, 1.0f};
@@ -78,7 +80,8 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout(), 0, 1, &descr_set, 0, nullptr);
+    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_[rp_index].layout(), 0, 1, &descr_set, 0,
+                            nullptr);
 
     Ren::Mat4f translate_matrix;
     translate_matrix = Ren::Translate(translate_matrix, draw_cam_pos_);
@@ -87,7 +90,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{5000.0f, 5000.0f, 5000.0f});
 
     const Ren::Mat4f push_constant_data = translate_matrix * scale_matrix;
-    vkCmdPushConstants(cmd_buf, pipeline_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Ren::Mat4f),
+    vkCmdPushConstants(cmd_buf, pipeline_[rp_index].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Ren::Mat4f),
                        &push_constant_data);
 
     vtx_input_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);

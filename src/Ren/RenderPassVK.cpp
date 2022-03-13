@@ -33,6 +33,8 @@ static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT == 4, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT == 8, "!");
+
+VkFormat ToSRGBFormat(const VkFormat format);
 } // namespace Ren
 
 Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
@@ -64,34 +66,6 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
     color_rts.resize(_color_rts_count);
     depth_rt = {};
 
-    for (int i = 0; i < _color_rts_count; ++i) {
-        if (!_color_rts[i]) {
-            continue;
-        }
-
-        const uint32_t att_index = uint32_t(pass_attachments.size());
-
-        auto &att_desc = pass_attachments.emplace_back();
-        att_desc.format = Ren::VKFormatFromTexFormat(_color_rts[i].format);
-        att_desc.samples = VkSampleCountFlagBits(_color_rts[i].samples);
-        if (VkImageLayout(_color_rts[i].layout) == VK_IMAGE_LAYOUT_UNDEFINED) {
-            att_desc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-            att_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        } else {
-            att_desc.loadOp = vk_load_ops[int(_color_rts[i].load)];
-            att_desc.stencilLoadOp = vk_load_ops[int(_color_rts[i].load)];
-        }
-        att_desc.storeOp = vk_store_ops[int(_color_rts[i].store)];
-        att_desc.stencilStoreOp = vk_store_ops[int(_color_rts[i].store)];
-        att_desc.initialLayout = VkImageLayout(_color_rts[i].layout);
-        att_desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        color_attachment_refs[i].attachment = att_index;
-        color_attachment_refs[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-        color_rts[i] = _color_rts[i];
-    }
-
     if (_depth_rt) {
         const uint32_t att_index = uint32_t(pass_attachments.size());
 
@@ -109,6 +83,37 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
         depth_attachment_ref.layout = att_desc.initialLayout;
 
         depth_rt = _depth_rt;
+    }
+
+    for (int i = 0; i < _color_rts_count; ++i) {
+        if (!_color_rts[i]) {
+            continue;
+        }
+
+        const uint32_t att_index = uint32_t(pass_attachments.size());
+
+        auto &att_desc = pass_attachments.emplace_back();
+        att_desc.format = VKFormatFromTexFormat(_color_rts[i].format);
+        if (_color_rts[i].flags & TexSRGB) {
+            att_desc.format = ToSRGBFormat(att_desc.format);
+        }
+        att_desc.samples = VkSampleCountFlagBits(_color_rts[i].samples);
+        if (VkImageLayout(_color_rts[i].layout) == VK_IMAGE_LAYOUT_UNDEFINED) {
+            att_desc.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+            att_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        } else {
+            att_desc.loadOp = vk_load_ops[int(_color_rts[i].load)];
+            att_desc.stencilLoadOp = vk_load_ops[int(_color_rts[i].load)];
+        }
+        att_desc.storeOp = vk_store_ops[int(_color_rts[i].store)];
+        att_desc.stencilStoreOp = vk_store_ops[int(_color_rts[i].store)];
+        att_desc.initialLayout = VkImageLayout(_color_rts[i].layout);
+        att_desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        color_attachment_refs[i].attachment = att_index;
+        color_attachment_refs[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        color_rts[i] = _color_rts[i];
     }
 
     VkSubpassDescription subpass = {};

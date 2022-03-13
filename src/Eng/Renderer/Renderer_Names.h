@@ -21,6 +21,7 @@ const char MAIN_NORMAL_TEX[] = "Main Normals";
 const char MAIN_SPEC_TEX[] = "Main Specular";
 const char MAIN_DEPTH_TEX[] = "Main Depth";
 const char MAIN_VELOCITY_TEX[] = "Main Velocity";
+const char MAIN_ALBEDO_TEX[] = "Main Albedo";
 
 const char MAIN_COMBINED_TEX[] = "Main Combined";
 

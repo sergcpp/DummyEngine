@@ -21,7 +21,7 @@ class RpShadowMaps : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     const Ren::MaterialStorage *materials_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
-    DynArrayConstRef<DepthDrawBatch> shadow_batches_;
+    DynArrayConstRef<BasicDrawBatch> shadow_batches_;
     DynArrayConstRef<uint32_t> shadow_batch_indices_;
     DynArrayConstRef<ShadowList> shadow_lists_;
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
