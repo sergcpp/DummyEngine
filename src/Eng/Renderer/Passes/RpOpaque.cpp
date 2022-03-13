@@ -10,10 +10,11 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *
                      const Ren::BufferRef &materials_buf, const Ren::Pipeline pipelines[],
                      const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
                      const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
-                     const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char shared_data_buf[],
-                     const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
-                     const char shadowmap_tex[], const char ssao_tex[], const char out_color[],
-                     const char out_normals[], const char out_spec[], const char out_depth[]) {
+                     const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char instance_indices_buf[],
+                     const char shared_data_buf[], const char cells_buf[], const char items_buf[],
+                     const char lights_buf[], const char decals_buf[], const char shadowmap_tex[],
+                     const char ssao_tex[], const char out_color[], const char out_normals[], const char out_spec[],
+                     const char out_depth[]) {
     view_state_ = view_state;
     pipelines_ = pipelines;
     bindless_tex_ = bindless_tex;
@@ -31,6 +32,8 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *
     ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
     instances_buf_ =
         builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
+    instance_indices_buf_ =
+        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
     shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
                                           Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
     cells_buf_ = builder.ReadBuffer(cells_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);

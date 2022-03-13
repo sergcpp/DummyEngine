@@ -573,7 +573,7 @@ void RpBuilder::Execute(RenderPassBase *first_pass) {
 
     pass_timings_[ctx_.backend_frame()].clear();
     // Write timestamp at the beginning of execution
-    const int query_beg = WriteTimestamp(true);
+    const int query_beg = ctx_.WriteTimestamp(true);
 
     RenderPassBase *cur_pass = first_pass;
     while (cur_pass) {
@@ -586,7 +586,7 @@ void RpBuilder::Execute(RenderPassBase *first_pass) {
         // Start timestamp
         pass_timing_t &pass_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
         pass_interval.name = cur_pass->name();
-        pass_interval.query_beg = WriteTimestamp(true);
+        pass_interval.query_beg = ctx_.WriteTimestamp(true);
 
         AllocateNeededResources(cur_pass);
         InsertResourceTransitions(cur_pass);
@@ -597,14 +597,14 @@ void RpBuilder::Execute(RenderPassBase *first_pass) {
         cur_pass = cur_pass->p_next;
 
         // End timestamp
-        pass_interval.query_end = WriteTimestamp(false);
+        pass_interval.query_end = ctx_.WriteTimestamp(false);
     }
 
     // Write timestamp at the end of execution
     pass_timing_t &initial_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
     initial_interval.name = "GRAPH TOTAL";
     initial_interval.query_beg = query_beg;
-    initial_interval.query_end = WriteTimestamp(false);
+    initial_interval.query_end = ctx_.WriteTimestamp(false);
 }
 
 void RpBuilder::InsertResourceTransitions(RenderPassBase *pass) {

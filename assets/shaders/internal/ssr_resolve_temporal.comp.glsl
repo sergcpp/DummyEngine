@@ -36,7 +36,7 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
 layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
@@ -72,7 +72,7 @@ vec3 EstimateNeighbouhoodDeviation(ivec2 dispatch_thread_id) {
     for (int dx = -radius; dx <= radius; dx++) {
         for (int dy = -radius; dy <= radius; dy++) {
             ivec2 texel_coords = dispatch_thread_id + ivec2(dx, dy);
-            vec3 value = texelFetch(refl_texture, texel_coords, 0).rgb;
+            vec3 value = texelFetch(g_refl_texture, texel_coords, 0).rgb;
             color_sum += value;
             color_sum_squared += value * value;
         }
@@ -83,10 +83,10 @@ vec3 EstimateNeighbouhoodDeviation(ivec2 dispatch_thread_id) {
 }
 
 vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflected_ray_length) {
-    float z = texelFetch(depth_texture, dispatch_thread_id, 0).r;
+    float z = texelFetch(g_depth_texture, dispatch_thread_id, 0).r;
     vec3 ray_vs = vec3(uv, z);
 
-    vec2 unjitter = shrd_data.uTaaInfo.xy;
+    vec2 unjitter = g_shrd_data.taa_info.xy;
 #if defined(VULKAN)
     unjitter.y = -unjitter.y;
 #endif
@@ -95,7 +95,7 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
         ray_vs.y = (1.0 - ray_vs.y);
         ray_vs.xy = 2.0 * ray_vs.xy - 1.0;
         ray_vs.xy -= unjitter;
-        vec4 projected = shrd_data.uInvProjMatrix * vec4(ray_vs, 1.0);
+        vec4 projected = g_shrd_data.inv_proj_matrix * vec4(ray_vs, 1.0);
         ray_vs = projected.xyz / projected.w;
     }
 
@@ -109,13 +109,13 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     ray_vs *= ray_length;
     vec3 hit_position_ws; // This is the "fake" hit position if we would follow the ray straight through the surface.
     { // project from view space to world space
-        vec4 projected = shrd_data.uInvViewMatrix * vec4(ray_vs, 1.0);
+        vec4 projected = g_shrd_data.inv_view_matrix * vec4(ray_vs, 1.0);
         hit_position_ws = projected.xyz;
     }
 
     vec2 prev_hit_position;
     { // project to screen space of previous frame
-        vec4 projected = shrd_data.uViewProjPrevMatrix * vec4(hit_position_ws, 1.0);
+        vec4 projected = g_shrd_data.view_proj_prev_matrix * vec4(hit_position_ws, 1.0);
         projected.xyz /= projected.w;
         projected.xy = 0.5 * projected.xy + 0.5;
         projected.y = (1.0 - projected.y);
@@ -218,7 +218,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
 
         vec2 uv = (vec2(dispatch_thread_id) + 0.5) / vec2(params.img_size);
 
-        vec3 radiance = texelFetch(refl_texture, dispatch_thread_id, 0).rgb;
+        vec3 radiance = texelFetch(g_refl_texture, dispatch_thread_id, 0).rgb;
         vec3 radiance_hist = texelFetch(refl_history, dispatch_thread_id, 0).rgb;
         float ray_len = texelFetch(ray_len_texture, dispatch_thread_id, 0).r;
 
@@ -246,7 +246,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         radiance = mix(radiance, reprojection, weight);
         has_temporal_variance = ComputeTemporalVariance(radiance_hist, radiance) > temporal_variance_threshold;
 
-        imageStore(out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
+        imageStore(g_out_denoised_img, dispatch_thread_id, vec4(radiance, 1.0));
     }
 
     WriteTemporalVariance(dispatch_thread_id, group_thread_id, screen_size, has_temporal_variance);

@@ -337,6 +337,17 @@ void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
 
 void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
 
+int Ren::Context::WriteTimestamp(const bool start) {
+    VkCommandBuffer cmd_buf = api_ctx_->draw_cmd_buf[api_ctx_->backend_frame];
+
+    vkCmdWriteTimestamp(cmd_buf, start ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                        api_ctx_->query_pools[api_ctx_->backend_frame], api_ctx_->query_counts[api_ctx_->backend_frame]);
+
+    const uint32_t query_index = api_ctx_->query_counts[api_ctx_->backend_frame]++;
+    assert(api_ctx_->query_counts[api_ctx_->backend_frame] < Ren::MaxTimestampQueries);
+    return int(query_index);
+}
+
 
 #ifdef _MSC_VER
 #pragma warning(pop)

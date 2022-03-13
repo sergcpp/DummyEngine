@@ -104,7 +104,8 @@ struct DepthDrawBatch {                        // NOLINT
 
     uint32_t indices_count;
     int32_t base_vertex;
-    int32_t instance_indices[REN_MAX_BATCH_SIZE][2];
+    int32_t instance_index, material_index;
+    uint32_t instance_start;
     uint32_t instance_count;
 };
 static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
@@ -136,7 +137,8 @@ struct MainDrawBatch { // NOLINT
 
     uint32_t indices_count;
     int32_t base_vertex;
-    int32_t instance_indices[REN_MAX_BATCH_SIZE][2];
+    int32_t instance_index, material_index;
+    uint32_t instance_start;
     uint32_t instance_count;
 };
 static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
@@ -265,15 +267,15 @@ struct ViewState {
 };
 
 struct SharedDataBlock {
-    Ren::Mat4f uViewMatrix, uProjMatrix, uViewProjMatrix, uViewProjPrevMatrix;
-    Ren::Mat4f uInvViewMatrix, uInvProjMatrix, uInvViewProjMatrix, uDeltaMatrix;
-    ShadowMapRegion uShadowMapRegions[REN_MAX_SHADOWMAPS_TOTAL];
-    Ren::Vec4f uSunDir, uSunCol, uTaaInfo, uFrustumInfo;
-    Ren::Vec4f uClipInfo, uCamPosAndGamma, uCamDelta;
-    Ren::Vec4f uResAndFRes, uTranspParamsAndTime;
-    Ren::Vec4f uWindScroll, uWindScrollPrev;
-    ProbeItem uProbes[REN_MAX_PROBES_TOTAL] = {};
-    EllipsItem uEllipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
+    Ren::Mat4f view_matrix, proj_matrix, view_proj_matrix, view_proj_prev_matrix;
+    Ren::Mat4f inv_view_matrix, inv_proj_matrix, inv_view_proj_matrix, delta_matrix;
+    ShadowMapRegion shadowmap_regions[REN_MAX_SHADOWMAPS_TOTAL];
+    Ren::Vec4f sun_dir, sun_col, uTaaInfo, uFrustumInfo;
+    Ren::Vec4f clip_info, cam_pos_and_gamma, cam_delta;
+    Ren::Vec4f res_and_fres, transp_params_and_time;
+    Ren::Vec4f wind_scroll, wind_scroll_prev;
+    ProbeItem probes[REN_MAX_PROBES_TOTAL] = {};
+    EllipsItem ellipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
 };
 static_assert(sizeof(SharedDataBlock) == 7856, "!");
 
@@ -296,6 +298,15 @@ struct RTGeoInstance {
 };
 static_assert(sizeof(RTGeoInstance) == 32, "!");
 
+struct RTObjInstance {
+    float xform[3][4];
+    uint32_t custom_index : 24;
+    uint32_t mask : 8;
+    uint32_t _pad;
+    const Ren::IAccStructure *blas_ref;
+};
+static_assert(sizeof(RTObjInstance) == 64, "!");
+
 #if defined(USE_VK_RENDER)
 #include <Ren/VK.h>
 #include <Ren/Buffer.h>
@@ -315,6 +326,7 @@ struct BindlessTextureData {
 
 struct AccelerationStructureData {
     Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf;
+    uint32_t rt_tlas_build_scratch_size = 0;
     Ren::IAccStructure *rt_tlas = nullptr;
 };
 
@@ -323,10 +335,12 @@ const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_X
 const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
 const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
 const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
+const size_t InstanceIndicesBufChunkSize = sizeof(Ren::Vec2i) * REN_MAX_INSTANCES_TOTAL;
 const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
+const size_t RTObjInstancesBufChunkSize = sizeof(VkAccelerationStructureInstanceKHR) * REN_MAX_RT_OBJ_INSTANCES;
 const size_t SharedDataBlockSize = 8 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");

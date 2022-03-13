@@ -366,7 +366,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
 
     // Reflection settings
-    const float GlossyThreshold = 1.0f;
+    const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
     const float MirrorThreshold = 0.0001f;
     const int SamplesPerQuad = 1;
     const bool VarianceGuided = true;
@@ -567,6 +567,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     acc_struct_data.rt_instance_buf = persistent_data.rt_instance_buf;
     acc_struct_data.rt_geo_data_buf = persistent_data.rt_geo_data_buf;
     acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
+    acc_struct_data.rt_tlas_build_scratch_size = persistent_data.rt_tlas_build_scratch_size;
     if (persistent_data.rt_tlas) {
         acc_struct_data.rt_tlas = persistent_data.rt_tlas.get();
     }
@@ -578,7 +579,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // Update buffers
         //
         rp_update_buffers_.Setup(rp_builder_, list, &view_state_, SKIN_TRANSFORMS_BUF, SHAPE_KEYS_BUF, INSTANCES_BUF,
-                                 CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF, ATOMIC_CNT_BUF);
+                                 INSTANCE_INDICES_BUF, CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF,
+                                 ATOMIC_CNT_BUF);
         RenderPassBase *rp_head = &rp_update_buffers_;
         RenderPassBase *rp_tail = &rp_update_buffers_;
 
@@ -592,11 +594,25 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_tail = rp_tail->p_next;
 
         //
+        // RT acceleration structures
+        //
+        if (ctx_.capabilities.raytracing) {
+            rp_update_acc_bufs_.Setup(rp_builder_, list, "RT Obj Instances");
+            rp_tail->p_next = &rp_update_acc_bufs_;
+            rp_tail = rp_tail->p_next;
+
+            rp_build_acc_structs_.Setup(rp_builder_, "RT Obj Instances", list.rt_obj_instances.count,
+                                        "TLAS Scratch Buf", &acc_struct_data);
+            rp_tail->p_next = &rp_build_acc_structs_;
+            rp_tail = rp_tail->p_next;
+        }
+
+        //
         // Shadow maps
         //
         rp_shadow_maps_.Setup(rp_builder_, list, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
                               ctx_.default_indices_buf(), persistent_data.materials_buf, &bindless_tex, INSTANCES_BUF,
-                              SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_);
+                              INSTANCE_INDICES_BUF, SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_);
         rp_tail->p_next = &rp_shadow_maps_;
         rp_tail = rp_tail->p_next;
 
@@ -619,8 +635,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
             rp_depth_fill_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), persistent_data.materials_buf,
-                                 &bindless_tex, INSTANCES_BUF, SHARED_DATA_BUF, noise_tex_, MAIN_DEPTH_TEX,
-                                 MAIN_VELOCITY_TEX);
+                                 &bindless_tex, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF, noise_tex_,
+                                 MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
             rp_tail->p_next = &rp_depth_fill_;
             rp_tail = rp_tail->p_next;
         }
@@ -674,8 +690,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
                          ctx_.default_indices_buf(), persistent_data.materials_buf, persistent_data.pipelines.data(),
                          &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF,
-                         SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES,
-                         MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+                         INSTANCE_INDICES_BUF, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF,
+                         SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
         rp_tail->p_next = &rp_opaque_;
         rp_tail = rp_tail->p_next;
 
@@ -695,9 +711,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_transparent_.Setup(rp_builder_, list, &rp_opaque_.alpha_blend_start_index_, &view_state_,
                               ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
                               persistent_data.materials_buf, persistent_data.pipelines.data(), &bindless_tex, brdf_lut_,
-                              noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF, SHARED_DATA_BUF,
-                              CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
-                              MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
+                              noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF,
+                              SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES,
+                              MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
         rp_tail->p_next = &rp_transparent_;
         rp_tail = rp_tail->p_next;
 
@@ -780,8 +796,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             if (list.render_flags & DebugDenoise) {
                 rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
-                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2",
-                                       refl_out_name);
+                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2", refl_out_name);
             } else {
                 rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
                                        MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, refl_history_tex_,
@@ -812,8 +827,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail->p_next = &rp_ssr_dilate_;
             rp_tail = rp_tail->p_next;
 
-            rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage,
-                                  down_tex_4x_, brdf_lut_,
+            rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage, down_tex_4x_, brdf_lut_,
                                   SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
                                   DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
             rp_tail->p_next = &rp_ssr_compose_;

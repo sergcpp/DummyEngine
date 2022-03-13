@@ -5,11 +5,6 @@
 
 INTERFACE_START(Probe)
 
-/*struct Params {
-    IVEC2_TYPE uInstanceIndices[REN_MAX_BATCH_SIZE][2];
-    MAT4_TYPE uShadowViewProjMatrix;
-};*/
-
 DEF_CONST_INT(U_M_MATRIX_LOC, 0)
 
 INTERFACE_END

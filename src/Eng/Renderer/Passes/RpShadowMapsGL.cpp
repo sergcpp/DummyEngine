@@ -55,6 +55,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
+    RpAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
     RpAllocBuf &textures_buf = builder.GetReadBuffer(textures_buf_);
 
@@ -66,6 +67,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
     }
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
 
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, GLuint(unif_shared_data_buf.ref->id()));
 
@@ -103,7 +105,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 continue;
             }
 
-            glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+            glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                               (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -138,7 +140,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 continue;
             }
 
-            glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+            glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                               (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -174,13 +176,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 continue;
             }
 
-            if (!ctx.capabilities.bindless_texture && batch.instance_indices[0][1] != cur_mat_id) {
-                const Ren::Material &mat = materials_->at(batch.instance_indices[0][1]);
+            if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
+                const Ren::Material &mat = materials_->at(batch.material_index);
                 _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
-                cur_mat_id = batch.instance_indices[0][1];
+                cur_mat_id = batch.material_index;
             }
 
-            glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+            glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                               (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -216,13 +218,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 continue;
             }
 
-            if (!ctx.capabilities.bindless_texture && batch.instance_indices[0][1] != cur_mat_id) {
-                const Ren::Material &mat = materials_->at(batch.instance_indices[0][1]);
+            if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
+                const Ren::Material &mat = materials_->at(batch.material_index);
                 _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
-                cur_mat_id = batch.instance_indices[0][1];
+                cur_mat_id = batch.material_index;
             }
 
-            glUniform2iv(REN_U_INSTANCES_LOC, batch.instance_count, &batch.instance_indices[0][0]);
+            glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
             glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                               (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),

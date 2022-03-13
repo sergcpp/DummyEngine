@@ -1,11 +1,14 @@
 #include "Renderer_DrawList.h"
 
-void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _instatnces_stage_buf,
-                    Ren::BufferRef _skin_transforms_stage_buf, Ren::BufferRef _shape_keys_stage_buf,
-                    Ren::BufferRef _cells_stage_buf, Ren::BufferRef _items_stage_buf, Ren::BufferRef _lights_stage_buf,
-                    Ren::BufferRef _decals_stage_buf) {
+void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _instances_stage_buf,
+                    Ren::BufferRef _instance_indices_stage_buf, Ren::BufferRef _skin_transforms_stage_buf,
+                    Ren::BufferRef _shape_keys_stage_buf, Ren::BufferRef _cells_stage_buf,
+                    Ren::BufferRef _items_stage_buf, Ren::BufferRef _lights_stage_buf, Ren::BufferRef _decals_stage_buf,
+                    Ren::BufferRef _rt_obj_instances_stage_buf) {
     instances.realloc(REN_MAX_INSTANCES_TOTAL);
-    instatnces_stage_buf = std::move(_instatnces_stage_buf);
+    instances_stage_buf = std::move(_instances_stage_buf);
+    instance_indices.realloc(REN_MAX_INSTANCES_TOTAL);
+    instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
     shadow_batches.realloc(REN_MAX_SHADOW_BATCHES);
     shadow_batch_indices.realloc(REN_MAX_SHADOW_BATCHES);
     shadow_lists.realloc(REN_MAX_SHADOWMAPS_TOTAL);
@@ -33,6 +36,10 @@ void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _insta
     items.realloc(REN_MAX_ITEMS_TOTAL);
     items_stage_buf = std::move(_items_stage_buf);
 
+    rt_geo_instances.realloc(REN_MAX_RT_GEO_INSTANCES);
+    rt_obj_instances.realloc(REN_MAX_RT_OBJ_INSTANCES);
+    rt_obj_instances_stage_buf = std::move(_rt_obj_instances_stage_buf);
+
     shared_data_stage_buf = std::move(_shared_data_stage_buf);
 
     visible_textures.realloc(REN_MAX_TEX_COUNT);
@@ -43,6 +50,7 @@ void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _insta
 
 void DrawList::Clear() {
     instances.count = 0;
+    instance_indices.count = 0;
     shadow_batches.count = 0;
     shadow_batch_indices.count = 0;
     shadow_lists.count = 0;

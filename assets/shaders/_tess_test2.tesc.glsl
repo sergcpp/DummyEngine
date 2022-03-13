@@ -15,17 +15,17 @@ UNIFORM_BLOCKS
 layout (vertices = 1) out;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in highp vec3 aVertexPos_CS[];
-layout(location = 1) in mediump vec2 aVertexUVs_CS[];
-layout(location = 2) in mediump vec3 aVertexNormal_CS[];
-layout(location = 3) in mediump vec3 aVertexTangent_CS[];
-layout(location = 4) in highp vec3 aVertexShUVs_CS[][4];
+layout(location = 0) in highp vec3 g_vtx_pos_cs[];
+layout(location = 1) in mediump vec2 g_vtx_uvs_cs[];
+layout(location = 2) in mediump vec3 g_vtx_norm_cs[];
+layout(location = 3) in mediump vec3 g_vtx_tangent_cs[];
+layout(location = 4) in highp vec3 g_vtx_sh_uvs_cs[][4];
 #else
-in highp vec3 aVertexPos_CS[];
-in mediump vec2 aVertexUVs_CS[];
-in mediump vec3 aVertexNormal_CS[];
-in mediump vec3 aVertexTangent_CS[];
-in highp vec3 aVertexShUVs_CS[][4];
+in highp vec3 g_vtx_pos_cs[];
+in mediump vec2 g_vtx_uvs_cs[];
+in mediump vec3 g_vtx_norm_cs[];
+in mediump vec3 g_vtx_tangent_cs[];
+in highp vec3 g_vtx_sh_uvs_cs[][4];
 #endif
 
 struct OutputPatch {
@@ -39,7 +39,7 @@ struct OutputPatch {
     vec3 aVertexPos_B210;
     vec3 aVertexPos_B120;
     vec3 aVertexPos_B111;
-    vec2 aVertexUVs[3];
+    vec2 g_in_vtx_uvs[3];
     vec3 aVertexNormal[3];
     vec3 aVertexTangent[3];
     //vec3 aVertexShUVs[3][4];
@@ -53,7 +53,7 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
 float GetTessLevel(float Distance0, float Distance1) {
@@ -70,9 +70,9 @@ vec3 ProjectToPlane(vec3 Point, vec3 PlanePoint, vec3 PlaneNormal) {
 
 void CalcPositions() {
     // The original vertices stay the same
-    oPatch.aVertexPos_B030 = aVertexPos_CS[0];
-    oPatch.aVertexPos_B003 = aVertexPos_CS[1];
-    oPatch.aVertexPos_B300 = aVertexPos_CS[2];
+    oPatch.aVertexPos_B030 = g_vtx_pos_cs[0];
+    oPatch.aVertexPos_B003 = g_vtx_pos_cs[1];
+    oPatch.aVertexPos_B300 = g_vtx_pos_cs[2];
 
     // Edges are names according to the opposing vertex
     vec3 EdgeB300 = oPatch.aVertexPos_B003 - oPatch.aVertexPos_B030;
@@ -110,20 +110,20 @@ void CalcPositions() {
 
 void main(void) {
     for (int i = 0; i < 3; i++) {
-        oPatch.aVertexUVs[i] = aVertexUVs_CS[i];
-        oPatch.aVertexNormal[i] = aVertexNormal_CS[i];
-        oPatch.aVertexTangent[i] = aVertexTangent_CS[i];
-        //oPatch.aVertexShUVs[i][0] = aVertexShUVs_CS[i][0];
-        //oPatch.aVertexShUVs[i][1] = aVertexShUVs_CS[i][1];
-        //oPatch.aVertexShUVs[i][2] = aVertexShUVs_CS[i][2];
-        //oPatch.aVertexShUVs[i][3] = aVertexShUVs_CS[i][3];
+        oPatch.g_in_vtx_uvs[i] = g_vtx_uvs_cs[i];
+        oPatch.aVertexNormal[i] = g_vtx_norm_cs[i];
+        oPatch.aVertexTangent[i] = g_vtx_tangent_cs[i];
+        //oPatch.aVertexShUVs[i][0] = g_vtx_sh_uvs_cs[i][0];
+        //oPatch.aVertexShUVs[i][1] = g_vtx_sh_uvs_cs[i][1];
+        //oPatch.aVertexShUVs[i][2] = g_vtx_sh_uvs_cs[i][2];
+        //oPatch.aVertexShUVs[i][3] = g_vtx_sh_uvs_cs[i][3];
     }
 
     CalcPositions();
 
-    float EyeToVertexDistance0 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[0]);
-    float EyeToVertexDistance1 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[1]);
-    float EyeToVertexDistance2 = distance(shrd_data.uCamPosAndGamma.xyz, aVertexPos_CS[2]);
+    float EyeToVertexDistance0 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_cs[0]);
+    float EyeToVertexDistance1 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_cs[1]);
+    float EyeToVertexDistance2 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_cs[2]);
 
     gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
     gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);

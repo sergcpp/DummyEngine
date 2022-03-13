@@ -21,15 +21,15 @@ layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2D s_additional_text
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    ivec2 icoord = ivec2(aVertexUVs_);
+    ivec2 icoord = ivec2(g_vtx_uvs);
 
 #if defined(MSAA_4)
     vec4 accum = 0.25 * (texelFetch(s_accum_texture, icoord, 0) +
@@ -50,11 +50,11 @@ void main() {
 #endif
 
     float k = exp(-b0);
-    outColor = vec4(accum.xyz, k);
+    g_out_color = vec4(accum.xyz, k);
 #elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
     float revealage = texelFetch(s_additional_texture, icoord, 0).x;
 
-    outColor = vec4(accum.rgb / clamp(accum.a, 1e-4, 5e4), revealage);
+    g_out_color = vec4(accum.rgb / clamp(accum.a, 1e-4, 5e4), revealage);
 #endif
 }
 

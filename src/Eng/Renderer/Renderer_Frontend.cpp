@@ -9,17 +9,13 @@
 extern __itt_domain *__g_itt_domain;
 
 namespace RendererInternal {
-// 'nabe' is short for 'neighbourhood'
-const float CamNabeRadius = 100.0f;
-const float CamNabeRadius2 = CamNabeRadius * CamNabeRadius;
-
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]) {
     return p[0] > bbox_min[0] && p[0] < bbox_max[0] && p[1] > bbox_min[1] && p[1] < bbox_max[1] && p[2] > bbox_min[2] &&
            p[2] < bbox_max[2];
 }
 
-const uint32_t bbox_indices[] = {0, 1, 2, 2, 1, 3, 0, 4, 5, 0, 5, 1, 0, 2, 4, 4, 2, 6,
-                                 2, 3, 6, 6, 3, 7, 3, 1, 5, 3, 5, 7, 4, 6, 5, 5, 6, 7};
+static const uint32_t bbox_indices[] = {0, 1, 2, 2, 1, 3, 0, 4, 5, 0, 5, 1, 0, 2, 4, 4, 2, 6,
+                                        2, 3, 6, 6, 3, 7, 3, 1, 5, 3, 5, 7, 4, 6, 5, 5, 6, 7};
 
 template <typename T> void RadixSort_LSB_Step(const unsigned shift, const T *begin, const T *end, T *begin1) {
     size_t count[0x100] = {};
@@ -141,6 +137,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.ellipsoids.count = 0;
 
     list.instances.count = 0;
+    list.instance_indices.count = 0;
     list.shadow_batches.count = 0;
     list.zfill_batches.count = 0;
     list.main_batches.count = 0;
@@ -152,6 +149,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.skin_regions.count = 0;
     list.shape_keys_data.count = 0;
     list.skin_vertices_count = 0;
+
+    list.rt_geo_instances.count = 0;
+    list.rt_obj_instances.count = 0;
 
     list.visible_textures.count = 0;
     list.desired_textures.count = 0;
@@ -177,7 +177,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
-    std::memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+    memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+
+    const float ExtendedFrustumOffset = 100.0f;
+    const float ExtendedFrustumFrontOffset = 200.0f;
+
+    Ren::Frustum ext_frustum = list.draw_cam.frustum();
+    for (int i = 0; i < 6; ++i) {
+        ext_frustum.planes[i].d += ExtendedFrustumOffset;
+    }
+    ext_frustum.planes[int(Ren::eCamPlane::Far)].d =
+        -ext_frustum.planes[int(Ren::eCamPlane::Near)].d + (ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
@@ -189,6 +199,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->SequentialData();
     const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
     const auto *vegs = (VegState *)scene.comp_store[CompVegState]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene.comp_store[CompAccStructure]->SequentialData();
 
     const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16;
 
@@ -245,8 +256,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
-                    // Node has slightly enlarged bounds, so we need to check object's
-                    // bounding box here
+                    // Node has slightly enlarged bounds, so we need to check object's bounding box here
                     if (!skip_frustum_check &&
                         list.draw_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == eVisResult::Invisible) {
                         continue;
@@ -335,7 +345,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
             }
 
-            if (cam_visibility == eVisResult::Invisible && cam_dist2 > CamNabeRadius2) {
+            eVisResult ext_frustum_visibility = ext_frustum.CheckVisibility(bbox_points);
+            if (cam_visibility == eVisResult::Invisible && ext_frustum_visibility == eVisResult::Invisible) {
                 continue;
             }
 
@@ -345,25 +356,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             } else {
                 const SceneObject &obj = scene.objects[n->prim_index];
 
-                if (cam_visibility != eVisResult::Invisible && (obj.comp_mask & CompTransformBit) &&
+                if ((obj.comp_mask & CompTransformBit) &&
                     (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) { // NOLINT
-                    const uint16_t cam_dist_u16 = uint16_t(0xffffu * (std::sqrt(cam_dist2) / CamNabeRadius));
+                    const uint16_t cam_dist_u16 = uint16_t(0xffffu * (std::sqrt(cam_dist2) / 500.0f));
 
                     const Transform &tr = transforms[obj.components[CompTransform]];
 
                     const float bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
 
                     if (!skip_frustum_check) {
-                        // Node has slightly enlarged bounds, so we need to check object's
-                        // bounding box here
-                        if (list.draw_cam.CheckFrustumVisibility(bbox_points) == eVisResult::Invisible) {
+                        // Node has slightly enlarged bounds, so we need to check object's bounding box here
+                        cam_visibility = list.draw_cam.CheckFrustumVisibility(bbox_points);
+                        ext_frustum_visibility = ext_frustum.CheckVisibility(bbox_points);
+                        if (cam_visibility == eVisResult::Invisible &&
+                            ext_frustum_visibility == eVisResult::Invisible) {
                             continue;
                         }
                     }
 
-                    if (culling_enabled) {
-                        // do not question visibility of the object in which we are
-                        // inside
+                    if (culling_enabled && cam_visibility != eVisResult::Invisible) {
+                        // do not question visibility of the object in which we are inside
                         if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f || cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
                             cam_pos[2] < tr.bbox_min_ws[2] - 0.5f || cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
                             cam_pos[1] > tr.bbox_max_ws[1] + 0.5f || cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
@@ -381,7 +393,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
 
                             if (surf.visible == 0) {
-                                continue;
+                                cam_visibility = eVisResult::Invisible;
                             }
                         }
                     }
@@ -412,7 +424,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Mesh *mesh = dr.mesh.get();
 
                         const auto dist =
-                            (uint8_t)_MIN(255 * Distance(tr.bbox_min_ws, cam.world_position()) / CamNabeRadius, 255);
+                            (uint8_t)_MIN(255 * Distance(tr.bbox_min_ws, cam.world_position()) / 500.0f, 255);
 
                         uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
@@ -424,6 +436,18 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         __push_ellipsoids(dr, tr.world_from_object, list);
 
+                        if (ext_frustum_visibility != eVisResult::Invisible && (obj.comp_mask & CompAccStructureBit)) {
+                            const Ren::IAccStructure *acc =
+                                acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+                            if (acc) {
+                                RTObjInstance &new_instance = list.rt_obj_instances.data[list.rt_obj_instances.count++];
+                                memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                                new_instance.custom_index = acc->geo_index;
+                                new_instance.mask = 0xff;
+                                new_instance.blas_ref = acc;
+                            }
+                        }
+
                         const uint32_t indices_start = mesh->indices_buf().offset;
                         for (const auto &grp : mesh->groups()) {
                             const Material *mat = grp.mat.get();
@@ -432,62 +456,62 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             if (cam_visibility != eVisResult::Invisible) {
                                 __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
+
+                                MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
+
+                                main_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
+                                main_batch.pipe_id = mat->pipelines[pipeline_index].index();
+                                main_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                main_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
+                                main_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                if (!ctx_.capabilities.bindless_texture) {
+                                    main_batch.mat_id = uint32_t(grp.mat.index());
+                                } else {
+                                    main_batch.mat_id = 0;
+                                }
+                                main_batch.cam_dist =
+                                    (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
+                                main_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                                main_batch.base_vertex = base_vertex;
+                                main_batch.indices_count = grp.num_indices;
+                                main_batch.instance_index = int32_t(list.instances.count - 1);
+                                main_batch.material_index = int32_t(grp.mat.index());
+                                main_batch.instance_count = 1;
+
+                                if (zfill_enabled && (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
+                                                      ((mat->flags() & uint32_t(eMatFlags::AlphaBlend)) &&
+                                                       (mat->flags() & uint32_t(eMatFlags::AlphaTest))))) {
+                                    DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
+
+                                    zfill_batch.type_bits = DepthDrawBatch::TypeSimple;
+
+                                    if (obj.comp_mask & CompAnimStateBit) {
+                                        zfill_batch.type_bits = DepthDrawBatch::TypeSkinned;
+                                    } else if (obj.comp_mask & CompVegStateBit) {
+                                        zfill_batch.type_bits = DepthDrawBatch::TypeVege;
+                                    }
+
+                                    zfill_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                    zfill_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
+                                    zfill_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                    zfill_batch.indices_offset = main_batch.indices_offset;
+                                    zfill_batch.base_vertex = base_vertex;
+                                    zfill_batch.indices_count = grp.num_indices;
+                                    zfill_batch.instance_index = int32_t(list.instances.count - 1);
+                                    zfill_batch.material_index =
+                                        (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
+                                    zfill_batch.instance_count = 1;
+                                }
                             } else {
                                 __record_textures(list.desired_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
-                            }
-
-                            MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
-
-                            main_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
-                            main_batch.pipe_id = mat->pipelines[pipeline_index].index();
-                            main_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                            main_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
-                            main_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                            if (!ctx_.capabilities.bindless_texture) {
-                                main_batch.mat_id = uint32_t(grp.mat.index());
-                            } else {
-                                main_batch.mat_id = 0;
-                            }
-                            main_batch.cam_dist = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
-                            main_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                            main_batch.base_vertex = base_vertex;
-                            main_batch.indices_count = grp.num_indices;
-                            main_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
-                            main_batch.instance_indices[0][1] = int32_t(grp.mat.index());
-                            main_batch.instance_count = 1;
-
-                            if (zfill_enabled && (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
-                                                  ((mat->flags() & uint32_t(eMatFlags::AlphaBlend)) &&
-                                                   (mat->flags() & uint32_t(eMatFlags::AlphaTest))))) {
-                                DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
-
-                                zfill_batch.type_bits = DepthDrawBatch::TypeSimple;
-
-                                if (obj.comp_mask & CompAnimStateBit) {
-                                    zfill_batch.type_bits = DepthDrawBatch::TypeSkinned;
-                                } else if (obj.comp_mask & CompVegStateBit) {
-                                    zfill_batch.type_bits = DepthDrawBatch::TypeVege;
-                                }
-
-                                zfill_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                zfill_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                                zfill_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                zfill_batch.indices_offset = main_batch.indices_offset;
-                                zfill_batch.base_vertex = base_vertex;
-                                zfill_batch.indices_count = grp.num_indices;
-                                zfill_batch.instance_indices[0][0] = int32_t(list.instances.count - 1);
-                                zfill_batch.instance_indices[0][1] =
-                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
-                                zfill_batch.instance_count = 1;
                             }
                         }
 
                         if (obj.last_change_mask & CompTransformBit) {
                             const Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
 
-                            // moving objects need 2 transform matrices (for velocity
-                            // calculation)
+                            // moving objects require 2 transform matrices (for velocity calculation)
                             InstanceData &prev_instance = list.instances.data[list.instances.count++];
                             memcpy(&prev_instance.model_matrix[0][0], ValuePtr(prev_world_from_object_trans),
                                    12 * sizeof(float));
@@ -999,8 +1023,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
                                 batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
-                                batch.instance_indices[0][0] = proc_objects_.data[n->prim_index].instance_index;
-                                batch.instance_indices[0][1] =
+                                batch.instance_index = proc_objects_.data[n->prim_index].instance_index;
+                                batch.material_index =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
                                 batch.instance_count = 1;
                             }
@@ -1213,8 +1237,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
                                 batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
-                                batch.instance_indices[0][0] = proc_objects_.data[n->prim_index].instance_index;
-                                batch.instance_indices[0][1] =
+                                batch.instance_index = proc_objects_.data[n->prim_index].instance_index;
+                                batch.material_index =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? uint32_t(grp.mat.index()) : 0;
                                 batch.instance_count = 1;
                             }
@@ -1291,18 +1315,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
         // Merge similar batches
         for (uint32_t start = 0, end = 1; end <= list.zfill_batch_indices.count; end++) {
-            if ((end - start) >= REN_MAX_BATCH_SIZE || end == list.zfill_batch_indices.count ||
+            if (end == list.zfill_batch_indices.count ||
                 list.zfill_batches.data[list.zfill_batch_indices.data[start]].sort_key !=
                     list.zfill_batches.data[list.zfill_batch_indices.data[end]].sort_key) {
 
                 DepthDrawBatch &b1 = list.zfill_batches.data[list.zfill_batch_indices.data[start]];
+                b1.instance_start = list.instance_indices.count;
+                for (uint32_t j = 0; j < b1.instance_count; ++j) {
+                    list.instance_indices.data[list.instance_indices.count++] =
+                        Ren::Vec2i{b1.instance_index, b1.material_index};
+                }
+
                 for (uint32_t i = start + 1; i < end; i++) {
                     DepthDrawBatch &b2 = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+                    b2.instance_start = list.instance_indices.count;
+                    for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                        list.instance_indices.data[list.instance_indices.count++] =
+                            Ren::Vec2i{b2.instance_index, b2.material_index};
+                    }
 
-                    if (b1.base_vertex == b2.base_vertex &&
-                        b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
-                        memcpy(&b1.instance_indices[b1.instance_count][0], &b2.instance_indices[0][0],
-                               b2.instance_count * 2 * sizeof(uint32_t));
+                    if (b1.base_vertex == b2.base_vertex) {
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
                     }
@@ -1342,17 +1374,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     // Merge similar batches
     for (uint32_t start = 0, end = 1; end <= list.main_batch_indices.count; end++) {
-        if ((end - start) >= REN_MAX_BATCH_SIZE || end == list.main_batch_indices.count ||
+        if (end == list.main_batch_indices.count ||
             list.main_batches.data[list.main_batch_indices.data[start]].sort_key !=
                 list.main_batches.data[list.main_batch_indices.data[end]].sort_key) {
 
             MainDrawBatch &b1 = list.main_batches.data[list.main_batch_indices.data[start]];
+            b1.instance_start = list.instance_indices.count;
+            for (uint32_t j = 0; j < b1.instance_count; ++j) {
+                list.instance_indices.data[list.instance_indices.count++] =
+                    Ren::Vec2i{b1.instance_index, b1.material_index};
+            }
             for (uint32_t i = start + 1; i < end; i++) {
                 MainDrawBatch &b2 = list.main_batches.data[list.main_batch_indices.data[i]];
+                b2.instance_start = list.instance_indices.count;
+                for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                    list.instance_indices.data[list.instance_indices.count++] =
+                        Ren::Vec2i{b2.instance_index, b2.material_index};
+                }
 
-                if (b1.base_vertex == b2.base_vertex && b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
-                    memcpy(&b1.instance_indices[b1.instance_count][0], &b2.instance_indices[0][0],
-                           b2.instance_count * 2 * sizeof(uint32_t));
+                if (b1.base_vertex == b2.base_vertex) {
                     b1.instance_count += b2.instance_count;
                     b2.instance_count = 0;
                 }
@@ -1401,18 +1441,25 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         // Merge similar batches
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end;
              end++) {
-            if ((end - start) >= REN_MAX_BATCH_SIZE || end == shadow_batch_end ||
-                list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key !=
-                    list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
+            if (end == shadow_batch_end || list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key !=
+                                               list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
 
                 DepthDrawBatch &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
+                b1.instance_start = list.instance_indices.count;
+                for (uint32_t j = 0; j < b1.instance_count; ++j) {
+                    list.instance_indices.data[list.instance_indices.count++] =
+                        Ren::Vec2i{b1.instance_index, b1.material_index};
+                }
+
                 for (uint32_t i = start + 1; i < end; i++) {
                     DepthDrawBatch &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
+                    b2.instance_start = list.instance_indices.count;
+                    for (uint32_t j = 0; j < b2.instance_count; ++j) {
+                        list.instance_indices.data[list.instance_indices.count++] =
+                            Ren::Vec2i{b2.instance_index, b2.material_index};
+                    }
 
-                    if (b1.base_vertex == b2.base_vertex &&
-                        b1.instance_count + b2.instance_count <= REN_MAX_BATCH_SIZE) {
-                        memcpy(&b1.instance_indices[b1.instance_count][0], &b2.instance_indices[0][0],
-                               b2.instance_count * 2 * sizeof(uint32_t));
+                    if (b1.base_vertex == b2.base_vertex) {
                         b1.instance_count += b2.instance_count;
                         b2.instance_count = 0;
                     }

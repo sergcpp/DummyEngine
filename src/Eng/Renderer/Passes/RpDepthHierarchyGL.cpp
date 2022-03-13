@@ -32,6 +32,11 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
         glBindImageTexture(DepthHierarchy::DEPTH_IMG_SLOT + i, 0, i, GL_FALSE, 0, GL_WRITE_ONLY, GL_R32F);
     }
 
+    const int grp_x =
+        (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X;
+    const int grp_y =
+        (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y;
+
     Ren::Buffer temp_unif_buffer =
         Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(DepthHierarchy::Params), 16);
     Ren::Buffer temp_stage_buffer =
@@ -39,7 +44,8 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
     {
         DepthHierarchy::Params *stage_data =
             reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map(Ren::BufMapWrite));
-        stage_data->depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], 0, 0};
+        stage_data->depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1],
+                                            output_tex.ref->params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;
 
         temp_stage_buffer.FlushMappedRange(0, sizeof(DepthHierarchy::Params));
@@ -49,7 +55,5 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
 
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_UNIF_PARAM_LOC, temp_unif_buffer.id());
 
-    glDispatchCompute(
-        (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X,
-        (output_tex.ref->params.h + DepthHierarchy::LOCAL_GROUP_SIZE_Y - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_Y, 1);
+    glDispatchCompute(grp_x, grp_y, 1);
 }

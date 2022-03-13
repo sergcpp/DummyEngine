@@ -20,31 +20,31 @@ layout (binding = REN_UB_SHARED_DATA_LOC, std140)
 layout (std140)
 #endif
 uniform SharedDataBlock {
-    SharedData shrd_data;
+    SharedData g_shrd_data;
 };
 
 #if defined(MSAA_4)
-layout(binding = 0) uniform mediump sampler2DMS depth_texture;
+layout(binding = 0) uniform mediump sampler2DMS g_depth_texture;
 #else
-layout(binding = 0) uniform mediump sampler2D depth_texture;
+layout(binding = 0) uniform mediump sampler2D g_depth_texture;
 #endif
-layout(binding = 1) uniform highp samplerBuffer nodes_buffer;
+layout(binding = 1) uniform highp samplerBuffer g_nodes_buffer;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
-    layout(offset = 16) int uRootIndex;
+    layout(offset = 16) int g_root_index;
 };
 #else
-layout(location = 12) uniform int uRootIndex;
+layout(location = 12) uniform int g_root_index;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout(location = 0) in vec2 aVertexUVs_;
+layout(location = 0) in vec2 g_vtx_uvs;
 #else
-in vec2 aVertexUVs_;
+in vec2 g_vtx_uvs;
 #endif
 
-layout(location = 0) out vec4 outColor;
+layout(location = 0) out vec4 g_out_color;
 
 bool _bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
     float low = inv_d.x * (bbox_min[0] - o.x);
@@ -67,21 +67,21 @@ bool _bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
 }
 
 void main() {
-    vec2 norm_uvs = aVertexUVs_ / shrd_data.uResAndFRes.xy;
+    vec2 norm_uvs = g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
-    float depth = texelFetch(depth_texture, ivec2(aVertexUVs_), 0).r;
+    float depth = texelFetch(g_depth_texture, ivec2(g_vtx_uvs), 0).r;
     depth = 2.0 * depth - 1.0;
 
-    vec4 ray_start_cs = vec4(aVertexUVs_ / shrd_data.uResAndFRes.xy, 0.0, 1.0);
+    vec4 ray_start_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, 0.0, 1.0);
     ray_start_cs.xy = 2.0 * ray_start_cs.xy - 1.0;
 
-    vec4 ray_end_cs = vec4(aVertexUVs_ / shrd_data.uResAndFRes.xy, depth, 1.0);
+    vec4 ray_end_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
-    vec4 ray_start_ws = shrd_data.uInvViewProjMatrix * ray_start_cs;
+    vec4 ray_start_ws = g_shrd_data.inv_view_proj_matrix * ray_start_cs;
     ray_start_ws /= ray_start_ws.w;
 
-    vec4 ray_end_ws = shrd_data.uInvViewProjMatrix * ray_end_cs;
+    vec4 ray_end_ws = g_shrd_data.inv_view_proj_matrix * ray_end_cs;
     ray_end_ws /= ray_end_ws.w;
 
     vec3 ray_dir_ws = ray_end_ws.xyz - ray_start_ws.xyz;
@@ -92,7 +92,7 @@ void main() {
 
     int stack[32];
     int stack_size = 0;
-    stack[stack_size++] = uRootIndex;
+    stack[stack_size++] = g_root_index;
 
     int tree_complexity = 0;
 
@@ -107,19 +107,19 @@ void main() {
             };
         */
 
-        vec4 node_data1 = texelFetch(nodes_buffer, cur * 3 + 1);
-        vec4 node_data2 = texelFetch(nodes_buffer, cur * 3 + 2);
+        vec4 node_data1 = texelFetch(g_nodes_buffer, cur * 3 + 1);
+        vec4 node_data2 = texelFetch(g_nodes_buffer, cur * 3 + 2);
 
         if (!_bbox_test(ray_start_ws.xyz, inv_dir, 100.0, node_data1.xyz, node_data2.xyz)) continue;
 
         tree_complexity++;
 
-        uvec4 node_data0 = floatBitsToUint(texelFetch(nodes_buffer, cur * 3 + 0));
+        uvec4 node_data0 = floatBitsToUint(texelFetch(g_nodes_buffer, cur * 3 + 0));
         if (node_data0.y == 0u) {
             stack[stack_size++] = int(node_data0.w);
             stack[stack_size++] = int(node_data0.z);
         }
     }
 
-    outColor = vec4(heatmap(float(tree_complexity) / 128.0), 0.85);
+    g_out_color = vec4(heatmap(float(tree_complexity) / 128.0), 0.85);
 }
