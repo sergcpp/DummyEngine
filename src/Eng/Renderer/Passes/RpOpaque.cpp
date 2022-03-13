@@ -24,8 +24,8 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *
     probe_storage_ = list.probe_storage;
 
     render_flags_ = list.render_flags;
-    main_batches_ = list.main_batches;
-    main_batch_indices_ = list.main_batch_indices;
+    main_batches_ = list.custom_batches;
+    main_batch_indices_ = list.custom_batch_indices;
 
     vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
     vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
@@ -114,6 +114,7 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
         params.format = Ren::eTexFormat::RawRGBA8888;
+        params.flags = Ren::TexSRGB;
         params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;
@@ -180,15 +181,16 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf
             {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
             {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
             // Attributes from buffer 2
-            {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
-            {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
+            {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
+            {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)},
+            {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
 
-        draw_pass_vi_.Setup(attribs, 5, ndx_buf.ref);
+        draw_pass_vi_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref);
     }
 
     if (!opaque_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_opaque_, depth_tex.desc.w, depth_tex.desc.h,
-                                                    color_targets, 3, depth_target, depth_target)) {
+                                                    depth_target, depth_target, color_targets,
+                                                    COUNT_OF(color_targets))) {
         ctx.log()->Error("RpOpaque: opaque_draw_fb_ init failed!");
     }
 }

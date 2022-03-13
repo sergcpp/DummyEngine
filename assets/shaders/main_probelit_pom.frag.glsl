@@ -27,7 +27,7 @@ layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer g_lights_buffer;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buffer;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
@@ -551,7 +551,7 @@ void main(void) {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
-        float _dot1 = max(dot(L, normal), 0.0);
+        float _dot1 = clamp(dot(L, normal), 0.0, 1.0);
         float _dot2 = dot(L, dir_and_spot.xyz);
 
         atten = _dot1 * atten;

@@ -29,27 +29,23 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 namespace {
 DummyApp *g_app = nullptr;
 
-uint32_t ScancodeFromLparam(LPARAM lparam) {
+uint32_t ScancodeFromLparam(const LPARAM lparam) {
     return ((lparam >> 16) & 0x7f) | ((lparam & (1 << 24)) != 0 ? 0x80 : 0);
 }
 
 static const unsigned char ScancodeToHID_table[256] = {
-    0,  41, 30, 31, 32,  33,  34, 35, 36, 37,  38,  39,  45, 46,  42, 43, 20,  26, 8,
-    21, 23, 28, 24, 12,  18,  19, 47, 48, 158, 224, 4,   22, 7,   9,  10, 11,  13, 14,
-    15, 51, 52, 53, 225, 49,  29, 27, 6,  25,  5,   17,  16, 54,  55, 56, 229, 0,  226,
-    44, 57, 58, 59, 60,  61,  62, 63, 64, 65,  66,  67,  72, 71,  0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,   68,  69, 0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,   0,   0,  0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,   0,   0,  0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,   0,   0,  0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   228, 0,  0,  0,  0,   0,   0,   0,  0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,   0,   70, 230, 0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  74,  82,  75,  0,  80,  0,  79, 0,   77, 81,
-    78, 73, 76, 0,  0,   0,   0,  0,  0,  0,   227, 231, 0,  0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,   0,   0,  0,   0,  0,  0,   0,  0,
-    0,  0,  0,  0,  0,   0,   0,  0,  0};
+    0,  41,  30,  31,  32,  33, 34, 35, 36, 37, 38, 39,  45,  46, 42, 43, 20,  26, 8,  21, 23, 28, 24, 12, 18, 19,
+    47, 48,  158, 224, 4,   22, 7,  9,  10, 11, 13, 14,  15,  51, 52, 53, 225, 49, 29, 27, 6,  25, 5,  17, 16, 54,
+    55, 56,  229, 0,   226, 44, 57, 58, 59, 60, 61, 62,  63,  64, 65, 66, 67,  72, 71, 0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  68, 69, 0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  228, 0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  70,  230, 0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   74, 82, 75, 0,  80, 0,  79, 0,  77,
+    81, 78,  73,  76,  0,   0,  0,  0,  0,  0,  0,  227, 231, 0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0};
 
-uint32_t ScancodeToHID(uint32_t scancode) {
+uint32_t ScancodeToHID(const uint32_t scancode) {
     if (scancode >= 256) {
         return 0;
     }
@@ -61,15 +57,11 @@ class AuxGfxThread : public Sys::ThreadWorker {
     HGLRC gl_ctx_;
 
   public:
-    AuxGfxThread(HDC device_ctx, HGLRC gl_ctx)
-        : device_ctx_(device_ctx), gl_ctx_(gl_ctx) {
-        AddTask([this]() {
-            __itt_thread_set_name("AuxGfxThread");
-        });
+    AuxGfxThread(HDC device_ctx, HGLRC gl_ctx) : device_ctx_(device_ctx), gl_ctx_(gl_ctx) {
+        AddTask([this]() { __itt_thread_set_name("AuxGfxThread"); });
     }
 
-    ~AuxGfxThread() override {
-    }
+    ~AuxGfxThread() override {}
 };
 } // namespace
 
@@ -79,37 +71,11 @@ DLL_EXPORT int32_t NvOptimusEnablement = 0x00000001;     // Nvidia
 DLL_EXPORT int AmdPowerXpressRequestHighPerformance = 1; // AMD
 }
 
-typedef BOOL(WINAPI *PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int *piAttribIList,
-                                                     const FLOAT *pfAttribFList,
-                                                     UINT nMaxFormats, int *piFormats,
-                                                     UINT *nNumFormats);
-typedef HGLRC(WINAPI *PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext,
-                                                         const int *attribList);
-typedef BOOL(WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
-
-#define WGL_DRAW_TO_WINDOW_ARB 0x2001
-#define WGL_ACCELERATION_ARB 0x2003
-#define WGL_SUPPORT_OPENGL_ARB 0x2010
-#define WGL_DOUBLE_BUFFER_ARB 0x2011
-#define WGL_PIXEL_TYPE_ARB 0x2013
-#define WGL_COLOR_BITS_ARB 0x2014
-#define WGL_ALPHA_BITS_ARB 0x201B
-#define WGL_DEPTH_BITS_ARB 0x2022
-#define WGL_STENCIL_BITS_ARB 0x2023
-#define WGL_FULL_ACCELERATION_ARB 0x2027
-#define WGL_TYPE_RGBA_ARB 0x202B
-
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-
-#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
-#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
-
 DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() {}
 
-LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wParam, const LPARAM lParam) {
     static float last_p1_pos[2] = {0.0f, 0.0f}, last_p2_pos[2] = {0.0f, 0.0f};
 
     switch (uMsg) {
@@ -119,33 +85,27 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_LBUTTONDOWN: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
-
         g_app->AddEvent(RawInputEv::P1Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONDOWN: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
-
         g_app->AddEvent(RawInputEv::P2Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_LBUTTONUP: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
-
         g_app->AddEvent(RawInputEv::P1Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONUP: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
-
         g_app->AddEvent(RawInputEv::P2Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {
         const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
-
-        g_app->AddEvent(RawInputEv::P1Move, 0, px, py, px - last_p1_pos[0],
-                        py - last_p1_pos[1]);
+        g_app->AddEvent(RawInputEv::P1Move, 0, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
 
         last_p1_pos[0] = px;
         last_p1_pos[1] = py;
@@ -155,17 +115,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         if (wParam == VK_ESCAPE) {
             PostQuitMessage(0);
         } else {
-            const uint32_t scan_code = ScancodeFromLparam(lParam),
-                           key_code = ScancodeToHID(scan_code);
-
+            const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
             g_app->AddEvent(RawInputEv::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         break;
     }
     case WM_KEYUP: {
-        const uint32_t scan_code = ScancodeFromLparam(lParam),
-                       key_code = ScancodeToHID(scan_code);
-
+        const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
         g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
@@ -179,7 +135,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
-        g_app->AddEvent(RawInputEv::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
+        g_app->AddEvent(RawInputEv::Resize, 0, float(w), float(h), 0.0f, 0.0f);
     }
     default: {
         break;
@@ -214,18 +170,16 @@ int DummyApp::Init(const int w, const int h, const char *device_name) {
 
     int win_pos[] = {CW_USEDEFAULT, CW_USEDEFAULT};
 
-    window_handle_ = ::CreateWindowEx(
-        NULL, "MainWindowClass", "View (VK)", WS_OVERLAPPEDWINDOW | WS_VISIBLE, win_pos[0],
-        win_pos[1], rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
-        GetModuleHandle(nullptr), nullptr);
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (VK)", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                      win_pos[0], win_pos[1], rect.right - rect.left, rect.bottom - rect.top, nullptr,
+                                      nullptr, GetModuleHandle(nullptr), nullptr);
 
     device_context_ = GetDC(window_handle_);
 
     try {
         Viewer::PrepareAssets("pc");
 
-        auto aux_gfx_thread =
-            std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
+        auto aux_gfx_thread = std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
         viewer_.reset(new Viewer(w, h, nullptr, device_name, std::move(aux_gfx_thread)));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
@@ -257,8 +211,8 @@ void DummyApp::Resize(const int w, const int h) {
     }
 }
 
-void DummyApp::AddEvent(const RawInputEv type, const uint32_t key_code, const float x,
-                        const float y, const float dx, const float dy) {
+void DummyApp::AddEvent(const RawInputEv type, const uint32_t key_code, const float x, const float y, const float dx,
+                        const float dy) {
     std::shared_ptr<InputManager> input_manager = input_manager_.lock();
     if (!input_manager) {
         return;
@@ -288,11 +242,9 @@ int DummyApp::Run(int argc, char *argv[]) {
             i++;
         } else if (strcmp(arg, "--norun") == 0) {
             return 0;
-        } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) &&
-                   (i + 1 < argc)) {
+        } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) && (i + 1 < argc)) {
             w = std::atoi(argv[++i]);
-        } else if ((strcmp(arg, "--height") == 0 || strcmp(arg, "-h") == 0) &&
-                   (i + 1 < argc)) {
+        } else if ((strcmp(arg, "--height") == 0 || strcmp(arg, "-h") == 0) && (i + 1 < argc)) {
             h = std::atoi(argv[++i]);
         } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
             fullscreen_ = true;

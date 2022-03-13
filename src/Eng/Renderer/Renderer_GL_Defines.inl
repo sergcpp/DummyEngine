@@ -67,6 +67,7 @@
 #define REN_OUT_NORM_INDEX  1
 #define REN_OUT_SPEC_INDEX  2
 #define REN_OUT_VELO_INDEX  3
+#define REN_OUT_ALBEDO_INDEX 0
 
 // Shadow resolution
 #define REN_SHAD_RES_PC         8192

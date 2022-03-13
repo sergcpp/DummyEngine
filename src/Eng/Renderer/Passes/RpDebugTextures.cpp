@@ -262,7 +262,7 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
         }
     }
 
-    if (!output_fb_.Setup(ctx.api_ctx(), {}, ctx.w(), ctx.h(), &output_tex_, 1, {}, {}, false)) {
+    if (!output_fb_.Setup(ctx.api_ctx(), {}, ctx.w(), ctx.h(), {}, {}, &output_tex_, 1, false)) {
         ctx.log()->Error("RpDebugTextures: output_fb_ init failed!");
     }
 }

@@ -27,7 +27,7 @@ layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4]
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
 layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
 layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform mediump samplerBuffer g_lights_buffer;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buffer;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
@@ -69,10 +69,8 @@ void main(void) {
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
     highp uvec2 cell_data = texelFetch(g_cells_buffer, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
-                                          bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
-                                          bitfieldExtract(cell_data.y, 8, 8));
+    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 diff_color = texture(SAMPLER2D(g_diff_texture), g_vtx_uvs).rgb;
     vec3 norm_color = texture(SAMPLER2D(g_norm_texture), g_vtx_uvs).wyz;
@@ -171,7 +169,7 @@ void main(void) {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
-        float _dot1 = max(dot(L, normal), 0.0);
+        float _dot1 = clamp(dot(L, normal), 0.0, 1.0);
         float _dot2 = dot(L, dir_and_spot.xyz);
 
         atten = _dot1 * atten;

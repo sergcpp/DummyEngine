@@ -159,7 +159,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
         initialized = true;
     }
 
-    if (!shadow_fb_.Setup(ctx.api_ctx(), rp_depth_only_, w_, h_, nullptr, 0, shadowmap_tex.ref, {}, false)) {
+    if (!shadow_fb_.Setup(ctx.api_ctx(), rp_depth_only_, w_, h_, shadowmap_tex.ref, {}, nullptr, 0, false)) {
         ctx.log()->Error("RpShadowMaps: shadow_fb_ init failed!");
     }
 }

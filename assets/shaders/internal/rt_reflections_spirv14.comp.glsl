@@ -1,5 +1,4 @@
 #version 460
-#if defined(VULKAN)
 #extension GL_EXT_ray_query : require
 
 #if defined(GL_ES) || defined(VULKAN)
@@ -290,9 +289,3 @@ void main() {
         imageStore(g_out_raylen_img, copy_coords, vec4(0.0));
     }
 }
-
-#else // VULKAN
-
-void main() {}
-
-#endif // VULKAN

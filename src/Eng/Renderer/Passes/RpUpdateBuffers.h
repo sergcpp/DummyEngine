@@ -24,7 +24,7 @@ class RpUpdateBuffers : public RenderPassBase {
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
     DynArrayConstRef<ProbeItem> probes_;
     DynArrayConstRef<EllipsItem> ellipsoids_;
-    uint32_t render_flags_ = 0;
+    uint64_t render_flags_ = 0;
 
     Ren::WeakBufferRef shared_data_stage_buf_;
 

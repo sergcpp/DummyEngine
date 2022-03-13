@@ -51,11 +51,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
     }
 
-    if (!probe_storage_) {
-        return;
-    }
-
-    if (!probe_storage_) {
+    if (!probe_storage_ || alpha_blend_start_index_ == -1) {
         return;
     }
 
@@ -301,8 +297,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         draw_pass_vi_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-        for (int j = int(main_batch_indices_.count) - 1; j >= *alpha_blend_start_index_; j--) {
-            const MainDrawBatch &batch = main_batches_.data[main_batch_indices_.data[j]];
+        for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
+            const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
             if (!batch.alpha_blend_bit || !batch.two_sided_bit) {
                 continue;
             }
@@ -344,8 +340,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         cur_mat_id = 0xffffffffffffffff;
 
-        for (int j = int(main_batch_indices_.count) - 1; j >= *alpha_blend_start_index_; j--) {
-            const MainDrawBatch &batch = main_batches_.data[main_batch_indices_.data[j]];
+        for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
+            const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
             if (!batch.instance_count) {
                 continue;
             }

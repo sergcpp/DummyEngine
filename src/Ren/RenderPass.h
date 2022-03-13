@@ -52,6 +52,7 @@ inline bool operator==(const RenderTarget &lhs, const RenderTarget &rhs) {
 struct RenderTargetInfo {
     eTexFormat format = eTexFormat::Undefined;
     uint8_t samples = 1;
+    uint16_t flags = 0;
     eImageLayout layout = eImageLayout::Undefined;
     eLoadOp load = eLoadOp::DontCare;
     eStoreOp store = eStoreOp::DontCare;
@@ -61,7 +62,7 @@ struct RenderTargetInfo {
     RenderTargetInfo() = default;
     RenderTargetInfo(WeakTex2DRef _ref, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
-        : format(_ref->params.format), samples(_ref->params.samples),
+        : format(_ref->params.format), samples(_ref->params.samples), flags(_ref->params.flags),
 #if defined(USE_VK_RENDER)
           layout(eImageLayout(VKImageLayoutForState(_ref->resource_state))),
 #endif
@@ -69,7 +70,7 @@ struct RenderTargetInfo {
     }
     RenderTargetInfo(const Texture2D *tex, eLoadOp _load, eStoreOp _store, eLoadOp _stencil_load = eLoadOp::DontCare,
                      eStoreOp _stencil_store = eStoreOp::DontCare)
-        : format(tex->params.format), samples(tex->params.samples),
+        : format(tex->params.format), samples(tex->params.samples), flags(tex->params.flags),
 #if defined(USE_VK_RENDER)
           layout(eImageLayout(VKImageLayoutForState(tex->resource_state))),
 #endif
@@ -83,6 +84,7 @@ struct RenderTargetInfo {
         if (rt.ref) {
             format = rt.ref->params.format;
             samples = rt.ref->params.samples;
+            flags = rt.ref->params.flags;
 #if defined(USE_VK_RENDER)
             layout = eImageLayout(VKImageLayoutForState(rt.ref->resource_state));
 #endif

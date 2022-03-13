@@ -37,9 +37,9 @@ class DummyApp {
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)
-    HWND            window_handle_;
-    HDC             device_context_;
-    HGLRC           gl_ctx_main_, gl_ctx_aux_;
+    HWND            window_handle_ = {};
+    HDC             device_context_ = {};
+    HGLRC           gl_ctx_main_ = {}, gl_ctx_aux_ = {};
 #elif defined(__linux__)
     Display         *dpy_ = nullptr;
     Window          win_ = {};

@@ -77,6 +77,14 @@ vec3 BilinearTexelFetch(sampler2D texture, vec2 texcoord) {
 }
 #endif
 
+vec3 to_srgb(vec3 linear_rgb) {
+    bvec3 cutoff = lessThan(linear_rgb, vec3(0.0031308));
+    vec3 higher = vec3(1.055) * pow(linear_rgb.rgb, vec3(1.0 / 2.4)) - vec3(0.055);
+    vec3 lower = linear_rgb * vec3(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
 void main() {
     vec2 uvs = g_vtx_uvs - vec2(0.5, 0.5);
     vec2 norm_uvs = uvs / g_params.tex_size;
@@ -103,9 +111,14 @@ void main() {
 
         // white is vec3(0.834032297)
 
-        vec3 inv_gamma = vec3(1.0 / g_params.gamma);
+        //vec3 inv_gamma = vec3(1.0 / g_params.gamma);
+        //col = pow(col / white, inv_gamma);
 
-        col = pow(col / white, inv_gamma);
+        col /= white;
+
+#if defined(VULKAN)
+        col = to_srgb(col);
+#endif
     }
 
     col = mix(col, vec3(0.0), g_params.fade);

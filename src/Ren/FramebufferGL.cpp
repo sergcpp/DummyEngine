@@ -10,18 +10,19 @@ Ren::Framebuffer::~Framebuffer() {
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
-                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
                              const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
+                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
+
                              const bool is_multisampled) {
-    if (_color_attachments_count == color_attachments.size() &&
+    if (((!_depth_attachment && !depth_attachment.ref) ||
+         (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
+        ((!_stencil_attachment && !stencil_attachment.ref) ||
+         (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle)) &&
+        _color_attachments_count == color_attachments.size() &&
         std::equal(_color_attachments, _color_attachments + _color_attachments_count, color_attachments.data(),
                    [](const WeakTex2DRef &lhs, const Attachment &rhs) {
                        return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
-                   }) &&
-        ((!_depth_attachment && !depth_attachment.ref) ||
-         (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
-        ((!_stencil_attachment && !stencil_attachment.ref) ||
-         (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle))) {
+                   })) {
         // nothing has changed
         return true;
     }
@@ -36,23 +37,23 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         color_targets.emplace_back(_color_attachments[i], eLoadOp::DontCare, eStoreOp::DontCare);
     }
 
-    return Setup(api_ctx, render_pass, w, h, color_targets.data(), int(color_targets.size()),
-                 RenderTarget(_depth_attachment, eLoadOp::DontCare, eStoreOp::DontCare),
-                 RenderTarget(_stencil_attachment, eLoadOp::DontCare, eStoreOp::DontCare));
+    return Setup(api_ctx, render_pass, w, h, RenderTarget(_depth_attachment, eLoadOp::DontCare, eStoreOp::DontCare),
+                 RenderTarget(_stencil_attachment, eLoadOp::DontCare, eStoreOp::DontCare), color_targets.data(),
+                 int(color_targets.size()));
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
-                             const RenderTarget _color_targets[], int _color_targets_count,
-                             const RenderTarget &_depth_target, const RenderTarget &_stencil_target) {
-    if (_color_targets_count == color_attachments.size() &&
+                             const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
+                             const RenderTarget _color_targets[], int _color_targets_count) {
+    if (((!_depth_target && !depth_attachment.ref) ||
+         (_depth_target && _depth_target.ref->handle() == depth_attachment.handle)) &&
+        ((!_stencil_target && !stencil_attachment.ref) ||
+         (_stencil_target && _stencil_target.ref->handle() == stencil_attachment.handle)) &&
+        _color_targets_count == color_attachments.size() &&
         std::equal(_color_targets, _color_targets + _color_targets_count, color_attachments.data(),
                    [](const RenderTarget &lhs, const Attachment &rhs) {
                        return (!lhs && !rhs.ref) || (lhs && lhs.ref->handle() == rhs.handle);
-                   }) &&
-        ((!_depth_target && !depth_attachment.ref) ||
-         (_depth_target && _depth_target.ref->handle() == depth_attachment.handle)) &&
-        ((!_stencil_target && !stencil_attachment.ref) ||
-         (_stencil_target && _stencil_target.ref->handle() == stencil_attachment.handle))) {
+                   })) {
         // nothing has changed
         return true;
     }

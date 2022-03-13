@@ -21,7 +21,7 @@ class RpDebugTextures : public RenderPassBase {
     Ren::Tex1DRef nodes_tbo_;
 
     // temp data (valid only between Setup and Execute calls)
-    uint32_t render_flags_ = 0;
+    uint64_t render_flags_ = 0;
     Ren::WeakTex2DRef output_tex_;
     const ViewState *view_state_ = nullptr;
     const Ren::Camera *draw_cam_ = nullptr;
