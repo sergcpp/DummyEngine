@@ -140,7 +140,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
         descr_writes[1].pTexelBufferView = &instances_buf_view;
 
         descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[2].dstSet = simple_descr_sets[0];
+        descr_writes[2].dstSet = vege_descr_sets[0];
         descr_writes[2].dstBinding = REN_INST_INDICES_BUF_SLOT;
         descr_writes[2].dstArrayElement = 0;
         descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
