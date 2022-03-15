@@ -176,7 +176,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         const VkDescriptorImageInfo img_info = noise_tex.ref->vk_desc_image_info();
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
-        VkWriteDescriptorSet descr_writes[4];
+        VkWriteDescriptorSet descr_writes[5];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = vege_descr_sets[0];
         descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
@@ -201,21 +201,21 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pBufferInfo = &instance_indices_buf_info;
 
-        descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
-        descr_writes[2].dstSet = vege_descr_sets[0];
-        descr_writes[2].dstBinding = REN_NOISE_TEX_SLOT;
-        descr_writes[2].dstArrayElement = 0;
-        descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        descr_writes[2].descriptorCount = 1;
-        descr_writes[2].pImageInfo = &img_info;
-
         descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = vege_descr_sets[0];
-        descr_writes[3].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[3].dstBinding = REN_NOISE_TEX_SLOT;
         descr_writes[3].dstArrayElement = 0;
-        descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descr_writes[3].descriptorCount = 1;
-        descr_writes[3].pBufferInfo = &mat_buf_info;
+        descr_writes[3].pImageInfo = &img_info;
+
+        descr_writes[4] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+        descr_writes[4].dstSet = vege_descr_sets[0];
+        descr_writes[4].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[4].dstArrayElement = 0;
+        descr_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descr_writes[4].descriptorCount = 1;
+        descr_writes[4].pBufferInfo = &mat_buf_info;
 
         vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
