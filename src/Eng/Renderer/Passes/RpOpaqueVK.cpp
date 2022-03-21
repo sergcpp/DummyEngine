@@ -159,7 +159,8 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
         }
 
-        const VkDescriptorImageInfo decal_info = dummy_black.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo decal_info =
+            decals_atlas_ ? decals_atlas_->vk_desc_image_info() : dummy_black.ref->vk_desc_image_info();
         const VkDescriptorImageInfo ssao_info = ssao_tex->ref->vk_desc_image_info();
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();

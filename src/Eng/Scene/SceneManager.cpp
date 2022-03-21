@@ -127,8 +127,9 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
     { // Alloc texture for decals atlas
         const Ren::eTexFormat formats[] = {Ren::DefaultCompressedRGBA, Ren::eTexFormat::Undefined};
         const uint32_t flags[] = {0};
-        scene_data_.decals_atlas = Ren::TextureAtlas{DECALS_ATLAS_RESX,          DECALS_ATLAS_RESY, 64, formats, flags,
-                                                     Ren::eTexFilter::Trilinear, ren_ctx_.log()};
+        scene_data_.decals_atlas =
+            Ren::TextureAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, formats, flags,
+                              Ren::eTexFilter::Trilinear, ren_ctx_.log()};
     }
 
     { // Create splitter for lightmap atlas
@@ -518,8 +519,6 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
 
     scene_data_.probe_storage.Finalize();
     LoadProbeCache();
-
-    scene_data_.decals_atlas.Finalize();
 
     log->Info("SceneManager: RebuildSceneBVH!");
 
@@ -1328,6 +1327,25 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
     const uint8_t *p_data = (uint8_t *)in_file_data.get() + sizeof(Ren::DDSHeader);
     int data_len = int(in_file_size) - int(sizeof(Ren::DDSHeader));
 
+    Ren::StageBufRef stage_buf = ren_ctx_.default_stage_bufs().GetNextBuffer();
+    if (stage_buf.buf->size() < uint32_t(data_len)) {
+        ren_ctx_.log()->Error("Texture is larger than stage buffer!");
+        return Ren::Vec4f{};
+    }
+
+    { // Initialize stage buffer
+        uint8_t *stage_data = stage_buf.buf->Map(Ren::BufMapWrite);
+        if (!stage_data) {
+            ren_ctx_.log()->Error("Failed to map buffer!");
+            return Ren::Vec4f{};
+        }
+
+        memcpy(stage_data, p_data, data_len);
+
+        stage_buf.buf->FlushMappedRange(0, stage_buf.buf->AlignMapOffset(data_len));
+        stage_buf.buf->Unmap();
+    }
+
     int pos[2];
     const int rc = scene_data_.decals_atlas.AllocateRegion(res, pos);
     if (rc == -1) {
@@ -1339,6 +1357,7 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
     int _res[2] = {res[0], res[1]};
     int level = 0;
 
+    int data_off = 0;
     while (_res[0] >= 16 && _res[1] >= 16) {
         const int len = ((_res[0] + 3) / 4) * ((_res[1] + 3) / 4) * 16;
 
@@ -1347,10 +1366,10 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
             break;
         }
 
-        scene_data_.decals_atlas.InitRegion(p_data, len, Ren::DefaultCompressedRGBA, 0, 0, level, _pos, _res,
-                                            ren_ctx_.log());
+        scene_data_.decals_atlas.InitRegion(*stage_buf.buf, data_off, len, stage_buf.cmd_buf,
+                                            Ren::DefaultCompressedRGBA, 0, 0, level, _pos, _res, ren_ctx_.log());
 
-        p_data += len;
+        data_off += len;
         data_len -= len;
 
         _pos[0] = _pos[0] / 2;
@@ -1419,6 +1438,8 @@ void SceneManager::Serve(const int texture_budget) {
     using namespace SceneManagerConstants;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_serve_str);
+
+    scene_data_.decals_atlas.Finalize(ren_ctx_.current_cmd_buf());
 
     EstimateTextureMemory(texture_budget);
     ProcessPendingTextures(texture_budget);

@@ -3,8 +3,8 @@
 #include "GL.h"
 #include "Utils.h"
 
-Ren::TextureAtlas::TextureAtlas(const int w, const int h, const int min_res, const eTexFormat *formats,
-                                const uint32_t *flags, eTexFilter filter, ILog *log)
+Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,
+                                const eTexFormat *formats, const uint32_t *flags, eTexFilter filter, ILog *log)
     : splitter_(w, h) {
     filter_ = filter;
 
@@ -131,8 +131,9 @@ int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
     return index;
 }
 
-void Ren::TextureAtlas::InitRegion(const void *data, const int data_len, const eTexFormat format, const uint32_t flags,
-                                   const int layer, const int level, const int pos[2], const int res[2], ILog *log) {
+void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, void *cmd_buf,
+                                   const eTexFormat format, const uint32_t flags, const int layer, const int level,
+                                   const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
     if (level == 0) {
         int _res[2];
@@ -142,6 +143,8 @@ void Ren::TextureAtlas::InitRegion(const void *data, const int data_len, const e
     }
 #endif
 
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
+
     if (IsCompressedFormat(format)) {
         const GLenum tex_format =
 #if !defined(__ANDROID__)
@@ -150,11 +153,16 @@ void Ren::TextureAtlas::InitRegion(const void *data, const int data_len, const e
             (flags & TexSRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
         ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(tex_ids_[layer]), level, pos[0], pos[1], res[0],
-                                               res[1], tex_format, data_len, data);
+                                               res[1], tex_format, data_len,
+                                               reinterpret_cast<const void *>(uintptr_t(data_off)));
     } else {
         ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(tex_ids_[layer]), level, pos[0], pos[1], res[0], res[1],
-                                     GLFormatFromTexFormat(format), GLTypeFromTexFormat(format), data);
+                                     GLFormatFromTexFormat(format), GLTypeFromTexFormat(format),
+                                     reinterpret_cast<const void *>(uintptr_t(data_off)));
     }
+
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
     CheckError("init sub image", log);
 }
 
@@ -163,7 +171,7 @@ bool Ren::TextureAtlas::Free(const int pos[2]) {
     return splitter_.Free(pos);
 }
 
-void Ren::TextureAtlas::Finalize() {
+void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
     if (filter_ == eTexFilter::Trilinear || filter_ == eTexFilter::Bilinear) {
         for (int i = 0; i < MaxTextureCount && (formats_[i] != eTexFormat::Undefined); i++) {
             if (!IsCompressedFormat(formats_[i])) {
@@ -228,7 +236,7 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
     return (*this);
 }
 
-int Ren::TextureAtlasArray::Allocate(const void *data, const eTexFormat format, const int res[2], int out_pos[3],
+/*int Ren::TextureAtlasArray::Allocate(const void *data, const eTexFormat format, const int res[2], int out_pos[3],
                                      const int border) {
     const int alloc_res[] = {res[0] < splitters_[0].resx() ? res[0] + border : res[0],
                              res[1] < splitters_[1].resy() ? res[1] + border : res[1]};
@@ -246,7 +254,7 @@ int Ren::TextureAtlasArray::Allocate(const void *data, const eTexFormat format, 
     }
 
     return -1;
-}
+}*/
 
 int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_len, void *, eTexFormat format,
                                      const int res[2], int out_pos[3], int border) {
