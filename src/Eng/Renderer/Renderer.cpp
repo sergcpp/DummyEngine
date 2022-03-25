@@ -572,6 +572,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         acc_struct_data.rt_tlas = persistent_data.rt_tlas.get();
     }
 
+    const bool deferred_shading = (list.render_flags & EnableDeferred) != 0;
+
     { // Setup render passes
         rp_builder_.Reset();
 
@@ -616,27 +618,29 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_tail->p_next = &rp_shadow_maps_;
         rp_tail = rp_tail->p_next;
 
-        //
-        // Skydome drawing
-        //
-        if (list.env.env_map) {
-            rp_skydome_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                              ctx_.default_indices_buf(), SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_SPEC_TEX,
-                              MAIN_DEPTH_TEX);
-            rp_tail->p_next = &rp_skydome_;
-            rp_tail = rp_tail->p_next;
-        } else {
-            // TODO: ...
+        if (!deferred_shading) {
+            //
+            // Skydome drawing
+            //
+            if (list.env.env_map) {
+                rp_skydome_.Setup(rp_builder_, list, &view_state_, true /* clear */, ctx_.default_vertex_buf1(),
+                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), SHARED_DATA_BUF,
+                                  MAIN_COLOR_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+                rp_tail->p_next = &rp_skydome_;
+                rp_tail = rp_tail->p_next;
+            } else {
+                // TODO: ...
+            }
         }
 
         //
         // Depth prepass
         //
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
-            rp_depth_fill_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
-                                 ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), persistent_data.materials_buf,
-                                 &bindless_tex, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF, noise_tex_,
-                                 MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
+            rp_depth_fill_.Setup(rp_builder_, list, &view_state_, deferred_shading /* clear_depth */,
+                                 ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
+                                 persistent_data.materials_buf, &bindless_tex, INSTANCES_BUF, INSTANCE_INDICES_BUF,
+                                 SHARED_DATA_BUF, noise_tex_, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
             rp_tail->p_next = &rp_depth_fill_;
             rp_tail = rp_tail->p_next;
         }
@@ -684,16 +688,62 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
         }
 
-        //
-        // Opaque pass
-        //
-        rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                         ctx_.default_indices_buf(), persistent_data.materials_buf, persistent_data.pipelines.data(),
-                         &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF,
-                         INSTANCE_INDICES_BUF, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF,
-                         SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
-        rp_tail->p_next = &rp_opaque_;
-        rp_tail = rp_tail->p_next;
+        if (deferred_shading) {
+            //
+            // GBuffer filling pass
+            //
+            rp_gbuffer_fill_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
+                                   ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
+                                   persistent_data.materials_buf, &bindless_tex, noise_tex_, dummy_black_,
+                                   INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF,
+                                   DECALS_BUF, MAIN_ALBEDO_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+            rp_tail->p_next = &rp_gbuffer_fill_;
+            rp_tail = rp_tail->p_next;
+
+            //
+            // GBuffer shading pass
+            //
+            rp_gbuffer_shade_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF,
+                                    DECALS_BUF, MAIN_DEPTH_TEX, MAIN_ALBEDO_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
+                                    SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX);
+            rp_tail->p_next = &rp_gbuffer_shade_;
+            rp_tail = rp_tail->p_next;
+
+            //
+            // Additional forward pass (for custom-shaded objects)
+            //
+            rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
+                             ctx_.default_indices_buf(), persistent_data.materials_buf,
+                             persistent_data.pipelines.data(), &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_,
+                             dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF,
+                             CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
+                             MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+            rp_tail->p_next = &rp_opaque_;
+            rp_tail = rp_tail->p_next;
+
+            //
+            // Skydome drawing
+            //
+            if (list.env.env_map) {
+                rp_skydome_.Setup(rp_builder_, list, &view_state_, false /* clear */, ctx_.default_vertex_buf1(),
+                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), SHARED_DATA_BUF,
+                                  MAIN_COLOR_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+                rp_tail->p_next = &rp_skydome_;
+                rp_tail = rp_tail->p_next;
+            }
+        } else {
+            //
+            // Opaque forward pass
+            //
+            rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
+                             ctx_.default_indices_buf(), persistent_data.materials_buf,
+                             persistent_data.pipelines.data(), &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_,
+                             dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF,
+                             CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
+                             MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
+            rp_tail->p_next = &rp_opaque_;
+            rp_tail = rp_tail->p_next;
+        }
 
 #if defined(USE_GL_RENDER) // gl-only for now
         //
@@ -707,15 +757,16 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Transparent pass
         //
-
-        rp_transparent_.Setup(rp_builder_, list, &rp_opaque_.alpha_blend_start_index_, &view_state_,
-                              ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
-                              persistent_data.materials_buf, persistent_data.pipelines.data(), &bindless_tex, brdf_lut_,
-                              noise_tex_, cone_rt_lut_, dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF,
-                              SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES,
-                              MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
-        rp_tail->p_next = &rp_transparent_;
-        rp_tail = rp_tail->p_next;
+        if (list.alpha_blend_start_index != -1) {
+            rp_transparent_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
+                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), persistent_data.materials_buf,
+                                  persistent_data.pipelines.data(), &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_,
+                                  dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF,
+                                  CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
+                                  MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
+            rp_tail->p_next = &rp_transparent_;
+            rp_tail = rp_tail->p_next;
+        }
 
         //
         // Reflections pass
@@ -864,7 +915,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Temporal resolve
         //
-        if ((list.render_flags & EnableTaa) && list.env.env_map) {
+        if (list.render_flags & EnableTaa) {
             assert(!view_state_.is_multisampled);
             rp_taa_.Setup(rp_builder_, &view_state_, taa_history_tex_, reduced_average_, list.draw_cam.max_exposure,
                           SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX, RESOLVED_COLOR_TEX);
@@ -1024,8 +1075,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             const Ren::WeakTex2DRef output_tex =
                 target ? Ren::WeakTex2DRef{target->attachments[0].tex} : Ren::WeakTex2DRef{};
             rp_debug_textures_.Setup(rp_builder_, &view_state_, list, down_tex_4x_, SHARED_DATA_BUF, CELLS_BUF,
-                                     ITEMS_BUF, SHADOWMAP_TEX, MAIN_COLOR_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                                     MAIN_DEPTH_TEX, SSAO_RES, BLUR_RES_TEX, REDUCED_TEX, output_tex);
+                                     ITEMS_BUF, SHADOWMAP_TEX, deferred_shading ? MAIN_ALBEDO_TEX : MAIN_COLOR_TEX,
+                                     MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, SSAO_RES, BLUR_RES_TEX,
+                                     REDUCED_TEX, output_tex);
             rp_tail->p_next = &rp_debug_textures_;
             rp_tail = rp_tail->p_next;
         }

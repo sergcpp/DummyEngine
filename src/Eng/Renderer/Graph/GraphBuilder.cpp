@@ -490,7 +490,7 @@ void RpBuilder::Compile(RenderPassBase *first_pass) {
     struct {
         RenderPassBase *owner;
         RpResource resource;
-    } stack[64] = {};
+    } stack[128] = {};
     uint32_t stack_size = 0;
 
     { // gather unreferenced resources

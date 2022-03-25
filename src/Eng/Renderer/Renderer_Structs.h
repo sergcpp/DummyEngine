@@ -75,25 +75,26 @@ struct InstanceData {
 };
 static_assert(sizeof(InstanceData) == 128, "!");
 
-struct DepthDrawBatch {                        // NOLINT
+struct BasicDrawBatch {                       // NOLINT
     static const uint32_t TypeSimple = 0b00u;  // simple
     static const uint32_t TypeVege = 0b01u;    // vegetation
     static const uint32_t TypeSkinned = 0b10u; // skeletal
-    // TODO: this probably should not be a type
-    static const uint32_t TypeTaaResp = 0b11u; // video-textured etc.
+    static const uint32_t TypeUnused = 0b11u;
 
     static const uint32_t BitsSimple = (TypeSimple << 30u);
     static const uint32_t BitsVege = (TypeVege << 30u);
     static const uint32_t BitsSkinned = (TypeSkinned << 30u);
-    static const uint32_t BitsTaaResp = (TypeTaaResp << 30u);
+    static const uint32_t BitsUnused = (TypeUnused << 30u);
     static const uint32_t BitAlphaTest = (1u << 29u);
     static const uint32_t BitMoving = (1u << 28u);
     static const uint32_t BitTwoSided = (1u << 27u);
-    static const uint32_t FlagBits = (0b11111u << 27u);
+    static const uint32_t BitCustomShaded = (1u << 26u);
+    static const uint32_t FlagBits = (0b111111u << 26u);
 
     union {
         struct {
-            uint32_t indices_offset : 27;
+            uint32_t indices_offset : 26;
+            uint32_t custom_shaded : 1;
             uint32_t two_sided_bit : 1;
             uint32_t moving_bit : 1; // object uses two transforms
             uint32_t alpha_test_bit : 1;
@@ -108,9 +109,11 @@ struct DepthDrawBatch {                        // NOLINT
     uint32_t instance_start;
     uint32_t instance_count;
 };
-static_assert(offsetof(DepthDrawBatch, indices_count) == 4, "!");
+static_assert(offsetof(BasicDrawBatch, indices_count) == 4, "!");
 
-struct MainDrawBatch { // NOLINT
+// Draw batch that allows to specify program for forward rendering
+struct CustomDrawBatch { // NOLINT
+    // TODO: change order of alpha-test and two-sided
     static const uint64_t BitAlphaBlend = (1ull << 63u);
     static const uint64_t BitAlphaTest = (1ull << 62u);
     static const uint64_t BitDepthWrite = (1ull << 61u);
@@ -141,7 +144,7 @@ struct MainDrawBatch { // NOLINT
     uint32_t instance_start;
     uint32_t instance_count;
 };
-static_assert(offsetof(MainDrawBatch, indices_count) == 8, "!");
+static_assert(offsetof(CustomDrawBatch, indices_count) == 8, "!");
 
 struct ShadowList { // NOLINT
     int shadow_map_pos[2], shadow_map_size[2];
@@ -193,39 +196,40 @@ struct ShapeKeyData {
     uint16_t shape_weight;
 };
 
-enum eRenderFlags : uint32_t {
-    EnableZFill = (1u << 0u),
-    EnableCulling = (1u << 1u),
-    EnableSSR = (1u << 2u),
-    EnableSSR_HQ = (1u << 3u),
-    EnableSSAO = (1u << 4u),
-    EnableLightmap = (1u << 5u),
-    EnableLights = (1u << 6u),
-    EnableDecals = (1u << 7u),
-    EnableProbes = (1u << 8u),
-    EnableDOF = (1u << 9u),
-    EnableShadows = (1u << 10u),
-    EnableOIT = (1u << 11u),
-    EnableTonemap = (1u << 12u),
-    EnableBloom = (1u << 13u),
-    EnableMsaa = (1u << 14u),
-    EnableTaa = (1u << 15u),
-    EnableFxaa = (1u << 16u),
-    EnableTimers = (1u << 17u),
-    DebugWireframe = (1u << 18u),
-    DebugCulling = (1u << 19u),
-    DebugShadow = (1u << 20u),
-    DebugLights = (1u << 21u),
-    DebugDeferred = (1u << 22u),
-    DebugBlur = (1u << 23u),
-    DebugDecals = (1u << 24u),
-    DebugSSAO = (1u << 25u),
-    DebugTimings = (1u << 26u),
-    DebugBVH = (1u << 27u),
-    DebugProbes = (1u << 28u),
-    DebugEllipsoids = (1u << 29u),
-    DebugRT = (1u << 30u),
-    DebugDenoise = (1u << 31u)
+enum eRenderFlags : uint64_t {
+    EnableZFill = (1ull << 0u),
+    EnableCulling = (1ull << 1u),
+    EnableSSR = (1ull << 2u),
+    EnableSSR_HQ = (1ull << 3u),
+    EnableSSAO = (1ull << 4u),
+    EnableLightmap = (1ull << 5u),
+    EnableLights = (1ull << 6u),
+    EnableDecals = (1ull << 7u),
+    EnableProbes = (1ull << 8u),
+    EnableDOF = (1ull << 9u),
+    EnableShadows = (1ull << 10u),
+    EnableOIT = (1ull << 11u),
+    EnableTonemap = (1ull << 12u),
+    EnableBloom = (1ull << 13u),
+    EnableMsaa = (1ull << 14u),
+    EnableTaa = (1ull << 15u),
+    EnableFxaa = (1ull << 16u),
+    EnableTimers = (1ull << 17u),
+    EnableDeferred = (1ull << 18u),
+    DebugWireframe = (1ull << 31u),
+    DebugCulling = (1ull << 32u),
+    DebugShadow = (1ull << 33u),
+    DebugLights = (1ull << 34u),
+    DebugDeferred = (1ull << 35u),
+    DebugBlur = (1ull << 36u),
+    DebugDecals = (1ull << 37u),
+    DebugSSAO = (1ull << 38u),
+    DebugTimings = (1ull << 39u),
+    DebugBVH = (1ull << 40u),
+    DebugProbes = (1ull << 41u),
+    DebugEllipsoids = (1ull << 42u),
+    DebugRT = (1ull << 43u),
+    DebugDenoise = (1ull << 44u)
 };
 
 struct FrontendInfo {
@@ -308,9 +312,9 @@ struct RTObjInstance {
 static_assert(sizeof(RTObjInstance) == 64, "!");
 
 #if defined(USE_VK_RENDER)
-#include <Ren/VK.h>
 #include <Ren/Buffer.h>
 #include <Ren/Fwd.h>
+#include <Ren/VK.h>
 #elif defined(USE_GL_RENDER)
 #include <Ren/Buffer.h>
 #endif

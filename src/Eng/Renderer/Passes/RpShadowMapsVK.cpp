@@ -205,8 +205,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const DepthDrawBatch &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
-                    if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits == DepthDrawBatch::TypeVege) {
+                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits == BasicDrawBatch::TypeVege) {
                         continue;
                     }
 
@@ -247,8 +247,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const DepthDrawBatch &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
-                    if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != DepthDrawBatch::TypeVege) {
+                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
                         continue;
                     }
 
@@ -290,8 +290,9 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const DepthDrawBatch &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
-                    if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits == DepthDrawBatch::TypeVege) {
+                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    if (!batch.instance_count || !batch.alpha_test_bit ||
+                        batch.type_bits == BasicDrawBatch::TypeVege) {
                         continue;
                     }
 
@@ -340,8 +341,9 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const DepthDrawBatch &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
-                    if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != DepthDrawBatch::TypeVege) {
+                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    if (!batch.instance_count || !batch.alpha_test_bit ||
+                        batch.type_bits != BasicDrawBatch::TypeVege) {
                         continue;
                     }
 

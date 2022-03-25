@@ -139,8 +139,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.instances.count = 0;
     list.instance_indices.count = 0;
     list.shadow_batches.count = 0;
-    list.zfill_batches.count = 0;
-    list.main_batches.count = 0;
+    list.basic_batches.count = 0;
+    list.custom_batches.count = 0;
 
     list.shadow_lists.count = 0;
     list.shadow_regions.count = 0;
@@ -160,7 +160,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const bool lighting_enabled = (list.render_flags & EnableLights) != 0;
     const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
     const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
-    const bool zfill_enabled = (list.render_flags & (EnableZFill | EnableSSAO)) != 0;
 
     if (!lighting_enabled) {
         list.env.sun_col = {};
@@ -457,50 +456,54 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
 
-                                MainDrawBatch &main_batch = list.main_batches.data[list.main_batches.count++];
+                                if ((list.render_flags & EnableDeferred) == 0 ||
+                                    (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
+                                    (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
+                                    CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
 
-                                main_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
-                                main_batch.pipe_id = mat->pipelines[pipeline_index].index();
-                                main_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                main_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
-                                main_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                if (!ctx_.capabilities.bindless_texture) {
-                                    main_batch.mat_id = uint32_t(grp.mat.index());
-                                } else {
-                                    main_batch.mat_id = 0;
+                                    fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
+                                    fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
+                                    fwd_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                    fwd_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
+                                    fwd_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                    if (!ctx_.capabilities.bindless_texture) {
+                                        fwd_batch.mat_id = uint32_t(grp.mat.index());
+                                    } else {
+                                        fwd_batch.mat_id = 0;
+                                    }
+                                    fwd_batch.cam_dist =
+                                        (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
+                                    fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                                    fwd_batch.base_vertex = base_vertex;
+                                    fwd_batch.indices_count = grp.num_indices;
+                                    fwd_batch.instance_index = int32_t(list.instances.count - 1);
+                                    fwd_batch.material_index = int32_t(grp.mat.index());
+                                    fwd_batch.instance_count = 1;
                                 }
-                                main_batch.cam_dist =
-                                    (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
-                                main_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                                main_batch.base_vertex = base_vertex;
-                                main_batch.indices_count = grp.num_indices;
-                                main_batch.instance_index = int32_t(list.instances.count - 1);
-                                main_batch.material_index = int32_t(grp.mat.index());
-                                main_batch.instance_count = 1;
 
-                                if (zfill_enabled && (!(mat->flags() & uint32_t(eMatFlags::AlphaBlend)) ||
-                                                      ((mat->flags() & uint32_t(eMatFlags::AlphaBlend)) &&
-                                                       (mat->flags() & uint32_t(eMatFlags::AlphaTest))))) {
-                                    DepthDrawBatch &zfill_batch = list.zfill_batches.data[list.zfill_batches.count++];
+                                if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
+                                    ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
+                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
+                                    BasicDrawBatch &base_batch = list.basic_batches.data[list.basic_batches.count++];
 
-                                    zfill_batch.type_bits = DepthDrawBatch::TypeSimple;
+                                    base_batch.type_bits = BasicDrawBatch::TypeSimple;
 
                                     if (obj.comp_mask & CompAnimStateBit) {
-                                        zfill_batch.type_bits = DepthDrawBatch::TypeSkinned;
+                                        base_batch.type_bits = BasicDrawBatch::TypeSkinned;
                                     } else if (obj.comp_mask & CompVegStateBit) {
-                                        zfill_batch.type_bits = DepthDrawBatch::TypeVege;
+                                        base_batch.type_bits = BasicDrawBatch::TypeVege;
                                     }
 
-                                    zfill_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                    zfill_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                                    zfill_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                    zfill_batch.indices_offset = main_batch.indices_offset;
-                                    zfill_batch.base_vertex = base_vertex;
-                                    zfill_batch.indices_count = grp.num_indices;
-                                    zfill_batch.instance_index = int32_t(list.instances.count - 1);
-                                    zfill_batch.material_index =
-                                        (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
-                                    zfill_batch.instance_count = 1;
+                                    base_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                    base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
+                                    base_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                    base_batch.custom_shaded = (mat_flags & uint32_t(eMatFlags::CustomShaded)) ? 1 : 0;
+                                    base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                                    base_batch.base_vertex = base_vertex;
+                                    base_batch.indices_count = grp.num_indices;
+                                    base_batch.instance_index = int32_t(list.instances.count - 1);
+                                    base_batch.material_index = int32_t(grp.mat.index());
+                                    base_batch.instance_count = 1;
                                 }
                             } else {
                                 __record_textures(list.desired_textures, mat, (obj.comp_mask & CompAnimStateBit),
@@ -531,7 +534,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         eVisResult res = eVisResult::FullyVisible;
 
                         for (int k = 0; k < 6 && !skip_frustum_check; k++) {
-                            const Plane &plane = list.draw_cam.frustum_plane(k);
+                            const auto &plane = list.draw_cam.frustum_plane(k);
 
                             const float dist =
                                 plane.n[0] * pos[0] + plane.n[1] * pos[1] + plane.n[2] * pos[2] + plane.d;
@@ -583,7 +586,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         eVisResult res = eVisResult::FullyVisible;
 
                         for (int p = int(eCamPlane::Left); p <= int(eCamPlane::Far) && !skip_frustum_check; p++) {
-                            const Plane &plane = list.draw_cam.frustum_plane(p);
+                            const auto &plane = list.draw_cam.frustum_plane(p);
 
                             int in_count = 8;
 
@@ -1008,13 +1011,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     __record_texture(list.visible_textures, mat->textures[0], 0, 0xffffu);
                                 }
 
-                                DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                                BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
 
-                                batch.type_bits = DepthDrawBatch::TypeSimple;
+                                batch.type_bits = BasicDrawBatch::TypeSimple;
 
                                 // we do not care if it is skinned
                                 if (obj.comp_mask & CompVegStateBit) {
-                                    batch.type_bits = DepthDrawBatch::TypeVege;
+                                    batch.type_bits = BasicDrawBatch::TypeVege;
                                 }
 
                                 batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
@@ -1222,13 +1225,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     __record_texture(list.visible_textures, mat->textures[0], 0, 0xffffu);
                                 }
 
-                                DepthDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                                BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
 
-                                batch.type_bits = DepthDrawBatch::TypeSimple;
+                                batch.type_bits = BasicDrawBatch::TypeSimple;
 
                                 // we do not care if it is skinned
                                 if (obj.comp_mask & CompVegStateBit) {
-                                    batch.type_bits = DepthDrawBatch::TypeVege;
+                                    batch.type_bits = BasicDrawBatch::TypeVege;
                                 }
 
                                 batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
@@ -1283,19 +1286,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const uint64_t drawables_sort_start = Sys::GetTimeUs();
 
-    // Sort drawables to optimize state switches
-
-    if (zfill_enabled) {
-        temp_sort_spans_32_[0].count = list.zfill_batches.count;
-        temp_sort_spans_32_[1].count = list.zfill_batches.count;
-        list.zfill_batch_indices.count = list.zfill_batches.count;
+    { // Sort drawables to optimize state switches
+        temp_sort_spans_32_[0].count = list.basic_batches.count;
+        temp_sort_spans_32_[1].count = list.basic_batches.count;
+        list.basic_batch_indices.count = list.basic_batches.count;
         uint32_t spans_count = 0;
 
         // compress batches into spans with indentical key values (makes sorting faster)
-        for (uint32_t start = 0, end = 1; end <= list.zfill_batches.count; end++) {
-            if (end == list.zfill_batches.count ||
-                (list.zfill_batches.data[start].sort_key != list.zfill_batches.data[end].sort_key)) {
-                temp_sort_spans_32_[0].data[spans_count].key = list.zfill_batches.data[start].sort_key;
+        for (uint32_t start = 0, end = 1; end <= list.basic_batches.count; end++) {
+            if (end == list.basic_batches.count ||
+                (list.basic_batches.data[start].sort_key != list.basic_batches.data[end].sort_key)) {
+                temp_sort_spans_32_[0].data[spans_count].key = list.basic_batches.data[start].sort_key;
                 temp_sort_spans_32_[0].data[spans_count].base = start;
                 temp_sort_spans_32_[0].data[spans_count++].count = end - start;
                 start = end;
@@ -1309,17 +1310,17 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         size_t counter = 0;
         for (uint32_t i = 0; i < spans_count; i++) {
             for (uint32_t j = 0; j < temp_sort_spans_32_[0].data[i].count; j++) {
-                list.zfill_batch_indices.data[counter++] = temp_sort_spans_32_[0].data[i].base + j;
+                list.basic_batch_indices.data[counter++] = temp_sort_spans_32_[0].data[i].base + j;
             }
         }
 
         // Merge similar batches
-        for (uint32_t start = 0, end = 1; end <= list.zfill_batch_indices.count; end++) {
-            if (end == list.zfill_batch_indices.count ||
-                list.zfill_batches.data[list.zfill_batch_indices.data[start]].sort_key !=
-                    list.zfill_batches.data[list.zfill_batch_indices.data[end]].sort_key) {
+        for (uint32_t start = 0, end = 1; end <= list.basic_batch_indices.count; end++) {
+            if (end == list.basic_batch_indices.count ||
+                list.basic_batches.data[list.basic_batch_indices.data[start]].sort_key !=
+                    list.basic_batches.data[list.basic_batch_indices.data[end]].sort_key) {
 
-                DepthDrawBatch &b1 = list.zfill_batches.data[list.zfill_batch_indices.data[start]];
+                BasicDrawBatch &b1 = list.basic_batches.data[list.basic_batch_indices.data[start]];
                 b1.instance_start = list.instance_indices.count;
                 for (uint32_t j = 0; j < b1.instance_count; ++j) {
                     list.instance_indices.data[list.instance_indices.count++] =
@@ -1327,7 +1328,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
 
                 for (uint32_t i = start + 1; i < end; i++) {
-                    DepthDrawBatch &b2 = list.zfill_batches.data[list.zfill_batch_indices.data[i]];
+                    BasicDrawBatch &b2 = list.basic_batches.data[list.basic_batch_indices.data[i]];
                     b2.instance_start = list.instance_indices.count;
                     for (uint32_t j = 0; j < b2.instance_count; ++j) {
                         list.instance_indices.data[list.instance_indices.count++] =
@@ -1345,16 +1346,16 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
-    temp_sort_spans_64_[0].count = list.main_batches.count;
-    temp_sort_spans_64_[1].count = list.main_batches.count;
-    list.main_batch_indices.count = list.main_batches.count;
+    temp_sort_spans_64_[0].count = list.custom_batches.count;
+    temp_sort_spans_64_[1].count = list.custom_batches.count;
+    list.custom_batch_indices.count = list.custom_batches.count;
     uint32_t spans_count = 0;
 
     // compress batches into spans with indentical key values (makes sorting faster)
-    for (uint32_t start = 0, end = 1; end <= list.main_batches.count; end++) {
-        if (end == list.main_batches.count ||
-            (list.main_batches.data[start].sort_key != list.main_batches.data[end].sort_key)) {
-            temp_sort_spans_64_[0].data[spans_count].key = list.main_batches.data[start].sort_key;
+    for (uint32_t start = 0, end = 1; end <= list.custom_batches.count; end++) {
+        if (end == list.custom_batches.count ||
+            (list.custom_batches.data[start].sort_key != list.custom_batches.data[end].sort_key)) {
+            temp_sort_spans_64_[0].data[spans_count].key = list.custom_batches.data[start].sort_key;
             temp_sort_spans_64_[0].data[spans_count].base = start;
             temp_sort_spans_64_[0].data[spans_count++].count = end - start;
             start = end;
@@ -1368,24 +1369,26 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     size_t counter = 0;
     for (uint32_t i = 0; i < spans_count; i++) {
         for (uint32_t j = 0; j < temp_sort_spans_64_[0].data[i].count; j++) {
-            list.main_batch_indices.data[counter++] = temp_sort_spans_64_[0].data[i].base + j;
+            list.custom_batch_indices.data[counter++] = temp_sort_spans_64_[0].data[i].base + j;
         }
     }
 
-    // Merge similar batches
-    for (uint32_t start = 0, end = 1; end <= list.main_batch_indices.count; end++) {
-        if (end == list.main_batch_indices.count ||
-            list.main_batches.data[list.main_batch_indices.data[start]].sort_key !=
-                list.main_batches.data[list.main_batch_indices.data[end]].sort_key) {
+    list.alpha_blend_start_index = -1;
 
-            MainDrawBatch &b1 = list.main_batches.data[list.main_batch_indices.data[start]];
+    // Merge similar batches
+    for (uint32_t start = 0, end = 1; end <= list.custom_batch_indices.count; end++) {
+        if (end == list.custom_batch_indices.count ||
+            list.custom_batches.data[list.custom_batch_indices.data[start]].sort_key !=
+                list.custom_batches.data[list.custom_batch_indices.data[end]].sort_key) {
+
+            CustomDrawBatch &b1 = list.custom_batches.data[list.custom_batch_indices.data[start]];
             b1.instance_start = list.instance_indices.count;
             for (uint32_t j = 0; j < b1.instance_count; ++j) {
                 list.instance_indices.data[list.instance_indices.count++] =
                     Ren::Vec2i{b1.instance_index, b1.material_index};
             }
             for (uint32_t i = start + 1; i < end; i++) {
-                MainDrawBatch &b2 = list.main_batches.data[list.main_batch_indices.data[i]];
+                CustomDrawBatch &b2 = list.custom_batches.data[list.custom_batch_indices.data[i]];
                 b2.instance_start = list.instance_indices.count;
                 for (uint32_t j = 0; j < b2.instance_count; ++j) {
                     list.instance_indices.data[list.instance_indices.count++] =
@@ -1396,6 +1399,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     b1.instance_count += b2.instance_count;
                     b2.instance_count = 0;
                 }
+            }
+
+            if (list.alpha_blend_start_index == -1 && b1.alpha_blend_bit) {
+                list.alpha_blend_start_index = int(start);
             }
 
             start = end;
@@ -1444,7 +1451,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             if (end == shadow_batch_end || list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key !=
                                                list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
 
-                DepthDrawBatch &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
+                BasicDrawBatch &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
                 b1.instance_start = list.instance_indices.count;
                 for (uint32_t j = 0; j < b1.instance_count; ++j) {
                     list.instance_indices.data[list.instance_indices.count++] =
@@ -1452,7 +1459,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
 
                 for (uint32_t i = start + 1; i < end; i++) {
-                    DepthDrawBatch &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
+                    BasicDrawBatch &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
                     b2.instance_start = list.instance_indices.count;
                     for (uint32_t j = 0; j < b2.instance_count; ++j) {
                         list.instance_indices.data[list.instance_indices.count++] =

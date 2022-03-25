@@ -30,11 +30,11 @@ class RpTransparent : public RenderPassBase {
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
     const Ren::ProbeStorage *probe_storage_ = nullptr;
 
-    uint32_t render_flags_ = 0;
+    uint64_t render_flags_ = 0;
     const Ren::MaterialStorage *materials_ = nullptr;
-    DynArrayConstRef<MainDrawBatch> main_batches_;
+    DynArrayConstRef<CustomDrawBatch> main_batches_;
     DynArrayConstRef<uint32_t> main_batch_indices_;
-    const int *alpha_blend_start_index_ = nullptr;
+    int alpha_blend_start_index_ = -1;
 
     RpResource vtx_buf1_;
     RpResource vtx_buf2_;
@@ -83,15 +83,15 @@ class RpTransparent : public RenderPassBase {
     RpTransparent(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpTransparent();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const int *alpha_blend_start_index,
-               const ViewState *view_state, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
-               const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf, const Ren::Pipeline pipelines[],
-               const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut, const Ren::Tex2DRef &noise_tex,
-               const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black, const Ren::Tex2DRef &dummy_white,
-               const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
-               const char cells_buf[], const char items_buf[], const char lights_buf[], const char decals_buf[],
-               const char shad_tex[], const char ssao_tex[], const char color_tex[], const char normal_tex[],
-               const char spec_tex[], const char depth_tex[], const char transparent_tex_name[]);
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const Ren::BufferRef &vtx_buf1,
+               const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
+               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
+               const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
+               const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char instance_indices_buf[],
+               const char shared_data_buf[], const char cells_buf[], const char items_buf[], const char lights_buf[],
+               const char decals_buf[], const char shad_tex[], const char ssao_tex[], const char color_tex[],
+               const char normal_tex[], const char spec_tex[], const char depth_tex[],
+               const char transparent_tex_name[]);
     void Execute(RpBuilder &builder) override;
 
     const char *name() const override { return "TRANSPARENT"; }

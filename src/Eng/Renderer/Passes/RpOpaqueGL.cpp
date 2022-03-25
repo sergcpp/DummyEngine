@@ -16,7 +16,7 @@ void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
     }
 }
 uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
+                               const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
                                const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                BackendInfo &backend_info) {
@@ -33,8 +33,8 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
     }
 
     for (; i < main_batch_indices.count; i++) {
-        const MainDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
-        if ((batch.sort_key & MainDrawBatch::FlagBits) != mask) {
+        const auto &batch = main_batches.data[main_batch_indices.data[i]];
+        if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -77,7 +77,8 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
 }
 
 uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
+                                   const Ren::Pipeline pipelines[],
+                                   const DynArrayConstRef<CustomDrawBatch> &main_batches,
                                    const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    BackendInfo &backend_info) {
@@ -85,8 +86,8 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
 
     int i = int(ndx);
     for (; i >= 0; i--) {
-        const MainDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
-        if ((batch.sort_key & MainDrawBatch::FlagBits) != mask) {
+        const auto &batch = main_batches.data[main_batch_indices.data[i]];
+        if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -236,7 +237,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     BackendInfo _dummy = {};
 
     { // actual drawing
-        using MDB = MainDrawBatch;
+        using CDB = CustomDrawBatch;
 
         uint64_t cur_pipe_id = 0xffffffffffffffff;
         uint64_t cur_prog_id = 0xffffffffffffffff;
@@ -263,7 +264,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
-                                      MDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
+                                      CDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // one-sided2
@@ -274,7 +275,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
-                                      MDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
+                                      CDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // two-sided2
@@ -285,11 +286,9 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
-                                      MDB::BitAlphaTest | MDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id,
+                                      CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id,
                                       _dummy);
         }
-
-        alpha_blend_start_index_ = int(i);
 
         { // two-sided-tested-blended
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "TWO-SIDED-TESTED-BLENDED");
@@ -300,7 +299,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
             i = _draw_list_range_full_rev(builder, materials_, pipelines_, main_batches_, main_batch_indices_,
                                           main_batch_indices_.count - 1,
-                                          MDB::BitAlphaBlend | MDB::BitAlphaTest | MDB::BitTwoSided, cur_mat_id,
+                                          CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id,
                                           cur_pipe_id, cur_prog_id, _dummy);
         }
 
@@ -312,7 +311,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             _draw_list_range_full_rev(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
-                                      MDB::BitAlphaBlend | MDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id,
+                                      CDB::BitAlphaBlend | CDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id,
                                       _dummy);
         }
     }

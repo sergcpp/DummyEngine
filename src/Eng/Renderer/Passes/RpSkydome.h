@@ -16,13 +16,14 @@ class RpSkydome : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
+    bool clear_ = false;
 
     Ren::Vec3f draw_cam_pos_;
 
     // lazily initialized data
-    Ren::RenderPass render_pass_;
+    Ren::RenderPass render_pass_[2];
     Ren::VertexInput vtx_input_;
-    Ren::Pipeline pipeline_;
+    Ren::Pipeline pipeline_[2];
     Ren::Framebuffer framebuf_[Ren::MaxFramesInFlight];
 
     RpResource shared_data_buf_;
@@ -44,7 +45,7 @@ class RpSkydome : public RenderPassBase {
     RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpSkydome();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, Ren::BufferRef vtx_buf1,
+    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, bool clear, Ren::BufferRef vtx_buf1,
                Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, const char shared_data_buf[], const char color_tex[],
                const char spec_tex[], const char depth_tex[]);
     void Execute(RpBuilder &builder) override;

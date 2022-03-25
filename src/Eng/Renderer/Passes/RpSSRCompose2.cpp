@@ -123,8 +123,8 @@ void RpSSRCompose2::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &ou
         ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
     }
 
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, render_targets, 1, {},
-                          {})) {
+    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
+                          1)) {
         ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

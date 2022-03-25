@@ -136,8 +136,8 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                 flags_ |= uint32_t(eMatFlags::DepthWrite);
             } else if (flag == "two_sided") {
                 flags_ |= uint32_t(eMatFlags::TwoSided);
-            } else if (flag == "taa_responsive") {
-                flags_ |= uint32_t(eMatFlags::TaaResponsive);
+            } else if (flag == "custom_shaded") {
+                flags_ |= uint32_t(eMatFlags::CustomShaded);
             } else {
                 log->Error("Unknown flag %s", flag.c_str());
             }

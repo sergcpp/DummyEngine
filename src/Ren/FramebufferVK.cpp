@@ -31,18 +31,19 @@ void Ren::Framebuffer::Destroy() {
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
-                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
                              const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
+                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
                              const bool is_multisampled) {
-    if (renderpass_ == render_pass.handle() && _color_attachments_count == color_attachments.size() &&
-        std::equal(_color_attachments, _color_attachments + _color_attachments_count, color_attachments.data(),
-                   [](const WeakTex2DRef &lhs, const Attachment &rhs) {
-                       return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
-                   }) &&
+    if (renderpass_ == render_pass.handle() &&
         ((!_depth_attachment && !depth_attachment.ref) ||
          (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
         ((!_stencil_attachment && !stencil_attachment.ref) ||
-         (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle))) {
+         (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle)) &&
+        _color_attachments_count == color_attachments.size() &&
+        std::equal(_color_attachments, _color_attachments + _color_attachments_count, color_attachments.data(),
+                   [](const WeakTex2DRef &lhs, const Attachment &rhs) {
+                       return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
+                   })) {
         // nothing has changed
         return true;
     }
@@ -60,14 +61,6 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     stencil_attachment = {};
 
     SmallVector<VkImageView, 4> image_views;
-    for (int i = 0; i < _color_attachments_count; i++) {
-        if (_color_attachments[i]) {
-            image_views.push_back(_color_attachments[i]->handle().views[0]);
-            color_attachments.push_back({_color_attachments[i], _color_attachments[i]->handle()});
-        } else {
-            color_attachments.emplace_back();
-        }
-    }
 
     if (_depth_attachment) {
         image_views.push_back(_depth_attachment->handle().views[0]);
@@ -78,6 +71,15 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         stencil_attachment = {_stencil_attachment, _stencil_attachment->handle()};
         if (_stencil_attachment->handle().views[0] != _depth_attachment->handle().views[0]) {
             image_views.push_back(_stencil_attachment->handle().views[0]);
+        }
+    }
+
+    for (int i = 0; i < _color_attachments_count; i++) {
+        if (_color_attachments[i]) {
+            image_views.push_back(_color_attachments[i]->handle().views[0]);
+            color_attachments.push_back({_color_attachments[i], _color_attachments[i]->handle()});
+        } else {
+            color_attachments.emplace_back();
         }
     }
 
@@ -98,17 +100,18 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
-                             const RenderTarget _color_targets[], int _color_targets_count,
-                             const RenderTarget &_depth_target, const RenderTarget &_stencil_target) {
-    if (renderpass_ == render_pass.handle() && _color_targets_count == color_attachments.size() &&
-        std::equal(_color_targets, _color_targets + _color_targets_count, color_attachments.data(),
-                   [](const RenderTarget &lhs, const Attachment &rhs) {
-                       return (!lhs && !rhs.ref) || (lhs && lhs.ref->handle() == rhs.handle);
-                   }) &&
+                             const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
+                             const RenderTarget _color_targets[], int _color_targets_count) {
+    if (renderpass_ == render_pass.handle() &&
         ((!_depth_target && !depth_attachment.ref) ||
          (_depth_target && _depth_target.ref->handle() == depth_attachment.handle)) &&
         ((!_stencil_target && !stencil_attachment.ref) ||
-         (_stencil_target && _stencil_target.ref->handle() == stencil_attachment.handle))) {
+         (_stencil_target && _stencil_target.ref->handle() == stencil_attachment.handle)) &&
+        _color_targets_count == color_attachments.size() &&
+        std::equal(_color_targets, _color_targets + _color_targets_count, color_attachments.data(),
+                   [](const RenderTarget &lhs, const Attachment &rhs) {
+                       return (!lhs && !rhs.ref) || (lhs && lhs.ref->handle() == rhs.handle);
+                   })) {
         // nothing has changed
         return true;
     }
@@ -126,14 +129,6 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     stencil_attachment = {};
 
     SmallVector<VkImageView, 4> image_views;
-    for (int i = 0; i < _color_targets_count; i++) {
-        if (_color_targets[i]) {
-            image_views.push_back(_color_targets[i].ref->handle().views[0]);
-            color_attachments.push_back({_color_targets[i].ref, _color_targets[i].ref->handle()});
-        } else {
-            color_attachments.emplace_back();
-        }
-    }
 
     if (_depth_target) {
         image_views.push_back(_depth_target.ref->handle().views[0]);
@@ -144,6 +139,15 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         stencil_attachment = {_stencil_target.ref, _stencil_target.ref->handle()};
         if (!_depth_target || _stencil_target.ref->handle().views[0] != _depth_target.ref->handle().views[0]) {
             image_views.push_back(_stencil_target.ref->handle().views[0]);
+        }
+    }
+
+    for (int i = 0; i < _color_targets_count; i++) {
+        if (_color_targets[i]) {
+            image_views.push_back(_color_targets[i].ref->handle().views[0]);
+            color_attachments.push_back({_color_targets[i].ref, _color_targets[i].ref->handle()});
+        } else {
+            color_attachments.emplace_back();
         }
     }
 
