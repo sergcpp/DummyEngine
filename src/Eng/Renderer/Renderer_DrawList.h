@@ -100,7 +100,7 @@ struct EnvironmentWeak {
 //static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
 
 struct DrawList {
-    uint32_t                    render_flags = 0;
+    uint64_t                    render_flags = 0;
     uint32_t                    frame_index = 0;
     Ren::Camera                 draw_cam;
     EnvironmentWeak             env;
@@ -109,14 +109,15 @@ struct DrawList {
     Ren::BufferRef              instances_stage_buf;
     DynArray<Ren::Vec2i>        instance_indices;
     Ren::BufferRef              instance_indices_stage_buf;
-    DynArray<DepthDrawBatch>    shadow_batches;
+    DynArray<BasicDrawBatch>    shadow_batches;
     DynArray<uint32_t>          shadow_batch_indices;
     DynArray<ShadowList>        shadow_lists;
     DynArray<ShadowMapRegion>   shadow_regions;
-    DynArray<DepthDrawBatch>    zfill_batches;
-    DynArray<uint32_t>          zfill_batch_indices;
-    DynArray<MainDrawBatch>     main_batches;
-    DynArray<uint32_t>          main_batch_indices;
+    DynArray<BasicDrawBatch>    basic_batches;
+    DynArray<uint32_t>          basic_batch_indices;
+    DynArray<CustomDrawBatch>   custom_batches;
+    DynArray<uint32_t>          custom_batch_indices;
+    int                         alpha_blend_start_index = -1;
     DynArray<SkinTransform>     skin_transforms;
     Ren::BufferRef              skin_transforms_stage_buf;
     DynArray<SkinRegion>        skin_regions;

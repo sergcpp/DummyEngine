@@ -328,6 +328,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_FRAMEBUFFER_BINDING              0x8CA6
 
+#define GL_FRAMEBUFFER_SRGB                 0x8DB9
+
 #define GL_MAP_READ_BIT                     0x0001
 #define GL_MAP_WRITE_BIT                    0x0002
 #define GL_MAP_INVALIDATE_RANGE_BIT         0x0004

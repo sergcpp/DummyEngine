@@ -26,6 +26,7 @@ class Framebuffer {
     };
 
     void Destroy();
+
   public:
     int w = -1, h = -1;
 
@@ -47,14 +48,14 @@ class Framebuffer {
     uint32_t id() const { return id_; }
 #endif
 
-    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const WeakTex2DRef color_attachments[],
-               int color_attachments_count, WeakTex2DRef depth_attachment, WeakTex2DRef stencil_attachment,
+    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
+               WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachments[], int color_attachments_count,
                bool is_multisampled);
-    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget color_attachments[],
-               int color_attachments_count, const RenderTarget &depth_target, const RenderTarget &stencil_target);
-    bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTex2DRef color_attachment,
-               const WeakTex2DRef depth_attachment, const WeakTex2DRef stencil_attachment, const bool is_multisampled) {
-        return Setup(api_ctx, renderpass, w, h, &color_attachment, 1, depth_attachment, stencil_attachment,
+    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget &depth_target,
+               const RenderTarget &stencil_target, const RenderTarget color_attachments[], int color_attachments_count);
+    bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTex2DRef depth_attachment,
+               const WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachment, const bool is_multisampled) {
+        return Setup(api_ctx, renderpass, w, h, depth_attachment, stencil_attachment, &color_attachment, 1,
                      is_multisampled);
     }
 };

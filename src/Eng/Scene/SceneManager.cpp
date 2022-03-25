@@ -260,17 +260,19 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
             {vtx_buf2, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
             {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
 
-        draw_pass_vi_.Setup(attribs, 5, ndx_buf);
+        draw_pass_vi_.Setup(attribs, COUNT_OF(attribs), ndx_buf);
     }
 
     {
-        const Ren::RenderTargetInfo color_rts[] = {
+        Ren::RenderTargetInfo color_rts[] = {
             {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+
+        color_rts[2].flags = Ren::TexSRGB;
 
         const auto depth_format = ren_ctx.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
                                                                                : Ren::eTexFormat::Depth32Stencil8;

@@ -65,7 +65,7 @@ void RpFXAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_te
     }
 
     const Ren::WeakTex2DRef output = output_tex ? output_tex->ref : Ren::WeakTex2DRef{};
-    if (!output_fb_.Setup(ctx.api_ctx(), {}, view_state_->act_res[0], view_state_->act_res[1], &output, 1, {}, {},
+    if (!output_fb_.Setup(ctx.api_ctx(), {}, view_state_->act_res[0], view_state_->act_res[1], {}, {}, &output, 1,
                           false)) {
         ctx.log()->Error("RpFXAA: output_fb_ init failed!");
     }

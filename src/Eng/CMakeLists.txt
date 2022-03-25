@@ -133,6 +133,10 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpDownDepth.cpp
                     Renderer/Passes/RpFillStaticVel.h
                     Renderer/Passes/RpFillStaticVel.cpp
+                    Renderer/Passes/RpGBufferFill.h
+                    Renderer/Passes/RpGBufferFill.cpp
+                    Renderer/Passes/RpGBufferShade.h
+                    Renderer/Passes/RpGBufferShade.cpp
                     Renderer/Passes/RpOpaque.h
                     Renderer/Passes/RpOpaque.cpp
                     Renderer/Passes/RpReadBrightness.h
@@ -215,6 +219,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpDebugRT_GL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp
                         Renderer/Passes/RpDepthHierarchyGL.cpp
+                        Renderer/Passes/RpGBufferFillGL.cpp
                         Renderer/Passes/RpOpaqueGL.cpp
                         Renderer/Passes/RpRTReflections_GL.cpp
                         Renderer/Passes/RpShadowMapsGL.cpp
@@ -237,6 +242,7 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/Passes/RpDebugRT_VK.cpp
                         Renderer/Passes/RpDepthFillVK.cpp
                         Renderer/Passes/RpDepthHierarchyVK.cpp
+                        Renderer/Passes/RpGBufferFillVK.cpp
                         Renderer/Passes/RpOpaqueVK.cpp
                         Renderer/Passes/RpRTReflections_VK.cpp
                         Renderer/Passes/RpShadowMapsVK.cpp

@@ -174,7 +174,7 @@ void main(void) {
         atten = (atten - factor) / (1.0 - LIGHT_ATTEN_CUTOFF);
         atten = max(atten, 0.0);
 
-        float _dot1 = max(dot(L, normal), 0.0);
+        float _dot1 = clamp(dot(L, normal), 0.0, 1.0);
         float _dot2 = dot(L, dir_and_spot.xyz);
 
         atten = _dot1 * atten;

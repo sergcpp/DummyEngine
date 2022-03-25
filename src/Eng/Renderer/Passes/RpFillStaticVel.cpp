@@ -70,8 +70,8 @@ void RpFillStaticVel::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &
         ctx.log()->Error("RpFillStaticVel: render_pass_ init failed!");
     }
 
-    if (!velocity_fb_.Setup(ctx.api_ctx(), render_pass_, velocity_tex.desc.w, velocity_tex.desc.h, render_targets, 1,
-                            {}, depth_target)) {
+    if (!velocity_fb_.Setup(ctx.api_ctx(), render_pass_, velocity_tex.desc.w, velocity_tex.desc.h, {}, depth_target,
+                            render_targets, 1)) {
         ctx.log()->Error("RpFillStaticVel: output_fb_ init failed!");
     }
 }

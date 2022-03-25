@@ -16,7 +16,7 @@ class RpDebugRT : public RenderPassBase {
     Ren::Pipeline pi_debug_rt_;
 
     // temp data (valid only between Setup and Execute calls)
-    uint32_t render_flags_ = 0;
+    uint64_t render_flags_ = 0;
     const ViewState *view_state_ = nullptr;
     const Ren::Camera *draw_cam_ = nullptr;
     const AccelerationStructureData *acc_struct_data_ = nullptr;

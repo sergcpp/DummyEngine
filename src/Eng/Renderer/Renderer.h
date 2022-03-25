@@ -25,6 +25,8 @@ extern "C" {
 #include "Passes/RpDownColor.h"
 #include "Passes/RpDownDepth.h"
 #include "Passes/RpFXAA.h"
+#include "Passes/RpGBufferFill.h"
+#include "Passes/RpGBufferShade.h"
 #include "Passes/RpFillStaticVel.h"
 #include "Passes/RpOpaque.h"
 #include "Passes/RpRTReflections.h"
@@ -117,7 +119,7 @@ class Renderer {
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
          EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*| DebugRT*/ /*|
-         DebugEllipsoids*/);
+         DebugEllipsoids*/ /*| DebugDeferred*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -212,6 +214,8 @@ class Renderer {
     RpSSAO rp_ssao_ = {prim_draw_};
     RpBilateralBlur rp_ssao_blur_h_ = {prim_draw_}, rp_ssao_blur_v_ = {prim_draw_};
     RpUpscale rp_ssao_upscale_ = {prim_draw_};
+    RpGBufferFill rp_gbuffer_fill_;
+    RpGBufferShade rp_gbuffer_shade_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
     RpSSRPrepare rp_ssr_prepare_;

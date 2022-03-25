@@ -72,6 +72,8 @@ VkFormat ToSRGBFormat(const VkFormat format) {
         return VK_FORMAT_R8G8B8_SRGB;
     case VK_FORMAT_R8G8B8A8_UNORM:
         return VK_FORMAT_R8G8B8A8_SRGB;
+    case VK_FORMAT_B8G8R8A8_UNORM:
+        return VK_FORMAT_B8G8R8A8_SRGB;
     case VK_FORMAT_BC1_RGBA_UNORM_BLOCK:
         return VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
     case VK_FORMAT_BC2_UNORM_BLOCK:
@@ -552,6 +554,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_vk_formats[size_t(p.format)];
+        if (p.flags & TexSRGB) {
+            img_info.format = ToSRGBFormat(img_info.format);
+        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(p.usage) != 0);
@@ -597,6 +602,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_vk_formats[size_t(p.format)];
+        if (p.flags & TexSRGB) {
+            view_info.format = ToSRGBFormat(view_info.format);
+        }
         if (IsDepthStencilFormat(p.format)) {
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
         } else if (IsDepthFormat(p.format)) {
@@ -1100,6 +1108,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_vk_formats[size_t(p.format)];
+        if (p.flags & TexSRGB) {
+            img_info.format = ToSRGBFormat(img_info.format);
+        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(p.usage) != 0);
@@ -1144,6 +1155,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
+        if (p.flags & TexSRGB) {
+            view_info.format = ToSRGBFormat(view_info.format);
+        }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count;
@@ -1419,6 +1433,9 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         img_info.mipLevels = first_mip_count;
         img_info.arrayLayers = 6;
         img_info.format = g_vk_formats[size_t(first_format)];
+        if (p.flags & TexSRGB) {
+            img_info.format = ToSRGBFormat(img_info.format);
+        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(p.usage) != 0);
@@ -1463,6 +1480,9 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
+        if (p.flags & TexSRGB) {
+            view_info.format = ToSRGBFormat(view_info.format);
+        }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = first_mip_count;
@@ -1640,6 +1660,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         img_info.mipLevels = first_header->mipmap_levels_count;
         img_info.arrayLayers = 6;
         img_info.format = g_vk_formats[size_t(params.format)];
+        if (params.flags & TexSRGB) {
+            img_info.format = ToSRGBFormat(img_info.format);
+        }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
         img_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         assert(uint8_t(p.usage) != 0);
@@ -1684,6 +1707,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
+        if (p.flags & TexSRGB) {
+            view_info.format = ToSRGBFormat(view_info.format);
+        }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = first_header->mipmap_levels_count;

@@ -10,8 +10,7 @@
 
 namespace Ren {
 void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                            const GLchar *message,
-                   const void *userParam) {
+                            const GLchar *message, const void *userParam) {
     auto *self = reinterpret_cast<const Context *>(userParam);
     if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
         if (id != 131154 /* pixel-path performance warning */) {
@@ -108,6 +107,15 @@ bool Ren::Context::Init(int w, int h, ILog *log, const char *) {
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 #endif
 
+    const bool srgb_framebuffer = IsExtensionSupported("GL_ARB_framebuffer_sRGB") ||
+                                  IsExtensionSupported("GLX_ARB_framebuffer_sRGB") ||
+                                  IsExtensionSupported("WGL_ARB_framebuffer_sRGB");
+    if (srgb_framebuffer) {
+        glEnable(GL_FRAMEBUFFER_SRGB);
+    } else {
+        log->Warning("SRGB framebuffer is not supported!");
+    }
+
     capabilities.spirv = IsExtensionSupported("GL_ARB_gl_spirv");
     capabilities.persistent_buf_mapping = IsExtensionSupported("GL_ARB_buffer_storage");
 
@@ -195,7 +203,6 @@ int Ren::Context::WriteTimestamp(const bool) {
 
     return int(query_index);
 }
-
 
 #ifdef _MSC_VER
 #pragma warning(pop)

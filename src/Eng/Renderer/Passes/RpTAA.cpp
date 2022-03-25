@@ -95,8 +95,8 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
         ctx.log()->Error("RpCombine: render_pass_ init failed!");
     }
 
-    if (!resolve_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, render_targets, 1, {},
-                           {})) {
+    if (!resolve_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
+                           1)) {
         ctx.log()->Error("RpTAA: resolve_fb_ init failed!");
     }
 }

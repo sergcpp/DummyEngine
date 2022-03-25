@@ -103,7 +103,7 @@ void RpCombine::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output
 
     if (!output_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), render_pass_[ctx.backend_frame()],
                                                output_tex ? output_tex->desc.w : ctx.w(),
-                                               output_tex ? output_tex->desc.h : ctx.h(), output, {}, {}, false)) {
+                                               output_tex ? output_tex->desc.h : ctx.h(), {}, {}, output, false)) {
         ctx.log()->Error("RpCombine: output_fb_ init failed!");
     }
 }
