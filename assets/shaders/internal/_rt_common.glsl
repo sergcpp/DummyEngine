@@ -32,3 +32,11 @@ float pow5(float x) {
 vec3 FresnelSchlickRoughness(float cos_theta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow5(1.0 - cos_theta);
 }
+
+vec3 SRGBToLinear(vec3 sRGB) {
+    bvec3 cutoff = lessThan(sRGB, vec3(0.04045));
+    vec3 higher = pow((sRGB + vec3(0.055))/vec3(1.055), vec3(2.4));
+    vec3 lower = sRGB/vec3(12.92);
+
+    return mix(higher, lower, cutoff);
+}
