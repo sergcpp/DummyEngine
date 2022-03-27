@@ -100,7 +100,7 @@ void main() {
     vec3 ssr_uvs = texelFetch(g_ssr_texture, icoord, 0).rgb;
 #endif // HALFRES
 
-    vec3 normal = 2.0 * texelFetch(g_norm_texture, icoord, 0).xyz - 1.0;
+    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_texture, icoord, 0)).xyz;
 
     float tex_lod = 6.0 * specular.a;
     float N_dot_V;
