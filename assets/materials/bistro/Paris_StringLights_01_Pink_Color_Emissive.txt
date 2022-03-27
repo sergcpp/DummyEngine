@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit_nossr.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit_nossr.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: bistro/Paris_StringLights_01_Pink_Color_Emissive_diff.png srgb
+texture: bistro/Paris_StringLights_01_Pink_Color_Emissive_diff.png
 texture: default_normalmap.png
 texture: shiny_spec.png

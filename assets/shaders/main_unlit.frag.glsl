@@ -53,7 +53,7 @@ layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
 layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
 
 void main(void) {
-    vec3 albedo_color = texture(SAMPLER2D(g_diff_texture), g_vtx_uvs).rgb;
+    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), g_vtx_uvs)));
 
     g_out_color = vec4(albedo_color, 1.0);
     g_out_normal = PackNormalAndRoughness(g_vtx_normal, 0.0);

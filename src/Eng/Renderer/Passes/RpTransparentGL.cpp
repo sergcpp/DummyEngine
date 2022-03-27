@@ -8,8 +8,6 @@
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
-void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
-                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,

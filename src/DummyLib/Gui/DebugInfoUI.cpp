@@ -10,7 +10,7 @@ DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const Ba
     : BaseElement(pos, size, parent), parent_(parent), font_(std::move(font)) {}
 
 void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info,
-                             const ItemsInfo &items_info, const TimeInterval &swap_interval, uint32_t render_flags) {
+                             const ItemsInfo &items_info, const TimeInterval &swap_interval, uint64_t render_flags) {
     const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 

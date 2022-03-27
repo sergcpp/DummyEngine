@@ -1,6 +1,6 @@
 gl_program: main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: parquet_flooring_03.png srgb
+texture: parquet_flooring_03_diff.png
 texture: parquet_flooring_03_norm.png
 texture: parquet_flooring_03_spec.png

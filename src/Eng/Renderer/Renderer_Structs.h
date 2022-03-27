@@ -18,9 +18,10 @@ static_assert(sizeof(LightSourceItem) == 48, "!");
 
 struct DecalItem {
     float mat[3][4];
-    float diff[4], norm[4], spec[4];
+    // TODO: use 16-bit unorms
+    float mask[4], diff[4], norm[4], spec[4];
 };
-static_assert(sizeof(DecalItem) == 24 * sizeof(float), "!");
+static_assert(sizeof(DecalItem) == REN_DECALS_BUF_STRIDE * 4 * sizeof(float), "!");
 
 struct ProbeItem {
     float position[3], radius;

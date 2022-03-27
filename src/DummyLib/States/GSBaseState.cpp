@@ -129,7 +129,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_wireframe", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugWireframe;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -139,7 +139,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_culling", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableCulling;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -149,7 +149,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_lightmap", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableLightmap;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -159,7 +159,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_lights", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableLights;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -169,7 +169,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_decals", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableDecals;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -179,7 +179,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_shadows", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableShadows;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -189,7 +189,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_msaa", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableMsaa;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -199,7 +199,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_fxaa", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableFxaa;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -209,7 +209,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_taa", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableTaa;
             if (flags & EnableTaa) {
                 flags &= ~(EnableMsaa | EnableFxaa);
@@ -247,7 +247,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_oit", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableOIT;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -257,7 +257,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_zfill", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableZFill;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -267,7 +267,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_deferred", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= EnableDeferred;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -391,7 +391,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showCull", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugCulling;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -401,7 +401,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showShadows", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugShadow;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -411,7 +411,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showLights", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugLights;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -421,7 +421,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showDecals", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugDecals;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -431,7 +431,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showDeferred", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugDeferred;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -441,7 +441,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showBlur", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugBlur;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -451,7 +451,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showSSAO", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugSSAO;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -461,7 +461,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showTimings", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugTimings;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -471,7 +471,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showBVH", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugBVH;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -481,7 +481,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showProbes", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugProbes;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -491,7 +491,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showEllipsoids", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugEllipsoids;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -501,7 +501,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showRT", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugRT;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -511,7 +511,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_showDenoise", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            uint32_t flags = shrd_this->renderer_->render_flags();
+            uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugDenoise;
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -818,7 +818,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     if (!use_pt_ && !use_lm_) {
         const int back_list = (front_list_ + 1) % 2;
 
-        uint32_t render_flags = renderer_->render_flags();
+        uint64_t render_flags = renderer_->render_flags();
         FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
         const BackendInfo &back_info = renderer_->backend_info();
 

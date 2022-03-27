@@ -25,7 +25,7 @@ uniform SharedDataBlock {
 
 #ifdef TRANSPARENT_PERM
     #if !defined(BINDLESS_TEXTURES)
-        layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_alpha_texture;
+        layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_alpha_texture;
     #endif // BINDLESS_TEXTURES
     #ifdef HASHED_TRANSPARENCY
         layout(location = 3) uniform float hash_scale;
@@ -60,7 +60,7 @@ float hash3D(vec3 v) {
 
 void main() {
 #ifdef TRANSPARENT_PERM
-    float tx_alpha = texture(SAMPLER2D(g_alpha_texture), g_vtx_uvs0).a;
+    float tx_alpha = texture(SAMPLER2D(g_alpha_texture), g_vtx_uvs0).r;
 #ifndef HASHED_TRANSPARENCY
     if (tx_alpha < 0.9) discard;
 #else // HASHED_TRANSPARENCY

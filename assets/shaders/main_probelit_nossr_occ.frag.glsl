@@ -72,7 +72,7 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 albedo_color = texture(SAMPLER2D(g_diff_texture), g_vtx_uvs).rgb;
+    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), g_vtx_uvs)));
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     vec3 normal_color = texture(SAMPLER2D(g_norm_texture), g_vtx_uvs).wyz;
@@ -86,9 +86,9 @@ void main(void) {
         int di = int(bitfieldExtract(item_data, 12, 12));
 
         mat4 de_proj;
-        de_proj[0] = texelFetch(g_decals_buffer, di * 6 + 0);
-        de_proj[1] = texelFetch(g_decals_buffer, di * 6 + 1);
-        de_proj[2] = texelFetch(g_decals_buffer, di * 6 + 2);
+        de_proj[0] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 0);
+        de_proj[1] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 1);
+        de_proj[2] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 2);
         de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
         de_proj = transpose(de_proj);
 
@@ -102,41 +102,31 @@ void main(void) {
         vec2 duv_dy = 0.5 * (de_proj * vec4(dp_dy, 0.0)).xy;
 
         if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
-            vec4 diff_uvs_tr = texelFetch(g_decals_buffer, di * 6 + 3);
-            float decal_influence = 0.0;
-
-            if (diff_uvs_tr.z > 0.0) {
-                vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
-
-                vec2 _duv_dx = diff_uvs_tr.zw * duv_dx;
-                vec2 _duv_dy = diff_uvs_tr.zw * duv_dy;
-
-                vec4 decal_diff = textureGrad(g_decals_texture, diff_uvs, _duv_dx, _duv_dy);
-                decal_influence = decal_diff.a;
-                albedo_color = mix(albedo_color, SRGBToLinear(decal_diff.rgb), decal_influence);
+            float decal_influence = 1.0;
+            vec4 mask_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 3);
+            if (mask_uvs_tr.z > 0.0) {
+                vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
+                decal_influence = textureGrad(g_decals_texture, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
             }
 
-            vec4 norm_uvs_tr = texelFetch(g_decals_buffer, di * 6 + 4);
+            vec4 diff_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 4);
+            if (diff_uvs_tr.z > 0.0) {
+                vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
+                vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_texture, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
+                albedo_color = mix(albedo_color, SRGBToLinear(decal_diff), decal_influence);
+            }
 
+            vec4 norm_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 5);
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
-
-                vec2 _duv_dx = 2.0 * norm_uvs_tr.zw * duv_dx;
-                vec2 _duv_dy = 2.0 * norm_uvs_tr.zw * duv_dy;
-
-                vec3 decal_norm = textureGrad(g_decals_texture, norm_uvs, _duv_dx, _duv_dy).wyz;
+                vec3 decal_norm = textureGrad(g_decals_texture, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).wyz;
                 normal_color = mix(normal_color, decal_norm, decal_influence);
             }
 
-            vec4 spec_uvs_tr = texelFetch(g_decals_buffer, di * 6 + 5);
-
+            vec4 spec_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 6);
             if (spec_uvs_tr.z > 0.0) {
                 vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;
-
-                vec2 _duv_dx = spec_uvs_tr.zw * duv_dx;
-                vec2 _duv_dy = spec_uvs_tr.zw * duv_dy;
-
-                vec4 decal_spec = textureGrad(g_decals_texture, spec_uvs, _duv_dx, _duv_dy);
+                vec4 decal_spec = textureGrad(g_decals_texture, spec_uvs, spec_uvs_tr.zw * duv_dx, spec_uvs_tr.zw * duv_dy);
                 spec_color = mix(spec_color, decal_spec, decal_influence);
             }
         }

@@ -2,6 +2,7 @@ gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
 flag: alpha_test
-texture: bistro/Foliage_Linde_Tree_Large_Green_Leaves_diff.png srgb
+texture: bistro/Foliage_Linde_Tree_Large_Green_Leaves_diff.png
 texture: default_normalmap.png
 texture: default_specular.png
+texture: bistro/Foliage_Linde_Tree_Large_Green_Leaves_mask.png

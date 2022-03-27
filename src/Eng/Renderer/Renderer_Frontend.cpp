@@ -614,6 +614,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                             DecalItem &de = list.decals.data[list.decals.count++];
                             memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
+                            memcpy(&de.mask[0], &decal.mask[0], 4 * sizeof(float));
                             memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
                             memcpy(&de.norm[0], &decal.norm[0], 4 * sizeof(float));
                             memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
@@ -2080,8 +2081,15 @@ uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage, const R
 
 void RendererInternal::__record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat, const bool is_animated,
                                          const uint16_t distance) {
+    static const int TexPriorities[] = {
+        0, 1, 2, 0, 4, 5, 6, 7
+    };
     for (int i = 0; i < int(mat->textures.size()); ++i) {
-        const int prio = _MIN(is_animated ? i : (i + 8), 15);
+        int prio = TexPriorities[i];
+        if (!is_animated) {
+            prio += 8;
+        }
+        prio = _MIN(prio, 15);
         __record_texture(storage, mat->textures[i], prio, distance);
     }
 }

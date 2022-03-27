@@ -1,6 +1,6 @@
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: ornament_dark.png srgb
+texture: ornament_dark_diff.png
 texture: default_normalmap.png
 texture: shiny_spec.png
