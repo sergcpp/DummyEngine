@@ -71,7 +71,7 @@ void main() {
 
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
-    g_alpha_texture = GET_HANDLE(mat.texture_indices[0]);
+    g_alpha_texture = GET_HANDLE(mat.texture_indices[3]);
 #endif // BINDLESS_TEXTURES
 #ifdef HASHED_TRANSPARENCY
     g_vtx_pos_ls = g_in_vtx_pos_curr;

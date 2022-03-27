@@ -14,7 +14,7 @@ PERM @TRANSPARENT_PERM
 
 #ifdef TRANSPARENT_PERM
 #if !defined(BINDLESS_TEXTURES)
-    layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_alpha_texture;
+    layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_alpha_texture;
 #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
@@ -27,7 +27,7 @@ PERM @TRANSPARENT_PERM
 
 void main() {
 #ifdef TRANSPARENT_PERM
-    float alpha = texture(SAMPLER2D(g_alpha_texture), g_vtx_uvs0).a;
+    float alpha = texture(SAMPLER2D(g_alpha_texture), g_vtx_uvs0).r;
     if (alpha < 0.5) discard;
 #endif
 }

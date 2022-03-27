@@ -21,6 +21,7 @@ $ModifyWarning
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_mask_texture;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
 layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4];
@@ -53,7 +54,7 @@ LAYOUT(location = 6) in highp vec4 g_vtx_sh_uvs2;
     LAYOUT(location = 7) in flat TEX_HANDLE g_diff_texture;
     LAYOUT(location = 8) in flat TEX_HANDLE g_norm_texture;
     LAYOUT(location = 9) in flat TEX_HANDLE g_spec_texture;
-    LAYOUT(location = 10) in flat TEX_HANDLE g_mat3_texture;
+    LAYOUT(location = 10) in flat TEX_HANDLE g_mask_texture;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
@@ -74,7 +75,8 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec4 diff_color = texture(SAMPLER2D(g_diff_texture), g_vtx_uvs);
+    vec3 diff_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), g_vtx_uvs)));
+    float mask_value = texture(SAMPLER2D(g_mask_texture), g_vtx_uvs).r;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     vec3 normal_color = texture(SAMPLER2D(g_norm_texture), g_vtx_uvs).wyz;
@@ -179,15 +181,15 @@ void main(void) {
 
     vec2 ao_uvs = vec2(ix, iy) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
-    vec3 diffuse_color = diff_color.rgb * (g_shrd_data.sun_col.xyz * lambert * visibility +
-                                             ambient_occlusion * ambient_occlusion * indirect_col +
-                                             additional_light);
+    vec3 diffuse_color = diff_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
+                                       ambient_occlusion * ambient_occlusion * indirect_col +
+                                       additional_light);
 
     float N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, specular_color.rgb, specular_color.a);
 
-    g_out_color = vec4(diffuse_color * kD, diff_color.a);
+    g_out_color = vec4(diffuse_color * kD, mask_value);
     //g_out_normal = vec4(normal * 0.5 + 0.5, 1.0);
     g_out_specular = vec4(0.0);
 }

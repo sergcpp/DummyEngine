@@ -1,6 +1,6 @@
 gl_program: main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: concrete_03.png srgb
+texture: concrete_03_diff.png
 texture: concrete_03_norm.png
 texture: default_specular.png

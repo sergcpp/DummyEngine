@@ -1,7 +1,7 @@
 gl_program: main_probelit_pom main_probelit.vert.glsl main_probelit_pom.frag.glsl
 gl_program: main_probelit_pom main_probelit.vert.glsl main_probelit_pom.frag.glsl
 sw_program: main
-texture: checker.png srgb
+texture: checker_diff.png
 texture: pom_test_norm.png
 texture: default_specular.png
 texture: pom_test_bump.uncompressed.png mip_min nobias
