@@ -399,6 +399,14 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float image_data[], 
     return u8_data;
 }
 
+void Ren::ConvertRGB_to_YCoCg_rev(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {
+    RGB_to_YCoCg_reversible(in_RGB, out_YCoCg);
+}
+
+void Ren::ConvertYCoCg_to_RGB_rev(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]) {
+    YCoCg_to_RGB_reversible(in_YCoCg, out_RGB);
+}
+
 std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY_rev(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
 
@@ -430,6 +438,9 @@ std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB_rev(const uint8_t image_dat
 
     return u8_data;
 }
+
+void Ren::ConvertRGB_to_YCoCg(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) { RGB_to_YCoCg(in_RGB, out_YCoCg); }
+void Ren::ConvertYCoCg_to_RGB(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]) { YCoCg_to_RGB(in_YCoCg, out_RGB); }
 
 std::unique_ptr<uint8_t[]> Ren::ConvertRGB_to_CoCgxY(const uint8_t image_data[], const int w, const int h) {
     std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
@@ -1588,7 +1599,7 @@ void EmitColorIndices_Ref(const uint8_t block[64], const uint8_t min_color[3], c
     // find best ind for each pixel in a block
     uint32_t result_indices = 0;
 
-#if 0 // use euclidian distance (slower)
+#if 0   // use euclidian distance (slower)
         uint32_t palette_indices[16];
         for (int i = 0; i < 16; i++) {
             uint32_t min_dist = std::numeric_limits<uint32_t>::max();

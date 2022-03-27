@@ -51,7 +51,7 @@ LAYOUT(location = 6) out highp vec4 g_vtx_sh_uvs2;
     LAYOUT(location = 7) out flat TEX_HANDLE g_diff_texture;
     LAYOUT(location = 8) out flat TEX_HANDLE g_norm_texture;
     LAYOUT(location = 9) out flat TEX_HANDLE g_spec_texture;
-    LAYOUT(location = 10) out flat TEX_HANDLE g_mat3_texture;
+    LAYOUT(location = 10) out flat TEX_HANDLE g_mask_texture;
 #endif // BINDLESS_TEXTURES
 
 invariant gl_Position;
@@ -99,7 +99,7 @@ void main(void) {
     g_diff_texture = GET_HANDLE(mat.texture_indices[0]);
     g_norm_texture = GET_HANDLE(mat.texture_indices[1]);
     g_spec_texture = GET_HANDLE(mat.texture_indices[2]);
-    g_mat3_texture = GET_HANDLE(mat.texture_indices[3]);
+    g_mask_texture = GET_HANDLE(mat.texture_indices[3]);
 #endif // BINDLESS_TEXTURES
 
     gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws, 1.0);

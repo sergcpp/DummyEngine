@@ -335,15 +335,25 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     // Compress mip images
     //
     std::unique_ptr<uint8_t[]> dxt_data[16];
-    int dxt_size[16] = {};
-    int dxt_size_total = 0;
+    int dxt_size[16] = {}, dxt_size_total = 0;
+
+    const bool use_YCoCg = strstr(out_file, "_diff."); // Store diffuse as YCoCg
+    const bool use_DXT5 = (channels == 4) || use_YCoCg;
 
     for (int i = 0; i < mip_count; i++) {
         if (channels == 3) {
-            dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
-            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
-            Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
-        } else if (channels == 4) {
+            if (use_YCoCg) {
+                dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
+                dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+                auto temp_YCoCg = Ren::ConvertRGB_to_CoCgxY(mipmaps[i], widths[i], heights[i]);
+                Ren::CompressImage_DXT5<true /* Is_YCoCg */>(temp_YCoCg.get(), widths[i], heights[i],
+                                                             dxt_data[i].get());
+            } else {
+                dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
+                dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+                Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
+            }
+        } else {
             dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
             dxt_data[i].reset(new uint8_t[dxt_size[i]]);
             Ren::CompressImage_DXT5(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
@@ -366,7 +376,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     header.sPixelFormat.dwSize = 32;
     header.sPixelFormat.dwFlags = DDPF_FOURCC;
 
-    if (channels == 3) {
+    if (!use_DXT5) {
         header.sPixelFormat.dwFourCC =
             (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('1') << 24u);
     } else {
@@ -394,6 +404,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
                const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
+    const bool use_YCoCg = strstr(out_file, "_diff."); // Store diffuse as YCoCg
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
@@ -420,6 +431,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
         }
 
         if (out_color) {
+            // Use color of the last mip level
             memcpy(out_color, &mipmaps[mip_count - 1][0], channels);
         }
     } else {
@@ -432,6 +444,16 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
 
     if (out_color && channels == 3) {
         out_color[3] = 255;
+    }
+
+    if (use_YCoCg && out_color) {
+        uint8_t YCoCg[3];
+        Ren::ConvertRGB_to_YCoCg(out_color, YCoCg);
+
+        out_color[0] = YCoCg[1];
+        out_color[1] = YCoCg[2];
+        out_color[2] = 0;
+        out_color[3] = YCoCg[0];
     }
 
     uint8_t *_mipmaps[16];

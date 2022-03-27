@@ -62,7 +62,7 @@ class GSBaseState : public GameState {
     bool shutdown_ = false, notified_ = false;
 
     // Enable all flags, Renderer will mask out what is not enabled
-    uint32_t render_flags_ = 0xffffffff;
+    uint64_t render_flags_ = 0xffffffffffffffff;
 
     FrameInfo fr_info_;
 

@@ -16,7 +16,7 @@ class DebugInfoUI : public Gui::BaseElement {
     uint64_t last_frame_time_ = 0;
     double cur_frame_dur_ = 0.0;
 
-    uint32_t render_flags_ = 0;
+    uint64_t render_flags_ = 0;
 
     struct {
         float occluders_time_ms = 0.0f, main_gather_time_ms = 0.0f, shadow_gather_time_ms = 0.0f,
@@ -54,7 +54,7 @@ class DebugInfoUI : public Gui::BaseElement {
                 std::shared_ptr<Gui::BitmapFont> font);
 
     void UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info, const ItemsInfo &items_info,
-                    const TimeInterval &swap_interval, uint32_t render_flags);
+                    const TimeInterval &swap_interval, uint64_t render_flags);
 
     void Draw(Gui::Renderer *r) override;
 };

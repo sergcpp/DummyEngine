@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: bistro/Roofing_Shingle_Grey_diff.png srgb
+texture: bistro/Roofing_Shingle_Grey_diff.png
 texture: bistro/Roofing_Shingle_Grey_norm.png
 texture: default_specular.png

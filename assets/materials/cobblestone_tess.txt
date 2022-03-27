@@ -2,7 +2,7 @@ gl_program: _tess_test _tess_test.vert.glsl _tess_test.frag.glsl _tess_test.tesc
 gl_program: _tess_test _tess_test.vert.glsl _tess_test.frag.glsl _tess_test.tesc.glsl _tess_test.tese.glsl
 gl_program: _tess_test _tess_test.vert.glsl _tess_test.frag.glsl
 sw_program: main
-texture: cobblestone_diff.png srgb
+texture: cobblestone_diff.png
 texture: cobblestone_norm.png
 texture: default_specular.png
 texture: cobblestone_bump.png

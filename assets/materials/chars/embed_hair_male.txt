@@ -4,6 +4,7 @@ sw_program: main
 flag: two_sided
 flag: alpha_blend
 flag: alpha_test
-texture: chars/embed_hair_male_diff.png srgb
+texture: chars/embed_hair_male_diff.png
 texture: default_normalmap.png
 texture: default_specular.png
+texture: chars/embed_hair_male_mask.png

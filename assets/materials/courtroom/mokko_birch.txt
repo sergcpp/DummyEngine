@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: courtroom/mokko_birch_diff.png srgb
+texture: courtroom/mokko_birch_diff.png
 texture: default_normalmap.png
 texture: courtroom/mokko_birch_spec.png

@@ -1,6 +1,6 @@
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
-texture: chars/shoes05_diff.png srgb
+texture: chars/shoes05_diff.png
 texture: default_normalmap.png
 texture: default_specular.png

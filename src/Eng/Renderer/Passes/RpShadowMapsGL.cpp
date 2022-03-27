@@ -8,7 +8,7 @@
 #include "../assets/shaders/internal/shadow_interface.glsl"
 
 namespace RpSharedInternal {
-void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
+void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
 }
 namespace RpShadowMapsInternal {
@@ -178,7 +178,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
             if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
                 const Ren::Material &mat = materials_->at(batch.material_index);
-                _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
+                _bind_texture3_and_sampler3(builder.ctx(), mat, builder.temp_samplers);
                 cur_mat_id = batch.material_index;
             }
 
@@ -220,7 +220,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
             if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
                 const Ren::Material &mat = materials_->at(batch.material_index);
-                _bind_texture0_and_sampler0(builder.ctx(), mat, builder.temp_samplers);
+                _bind_texture3_and_sampler3(builder.ctx(), mat, builder.temp_samplers);
                 cur_mat_id = batch.material_index;
             }
 
