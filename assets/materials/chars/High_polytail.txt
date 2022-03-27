@@ -4,6 +4,7 @@ sw_program: main
 flag: two_sided
 flag: alpha_blend
 flag: alpha_test
-texture: chars/High_polytail_diff.png srgb
+texture: chars/High_polytail_diff.png
 texture: default_normalmap.png
 texture: chars/High_polytail_spec.png
+texture: chars/High_polytail_mask.png

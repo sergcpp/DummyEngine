@@ -2,6 +2,6 @@ gl_program: main_unlit main_unlit.vert.glsl main_unlit.frag.glsl
 gl_program: main_unlit main_unlit.vert.glsl main_unlit.frag.glsl
 sw_program: main
 flag: custom_shaded
-texture: laptop_screen.png srgb
+texture: laptop_screen_diff.png
 texture: default_normalmap.png
 texture: default_specular.png

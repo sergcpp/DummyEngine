@@ -1,6 +1,6 @@
 gl_program: main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
 gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
-texture: wall_01.png srgb
+texture: wall_01_diff.png
 texture: wall_01_nor.png
 texture: default_specular.png

@@ -55,7 +55,8 @@
                 "dim" : [ 3.0, 3.0, 1.0 ],
                 "diff" : "puddle_diff.png",
                 "norm" : "puddle_norm.png",
-                "spec" : "puddle_spec.png"
+                "spec" : "puddle_spec.png",
+                "mask" : "puddle_mask.png"
             }
         },
         {
@@ -68,7 +69,8 @@
                 "dim" : [ 3.0, 3.0, 1.0 ],
                 "diff" : "puddle_diff.png",
                 "norm" : "puddle_norm.png",
-                "spec" : "puddle_spec.png"
+                "spec" : "puddle_spec.png",
+                "mask" : "puddle_mask.png"
             }
         },
         {
@@ -80,7 +82,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -92,7 +95,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -104,7 +108,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -116,7 +121,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -128,7 +134,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -140,7 +147,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -152,7 +160,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -164,7 +173,8 @@
                 "rot" : [ 90.0, -45.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -176,7 +186,8 @@
                 "rot" : [ 90.0, 0.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {
@@ -188,7 +199,8 @@
                 "rot" : [ 90.0, 45.0, 0.0 ],
                 "dim" : [ 4.0, 4.0, 0.1 ],
                 "diff" : "leaves_diff.png",
-                "norm" : "leaves_norm.png"
+                "norm" : "leaves_norm.png",
+                "mask" : "leaves_mask.png"
             }
         },
         {

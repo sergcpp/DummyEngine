@@ -72,9 +72,9 @@ class Renderer {
     Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::ThreadPool> threads);
     ~Renderer();
 
-    uint32_t render_flags() const { return render_flags_; }
+    uint64_t render_flags() const { return render_flags_; }
 
-    void set_render_flags(const uint32_t f) { render_flags_ = f; }
+    void set_render_flags(const uint64_t f) { render_flags_ = f; }
 
     const BackendInfo &backend_info() const { return backend_info_; }
 
@@ -114,7 +114,7 @@ class Renderer {
 
     Ren::TextureSplitter shadow_splitter_;
 
-    static const uint32_t DefaultFlags =
+    static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap |
          EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
@@ -124,7 +124,7 @@ class Renderer {
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
 #endif
-    uint32_t render_flags_ = DefaultFlags;
+    uint64_t render_flags_ = DefaultFlags;
 
     DynArray<const LightSource *> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;

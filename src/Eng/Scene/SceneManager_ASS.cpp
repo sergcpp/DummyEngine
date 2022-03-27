@@ -926,6 +926,10 @@ bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, c
                     JsString &js_spec_tex = js_decal.at("spec").as_str();
                     SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
                 }
+                if (js_decal.Has("mask")) {
+                    JsString &js_mask_tex = js_decal.at("mask").as_str();
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_mask_tex.val);
+                }
             }
         }
     }

@@ -1037,6 +1037,18 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
 void SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *de = (Decal *)comp;
 
+    if (js_comp_obj.Has("mask")) {
+        const JsStringP &js_mask = js_comp_obj.at("mask").as_str();
+
+        const Ren::Vec4f *mask_tr = scene_data_.decals_textures.Find(js_mask.val.c_str());
+        if (!mask_tr) {
+            de->mask = LoadDecalTexture(js_mask.val.c_str());
+            scene_data_.decals_textures.Insert(Ren::String{js_mask.val.c_str()}, de->mask);
+        } else {
+            de->mask = *mask_tr;
+        }
+    }
+
     if (js_comp_obj.Has("diff")) {
         const JsStringP &js_diff = js_comp_obj.at("diff").as_str();
 
