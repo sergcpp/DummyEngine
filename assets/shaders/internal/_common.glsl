@@ -27,9 +27,42 @@
 #define DelinearizeDepth(z, clip_info) \
     (((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
 
+// Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
+// https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
+// [Cigolle 2014, "A Survey of Efficient Representations for Independent Unit Vectors"]
+vec2 PackUnitVector(vec3 v, bool signed) {
+    vec3 t = v / (abs(v.x) + abs(v.y) + abs(v.z));
+    vec3 a = t.z >= 0.0 ? t : (vec3(1.0) - abs(t.yxz)) * sign(t);
+
+    if (!signed)
+    {
+        a = saturate(a * 0.5 + vec3(0.5));
+    }
+
+    return vec2(a.x, a.y);
+}
+
+vec3 UnpackUnitVector(vec2 p, bool signed) {
+    vec2 t = signed ? p : (p * 2.0 - vec2(1.0));
+
+    // https://twitter.com/Stubbesaurus/status/937994790553227264
+    vec3 n = vec3(t.x, t.y, 1.0 - abs(t.x) - abs(t.y));
+    float a = saturate(-n.z);
+    n.x += n.x >= 0.0 ? -a : a;
+    n.y += n.y >= 0.0 ? -a : a;
+
+    return normalize(n);
+}
+
+
 vec4 PackNormalAndRoughness(vec3 N, float roughness) {
     vec4 p;
 
+#if REN_USE_OCT_PACKED_NORMALS == 1
+    p.xy = PackUnitVector(N, false /* signed */);
+    p.z = roughness;
+    p.w = 0;
+#else
     p.xyz = N;
 
     // Best fit
@@ -38,16 +71,22 @@ vec4 PackNormalAndRoughness(vec3 N, float roughness) {
 
     p.xyz = p.xyz * 0.5 + 0.5;
     p.w = roughness;
+#endif
 
     return p;
 }
 
 vec4 UnpackNormalAndRoughness(vec4 p) {
     vec4 r;
+
+#if REN_USE_OCT_PACKED_NORMALS == 1
+    r.xyz = UnpackUnitVector(p.xy, false /* signed */);
+    r.w = p.z;
+#else
     p.xyz = p.xyz * 2.0 - 1.0;
     r.xyz = p.xyz;
     r.w = p.w;
-
+#endif
     r.xyz = normalize(r.xyz);
 
     return r;

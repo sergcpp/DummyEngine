@@ -97,11 +97,15 @@ void RpOpaque::Setup(RpBuilder &builder, const DrawList &list, const ViewState *
         color_tex_ = builder.WriteTexture(out_color, params, Ren::eResState::RenderTarget,
                                           Ren::eStageBits::ColorAttachment, *this);
     }
-    { // 4-component world-space normal (alpha is roughness)
+    { // 4-component world-space normal (alpha or z is roughness)
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
+#if REN_USE_OCT_PACKED_NORMALS == 1
+        params.format = Ren::eTexFormat::RawRGB10_A2;
+#else
         params.format = Ren::eTexFormat::RawRGBA8888;
+#endif
         params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.samples = view_state->is_multisampled ? 4 : 1;

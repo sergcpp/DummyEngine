@@ -267,10 +267,16 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         Ren::RenderTargetInfo color_rts[] = {
             {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+#if REN_USE_OCT_PACKED_NORMALS == 1
+            {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+#else
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+#endif
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
+        };
 
         color_rts[2].flags = Ren::TexSRGB;
 
