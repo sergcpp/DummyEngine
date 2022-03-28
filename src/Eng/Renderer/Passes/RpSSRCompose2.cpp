@@ -11,63 +11,15 @@
 
 #include "../assets/shaders/internal/blit_ssr_compose2_interface.glsl"
 
-void RpSSRCompose2::Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
-                          Ren::Tex2DRef brdf_lut, const char shared_data_buf[], const char depth_tex_name[],
-                          const char normal_tex_name[], const char spec_tex_name[], const char refl_tex_name[],
-                          const char output_tex_name[]) {
-    view_state_ = view_state;
-
-    probe_storage_ = probe_storage;
-
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    depth_tex_ =
-        builder.ReadTexture(depth_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    normal_tex_ =
-        builder.ReadTexture(normal_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    spec_tex_ =
-        builder.ReadTexture(spec_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    refl_tex_ =
-        builder.ReadTexture(refl_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    brdf_lut_ = builder.ReadTexture(brdf_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    output_tex_ =
-        builder.WriteTexture(output_tex_name, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-}
-
-void RpSSRCompose2::Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
-                          Ren::Tex2DRef brdf_lut, const char shared_data_buf[], const char depth_tex_name[],
-                          const char normal_tex_name[], const char spec_tex_name[], Ren::WeakTex2DRef refl_tex,
-                          const char output_tex_name[]) {
-    view_state_ = view_state;
-
-    probe_storage_ = probe_storage;
-
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    depth_tex_ =
-        builder.ReadTexture(depth_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    normal_tex_ =
-        builder.ReadTexture(normal_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    spec_tex_ =
-        builder.ReadTexture(spec_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    refl_tex_ =
-        builder.ReadTexture(refl_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    brdf_lut_ = builder.ReadTexture(brdf_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    output_tex_ =
-        builder.WriteTexture(output_tex_name, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-}
-
 void RpSSRCompose2::Execute(RpBuilder &builder) {
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &spec_tex = builder.GetReadTexture(spec_tex_);
-    RpAllocTex &refl_tex = builder.GetReadTexture(refl_tex_);
-    RpAllocTex &brdf_lut = builder.GetReadTexture(brdf_lut_);
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
+    RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
+    RpAllocTex &spec_tex = builder.GetReadTexture(pass_data_->spec_tex);
+    RpAllocTex &refl_tex = builder.GetReadTexture(pass_data_->refl_tex);
+    RpAllocTex &brdf_lut = builder.GetReadTexture(pass_data_->brdf_lut);
 
-    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
     LazyInit(builder.ctx(), builder.sh(), output_tex);
 

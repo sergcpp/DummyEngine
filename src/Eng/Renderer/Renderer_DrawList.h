@@ -99,6 +99,7 @@ struct EnvironmentWeak {
 };
 //static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
 
+// TODO: use persistant mapping of stage buffers
 struct DrawList {
     uint64_t                    render_flags = 0;
     uint32_t                    frame_index = 0;
@@ -106,9 +107,9 @@ struct DrawList {
     EnvironmentWeak             env;
     FrontendInfo                frontend_info;
     DynArray<InstanceData>      instances;
-    Ren::BufferRef              instances_stage_buf;
+    mutable Ren::BufferRef      instances_stage_buf;
     DynArray<Ren::Vec2i>        instance_indices;
-    Ren::BufferRef              instance_indices_stage_buf;
+    mutable Ren::BufferRef      instance_indices_stage_buf;
     DynArray<BasicDrawBatch>    shadow_batches;
     DynArray<uint32_t>          shadow_batch_indices;
     DynArray<ShadowList>        shadow_lists;
@@ -119,27 +120,27 @@ struct DrawList {
     DynArray<uint32_t>          custom_batch_indices;
     int                         alpha_blend_start_index = -1;
     DynArray<SkinTransform>     skin_transforms;
-    Ren::BufferRef              skin_transforms_stage_buf;
+    mutable Ren::BufferRef      skin_transforms_stage_buf;
     DynArray<SkinRegion>        skin_regions;
     DynArray<ShapeKeyData>      shape_keys_data;
-    Ren::BufferRef              shape_keys_stage_buf;
+    mutable Ren::BufferRef      shape_keys_stage_buf;
     uint32_t                    skin_vertices_count = 0;
-    DynArray<LightSourceItem>   light_sources;
-    Ren::BufferRef              lights_stage_buf;
+    DynArray<LightItem>         lights;
+    mutable Ren::BufferRef      lights_stage_buf;
     DynArray<DecalItem>         decals;
-    Ren::BufferRef              decals_stage_buf;
+    mutable Ren::BufferRef      decals_stage_buf;
     DynArray<ProbeItem>         probes;
     DynArray<EllipsItem>        ellipsoids;
     DynArray<CellData>          cells;
-    Ren::BufferRef              cells_stage_buf;
+    mutable Ren::BufferRef      cells_stage_buf;
     DynArray<ItemData>          items;
-    Ren::BufferRef              items_stage_buf;
+    mutable Ren::BufferRef      items_stage_buf;
 
     DynArray<RTGeoInstance>     rt_geo_instances;
     DynArray<RTObjInstance>     rt_obj_instances;
-    Ren::BufferRef              rt_obj_instances_stage_buf;
+    mutable Ren::BufferRef      rt_obj_instances_stage_buf;
 
-    Ren::BufferRef              shared_data_stage_buf;
+    mutable Ren::BufferRef      shared_data_stage_buf;
 
     DynArray<TexEntry>          visible_textures;
     DynArray<TexEntry>          desired_textures;

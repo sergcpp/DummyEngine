@@ -5,7 +5,12 @@
 class PrimDraw;
 struct ViewState;
 
-class RpBlur : public RenderPassBase {
+struct RpBlurData {
+    RpResource input_tex;
+    RpResource output_tex;
+};
+
+class RpBlur : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -17,9 +22,7 @@ class RpBlur : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     bool vertical_ = false;
     const ViewState *view_state_ = nullptr;
-
-    RpResource input_tex_;
-    RpResource output_tex_;
+    const RpBlurData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
 
@@ -27,11 +30,10 @@ class RpBlur : public RenderPassBase {
   public:
     RpBlur(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, bool vertical, Ren::WeakTex2DRef input_tex,
-               const char output_tex_name[]);
-    void Setup(RpBuilder &builder, const ViewState *view_state, bool vertical, const char input_tex_name[],
-               const char output_tex_name[]);
+    void Setup(const ViewState *view_state, bool vertical, const RpBlurData *pass_data) {
+        vertical_ = vertical;
+        view_state_ = view_state;
+        pass_data_ = pass_data;
+    }
     void Execute(RpBuilder &builder) override;
-
-    const char *name() const override { return "BLUR"; }
 };

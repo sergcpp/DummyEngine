@@ -5,7 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
-class RpGBufferFill : public RenderPassBase {
+class RpGBufferFill : public RenderPassExecutor {
     bool initialized = false;
 
     // lazily initialized data
@@ -63,16 +63,47 @@ class RpGBufferFill : public RenderPassBase {
   public:
     ~RpGBufferFill();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const Ren::BufferRef &vtx_buf1,
-               const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
-               const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &noise_tex,
-               const Ren::Tex2DRef &dummy_black, const char instances_buf[], const char instance_indices_buf[],
-               const char shared_data_buf[], const char cells_buf[], const char items_buf[], const char decals_buf[],
-               const char out_albedo[], const char out_normals[], const char out_spec[], const char out_depth[]);
+    void Setup(const DrawList &list, const ViewState *view_state, const RpResource &vtx_buf1,
+               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
+               const RpResource &textures_buf, const BindlessTextureData *bindless_tex, const RpResource &noise_tex,
+               const RpResource &dummy_black, const RpResource &instances_buf, const RpResource &instance_indices_buf,
+               const RpResource &shared_data_buf, const RpResource &cells_buf, const RpResource &items_buf,
+               const RpResource &decals_buf, const RpResource &out_albedo, const RpResource &out_normals,
+               const RpResource &out_spec, const RpResource &out_depth) {
+        view_state_ = view_state;
+        bindless_tex_ = bindless_tex;
+
+        materials_ = list.materials;
+        decals_atlas_ = list.decals_atlas;
+
+        render_flags_ = list.render_flags;
+        main_batches_ = list.basic_batches;
+        main_batch_indices_ = list.basic_batch_indices;
+
+        vtx_buf1_ = vtx_buf1;
+        vtx_buf2_ = vtx_buf2;
+        ndx_buf_ = ndx_buf;
+        instances_buf_ = instances_buf;
+        instance_indices_buf_ = instance_indices_buf;
+        shared_data_buf_ = shared_data_buf;
+        cells_buf_ = cells_buf;
+        items_buf_ = items_buf;
+        decals_buf_ = decals_buf;
+        materials_buf_ = materials_buf;
+
+        noise_tex_ = noise_tex;
+        dummy_black_ = dummy_black;
+
+        textures_buf_ = textures_buf;
+
+        out_albedo_tex_ = out_albedo;
+        out_normal_tex_ = out_normals;
+        out_spec_tex_ = out_spec;
+        out_depth_tex_ = out_depth;
+    }
+
     void Execute(RpBuilder &builder) override;
 
     // TODO: remove this
     int alpha_blend_start_index_ = -1;
-
-    const char *name() const override { return "GBUFFER FILL"; }
 };

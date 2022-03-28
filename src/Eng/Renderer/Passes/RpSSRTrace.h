@@ -6,7 +6,14 @@ class PrimDraw;
 class ProbeStorage;
 struct ViewState;
 
-class RpSSRTrace : public RenderPassBase {
+struct RpSSRTraceData {
+    RpResource shared_data;
+    RpResource normal_tex;
+    RpResource depth_down_2x_tex;
+    RpResource output_tex;
+};
+
+class RpSSRTrace : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -16,23 +23,18 @@ class RpSSRTrace : public RenderPassBase {
     Ren::Framebuffer output_fb_;
 
     // temp data (valid only between Setup and Execute calls)
-    Ren::Tex2DRef brdf_lut_;
     const ViewState *view_state_ = nullptr;
-
-    RpResource shared_data_buf_;
-    RpResource normal_tex_;
-    RpResource depth_down_2x_tex_;
-
-    RpResource output_tex_;
+    const RpSSRTraceData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
 
   public:
     RpSSRTrace(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, Ren::Tex2DRef brdf_lut, const char shared_data_buf[],
-               const char normal_tex[], const char depth_down_2x[], const char output_tex_name[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(RpBuilder &builder, const ViewState *view_state, const RpSSRTraceData *pass_data) {
+        view_state_ = view_state;
+        pass_data_ = pass_data;
+    }
 
-    const char *name() const override { return "SSR TRACE"; }
+    void Execute(RpBuilder &builder) override;
 };

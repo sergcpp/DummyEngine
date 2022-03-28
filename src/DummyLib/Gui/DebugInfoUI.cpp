@@ -47,8 +47,8 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
     back_info_smooth_.cpu_total_ms +=
         k * us_to_ms(backend_info.cpu_end_timepoint_us - backend_info.cpu_start_timepoint_us);
 
-    items_info_smooth_.light_sources_count *= alpha;
-    items_info_smooth_.light_sources_count += k * items_info.light_sources_count;
+    items_info_smooth_.lights_count *= alpha;
+    items_info_smooth_.lights_count += k * items_info.lights_count;
     items_info_smooth_.decals_count *= alpha;
     items_info_smooth_.decals_count += k * items_info.decals_count;
     items_info_smooth_.probes_count *= alpha;
@@ -153,12 +153,12 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "     LIGHTS COUNT: %.3f", items_info_smooth_.light_sources_count);
+        sprintf(text_buffer, "     LIGHTS COUNT: %.3f", items_info_smooth_.lights_count);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         sprintf(text_buffer, "      LIGHTS DATA: %.3f kb",
-                items_info_smooth_.light_sources_count * sizeof(LightSourceItem) / 1024.0f);
+                items_info_smooth_.lights_count * sizeof(LightItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;

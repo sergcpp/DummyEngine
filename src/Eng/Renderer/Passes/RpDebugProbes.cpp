@@ -1,5 +1,5 @@
 #include "RpDebugProbes.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/RastState.h>
 
@@ -77,3 +77,4 @@ void RpDebugProbes::DrawProbes(RpBuilder &builder) {
                             sizeof(bindings) / sizeof(bindings[0]), uniforms, sizeof(uniforms) / sizeof(uniforms[0]));
     }
 }
+#endif

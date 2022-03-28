@@ -10,29 +10,6 @@
 
 #include "../assets/shaders/internal/blit_ssao_interface.glsl"
 
-void RpSSAO::Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakTex2DRef rand2d_dirs_4x4_tex,
-                   const char depth_down_2x[], const char output_tex[]) {
-    view_state_ = view_state;
-
-    depth_down_2x_tex_ =
-        builder.ReadTexture(depth_down_2x, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    rand_tex_ = builder.ReadTexture(rand2d_dirs_4x4_tex, Ren::eResState::ShaderResource,
-                                    Ren::eStageBits::FragmentShader, *this);
-
-    { // Allocate output texture
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0] / 2;
-        params.h = view_state->scr_res[1] / 2;
-        params.format = Ren::eTexFormat::RawR8;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpSSAO::Execute(RpBuilder &builder) {
     RpAllocTex &down_depth_2x_tex = builder.GetReadTexture(depth_down_2x_tex_);
     RpAllocTex &rand_tex = builder.GetReadTexture(rand_tex_);

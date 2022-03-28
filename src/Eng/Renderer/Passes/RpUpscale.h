@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpUpscale : public RenderPassBase {
+class RpUpscale : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -29,9 +29,17 @@ class RpUpscale : public RenderPassBase {
   public:
     RpUpscale(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const Ren::Vec4i &res, const Ren::Vec4f &clip_info, const char depth_down_2x[],
-               const char depth_tex[], const char input_tex[], const char output_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const Ren::Vec4i &res, const Ren::Vec4f &clip_info, const RpResource &depth_down_2x,
+               const RpResource &depth_tex, const RpResource &input_tex, const RpResource &output_tex) {
+        res_ = res;
+        clip_info_ = clip_info;
 
-    const char *name() const override { return "UPSCALE"; }
+        depth_down_2x_tex_ = depth_down_2x;
+        depth_tex_ = depth_tex;
+        input_tex_ = input_tex;
+
+        output_tex_ = output_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

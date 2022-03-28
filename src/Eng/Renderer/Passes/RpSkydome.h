@@ -10,7 +10,7 @@
 
 class PrimDraw;
 
-class RpSkydome : public RenderPassBase {
+class RpSkydome : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -45,10 +45,25 @@ class RpSkydome : public RenderPassBase {
     RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpSkydome();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, bool clear, Ren::BufferRef vtx_buf1,
-               Ren::BufferRef vtx_buf2, Ren::BufferRef ndx_buf, const char shared_data_buf[], const char color_tex[],
-               const char spec_tex[], const char depth_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const DrawList &list, const ViewState *view_state, bool clear, const RpResource &vtx_buf1,
+               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &shared_data_buf,
+               const RpResource &env_tex, const RpResource &color_tex, const RpResource &spec_tex,
+               const RpResource &depth_tex) {
+        view_state_ = view_state;
+        clear_ = clear;
 
-    const char *name() const override { return "SKYDOME"; }
+        draw_cam_pos_ = list.draw_cam.world_position();
+
+        shared_data_buf_ = shared_data_buf;
+        env_tex_ = env_tex;
+        vtx_buf1_ = vtx_buf1;
+        vtx_buf2_ = vtx_buf2;
+        ndx_buf_ = ndx_buf;
+
+        color_tex_ = color_tex;
+        spec_tex_ = spec_tex;
+        depth_tex_ = depth_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

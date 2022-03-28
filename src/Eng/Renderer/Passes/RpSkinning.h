@@ -5,12 +5,8 @@
 
 struct DrawList;
 
-class RpSkinning : public RenderPassBase {
-    // lazily initialized data
-    bool initialized = false;
-    Ren::Pipeline pi_skinning_;
-
-    // temp data (valid only between Setup and Execute calls)
+class RpSkinningExecutor : public RenderPassExecutor {
+    const Ren::Pipeline &pi_skinning_;
     DynArrayConstRef<SkinRegion> skin_regions_;
 
     RpResource skin_vtx_buf_;
@@ -21,12 +17,14 @@ class RpSkinning : public RenderPassBase {
     RpResource vtx_buf1_;
     RpResource vtx_buf2_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
   public:
-    void Setup(RpBuilder &builder, const DrawList &list, Ren::BufferRef vtx_buf1,
-               Ren::BufferRef vtx_buf2, Ren::BufferRef delta_buf, Ren::BufferRef skin_vtx_buf,
-               const char skin_transforms_buf[], const char shape_keys_buf[]);
-    void Execute(RpBuilder &builder) override;
+    RpSkinningExecutor(const Ren::Pipeline &pi_skinning, const DynArray<SkinRegion> &skin_regions,
+                       const RpResource &skin_vtx_buf, const RpResource &skin_transforms_buf,
+                       const RpResource &shape_keys_buf, const RpResource &delta_buf, const RpResource &vtx_buf1,
+                       const RpResource &vtx_buf2)
+        : pi_skinning_(pi_skinning), skin_regions_(skin_regions), skin_vtx_buf_(skin_vtx_buf),
+          skin_transforms_buf_(skin_transforms_buf), shape_keys_buf_(shape_keys_buf), delta_buf_(delta_buf),
+          vtx_buf1_(vtx_buf1), vtx_buf2_(vtx_buf2) {}
 
-    const char *name() const override { return "SKINNING"; }
+    void Execute(RpBuilder &builder) override;
 };

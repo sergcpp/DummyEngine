@@ -131,7 +131,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         list.temp_nodes = {};
     }
 
-    list.light_sources.count = 0;
+    list.lights.count = 0;
     list.decals.count = 0;
     list.probes.count = 0;
     list.ellipsoids.count = 0;
@@ -549,7 +549,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         if (res != eVisResult::Invisible) {
                             litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
-                            LightSourceItem &ls = list.light_sources.data[list.light_sources.count++];
+                            LightItem &ls = list.lights.data[list.lights.count++];
 
                             memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
                             ls.radius = light.radius;
@@ -1043,8 +1043,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const Vec3f cam_pos = cam.world_position();
 
-    for (int i = 0; i < int(list.light_sources.count) && shadows_enabled; i++) {
-        LightSourceItem &l = list.light_sources.data[i];
+    for (int i = 0; i < int(list.lights.count) && shadows_enabled; i++) {
+        LightItem &l = list.lights.data[i];
         const LightSource *ls = litem_to_lsource_.data[i];
 
         if (!ls->cast_shadow) {
@@ -1520,7 +1520,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const uint64_t items_assignment_start = Sys::GetTimeUs();
 
-    if (list.light_sources.count || list.decals.count || list.probes.count) {
+    if (list.lights.count || list.decals.count || list.probes.count) {
         list.draw_cam.ExtractSubFrustums(REN_GRID_RES_X, REN_GRID_RES_Y, REN_GRID_RES_Z, temp_sub_frustums_.data);
 
         std::future<void> futures[REN_GRID_RES_Z];
@@ -1601,8 +1601,8 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
     // Gather to local list first
     ItemData local_items[REN_GRID_RES_X * REN_GRID_RES_Y][REN_MAX_ITEMS_PER_CELL];
 
-    for (int j = 0; j < int(list.light_sources.count); j++) {
-        const LightSourceItem &l = list.light_sources.data[j];
+    for (int j = 0; j < int(list.lights.count); j++) {
+        const LightItem &l = list.lights.data[j];
         const float radius = litem_to_lsource[j]->radius;
         const float influence = litem_to_lsource[j]->influence;
         const float cap_radius = litem_to_lsource[j]->cap_radius;

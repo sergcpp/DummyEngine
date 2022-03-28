@@ -33,29 +33,11 @@ const Ren::Vec2f poisson_disk[] = {
     Ren::Vec2f{-0.178564f, -0.596057f}};
 } // namespace RpSampleBrightnessInternal
 
-void RpSampleBrightness::Setup(RpBuilder &builder, Ren::WeakTex2DRef tex_to_sample, const char reduced_tex_name[]) {
-    input_tex_ =
-        builder.ReadTexture(tex_to_sample, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    { // aux buffer which gathers frame luminance
-        Ren::Tex2DParams params;
-        params.w = 16;
-        params.h = 8;
-        params.format = Ren::eTexFormat::RawR32F;
-        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        reduced_tex_ = builder.WriteTexture(reduced_tex_name, params, Ren::eResState::RenderTarget,
-                                            Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpSampleBrightness::Execute(RpBuilder &builder) {
     using namespace RpSampleBrightnessInternal;
 
-    RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
-    RpAllocTex &reduced_tex = builder.GetWriteTexture(reduced_tex_);
+    RpAllocTex &input_tex = builder.GetReadTexture(pass_data_->input_tex);
+    RpAllocTex &reduced_tex = builder.GetWriteTexture(pass_data_->reduced_tex);
 
     Ren::Context &ctx = builder.ctx();
     LazyInit(ctx, builder.sh(), reduced_tex);

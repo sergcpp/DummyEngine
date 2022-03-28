@@ -830,7 +830,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         long)back_dur);*/
 
         ItemsInfo items_info;
-        items_info.light_sources_count = main_view_lists_[back_list].light_sources.count;
+        items_info.lights_count = main_view_lists_[back_list].lights.count;
         items_info.decals_count = main_view_lists_[back_list].decals.count;
         items_info.probes_count = main_view_lists_[back_list].probes.count;
         items_info.items_total = main_view_lists_[back_list].items.count;

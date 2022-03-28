@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include "../Graph/GraphBuilder.h"
 
 class PrimDraw;
@@ -33,3 +33,4 @@ class RpFXAA : public RenderPassBase {
 
     const char *name() const override { return "FXAA"; }
 };
+#endif

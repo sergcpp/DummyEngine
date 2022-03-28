@@ -33,6 +33,7 @@ set(SOURCE_FILES Anim.h
                  AccStructure.h
                  AccStructure.cpp
                  Buffer.h
+                 Buffer.cpp
                  Camera.h
                  Camera.cpp
                  Common.h
