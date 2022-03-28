@@ -3,16 +3,17 @@
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
-class RpUpdateAccBuffers : public RenderPassBase {
-    // temp data (valid only between Setup and Execute calls)
+class RpUpdateAccBuffersExecutor : public RenderPassExecutor {
     DynArrayConstRef<RTObjInstance> rt_obj_instances_;
     Ren::WeakBufferRef rt_obj_instances_stage_buf_;
 
     RpResource rt_obj_instances_buf_;
 
   public:
-    void Setup(RpBuilder &builder, const DrawList &list, const char rt_obj_instances_buf[]);
-    void Execute(RpBuilder &builder) override;
+    RpUpdateAccBuffersExecutor(const DynArray<RTObjInstance> &rt_obj_instances,
+                               const Ren::BufferRef &rt_obj_instances_stage_buf, const RpResource &rt_obj_instances_buf)
+        : rt_obj_instances_(rt_obj_instances), rt_obj_instances_stage_buf_(rt_obj_instances_stage_buf),
+          rt_obj_instances_buf_(rt_obj_instances_buf) {}
 
-    const char *name() const override { return "UPDATE ACC BUFS"; }
+    void Execute(RpBuilder &builder) override;
 };

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/RenderPass.h"
 
 class PrimDraw;
 struct ViewState;
 
-class RpBilateralBlur : public RenderPassBase {
+class RpBilateralBlur : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -28,9 +28,16 @@ class RpBilateralBlur : public RenderPassBase {
   public:
     RpBilateralBlur(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, Ren::Vec2i res, bool vertical, const char depth_tex[], const char input_tex[],
-               const char output_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const Ren::Vec2i res, const bool vertical, const RpResource &depth_tex, const RpResource &input_tex,
+               const RpResource &output_tex) {
+        res_ = res;
+        vertical_ = vertical;
 
-    const char *name() const override { return "BILATERAL BLUR"; }
+        depth_tex_ = depth_tex;
+        input_tex_ = input_tex;
+
+        output_tex_ = output_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

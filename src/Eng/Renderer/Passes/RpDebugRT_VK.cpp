@@ -13,27 +13,23 @@
 void RpDebugRT::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(geo_data_buf_);
-    RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    RpAllocTex &env_tex = builder.GetReadTexture(env_tex_);
-    RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data_buf);
+    RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials_buf);
+    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
+    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
+    RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
+    RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
-        if (lm_tex_[i]) {
-            lm_tex[i] = &builder.GetReadTexture(lm_tex_[i]);
+        if (pass_data_->lm_tex[i]) {
+            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
     }
-
-    RpAllocTex *output_tex = nullptr;
-    if (output_tex_) {
-        output_tex = &builder.GetWriteTexture(output_tex_);
-    }
+    RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();

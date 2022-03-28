@@ -5,7 +5,12 @@
 class PrimDraw;
 struct ViewState;
 
-class RpDownColor : public RenderPassBase {
+struct RpDownColorData {
+    RpResource input_tex;
+    RpResource output_tex;
+};
+
+class RpDownColor : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -16,19 +21,16 @@ class RpDownColor : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-
-    RpResource input_tex_;
-
-    RpResource output_tex_;
+    const RpDownColorData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
 
   public:
     RpDownColor(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char input_tex_name[],
-               Ren::WeakTex2DRef output_tex);
+    void Setup(const ViewState *view_state, const RpDownColorData *pass_data) {
+        view_state_ = view_state;
+        pass_data_ = pass_data;
+    }
     void Execute(RpBuilder &builder) override;
-
-    const char *name() const override { return "DOWNSAMPLE COLOR"; }
 };

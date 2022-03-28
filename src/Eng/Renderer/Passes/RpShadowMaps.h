@@ -5,7 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
-class RpShadowMaps : public RenderPassBase {
+class RpShadowMaps : public RenderPassExecutor {
     bool initialized = false;
     int w_, h_;
 
@@ -47,11 +47,30 @@ class RpShadowMaps : public RenderPassBase {
   public:
     RpShadowMaps(int w, int h) : w_(w), h_(h) {}
 
-    void Setup(RpBuilder &builder, const DrawList &list, const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2,
-               const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
-               const BindlessTextureData *bindless_tex, const char instances_buf[], const char instance_indices_buf[],
-               const char shared_data_buf[], const char shadowmap_tex[], const Ren::Tex2DRef &noise_tex);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const DrawList &list, const RpResource &vtx_buf1, const RpResource &vtx_buf2, const RpResource &ndx_buf,
+               const RpResource &materials_buf, const BindlessTextureData *bindless_tex, const RpResource &textures_buf,
+               const RpResource &instances_buf, const RpResource &instance_indices_buf,
+               const RpResource &shared_data_buf, const RpResource &noise_tex, const RpResource &shadowmap_tex) {
+        materials_ = list.materials;
+        bindless_tex_ = bindless_tex;
+        shadow_batches_ = list.shadow_batches;
+        shadow_batch_indices_ = list.shadow_batch_indices;
+        shadow_lists_ = list.shadow_lists;
+        shadow_regions_ = list.shadow_regions;
 
-    const char *name() const override { return "SHADOW MAPS"; }
+        vtx_buf1_ = vtx_buf1;
+        vtx_buf2_ = vtx_buf2;
+        ndx_buf_ = ndx_buf;
+
+        instances_buf_ = instances_buf;
+        instance_indices_buf_ = instance_indices_buf;
+        shared_data_buf_ = shared_data_buf;
+        materials_buf_ = materials_buf;
+        textures_buf_ = textures_buf;
+        noise_tex_ = noise_tex;
+
+        shadowmap_tex_ = shadowmap_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

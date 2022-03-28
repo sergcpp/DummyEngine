@@ -10,19 +10,9 @@
 
 #include "../assets/shaders/internal/blit_down_interface.glsl"
 
-void RpDownColor::Setup(RpBuilder &builder, const ViewState *view_state, const char color_tex_name[],
-                        Ren::WeakTex2DRef output_tex) {
-    view_state_ = view_state;
-
-    input_tex_ =
-        builder.ReadTexture(color_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    output_tex_ =
-        builder.WriteTexture(output_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-}
-
 void RpDownColor::Execute(RpBuilder &builder) {
-    RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
-    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+    RpAllocTex &input_tex = builder.GetReadTexture(pass_data_->input_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
     LazyInit(builder.ctx(), builder.sh(), output_tex);
 

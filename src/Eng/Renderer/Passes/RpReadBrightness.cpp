@@ -9,16 +9,11 @@ const float MaxValue = 64.0f;
 const float AvgAlpha = 1.0f / 64.0f;
 } // namespace RpReadBrightnessInternal
 
-void RpReadBrightness::Setup(RpBuilder &builder, const char intput_tex_name[], Ren::WeakBufferRef output_buf) {
-    input_tex_ = builder.ReadTexture(intput_tex_name, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
-    output_buf_ = builder.WriteBuffer(output_buf, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-}
-
 void RpReadBrightness::Execute(RpBuilder &builder) {
     using namespace RpReadBrightnessInternal;
 
-    RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
-    RpAllocBuf &output_buf = builder.GetWriteBuffer(output_buf_);
+    RpAllocTex &input_tex = builder.GetReadTexture(pass_data_->input_tex);
+    RpAllocBuf &output_buf = builder.GetWriteBuffer(pass_data_->output_buf);
 
     auto &ctx = builder.ctx();
 

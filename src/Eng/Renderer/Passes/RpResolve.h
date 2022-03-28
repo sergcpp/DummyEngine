@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include <Ren/Texture.h>
 
 #include "../Graph/GraphBuilder.h"
@@ -33,3 +33,4 @@ class RpResolve : public RenderPassBase {
 
     const char *name() const override { return "REFLECTIONS PASS"; }
 };
+#endif

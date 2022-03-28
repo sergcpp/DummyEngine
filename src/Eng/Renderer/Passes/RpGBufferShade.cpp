@@ -1,5 +1,5 @@
 #include "RpGBufferShade.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/ProbeStorage.h>
 #include <Ren/Program.h>
@@ -107,3 +107,4 @@ void RpGBufferShade::Execute(RpBuilder &builder) {
     Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
                          sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
 }
+#endif

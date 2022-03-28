@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include <Ren/Pipeline.h>
 
 #include "../Graph/GraphBuilder.h"
@@ -42,3 +42,4 @@ class RpGBufferShade : public RenderPassBase {
 
     const char *name() const override { return "GBUFFER SHADE"; }
 };
+#endif

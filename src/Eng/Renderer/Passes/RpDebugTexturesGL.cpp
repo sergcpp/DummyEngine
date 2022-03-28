@@ -1,5 +1,5 @@
 #include "RpDebugTextures.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Ren/RastState.h>
@@ -174,3 +174,4 @@ void RpDebugTextures::DrawShadowMaps(Ren::Context &ctx, RpAllocTex &shadowmap_te
 
     shadowmap_tex.ref->ApplySampling(tmp_params, ctx.log());
 }
+#endif

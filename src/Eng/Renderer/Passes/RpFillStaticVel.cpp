@@ -10,19 +10,6 @@
 
 #include "../assets/shaders/internal/blit_static_vel_interface.glsl"
 
-void RpFillStaticVel::Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[],
-                            const char depth_tex[], const char velocity_tex[]) {
-    view_state_ = view_state;
-
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-
-    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::StencilTestDepthFetch,
-                                     Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader, *this);
-    velocity_tex_ =
-        builder.WriteTexture(velocity_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-}
-
 void RpFillStaticVel::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
 

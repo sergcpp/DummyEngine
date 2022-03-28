@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpSSAO : public RenderPassBase {
+class RpSSAO : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -27,9 +27,15 @@ class RpSSAO : public RenderPassBase {
   public:
     RpSSAO(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, Ren::WeakTex2DRef rand2d_dirs_4x4_tex,
-               const char depth_down_2x[], const char output_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(RpBuilder &builder, const ViewState *view_state, const RpResource &rand2d_dirs_4x4_tex,
+               const RpResource &depth_down_2x, const RpResource &output_tex) {
+        view_state_ = view_state;
 
-    const char *name() const override { return "SSAO"; }
+        depth_down_2x_tex_ = depth_down_2x;
+        rand_tex_ = rand2d_dirs_4x4_tex;
+
+        output_tex_ = output_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

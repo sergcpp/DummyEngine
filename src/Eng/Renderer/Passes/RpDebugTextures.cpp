@@ -1,5 +1,5 @@
 #include "RpDebugTextures.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/RastState.h>
 #include <Ren/Texture.h>
@@ -287,3 +287,4 @@ int RpDebugTextures::BlitTex(Ren::RastState &applied_state, const int x, const i
 
     return w;
 }
+#endif

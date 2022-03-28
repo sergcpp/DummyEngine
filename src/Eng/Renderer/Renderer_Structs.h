@@ -8,13 +8,13 @@
 
 #include "Renderer_GL_Defines.inl"
 
-struct LightSourceItem {
+struct LightItem {
     float pos[3], radius;
     float col[3];
     int shadowreg_index;
     float dir[3], spot;
 };
-static_assert(sizeof(LightSourceItem) == 48, "!");
+static_assert(sizeof(LightItem) == 48, "!");
 
 struct DecalItem {
     float mat[3][4];
@@ -257,7 +257,7 @@ struct BackendInfo {
 };
 
 struct ItemsInfo {
-    uint32_t light_sources_count = 0, decals_count = 0, probes_count = 0;
+    uint32_t lights_count = 0, decals_count = 0, probes_count = 0;
     uint32_t items_total = 0;
 };
 
@@ -341,7 +341,7 @@ const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_T
 const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
 const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
 const size_t InstanceIndicesBufChunkSize = sizeof(Ren::Vec2i) * REN_MAX_INSTANCES_TOTAL;
-const size_t LightsBufChunkSize = sizeof(LightSourceItem) * REN_MAX_LIGHTS_TOTAL;
+const size_t LightsBufChunkSize = sizeof(LightItem) * REN_MAX_LIGHTS_TOTAL;
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;

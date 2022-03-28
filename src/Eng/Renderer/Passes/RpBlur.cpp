@@ -10,52 +10,9 @@
 
 #include "../assets/shaders/internal/blit_gauss_interface.glsl"
 
-void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertical, Ren::WeakTex2DRef input_tex,
-                   const char output_tex_name[]) {
-    vertical_ = vertical;
-    view_state_ = view_state;
-
-    input_tex_ = builder.ReadTexture(input_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    { // Auxilary textures for bloom effect
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0] / 4;
-        params.h = view_state->scr_res[1] / 4;
-        params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex_name, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
-void RpBlur::Setup(RpBuilder &builder, const ViewState *view_state, bool vertical, const char input_tex_name[],
-                   const char output_tex_name[]) {
-    vertical_ = vertical;
-    view_state_ = view_state;
-
-    input_tex_ =
-        builder.ReadTexture(input_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    { // Auxilary textures for bloom effect
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0] / 4;
-        params.h = view_state->scr_res[1] / 4;
-        params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex_name, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpBlur::Execute(RpBuilder &builder) {
-    RpAllocTex &intput_tex = builder.GetReadTexture(input_tex_);
-    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+    RpAllocTex &intput_tex = builder.GetReadTexture(pass_data_->input_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
     LazyInit(builder.ctx(), builder.sh(), output_tex);
 

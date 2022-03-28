@@ -18,67 +18,6 @@ uint32_t _skip_range(const DynArrayConstRef<uint32_t> &batch_indices, const DynA
 }
 } // namespace RpSharedInternal
 
-void RpDepthFill::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, bool clear_depth,
-                        const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
-                        const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex,
-                        const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
-                        const Ren::Tex2DRef &noise_tex, const char main_depth_tex[], const char main_velocity_tex[]) {
-    view_state_ = view_state;
-    bindless_tex_ = bindless_tex;
-    clear_depth_ = clear_depth;
-
-    render_flags_ = list.render_flags;
-    materials_ = list.materials;
-    zfill_batch_indices = list.basic_batch_indices;
-    zfill_batches = list.basic_batches;
-
-    vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
-    instances_buf_ =
-        builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-    instance_indices_buf_ =
-        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    materials_buf_ =
-        builder.ReadBuffer(materials_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-#if defined(USE_GL_RENDER)
-    if (bindless_tex->textures_buf) {
-        textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
-                                           Ren::eStageBits::VertexShader, *this);
-    }
-#endif
-
-    noise_tex_ = builder.ReadTexture(noise_tex, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-
-    { // 24-bit depth
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0];
-        params.h = view_state->scr_res[1];
-        params.format = builder.ctx().capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
-                                                                           : Ren::eTexFormat::Depth32Stencil8;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.samples = view_state->is_multisampled ? 4 : 1;
-
-        depth_tex_ = builder.WriteTexture(main_depth_tex, params, Ren::eResState::DepthWrite,
-                                          Ren::eStageBits::DepthAttachment, *this);
-    }
-    { // Texture that holds 2D velocity
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0];
-        params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRG16Snorm;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.samples = view_state->is_multisampled ? 4 : 1;
-
-        velocity_tex_ = builder.WriteTexture(main_velocity_tex, params, Ren::eResState::RenderTarget,
-                                             Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpDepthFill::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
