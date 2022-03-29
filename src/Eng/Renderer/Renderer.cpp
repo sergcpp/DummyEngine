@@ -455,7 +455,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                    status == Ren::eTexLoadStatus::Reinitialized);
 
+#if REN_USE_OCT_PACKED_NORMALS == 1
+            params.format = Ren::eTexFormat::RawRGB10_A2;
+#else
             params.format = Ren::eTexFormat::RawRGBA8888;
+#endif
             norm_history_tex_ = ctx_.LoadTexture2D("Normal History tex", params, ctx_.default_mem_allocs(), &status);
             assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                    status == Ren::eTexLoadStatus::Reinitialized);
