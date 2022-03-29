@@ -18,6 +18,7 @@ void RpCopyTex::Execute(RpBuilder &builder) {
     RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
     RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
+    assert(input_tex.ref->params.format == output_tex.ref->params.format);
     Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *input_tex.ref, 0, 0, 0, *output_tex.ref, 0, 0, 0,
                           copy_res_[0], copy_res_[1]);
 }
