@@ -23,6 +23,7 @@ set(SOURCE_FILES AssetFile.h
                  Delegate.h
                  DynLib.h
                  DynLib.cpp
+                 InplaceFunction.h
                  Json.h
                  Json.cpp
                  Log.h
