@@ -5,6 +5,7 @@ add_executable(test_Sys main.cpp
                         test_alloc.cpp
                         test_async_file.cpp
                         test_common.h
+                        test_inplace_function.cpp
                         test_json.cpp
                         test_optional.cpp
                         test_pack.cpp
