@@ -193,12 +193,13 @@ void main() {
     ivec2 pix_uvs = ivec2(g_vtx_uvs + vec2(0.5));
     vec2 norm_uvs = 2.0 * g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_tex = texelFetch(g_norm_texture, 2 * pix_uvs, 0);
-    if (normal_tex.w < 0.0001) return;
+    vec4 normal_fetch = texelFetch(g_norm_texture, 2 * pix_uvs, 0);
+    vec4 normal_roughness = UnpackNormalAndRoughness(normal_fetch);
+    if (normal_roughness.w > 0.95) return;
 
     float depth = DelinearizeDepth(texelFetch(g_depth_texture, pix_uvs, 0).r, g_shrd_data.clip_info);
 
-    vec3 normal_ws = 2.0 * normal_tex.xyz - 1.0;
+    vec3 normal_ws = normal_roughness.xyz;
     vec3 normal_vs = (g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz;
 
     vec4 ray_origin_cs = vec4(norm_uvs, depth, 1.0);
