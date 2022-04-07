@@ -335,12 +335,12 @@ void Renderer::AddSkydomePass(const DrawList &list, const CommonBuffers &common_
                               FrameTextures &frame_textures) {
     if (list.env.env_map) {
         auto &skymap = rp_builder_.AddPass("SKYDOME");
-        RpResource shared_data_buf = skymap.AddUniformBufferInput(
+        RpResRef shared_data_buf = skymap.AddUniformBufferInput(
             common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-        RpResource env_tex = skymap.AddTextureInput(list.env.env_map, Ren::eStageBits::FragmentShader);
-        RpResource vtx_buf1 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        RpResource vtx_buf2 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        RpResource ndx_buf = skymap.AddIndexBufferInput(ctx_.default_indices_buf());
+        RpResRef env_tex = skymap.AddTextureInput(list.env.env_map, Ren::eStageBits::FragmentShader);
+        RpResRef vtx_buf1 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf1());
+        RpResRef vtx_buf2 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf2());
+        RpResRef ndx_buf = skymap.AddIndexBufferInput(ctx_.default_indices_buf());
 
         frame_textures.color = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
         frame_textures.specular = skymap.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
@@ -358,36 +358,36 @@ void Renderer::AddGBufferFillPass(const DrawList &list, const CommonBuffers &com
                                   const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
                                   FrameTextures &frame_textures) {
     auto &gbuf_fill = rp_builder_.AddPass("GBUFFER FILL");
-    const RpResource vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResource vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResource ndx_buf = gbuf_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+    const RpResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const RpResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const RpResRef ndx_buf = gbuf_fill.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResource materials_buf =
+    const RpResRef materials_buf =
         gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResource textures_buf =
+    const RpResRef textures_buf =
         gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
 #else
-    const RpResource textures_buf;
+    const RpResRef textures_buf = {};
 #endif
 
-    const RpResource noise_tex =
+    const RpResRef noise_tex =
         gbuf_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    const RpResource dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
 
-    const RpResource instances_buf =
+    const RpResRef instances_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
-    const RpResource instances_indices_buf =
+    const RpResRef instances_indices_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-    const RpResource shared_data_buf = gbuf_fill.AddUniformBufferInput(
+    const RpResRef shared_data_buf = gbuf_fill.AddUniformBufferInput(
         common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
 
-    const RpResource cells_buf =
+    const RpResRef cells_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-    const RpResource items_buf =
+    const RpResRef items_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
-    const RpResource decals_buf =
+    const RpResRef decals_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::FragmentShader);
 
     frame_textures.albedo = gbuf_fill.AddColorOutput(MAIN_ALBEDO_TEX, frame_textures.albedo_params);
@@ -406,47 +406,47 @@ void Renderer::AddForwardOpaquePass(const DrawList &list, const CommonBuffers &c
                                     const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
                                     FrameTextures &frame_textures) {
     auto &opaque = rp_builder_.AddPass("OPAQUE");
-    const RpResource vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResource vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResource ndx_buf = opaque.AddIndexBufferInput(ctx_.default_indices_buf());
+    const RpResRef vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const RpResRef vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const RpResRef ndx_buf = opaque.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResource materials_buf =
+    const RpResRef materials_buf =
         opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResource textures_buf =
+    const RpResRef textures_buf =
         opaque.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
 #else
-    const RpResource textures_buf;
+    const RpResRef textures_buf = {};
 #endif
-    const RpResource brdf_lut = opaque.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
-    const RpResource noise_tex =
+    const RpResRef brdf_lut = opaque.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
+    const RpResRef noise_tex =
         opaque.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    const RpResource cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
+    const RpResRef cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
 
-    const RpResource dummy_black = opaque.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-    const RpResource dummy_white = opaque.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_black = opaque.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_white = opaque.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
 
-    const RpResource instances_buf =
+    const RpResRef instances_buf =
         opaque.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
-    const RpResource instances_indices_buf =
+    const RpResRef instances_indices_buf =
         opaque.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-    const RpResource shader_data_buf = opaque.AddUniformBufferInput(
+    const RpResRef shader_data_buf = opaque.AddUniformBufferInput(
         common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
 
-    const RpResource cells_buf =
+    const RpResRef cells_buf =
         opaque.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-    const RpResource items_buf =
+    const RpResRef items_buf =
         opaque.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
-    const RpResource lights_buf =
+    const RpResRef lights_buf =
         opaque.AddStorageReadonlyInput(common_buffers.lights_res, Ren::eStageBits::FragmentShader);
-    const RpResource decals_buf =
+    const RpResRef decals_buf =
         opaque.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::FragmentShader);
 
-    const RpResource shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::FragmentShader);
-    const RpResource ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Ren::eStageBits::FragmentShader);
+    const RpResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::FragmentShader);
+    const RpResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Ren::eStageBits::FragmentShader);
 
-    RpResource lmap_tex[4];
+    RpResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (list.env.lm_indir_sh[i]) {
             lmap_tex[i] = opaque.AddTextureInput(list.env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
@@ -474,48 +474,48 @@ void Renderer::AddForwardTransparentPass(const DrawList &list, const CommonBuffe
         return;
     }
     auto &transparent = rp_builder_.AddPass("TRANSPARENT");
-    const RpResource vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
-    const RpResource vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
-    const RpResource ndx_buf = transparent.AddIndexBufferInput(ctx_.default_indices_buf());
+    const RpResRef vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
+    const RpResRef vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
+    const RpResRef ndx_buf = transparent.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResource materials_buf =
+    const RpResRef materials_buf =
         transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResource textures_buf =
+    const RpResRef textures_buf =
         transparent.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
 #else
-    const RpResource textures_buf;
+    const RpResRef textures_buf = {};
 #endif
-    const RpResource brdf_lut = transparent.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
-    const RpResource noise_tex =
+    const RpResRef brdf_lut = transparent.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
+    const RpResRef noise_tex =
         transparent.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    const RpResource cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
+    const RpResRef cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
 
-    const RpResource dummy_black = transparent.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-    const RpResource dummy_white = transparent.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_black = transparent.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_white = transparent.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
 
-    const RpResource instances_buf =
+    const RpResRef instances_buf =
         transparent.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
-    const RpResource instances_indices_buf =
+    const RpResRef instances_indices_buf =
         transparent.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-    const RpResource shader_data_buf = transparent.AddUniformBufferInput(
+    const RpResRef shader_data_buf = transparent.AddUniformBufferInput(
         common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
 
-    const RpResource cells_buf =
+    const RpResRef cells_buf =
         transparent.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-    const RpResource items_buf =
+    const RpResRef items_buf =
         transparent.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
-    const RpResource lights_buf =
+    const RpResRef lights_buf =
         transparent.AddStorageReadonlyInput(common_buffers.lights_res, Ren::eStageBits::FragmentShader);
-    const RpResource decals_buf =
+    const RpResRef decals_buf =
         transparent.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::FragmentShader);
 
-    const RpResource shadowmap_tex =
+    const RpResRef shadowmap_tex =
         transparent.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::FragmentShader);
-    const RpResource ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Ren::eStageBits::FragmentShader);
+    const RpResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Ren::eStageBits::FragmentShader);
 
-    RpResource lmap_tex[4];
+    RpResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (list.env.lm_indir_sh[i]) {
             lmap_tex[i] = transparent.AddTextureInput(list.env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
@@ -539,11 +539,11 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");
 
     struct PassData {
-        RpResource shared_data;
-        RpResource cells_buf, items_buf, lights_buf, decals_buf;
-        RpResource shadowmap_tex, ssao_tex;
-        RpResource depth_tex, albedo_tex, normal_tex, spec_tex;
-        RpResource output_tex;
+        RpResRef shared_data;
+        RpResRef cells_buf, items_buf, lights_buf, decals_buf;
+        RpResRef shadowmap_tex, ssao_tex;
+        RpResRef depth_tex, albedo_tex, normal_tex, spec_tex;
+        RpResRef output_tex;
     };
 
     auto *data = gbuf_shade.AllocPassData<PassData>();
@@ -609,15 +609,15 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     });
 }
 
-void Renderer::AddSSAOPasses(const RpResource &depth_down_2x, const RpResource &_depth_tex, RpResource &out_ssao) {
+void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth_tex, RpResRef &out_ssao) {
     const Ren::Vec4i cur_res =
         Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};
 
-    RpResource ssao_raw;
+    RpResRef ssao_raw;
     { // Main SSAO pass
         auto &ssao = rp_builder_.AddPass("SSAO");
-        const RpResource rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Ren::eStageBits::FragmentShader);
-        const RpResource depth_tex = ssao.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        const RpResRef rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Ren::eStageBits::FragmentShader);
+        const RpResRef depth_tex = ssao.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -635,11 +635,11 @@ void Renderer::AddSSAOPasses(const RpResource &depth_down_2x, const RpResource &
         ssao.set_executor(&rp_ssao_);
     }
 
-    RpResource ssao_blurred1;
+    RpResRef ssao_blurred1;
     { // Horizontal SSAO blur
         auto &ssao_blur_h = rp_builder_.AddPass("SSAO BLUR H");
-        const RpResource depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        const RpResource ssao_tex = ssao_blur_h.AddTextureInput(ssao_raw, Ren::eStageBits::FragmentShader);
+        const RpResRef depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        const RpResRef ssao_tex = ssao_blur_h.AddTextureInput(ssao_raw, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -657,11 +657,11 @@ void Renderer::AddSSAOPasses(const RpResource &depth_down_2x, const RpResource &
         ssao_blur_h.set_executor(&rp_ssao_blur_h_);
     }
 
-    RpResource ssao_blurred2;
+    RpResRef ssao_blurred2;
     { // Vertical SSAO blur
         auto &ssao_blur_v = rp_builder_.AddPass("SSAO BLUR V");
-        const RpResource depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        const RpResource ssao_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Ren::eStageBits::FragmentShader);
+        const RpResRef depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        const RpResRef ssao_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -681,10 +681,10 @@ void Renderer::AddSSAOPasses(const RpResource &depth_down_2x, const RpResource &
 
     { // Upscale SSAO pass
         auto &ssao_upscale = rp_builder_.AddPass("UPSCALE");
-        const RpResource depth_down_2x_res =
+        const RpResRef depth_down_2x_res =
             ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        const RpResource depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
-        const RpResource ssao_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
+        const RpResRef depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
+        const RpResRef ssao_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;

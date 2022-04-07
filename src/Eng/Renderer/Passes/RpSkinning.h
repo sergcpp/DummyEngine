@@ -9,19 +9,18 @@ class RpSkinningExecutor : public RenderPassExecutor {
     const Ren::Pipeline &pi_skinning_;
     DynArrayConstRef<SkinRegion> skin_regions_;
 
-    RpResource skin_vtx_buf_;
-    RpResource skin_transforms_buf_;
-    RpResource shape_keys_buf_;
-    RpResource delta_buf_;
+    RpResRef skin_vtx_buf_;
+    RpResRef skin_transforms_buf_;
+    RpResRef shape_keys_buf_;
+    RpResRef delta_buf_;
 
-    RpResource vtx_buf1_;
-    RpResource vtx_buf2_;
+    RpResRef vtx_buf1_;
+    RpResRef vtx_buf2_;
 
   public:
     RpSkinningExecutor(const Ren::Pipeline &pi_skinning, const DynArray<SkinRegion> &skin_regions,
-                       const RpResource &skin_vtx_buf, const RpResource &skin_transforms_buf,
-                       const RpResource &shape_keys_buf, const RpResource &delta_buf, const RpResource &vtx_buf1,
-                       const RpResource &vtx_buf2)
+                       const RpResRef skin_vtx_buf, const RpResRef skin_transforms_buf, const RpResRef shape_keys_buf,
+                       const RpResRef delta_buf, const RpResRef vtx_buf1, const RpResRef vtx_buf2)
         : pi_skinning_(pi_skinning), skin_regions_(skin_regions), skin_vtx_buf_(skin_vtx_buf),
           skin_transforms_buf_(skin_transforms_buf), shape_keys_buf_(shape_keys_buf), delta_buf_(delta_buf),
           vtx_buf1_(vtx_buf1), vtx_buf2_(vtx_buf2) {}

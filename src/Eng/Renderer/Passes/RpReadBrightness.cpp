@@ -14,6 +14,7 @@ void RpReadBrightness::Execute(RpBuilder &builder) {
 
     RpAllocTex &input_tex = builder.GetReadTexture(pass_data_->input_tex);
     RpAllocBuf &output_buf = builder.GetWriteBuffer(pass_data_->output_buf);
+    RpAllocTex &exposure_tex = builder.GetWriteTexture(pass_data_->exposure_tex);
 
     auto &ctx = builder.ctx();
 

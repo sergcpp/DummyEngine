@@ -18,18 +18,18 @@ class RpBilateralBlur : public RenderPassExecutor {
     Ren::Vec2i res_ = {};
     bool vertical_ = false;
 
-    RpResource depth_tex_;
-    RpResource input_tex_;
+    RpResRef depth_tex_;
+    RpResRef input_tex_;
 
-    RpResource output_tex_;
+    RpResRef output_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
 
   public:
     RpBilateralBlur(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(const Ren::Vec2i res, const bool vertical, const RpResource &depth_tex, const RpResource &input_tex,
-               const RpResource &output_tex) {
+    void Setup(const Ren::Vec2i res, const bool vertical, const RpResRef depth_tex, const RpResRef input_tex,
+               const RpResRef output_tex) {
         res_ = res;
         vertical_ = vertical;
 

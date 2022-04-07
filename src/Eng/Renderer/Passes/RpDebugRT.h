@@ -10,17 +10,17 @@ class PrimDraw;
 struct ViewState;
 
 struct RpDebugRTData {
-    RpResource shared_data;
-    RpResource geo_data_buf;
-    RpResource materials_buf;
-    RpResource vtx_buf1;
-    RpResource vtx_buf2;
-    RpResource ndx_buf;
-    RpResource env_tex;
-    RpResource lm_tex[5];
-    RpResource dummy_black;
+    RpResRef shared_data;
+    RpResRef geo_data_buf;
+    RpResRef materials_buf;
+    RpResRef vtx_buf1;
+    RpResRef vtx_buf2;
+    RpResRef ndx_buf;
+    RpResRef env_tex;
+    RpResRef lm_tex[5];
+    RpResRef dummy_black;
 
-    RpResource output_tex;
+    RpResRef output_tex;
 };
 
 class RpDebugRT : public RenderPassExecutor {

@@ -6,8 +6,8 @@ class PrimDraw;
 struct ViewState;
 
 struct RpBlurData {
-    RpResource input_tex;
-    RpResource output_tex;
+    RpResRef input_tex;
+    RpResRef output_tex;
 };
 
 class RpBlur : public RenderPassExecutor {

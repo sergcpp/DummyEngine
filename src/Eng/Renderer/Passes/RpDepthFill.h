@@ -21,18 +21,18 @@ class RpDepthFill : public RenderPassExecutor {
     DynArrayConstRef<uint32_t> zfill_batch_indices;
     DynArrayConstRef<BasicDrawBatch> zfill_batches;
 
-    RpResource vtx_buf1_;
-    RpResource vtx_buf2_;
-    RpResource ndx_buf_;
-    RpResource instances_buf_;
-    RpResource instance_indices_buf_;
-    RpResource shared_data_buf_;
-    RpResource materials_buf_;
-    RpResource textures_buf_;
-    RpResource noise_tex_;
+    RpResRef vtx_buf1_;
+    RpResRef vtx_buf2_;
+    RpResRef ndx_buf_;
+    RpResRef instances_buf_;
+    RpResRef instance_indices_buf_;
+    RpResRef shared_data_buf_;
+    RpResRef materials_buf_;
+    RpResRef textures_buf_;
+    RpResRef noise_tex_;
 
-    RpResource depth_tex_;
-    RpResource velocity_tex_;
+    RpResRef depth_tex_;
+    RpResRef velocity_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                   RpAllocTex &depth_tex, RpAllocTex &velocity_tex);
@@ -60,11 +60,11 @@ class RpDepthFill : public RenderPassExecutor {
                const char instance_indices_buf[], const char shared_data_buf[], const Ren::Tex2DRef &noise_tex,
                const char main_depth_tex[], const char main_velocity_tex[]);
 
-    void Setup(const DrawList &list, const ViewState *view_state, bool clear_depth, const RpResource &vtx_buf1,
-               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
-               const RpResource &textures_buf, const BindlessTextureData *bindless_tex, const RpResource &instances_buf,
-               const RpResource &instance_indices_buf, const RpResource &shared_data_buf, const RpResource &noise_tex,
-               const RpResource &depth_tex, const RpResource &velocity_tex) {
+    void Setup(const DrawList &list, const ViewState *view_state, bool clear_depth, const RpResRef vtx_buf1,
+               const RpResRef vtx_buf2, const RpResRef ndx_buf, const RpResRef materials_buf,
+               const RpResRef textures_buf, const BindlessTextureData *bindless_tex, const RpResRef instances_buf,
+               const RpResRef instance_indices_buf, const RpResRef shared_data_buf, const RpResRef noise_tex,
+               const RpResRef depth_tex, const RpResRef velocity_tex) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
         clear_depth_ = clear_depth;

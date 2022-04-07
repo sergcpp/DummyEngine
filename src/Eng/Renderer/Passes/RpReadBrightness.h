@@ -4,8 +4,9 @@
 #include "../Renderer_DrawList.h"
 
 struct RpReadBrightnessData {
-    RpResource input_tex;
-    RpResource output_buf;
+    RpResRef input_tex;
+    RpResRef output_buf;
+    RpResRef exposure_tex;
 };
 
 class RpReadBrightness : public RenderPassExecutor {

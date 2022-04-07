@@ -192,11 +192,12 @@ DebugEllipsoids*/
     static const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 
     RpBuilder rp_builder_;
+    Ren::SmallVector<RpResRef, 8> backbuffer_sources_;
 
-    //RpUpdateBuffers rp_update_buffers_;
-    //RpSkinning rp_skinning_;
-    //RpUpdateAccBuffers rp_update_acc_bufs_;
-    //RpBuildAccStructures rp_build_acc_structs_;
+    // RpUpdateBuffers rp_update_buffers_;
+    // RpSkinning rp_skinning_;
+    // RpUpdateAccBuffers rp_update_acc_bufs_;
+    // RpBuildAccStructures rp_build_acc_structs_;
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydome rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
@@ -228,7 +229,7 @@ DebugEllipsoids*/
     RpRTReflections rp_rt_reflections_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
-    //RpCopyTex rp_taa_copy_tex_ = {"TAA COPY TEX"};
+    // RpCopyTex rp_taa_copy_tex_ = {"TAA COPY TEX"};
     RpBlur rp_blur_h_ = {prim_draw_}, rp_blur_v_ = {prim_draw_};
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
     RpReadBrightness rp_read_brightness_;
@@ -241,9 +242,9 @@ DebugEllipsoids*/
     // RpFXAA rp_fxaa_ = {prim_draw_};
 
     // debugging passes
-    //RpDebugEllipsoids rp_debug_ellipsoids_ = {prim_draw_};
-    //RpDebugProbes rp_debug_probes_ = {prim_draw_};
-    //RpDebugTextures rp_debug_textures_ = {prim_draw_};
+    // RpDebugEllipsoids rp_debug_ellipsoids_ = {prim_draw_};
+    // RpDebugProbes rp_debug_probes_ = {prim_draw_};
+    // RpDebugTextures rp_debug_textures_ = {prim_draw_};
 #endif
 
     ViewState view_state_;
@@ -258,26 +259,26 @@ DebugEllipsoids*/
     Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_resolve_temporal_;
 
     struct CommonBuffers {
-        RpResource skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
+        RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
             decals_res, items_res, shared_data_res, atomic_cnt_res;
     };
 
     struct FrameTextures {
         Ren::Tex2DParams color_params;
-        RpResource color;
+        RpResRef color;
         Ren::Tex2DParams albedo_params;
-        RpResource albedo;
+        RpResRef albedo;
         Ren::Tex2DParams specular_params;
-        RpResource specular;
+        RpResRef specular;
         Ren::Tex2DParams normal_params;
-        RpResource normal;
+        RpResRef normal;
         Ren::Tex2DParams depth_params;
-        RpResource depth;
+        RpResRef depth;
         Ren::Tex2DParams velocity_params;
-        RpResource velocity;
+        RpResRef velocity;
 
-        RpResource shadowmap;
-        RpResource ssao;
+        RpResRef shadowmap;
+        RpResRef ssao;
     };
 
     void AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_buffers);
@@ -294,13 +295,13 @@ DebugEllipsoids*/
                                    const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
                                    FrameTextures &frame_textures);
 
-    void AddSSAOPasses(const RpResource &depth_down_2x, const RpResource &depth_tex, RpResource &out_ssao);
+    void AddSSAOPasses(RpResRef depth_down_2x, RpResRef depth_tex, RpResRef &out_ssao);
 
     void AddHQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
                              const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                             const BindlessTextureData &bindless, const RpResource &depth_hierarchy,
+                             const BindlessTextureData &bindless, RpResRef depth_hierarchy,
                              FrameTextures &frame_textures);
-    void AddLQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers, const RpResource &depth_down_2x,
+    void AddLQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers, RpResRef depth_down_2x,
                              FrameTextures &frame_textures);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
