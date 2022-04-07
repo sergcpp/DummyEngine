@@ -202,6 +202,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
         sprintf(name_buf, "Present Image [%i]", int(i));
 
         Tex2DParams params;
+        params.w = w;
+        params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
             params.format = eTexFormat::RawRGBA8888;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_SRGB) {
@@ -272,6 +274,8 @@ void Ren::Context::Resize(int w, int h) {
         sprintf(name_buf, "Present Image [%i]", int(i));
 
         Tex2DParams params;
+        params.w = w;
+        params.h = h;
         if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_UNORM) {
             params.format = eTexFormat::RawRGBA8888;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {

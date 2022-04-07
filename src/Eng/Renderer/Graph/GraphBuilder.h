@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include <unordered_set>
 #include <vector>
 
 #include <Ren/Buffer.h>
@@ -23,6 +24,12 @@ class ShaderLoader;
 
 class RpBuilder;
 
+struct rp_write_pass_t {
+    int16_t pass_index;
+    int16_t slot_index;
+};
+static_assert(sizeof(rp_write_pass_t) == 4, "!");
+
 struct RpAllocBuf {
     union {
         struct {
@@ -33,6 +40,7 @@ struct RpAllocBuf {
     };
 
     Ren::eStageBits used_in_stages;
+    Ren::SmallVector<rp_write_pass_t, 32> written_in_passes;
 
     std::string name;
     RpBufDesc desc;
@@ -51,6 +59,7 @@ struct RpAllocTex {
     };
 
     Ren::eStageBits used_in_stages;
+    Ren::SmallVector<rp_write_pass_t, 32> written_in_passes;
 
     std::string name;
     Ren::Tex2DParams desc;
@@ -67,10 +76,10 @@ class RpBuilder {
     Ren::RastState rast_state_;
 
     Ren::SparseArray<RpAllocBuf> buffers_;
-    Ren::HashMap32<std::string, uint32_t> name_to_buffer_;
+    Ren::HashMap32<std::string, uint16_t> name_to_buffer_;
 
     Ren::SparseArray<RpAllocTex> textures_;
-    Ren::HashMap32<std::string, uint32_t> name_to_texture_;
+    Ren::HashMap32<std::string, uint16_t> name_to_texture_;
 
     void AllocateNeededResources(RenderPass &pass);
     void InsertResourceTransitions(RenderPass &pass);
@@ -78,10 +87,15 @@ class RpBuilder {
                                   Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
     void CheckResourceStates(RenderPass &pass);
 
+    bool DependsOn_r(int16_t dst_pass, int16_t src_pass);
+    int16_t FindPreviousWrittenInPass(RpResRef handle);
+    void TraversePassDependencies(const RenderPass *pass, int recursion_depth, std::vector<RenderPass *> &out_pass_stack);
+
     static const int AllocBufSize = 4 * 1024 * 1024;
     std::unique_ptr<char[]> alloc_buf_;
     Sys::MonoAlloc<char> alloc_;
     std::vector<RenderPass *> render_passes_;
+    std::vector<RenderPass *> reordered_render_passes_;
     std::vector<std::unique_ptr<void, void (*)(void *)>> render_pass_data_;
 
     template <typename T> static void pass_data_deleter(void *_ptr) {
@@ -109,37 +123,36 @@ class RpBuilder {
         return new_data;
     }
 
-    RpResource ReadBuffer(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResource ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+    RpResRef ReadBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                        RenderPass &pass);
+
+    RpResRef ReadTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                         RenderPass &pass);
+
+    RpResRef WriteBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef WriteBuffer(const char *name, const RpBufDesc &desc, Ren::eResState desired_state, Ren::eStageBits stages,
+                         RenderPass &pass);
+    RpResRef WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                         RenderPass &pass);
+
+    RpResRef WriteTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef WriteTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef WriteTexture(const char *name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
+                          Ren::eStageBits stages, RenderPass &pass);
+    RpResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           RenderPass &pass);
 
-    RpResource ReadTexture(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResource ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResource ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                           RenderPass &pass);
+    RpAllocBuf &GetReadBuffer(RpResRef handle);
+    RpAllocTex &GetReadTexture(RpResRef handle);
 
-    RpResource WriteBuffer(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResource WriteBuffer(const char *name, const RpBufDesc &desc, Ren::eResState desired_state,
-                           Ren::eStageBits stages, RenderPass &pass);
-    RpResource WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                           RenderPass &pass);
-
-    RpResource WriteTexture(RpResource handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResource WriteTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
-                            RenderPass &pass);
-    RpResource WriteTexture(const char *name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
-                            Ren::eStageBits stages, RenderPass &pass);
-    RpResource WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                            RenderPass &pass);
-
-    RpAllocBuf &GetReadBuffer(const RpResource &handle);
-    RpAllocTex &GetReadTexture(const RpResource &handle);
-
-    RpAllocBuf &GetWriteBuffer(const RpResource &handle);
-    RpAllocTex &GetWriteTexture(const RpResource &handle);
+    RpAllocBuf &GetWriteBuffer(RpResRef handle);
+    RpAllocTex &GetWriteTexture(RpResRef handle);
 
     void Reset();
-    void Compile();
+    void Compile(const RpResRef backbuffer_sources[] = nullptr, int backbuffer_sources_count = 0);
     void Execute();
 
     Ren::SmallVector<Ren::SamplerRef, 64> temp_samplers;

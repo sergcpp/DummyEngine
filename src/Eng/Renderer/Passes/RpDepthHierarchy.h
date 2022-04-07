@@ -15,15 +15,15 @@ class RpDepthHierarchy : public RenderPassExecutor {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
 
-    RpResource depth_tex_;
-    RpResource atomic_buf_;
-    RpResource output_tex_;
+    RpResRef depth_tex_;
+    RpResRef atomic_buf_;
+    RpResRef output_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const RpResource &depth_tex,
-               const RpResource &atomic_counter, const RpResource &output_tex) {
+    void Setup(RpBuilder &builder, const ViewState *view_state, const RpResRef depth_tex, const RpResRef atomic_counter,
+               const RpResRef output_tex) {
         view_state_ = view_state;
 
         depth_tex_ = depth_tex;

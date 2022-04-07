@@ -6,8 +6,8 @@ class PrimDraw;
 struct ViewState;
 
 struct RpDownColorData {
-    RpResource input_tex;
-    RpResource output_tex;
+    RpResRef input_tex;
+    RpResRef output_tex;
 };
 
 class RpDownColor : public RenderPassExecutor {

@@ -7,10 +7,10 @@ class ProbeStorage;
 struct ViewState;
 
 struct RpSSRTraceData {
-    RpResource shared_data;
-    RpResource normal_tex;
-    RpResource depth_down_2x_tex;
-    RpResource output_tex;
+    RpResRef shared_data;
+    RpResRef normal_tex;
+    RpResRef depth_down_2x_tex;
+    RpResRef output_tex;
 };
 
 class RpSSRTrace : public RenderPassExecutor {

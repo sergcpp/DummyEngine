@@ -7,8 +7,8 @@ class ProbeStorage;
 struct ViewState;
 
 struct RpSSRDilateData {
-    RpResource ssr_tex;
-    RpResource output_tex;
+    RpResRef ssr_tex;
+    RpResRef output_tex;
 };
 
 class RpSSRDilate : public RenderPassExecutor {

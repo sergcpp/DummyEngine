@@ -27,18 +27,18 @@ class RpShadowMaps : public RenderPassExecutor {
     DynArrayConstRef<ShadowMapRegion> shadow_regions_;
 
     // inputs
-    RpResource vtx_buf1_;
-    RpResource vtx_buf2_;
-    RpResource ndx_buf_;
-    RpResource instances_buf_;
-    RpResource instance_indices_buf_;
-    RpResource shared_data_buf_;
-    RpResource materials_buf_;
-    RpResource textures_buf_;
-    RpResource noise_tex_;
+    RpResRef vtx_buf1_;
+    RpResRef vtx_buf2_;
+    RpResRef ndx_buf_;
+    RpResRef instances_buf_;
+    RpResRef instance_indices_buf_;
+    RpResRef shared_data_buf_;
+    RpResRef materials_buf_;
+    RpResRef textures_buf_;
+    RpResRef noise_tex_;
 
     // outputs
-    RpResource shadowmap_tex_;
+    RpResRef shadowmap_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                   RpAllocTex &shadowmap_tex);
@@ -47,10 +47,10 @@ class RpShadowMaps : public RenderPassExecutor {
   public:
     RpShadowMaps(int w, int h) : w_(w), h_(h) {}
 
-    void Setup(const DrawList &list, const RpResource &vtx_buf1, const RpResource &vtx_buf2, const RpResource &ndx_buf,
-               const RpResource &materials_buf, const BindlessTextureData *bindless_tex, const RpResource &textures_buf,
-               const RpResource &instances_buf, const RpResource &instance_indices_buf,
-               const RpResource &shared_data_buf, const RpResource &noise_tex, const RpResource &shadowmap_tex) {
+    void Setup(const DrawList &list, const RpResRef vtx_buf1, const RpResRef vtx_buf2, const RpResRef ndx_buf,
+               const RpResRef materials_buf, const BindlessTextureData *bindless_tex, const RpResRef textures_buf,
+               const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
+               const RpResRef noise_tex, const RpResRef shadowmap_tex) {
         materials_ = list.materials;
         bindless_tex_ = bindless_tex;
         shadow_batches_ = list.shadow_batches;
