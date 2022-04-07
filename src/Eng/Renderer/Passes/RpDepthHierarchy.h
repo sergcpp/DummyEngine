@@ -6,7 +6,7 @@
 
 struct ViewState;
 
-class RpDepthHierarchy : public RenderPassBase {
+class RpDepthHierarchy : public RenderPassExecutor {
     bool initialized = false;
 
     // lazily initialized data
@@ -15,16 +15,25 @@ class RpDepthHierarchy : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
 
-    RpResource input_tex_;
+    RpResource depth_tex_;
     RpResource atomic_buf_;
     RpResource output_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char depth_tex[], const char atomic_counter[],
-               const char output_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(RpBuilder &builder, const ViewState *view_state, const RpResource &depth_tex,
+               const RpResource &atomic_counter, const RpResource &output_tex) {
+        view_state_ = view_state;
 
-    const char *name() const override { return "DEPTH HIERARCHY"; }
+        depth_tex_ = depth_tex;
+        atomic_buf_ = atomic_counter;
+        output_tex_ = output_tex;
+    }
+
+    static const int MipCount = 7;
+    // TODO: check if it is actually makes sense to use padding
+    static const int TileSize = 1 << (MipCount - 1);
+
+    void Execute(RpBuilder &builder) override;
 };

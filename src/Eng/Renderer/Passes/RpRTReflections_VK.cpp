@@ -13,33 +13,33 @@
 void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf &sobol_buf = builder.GetReadBuffer(sobol_buf_);
-    RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(scrambling_tile_buf_);
-    RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(ranking_tile_buf_);
-    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(geo_data_buf_);
-    RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &env_tex = builder.GetReadTexture(env_tex_);
-    RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(ray_counter_buf_);
-    RpAllocBuf &ray_list_buf = builder.GetReadBuffer(ray_list_buf_);
-    RpAllocBuf &indir_args_buf = builder.GetReadBuffer(indir_args_buf_);
-    RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    RpAllocBuf &sobol_buf = builder.GetReadBuffer(pass_data_->sobol);
+    RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(pass_data_->scrambling_tile);
+    RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(pass_data_->ranking_tile);
+    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
+    RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
+    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
+    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
+    RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
+    RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
+    RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
+    RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(pass_data_->ray_counter);
+    RpAllocBuf &ray_list_buf = builder.GetReadBuffer(pass_data_->ray_list);
+    RpAllocBuf &indir_args_buf = builder.GetReadBuffer(pass_data_->indir_args);
+    RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
-        if (lm_tex_[i]) {
-            lm_tex[i] = &builder.GetReadTexture(lm_tex_[i]);
+        if (pass_data_->lm_tex[i]) {
+            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
     }
 
-    RpAllocTex &out_refl_tex = builder.GetWriteTexture(out_refl_tex_);
-    RpAllocTex &out_raylen_tex = builder.GetWriteTexture(out_raylen_tex_);
+    RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex);
+    RpAllocTex &out_raylen_tex = builder.GetWriteTexture(pass_data_->out_raylen_tex);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -113,33 +113,33 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
 void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf &sobol_buf = builder.GetReadBuffer(sobol_buf_);
-    RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(scrambling_tile_buf_);
-    RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(ranking_tile_buf_);
-    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(geo_data_buf_);
-    RpAllocBuf &materials_buf = builder.GetReadBuffer(materials_buf_);
-    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
-    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
-    RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &env_tex = builder.GetReadTexture(env_tex_);
-    RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(ray_counter_buf_);
-    RpAllocBuf &ray_list_buf = builder.GetReadBuffer(ray_list_buf_);
-    RpAllocBuf &indir_args_buf = builder.GetReadBuffer(indir_args_buf_);
-    RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
+    RpAllocBuf &sobol_buf = builder.GetReadBuffer(pass_data_->sobol);
+    RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(pass_data_->scrambling_tile);
+    RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(pass_data_->ranking_tile);
+    RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
+    RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
+    RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
+    RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
+    RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
+    RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
+    RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
+    RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(pass_data_->ray_counter);
+    RpAllocBuf &ray_list_buf = builder.GetReadBuffer(pass_data_->ray_list);
+    RpAllocBuf &indir_args_buf = builder.GetReadBuffer(pass_data_->indir_args);
+    RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
-        if (lm_tex_[i]) {
-            lm_tex[i] = &builder.GetReadTexture(lm_tex_[i]);
+        if (pass_data_->lm_tex[i]) {
+            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
         } else {
             lm_tex[i] = &dummy_black;
         }
     }
 
-    RpAllocTex &out_refl_tex = builder.GetWriteTexture(out_refl_tex_);
-    RpAllocTex &out_raylen_tex = builder.GetWriteTexture(out_raylen_tex_);
+    RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex);
+    RpAllocTex &out_raylen_tex = builder.GetWriteTexture(pass_data_->out_raylen_tex);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();

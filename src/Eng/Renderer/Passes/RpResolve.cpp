@@ -1,5 +1,5 @@
 #include "RpResolve.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/Program.h>
 #include <Ren/RastState.h>
@@ -64,3 +64,4 @@ void RpResolve::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output
         ctx.log()->Error("RpResolve: resolve_fb_ init failed!");
     }
 }
+#endif

@@ -11,30 +11,9 @@
 
 #include "../assets/shaders/internal/blit_ssr_dilate_interface.glsl"
 
-void RpSSRDilate::Setup(RpBuilder &builder, const ViewState *view_state, const char ssr_tex_name[],
-                        const char output_tex_name[]) {
-    view_state_ = view_state;
-
-    ssr_tex_ =
-        builder.ReadTexture(ssr_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    { // Auxilary texture for reflections (rg - uvs, b - influence)
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0] / 2;
-        params.h = view_state->scr_res[1] / 2;
-        params.format = Ren::eTexFormat::RawRGB10_A2;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex_name, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpSSRDilate::Execute(RpBuilder &builder) {
-    RpAllocTex &ssr_tex = builder.GetReadTexture(ssr_tex_);
-    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+    RpAllocTex &ssr_tex = builder.GetReadTexture(pass_data_->ssr_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
     LazyInit(builder.ctx(), builder.sh(), output_tex);
 
     Ren::RastState rast_state;

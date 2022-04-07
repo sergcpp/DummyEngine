@@ -534,6 +534,8 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
         }
     }
 
+    (void)tile_count;
+
     return is_occluder;
 
 #undef LEFT_EDGE_BIAS
@@ -543,7 +545,7 @@ SWint _swRasterizeTriangle_Ref(SWcull_ctx *ctx, SWint tile_row_ndx,
 
 SWint _swProcessTriangle_Ref(SWcull_ctx *ctx, SWfloat v0[3], SWfloat v1[3], SWfloat v2[3],
                              SWint is_occluder) {
-    const SWint tile_count = ctx->tile_w * ctx->tile_h;
+    //const SWint tile_count = ctx->tile_w * ctx->tile_h;
 
     SWint bb_min[2], bb_max[2];
 
@@ -941,8 +943,8 @@ SWint _swCullCtxTestRect_Ref(const SWcull_ctx *ctx, const SWfloat p_min[2],
         _mm128_and_si128(_mm128_add_epi32(px_bboxi, SIMD_TILE_PAD), SIMD_TILE_PAD_MASK);
     SWint tile_min_x = tile_bboxi.i32[0] >> SW_CULL_TILE_WIDTH_SHIFT;
     SWint tile_max_x = tile_bboxi.i32[1] >> SW_CULL_TILE_WIDTH_SHIFT;
-    SWint tile_min_y = tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT;
-    SWint tile_max_y = tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    // SWint tile_min_y = tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    // SWint tile_max_y = tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT;
     SWint tile_row_ndx = (tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
     SWint tile_row_end = (tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
 

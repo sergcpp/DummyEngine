@@ -22,7 +22,7 @@ void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _insta
     skin_regions.realloc(REN_MAX_SKIN_REGIONS_TOTAL);
     shape_keys_data.realloc(REN_MAX_SHAPE_KEYS_TOTAL);
     shape_keys_stage_buf = std::move(_shape_keys_stage_buf);
-    light_sources.realloc(REN_MAX_LIGHTS_TOTAL);
+    lights.realloc(REN_MAX_LIGHTS_TOTAL);
     lights_stage_buf = std::move(_lights_stage_buf);
     decals.realloc(REN_MAX_DECALS_TOTAL);
     decals_stage_buf = std::move(_decals_stage_buf);
@@ -62,7 +62,7 @@ void DrawList::Clear() {
     skin_transforms.count = 0;
     skin_regions.count = 0;
     shape_keys_data.count = 0;
-    light_sources.count = 0;
+    lights.count = 0;
     decals.count = 0;
     probes.count = 0;
     ellipsoids.count = 0;

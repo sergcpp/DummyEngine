@@ -12,48 +12,12 @@
 
 #include "../assets/shaders/internal/blit_combine_interface.glsl"
 
-void RpCombine::Setup(RpBuilder &builder, const ViewState *view_state, const Ren::Tex2DRef &dummy_black,
-                      const float gamma, const float exposure, const float fade, const bool tonemap,
-                      const char color_tex_name[], const char blur_tex_name[], const char output_tex_name[]) {
-    view_state_ = view_state;
-    gamma_ = gamma;
-    exposure_ = exposure;
-    fade_ = fade;
-    tonemap_ = tonemap;
-
-    color_tex_ =
-        builder.ReadTexture(color_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    if (blur_tex_name) {
-        blur_tex_ =
-            builder.ReadTexture(blur_tex_name, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    } else {
-        blur_tex_ =
-            builder.ReadTexture(dummy_black, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    }
-
-    if (output_tex_name) {
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0];
-        params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRGB888;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex_name, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    } else {
-        output_tex_ = {};
-    }
-}
-
 void RpCombine::Execute(RpBuilder &builder) {
-    RpAllocTex &color_tex = builder.GetReadTexture(color_tex_);
-    RpAllocTex &blur_tex = builder.GetReadTexture(blur_tex_);
+    RpAllocTex &color_tex = builder.GetReadTexture(pass_data_->color_tex);
+    RpAllocTex &blur_tex = builder.GetReadTexture(pass_data_->blur_tex);
     RpAllocTex *output_tex = nullptr;
-    if (output_tex_) {
-        output_tex = &builder.GetWriteTexture(output_tex_);
+    if (pass_data_->output_tex) {
+        output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
     }
 
     LazyInit(builder.ctx(), builder.sh(), output_tex);
@@ -61,7 +25,7 @@ void RpCombine::Execute(RpBuilder &builder) {
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-    if (output_tex_) {
+    if (pass_data_->output_tex) {
         rast_state.viewport[2] = view_state_->act_res[0];
         rast_state.viewport[3] = view_state_->act_res[1];
     } else {

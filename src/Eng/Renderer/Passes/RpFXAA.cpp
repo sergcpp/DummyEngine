@@ -1,5 +1,5 @@
 #include "RpFXAA.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/RastState.h>
 #include <Ren/Texture.h>
@@ -70,3 +70,4 @@ void RpFXAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_te
         ctx.log()->Error("RpFXAA: output_fb_ init failed!");
     }
 }
+#endif

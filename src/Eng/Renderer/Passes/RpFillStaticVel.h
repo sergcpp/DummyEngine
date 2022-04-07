@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpFillStaticVel : public RenderPassBase {
+class RpFillStaticVel : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -28,9 +28,15 @@ class RpFillStaticVel : public RenderPassBase {
   public:
     RpFillStaticVel(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[], const char depth_tex[],
-               const char velocity_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const ViewState *view_state, const RpResource &shared_data_buf, const RpResource &depth_tex,
+               const RpResource &velocity_tex) {
+        view_state_ = view_state;
 
-    const char *name() const override { return "FILL STATIC VEL"; }
+        shared_data_buf_ = shared_data_buf;
+
+        depth_tex_ = depth_tex;
+        velocity_tex_ = velocity_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

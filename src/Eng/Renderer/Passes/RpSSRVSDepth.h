@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include <Ren/Pipeline.h>
 
 #include "../Graph/GraphBuilder.h"
@@ -31,3 +31,4 @@ class RpSSRVSDepth : public RenderPassBase {
 
     const char *name() const override { return "SSR VS DEPTH"; }
 };
+#endif

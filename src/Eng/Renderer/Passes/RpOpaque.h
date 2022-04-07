@@ -5,7 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
-class RpOpaque : public RenderPassBase {
+class RpOpaque : public RenderPassExecutor {
     bool initialized = false;
 
     // lazily initialized data
@@ -66,15 +66,60 @@ class RpOpaque : public RenderPassBase {
   public:
     ~RpOpaque();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const Ren::BufferRef &vtx_buf1,
-               const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
-               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
-               const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
-               const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char instance_indices_buf[],
-               const char shared_data_buf[], const char cells_buf[], const char items_buf[], const char lights_buf[],
-               const char decals_buf[], const char shadowmap_tex[], const char ssao_tex[], const char out_color[],
-               const char out_normals[], const char out_spec[], const char out_depth[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const DrawList &list, const ViewState *view_state, const RpResource &vtx_buf1,
+               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
+               const RpResource &textures_buf, const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
+               const RpResource &brdf_lut, const RpResource &noise_tex, const RpResource &cone_rt_lut,
+               const RpResource &dummy_black, const RpResource &dummy_white, const RpResource &instances_buf,
+               const RpResource &instance_indices_buf, const RpResource &shared_data_buf, const RpResource &cells_buf,
+               const RpResource &items_buf, const RpResource &lights_buf, const RpResource &decals_buf,
+               const RpResource &shadowmap_tex, const RpResource &ssao_tex, const RpResource lm_tex[],
+               const RpResource &out_color, const RpResource &out_normals, const RpResource &out_spec,
+               const RpResource &out_depth) {
+        view_state_ = view_state;
+        pipelines_ = pipelines;
+        bindless_tex_ = bindless_tex;
 
-    const char *name() const override { return "OPAQUE"; }
+        materials_ = list.materials;
+        decals_atlas_ = list.decals_atlas;
+        probe_storage_ = list.probe_storage;
+
+        render_flags_ = list.render_flags;
+        main_batches_ = list.custom_batches;
+        main_batch_indices_ = list.custom_batch_indices;
+
+        vtx_buf1_ = vtx_buf1;
+        vtx_buf2_ = vtx_buf2;
+        ndx_buf_ = ndx_buf;
+        instances_buf_ = instances_buf;
+        instance_indices_buf_ = instance_indices_buf;
+        shared_data_buf_ = shared_data_buf;
+        cells_buf_ = cells_buf;
+        items_buf_ = items_buf;
+        lights_buf_ = lights_buf;
+        decals_buf_ = decals_buf;
+        shad_tex_ = shadowmap_tex;
+
+        materials_buf_ = materials_buf;
+        ssao_tex_ = ssao_tex;
+
+        for (int i = 0; i < 4; ++i) {
+            lm_tex_[i] = lm_tex[i];
+        }
+
+        brdf_lut_ = brdf_lut;
+        noise_tex_ = noise_tex;
+        cone_rt_lut_ = cone_rt_lut;
+
+        dummy_black_ = dummy_black;
+        dummy_white_ = dummy_white;
+
+        textures_buf_ = textures_buf;
+
+        color_tex_ = out_color;
+        normal_tex_ = out_normals;
+        spec_tex_ = out_spec;
+        depth_tex_ = out_depth;
+    }
+    void Execute(RpBuilder &builder) override;
 };

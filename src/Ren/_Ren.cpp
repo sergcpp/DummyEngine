@@ -53,6 +53,7 @@ extern "C" {
 #endif
 
 #include "Anim.cpp"
+#include "Buffer.cpp"
 #include "Camera.cpp"
 #include "Context.cpp"
 #include "CPUFeatures.cpp"

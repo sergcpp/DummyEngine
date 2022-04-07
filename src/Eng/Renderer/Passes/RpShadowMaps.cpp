@@ -5,53 +5,6 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpShadowMaps::Setup(RpBuilder &builder, const DrawList &list, const Ren::BufferRef &vtx_buf1,
-                         const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
-                         const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex,
-                         const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
-                         const char shadowmap_tex[], const Ren::Tex2DRef &noise_tex) {
-    materials_ = list.materials;
-    bindless_tex_ = bindless_tex;
-    shadow_batches_ = list.shadow_batches;
-    shadow_batch_indices_ = list.shadow_batch_indices;
-    shadow_lists_ = list.shadow_lists;
-    shadow_regions_ = list.shadow_regions;
-
-    vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
-    instances_buf_ =
-        builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-    instance_indices_buf_ =
-        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    materials_buf_ =
-        builder.ReadBuffer(materials_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-#if defined(USE_GL_RENDER)
-    textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
-                                       Ren::eStageBits::VertexShader, *this);
-#endif
-    noise_tex_ =
-        builder.ReadTexture(std::move(noise_tex), Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-
-    { // shadow map buffer
-        Ren::Tex2DParams params;
-        params.w = w_;
-        params.h = h_;
-        params.format = Ren::eTexFormat::Depth16;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.min_lod.from_float(0.0f);
-        params.sampling.max_lod.from_float(0.0f);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        params.sampling.compare = Ren::eTexCompare::LEqual;
-
-        shadowmap_tex_ = builder.WriteTexture(shadowmap_tex, params, Ren::eResState::DepthWrite,
-                                              /*Ren::eStageBits::Transfer |*/ Ren::eStageBits::DepthAttachment, *this);
-    }
-}
-
 void RpShadowMaps::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);

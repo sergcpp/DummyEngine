@@ -7,9 +7,7 @@
 
 #include "../assets/shaders/internal/skinning_interface.glsl"
 
-void RpSkinning::Execute(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
-
+void RpSkinningExecutor::Execute(RpBuilder &builder) {
     RpAllocBuf &skin_vtx_buf = builder.GetReadBuffer(skin_vtx_buf_);
     RpAllocBuf &skin_transforms_buf = builder.GetReadBuffer(skin_transforms_buf_);
     RpAllocBuf &shape_keys_buf = builder.GetReadBuffer(shape_keys_buf_);

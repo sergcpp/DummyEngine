@@ -84,7 +84,9 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_DrawList.cpp
                         Renderer/Renderer_Frontend.cpp
                         Renderer/Renderer_Gen.cpp
+                        Renderer/Renderer_GISpecular.cpp
                         Renderer/Renderer_Names.h
+                        Renderer/Renderer_Passes.cpp
                         Renderer/Renderer_Structs.h
                         Renderer/__brdf_lut.inl
                         Renderer/__cone_rt_lut.inl
@@ -109,7 +111,10 @@ set(SCENE_SOURCES   Scene/__cam_rig.inl
                     Scene/TexUpdateFileBuf.h)
 
 set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
-                    Renderer/Graph/GraphBuilder.cpp)
+                    Renderer/Graph/GraphBuilder.cpp
+                    Renderer/Graph/RenderPass.h
+                    Renderer/Graph/RenderPass.cpp
+                    Renderer/Graph/Resource.h)
 
 set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBilateralBlur.cpp
@@ -119,8 +124,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBuildAccStructures.cpp
                     Renderer/Passes/RpCombine.h
                     Renderer/Passes/RpCombine.cpp
-                    Renderer/Passes/RpCopyTex.h
-                    Renderer/Passes/RpCopyTex.cpp
                     Renderer/Passes/RpDebugRT.h
                     Renderer/Passes/RpDebugRT.cpp
                     Renderer/Passes/RpDepthFill.h
@@ -155,32 +158,16 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpSSAO.cpp
                     Renderer/Passes/RpSSRBlur.h
                     Renderer/Passes/RpSSRBlur.cpp
-                    Renderer/Passes/RpSSRClassifyTiles.h
-                    Renderer/Passes/RpSSRClassifyTiles.cpp
                     Renderer/Passes/RpSSRCompose.h
                     Renderer/Passes/RpSSRCompose.cpp
                     Renderer/Passes/RpSSRCompose2.h
                     Renderer/Passes/RpSSRCompose2.cpp
                     Renderer/Passes/RpSSRDilate.h
                     Renderer/Passes/RpSSRDilate.cpp
-                    Renderer/Passes/RpSSRPrefilter.h
-                    Renderer/Passes/RpSSRPrefilter.cpp
-                    Renderer/Passes/RpSSRPrepare.h
-                    Renderer/Passes/RpSSRPrepare.cpp
-                    Renderer/Passes/RpSSRReproject.h
-                    Renderer/Passes/RpSSRReproject.cpp
-                    Renderer/Passes/RpSSRResolveTemporal.h
-                    Renderer/Passes/RpSSRResolveTemporal.cpp
                     Renderer/Passes/RpSSRTrace.h
                     Renderer/Passes/RpSSRTrace.cpp
-                    Renderer/Passes/RpSSRTraceHQ.h
-                    Renderer/Passes/RpSSRTraceHQ.cpp
                     Renderer/Passes/RpSSRVSDepth.h
                     Renderer/Passes/RpSSRVSDepth.cpp
-                    Renderer/Passes/RpSSRWriteIndirectArgs.h
-                    Renderer/Passes/RpSSRWriteIndirectArgs.cpp
-                    Renderer/Passes/RpSSRWriteIndirectRTDispatch.h
-                    Renderer/Passes/RpSSRWriteIndirectRTDispatch.cpp
                     Renderer/Passes/RpTAA.h
                     Renderer/Passes/RpTAA.cpp
                     Renderer/Passes/RpTransparent.h
@@ -225,7 +212,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
-                        Renderer/Passes/RpSSRPrepareGL.cpp
                         Renderer/Passes/RpTransparentGL.cpp
                         Renderer/Passes/RpUpdateAccBuffersGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
@@ -248,7 +234,6 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp
                         Renderer/Passes/RpSkydomeVK.cpp
-                        Renderer/Passes/RpSSRPrepareVK.cpp
                         Renderer/Passes/RpTransparentVK.cpp
                         Renderer/Passes/RpUpdateAccBuffersVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")

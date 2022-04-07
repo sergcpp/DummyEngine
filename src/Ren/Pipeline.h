@@ -12,6 +12,18 @@ enum class ePipelineType : uint8_t {
     Undefined, Graphics, Compute, Raytracing
 };
 
+struct DispatchIndirectCommand {
+    uint32_t num_groups_x;
+    uint32_t num_groups_y;
+    uint32_t num_groups_z;
+};
+
+struct TraceRaysIndirectCommand {
+    uint32_t width;
+    uint32_t height;
+    uint32_t depth;
+};
+
 class Pipeline : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     ePipelineType type_ = ePipelineType::Undefined;

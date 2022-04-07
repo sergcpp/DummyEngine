@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
@@ -15,7 +15,7 @@ class RpUpdateBuffers : public RenderPassBase {
     Ren::WeakBufferRef instance_indices_stage_buf_;
     DynArrayConstRef<CellData> cells_;
     Ren::WeakBufferRef cells_stage_buf_;
-    DynArrayConstRef<LightSourceItem> light_sources_;
+    DynArrayConstRef<LightItem> lights_;
     Ren::WeakBufferRef lights_stage_buf_;
     DynArrayConstRef<DecalItem> decals_;
     Ren::WeakBufferRef decals_stage_buf_;
@@ -33,16 +33,16 @@ class RpUpdateBuffers : public RenderPassBase {
     const Ren::Camera *draw_cam_ = nullptr;
     const ViewState *view_state_ = nullptr;
 
-    RpResource skin_transforms_buf_;
-    RpResource shape_keys_buf_;
-    RpResource instances_buf_;
-    RpResource instance_indices_buf_;
-    RpResource cells_buf_;
-    RpResource lights_buf_;
-    RpResource decals_buf_;
-    RpResource items_buf_;
-    RpResource shared_data_buf_;
-    RpResource atomic_cnt_buf_;
+    //RpResource skin_transforms_buf_;
+    //RpResource shape_keys_buf_;
+    //RpResource instances_buf_;
+    //RpResource instance_indices_buf_;
+    //RpResource cells_buf_;
+    //RpResource lights_buf_;
+    //RpResource decals_buf_;
+    //RpResource items_buf_;
+    //RpResource shared_data_buf_;
+    //RpResource atomic_cnt_buf_;
 
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const char skin_transforms_buf[],
@@ -53,3 +53,4 @@ class RpUpdateBuffers : public RenderPassBase {
 
     const char *name() const override { return "UPDATE BUFFERS"; }
 };
+#endif

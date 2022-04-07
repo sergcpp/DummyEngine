@@ -8,20 +8,14 @@
 
 #include "../assets/shaders/internal/depth_hierarchy_interface.glsl"
 
-namespace RpDepthHierarchyInternal {
-extern const int MipCount;
-} // namespace RpDepthHierarchyInternal
-
 void RpDepthHierarchy::Execute(RpBuilder &builder) {
-    using namespace RpDepthHierarchyInternal;
-
-    RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
+    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
     RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
     LazyInit(builder.ctx(), builder.sh());
 
     glUseProgram(pi_depth_hierarchy_.prog()->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, input_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, DepthHierarchy::DEPTH_TEX_SLOT, depth_tex.ref->id());
 
     int i = 0;
     for (; i < output_tex.ref->params.mip_count; ++i) {

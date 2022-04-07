@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include <Ren/Texture.h>
 #include <Ren/VertexInput.h>
 
@@ -71,3 +71,4 @@ class RpDebugTextures : public RenderPassBase {
 
     const char *name() const override { return "DEBUG TEXTURES"; }
 };
+#endif

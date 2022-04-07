@@ -75,6 +75,10 @@ namespace Sys {
 
         ~MonoAlloc() {}
 
+        void Reset() {
+            memory_pos_ = 0;
+            p_memory_pos_ = &memory_pos_;
+        }
 
         T *allocate(const std::size_t n) {
             if (n == 0) {

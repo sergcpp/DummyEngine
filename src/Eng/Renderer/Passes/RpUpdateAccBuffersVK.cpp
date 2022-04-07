@@ -1,12 +1,9 @@
 #include "RpUpdateAccBuffers.h"
 
-void RpUpdateAccBuffers::Execute(RpBuilder &builder) {
+void RpUpdateAccBuffersExecutor::Execute(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetWriteBuffer(rt_obj_instances_buf_);
 
     Ren::Context &ctx = builder.ctx();
-    Ren::ApiContext *api_ctx = ctx.api_ctx();
-
-    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     if (rt_obj_instances_.count) {
         uint8_t *stage_mem = rt_obj_instances_stage_buf_->MapRange(
@@ -32,7 +29,7 @@ void RpUpdateAccBuffers::Execute(RpBuilder &builder) {
             builder.log()->Error("RpUpdateAccStructures: Failed to map rt obj instance buffer!");
         }
 
-        Ren::CopyBufferToBuffer(*rt_obj_instances_stage_buf_, api_ctx->backend_frame * RTObjInstancesBufChunkSize,
-                                *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, cmd_buf);
+        Ren::CopyBufferToBuffer(*rt_obj_instances_stage_buf_, ctx.backend_frame() * RTObjInstancesBufChunkSize,
+                                *rt_obj_instances_buf.ref, 0, rt_obj_instances_mem_size, ctx.current_cmd_buf());
     }
 }

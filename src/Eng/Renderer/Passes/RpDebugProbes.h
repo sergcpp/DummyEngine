@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
@@ -39,3 +39,4 @@ class RpDebugProbes : public RenderPassBase {
 
     const char *name() const override { return "DEBUG PROBES"; }
 };
+#endif

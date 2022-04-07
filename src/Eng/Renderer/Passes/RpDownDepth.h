@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpDownDepth : public RenderPassBase {
+class RpDownDepth : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -20,16 +20,21 @@ class RpDownDepth : public RenderPassBase {
     RpResource shared_data_buf_;
 
     RpResource depth_tex_;
-    RpResource depth_down_2x_tex_;
+    RpResource output_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_2x_tex);
 
   public:
     RpDownDepth(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[], const char depth_tex[],
-               const char output_tex[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const ViewState *view_state, const RpResource &shared_data_buf, const RpResource &depth_tex,
+               const RpResource &output_tex) {
+        view_state_ = view_state;
 
-    const char *name() const override { return "DOWN DEPTH"; }
+        shared_data_buf_ = shared_data_buf;
+        depth_tex_ = depth_tex;
+        output_tex_ = output_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };
