@@ -58,6 +58,7 @@ static_assert(COUNT_OF(g_blend_factor_vk) == int(eBlendFactor::_Count), "!");
 
 uint32_t align_up(const uint32_t size, const uint32_t alignment) { return (size + alignment - 1) & ~(alignment - 1); }
 
+static_assert(sizeof(TraceRaysIndirectCommand) == sizeof(VkTraceRaysIndirectCommandKHR), "!");
 } // namespace Ren
 
 Ren::Pipeline &Ren::Pipeline::operator=(Pipeline &&rhs) noexcept {

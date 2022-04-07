@@ -10,33 +10,12 @@
 
 #include "../assets/shaders/internal/blit_down_depth_interface.glsl"
 
-void RpDownDepth::Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[],
-                        const char depth_tex[], const char output_tex[]) {
-    view_state_ = view_state;
-
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-
-    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    { // Texture that holds 2x downsampled linear depth
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0] / 2;
-        params.h = view_state->scr_res[1] / 2;
-        params.format = Ren::eTexFormat::RawR32F;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        depth_down_2x_tex_ = builder.WriteTexture(output_tex, params, Ren::eResState::RenderTarget,
-                                                  Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpDownDepth::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
-    RpAllocTex &down_depth_2x_tex = builder.GetWriteTexture(depth_down_2x_tex_);
+    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), down_depth_2x_tex);
+    LazyInit(builder.ctx(), builder.sh(), output_tex);
 
     Ren::RastState rast_state;
 

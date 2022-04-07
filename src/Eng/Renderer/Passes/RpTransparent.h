@@ -7,7 +7,7 @@
 
 class PrimDraw;
 
-class RpTransparent : public RenderPassBase {
+class RpTransparent : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -56,16 +56,15 @@ class RpTransparent : public RenderPassBase {
     RpResource dummy_white_;
 
     RpResource shad_tex_;
+    RpResource ssao_tex_;
+
     RpResource color_tex_;
     RpResource normal_tex_;
     RpResource spec_tex_;
     RpResource depth_tex_;
-    RpResource ssao_tex_;
-    RpResource transparent_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                  RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex,
-                  RpAllocTex &transparent_tex);
+                  RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
     void DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex);
 
     void DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf, RpAllocBuf &instance_indices_buf,
@@ -83,16 +82,61 @@ class RpTransparent : public RenderPassBase {
     RpTransparent(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpTransparent();
 
-    void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, const Ren::BufferRef &vtx_buf1,
-               const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf, const Ren::BufferRef &materials_buf,
-               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
-               const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut, const Ren::Tex2DRef &dummy_black,
-               const Ren::Tex2DRef &dummy_white, const char instances_buf[], const char instance_indices_buf[],
-               const char shared_data_buf[], const char cells_buf[], const char items_buf[], const char lights_buf[],
-               const char decals_buf[], const char shad_tex[], const char ssao_tex[], const char color_tex[],
-               const char normal_tex[], const char spec_tex[], const char depth_tex[],
-               const char transparent_tex_name[]);
-    void Execute(RpBuilder &builder) override;
+    void Setup(const DrawList &list, const ViewState *view_state, const RpResource &vtx_buf1,
+               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
+               const RpResource &textures_buf, const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
+               const RpResource &brdf_lut, const RpResource &noise_tex, const RpResource &cone_rt_lut,
+               const RpResource &dummy_black, const RpResource &dummy_white, const RpResource &instances_buf,
+               const RpResource &instance_indices_buf, const RpResource &shared_data_buf, const RpResource &cells_buf,
+               const RpResource &items_buf, const RpResource &lights_buf, const RpResource &decals_buf,
+               const RpResource &shad_tex, const RpResource &ssao_tex, const RpResource lm_tex[4],
+               const RpResource &color_tex, const RpResource &normal_tex, const RpResource &spec_tex,
+               const RpResource &depth_tex) {
+        view_state_ = view_state;
+        pipelines_ = pipelines;
+        bindless_tex_ = bindless_tex;
 
-    const char *name() const override { return "TRANSPARENT"; }
+        env_ = &list.env;
+        materials_ = list.materials;
+        decals_atlas_ = list.decals_atlas;
+        probe_storage_ = list.probe_storage;
+
+        render_flags_ = list.render_flags;
+        main_batches_ = list.custom_batches;
+        main_batch_indices_ = list.custom_batch_indices;
+        alpha_blend_start_index_ = list.alpha_blend_start_index;
+
+        vtx_buf1_ = vtx_buf1;
+        vtx_buf2_ = vtx_buf2;
+        ndx_buf_ = ndx_buf;
+        instances_buf_ = instances_buf;
+        instance_indices_buf_ = instance_indices_buf;
+        shared_data_buf_ = shared_data_buf;
+        cells_buf_ = cells_buf;
+        items_buf_ = items_buf;
+        lights_buf_ = lights_buf;
+        decals_buf_ = decals_buf;
+        shad_tex_ = shad_tex;
+        ssao_tex_ = ssao_tex;
+        materials_buf_ = materials_buf;
+        textures_buf_ = textures_buf;
+
+        for (int i = 0; i < 4; ++i) {
+            lm_tex_[i] = lm_tex[i];
+        }
+
+        brdf_lut_ = brdf_lut;
+        noise_tex_ = noise_tex;
+        cone_rt_lut_ = cone_rt_lut;
+
+        dummy_black_ = dummy_black;
+        dummy_white_ = dummy_white;
+
+        color_tex_ = color_tex;
+        normal_tex_ = normal_tex;
+        spec_tex_ = spec_tex;
+        depth_tex_ = depth_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

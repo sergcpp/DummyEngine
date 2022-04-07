@@ -11,38 +11,11 @@
 
 #include "../assets/shaders/internal/blit_ssr_interface.glsl"
 
-void RpSSRTrace::Setup(RpBuilder &builder, const ViewState *view_state, Ren::Tex2DRef brdf_lut,
-                       const char shared_data_buf[], const char normal_tex[], const char depth_down_2x[],
-                       const char output_tex_name[]) {
-    view_state_ = view_state;
-    brdf_lut_ = brdf_lut;
-
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    normal_tex_ =
-        builder.ReadTexture(normal_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    depth_down_2x_tex_ =
-        builder.ReadTexture(depth_down_2x, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    { // Auxilary texture for reflections (rg - uvs, b - influence)
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0] / 2;
-        params.h = view_state->scr_res[1] / 2;
-        params.format = Ren::eTexFormat::RawRGB10_A2;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex_name, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpSSRTrace::Execute(RpBuilder &builder) {
-    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(shared_data_buf_);
-    RpAllocTex &normal_tex = builder.GetReadTexture(normal_tex_);
-    RpAllocTex &depth_down_2x_tex = builder.GetReadTexture(depth_down_2x_tex_);
-    RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
+    RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
+    RpAllocTex &depth_down_2x_tex = builder.GetReadTexture(pass_data_->depth_down_2x_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
 
     LazyInit(builder.ctx(), builder.sh(), output_tex);
 

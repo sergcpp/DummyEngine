@@ -37,7 +37,7 @@ class DebugInfoUI : public Gui::BaseElement {
     } back_info_smooth_;
 
     struct {
-        float light_sources_count = 0.0f, decals_count = 0.0f, probes_count = 0.0f;
+        float lights_count = 0.0f, decals_count = 0.0f, probes_count = 0.0f;
         float items_total = 0.0f;
     } items_info_smooth_;
 

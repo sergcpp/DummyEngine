@@ -3,8 +3,7 @@
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
-class RpBuildAccStructures : public RenderPassBase {
-    // temp data (valid only between Setup and Execute calls)
+class RpBuildAccStructuresExecutor : public RenderPassExecutor {
     uint32_t instance_count_ = 0;
     const AccelerationStructureData *acc_struct_data_;
 
@@ -13,9 +12,12 @@ class RpBuildAccStructures : public RenderPassBase {
     RpResource rt_tlas_build_scratch_buf_;
 
   public:
-    void Setup(RpBuilder &builder, const char rt_obj_instances_buf[], uint32_t instance_count,
-               const char rt_tlas_scratch_buf_name[], const AccelerationStructureData *acc_struct_data);
-    void Execute(RpBuilder &builder) override;
+    RpBuildAccStructuresExecutor(const RpResource &rt_obj_instances_buf, uint32_t instance_count,
+                                 const AccelerationStructureData *acc_struct_data, const RpResource &rt_tlas_buf,
+                                 const RpResource &rt_tlas_scratch_buf)
+        : rt_obj_instances_buf_(rt_obj_instances_buf), instance_count_(instance_count),
+          acc_struct_data_(acc_struct_data), rt_tlas_buf_(rt_tlas_buf),
+          rt_tlas_build_scratch_buf_(rt_tlas_scratch_buf) {}
 
-    const char *name() const override { return "BUILD ACC STRCTS"; }
+    void Execute(RpBuilder &builder) override;
 };

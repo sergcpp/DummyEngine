@@ -10,31 +10,6 @@
 
 #include "../assets/shaders/internal/blit_upscale_interface.glsl"
 
-void RpUpscale::Setup(RpBuilder &builder, const Ren::Vec4i &res, const Ren::Vec4f &clip_info,
-                      const char depth_down_2x[], const char depth_tex[], const char input_tex[],
-                      const char output_tex[]) {
-    res_ = res;
-    clip_info_ = clip_info;
-
-    depth_down_2x_tex_ =
-        builder.ReadTexture(depth_down_2x, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    depth_tex_ = builder.ReadTexture(depth_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    input_tex_ = builder.ReadTexture(input_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    { // Allocate output texture
-        Ren::Tex2DParams params;
-        params.w = res_[2];
-        params.h = res_[3];
-        params.format = Ren::eTexFormat::RawR8;
-        params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        output_tex_ = builder.WriteTexture(output_tex, params, Ren::eResState::RenderTarget,
-                                           Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpUpscale::Execute(RpBuilder &builder) {
     RpAllocTex &down_depth_2x_tex = builder.GetReadTexture(depth_down_2x_tex_);
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);

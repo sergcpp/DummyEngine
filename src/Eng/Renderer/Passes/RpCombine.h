@@ -8,7 +8,13 @@
 class PrimDraw;
 struct ViewState;
 
-class RpCombine : public RenderPassBase {
+struct RpCombineData {
+    RpResource color_tex;
+    RpResource blur_tex;
+    RpResource output_tex;
+};
+
+class RpCombine : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
     bool tonemap_ = false;
@@ -19,10 +25,7 @@ class RpCombine : public RenderPassBase {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-
-    RpResource color_tex_;
-    RpResource blur_tex_;
-    RpResource output_tex_;
+    const RpCombineData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex);
 
@@ -32,10 +35,14 @@ class RpCombine : public RenderPassBase {
   public:
     RpCombine(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::Tex2DRef &dummy_black, float gamma,
-               float exposure, float fade, bool tonemap, const char color_tex_name[], const char blur_tex_name[],
-               const char output_tex_name[]);
+    void Setup(const ViewState *view_state, const float gamma, const float exposure, const float fade,
+               const bool tonemap, const RpCombineData *pass_data) {
+        view_state_ = view_state;
+        gamma_ = gamma;
+        exposure_ = exposure;
+        fade_ = fade;
+        tonemap_ = tonemap;
+        pass_data_ = pass_data;
+    }
     void Execute(RpBuilder &builder) override;
-
-    const char *name() const override { return "COMBINE"; }
 };

@@ -4,6 +4,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
+#include <Sys/MonoAlloc.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
@@ -11,6 +12,14 @@
 
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
+
+#include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
+#include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
+#include "../assets/shaders/internal/ssr_reproject_interface.glsl"
+#include "../assets/shaders/internal/ssr_resolve_temporal_interface.glsl"
+#include "../assets/shaders/internal/ssr_trace_hq_interface.glsl"
+#include "../assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.glsl"
+#include "../assets/shaders/internal/ssr_write_indirect_args_interface.glsl"
 
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
@@ -292,6 +301,7 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
     }
 
     // Compile built-in shaders etc.
+    InitPipelines();
     InitRendererInternal();
 
     {
@@ -364,12 +374,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     const bool cur_taa_enabled = (list.render_flags & EnableTaa) != 0;
     const bool cur_hq_ssr_enabled = (list.render_flags & EnableSSR_HQ) != 0;
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
-
-    // Reflection settings
-    const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
-    const float MirrorThreshold = 0.0001f;
-    const int SamplesPerQuad = 1;
-    const bool VarianceGuided = true;
 
     uint64_t gpu_draw_start = 0;
     if (list.render_flags & DebugTimings) {
@@ -581,354 +585,445 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     { // Setup render passes
         rp_builder_.Reset();
 
-        //
-        // Update buffers
-        //
-        rp_update_buffers_.Setup(rp_builder_, list, &view_state_, SKIN_TRANSFORMS_BUF, SHAPE_KEYS_BUF, INSTANCES_BUF,
-                                 INSTANCE_INDICES_BUF, CELLS_BUF, LIGHTS_BUF, DECALS_BUF, ITEMS_BUF, SHARED_DATA_BUF,
-                                 ATOMIC_CNT_BUF);
-        RenderPassBase *rp_head = &rp_update_buffers_;
-        RenderPassBase *rp_tail = &rp_update_buffers_;
+        CommonBuffers common_buffers;
 
-        //
-        // Skinning and blend shapes
-        //
-        rp_skinning_.Setup(rp_builder_, list, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                           ctx_.default_delta_buf(), ctx_.default_skin_vertex_buf(), SKIN_TRANSFORMS_BUF,
-                           SHAPE_KEYS_BUF);
-        rp_tail->p_next = &rp_skinning_;
-        rp_tail = rp_tail->p_next;
+        AddBuffersUpdatePass(list, common_buffers);
+
+        {
+            auto &skinning = rp_builder_.AddPass("SKINNING");
+
+            RpResource skin_vtx_res =
+                skinning.AddStorageReadonlyInput(ctx_.default_skin_vertex_buf(), Ren::eStageBits::ComputeShader);
+            RpResource in_skin_transforms_res =
+                skinning.AddStorageReadonlyInput(common_buffers.skin_transforms_res, Ren::eStageBits::ComputeShader);
+            RpResource in_shape_keys_res =
+                skinning.AddStorageReadonlyInput(common_buffers.shape_keys_res, Ren::eStageBits::ComputeShader);
+            RpResource delta_buf_res =
+                skinning.AddStorageReadonlyInput(ctx_.default_delta_buf(), Ren::eStageBits::ComputeShader);
+
+            RpResource vtx_buf1_res =
+                skinning.AddStorageOutput(ctx_.default_vertex_buf1(), Ren::eStageBits::ComputeShader);
+            RpResource vtx_buf2_res =
+                skinning.AddStorageOutput(ctx_.default_vertex_buf2(), Ren::eStageBits::ComputeShader);
+
+            skinning.make_executor<RpSkinningExecutor>(pi_skinning_, list.skin_regions, skin_vtx_res,
+                                                       in_skin_transforms_res, in_shape_keys_res, delta_buf_res,
+                                                       vtx_buf1_res, vtx_buf2_res);
+        }
 
         //
         // RT acceleration structures
         //
         if (ctx_.capabilities.raytracing) {
-            rp_update_acc_bufs_.Setup(rp_builder_, list, "RT Obj Instances");
-            rp_tail->p_next = &rp_update_acc_bufs_;
-            rp_tail = rp_tail->p_next;
+            auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
 
-            rp_build_acc_structs_.Setup(rp_builder_, "RT Obj Instances", list.rt_obj_instances.count,
-                                        "TLAS Scratch Buf", &acc_struct_data);
-            rp_tail->p_next = &rp_build_acc_structs_;
-            rp_tail = rp_tail->p_next;
+            RpResource rt_obj_instances_res;
+
+            { // create obj instances buffer
+                RpBufDesc desc;
+                desc.type = Ren::eBufType::Storage;
+                desc.size = RTObjInstancesBufChunkSize;
+
+                rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
+            }
+
+            update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(
+                list.rt_obj_instances, list.rt_obj_instances_stage_buf, rt_obj_instances_res);
+
+            ////
+
+            auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
+            rt_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res);
+            RpResource rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
+
+            RpResource rt_tlas_build_scratch_res;
+
+            { // create scratch buffer
+                RpBufDesc desc;
+                desc.type = Ren::eBufType::Storage;
+                desc.size = acc_struct_data.rt_tlas_build_scratch_size;
+                rt_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("TLAS Scratch Buf", desc);
+            }
+
+            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(rt_obj_instances_res,
+                                                                          list.rt_obj_instances.count, &acc_struct_data,
+                                                                          rt_tlas_res, rt_tlas_build_scratch_res);
         }
 
-        //
-        // Shadow maps
-        //
-        rp_shadow_maps_.Setup(rp_builder_, list, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                              ctx_.default_indices_buf(), persistent_data.materials_buf, &bindless_tex, INSTANCES_BUF,
-                              INSTANCE_INDICES_BUF, SHARED_DATA_BUF, SHADOWMAP_TEX, noise_tex_);
-        rp_tail->p_next = &rp_shadow_maps_;
-        rp_tail = rp_tail->p_next;
+        FrameTextures frame_textures;
+
+        { // Shadow maps
+            auto &shadow_maps = rp_builder_.AddPass("SHADOW MAPS");
+            RpResource vtx_buf1_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            RpResource vtx_buf2_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            RpResource ndx_buf_res = shadow_maps.AddIndexBufferInput(ctx_.default_indices_buf());
+
+            RpResource shared_data_res = shadow_maps.AddUniformBufferInput(
+                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+            RpResource instances_res =
+                shadow_maps.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+            RpResource instance_indices_res =
+                shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+
+            RpResource materials_buf_res =
+                shadow_maps.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+#if defined(USE_GL_RENDER)
+            RpResource textures_buf_res =
+                shadow_maps.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+#else
+            RpResource textures_buf_res;
+#endif
+            RpResource noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+
+            { // shadow map buffer
+                Ren::Tex2DParams params;
+                params.w = SHADOWMAP_WIDTH;
+                params.h = SHADOWMAP_HEIGHT;
+                params.format = Ren::eTexFormat::Depth16;
+                params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                params.sampling.min_lod.from_float(0.0f);
+                params.sampling.max_lod.from_float(0.0f);
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                params.sampling.compare = Ren::eTexCompare::LEqual;
+
+                frame_textures.shadowmap = shadow_maps.AddDepthOutput(SHADOWMAP_TEX, params);
+            }
+
+            rp_shadow_maps_.Setup(list, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
+                                  textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
+                                  frame_textures.shadowmap);
+            shadow_maps.set_executor(&rp_shadow_maps_);
+        }
+
+        frame_textures.depth_params.w = view_state_.scr_res[0];
+        frame_textures.depth_params.h = view_state_.scr_res[1];
+        frame_textures.depth_params.format = ctx_.capabilities.depth24_stencil8_format
+                                                 ? Ren::eTexFormat::Depth24Stencil8
+                                                 : Ren::eTexFormat::Depth32Stencil8;
+        frame_textures.depth_params.usage =
+            (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+        frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.depth_params.samples = view_state_.is_multisampled ? 4 : 1;
+
+        // Main HDR color
+        frame_textures.color_params.w = view_state_.scr_res[0];
+        frame_textures.color_params.h = view_state_.scr_res[1];
+#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
+        // renormalization requires buffer with alpha channel
+        frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
+#else
+        frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
+#endif
+        // Ren::eTexUsage::Storage is needed for rt debugging, consider removing this
+        frame_textures.color_params.usage =
+            (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage | Ren::eTexUsage::RenderTarget);
+        frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
+
+        // 4-component specular (alpha is roughness)
+        frame_textures.specular_params.w = view_state_.scr_res[0];
+        frame_textures.specular_params.h = view_state_.scr_res[1];
+        frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
+        frame_textures.specular_params.flags = Ren::TexSRGB;
+        frame_textures.specular_params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+        frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
+
+        // 4-component world-space normal (alpha or z is roughness)
+        frame_textures.normal_params.w = view_state_.scr_res[0];
+        frame_textures.normal_params.h = view_state_.scr_res[1];
+#if REN_USE_OCT_PACKED_NORMALS == 1
+        frame_textures.normal_params.format = Ren::eTexFormat::RawRGB10_A2;
+#else
+        frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;
+#endif
+        frame_textures.normal_params.usage =
+            (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+        frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.normal_params.samples = view_state_.is_multisampled ? 4 : 1;
+
+        // 4-component albedo (alpha is unused)
+        frame_textures.albedo_params.w = view_state_.scr_res[0];
+        frame_textures.albedo_params.h = view_state_.scr_res[1];
+        frame_textures.albedo_params.format = Ren::eTexFormat::RawRGBA8888;
+        frame_textures.albedo_params.flags = Ren::TexSRGB;
+        frame_textures.albedo_params.usage =
+            (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+        frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         if (!deferred_shading) {
-            //
             // Skydome drawing
-            //
-            if (list.env.env_map) {
-                rp_skydome_.Setup(rp_builder_, list, &view_state_, true /* clear */, ctx_.default_vertex_buf1(),
-                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), SHARED_DATA_BUF,
-                                  MAIN_COLOR_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
-                rp_tail->p_next = &rp_skydome_;
-                rp_tail = rp_tail->p_next;
-            } else {
-                // TODO: ...
-            }
+            AddSkydomePass(list, common_buffers, true /* clear */, frame_textures);
         }
 
         //
         // Depth prepass
         //
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
-            rp_depth_fill_.Setup(rp_builder_, list, &view_state_, deferred_shading /* clear_depth */,
-                                 ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
-                                 persistent_data.materials_buf, &bindless_tex, INSTANCES_BUF, INSTANCE_INDICES_BUF,
-                                 SHARED_DATA_BUF, noise_tex_, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
-            rp_tail->p_next = &rp_depth_fill_;
-            rp_tail = rp_tail->p_next;
+            auto &depth_fill = rp_builder_.AddPass("DEPTH FILL");
+
+            RpResource vtx_buf1 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            RpResource vtx_buf2 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            RpResource ndx_buf = depth_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+
+            RpResource shared_data_res = depth_fill.AddUniformBufferInput(
+                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+            RpResource instances_res =
+                depth_fill.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+            RpResource instance_indices_res =
+                depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+
+            RpResource materials_buf_res =
+                depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+#if defined(USE_GL_RENDER)
+            RpResource textures_buf_res =
+                depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
+#else
+            RpResource textures_buf_res;
+#endif
+            RpResource noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+
+            frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+
+            { // Texture that holds 2D velocity
+                Ren::Tex2DParams params;
+                params.w = view_state_.scr_res[0];
+                params.h = view_state_.scr_res[1];
+                params.format = Ren::eTexFormat::RawRG16Snorm;
+                params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                params.samples = view_state_.is_multisampled ? 4 : 1;
+
+                frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, params);
+            }
+
+            rp_depth_fill_.Setup(list, &view_state_, deferred_shading /* clear_depth */, vtx_buf1, vtx_buf2, ndx_buf,
+                                 materials_buf_res, textures_buf_res, &bindless_tex, instances_res,
+                                 instance_indices_res, shared_data_res, noise_tex_res, frame_textures.depth,
+                                 frame_textures.velocity);
+            depth_fill.set_executor(&rp_depth_fill_);
         }
 
         //
         // Downsample depth
         //
+        RpResource depth_down_2x, depth_hierarchy_tex;
+
         if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            rp_down_depth_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, DEPTH_DOWN_2X_TEX);
-            rp_tail->p_next = &rp_down_depth_;
-            rp_tail = rp_tail->p_next;
+            { // TODO: get rid of this (or use on low spec only)
+                auto &downsample_depth = rp_builder_.AddPass("DOWN DEPTH");
 
-            rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, ATOMIC_CNT_BUF, DEPTH_HIERARCHY_TEX);
-            rp_tail->p_next = &rp_depth_hierarchy_;
-            rp_tail = rp_tail->p_next;
+                const RpResource shared_data_res = downsample_depth.AddUniformBufferInput(
+                    common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                const RpResource in_depth_tex_res =
+                    downsample_depth.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
+
+                { // Texture that holds 2x downsampled linear depth
+                    Ren::Tex2DParams params;
+                    params.w = view_state_.scr_res[0] / 2;
+                    params.h = view_state_.scr_res[1] / 2;
+                    params.format = Ren::eTexFormat::RawR32F;
+                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    depth_down_2x = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
+                }
+
+                rp_down_depth_.Setup(&view_state_, shared_data_res, in_depth_tex_res, depth_down_2x);
+                downsample_depth.set_executor(&rp_down_depth_);
+            }
+
+            auto &depth_hierarchy = rp_builder_.AddPass("DEPTH HIERARCHY");
+            const RpResource depth_tex =
+                depth_hierarchy.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+            const RpResource atomic_buf =
+                depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt_res, Ren::eStageBits::ComputeShader);
+
+            { // 32-bit float depth hierarchy
+                Ren::Tex2DParams params;
+                params.w = ((view_state_.scr_res[0] + RpDepthHierarchy::TileSize - 1) / RpDepthHierarchy::TileSize) *
+                           RpDepthHierarchy::TileSize;
+                params.h = ((view_state_.scr_res[1] + RpDepthHierarchy::TileSize - 1) / RpDepthHierarchy::TileSize) *
+                           RpDepthHierarchy::TileSize;
+                params.format = Ren::eTexFormat::RawR32F;
+                params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
+                params.mip_count = RpDepthHierarchy::MipCount;
+                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+                params.sampling.filter = Ren::eTexFilter::NearestMipmap;
+
+                depth_hierarchy_tex =
+                    depth_hierarchy.AddStorageImageOutput(DEPTH_HIERARCHY_TEX, params, Ren::eStageBits::ComputeShader);
+            }
+
+            rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, depth_tex, atomic_buf, depth_hierarchy_tex);
+            depth_hierarchy.set_executor(&rp_depth_hierarchy_);
         }
 
         //
         // Ambient occlusion
         //
-        const Ren::Vec4i cur_res =
-            Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};
-
         const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
         const uint32_t use_ssao = (EnableZFill | EnableSSAO);
         if ((list.render_flags & use_ssao_mask) == use_ssao) {
-            rp_ssao_.Setup(rp_builder_, &view_state_, rand2d_dirs_4x4_, DEPTH_DOWN_2X_TEX, SSAO_RAW);
-            rp_tail->p_next = &rp_ssao_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssao_blur_h_.Setup(rp_builder_, view_state_.act_res / 2, false /* vertical */, DEPTH_DOWN_2X_TEX,
-                                  SSAO_RAW, "SSAO BLUR TEMP1");
-            rp_tail->p_next = &rp_ssao_blur_h_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssao_blur_v_.Setup(rp_builder_, view_state_.act_res / 2, true /* vertical */, DEPTH_DOWN_2X_TEX,
-                                  "SSAO BLUR TEMP1", "SSAO BLUR TEMP2");
-            rp_tail->p_next = &rp_ssao_blur_v_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssao_upscale_.Setup(rp_builder_, cur_res, view_state_.clip_info, DEPTH_DOWN_2X_TEX, MAIN_DEPTH_TEX,
-                                   "SSAO BLUR TEMP2", SSAO_RES);
-            rp_tail->p_next = &rp_ssao_upscale_;
-            rp_tail = rp_tail->p_next;
+            AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
         }
 
         if (deferred_shading) {
-            //
             // GBuffer filling pass
-            //
-            rp_gbuffer_fill_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
-                                   ctx_.default_vertex_buf2(), ctx_.default_indices_buf(),
-                                   persistent_data.materials_buf, &bindless_tex, noise_tex_, dummy_black_,
-                                   INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF,
-                                   DECALS_BUF, MAIN_ALBEDO_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
-            rp_tail->p_next = &rp_gbuffer_fill_;
-            rp_tail = rp_tail->p_next;
+            AddGBufferFillPass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
 
-            //
             // GBuffer shading pass
-            //
-            rp_gbuffer_shade_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, LIGHTS_BUF,
-                                    DECALS_BUF, MAIN_DEPTH_TEX, MAIN_ALBEDO_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                                    SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX);
-            rp_tail->p_next = &rp_gbuffer_shade_;
-            rp_tail = rp_tail->p_next;
+            AddDeferredShadingPass(common_buffers, frame_textures);
 
-            //
             // Additional forward pass (for custom-shaded objects)
-            //
-            rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                             ctx_.default_indices_buf(), persistent_data.materials_buf,
-                             persistent_data.pipelines.data(), &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_,
-                             dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF,
-                             CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
-                             MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
-            rp_tail->p_next = &rp_opaque_;
-            rp_tail = rp_tail->p_next;
+            AddForwardOpaquePass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
 
-            //
             // Skydome drawing
-            //
-            if (list.env.env_map) {
-                rp_skydome_.Setup(rp_builder_, list, &view_state_, false /* clear */, ctx_.default_vertex_buf1(),
-                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), SHARED_DATA_BUF,
-                                  MAIN_COLOR_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
-                rp_tail->p_next = &rp_skydome_;
-                rp_tail = rp_tail->p_next;
-            }
+            AddSkydomePass(list, common_buffers, false /* clear */, frame_textures);
         } else {
-            //
-            // Opaque forward pass
-            //
-            rp_opaque_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                             ctx_.default_indices_buf(), persistent_data.materials_buf,
-                             persistent_data.pipelines.data(), &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_,
-                             dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF,
-                             CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
-                             MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX);
-            rp_tail->p_next = &rp_opaque_;
-            rp_tail = rp_tail->p_next;
+            AddForwardOpaquePass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 
-#if defined(USE_GL_RENDER) // gl-only for now
-        //
-        // Resolve ms buffer
-        //
-        if ((list.render_flags & EnableOIT) && cur_msaa_enabled) {
-            rp_resolve_.Setup(rp_builder_, &view_state_, MAIN_COLOR_TEX, RESOLVED_COLOR_TEX);
-        }
-#endif
-
-        //
         // Transparent pass
-        //
-        if (list.alpha_blend_start_index != -1) {
-            rp_transparent_.Setup(rp_builder_, list, &view_state_, ctx_.default_vertex_buf1(),
-                                  ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), persistent_data.materials_buf,
-                                  persistent_data.pipelines.data(), &bindless_tex, brdf_lut_, noise_tex_, cone_rt_lut_,
-                                  dummy_black_, dummy_white_, INSTANCES_BUF, INSTANCE_INDICES_BUF, SHARED_DATA_BUF,
-                                  CELLS_BUF, ITEMS_BUF, LIGHTS_BUF, DECALS_BUF, SHADOWMAP_TEX, SSAO_RES, MAIN_COLOR_TEX,
-                                  MAIN_NORMAL_TEX, MAIN_SPEC_TEX, MAIN_DEPTH_TEX, RESOLVED_COLOR_TEX);
-            rp_tail->p_next = &rp_transparent_;
-            rp_tail = rp_tail->p_next;
+        AddForwardTransparentPass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
+
+        if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
+            assert(!view_state_.is_multisampled);
+            auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
+
+            const RpResource shared_data_buf = static_vel.AddUniformBufferInput(
+                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+            const RpResource depth_tex =
+                static_vel.AddCustomTextureInput(frame_textures.depth, Ren::eResState::StencilTestDepthFetch,
+                                                 Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
+            const RpResource velocity_tex = static_vel.AddColorOutput(frame_textures.velocity);
+
+            rp_fill_static_vel_.Setup(&view_state_, shared_data_buf, depth_tex, velocity_tex);
+            static_vel.set_executor(&rp_fill_static_vel_);
         }
 
         //
         // Reflections pass
         //
 
-        if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
-            assert(!view_state_.is_multisampled);
-            rp_fill_static_vel_.Setup(rp_builder_, &view_state_, SHARED_DATA_BUF, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX);
-            rp_tail->p_next = &rp_fill_static_vel_;
-            rp_tail = rp_tail->p_next;
-        }
-
         const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
-
         if (list.render_flags & EnableSSR_HQ) {
-            rp_ssr_prepare_.Setup(rp_builder_, &view_state_, "Ray Counter", "Refl Ray Length");
-            rp_tail->p_next = &rp_ssr_prepare_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_classify_tiles_.Setup(rp_builder_, &view_state_, GlossyThreshold, MirrorThreshold, SamplesPerQuad,
-                                         VarianceGuided, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, variance_tex_[0],
-                                         "Ray Counter", "Ray List", "Tile List", "SSR Temp 2");
-            rp_tail->p_next = &rp_ssr_classify_tiles_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_write_indir_args_.Setup(rp_builder_, &view_state_, "Ray Counter", "Intersect Args");
-            rp_tail->p_next = &rp_ssr_write_indir_args_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_trace_hq_.Setup(rp_builder_, &view_state_, sobol_seq_buf_, scrambling_tile_1spp_buf_,
-                                   ranking_tile_1spp_buf_, SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_NORMAL_TEX,
-                                   DEPTH_HIERARCHY_TEX, "Ray Counter", "Ray List", "Intersect Args", "SSR Temp 2",
-                                   "Refl Ray Length", "Ray RT List");
-            rp_tail->p_next = &rp_ssr_trace_hq_;
-            rp_tail = rp_tail->p_next;
-
-            if (ctx_.capabilities.raytracing && list.env.env_map) {
-                rp_ssr_write_indir_rt_disp_.Setup(rp_builder_, &view_state_, "Ray Counter", "RT Dispatch Args");
-                rp_tail->p_next = &rp_ssr_write_indir_rt_disp_;
-                rp_tail = rp_tail->p_next;
-
-                rp_rt_reflections_.Setup(rp_builder_, &view_state_, sobol_seq_buf_, scrambling_tile_1spp_buf_,
-                                         ranking_tile_1spp_buf_, list, ctx_.default_vertex_buf1(),
-                                         ctx_.default_vertex_buf2(), ctx_.default_indices_buf(), &acc_struct_data,
-                                         &bindless_tex, persistent_data.materials_buf, SHARED_DATA_BUF,
-                                         DEPTH_HIERARCHY_TEX, MAIN_NORMAL_TEX, dummy_black_, "Ray Counter",
-                                         "Ray RT List", "RT Dispatch Args", "SSR Temp 2", "Refl Ray Length");
-                rp_tail->p_next = &rp_rt_reflections_;
-                rp_tail = rp_tail->p_next;
-            }
-
-            // TODO: maybe try to avoid this?
-            // rp_ssr_vs_depth_.Setup(rp_builder_, &view_state_, MAIN_DEPTH_TEX, SHARED_DATA_BUF, "VS Depth");
-            // rp_tail->p_next = &rp_ssr_vs_depth_;
-            // rp_tail = rp_tail->p_next;
-
-            rp_ssr_reproject_.Setup(rp_builder_, &view_state_, GlossyThreshold, SHARED_DATA_BUF, MAIN_DEPTH_TEX,
-                                    MAIN_NORMAL_TEX, depth_history_tex_, norm_history_tex_, "SSR Temp 2",
-                                    "Refl Ray Length", refl_history_tex_, MAIN_VELOCITY_TEX, variance_tex_[0],
-                                    sample_count_tex_[1], "Tile List", "Intersect Args", 3 * sizeof(uint32_t),
-                                    "SSR Reprojected", "Average Refl", variance_tex_[1], sample_count_tex_[0]);
-            rp_tail->p_next = &rp_ssr_reproject_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_prefilter_.Setup(rp_builder_, &view_state_, GlossyThreshold, MirrorThreshold, DEPTH_HIERARCHY_TEX,
-                                    MAIN_NORMAL_TEX, "Average Refl", "SSR Temp 2", variance_tex_[1],
-                                    sample_count_tex_[0], "Tile List", "Intersect Args", 3 * sizeof(uint32_t),
-                                    "SSR Denoised 1", variance_tex_[0]);
-            rp_tail->p_next = &rp_ssr_prefilter_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_resolve_temporal_.Setup(rp_builder_, &view_state_, GlossyThreshold, MirrorThreshold, SHARED_DATA_BUF,
-                                           MAIN_NORMAL_TEX, "Average Refl", "SSR Denoised 1", "SSR Reprojected",
-                                           variance_tex_[0], sample_count_tex_[0], "Tile List", "Intersect Args",
-                                           3 * sizeof(uint32_t), refl_history_tex_, variance_tex_[1]);
-            rp_tail->p_next = &rp_ssr_resolve_temporal_;
-            rp_tail = rp_tail->p_next;
-
-            if (list.render_flags & DebugDenoise) {
-                rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
-                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, "SSR Temp 2", refl_out_name);
-            } else {
-                rp_ssr_compose2_.Setup(rp_builder_, &view_state_, list.probe_storage, brdf_lut_, SHARED_DATA_BUF,
-                                       MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX, refl_history_tex_,
-                                       refl_out_name);
-            }
-            rp_tail->p_next = &rp_ssr_compose2_;
-            rp_tail = rp_tail->p_next;
-
-            { // copy history textures
-                rp_ssr_copy_depth_.Setup(rp_builder_, view_state_.act_res, MAIN_DEPTH_TEX, depth_history_tex_);
-                rp_tail->p_next = &rp_ssr_copy_depth_;
-                rp_tail = rp_tail->p_next;
-
-                rp_ssr_copy_normals_.Setup(rp_builder_, view_state_.act_res, MAIN_NORMAL_TEX, norm_history_tex_);
-                rp_tail->p_next = &rp_ssr_copy_normals_;
-                rp_tail = rp_tail->p_next;
-
-                std::swap(variance_tex_[0], variance_tex_[1]);
-                std::swap(sample_count_tex_[0], sample_count_tex_[1]);
-            }
+            AddHQSpecularPasses(list, common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                                depth_hierarchy_tex, frame_textures);
         } else {
-            rp_ssr_trace_.Setup(rp_builder_, &view_state_, brdf_lut_, SHARED_DATA_BUF, MAIN_NORMAL_TEX,
-                                DEPTH_DOWN_2X_TEX, "SSR Temp 1");
-            rp_tail->p_next = &rp_ssr_trace_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_dilate_.Setup(rp_builder_, &view_state_, "SSR Temp 1", "SSR Temp 2");
-            rp_tail->p_next = &rp_ssr_dilate_;
-            rp_tail = rp_tail->p_next;
-
-            rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage, down_tex_4x_, brdf_lut_,
-                                  SHARED_DATA_BUF, CELLS_BUF, ITEMS_BUF, MAIN_DEPTH_TEX, MAIN_NORMAL_TEX, MAIN_SPEC_TEX,
-                                  DEPTH_DOWN_2X_TEX, "SSR Temp 2", refl_out_name);
-            rp_tail->p_next = &rp_ssr_compose_;
-            rp_tail = rp_tail->p_next;
+            AddLQSpecularPasses(list, common_buffers, depth_down_2x, frame_textures);
         }
 
-#if defined(USE_GL_RENDER) // gl-only for now
         //
         // Debug geometry
         //
-        if (list.render_flags & DebugProbes) {
-            rp_debug_probes_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
-            rp_tail->p_next = &rp_debug_probes_;
-            rp_tail = rp_tail->p_next;
-        }
+        // if (list.render_flags & DebugProbes) {
+        //    rp_debug_probes_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
+        //    rp_tail->p_next = &rp_debug_probes_;
+        //    rp_tail = rp_tail->p_next;
+        //}
 
-        if (list.render_flags & DebugEllipsoids) {
-            rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
-            rp_tail->p_next = &rp_debug_ellipsoids_;
-            rp_tail = rp_tail->p_next;
-        }
-#endif
+        // if (list.render_flags & DebugEllipsoids) {
+        //     rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
+        //     rp_tail->p_next = &rp_debug_ellipsoids_;
+        //     rp_tail = rp_tail->p_next;
+        // }
 
 #if defined(USE_VK_RENDER) // vk-only for now
         if ((list.render_flags & DebugRT) && list.env.env_map) {
-            rp_debug_rt_.Setup(rp_builder_, &view_state_, list, ctx_.default_vertex_buf1(), ctx_.default_vertex_buf2(),
-                               ctx_.default_indices_buf(), &acc_struct_data, &bindless_tex,
-                               persistent_data.materials_buf, SHARED_DATA_BUF, dummy_black_, refl_out_name);
-            rp_tail->p_next = &rp_debug_rt_;
-            rp_tail = rp_tail->p_next;
+            auto &debug_rt = rp_builder_.AddPass("DEBUG RT");
+
+            auto *data = debug_rt.AllocPassData<RpDebugRTData>();
+            data->shared_data =
+                debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::RayTracingShader);
+            data->geo_data_buf =
+                debug_rt.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, Ren::eStageBits::RayTracingShader);
+            data->materials_buf =
+                debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::RayTracingShader);
+            data->vtx_buf1 =
+                debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), Ren::eStageBits::RayTracingShader);
+            data->vtx_buf2 =
+                debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), Ren::eStageBits::RayTracingShader);
+            data->ndx_buf =
+                debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), Ren::eStageBits::RayTracingShader);
+
+            data->env_tex = debug_rt.AddTextureInput(list.env.env_map, Ren::eStageBits::RayTracingShader);
+
+            if (list.env.lm_direct) {
+                data->lm_tex[0] = debug_rt.AddTextureInput(list.env.lm_direct, Ren::eStageBits::RayTracingShader);
+            }
+            for (int i = 0; i < 4; ++i) {
+                if (list.env.lm_indir_sh[i]) {
+                    data->lm_tex[i + 1] =
+                        debug_rt.AddTextureInput(list.env.lm_indir_sh[i], Ren::eStageBits::RayTracingShader);
+                }
+            }
+
+            data->dummy_black = debug_rt.AddTextureInput(dummy_black_, Ren::eStageBits::RayTracingShader);
+
+            data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::RayTracingShader);
+
+            rp_debug_rt_.Setup(rp_builder_, &view_state_, list, &acc_struct_data, &bindless_tex, data);
+            debug_rt.set_executor(&rp_debug_rt_);
         }
 #endif
+        RpResource resolved_color;
 
         //
         // Temporal resolve
         //
         if (list.render_flags & EnableTaa) {
             assert(!view_state_.is_multisampled);
-            rp_taa_.Setup(rp_builder_, &view_state_, taa_history_tex_, reduced_average_, list.draw_cam.max_exposure,
-                          SHARED_DATA_BUF, MAIN_COLOR_TEX, MAIN_DEPTH_TEX, MAIN_VELOCITY_TEX, RESOLVED_COLOR_TEX);
-            rp_tail->p_next = &rp_taa_;
-            rp_tail = rp_tail->p_next;
+            { // TAA
+                auto &taa = rp_builder_.AddPass("TAA");
 
-            rp_taa_copy_tex_.Setup(rp_builder_, view_state_.act_res, RESOLVED_COLOR_TEX, taa_history_tex_);
-            rp_tail->p_next = &rp_taa_copy_tex_;
-            rp_tail = rp_tail->p_next;
+                auto *data = taa.AllocPassData<RpTAAData>();
+                data->shared_data = taa.AddUniformBufferInput(
+                    common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+                data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
+                data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
+                data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
+                data->history_tex = taa.AddTextureInput(taa_history_tex_, Ren::eStageBits::FragmentShader);
+
+                { // Texture that holds resolved color
+                    Ren::Tex2DParams params;
+                    params.w = view_state_.scr_res[0];
+                    params.h = view_state_.scr_res[1];
+                    params.format = Ren::eTexFormat::RawRG11F_B10F;
+                    params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    resolved_color = data->output_tex = taa.AddColorOutput(RESOLVED_COLOR_TEX, params);
+                }
+
+                rp_taa_.Setup(rp_builder_, &view_state_, reduced_average_, list.draw_cam.max_exposure, data);
+                taa.set_executor(&rp_taa_);
+            }
+
+            { // Copy texture to history
+                auto &taa_copy_tex = rp_builder_.AddPass("TAA COPY HIST");
+
+                struct PassData {
+                    RpResource in_tex;
+                    RpResource out_tex;
+                };
+
+                auto *data = taa_copy_tex.AllocPassData<PassData>();
+                data->in_tex = taa_copy_tex.AddTransferImageInput(resolved_color);
+                data->out_tex = taa_copy_tex.AddTransferImageOutput(taa_history_tex_);
+
+                taa_copy_tex.set_execute_cb([this, data](RpBuilder &builder) {
+                    RpAllocTex &in_tex = builder.GetReadTexture(data->in_tex);
+                    RpAllocTex &out_tex = builder.GetWriteTexture(data->out_tex);
+
+                    assert(in_tex.ref->params.format == out_tex.ref->params.format);
+                    Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_tex.ref, 0, 0, 0, *out_tex.ref, 0, 0, 0,
+                                          view_state_.act_res[0], view_state_.act_res[1]);
+                });
+            }
         }
 
         //
@@ -936,12 +1031,17 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap | EnableDOF)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            rp_down_color_.Setup(rp_builder_, &view_state_, RESOLVED_COLOR_TEX, down_tex_4x_);
-            rp_tail->p_next = &rp_down_color_;
-            rp_tail = rp_tail->p_next;
+            auto &down_color = rp_builder_.AddPass("DOWNSAMPLE COLOR");
+
+            auto *data = down_color.AllocPassData<RpDownColorData>();
+            data->input_tex = down_color.AddTextureInput(resolved_color, Ren::eStageBits::FragmentShader);
+            data->output_tex = down_color.AddColorOutput(down_tex_4x_);
+
+            rp_down_color_.Setup(&view_state_, data);
+            down_color.set_executor(&rp_down_color_);
         }
 
-#if defined(USE_GL_RENDER) // gl-only for now
+#if defined(USE_GL_RENDER) && 0 // gl-only for now
         const bool apply_dof = (list.render_flags & EnableDOF) && list.draw_cam.focus_near_mul > 0.0f &&
                                list.draw_cam.focus_far_mul > 0.0f && ((list.render_flags & DebugWireframe) == 0);
 
@@ -976,31 +1076,89 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            rp_blur_h_.Setup(rp_builder_, &view_state_, false /* vertical */, down_tex_4x_, "Blur temp");
-            rp_tail->p_next = &rp_blur_h_;
-            rp_tail = rp_tail->p_next;
+            RpResource blur_temp;
+            { // Blur frame horizontally
+                auto &blur_h = rp_builder_.AddPass("BLUR H");
 
-            rp_blur_v_.Setup(rp_builder_, &view_state_, true /* vertical */, "Blur temp", BLUR_RES_TEX);
-            rp_tail->p_next = &rp_blur_v_;
-            rp_tail = rp_tail->p_next;
+                auto *data = blur_h.AllocPassData<RpBlurData>();
+                data->input_tex = blur_h.AddTextureInput(down_tex_4x_, Ren::eStageBits::FragmentShader);
+
+                { //
+                    Ren::Tex2DParams params;
+                    params.w = view_state_.scr_res[0] / 4;
+                    params.h = view_state_.scr_res[1] / 4;
+                    params.format = Ren::eTexFormat::RawRG11F_B10F;
+                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    blur_temp = data->output_tex = blur_h.AddColorOutput("Blur temp", params);
+                }
+
+                rp_blur_h_.Setup(&view_state_, false /* vertical */, data);
+                blur_h.set_executor(&rp_blur_h_);
+            }
+            { // Blur frame vertically
+                auto &blur_v = rp_builder_.AddPass("BLUR V");
+
+                auto *data = blur_v.AllocPassData<RpBlurData>();
+                data->input_tex = blur_v.AddTextureInput(blur_temp, Ren::eStageBits::FragmentShader);
+
+                { //
+                    Ren::Tex2DParams params;
+                    params.w = view_state_.scr_res[0] / 4;
+                    params.h = view_state_.scr_res[1] / 4;
+                    params.format = Ren::eTexFormat::RawRG11F_B10F;
+                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    data->output_tex = blur_v.AddColorOutput(BLUR_RES_TEX, params);
+                }
+
+                rp_blur_v_.Setup(&view_state_, true /* vertical */, data);
+                blur_v.set_executor(&rp_blur_v_);
+            }
         }
 
         //
         // Sample brightness
         //
         if (list.render_flags & EnableTonemap) {
-            rp_sample_brightness_.Setup(rp_builder_, down_tex_4x_, REDUCED_TEX);
-            rp_tail->p_next = &rp_sample_brightness_;
-            rp_tail = rp_tail->p_next;
+            RpResource lum_tex;
+            { // Sample brightness
+                auto &lum_sample = rp_builder_.AddPass("LUM SAMPLE");
 
-            rp_read_brightness_.Setup(rp_builder_, REDUCED_TEX, readback_buf_);
-            rp_tail->p_next = &rp_read_brightness_;
-            rp_tail = rp_tail->p_next;
+                auto *data = lum_sample.AllocPassData<RpSampleBrightnessData>();
+                data->input_tex = lum_sample.AddTextureInput(down_tex_4x_, Ren::eStageBits::FragmentShader);
+                { // aux buffer which gathers frame luminance
+                    Ren::Tex2DParams params;
+                    params.w = 16;
+                    params.h = 8;
+                    params.format = Ren::eTexFormat::RawR32F;
+                    params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::RenderTarget);
+                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    lum_tex = data->reduced_tex = lum_sample.AddColorOutput(REDUCED_TEX, params);
+                }
+
+                rp_sample_brightness_.Setup(data);
+                lum_sample.set_executor(&rp_sample_brightness_);
+            }
+            { // Readback brightness
+                auto &lum_read = rp_builder_.AddPass("LUM READBACK");
+
+                auto *data = lum_read.AllocPassData<RpReadBrightnessData>();
+                data->input_tex = lum_read.AddTransferImageInput(lum_tex);
+                data->output_buf = lum_read.AddTransferOutput(readback_buf_);
+
+                rp_read_brightness_.Setup(data);
+                lum_read.set_executor(&rp_read_brightness_);
+            }
         }
 
-#if defined(USE_VK_RENDER)
         bool apply_dof = false;
-#endif
 
         //
         // Combine with blurred and tonemap
@@ -1053,13 +1211,29 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             // TODO: Remove this condition
             if (list.env.env_map) {
-                rp_combine_.Setup(rp_builder_, &view_state_, dummy_black_, gamma, exposure, list.draw_cam.fade, tonemap,
-                                  color_tex, blur_tex, output_tex);
-                rp_tail->p_next = &rp_combine_;
-                rp_tail = rp_tail->p_next;
+                auto &combine = rp_builder_.AddPass("COMBINE");
+
+                auto *data = combine.AllocPassData<RpCombineData>();
+                data->color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
+                data->blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                if (output_tex) {
+                    Ren::Tex2DParams params;
+                    params.w = view_state_.scr_res[0];
+                    params.h = view_state_.scr_res[1];
+                    params.format = Ren::eTexFormat::RawRGB888;
+                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    data->output_tex = combine.AddColorOutput(output_tex, params);
+                }
+
+                rp_combine_.Setup(&view_state_, gamma, exposure, list.draw_cam.fade, tonemap, data);
+                combine.set_executor(&rp_combine_);
             }
         }
-#if defined(USE_GL_RENDER) // gl-only for now
+
+#if defined(USE_GL_RENDER) && 0 // gl-only for now
         //
         // FXAA
         //
@@ -1087,13 +1261,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         }
 #endif
 
-        //
-        // Compile and execute
-        //
-        rp_tail->p_next = nullptr;
-
-        rp_builder_.Compile(rp_head);
-        rp_builder_.Execute(rp_head);
+        rp_builder_.Compile();
+        rp_builder_.Execute();
     }
 
     { // store matrix to use it in next frame

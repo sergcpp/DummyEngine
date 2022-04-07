@@ -1,5 +1,5 @@
 #include "RpSSRBlur.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Ren/ProbeStorage.h>
 #include <Ren/Program.h>
@@ -78,3 +78,4 @@ void RpSSRBlur::Execute(RpBuilder &builder) {
     Ren::DispatchCompute(pi_ssr_blur_, grp_count, bindings, COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
                          builder.ctx().default_descr_alloc(), builder.ctx().log());
 }
+#endif

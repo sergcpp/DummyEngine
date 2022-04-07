@@ -1,5 +1,5 @@
 #include "RpDOF.h"
-
+#if 0
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
@@ -292,3 +292,4 @@ void RpDOF::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth
         ctx.log()->Error("RpDOF: dof_fb_ init failed!");
     }
 }
+#endif

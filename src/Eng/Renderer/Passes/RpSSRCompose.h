@@ -5,7 +5,23 @@
 class PrimDraw;
 struct ViewState;
 
-class RpSSRCompose : public RenderPassBase {
+struct RpSSRComposeData {
+    RpResource shared_data;
+    RpResource cells_buf;
+    RpResource items_buf;
+
+    RpResource depth_tex;
+    RpResource normal_tex;
+    RpResource spec_tex;
+    RpResource depth_down_2x_tex;
+    RpResource down_buf_4x_tex;
+    RpResource ssr_tex;
+    RpResource brdf_lut;
+
+    RpResource output_tex;
+};
+
+class RpSSRCompose : public RenderPassExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
@@ -18,20 +34,7 @@ class RpSSRCompose : public RenderPassBase {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
     const Ren::ProbeStorage *probe_storage_ = nullptr;
-
-    RpResource shared_data_buf_;
-    RpResource cells_buf_;
-    RpResource items_buf_;
-
-    RpResource depth_tex_;
-    RpResource normal_tex_;
-    RpResource spec_tex_;
-    RpResource depth_down_2x_tex_;
-    RpResource down_buf_4x_tex_;
-    RpResource ssr_tex_;
-    RpResource brdf_lut_;
-
-    RpResource output_tex_;
+    const RpSSRComposeData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
 
@@ -39,11 +42,10 @@ class RpSSRCompose : public RenderPassBase {
     RpSSRCompose(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
-               Ren::WeakTex2DRef down_buf_4x_tex, Ren::Tex2DRef brdf_lut, const char shared_data_buf[],
-               const char cells_buf[], const char items_buf[], const char depth_tex[], const char normal_tex[],
-               const char spec_tex[], const char depth_down_2x[], const char ssr_tex_name[],
-               const char output_tex_name[]);
+               const RpSSRComposeData *pass_data) {
+        view_state_ = view_state;
+        probe_storage_ = probe_storage;
+        pass_data_ = pass_data;
+    }
     void Execute(RpBuilder &builder) override;
-
-    const char *name() const override { return "SSR COMPOSE"; }
 };

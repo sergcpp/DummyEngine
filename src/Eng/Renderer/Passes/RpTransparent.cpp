@@ -5,95 +5,6 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpTransparent::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-                          const Ren::BufferRef &vtx_buf1, const Ren::BufferRef &vtx_buf2, const Ren::BufferRef &ndx_buf,
-                          const Ren::BufferRef &materials_buf, const Ren::Pipeline pipelines[],
-                          const BindlessTextureData *bindless_tex, const Ren::Tex2DRef &brdf_lut,
-                          const Ren::Tex2DRef &noise_tex, const Ren::Tex2DRef &cone_rt_lut,
-                          const Ren::Tex2DRef &dummy_black, const Ren::Tex2DRef &dummy_white,
-                          const char instances_buf[], const char instance_indices_buf[], const char shared_data_buf[],
-                          const char cells_buf[], const char items_buf[], const char lights_buf[],
-                          const char decals_buf[], const char shad_tex[], const char ssao_tex[], const char color_tex[],
-                          const char normal_tex[], const char spec_tex[], const char depth_tex[],
-                          const char transparent_tex_name[]) {
-    view_state_ = view_state;
-    pipelines_ = pipelines;
-    bindless_tex_ = bindless_tex;
-
-    env_ = &list.env;
-    materials_ = list.materials;
-    decals_atlas_ = list.decals_atlas;
-    probe_storage_ = list.probe_storage;
-
-    render_flags_ = list.render_flags;
-    main_batches_ = list.custom_batches;
-    main_batch_indices_ = list.custom_batch_indices;
-    alpha_blend_start_index_ = list.alpha_blend_start_index;
-
-    vtx_buf1_ = builder.ReadBuffer(vtx_buf1, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    vtx_buf2_ = builder.ReadBuffer(vtx_buf2, Ren::eResState::VertexBuffer, Ren::eStageBits::VertexInput, *this);
-    ndx_buf_ = builder.ReadBuffer(ndx_buf, Ren::eResState::IndexBuffer, Ren::eStageBits::VertexInput, *this);
-    instances_buf_ =
-        builder.ReadBuffer(instances_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-    instance_indices_buf_ =
-        builder.ReadBuffer(instance_indices_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-    shared_data_buf_ = builder.ReadBuffer(shared_data_buf, Ren::eResState::UniformBuffer,
-                                          Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    cells_buf_ = builder.ReadBuffer(cells_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    items_buf_ = builder.ReadBuffer(items_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    lights_buf_ =
-        builder.ReadBuffer(lights_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    decals_buf_ =
-        builder.ReadBuffer(decals_buf, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    shad_tex_ = builder.ReadTexture(shad_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    ssao_tex_ = builder.ReadTexture(ssao_tex, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    materials_buf_ =
-        builder.ReadBuffer(materials_buf, Ren::eResState::ShaderResource, Ren::eStageBits::VertexShader, *this);
-#if defined(USE_GL_RENDER)
-    textures_buf_ = builder.ReadBuffer(bindless_tex->textures_buf, Ren::eResState::ShaderResource,
-                                       Ren::eStageBits::VertexShader, *this);
-#endif
-
-    for (int i = 0; i < 4; ++i) {
-        if (env_->lm_indir_sh[i]) {
-            lm_tex_[i] = builder.ReadTexture(env_->lm_indir_sh[i], Ren::eResState::ShaderResource,
-                                             Ren::eStageBits::FragmentShader, *this);
-        } else {
-            lm_tex_[i] = {};
-        }
-    }
-
-    brdf_lut_ = builder.ReadTexture(brdf_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    noise_tex_ = builder.ReadTexture(noise_tex, Ren::eResState::ShaderResource,
-                                     Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader, *this);
-    cone_rt_lut_ =
-        builder.ReadTexture(cone_rt_lut, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    dummy_black_ =
-        builder.ReadTexture(dummy_black, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-    dummy_white_ =
-        builder.ReadTexture(dummy_white, Ren::eResState::ShaderResource, Ren::eStageBits::FragmentShader, *this);
-
-    color_tex_ = builder.WriteTexture(color_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-    normal_tex_ =
-        builder.WriteTexture(normal_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-    spec_tex_ = builder.WriteTexture(spec_tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
-    depth_tex_ = builder.WriteTexture(depth_tex, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
-
-    {
-        Ren::Tex2DParams params;
-        params.w = view_state->scr_res[0];
-        params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRG11F_B10F;
-        params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        transparent_tex_ = builder.WriteTexture(transparent_tex_name, params, Ren::eResState::RenderTarget,
-                                                Ren::eStageBits::ColorAttachment, *this);
-    }
-}
-
 void RpTransparent::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
@@ -103,10 +14,8 @@ void RpTransparent::Execute(RpBuilder &builder) {
     RpAllocTex &normal_tex = builder.GetWriteTexture(normal_tex_);
     RpAllocTex &spec_tex = builder.GetWriteTexture(spec_tex_);
     RpAllocTex &depth_tex = builder.GetWriteTexture(depth_tex_);
-    RpAllocTex &transparent_tex = builder.GetWriteTexture(transparent_tex_);
 
-    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, normal_tex, spec_tex, depth_tex,
-             transparent_tex);
+    LazyInit(builder.ctx(), builder.sh(), vtx_buf1, vtx_buf2, ndx_buf, color_tex, normal_tex, spec_tex, depth_tex);
     DrawTransparent(builder, color_tex);
 }
 
@@ -134,7 +43,7 @@ void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
 
 void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
                              RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
-                             RpAllocTex &depth_tex, RpAllocTex &transparent_tex) {
+                             RpAllocTex &depth_tex) {
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {normal_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {spec_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -187,10 +96,10 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
         ctx.log()->Error("RpTransparent: color_only_fb_ init failed!");
     }
 
-    if (!resolved_fb_.Setup(ctx.api_ctx(), {}, transparent_tex.desc.w, transparent_tex.desc.h, transparent_tex.ref, {},
-                            {}, false)) {
-        ctx.log()->Error("RpTransparent: resolved_fb_ init failed!");
-    }
+    //if (!resolved_fb_.Setup(ctx.api_ctx(), {}, transparent_tex.desc.w, transparent_tex.desc.h, transparent_tex.ref, {},
+    //                        {}, false)) {
+    //    ctx.log()->Error("RpTransparent: resolved_fb_ init failed!");
+    //}
 #endif
 
     /*if (moments_b0_.id && moments_z_and_z2_.id && moments_z3_and_z4_.id) {

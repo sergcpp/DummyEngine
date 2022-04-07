@@ -29,7 +29,19 @@ enum class eType : uint8_t {
     Int32,
     _Count
 };
-enum class eBufType : uint8_t { Undefined, VertexAttribs, VertexIndices, Texture, Uniform, Storage, Stage, AccStructure, ShaderBinding, Indirect, _Count };
+enum class eBufType : uint8_t {
+    Undefined,
+    VertexAttribs,
+    VertexIndices,
+    Texture,
+    Uniform,
+    Storage,
+    Stage,
+    AccStructure,
+    ShaderBinding,
+    Indirect,
+    _Count
+};
 
 const uint8_t BufMapRead = (1u << 0u);
 const uint8_t BufMapWrite = (1u << 1u);
@@ -138,6 +150,9 @@ class Buffer : public RefCounter, public LinearAlloc {
 void CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t dst_offset, uint32_t size,
                         void *_cmd_buf);
 void FillBuffer(Buffer &dst, uint32_t dst_offset, uint32_t size, uint32_t data, void *_cmd_buf);
+
+bool UpdateBufferContents(const void *data, uint32_t data_size, Buffer &stage, uint32_t map_offset, uint32_t map_size,
+                          Buffer &dst, uint32_t dst_offset, void *_cmd_buf);
 
 #if defined(USE_GL_RENDER)
 void GLUnbindBufferUnits(int start, int count);

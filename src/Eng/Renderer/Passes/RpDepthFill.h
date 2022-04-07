@@ -6,7 +6,7 @@
 #include <Ren/Pipeline.h>
 #include <Ren/VertexInput.h>
 
-class RpDepthFill : public RenderPassBase {
+class RpDepthFill : public RenderPassExecutor {
     bool initialized = false;
 
     // lazily initialized data
@@ -59,7 +59,35 @@ class RpDepthFill : public RenderPassBase {
                const Ren::BufferRef &materials_buf, const BindlessTextureData *bindless_tex, const char instances_buf[],
                const char instance_indices_buf[], const char shared_data_buf[], const Ren::Tex2DRef &noise_tex,
                const char main_depth_tex[], const char main_velocity_tex[]);
-    void Execute(RpBuilder &builder) override;
 
-    const char *name() const override { return "DEPTH FILL"; }
+    void Setup(const DrawList &list, const ViewState *view_state, bool clear_depth, const RpResource &vtx_buf1,
+               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
+               const RpResource &textures_buf, const BindlessTextureData *bindless_tex, const RpResource &instances_buf,
+               const RpResource &instance_indices_buf, const RpResource &shared_data_buf, const RpResource &noise_tex,
+               const RpResource &depth_tex, const RpResource &velocity_tex) {
+        view_state_ = view_state;
+        bindless_tex_ = bindless_tex;
+        clear_depth_ = clear_depth;
+
+        render_flags_ = list.render_flags;
+        materials_ = list.materials;
+        zfill_batch_indices = list.basic_batch_indices;
+        zfill_batches = list.basic_batches;
+
+        vtx_buf1_ = vtx_buf1;
+        vtx_buf2_ = vtx_buf2;
+        ndx_buf_ = ndx_buf;
+        instances_buf_ = instances_buf;
+        instance_indices_buf_ = instance_indices_buf;
+        shared_data_buf_ = shared_data_buf;
+        materials_buf_ = materials_buf;
+        textures_buf_ = textures_buf;
+
+        noise_tex_ = noise_tex;
+
+        depth_tex_ = depth_tex;
+        velocity_tex_ = velocity_tex;
+    }
+
+    void Execute(RpBuilder &builder) override;
 };

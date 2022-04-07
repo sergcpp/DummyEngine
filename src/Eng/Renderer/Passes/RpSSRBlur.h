@@ -1,5 +1,5 @@
 #pragma once
-
+#if 0
 #include <Ren/Pipeline.h>
 
 #include "../Graph/GraphBuilder.h"
@@ -34,3 +34,4 @@ class RpSSRBlur : public RenderPassBase {
 
     const char *name() const override { return "SSR BLUR"; }
 };
+#endif

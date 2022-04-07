@@ -1,5 +1,5 @@
 #include "RpUpdateBuffers.h"
-
+#if 0
 #include <Ren/Context.h>
 #include <Sys/Time_.h>
 
@@ -15,7 +15,7 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
     assert(list.skin_transforms.count < REN_MAX_SKIN_XFORMS_TOTAL);
     assert(list.skin_regions.count < REN_MAX_SKIN_REGIONS_TOTAL);
     assert(list.skin_vertices_count < REN_MAX_SKIN_VERTICES_TOTAL);
-    assert(list.light_sources.count < REN_MAX_LIGHTS_TOTAL);
+    assert(list.lights.count < REN_MAX_LIGHTS_TOTAL);
     assert(list.decals.count < REN_MAX_DECALS_TOTAL);
     assert(list.probes.count < REN_MAX_PROBES_TOTAL);
     assert(list.ellipsoids.count < REN_MAX_ELLIPSES_TOTAL);
@@ -31,7 +31,7 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
     instance_indices_stage_buf_ = list.instance_indices_stage_buf;
     cells_ = list.cells;
     cells_stage_buf_ = list.cells_stage_buf;
-    light_sources_ = list.light_sources;
+    lights_ = list.lights;
     lights_stage_buf_ = list.lights_stage_buf;
     decals_ = list.decals;
     decals_stage_buf_ = list.decals_stage_buf;
@@ -49,78 +49,78 @@ void RpUpdateBuffers::Setup(RpBuilder &builder, const DrawList &list, const View
     draw_cam_ = &list.draw_cam;
     view_state_ = view_state;
 
-    { // create skin transforms buffer
+    /*{ // create skin transforms buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = SkinTransformsBufChunkSize;
         skin_transforms_buf_ =
             builder.WriteBuffer(skin_transforms_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create shape keys buffer
+    }*/
+    /*{ // create shape keys buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = ShapeKeysBufChunkSize;
         shape_keys_buf_ =
             builder.WriteBuffer(shape_keys_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create instances buffer
+    }*/
+    /*{ // create instances buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceDataBufChunkSize;
         instances_buf_ =
             builder.WriteBuffer(instances_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create instance indices buffer
+    }*/
+    /*{ // create instance indices buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
         instance_indices_buf_ =
             builder.WriteBuffer(instance_indices_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create cells buffer
+    }*/
+    /*{ // create cells buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = CellsBufChunkSize;
         cells_buf_ = builder.WriteBuffer(cells_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create lights buffer
+    }*/
+    /*{ // create lights buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = LightsBufChunkSize;
         lights_buf_ = builder.WriteBuffer(lights_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create decals buffer
+    }*/
+    /*{ // create decals buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = DecalsBufChunkSize;
         decals_buf_ = builder.WriteBuffer(decals_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create items buffer
+    }*/
+    /*{ // create items buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = ItemsBufChunkSize;
         items_buf_ = builder.WriteBuffer(items_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create uniform buffer
+    }*/
+    /*{ // create uniform buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
         shared_data_buf_ =
             builder.WriteBuffer(shared_data_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
-    { // create atomic counter buffer
+    }*/
+    /*{ // create atomic counter buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Storage;
         desc.size = sizeof(uint32_t);
         atomic_cnt_buf_ =
             builder.WriteBuffer(atomic_counter_buf, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
-    }
+    }*/
 }
 
 void RpUpdateBuffers::Execute(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
 
-    RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(skin_transforms_buf_);
+    /*RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(skin_transforms_buf_);
 
     // Update bone transforms buffer
     if (skin_transforms_.count) {
@@ -138,9 +138,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*skin_transforms_stage_buf_, ctx.backend_frame() * SkinTransformsBufChunkSize,
                                 *skin_transforms_buf.ref, 0, skin_transforms_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(shape_keys_buf_);
+    /*RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(shape_keys_buf_);
 
     if (shape_keys_.count) {
         uint8_t *stage_mem = shape_keys_stage_buf_->MapRange(
@@ -156,9 +156,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*shape_keys_stage_buf_, ctx.backend_frame() * ShapeKeysBufChunkSize,
                                 *shape_keys_buf.ref, 0, shape_keys_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &instances_buf = builder.GetWriteBuffer(instances_buf_);
+    /*RpAllocBuf &instances_buf = builder.GetWriteBuffer(instances_buf_);
     if (!instances_buf.tbos[0]) {
         instances_buf.tbos[0] = ctx.CreateTexture1D("Instances TBO", instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
                                                     InstanceDataBufChunkSize);
@@ -179,9 +179,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*instances_stage_buf_, ctx.backend_frame() * InstanceDataBufChunkSize,
                                 *instances_buf.ref, 0, instance_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(instance_indices_buf_);
+    /*RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(instance_indices_buf_);
     if (!instance_indices_buf.tbos[0]) {
         instance_indices_buf.tbos[0] = ctx.CreateTexture1D("Instance Indices TBO", instance_indices_buf.ref,
                                                            Ren::eTexFormat::RawRG32UI, 0, InstanceIndicesBufChunkSize);
@@ -203,9 +203,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*instance_indices_stage_buf_, ctx.backend_frame() * InstanceIndicesBufChunkSize,
                                 *instance_indices_buf.ref, 0, instance_indices_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &cells_buf = builder.GetWriteBuffer(cells_buf_);
+    /*RpAllocBuf &cells_buf = builder.GetWriteBuffer(cells_buf_);
 
     if (!cells_buf.tbos[0]) {
         cells_buf.tbos[0] =
@@ -227,9 +227,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*cells_stage_buf_, ctx.backend_frame() * CellsBufChunkSize, *cells_buf.ref, 0,
                                 cells_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &lights_buf = builder.GetWriteBuffer(lights_buf_);
+    /*RpAllocBuf &lights_buf = builder.GetWriteBuffer(lights_buf_);
 
     if (!lights_buf.tbos[0]) { // Create buffer for lights information
         lights_buf.tbos[0] =
@@ -251,9 +251,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*lights_stage_buf_, ctx.backend_frame() * LightsBufChunkSize, *lights_buf.ref, 0,
                                 lights_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &decals_buf = builder.GetWriteBuffer(decals_buf_);
+    /*RpAllocBuf &decals_buf = builder.GetWriteBuffer(decals_buf_);
 
     if (!decals_buf.tbos[0]) {
         decals_buf.tbos[0] =
@@ -275,9 +275,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*decals_stage_buf_, ctx.backend_frame() * DecalsBufChunkSize, *decals_buf.ref, 0,
                                 decals_mem_size, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &items_buf = builder.GetWriteBuffer(items_buf_);
+    /*RpAllocBuf &items_buf = builder.GetWriteBuffer(items_buf_);
 
     if (!items_buf.tbos[0]) {
         items_buf.tbos[0] =
@@ -313,12 +313,12 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*items_stage_buf_, ctx.backend_frame() * ItemsBufChunkSize, *items_buf.ref, 0,
                                 sizeof(ItemData), ctx.current_cmd_buf());
-    }
+    }*/
 
     //
     // Update UBO with data that is shared between passes
     //
-    RpAllocBuf &unif_shared_data_buf = builder.GetWriteBuffer(shared_data_buf_);
+    /*RpAllocBuf &unif_shared_data_buf = builder.GetWriteBuffer(shared_data_buf_);
 
     { // Prepare data that is shared for all instances
         SharedDataBlock shrd_data;
@@ -423,8 +423,9 @@ void RpUpdateBuffers::Execute(RpBuilder &builder) {
 
         Ren::CopyBufferToBuffer(*shared_data_stage_buf_, ctx.backend_frame() * SharedDataBlockSize,
                                 *unif_shared_data_buf.ref, 0, SharedDataBlockSize, ctx.current_cmd_buf());
-    }
+    }*/
 
-    RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(atomic_cnt_buf_);
-    Ren::FillBuffer(*atomic_cnt_buf.ref, 0, sizeof(uint32_t), 0, ctx.current_cmd_buf());
+    //RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(atomic_cnt_buf_);
+    //Ren::FillBuffer(*atomic_cnt_buf.ref, 0, sizeof(uint32_t), 0, ctx.current_cmd_buf());
 }
+#endif

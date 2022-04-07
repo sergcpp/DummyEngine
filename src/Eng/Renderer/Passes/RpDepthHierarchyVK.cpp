@@ -10,9 +10,7 @@
 #include "../assets/shaders/internal/depth_hierarchy_interface.glsl"
 
 void RpDepthHierarchy::Execute(RpBuilder &builder) {
-    using namespace RpDepthHierarchyInternal;
-
-    RpAllocTex &input_tex = builder.GetReadTexture(input_tex_);
+    RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
     RpAllocBuf &atomic_buf = builder.GetWriteBuffer(atomic_buf_);
     RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);
 
@@ -51,7 +49,7 @@ void RpDepthHierarchy::Execute(RpBuilder &builder) {
     VkDescriptorSet descr_set = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
 
     { // update descriptor set
-        const VkDescriptorImageInfo depth_tex_info = input_tex.ref->vk_desc_image_info(1);
+        const VkDescriptorImageInfo depth_tex_info = depth_tex.ref->vk_desc_image_info(1);
         const VkDescriptorBufferInfo atomic_buf_info = {atomic_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         Ren::SmallVector<VkDescriptorImageInfo, 16> depth_img_infos;
         for (int i = 0; i < 7; ++i) {

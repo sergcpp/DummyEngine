@@ -14,7 +14,6 @@ extern "C" {
 #include "Passes/RpBlur.h"
 #include "Passes/RpBuildAccStructures.h"
 #include "Passes/RpCombine.h"
-#include "Passes/RpCopyTex.h"
 #include "Passes/RpDOF.h"
 #include "Passes/RpDebugEllipsoids.h"
 #include "Passes/RpDebugProbes.h"
@@ -25,28 +24,19 @@ extern "C" {
 #include "Passes/RpDownColor.h"
 #include "Passes/RpDownDepth.h"
 #include "Passes/RpFXAA.h"
+#include "Passes/RpFillStaticVel.h"
 #include "Passes/RpGBufferFill.h"
 #include "Passes/RpGBufferShade.h"
-#include "Passes/RpFillStaticVel.h"
 #include "Passes/RpOpaque.h"
 #include "Passes/RpRTReflections.h"
 #include "Passes/RpReadBrightness.h"
-#include "Passes/RpResolve.h"
 #include "Passes/RpSSAO.h"
 #include "Passes/RpSSRBlur.h"
-#include "Passes/RpSSRClassifyTiles.h"
 #include "Passes/RpSSRCompose.h"
 #include "Passes/RpSSRCompose2.h"
 #include "Passes/RpSSRDilate.h"
-#include "Passes/RpSSRPrefilter.h"
-#include "Passes/RpSSRPrepare.h"
-#include "Passes/RpSSRReproject.h"
-#include "Passes/RpSSRResolveTemporal.h"
 #include "Passes/RpSSRTrace.h"
-#include "Passes/RpSSRTraceHQ.h"
 #include "Passes/RpSSRVSDepth.h"
-#include "Passes/RpSSRWriteIndirectArgs.h"
-#include "Passes/RpSSRWriteIndirectRTDispatch.h"
 #include "Passes/RpSampleBrightness.h"
 #include "Passes/RpShadowMaps.h"
 #include "Passes/RpSkinning.h"
@@ -62,8 +52,9 @@ extern "C" {
 #include "Renderer_GL_Defines.inl"
 
 namespace Sys {
+template <typename T> class MonoAlloc;
 class ThreadPool;
-}
+} // namespace Sys
 
 class ShaderLoader;
 
@@ -116,10 +107,11 @@ class Renderer {
 
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap |
-         EnableLights | EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap |
-         EnableBloom | EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*| DebugRT*/ /*|
-         DebugEllipsoids*/ /*| DebugDeferred*/);
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
+         EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap | EnableBloom |
+         EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*| DebugRT*/ /*|
+DebugEllipsoids*/
+         /*| DebugDeferred*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -201,10 +193,10 @@ class Renderer {
 
     RpBuilder rp_builder_;
 
-    RpUpdateBuffers rp_update_buffers_;
-    RpSkinning rp_skinning_;
-    RpUpdateAccBuffers rp_update_acc_bufs_;
-    RpBuildAccStructures rp_build_acc_structs_;
+    //RpUpdateBuffers rp_update_buffers_;
+    //RpSkinning rp_skinning_;
+    //RpUpdateAccBuffers rp_update_acc_bufs_;
+    //RpBuildAccStructures rp_build_acc_structs_;
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydome rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
@@ -215,28 +207,28 @@ class Renderer {
     RpBilateralBlur rp_ssao_blur_h_ = {prim_draw_}, rp_ssao_blur_v_ = {prim_draw_};
     RpUpscale rp_ssao_upscale_ = {prim_draw_};
     RpGBufferFill rp_gbuffer_fill_;
-    RpGBufferShade rp_gbuffer_shade_;
+    // RpGBufferShade rp_gbuffer_shade_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
-    RpSSRPrepare rp_ssr_prepare_;
-    RpSSRClassifyTiles rp_ssr_classify_tiles_;
+    // RpSSRPrepare rp_ssr_prepare_;
+    // RpSSRClassifyTiles rp_ssr_classify_tiles_;
     RpSSRTrace rp_ssr_trace_ = {prim_draw_};
-    RpSSRTraceHQ rp_ssr_trace_hq_;
-    RpSSRVSDepth rp_ssr_vs_depth_;
-    RpSSRReproject rp_ssr_reproject_;
-    RpSSRPrefilter rp_ssr_prefilter_;
-    RpSSRResolveTemporal rp_ssr_resolve_temporal_;
-    RpSSRBlur rp_ssr_blur_;
-    RpCopyTex rp_ssr_copy_depth_ = {"COPY DEPTH"}, rp_ssr_copy_normals_ = {"COPY NORMALS"};
-    RpSSRWriteIndirectArgs rp_ssr_write_indir_args_;
-    RpSSRWriteIndirectRTDispatch rp_ssr_write_indir_rt_disp_;
+    // RpSSRTraceHQ rp_ssr_trace_hq_;
+    // RpSSRVSDepth rp_ssr_vs_depth_;
+    // RpSSRReproject rp_ssr_reproject_;
+    // RpSSRPrefilter rp_ssr_prefilter_;
+    // RpSSRResolveTemporal rp_ssr_resolve_temporal_;
+    // RpSSRBlur rp_ssr_blur_;
+    // RpCopyTex rp_ssr_copy_depth_ = {"COPY DEPTH"}, rp_ssr_copy_normals_ = {"COPY NORMALS"};
+    // RpSSRWriteIndirectArgs rp_ssr_write_indir_args_;
+    // RpSSRWriteIndirectRTDispatch rp_ssr_write_indir_rt_disp_;
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTReflections rp_rt_reflections_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
-    RpCopyTex rp_taa_copy_tex_ = {"TAA COPY TEX"};
+    //RpCopyTex rp_taa_copy_tex_ = {"TAA COPY TEX"};
     RpBlur rp_blur_h_ = {prim_draw_}, rp_blur_v_ = {prim_draw_};
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
     RpReadBrightness rp_read_brightness_;
@@ -245,22 +237,75 @@ class Renderer {
 #if defined(USE_VK_RENDER)
     RpDebugRT rp_debug_rt_;
 #elif defined(USE_GL_RENDER)
-    RpResolve rp_resolve_ = {prim_draw_};
-    RpDOF rp_dof_ = {prim_draw_};
-    RpFXAA rp_fxaa_ = {prim_draw_};
+    // RpDOF rp_dof_ = {prim_draw_};
+    // RpFXAA rp_fxaa_ = {prim_draw_};
 
     // debugging passes
-    RpDebugEllipsoids rp_debug_ellipsoids_ = {prim_draw_};
-    RpDebugProbes rp_debug_probes_ = {prim_draw_};
-    RpDebugTextures rp_debug_textures_ = {prim_draw_};
+    //RpDebugEllipsoids rp_debug_ellipsoids_ = {prim_draw_};
+    //RpDebugProbes rp_debug_probes_ = {prim_draw_};
+    //RpDebugTextures rp_debug_textures_ = {prim_draw_};
 #endif
 
     ViewState view_state_;
     PrimDraw prim_draw_;
     uint32_t frame_index_ = 0;
 
+    Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
+    // HQ SSR
+    Ren::Pipeline pi_ssr_classify_tiles_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
+    Ren::Pipeline pi_rt_write_indirect_;
+    // Denoiser stuff
+    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_resolve_temporal_;
+
+    struct CommonBuffers {
+        RpResource skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
+            decals_res, items_res, shared_data_res, atomic_cnt_res;
+    };
+
+    struct FrameTextures {
+        Ren::Tex2DParams color_params;
+        RpResource color;
+        Ren::Tex2DParams albedo_params;
+        RpResource albedo;
+        Ren::Tex2DParams specular_params;
+        RpResource specular;
+        Ren::Tex2DParams normal_params;
+        RpResource normal;
+        Ren::Tex2DParams depth_params;
+        RpResource depth;
+        Ren::Tex2DParams velocity_params;
+        RpResource velocity;
+
+        RpResource shadowmap;
+        RpResource ssao;
+    };
+
+    void AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_buffers);
+    void AddSkydomePass(const DrawList &list, const CommonBuffers &common_buffers, bool clear,
+                        FrameTextures &frame_textures);
+    void AddGBufferFillPass(const DrawList &list, const CommonBuffers &common_buffers,
+                            const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
+                            FrameTextures &frame_textures);
+    void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
+    void AddForwardOpaquePass(const DrawList &list, const CommonBuffers &common_buffers,
+                              const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
+                              FrameTextures &frame_textures);
+    void AddForwardTransparentPass(const DrawList &list, const CommonBuffers &common_buffers,
+                                   const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
+                                   FrameTextures &frame_textures);
+
+    void AddSSAOPasses(const RpResource &depth_down_2x, const RpResource &depth_tex, RpResource &out_ssao);
+
+    void AddHQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
+                             const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                             const BindlessTextureData &bindless, const RpResource &depth_hierarchy,
+                             FrameTextures &frame_textures);
+    void AddLQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers, const RpResource &depth_down_2x,
+                             FrameTextures &frame_textures);
+
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
+    void InitPipelines();
     void InitRendererInternal();
     void DestroyRendererInternal();
     static uint64_t GetGpuTimeBlockingUs();
