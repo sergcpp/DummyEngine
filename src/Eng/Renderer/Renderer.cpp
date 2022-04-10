@@ -584,6 +584,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
     { // Setup render passes
         rp_builder_.Reset();
+        backbuffer_sources_.clear();
 
         CommonBuffers common_buffers;
 
@@ -592,18 +593,18 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         {
             auto &skinning = rp_builder_.AddPass("SKINNING");
 
-            RpResource skin_vtx_res =
+            RpResRef skin_vtx_res =
                 skinning.AddStorageReadonlyInput(ctx_.default_skin_vertex_buf(), Ren::eStageBits::ComputeShader);
-            RpResource in_skin_transforms_res =
+            RpResRef in_skin_transforms_res =
                 skinning.AddStorageReadonlyInput(common_buffers.skin_transforms_res, Ren::eStageBits::ComputeShader);
-            RpResource in_shape_keys_res =
+            RpResRef in_shape_keys_res =
                 skinning.AddStorageReadonlyInput(common_buffers.shape_keys_res, Ren::eStageBits::ComputeShader);
-            RpResource delta_buf_res =
+            RpResRef delta_buf_res =
                 skinning.AddStorageReadonlyInput(ctx_.default_delta_buf(), Ren::eStageBits::ComputeShader);
 
-            RpResource vtx_buf1_res =
+            RpResRef vtx_buf1_res =
                 skinning.AddStorageOutput(ctx_.default_vertex_buf1(), Ren::eStageBits::ComputeShader);
-            RpResource vtx_buf2_res =
+            RpResRef vtx_buf2_res =
                 skinning.AddStorageOutput(ctx_.default_vertex_buf2(), Ren::eStageBits::ComputeShader);
 
             skinning.make_executor<RpSkinningExecutor>(pi_skinning_, list.skin_regions, skin_vtx_res,
@@ -617,7 +618,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         if (ctx_.capabilities.raytracing) {
             auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
 
-            RpResource rt_obj_instances_res;
+            RpResRef rt_obj_instances_res;
 
             { // create obj instances buffer
                 RpBufDesc desc;
@@ -634,9 +635,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
             rt_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res);
-            RpResource rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
+            RpResRef rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
 
-            RpResource rt_tlas_build_scratch_res;
+            RpResRef rt_tlas_build_scratch_res;
 
             { // create scratch buffer
                 RpBufDesc desc;
@@ -654,26 +655,26 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         { // Shadow maps
             auto &shadow_maps = rp_builder_.AddPass("SHADOW MAPS");
-            RpResource vtx_buf1_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            RpResource vtx_buf2_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            RpResource ndx_buf_res = shadow_maps.AddIndexBufferInput(ctx_.default_indices_buf());
+            RpResRef vtx_buf1_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            RpResRef vtx_buf2_res = shadow_maps.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            RpResRef ndx_buf_res = shadow_maps.AddIndexBufferInput(ctx_.default_indices_buf());
 
-            RpResource shared_data_res = shadow_maps.AddUniformBufferInput(
+            RpResRef shared_data_res = shadow_maps.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            RpResource instances_res =
+            RpResRef instances_res =
                 shadow_maps.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
-            RpResource instance_indices_res =
+            RpResRef instance_indices_res =
                 shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-            RpResource materials_buf_res =
+            RpResRef materials_buf_res =
                 shadow_maps.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-            RpResource textures_buf_res =
+            RpResRef textures_buf_res =
                 shadow_maps.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
-            RpResource textures_buf_res;
+            RpResRef textures_buf_res;
 #endif
-            RpResource noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            RpResRef noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
             { // shadow map buffer
                 Ren::Tex2DParams params;
@@ -763,26 +764,26 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         if ((list.render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
             auto &depth_fill = rp_builder_.AddPass("DEPTH FILL");
 
-            RpResource vtx_buf1 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
-            RpResource vtx_buf2 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
-            RpResource ndx_buf = depth_fill.AddIndexBufferInput(ctx_.default_indices_buf());
+            RpResRef vtx_buf1 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
+            RpResRef vtx_buf2 = depth_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
+            RpResRef ndx_buf = depth_fill.AddIndexBufferInput(ctx_.default_indices_buf());
 
-            RpResource shared_data_res = depth_fill.AddUniformBufferInput(
+            RpResRef shared_data_res = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            RpResource instances_res =
+            RpResRef instances_res =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
-            RpResource instance_indices_res =
+            RpResRef instance_indices_res =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
-            RpResource materials_buf_res =
+            RpResRef materials_buf_res =
                 depth_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-            RpResource textures_buf_res =
+            RpResRef textures_buf_res =
                 depth_fill.AddStorageReadonlyInput(bindless_tex.textures_buf, Ren::eStageBits::VertexShader);
 #else
-            RpResource textures_buf_res;
+            RpResRef textures_buf_res;
 #endif
-            RpResource noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
+            RpResRef noise_tex_res = depth_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
             frame_textures.depth = depth_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
@@ -808,16 +809,16 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Downsample depth
         //
-        RpResource depth_down_2x, depth_hierarchy_tex;
+        RpResRef depth_down_2x, depth_hierarchy_tex;
 
         if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
             { // TODO: get rid of this (or use on low spec only)
                 auto &downsample_depth = rp_builder_.AddPass("DOWN DEPTH");
 
-                const RpResource shared_data_res = downsample_depth.AddUniformBufferInput(
+                const RpResRef shared_data_res = downsample_depth.AddUniformBufferInput(
                     common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-                const RpResource in_depth_tex_res =
+                const RpResRef in_depth_tex_res =
                     downsample_depth.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
 
                 { // Texture that holds 2x downsampled linear depth
@@ -836,9 +837,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             }
 
             auto &depth_hierarchy = rp_builder_.AddPass("DEPTH HIERARCHY");
-            const RpResource depth_tex =
+            const RpResRef depth_tex =
                 depth_hierarchy.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-            const RpResource atomic_buf =
+            const RpResRef atomic_buf =
                 depth_hierarchy.AddStorageOutput(common_buffers.atomic_cnt_res, Ren::eStageBits::ComputeShader);
 
             { // 32-bit float depth hierarchy
@@ -893,14 +894,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             assert(!view_state_.is_multisampled);
             auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
 
-            const RpResource shared_data_buf = static_vel.AddUniformBufferInput(
+            const RpResRef shared_data_buf = static_vel.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            const RpResource depth_tex =
+            const RpResRef depth_tex =
                 static_vel.AddCustomTextureInput(frame_textures.depth, Ren::eResState::StencilTestDepthFetch,
                                                  Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
-            const RpResource velocity_tex = static_vel.AddColorOutput(frame_textures.velocity);
+            frame_textures.velocity = static_vel.AddColorOutput(frame_textures.velocity);
 
-            rp_fill_static_vel_.Setup(&view_state_, shared_data_buf, depth_tex, velocity_tex);
+            rp_fill_static_vel_.Setup(&view_state_, shared_data_buf, depth_tex, frame_textures.velocity);
             static_vel.set_executor(&rp_fill_static_vel_);
         }
 
@@ -969,7 +970,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             debug_rt.set_executor(&rp_debug_rt_);
         }
 #endif
-        RpResource resolved_color;
+        RpResRef resolved_color;
 
         //
         // Temporal resolve
@@ -1007,13 +1008,16 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 auto &taa_copy_tex = rp_builder_.AddPass("TAA COPY HIST");
 
                 struct PassData {
-                    RpResource in_tex;
-                    RpResource out_tex;
+                    RpResRef in_tex;
+                    RpResRef out_tex;
                 };
 
                 auto *data = taa_copy_tex.AllocPassData<PassData>();
                 data->in_tex = taa_copy_tex.AddTransferImageInput(resolved_color);
                 data->out_tex = taa_copy_tex.AddTransferImageOutput(taa_history_tex_);
+
+                // Make sure history copying pass will not be culled (temporary solution)
+                backbuffer_sources_.push_back(data->out_tex);
 
                 taa_copy_tex.set_execute_cb([this, data](RpBuilder &builder) {
                     RpAllocTex &in_tex = builder.GetReadTexture(data->in_tex);
@@ -1076,7 +1080,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            RpResource blur_temp;
+            RpResRef blur_temp;
             { // Blur frame horizontally
                 auto &blur_h = rp_builder_.AddPass("BLUR H");
 
@@ -1124,8 +1128,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Sample brightness
         //
+        RpResRef exposure_tex; // fake for now
         if (list.render_flags & EnableTonemap) {
-            RpResource lum_tex;
+            RpResRef lum_tex;
             { // Sample brightness
                 auto &lum_sample = rp_builder_.AddPass("LUM SAMPLE");
 
@@ -1152,6 +1157,18 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 auto *data = lum_read.AllocPassData<RpReadBrightnessData>();
                 data->input_tex = lum_read.AddTransferImageInput(lum_tex);
                 data->output_buf = lum_read.AddTransferOutput(readback_buf_);
+
+                { // 1px exposure texture (fake for now)
+                    Ren::Tex2DParams params;
+                    params.w = 1;
+                    params.h = 1;
+                    params.format = Ren::eTexFormat::RawR32F;
+                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
+                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                    exposure_tex = data->exposure_tex = lum_read.AddColorOutput("Exposure Tex", params);
+                }
 
                 rp_read_brightness_.Setup(data);
                 lum_read.set_executor(&rp_read_brightness_);
@@ -1216,6 +1233,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 auto *data = combine.AllocPassData<RpCombineData>();
                 data->color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
                 data->blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                data->exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
                 if (output_tex) {
                     Ren::Tex2DParams params;
                     params.w = view_state_.scr_res[0];
@@ -1226,7 +1244,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                     data->output_tex = combine.AddColorOutput(output_tex, params);
+                } else {
+                    data->output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
                 }
+
+                backbuffer_sources_.push_back(data->output_tex);
 
                 rp_combine_.Setup(&view_state_, gamma, exposure, list.draw_cam.fade, tonemap, data);
                 combine.set_executor(&rp_combine_);
@@ -1260,8 +1282,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
         }
 #endif
-
-        rp_builder_.Compile();
+        rp_builder_.Compile(backbuffer_sources_.data(), int(backbuffer_sources_.size()));
         rp_builder_.Execute();
     }
 

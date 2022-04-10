@@ -26,15 +26,15 @@ class RpSkydome : public RenderPassExecutor {
     Ren::Pipeline pipeline_[2];
     Ren::Framebuffer framebuf_[Ren::MaxFramesInFlight];
 
-    RpResource shared_data_buf_;
-    RpResource env_tex_;
-    RpResource vtx_buf1_;
-    RpResource vtx_buf2_;
-    RpResource ndx_buf_;
+    RpResRef shared_data_buf_;
+    RpResRef env_tex_;
+    RpResRef vtx_buf1_;
+    RpResRef vtx_buf2_;
+    RpResRef ndx_buf_;
 
-    RpResource color_tex_;
-    RpResource spec_tex_;
-    RpResource depth_tex_;
+    RpResRef color_tex_;
+    RpResRef spec_tex_;
+    RpResRef depth_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                   RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
@@ -45,10 +45,9 @@ class RpSkydome : public RenderPassExecutor {
     RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpSkydome();
 
-    void Setup(const DrawList &list, const ViewState *view_state, bool clear, const RpResource &vtx_buf1,
-               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &shared_data_buf,
-               const RpResource &env_tex, const RpResource &color_tex, const RpResource &spec_tex,
-               const RpResource &depth_tex) {
+    void Setup(const DrawList &list, const ViewState *view_state, bool clear, const RpResRef vtx_buf1,
+               const RpResRef vtx_buf2, const RpResRef ndx_buf, const RpResRef shared_data_buf, const RpResRef env_tex,
+               const RpResRef color_tex, const RpResRef spec_tex, const RpResRef depth_tex) {
         view_state_ = view_state;
         clear_ = clear;
 

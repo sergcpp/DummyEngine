@@ -9,9 +9,10 @@ class PrimDraw;
 struct ViewState;
 
 struct RpCombineData {
-    RpResource color_tex;
-    RpResource blur_tex;
-    RpResource output_tex;
+    RpResRef color_tex;
+    RpResRef blur_tex;
+    RpResRef exposure_tex;
+    RpResRef output_tex;
 };
 
 class RpCombine : public RenderPassExecutor {

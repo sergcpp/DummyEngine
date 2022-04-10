@@ -10,24 +10,24 @@ class PrimDraw;
 struct ViewState;
 
 struct RpRTReflectionsData {
-    RpResource sobol, scrambling_tile, ranking_tile;
-    RpResource geo_data;
-    RpResource materials;
-    RpResource vtx_buf1;
-    RpResource vtx_buf2;
-    RpResource ndx_buf;
-    RpResource shared_data;
-    RpResource depth_tex;
-    RpResource normal_tex;
-    RpResource env_tex;
-    RpResource lm_tex[5];
-    RpResource dummy_black;
-    RpResource ray_counter;
-    RpResource ray_list;
-    RpResource indir_args;
+    RpResRef sobol, scrambling_tile, ranking_tile;
+    RpResRef geo_data;
+    RpResRef materials;
+    RpResRef vtx_buf1;
+    RpResRef vtx_buf2;
+    RpResRef ndx_buf;
+    RpResRef shared_data;
+    RpResRef depth_tex;
+    RpResRef normal_tex;
+    RpResRef env_tex;
+    RpResRef lm_tex[5];
+    RpResRef dummy_black;
+    RpResRef ray_counter;
+    RpResRef ray_list;
+    RpResRef indir_args;
 
-    RpResource out_refl_tex;
-    RpResource out_raylen_tex;
+    RpResRef out_refl_tex;
+    RpResRef out_raylen_tex;
 };
 
 class RpRTReflections : public RenderPassExecutor {
