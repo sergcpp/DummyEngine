@@ -29,7 +29,7 @@ class RenderPass {
     RenderPassExecutor *p_executor_ = nullptr;
     Sys::InplaceFunction<void(RpBuilder &builder), 24> execute_cb_;
 
-    mutable Ren::SmallVector<int16_t, 64> depends_on_passes_;
+    mutable Ren::SmallVector<int16_t, 16> depends_on_passes_;
     mutable bool visited_ = false;
 
   public:
@@ -80,6 +80,9 @@ class RenderPass {
     RpResRef AddColorOutput(const char *name);
     // RpResRef AddColorOutput(const char *name, const Ren::Tex2DParams &params);
     RpResRef AddDepthOutput(const char *name, const Ren::Tex2DParams &params);
+
+    // TODO: try to get rid of this
+    RpResRef ReplaceColorOutput(int slot_index, const Ren::WeakTex2DRef &tex);
 
     RpResRef AddUniformBufferInput(RpResRef handle, Ren::eStageBits stages);
 

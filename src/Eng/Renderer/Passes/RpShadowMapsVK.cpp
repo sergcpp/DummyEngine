@@ -185,8 +185,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
             vi_depth_pass_solid_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-            for (int i = 0; i < int(shadow_lists_.count); i++) {
-                const ShadowList &sh_list = shadow_lists_.data[i];
+            for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -199,13 +199,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
                     if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits == BasicDrawBatch::TypeVege) {
                         continue;
                     }
@@ -227,8 +227,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
             vi_depth_pass_vege_solid_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-            for (int i = 0; i < int(shadow_lists_.count); i++) {
-                const ShadowList &sh_list = shadow_lists_.data[i];
+            for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -241,13 +241,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
                     if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
                         continue;
                     }
@@ -270,8 +270,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
             vi_depth_pass_transp_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-            for (int i = 0; i < int(shadow_lists_.count); i++) {
-                const ShadowList &sh_list = shadow_lists_.data[i];
+            for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -284,13 +284,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
                     if (!batch.instance_count || !batch.alpha_test_bit ||
                         batch.type_bits == BasicDrawBatch::TypeVege) {
                         continue;
@@ -321,8 +321,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
             vi_depth_pass_transp_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-            for (int i = 0; i < int(shadow_lists_.count); i++) {
-                const ShadowList &sh_list = shadow_lists_.data[i];
+            for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+                const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
                 if (!sh_list.shadow_batch_count) {
                     continue;
                 }
@@ -335,13 +335,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 }
 
                 Shadow::Params uniform_params = {};
-                uniform_params.g_shadow_view_proj_mat = shadow_regions_.data[i].clip_from_world;
+                uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
                 vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
                                    &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
-                    const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+                    const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
                     if (!batch.instance_count || !batch.alpha_test_bit ||
                         batch.type_bits != BasicDrawBatch::TypeVege) {
                         continue;

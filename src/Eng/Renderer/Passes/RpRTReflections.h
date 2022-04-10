@@ -38,9 +38,7 @@ class RpRTReflections : public RenderPassExecutor {
     Ren::Pipeline pi_rt_reflections_inline_;
 
     // temp data (valid only between Setup and Execute calls)
-    uint64_t render_flags_ = 0;
     const ViewState *view_state_ = nullptr;
-    const Ren::Camera *draw_cam_ = nullptr;
     const AccelerationStructureData *acc_struct_data_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
@@ -52,12 +50,9 @@ class RpRTReflections : public RenderPassExecutor {
     void ExecuteRTInline(RpBuilder &builder);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const DrawList &list,
-               const AccelerationStructureData *acc_struct_data, const BindlessTextureData *bindless_tex,
-               const RpRTReflectionsData *pass_data) {
-        render_flags_ = list.render_flags;
+    void Setup(RpBuilder &builder, const ViewState *view_state, const AccelerationStructureData *acc_struct_data,
+               const BindlessTextureData *bindless_tex, const RpRTReflectionsData *pass_data) {
         view_state_ = view_state;
-        draw_cam_ = &list.draw_cam;
         acc_struct_data_ = acc_struct_data;
         bindless_tex_ = bindless_tex;
         pass_data_ = pass_data;

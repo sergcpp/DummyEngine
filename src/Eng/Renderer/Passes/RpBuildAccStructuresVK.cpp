@@ -49,7 +49,7 @@ void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
 
     VkAccelerationStructureBuildRangeInfoKHR range_info = {};
     range_info.primitiveOffset = 0;
-    range_info.primitiveCount = instance_count_;
+    range_info.primitiveCount = p_list_->rt_obj_instances.count;
     range_info.firstVertex = 0;
     range_info.transformOffset = 0;
 

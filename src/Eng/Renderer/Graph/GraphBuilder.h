@@ -91,6 +91,8 @@ class RpBuilder {
     int16_t FindPreviousWrittenInPass(RpResRef handle);
     void TraversePassDependencies(const RenderPass *pass, int recursion_depth, std::vector<RenderPass *> &out_pass_stack);
 
+    void BuildResourceLinkedLists();
+
     static const int AllocBufSize = 4 * 1024 * 1024;
     std::unique_ptr<char[]> alloc_buf_;
     Sys::MonoAlloc<char> alloc_;
@@ -114,7 +116,10 @@ class RpBuilder {
 
     Ren::RastState &rast_state() { return rast_state_; }
 
+    bool ready() const { return !reordered_render_passes_.empty(); }
+
     RenderPass &AddPass(const char *name);
+    RenderPass *FindPass(const char *name);
 
     template <typename T, class... Args> T *AllocPassData(Args &&...args) {
         auto *new_data = reinterpret_cast<T *>(alloc_.allocate(sizeof(T)));
@@ -143,7 +148,7 @@ class RpBuilder {
     RpResRef WriteTexture(const char *name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
                           Ren::eStageBits stages, RenderPass &pass);
     RpResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                          RenderPass &pass);
+                          RenderPass &pass, int slot_index = -1);
 
     RpAllocBuf &GetReadBuffer(RpResRef handle);
     RpAllocTex &GetReadTexture(RpResRef handle);

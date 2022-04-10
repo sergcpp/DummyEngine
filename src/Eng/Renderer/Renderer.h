@@ -192,12 +192,13 @@ DebugEllipsoids*/
     static const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 
     RpBuilder rp_builder_;
+    uint64_t cached_render_flags_ = 0;
+    Ren::WeakTex2DRef env_map_;
+    Ren::WeakTex2DRef lm_direct_, lm_indir_, lm_indir_sh_[4];
+    const DrawList *p_list_;
+    const Ren::ProbeStorage *probe_storage_ = nullptr;
     Ren::SmallVector<RpResRef, 8> backbuffer_sources_;
 
-    // RpUpdateBuffers rp_update_buffers_;
-    // RpSkinning rp_skinning_;
-    // RpUpdateAccBuffers rp_update_acc_bufs_;
-    // RpBuildAccStructures rp_build_acc_structs_;
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydome rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
@@ -208,31 +209,19 @@ DebugEllipsoids*/
     RpBilateralBlur rp_ssao_blur_h_ = {prim_draw_}, rp_ssao_blur_v_ = {prim_draw_};
     RpUpscale rp_ssao_upscale_ = {prim_draw_};
     RpGBufferFill rp_gbuffer_fill_;
-    // RpGBufferShade rp_gbuffer_shade_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
-    // RpSSRPrepare rp_ssr_prepare_;
-    // RpSSRClassifyTiles rp_ssr_classify_tiles_;
     RpSSRTrace rp_ssr_trace_ = {prim_draw_};
-    // RpSSRTraceHQ rp_ssr_trace_hq_;
-    // RpSSRVSDepth rp_ssr_vs_depth_;
-    // RpSSRReproject rp_ssr_reproject_;
-    // RpSSRPrefilter rp_ssr_prefilter_;
-    // RpSSRResolveTemporal rp_ssr_resolve_temporal_;
-    // RpSSRBlur rp_ssr_blur_;
-    // RpCopyTex rp_ssr_copy_depth_ = {"COPY DEPTH"}, rp_ssr_copy_normals_ = {"COPY NORMALS"};
-    // RpSSRWriteIndirectArgs rp_ssr_write_indir_args_;
-    // RpSSRWriteIndirectRTDispatch rp_ssr_write_indir_rt_disp_;
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTReflections rp_rt_reflections_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
-    // RpCopyTex rp_taa_copy_tex_ = {"TAA COPY TEX"};
     RpBlur rp_blur_h_ = {prim_draw_}, rp_blur_v_ = {prim_draw_};
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
     RpReadBrightness rp_read_brightness_;
+    RpCombineData rp_combine_data_;
     RpCombine rp_combine_ = {prim_draw_};
 
 #if defined(USE_VK_RENDER)
@@ -281,28 +270,26 @@ DebugEllipsoids*/
         RpResRef ssao;
     };
 
-    void AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_buffers);
-    void AddSkydomePass(const DrawList &list, const CommonBuffers &common_buffers, bool clear,
-                        FrameTextures &frame_textures);
-    void AddGBufferFillPass(const DrawList &list, const CommonBuffers &common_buffers,
-                            const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
-                            FrameTextures &frame_textures);
+    void AddBuffersUpdatePass(CommonBuffers &common_buffers);
+    void AddSkydomePass(const CommonBuffers &common_buffers, bool clear, FrameTextures &frame_textures);
+    void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                            const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
-    void AddForwardOpaquePass(const DrawList &list, const CommonBuffers &common_buffers,
-                              const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
-                              FrameTextures &frame_textures);
-    void AddForwardTransparentPass(const DrawList &list, const CommonBuffers &common_buffers,
-                                   const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
-                                   FrameTextures &frame_textures);
+    void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                              const BindlessTextureData &bindless, FrameTextures &frame_textures);
+    void AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                   const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
     void AddSSAOPasses(RpResRef depth_down_2x, RpResRef depth_tex, RpResRef &out_ssao);
 
-    void AddHQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
+    void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
+                             const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
+                             const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                              const BindlessTextureData &bindless, RpResRef depth_hierarchy,
                              FrameTextures &frame_textures);
-    void AddLQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers, RpResRef depth_down_2x,
-                             FrameTextures &frame_textures);
+    void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
+                             RpResRef depth_down_2x, FrameTextures &frame_textures);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
