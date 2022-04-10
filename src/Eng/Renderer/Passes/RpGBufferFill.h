@@ -33,25 +33,25 @@ class RpGBufferFill : public RenderPassExecutor {
     DynArrayConstRef<BasicDrawBatch> main_batches_;
     DynArrayConstRef<uint32_t> main_batch_indices_;
 
-    RpResource vtx_buf1_;
-    RpResource vtx_buf2_;
-    RpResource ndx_buf_;
-    RpResource instances_buf_;
-    RpResource instance_indices_buf_;
-    RpResource shared_data_buf_;
-    RpResource materials_buf_;
-    RpResource textures_buf_;
-    RpResource cells_buf_;
-    RpResource items_buf_;
-    RpResource lights_buf_;
-    RpResource decals_buf_;
-    RpResource noise_tex_;
-    RpResource dummy_black_;
+    RpResRef vtx_buf1_;
+    RpResRef vtx_buf2_;
+    RpResRef ndx_buf_;
+    RpResRef instances_buf_;
+    RpResRef instance_indices_buf_;
+    RpResRef shared_data_buf_;
+    RpResRef materials_buf_;
+    RpResRef textures_buf_;
+    RpResRef cells_buf_;
+    RpResRef items_buf_;
+    RpResRef lights_buf_;
+    RpResRef decals_buf_;
+    RpResRef noise_tex_;
+    RpResRef dummy_black_;
 
-    RpResource out_albedo_tex_;
-    RpResource out_normal_tex_;
-    RpResource out_spec_tex_;
-    RpResource out_depth_tex_;
+    RpResRef out_albedo_tex_;
+    RpResRef out_normal_tex_;
+    RpResRef out_spec_tex_;
+    RpResRef out_depth_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                   RpAllocTex &albedo_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
@@ -63,13 +63,12 @@ class RpGBufferFill : public RenderPassExecutor {
   public:
     ~RpGBufferFill();
 
-    void Setup(const DrawList &list, const ViewState *view_state, const RpResource &vtx_buf1,
-               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
-               const RpResource &textures_buf, const BindlessTextureData *bindless_tex, const RpResource &noise_tex,
-               const RpResource &dummy_black, const RpResource &instances_buf, const RpResource &instance_indices_buf,
-               const RpResource &shared_data_buf, const RpResource &cells_buf, const RpResource &items_buf,
-               const RpResource &decals_buf, const RpResource &out_albedo, const RpResource &out_normals,
-               const RpResource &out_spec, const RpResource &out_depth) {
+    void Setup(const DrawList &list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
+               const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
+               const BindlessTextureData *bindless_tex, const RpResRef noise_tex, const RpResRef dummy_black,
+               const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
+               const RpResRef cells_buf, const RpResRef items_buf, const RpResRef decals_buf, const RpResRef out_albedo,
+               const RpResRef out_normals, const RpResRef out_spec, const RpResRef out_depth) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 

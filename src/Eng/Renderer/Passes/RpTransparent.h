@@ -36,32 +36,32 @@ class RpTransparent : public RenderPassExecutor {
     DynArrayConstRef<uint32_t> main_batch_indices_;
     int alpha_blend_start_index_ = -1;
 
-    RpResource vtx_buf1_;
-    RpResource vtx_buf2_;
-    RpResource ndx_buf_;
-    RpResource instances_buf_;
-    RpResource instance_indices_buf_;
-    RpResource shared_data_buf_;
-    RpResource cells_buf_;
-    RpResource items_buf_;
-    RpResource lights_buf_;
-    RpResource decals_buf_;
-    RpResource materials_buf_;
-    RpResource textures_buf_;
-    RpResource lm_tex_[4];
-    RpResource brdf_lut_;
-    RpResource noise_tex_;
-    RpResource cone_rt_lut_;
-    RpResource dummy_black_;
-    RpResource dummy_white_;
+    RpResRef vtx_buf1_;
+    RpResRef vtx_buf2_;
+    RpResRef ndx_buf_;
+    RpResRef instances_buf_;
+    RpResRef instance_indices_buf_;
+    RpResRef shared_data_buf_;
+    RpResRef cells_buf_;
+    RpResRef items_buf_;
+    RpResRef lights_buf_;
+    RpResRef decals_buf_;
+    RpResRef materials_buf_;
+    RpResRef textures_buf_;
+    RpResRef lm_tex_[4];
+    RpResRef brdf_lut_;
+    RpResRef noise_tex_;
+    RpResRef cone_rt_lut_;
+    RpResRef dummy_black_;
+    RpResRef dummy_white_;
 
-    RpResource shad_tex_;
-    RpResource ssao_tex_;
+    RpResRef shad_tex_;
+    RpResRef ssao_tex_;
 
-    RpResource color_tex_;
-    RpResource normal_tex_;
-    RpResource spec_tex_;
-    RpResource depth_tex_;
+    RpResRef color_tex_;
+    RpResRef normal_tex_;
+    RpResRef spec_tex_;
+    RpResRef depth_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                   RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
@@ -82,16 +82,15 @@ class RpTransparent : public RenderPassExecutor {
     RpTransparent(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
     ~RpTransparent();
 
-    void Setup(const DrawList &list, const ViewState *view_state, const RpResource &vtx_buf1,
-               const RpResource &vtx_buf2, const RpResource &ndx_buf, const RpResource &materials_buf,
-               const RpResource &textures_buf, const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex,
-               const RpResource &brdf_lut, const RpResource &noise_tex, const RpResource &cone_rt_lut,
-               const RpResource &dummy_black, const RpResource &dummy_white, const RpResource &instances_buf,
-               const RpResource &instance_indices_buf, const RpResource &shared_data_buf, const RpResource &cells_buf,
-               const RpResource &items_buf, const RpResource &lights_buf, const RpResource &decals_buf,
-               const RpResource &shad_tex, const RpResource &ssao_tex, const RpResource lm_tex[4],
-               const RpResource &color_tex, const RpResource &normal_tex, const RpResource &spec_tex,
-               const RpResource &depth_tex) {
+    void Setup(const DrawList &list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
+               const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
+               const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const RpResRef brdf_lut,
+               const RpResRef noise_tex, const RpResRef cone_rt_lut, const RpResRef dummy_black,
+               const RpResRef dummy_white, const RpResRef instances_buf, const RpResRef instance_indices_buf,
+               const RpResRef shared_data_buf, const RpResRef cells_buf, const RpResRef items_buf,
+               const RpResRef lights_buf, const RpResRef decals_buf, const RpResRef shad_tex, const RpResRef ssao_tex,
+               const RpResRef lm_tex[4], const RpResRef color_tex, const RpResRef normal_tex, const RpResRef spec_tex,
+               const RpResRef depth_tex) {
         view_state_ = view_state;
         pipelines_ = pipelines;
         bindless_tex_ = bindless_tex;

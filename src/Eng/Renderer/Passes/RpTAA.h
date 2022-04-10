@@ -6,14 +6,14 @@ class PrimDraw;
 struct ViewState;
 
 struct RpTAAData {
-    RpResource shared_data;
+    RpResRef shared_data;
 
-    RpResource clean_tex;
-    RpResource depth_tex;
-    RpResource velocity_tex;
-    RpResource history_tex;
+    RpResRef clean_tex;
+    RpResRef depth_tex;
+    RpResRef velocity_tex;
+    RpResRef history_tex;
 
-    RpResource output_tex;
+    RpResRef output_tex;
 };
 
 class RpTAA : public RenderPassExecutor {

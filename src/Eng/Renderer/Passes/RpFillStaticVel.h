@@ -15,10 +15,10 @@ class RpFillStaticVel : public RenderPassExecutor {
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
 
-    RpResource shared_data_buf_;
+    RpResRef shared_data_buf_;
 
-    RpResource depth_tex_;
-    RpResource velocity_tex_;
+    RpResRef depth_tex_;
+    RpResRef velocity_tex_;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex, RpAllocTex &velocity_tex);
 
@@ -28,8 +28,8 @@ class RpFillStaticVel : public RenderPassExecutor {
   public:
     RpFillStaticVel(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(const ViewState *view_state, const RpResource &shared_data_buf, const RpResource &depth_tex,
-               const RpResource &velocity_tex) {
+    void Setup(const ViewState *view_state, const RpResRef shared_data_buf, const RpResRef depth_tex,
+               const RpResRef velocity_tex) {
         view_state_ = view_state;
 
         shared_data_buf_ = shared_data_buf;

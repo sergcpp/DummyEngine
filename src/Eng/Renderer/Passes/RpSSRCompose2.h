@@ -6,14 +6,14 @@ class PrimDraw;
 struct ViewState;
 
 struct RpSSRCompose2Data {
-    RpResource shared_data;
-    RpResource depth_tex;
-    RpResource normal_tex;
-    RpResource spec_tex;
-    RpResource refl_tex;
-    RpResource brdf_lut;
+    RpResRef shared_data;
+    RpResRef depth_tex;
+    RpResRef normal_tex;
+    RpResRef spec_tex;
+    RpResRef refl_tex;
+    RpResRef brdf_lut;
 
-    RpResource output_tex;
+    RpResRef output_tex;
 };
 
 class RpSSRCompose2 : public RenderPassExecutor {

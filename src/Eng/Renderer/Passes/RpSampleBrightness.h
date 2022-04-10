@@ -6,8 +6,8 @@
 class PrimDraw;
 
 struct RpSampleBrightnessData {
-    RpResource input_tex;
-    RpResource reduced_tex;
+    RpResRef input_tex;
+    RpResRef reduced_tex;
 };
 
 class RpSampleBrightness : public RenderPassExecutor {

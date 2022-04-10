@@ -5,7 +5,7 @@
 void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
                                    const PersistentGpuData &persistent_data,
                                    const AccelerationStructureData &acc_struct_data,
-                                   const BindlessTextureData &bindless, const RpResource &depth_hierarchy,
+                                   const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                                    FrameTextures &frame_textures) {
     // Reflection settings
     static const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
@@ -13,14 +13,14 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
     static const int SamplesPerQuad = 1;
     static const bool VarianceGuided = true;
 
-    RpResource ray_counter;
+    RpResRef ray_counter;
 
     { // Prepare atomic counter and ray length texture
         auto &ssr_prepare = rp_builder_.AddPass("SSR PREPARE");
 
         struct PassData {
-            RpResource ray_counter;
-            RpResource ray_length_tex;
+            RpResRef ray_counter;
+            RpResRef ray_length_tex;
         };
 
         auto *data = ssr_prepare.AllocPassData<PassData>();
@@ -56,27 +56,27 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         });
     }
 
-    RpResource ray_list, tile_list;
-    RpResource refl_tex;
+    RpResRef ray_list, tile_list;
+    RpResRef refl_tex;
 
     { // Classify pixel quads
         auto &ssr_classify = rp_builder_.AddPass("SSR CLASSIFY");
 
         struct PassData {
-            RpResource depth;
-            RpResource normal;
-            RpResource variance_history;
-            RpResource ray_counter;
-            RpResource ray_list;
-            RpResource tile_list;
-            RpResource out_refl_tex;
+            RpResRef depth;
+            RpResRef normal;
+            RpResRef variance_history;
+            RpResRef ray_counter;
+            RpResRef ray_list;
+            RpResRef tile_list;
+            RpResRef out_refl_tex;
         };
 
         auto *data = ssr_classify.AllocPassData<PassData>();
         data->depth = ssr_classify.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
         data->variance_history = ssr_classify.AddTextureInput(variance_tex_[0], Ren::eStageBits::ComputeShader);
-        data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+        ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
 
         { // packed ray list
             RpBufDesc desc;
@@ -141,18 +141,18 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         });
     }
 
-    RpResource indir_disp_buf;
+    RpResRef indir_disp_buf;
 
     { // Write indirect arguments
         auto &write_indir = rp_builder_.AddPass("SSR INDIR ARGS");
 
         struct PassData {
-            RpResource ray_counter;
-            RpResource indir_disp_buf;
+            RpResRef ray_counter;
+            RpResRef indir_disp_buf;
         };
 
         auto *data = write_indir.AllocPassData<PassData>();
-        data->ray_counter = write_indir.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+        ray_counter = data->ray_counter = write_indir.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
 
         { // Indirect arguments
             RpBufDesc desc = {};
@@ -176,18 +176,18 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         });
     }
 
-    RpResource raylen_tex, ray_rt_list;
+    RpResRef raylen_tex, ray_rt_list;
 
     { // Trace rays
         auto &ssr_trace_hq = rp_builder_.AddPass("SSR TRACE HQ");
 
         struct PassData {
-            RpResource sobol, scrambling_tile, ranking_tile;
-            RpResource shared_data;
-            RpResource color_tex, normal_tex, depth_hierarchy;
+            RpResRef sobol, scrambling_tile, ranking_tile;
+            RpResRef shared_data;
+            RpResRef color_tex, normal_tex, depth_hierarchy;
 
-            RpResource in_ray_list, indir_args, inout_ray_counter;
-            RpResource refl_tex, raylen_tex, out_ray_list;
+            RpResRef in_ray_list, indir_args, inout_ray_counter;
+            RpResRef refl_tex, raylen_tex, out_ray_list;
         };
 
         auto *data = ssr_trace_hq.AllocPassData<PassData>();
@@ -205,8 +205,8 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
 
         data->in_ray_list = ssr_trace_hq.AddStorageReadonlyInput(ray_list, Ren::eStageBits::ComputeShader);
         data->indir_args = ssr_trace_hq.AddIndirectBufferInput(indir_disp_buf);
-        data->inout_ray_counter = ssr_trace_hq.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
-        data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Ren::eStageBits::ComputeShader);
+        ray_counter = data->inout_ray_counter = ssr_trace_hq.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+        refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Ren::eStageBits::ComputeShader);
 
         { // Ray length texture
             Ren::Tex2DParams params;
@@ -286,18 +286,18 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
     }
 
     if (ctx_.capabilities.raytracing && list.env.env_map) {
-        RpResource indir_rt_disp_buf;
+        RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
             auto &rt_disp_args = rp_builder_.AddPass("RT DISPATCH ARGS");
 
             struct PassData {
-                RpResource ray_counter;
-                RpResource indir_disp_buf;
+                RpResRef ray_counter;
+                RpResRef indir_disp_buf;
             };
 
             auto *data = rt_disp_args.AllocPassData<PassData>();
-            data->ray_counter = rt_disp_args.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+            ray_counter = data->ray_counter = rt_disp_args.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
 
             { // Indirect arguments
                 RpBufDesc desc = {};
@@ -357,29 +357,30 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
 
             data->dummy_black = rt_refl.AddTextureInput(dummy_black_, stage);
 
-            data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
-            data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
+            raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
+            refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
 
             rp_rt_reflections_.Setup(rp_builder_, &view_state_, list, &acc_struct_data, &bindless, data);
             rt_refl.set_executor(&rp_rt_reflections_);
         }
     }
 
-    RpResource reproj_refl_tex, avg_refl_tex;
+    RpResRef reproj_refl_tex, avg_refl_tex;
+    RpResRef depth_hist_tex;
 
     { // Denoiser reprojection
         auto &ssr_reproject = rp_builder_.AddPass("SSR REPROJECT");
 
         struct PassData {
-            RpResource shared_data;
-            RpResource depth_tex, norm_tex, velocity_tex;
-            RpResource depth_hist_tex, norm_hist_tex, refl_hist_tex, variance_hist_tex, sample_count_hist_tex;
-            RpResource refl_tex, raylen_tex;
-            RpResource tile_list;
-            RpResource indir_args;
+            RpResRef shared_data;
+            RpResRef depth_tex, norm_tex, velocity_tex;
+            RpResRef depth_hist_tex, norm_hist_tex, refl_hist_tex, variance_hist_tex, sample_count_hist_tex;
+            RpResRef refl_tex, raylen_tex;
+            RpResRef tile_list;
+            RpResRef indir_args;
             uint32_t indir_args_offset = 0;
-            RpResource out_reprojected_tex, out_avg_refl_tex;
-            RpResource out_variance_tex, out_sample_count_tex;
+            RpResRef out_reprojected_tex, out_avg_refl_tex;
+            RpResRef out_variance_tex, out_sample_count_tex;
         };
 
         auto *data = ssr_reproject.AllocPassData<PassData>();
@@ -477,18 +478,18 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         });
     }
 
-    RpResource prefiltered_refl;
+    RpResRef prefiltered_refl;
 
     { // Denoiser prefilter
         auto &ssr_prefilter = rp_builder_.AddPass("SSR PREFILTER");
 
         struct PassData {
-            RpResource depth_tex, norm_tex;
-            RpResource avg_refl_tex, refl_tex;
-            RpResource variance_tex, sample_count_tex;
-            RpResource tile_list, indir_args;
+            RpResRef depth_tex, norm_tex;
+            RpResRef avg_refl_tex, refl_tex;
+            RpResRef variance_tex, sample_count_tex;
+            RpResRef tile_list, indir_args;
             uint32_t indir_args_offset = 0;
-            RpResource out_refl_tex, out_variance_tex;
+            RpResRef out_refl_tex, out_variance_tex;
         };
 
         auto *data = ssr_prefilter.AllocPassData<PassData>();
@@ -561,12 +562,12 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         auto &ssr_temporal = rp_builder_.AddPass("SSR TEMPORAL");
 
         struct PassData {
-            RpResource shared_data;
-            RpResource norm_tex, avg_refl_tex, refl_tex, reproj_refl_tex;
-            RpResource variance_tex, sample_count_tex, tile_list;
-            RpResource indir_args;
+            RpResRef shared_data;
+            RpResRef norm_tex, avg_refl_tex, refl_tex, reproj_refl_tex;
+            RpResRef variance_tex, sample_count_tex, tile_list;
+            RpResRef indir_args;
             uint32_t indir_args_offset = 0;
-            RpResource out_refl_tex, out_variance_tex;
+            RpResRef out_refl_tex, out_variance_tex;
         };
 
         auto *data = ssr_temporal.AllocPassData<PassData>();
@@ -638,7 +639,7 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
             data->refl_tex = ssr_compose.AddTextureInput(refl_history_tex_, Ren::eStageBits::FragmentShader);
         }
         data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
-        data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
+        frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
         rp_ssr_compose2_.Setup(&view_state_, list.probe_storage, data);
         ssr_compose.set_executor(&rp_ssr_compose2_);
@@ -648,8 +649,8 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         auto &copy_hist = rp_builder_.AddPass("SSR COPY HIST");
 
         struct PassData {
-            RpResource in_depth, in_normal;
-            RpResource out_depth, out_normal;
+            RpResRef in_depth, in_normal;
+            RpResRef out_depth, out_normal;
         };
 
         auto *data = copy_hist.AllocPassData<PassData>();
@@ -659,6 +660,9 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
 
         data->out_depth = copy_hist.AddTransferImageOutput(depth_history_tex_);
         data->out_normal = copy_hist.AddTransferImageOutput(norm_history_tex_);
+
+        // Make sure history copying pass will not be culled (temporary solution)
+        backbuffer_sources_.push_back(data->out_depth);
 
         copy_hist.set_execute_cb([this, data](RpBuilder &builder) {
             RpAllocTex &in_depth = builder.GetReadTexture(data->in_depth);
@@ -681,8 +685,8 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
 }
 
 void Renderer::AddLQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
-                                   const RpResource &depth_down_2x, FrameTextures &frame_textures) {
-    RpResource ssr_temp1;
+                                   const RpResRef depth_down_2x, FrameTextures &frame_textures) {
+    RpResRef ssr_temp1;
     { // Trace
         auto &ssr_trace = rp_builder_.AddPass("SSR TRACE");
 
@@ -707,7 +711,7 @@ void Renderer::AddLQSpecularPasses(const DrawList &list, const CommonBuffers &co
         rp_ssr_trace_.Setup(rp_builder_, &view_state_, data);
         ssr_trace.set_executor(&rp_ssr_trace_);
     }
-    RpResource ssr_temp2;
+    RpResRef ssr_temp2;
     { // Dilate
         auto &ssr_dilate = rp_builder_.AddPass("SSR DILATE");
 
