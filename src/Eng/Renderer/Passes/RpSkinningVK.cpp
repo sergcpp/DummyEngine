@@ -18,7 +18,7 @@ void RpSkinningExecutor::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetWriteBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetWriteBuffer(vtx_buf2_);
 
-    if (skin_regions_.count) {
+    if (p_list_->skin_regions.count) {
         Ren::Context &ctx = builder.ctx();
         Ren::ApiContext *api_ctx = ctx.api_ctx();
         VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
@@ -53,8 +53,8 @@ void RpSkinningExecutor::Execute(RpBuilder &builder) {
         vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.layout(), 0, 1, &descr_set, 0,
                                 nullptr);
 
-        for (uint32_t i = 0; i < skin_regions_.count; i++) {
-            const SkinRegion &sr = skin_regions_.data[i];
+        for (uint32_t i = 0; i < p_list_->skin_regions.count; i++) {
+            const SkinRegion &sr = p_list_->skin_regions.data[i];
 
             const uint32_t non_shapekeyed_vertex_count = sr.vertex_count - sr.shape_keyed_vertex_count;
 

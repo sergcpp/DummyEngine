@@ -16,7 +16,7 @@ void RpSkinningExecutor::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetWriteBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetWriteBuffer(vtx_buf2_);
 
-    if (skin_regions_.count) {
+    if (p_list_->skin_regions.count) {
         const GLuint vertex_buf1_id = vtx_buf1.ref->id();
         const GLuint vertex_buf2_id = vtx_buf2.ref->id();
         const GLuint delta_buf_id = delta_buf.ref->id();
@@ -33,8 +33,8 @@ void RpSkinningExecutor::Execute(RpBuilder &builder) {
         Ren::Buffer temp_unif_buffer =
             Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(Skinning::Params), 16);
 
-        for (uint32_t i = 0; i < skin_regions_.count; i++) {
-            const SkinRegion &sr = skin_regions_.data[i];
+        for (uint32_t i = 0; i < p_list_->skin_regions.count; i++) {
+            const SkinRegion &sr = p_list_->skin_regions.data[i];
 
             const uint32_t non_shapekeyed_vertex_count = sr.vertex_count - sr.shape_keyed_vertex_count;
 

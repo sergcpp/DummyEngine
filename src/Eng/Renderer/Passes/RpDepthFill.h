@@ -16,10 +16,7 @@ class RpDepthFill : public RenderPassExecutor {
     const BindlessTextureData *bindless_tex_ = nullptr;
     bool clear_depth_ = false;
 
-    uint64_t render_flags_ = 0;
-    const Ren::MaterialStorage *materials_ = nullptr;
-    DynArrayConstRef<uint32_t> zfill_batch_indices;
-    DynArrayConstRef<BasicDrawBatch> zfill_batches;
+    const DrawList **p_list_;
 
     RpResRef vtx_buf1_;
     RpResRef vtx_buf2_;
@@ -60,7 +57,7 @@ class RpDepthFill : public RenderPassExecutor {
                const char instance_indices_buf[], const char shared_data_buf[], const Ren::Tex2DRef &noise_tex,
                const char main_depth_tex[], const char main_velocity_tex[]);
 
-    void Setup(const DrawList &list, const ViewState *view_state, bool clear_depth, const RpResRef vtx_buf1,
+    void Setup(const DrawList **list, const ViewState *view_state, bool clear_depth, const RpResRef vtx_buf1,
                const RpResRef vtx_buf2, const RpResRef ndx_buf, const RpResRef materials_buf,
                const RpResRef textures_buf, const BindlessTextureData *bindless_tex, const RpResRef instances_buf,
                const RpResRef instance_indices_buf, const RpResRef shared_data_buf, const RpResRef noise_tex,
@@ -69,10 +66,7 @@ class RpDepthFill : public RenderPassExecutor {
         bindless_tex_ = bindless_tex;
         clear_depth_ = clear_depth;
 
-        render_flags_ = list.render_flags;
-        materials_ = list.materials;
-        zfill_batch_indices = list.basic_batch_indices;
-        zfill_batches = list.basic_batches;
+        p_list_ = list;
 
         vtx_buf1_ = vtx_buf1;
         vtx_buf2_ = vtx_buf2;

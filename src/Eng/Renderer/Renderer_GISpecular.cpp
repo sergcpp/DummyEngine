@@ -2,7 +2,9 @@
 
 #include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
 
-void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
+void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
+                                   const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
+                                   const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                                    const PersistentGpuData &persistent_data,
                                    const AccelerationStructureData &acc_struct_data,
                                    const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
@@ -205,7 +207,8 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
 
         data->in_ray_list = ssr_trace_hq.AddStorageReadonlyInput(ray_list, Ren::eStageBits::ComputeShader);
         data->indir_args = ssr_trace_hq.AddIndirectBufferInput(indir_disp_buf);
-        ray_counter = data->inout_ray_counter = ssr_trace_hq.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+        ray_counter = data->inout_ray_counter =
+            ssr_trace_hq.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
         refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Ren::eStageBits::ComputeShader);
 
         { // Ray length texture
@@ -285,7 +288,7 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         });
     }
 
-    if (ctx_.capabilities.raytracing && list.env.env_map) {
+    if (ctx_.capabilities.raytracing && env_map) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -297,7 +300,8 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
             };
 
             auto *data = rt_disp_args.AllocPassData<PassData>();
-            ray_counter = data->ray_counter = rt_disp_args.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+            ray_counter = data->ray_counter =
+                rt_disp_args.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
 
             { // Indirect arguments
                 RpBufDesc desc = {};
@@ -340,18 +344,18 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
             data->shared_data = rt_refl.AddUniformBufferInput(common_buffers.shared_data_res, stage);
             data->depth_tex = rt_refl.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_refl.AddTextureInput(frame_textures.normal, stage);
-            data->env_tex = rt_refl.AddTextureInput(list.env.env_map, stage);
+            data->env_tex = rt_refl.AddTextureInput(env_map, stage);
             data->ray_counter = rt_refl.AddStorageReadonlyInput(ray_counter, stage);
             data->ray_list = rt_refl.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
 
-            if (list.env.lm_direct) {
-                data->lm_tex[0] = rt_refl.AddTextureInput(list.env.lm_direct, stage);
+            if (lm_direct) {
+                data->lm_tex[0] = rt_refl.AddTextureInput(lm_direct, stage);
             }
 
             for (int i = 0; i < 4; ++i) {
-                if (list.env.lm_indir_sh[i]) {
-                    data->lm_tex[i + 1] = rt_refl.AddTextureInput(list.env.lm_indir_sh[i], stage);
+                if (lm_indir_sh[i]) {
+                    data->lm_tex[i + 1] = rt_refl.AddTextureInput(lm_indir_sh[i], stage);
                 }
             }
 
@@ -360,7 +364,7 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
             raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
             refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
 
-            rp_rt_reflections_.Setup(rp_builder_, &view_state_, list, &acc_struct_data, &bindless, data);
+            rp_rt_reflections_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
             rt_refl.set_executor(&rp_rt_reflections_);
         }
     }
@@ -633,7 +637,7 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Ren::eStageBits::FragmentShader);
         data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Ren::eStageBits::FragmentShader);
 
-        if (list.render_flags & DebugDenoise) {
+        if (debug_denoise) {
             data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Ren::eStageBits::FragmentShader);
         } else {
             data->refl_tex = ssr_compose.AddTextureInput(refl_history_tex_, Ren::eStageBits::FragmentShader);
@@ -641,7 +645,7 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
         frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
-        rp_ssr_compose2_.Setup(&view_state_, list.probe_storage, data);
+        rp_ssr_compose2_.Setup(&view_state_, probe_storage, data);
         ssr_compose.set_executor(&rp_ssr_compose2_);
     }
 
@@ -651,15 +655,22 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         struct PassData {
             RpResRef in_depth, in_normal;
             RpResRef out_depth, out_normal;
+
+            RpResRef in_variance, in_sample_count;
+            RpResRef out_variance, out_sample_count;
         };
 
         auto *data = copy_hist.AllocPassData<PassData>();
 
         data->in_depth = copy_hist.AddTransferImageInput(frame_textures.depth);
         data->in_normal = copy_hist.AddTransferImageInput(frame_textures.normal);
+        data->in_variance = copy_hist.AddTransferImageInput(variance_tex_[0]);
+        data->in_sample_count = copy_hist.AddTransferImageInput(sample_count_tex_[0]);
 
         data->out_depth = copy_hist.AddTransferImageOutput(depth_history_tex_);
         data->out_normal = copy_hist.AddTransferImageOutput(norm_history_tex_);
+        data->out_variance = copy_hist.AddTransferImageOutput(variance_tex_[1]);
+        data->out_sample_count = copy_hist.AddTransferImageOutput(sample_count_tex_[1]);
 
         // Make sure history copying pass will not be culled (temporary solution)
         backbuffer_sources_.push_back(data->out_depth);
@@ -667,8 +678,12 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
         copy_hist.set_execute_cb([this, data](RpBuilder &builder) {
             RpAllocTex &in_depth = builder.GetReadTexture(data->in_depth);
             RpAllocTex &in_normal = builder.GetReadTexture(data->in_normal);
+            RpAllocTex &in_variance = builder.GetReadTexture(data->in_variance);
+            RpAllocTex &in_sample_count = builder.GetReadTexture(data->in_sample_count);
             RpAllocTex &out_depth = builder.GetWriteTexture(data->out_depth);
             RpAllocTex &out_normal = builder.GetWriteTexture(data->out_normal);
+            RpAllocTex &out_variance = builder.GetWriteTexture(data->out_variance);
+            RpAllocTex &out_sample_count = builder.GetWriteTexture(data->out_sample_count);
 
             assert(in_depth.ref->params.format == out_depth.ref->params.format);
             Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_depth.ref, 0, 0, 0, *out_depth.ref, 0, 0, 0,
@@ -677,14 +692,23 @@ void Renderer::AddHQSpecularPasses(const DrawList &list, const CommonBuffers &co
             assert(in_normal.ref->params.format == out_normal.ref->params.format);
             Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_normal.ref, 0, 0, 0, *out_normal.ref, 0, 0, 0,
                                   view_state_.act_res[0], view_state_.act_res[1]);
+
+            // TODO: avoid copying here
+            assert(in_variance.ref->params.format == out_variance.ref->params.format);
+            Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_variance.ref, 0, 0, 0, *out_variance.ref, 0, 0,
+                                  0, view_state_.act_res[0], view_state_.act_res[1]);
+
+            assert(in_sample_count.ref->params.format == out_sample_count.ref->params.format);
+            Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_sample_count.ref, 0, 0, 0, *out_sample_count.ref,
+                                  0, 0, 0, view_state_.act_res[0], view_state_.act_res[1]);
         });
 
-        std::swap(variance_tex_[0], variance_tex_[1]);
-        std::swap(sample_count_tex_[0], sample_count_tex_[1]);
+        // std::swap(variance_tex_[0], variance_tex_[1]);
+        // std::swap(sample_count_tex_[0], sample_count_tex_[1]);
     }
 }
 
-void Renderer::AddLQSpecularPasses(const DrawList &list, const CommonBuffers &common_buffers,
+void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                                    const RpResRef depth_down_2x, FrameTextures &frame_textures) {
     RpResRef ssr_temp1;
     { // Trace
@@ -752,9 +776,9 @@ void Renderer::AddLQSpecularPasses(const DrawList &list, const CommonBuffers &co
         data->ssr_tex = ssr_compose.AddTextureInput(ssr_temp2, Ren::eStageBits::FragmentShader);
         data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
 
-        data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
+        frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
-        rp_ssr_compose_.Setup(rp_builder_, &view_state_, list.probe_storage, data);
+        rp_ssr_compose_.Setup(rp_builder_, &view_state_, probe_storage, data);
         ssr_compose.set_executor(&rp_ssr_compose_);
     }
 }

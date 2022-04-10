@@ -55,7 +55,7 @@ RpResRef RenderPass::AddStorageOutput(const Ren::WeakBufferRef &buf, const Ren::
 }
 
 RpResRef RenderPass::AddStorageImageOutput(const char *name, const Ren::Tex2DParams &params,
-                                              const Ren::eStageBits stages) {
+                                           const Ren::eStageBits stages) {
     return builder_.WriteTexture(name, params, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
@@ -87,6 +87,11 @@ RpResRef RenderPass::AddDepthOutput(const char *name, const Ren::Tex2DParams &pa
     return builder_.WriteTexture(name, params, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
+RpResRef RenderPass::ReplaceColorOutput(const int slot_index, const Ren::WeakTex2DRef &tex) {
+    return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this,
+                                 slot_index);
+}
+
 RpResRef RenderPass::AddUniformBufferInput(const RpResRef handle, const Ren::eStageBits stages) {
     return builder_.ReadBuffer(handle, Ren::eResState::UniformBuffer, stages, *this);
 }
@@ -104,7 +109,7 @@ RpResRef RenderPass::AddTextureInput(const char *name, Ren::eStageBits stages) {
 }
 
 RpResRef RenderPass::AddCustomTextureInput(const RpResRef handle, const Ren::eResState desired_state,
-                                              const Ren::eStageBits stages) {
+                                           const Ren::eStageBits stages) {
     return builder_.ReadTexture(handle, desired_state, stages, *this);
 }
 

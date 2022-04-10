@@ -22,13 +22,7 @@ class RpOpaque : public RenderPassExecutor {
     const Ren::Pipeline *pipelines_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const Ren::TextureAtlas *decals_atlas_ = nullptr;
-    const Ren::ProbeStorage *probe_storage_ = nullptr;
-
-    uint64_t render_flags_ = 0;
-    const Ren::MaterialStorage *materials_ = nullptr;
-    DynArrayConstRef<CustomDrawBatch> main_batches_;
-    DynArrayConstRef<uint32_t> main_batch_indices_;
+    const DrawList **p_list_ = nullptr;
 
     RpResRef vtx_buf1_;
     RpResRef vtx_buf2_;
@@ -66,7 +60,7 @@ class RpOpaque : public RenderPassExecutor {
   public:
     ~RpOpaque();
 
-    void Setup(const DrawList &list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
+    void Setup(const DrawList **p_list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
                const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const RpResRef brdf_lut,
                const RpResRef noise_tex, const RpResRef cone_rt_lut, const RpResRef dummy_black,
@@ -79,13 +73,7 @@ class RpOpaque : public RenderPassExecutor {
         pipelines_ = pipelines;
         bindless_tex_ = bindless_tex;
 
-        materials_ = list.materials;
-        decals_atlas_ = list.decals_atlas;
-        probe_storage_ = list.probe_storage;
-
-        render_flags_ = list.render_flags;
-        main_batches_ = list.custom_batches;
-        main_batch_indices_ = list.custom_batch_indices;
+        p_list_ = p_list;
 
         vtx_buf1_ = vtx_buf1;
         vtx_buf2_ = vtx_buf2;

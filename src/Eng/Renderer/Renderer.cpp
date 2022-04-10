@@ -381,9 +381,12 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     }
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
 
+    bool rendertarget_changed = false;
+
     if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1] ||
         cur_msaa_enabled != view_state_.is_multisampled || cur_taa_enabled != taa_enabled_ ||
         cur_dof_enabled != dof_enabled_) {
+        rendertarget_changed = true;
 
         if (cur_taa_enabled) {
             Ren::Tex2DParams params;
@@ -492,8 +495,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 variance_tex_params.w = cur_scr_w;
                 variance_tex_params.h = cur_scr_h;
                 variance_tex_params.format = Ren::eTexFormat::RawR16F;
-                variance_tex_params.usage =
-                    (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Storage);
+                variance_tex_params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget |
+                                             Ren::eTexUsage::Storage | Ren::eTexUsage::Transfer);
                 variance_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 variance_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -508,8 +511,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 sample_count_tex_params.w = cur_scr_w;
                 sample_count_tex_params.h = cur_scr_h;
                 sample_count_tex_params.format = Ren::eTexFormat::RawR16F;
-                sample_count_tex_params.usage =
-                    (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Storage);
+                sample_count_tex_params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget |
+                                                 Ren::eTexUsage::Storage | Ren::eTexUsage::Transfer);
                 sample_count_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 sample_count_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -571,24 +574,31 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     bindless_tex.textures_buf = persistent_data.textures_buf;
 #endif
 
-    AccelerationStructureData acc_struct_data;
-    acc_struct_data.rt_instance_buf = persistent_data.rt_instance_buf;
-    acc_struct_data.rt_geo_data_buf = persistent_data.rt_geo_data_buf;
-    acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
-    acc_struct_data.rt_tlas_build_scratch_size = persistent_data.rt_tlas_build_scratch_size;
-    if (persistent_data.rt_tlas) {
-        acc_struct_data.rt_tlas = persistent_data.rt_tlas.get();
-    }
-
     const bool deferred_shading = (list.render_flags & EnableDeferred) != 0;
+    const bool env_map_changed = (env_map_ != list.env.env_map);
+    const bool lm_tex_changed =
+        lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
+        !std::equal(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
+    const bool probe_storage_changed = (list.probe_storage != probe_storage_);
+    const bool rebuild_renderpasses = (list.render_flags != cached_render_flags_) || probe_storage_changed ||
+                                      !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
 
-    { // Setup render passes
+    cached_render_flags_ = list.render_flags;
+    env_map_ = list.env.env_map;
+    lm_direct_ = list.env.lm_direct;
+    lm_indir_ = list.env.lm_indir;
+    std::copy(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
+    p_list_ = &list;
+    probe_storage_ = list.probe_storage;
+
+    if (rebuild_renderpasses) {
+        const uint64_t renderpass_setup_beg_us = Sys::GetTimeUs();
+
         rp_builder_.Reset();
         backbuffer_sources_.clear();
 
-        CommonBuffers common_buffers;
-
-        AddBuffersUpdatePass(list, common_buffers);
+        auto &common_buffers = *rp_builder_.AllocPassData<CommonBuffers>();
+        AddBuffersUpdatePass(common_buffers);
 
         {
             auto &skinning = rp_builder_.AddPass("SKINNING");
@@ -607,14 +617,22 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             RpResRef vtx_buf2_res =
                 skinning.AddStorageOutput(ctx_.default_vertex_buf2(), Ren::eStageBits::ComputeShader);
 
-            skinning.make_executor<RpSkinningExecutor>(pi_skinning_, list.skin_regions, skin_vtx_res,
-                                                       in_skin_transforms_res, in_shape_keys_res, delta_buf_res,
-                                                       vtx_buf1_res, vtx_buf2_res);
+            skinning.make_executor<RpSkinningExecutor>(pi_skinning_, p_list_, skin_vtx_res, in_skin_transforms_res,
+                                                       in_shape_keys_res, delta_buf_res, vtx_buf1_res, vtx_buf2_res);
         }
 
         //
         // RT acceleration structures
         //
+        auto &acc_struct_data = *rp_builder_.AllocPassData<AccelerationStructureData>();
+        acc_struct_data.rt_instance_buf = persistent_data.rt_instance_buf;
+        acc_struct_data.rt_geo_data_buf = persistent_data.rt_geo_data_buf;
+        acc_struct_data.rt_tlas_buf = persistent_data.rt_tlas_buf;
+        acc_struct_data.rt_tlas_build_scratch_size = persistent_data.rt_tlas_build_scratch_size;
+        if (persistent_data.rt_tlas) {
+            acc_struct_data.rt_tlas = persistent_data.rt_tlas.get();
+        }
+
         if (ctx_.capabilities.raytracing) {
             auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
 
@@ -628,8 +646,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
             }
 
-            update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(
-                list.rt_obj_instances, list.rt_obj_instances_stage_buf, rt_obj_instances_res);
+            update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, rt_obj_instances_res);
 
             ////
 
@@ -646,12 +663,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 rt_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("TLAS Scratch Buf", desc);
             }
 
-            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(rt_obj_instances_res,
-                                                                          list.rt_obj_instances.count, &acc_struct_data,
-                                                                          rt_tlas_res, rt_tlas_build_scratch_res);
+            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
+                p_list_, rt_obj_instances_res, &acc_struct_data, rt_tlas_res, rt_tlas_build_scratch_res);
         }
 
-        FrameTextures frame_textures;
+        auto &frame_textures = *rp_builder_.AllocPassData<FrameTextures>();
 
         { // Shadow maps
             auto &shadow_maps = rp_builder_.AddPass("SHADOW MAPS");
@@ -691,7 +707,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 frame_textures.shadowmap = shadow_maps.AddDepthOutput(SHADOWMAP_TEX, params);
             }
 
-            rp_shadow_maps_.Setup(list, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
+            rp_shadow_maps_.Setup(&p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
                                   textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
                                   frame_textures.shadowmap);
             shadow_maps.set_executor(&rp_shadow_maps_);
@@ -755,7 +771,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         if (!deferred_shading) {
             // Skydome drawing
-            AddSkydomePass(list, common_buffers, true /* clear */, frame_textures);
+            AddSkydomePass(common_buffers, true /* clear */, frame_textures);
         }
 
         //
@@ -799,8 +815,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 frame_textures.velocity = depth_fill.AddColorOutput(MAIN_VELOCITY_TEX, params);
             }
 
-            rp_depth_fill_.Setup(list, &view_state_, deferred_shading /* clear_depth */, vtx_buf1, vtx_buf2, ndx_buf,
-                                 materials_buf_res, textures_buf_res, &bindless_tex, instances_res,
+            rp_depth_fill_.Setup(&p_list_, &view_state_, deferred_shading /* clear_depth */, vtx_buf1, vtx_buf2,
+                                 ndx_buf, materials_buf_res, textures_buf_res, &bindless_tex, instances_res,
                                  instance_indices_res, shared_data_res, noise_tex_res, frame_textures.depth,
                                  frame_textures.velocity);
             depth_fill.set_executor(&rp_depth_fill_);
@@ -873,22 +889,22 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         if (deferred_shading) {
             // GBuffer filling pass
-            AddGBufferFillPass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
+            AddGBufferFillPass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // GBuffer shading pass
             AddDeferredShadingPass(common_buffers, frame_textures);
 
             // Additional forward pass (for custom-shaded objects)
-            AddForwardOpaquePass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
+            AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // Skydome drawing
-            AddSkydomePass(list, common_buffers, false /* clear */, frame_textures);
+            AddSkydomePass(common_buffers, false /* clear */, frame_textures);
         } else {
-            AddForwardOpaquePass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
+            AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
 
         // Transparent pass
-        AddForwardTransparentPass(list, common_buffers, persistent_data, bindless_tex, frame_textures);
+        AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
         if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
             assert(!view_state_.is_multisampled);
@@ -910,11 +926,12 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
 
         const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
-        if (list.render_flags & EnableSSR_HQ) {
-            AddHQSpecularPasses(list, common_buffers, persistent_data, acc_struct_data, bindless_tex,
+        if (cur_hq_ssr_enabled) {
+            AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugDenoise) != 0,
+                                list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
                                 depth_hierarchy_tex, frame_textures);
         } else {
-            AddLQSpecularPasses(list, common_buffers, depth_down_2x, frame_textures);
+            AddLQSpecularPasses(list.probe_storage, common_buffers, depth_down_2x, frame_textures);
         }
 
         //
@@ -964,12 +981,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             data->dummy_black = debug_rt.AddTextureInput(dummy_black_, Ren::eStageBits::RayTracingShader);
 
-            data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::RayTracingShader);
+            frame_textures.color = data->output_tex =
+                debug_rt.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::RayTracingShader);
 
-            rp_debug_rt_.Setup(rp_builder_, &view_state_, list, &acc_struct_data, &bindless_tex, data);
+            rp_debug_rt_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless_tex, data);
             debug_rt.set_executor(&rp_debug_rt_);
         }
 #endif
+
         RpResRef resolved_color;
 
         //
@@ -1230,10 +1249,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             if (list.env.env_map) {
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
-                auto *data = combine.AllocPassData<RpCombineData>();
-                data->color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
-                data->blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
-                data->exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
+                rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
+                rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                rp_combine_data_.exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
                 if (output_tex) {
                     Ren::Tex2DParams params;
                     params.w = view_state_.scr_res[0];
@@ -1243,14 +1261,19 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-                    data->output_tex = combine.AddColorOutput(output_tex, params);
+                    rp_combine_data_.output_tex = combine.AddColorOutput(output_tex, params);
                 } else {
-                    data->output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+                    rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
                 }
 
-                backbuffer_sources_.push_back(data->output_tex);
+                rp_combine_data_.tonemap = tonemap;
+                rp_combine_data_.gamma = gamma;
+                rp_combine_data_.exposure = exposure;
+                rp_combine_data_.fade = list.draw_cam.fade;
 
-                rp_combine_.Setup(&view_state_, gamma, exposure, list.draw_cam.fade, tonemap, data);
+                backbuffer_sources_.push_back(rp_combine_data_.output_tex);
+
+                rp_combine_.Setup(&view_state_, &rp_combine_data_);
                 combine.set_executor(&rp_combine_);
             }
         }
@@ -1282,9 +1305,30 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             rp_tail = rp_tail->p_next;
         }
 #endif
+
         rp_builder_.Compile(backbuffer_sources_.data(), int(backbuffer_sources_.size()));
-        rp_builder_.Execute();
+        const uint64_t renderpass_setup_end_us = Sys::GetTimeUs();
+        ctx_.log()->Info("Renderpass setup is done in %.2fms",
+                         (renderpass_setup_end_us - renderpass_setup_beg_us) * 0.001);
+    } else {
+        assert(!(list.render_flags & EnableFxaa));
+        // Use correct backbuffer image (assume topology is not changed)
+        // TODO: get rid of this
+        auto &combine = *rp_builder_.FindPass("COMBINE");
+        rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+
+        const float reduced_average = rp_read_brightness_.reduced_average();
+        float exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
+        exposure = std::min(exposure, list.draw_cam.max_exposure);
+
+        rp_combine_data_.exposure = exposure;
+        rp_combine_data_.fade = list.draw_cam.fade;
+
+        rp_combine_.Setup(&view_state_, &rp_combine_data_);
+        combine.set_executor(&rp_combine_);
     }
+
+    rp_builder_.Execute();
 
     { // store matrix to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();

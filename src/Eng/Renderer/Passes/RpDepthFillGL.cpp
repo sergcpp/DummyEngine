@@ -101,6 +101,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         glClear(GL_STENCIL_BUFFER_BIT);
     }
 
+    const auto &zfill_batches = (*p_list_)->basic_batches;
+    const auto &zfill_batch_indices = (*p_list_)->basic_batch_indices;
+
     int draws_count = 0;
     uint32_t i = 0;
 
@@ -145,7 +148,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // moving solid meshes (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-SOLID-MOVING");
 
-        if ((render_flags_ & EnableTaa) != 0) {
+        if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
             glUseProgram(pi_moving_solid_[0].prog()->id());
@@ -201,9 +204,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 rast_state.ApplyChanged(builder.rast_state());
                 builder.rast_state() = rast_state;
 
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, BDB::BitAlphaTest,
-                                    cur_mat_id, &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
+                                    BDB::BitAlphaTest, cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     BDB::BitAlphaTest | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
@@ -217,9 +220,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
@@ -227,7 +230,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         { // moving meshes (depth and velocity)
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-ALPHA-MOVING");
 
-            if ((render_flags_ & EnableTaa) != 0) {
+            if (((*p_list_)->render_flags & EnableTaa) != 0) {
                 // Write depth and velocity
                 glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
                 glUseProgram(pi_moving_transp_[0].prog()->id());
@@ -246,9 +249,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
@@ -262,9 +265,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
@@ -273,7 +276,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     { // static solid vegetation
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-SOLID-SIMPLE");
         glBindVertexArray(vi_vege_solid_.gl_vao());
-        if ((render_flags_ & EnableTaa) != 0) {
+        if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
             glUseProgram(pi_vege_static_solid_vel_[0].prog()->id());
@@ -313,7 +316,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     { // moving solid vegetation (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-SOLID-MOVING");
-        if ((render_flags_ & EnableTaa) != 0) {
+        if (((*p_list_)->render_flags & EnableTaa) != 0) {
             glUseProgram(pi_vege_moving_solid_vel_[0].prog()->id());
         } else {
             glUseProgram(pi_vege_static_solid_[0].prog()->id());
@@ -354,7 +357,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         { // static alpha-tested vegetation (depth and velocity)
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-ALPHA-SIMPLE");
             glBindVertexArray(vi_vege_transp_.gl_vao());
-            if ((render_flags_ & EnableTaa) != 0) {
+            if (((*p_list_)->render_flags & EnableTaa) != 0) {
                 glUseProgram(pi_vege_static_transp_vel_[0].prog()->id());
             } else {
                 glUseProgram(pi_vege_static_transp_[0].prog()->id());
@@ -370,9 +373,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
@@ -386,16 +389,16 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
 
         { // moving alpha-tested vegetation (depth and velocity)
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "VEGE-ALPHA-MOVING");
-            if ((render_flags_ & EnableTaa) != 0) {
+            if (((*p_list_)->render_flags & EnableTaa) != 0) {
                 glUseProgram(pi_vege_moving_transp_vel_[0].prog()->id());
             } else {
                 glUseProgram(pi_vege_static_transp_[0].prog()->id());
@@ -411,9 +414,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
@@ -427,9 +430,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
@@ -437,7 +440,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     { // solid skinned meshes (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-SOLID-SIMPLE");
-        if ((render_flags_ & EnableTaa) != 0) {
+        if (((*p_list_)->render_flags & EnableTaa) != 0) {
             glBindVertexArray(vi_skin_solid_.gl_vao());
             glUseProgram(pi_skin_static_solid_vel_[0].prog()->id());
         } else {
@@ -476,7 +479,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     { // moving solid skinned (depth and velocity)
         Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-SOLID-MOVING");
-        if ((render_flags_ & EnableTaa) != 0) {
+        if (((*p_list_)->render_flags & EnableTaa) != 0) {
             glUseProgram(pi_skin_moving_solid_vel_[0].prog()->id());
         } else {
             glUseProgram(pi_skin_static_solid_[0].prog()->id());
@@ -517,7 +520,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         { // simple alpha-tested skinned (depth and velocity)
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-ALPHA-SIMPLE");
             glBindVertexArray(vi_skin_transp_.gl_vao());
-            if ((render_flags_ & EnableTaa) != 0) {
+            if (((*p_list_)->render_flags & EnableTaa) != 0) {
                 glUseProgram(pi_skin_static_transp_vel_[0].prog()->id());
             } else {
                 glUseProgram(pi_skin_static_transp_[0].prog()->id());
@@ -533,9 +536,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
@@ -549,16 +552,16 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
 
         { // moving alpha-tested skinned (depth and velocity)
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "SKIN-ALPHA-MOVING");
-            if ((render_flags_ & EnableTaa) != 0) {
+            if (((*p_list_)->render_flags & EnableTaa) != 0) {
                 glUseProgram(pi_skin_moving_transp_vel_[0].prog()->id());
             } else {
                 glUseProgram(pi_skin_static_transp_[0].prog()->id());
@@ -574,9 +577,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
 
@@ -590,9 +593,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                 builder.rast_state() = rast_state;
 
                 const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided;
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i, DrawMask, cur_mat_id,
-                                    &draws_count);
-                i = _draw_range_ext(builder, materials_, zfill_batch_indices, zfill_batches, i,
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i, DrawMask,
+                                    cur_mat_id, &draws_count);
+                i = _draw_range_ext(builder, (*p_list_)->materials, zfill_batch_indices, zfill_batches, i,
                                     DrawMask | BDB::BitCustomShaded, cur_mat_id, &draws_count);
             }
         }
