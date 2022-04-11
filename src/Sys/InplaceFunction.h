@@ -66,6 +66,11 @@ template <class R, class... Args> struct func_table_t {
     static void default_copy_move_func(void *, void *) {}
     static void default_destroy_func(void *) {}
 
+    static func_table_t<R, Args...> *empty_func_table() {
+        static func_table_t<R, Args...> s_empty_func_table{};
+        return &s_empty_func_table;
+    }
+
     explicit func_table_t()
         : invoke_ptr(nullptr), copy_ptr(default_copy_move_func), move_ptr(default_copy_move_func),
           destroy_ptr(default_destroy_func) {}
@@ -92,8 +97,6 @@ template <class R, class... Args> struct func_table_t {
     ~func_table_t() = default;
 };
 
-template <class R, class... Args> func_table_t<R, Args...> g_empty_func_table{};
-
 template <class R, class... Args, size_t Capacity, size_t Alignment>
 class InplaceFunction<R(Args...), Capacity, Alignment> {
     alignas(Alignment) mutable char storage_[Capacity];
@@ -106,9 +109,10 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
     }
 
   public:
-    InplaceFunction() : func_table_(&g_empty_func_table<R, Args...>) {}
+    InplaceFunction() : func_table_(func_table_t<R, Args...>::empty_func_table()) {}
 
-    template <class T, class C = typename std::decay<T>::type, class = typename std::enable_if<!IsInplaceFunction<C>::value>::type>
+    template <class T, class C = typename std::decay<T>::type,
+              class = typename std::enable_if<!IsInplaceFunction<C>::value>::type>
     InplaceFunction(T &&func) {
         static_assert(std::is_copy_constructible<C>::value);
         static_assert(sizeof(C) <= Capacity);
@@ -120,7 +124,7 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
         ::new (storage_) C{std::forward<T>(func)};
     }
 
-    InplaceFunction(std::nullptr_t) : func_table_(&g_empty_func_table<R, Args...>) {}
+    InplaceFunction(std::nullptr_t) : func_table_(func_table_t<R, Args...>::empty_func_table()) {}
 
     ~InplaceFunction() { func_table_->destroy_ptr(storage_); }
 
@@ -128,7 +132,9 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
 
     bool operator==(std::nullptr_t) const noexcept { return !operator bool(); }
     bool operator!=(std::nullptr_t) const noexcept { return operator bool(); }
-    explicit constexpr operator bool() const noexcept { return func_table_ != &g_empty_func_table<R, Args...>; }
+    explicit constexpr operator bool() const noexcept {
+        return func_table_ != func_table_t<R, Args...>::empty_func_table();
+    }
 
     template <size_t Cap, size_t Align>
     InplaceFunction(const InplaceFunction<R(Args...), Cap, Align> &rhs)
@@ -142,20 +148,21 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
         : InplaceFunction(rhs.func_table_, rhs.func_table_->move_ptr, rhs.storage_) {
         static_assert(Capacity >= Cap);
         static_assert((Alignment % Align) == 0);
-        rhs.func_table_ = &g_empty_func_table<R, Args...>;
+        rhs.func_table_ = func_table_t<R, Args...>::empty_func_table();
     }
 
     InplaceFunction(const InplaceFunction &rhs) : func_table_{rhs.func_table_} {
         func_table_->copy_ptr(rhs.storage_, storage_);
     }
 
-    InplaceFunction(InplaceFunction &&rhs) : func_table_{exchange(rhs.func_table_, &g_empty_func_table<R, Args...>)} {
+    InplaceFunction(InplaceFunction &&rhs)
+        : func_table_{exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table())} {
         func_table_->move_ptr(rhs.storage_, storage_);
     }
 
     InplaceFunction &operator=(std::nullptr_t) noexcept {
         func_table_->destroy_ptr(storage_);
-        func_table_ = &g_empty_func_table<R, Args...>;
+        func_table_ = func_table_t<R, Args...>::empty_func_table();
         return *this;
     }
 
@@ -168,7 +175,7 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
 
     InplaceFunction &operator=(InplaceFunction &&rhs) noexcept {
         func_table_->destroy_ptr(storage_);
-        func_table_ = exchange(rhs.func_table_, &g_empty_func_table<R, Args...>);
+        func_table_ = exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table());
         func_table_->move_ptr(rhs.storage_, storage_);
         return *this;
     }
