@@ -37,10 +37,10 @@ void RpCombine::Execute(RpBuilder &builder) {
     BlitCombine::Params uniform_params;
     uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])};
     uniform_params.tex_size = Ren::Vec2f{float(view_state_->scr_res[0]), float(view_state_->scr_res[1])};
-    uniform_params.tonemap = tonemap_ ? 1.0f : 0.0f;
-    uniform_params.gamma = gamma_;
-    uniform_params.exposure = tonemap_ ? exposure_ : 1.0f;
-    uniform_params.fade = fade_;
+    uniform_params.tonemap = pass_data_->tonemap ? 1.0f : 0.0f;
+    uniform_params.gamma = pass_data_->gamma;
+    uniform_params.exposure = pass_data_->tonemap ? pass_data_->exposure : 1.0f;
+    uniform_params.fade = pass_data_->fade;
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
                                      {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};

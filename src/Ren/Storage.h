@@ -332,7 +332,9 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
     uint32_t index() const { return index_; }
 
     bool operator==(const WeakRef &rhs) const { return ctrl_ == rhs.ctrl_ && index_ == rhs.index_; }
+    bool operator!=(const WeakRef &rhs) const { return !operator==(rhs); }
     bool operator==(const StrongRef<T> &rhs) const { return storage_ == rhs.storage_ && index_ == rhs.index_; }
+    bool operator!=(const StrongRef<T> &rhs) const { return !operator==(rhs); }
 
     void Release() {
         if (ctrl_) {

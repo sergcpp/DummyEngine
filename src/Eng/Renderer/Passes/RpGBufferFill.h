@@ -28,10 +28,7 @@ class RpGBufferFill : public RenderPassExecutor {
 
     const Ren::TextureAtlas *decals_atlas_ = nullptr;
 
-    uint64_t render_flags_ = 0;
-    const Ren::MaterialStorage *materials_ = nullptr;
-    DynArrayConstRef<BasicDrawBatch> main_batches_;
-    DynArrayConstRef<uint32_t> main_batch_indices_;
+    const DrawList **p_list_ = nullptr;
 
     RpResRef vtx_buf1_;
     RpResRef vtx_buf2_;
@@ -63,7 +60,7 @@ class RpGBufferFill : public RenderPassExecutor {
   public:
     ~RpGBufferFill();
 
-    void Setup(const DrawList &list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
+    void Setup(const DrawList **p_list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
                const BindlessTextureData *bindless_tex, const RpResRef noise_tex, const RpResRef dummy_black,
                const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
@@ -72,12 +69,7 @@ class RpGBufferFill : public RenderPassExecutor {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 
-        materials_ = list.materials;
-        decals_atlas_ = list.decals_atlas;
-
-        render_flags_ = list.render_flags;
-        main_batches_ = list.basic_batches;
-        main_batch_indices_ = list.basic_batch_indices;
+        p_list_ = p_list;
 
         vtx_buf1_ = vtx_buf1;
         vtx_buf2_ = vtx_buf2;

@@ -84,7 +84,7 @@ void Renderer::InitPipelines() {
     }
 }
 
-void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_buffers) {
+void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
     auto &update_bufs = rp_builder_.AddPass("UPDATE BUFFERS");
 
     { // create skin transforms buffer
@@ -148,7 +148,7 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
         common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput(ATOMIC_CNT_BUF, desc);
     }
 
-    update_bufs.set_execute_cb([this, &common_buffers, &list](RpBuilder &builder) {
+    update_bufs.set_execute_cb([this, &common_buffers](RpBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
         RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
         RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
@@ -161,12 +161,12 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
         RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(common_buffers.shared_data_res);
         RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
 
-        Ren::UpdateBufferContents(list.skin_transforms.data, list.skin_transforms.count * sizeof(SkinTransform),
-                                  *list.skin_transforms_stage_buf, ctx.backend_frame() * SkinTransformsBufChunkSize,
+        Ren::UpdateBufferContents(p_list_->skin_transforms.data, p_list_->skin_transforms.count * sizeof(SkinTransform),
+                                  *p_list_->skin_transforms_stage_buf, ctx.backend_frame() * SkinTransformsBufChunkSize,
                                   SkinTransformsBufChunkSize, *skin_transforms_buf.ref, 0, ctx.current_cmd_buf());
 
-        Ren::UpdateBufferContents(list.shape_keys_data.data, list.shape_keys_data.count * sizeof(ShapeKeyData),
-                                  *list.shape_keys_stage_buf, ctx.backend_frame() * ShapeKeysBufChunkSize,
+        Ren::UpdateBufferContents(p_list_->shape_keys_data.data, p_list_->shape_keys_data.count * sizeof(ShapeKeyData),
+                                  *p_list_->shape_keys_stage_buf, ctx.backend_frame() * ShapeKeysBufChunkSize,
                                   ShapeKeysBufChunkSize, *shape_keys_buf.ref, 0, ctx.current_cmd_buf());
 
         if (!instances_buf.tbos[0]) {
@@ -174,8 +174,8 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
                                                         0, InstanceDataBufChunkSize);
         }
 
-        Ren::UpdateBufferContents(list.instances.data, list.instances.count * sizeof(InstanceData),
-                                  *list.instances_stage_buf, ctx.backend_frame() * InstanceDataBufChunkSize,
+        Ren::UpdateBufferContents(p_list_->instances.data, p_list_->instances.count * sizeof(InstanceData),
+                                  *p_list_->instances_stage_buf, ctx.backend_frame() * InstanceDataBufChunkSize,
                                   InstanceDataBufChunkSize, *instances_buf.ref, 0, ctx.current_cmd_buf());
 
         if (!instance_indices_buf.tbos[0]) {
@@ -184,49 +184,50 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
                                     InstanceIndicesBufChunkSize);
         }
 
-        Ren::UpdateBufferContents(list.instance_indices.data, list.instance_indices.count * sizeof(Ren::Vec2i),
-                                  *list.instance_indices_stage_buf, ctx.backend_frame() * InstanceIndicesBufChunkSize,
-                                  InstanceIndicesBufChunkSize, *instance_indices_buf.ref, 0, ctx.current_cmd_buf());
+        Ren::UpdateBufferContents(p_list_->instance_indices.data, p_list_->instance_indices.count * sizeof(Ren::Vec2i),
+                                  *p_list_->instance_indices_stage_buf,
+                                  ctx.backend_frame() * InstanceIndicesBufChunkSize, InstanceIndicesBufChunkSize,
+                                  *instance_indices_buf.ref, 0, ctx.current_cmd_buf());
 
         if (!cells_buf.tbos[0]) {
             cells_buf.tbos[0] =
                 ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RawRG32UI, 0, CellsBufChunkSize);
         }
 
-        Ren::UpdateBufferContents(list.cells.data, list.cells.count * sizeof(CellData), *list.cells_stage_buf,
-                                  ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize, *cells_buf.ref, 0,
-                                  ctx.current_cmd_buf());
+        Ren::UpdateBufferContents(p_list_->cells.data, p_list_->cells.count * sizeof(CellData),
+                                  *p_list_->cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
+                                  *cells_buf.ref, 0, ctx.current_cmd_buf());
 
         if (!lights_buf.tbos[0]) {
             lights_buf.tbos[0] =
                 ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, LightsBufChunkSize);
         }
 
-        Ren::UpdateBufferContents(list.lights.data, list.lights.count * sizeof(LightItem), *list.lights_stage_buf,
-                                  ctx.backend_frame() * LightsBufChunkSize, LightsBufChunkSize, *lights_buf.ref, 0,
-                                  ctx.current_cmd_buf());
+        Ren::UpdateBufferContents(p_list_->lights.data, p_list_->lights.count * sizeof(LightItem),
+                                  *p_list_->lights_stage_buf, ctx.backend_frame() * LightsBufChunkSize,
+                                  LightsBufChunkSize, *lights_buf.ref, 0, ctx.current_cmd_buf());
 
         if (!decals_buf.tbos[0]) {
             decals_buf.tbos[0] =
                 ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, DecalsBufChunkSize);
         }
 
-        Ren::UpdateBufferContents(list.decals.data, list.decals.count * sizeof(DecalItem), *list.decals_stage_buf,
-                                  ctx.backend_frame() * DecalsBufChunkSize, DecalsBufChunkSize, *decals_buf.ref, 0,
-                                  ctx.current_cmd_buf());
+        Ren::UpdateBufferContents(p_list_->decals.data, p_list_->decals.count * sizeof(DecalItem),
+                                  *p_list_->decals_stage_buf, ctx.backend_frame() * DecalsBufChunkSize,
+                                  DecalsBufChunkSize, *decals_buf.ref, 0, ctx.current_cmd_buf());
 
         if (!items_buf.tbos[0]) {
             items_buf.tbos[0] =
                 ctx.CreateTexture1D("Items TBO", items_buf.ref, Ren::eTexFormat::RawRG32UI, 0, ItemsBufChunkSize);
         }
 
-        if (list.items.count) {
-            Ren::UpdateBufferContents(list.items.data, list.items.count * sizeof(ItemData), *list.items_stage_buf,
-                                      ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, *items_buf.ref, 0,
-                                      ctx.current_cmd_buf());
+        if (p_list_->items.count) {
+            Ren::UpdateBufferContents(p_list_->items.data, p_list_->items.count * sizeof(ItemData),
+                                      *p_list_->items_stage_buf, ctx.backend_frame() * ItemsBufChunkSize,
+                                      ItemsBufChunkSize, *items_buf.ref, 0, ctx.current_cmd_buf());
         } else {
             const ItemData dummy = {};
-            Ren::UpdateBufferContents(&dummy, sizeof(ItemData), *list.items_stage_buf,
+            Ren::UpdateBufferContents(&dummy, sizeof(ItemData), *p_list_->items_stage_buf,
                                       ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, *items_buf.ref, 0,
                                       ctx.current_cmd_buf());
         }
@@ -234,22 +235,22 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
         { // Prepare data that is shared for all instances
             SharedDataBlock shrd_data;
 
-            shrd_data.view_matrix = list.draw_cam.view_matrix();
-            shrd_data.proj_matrix = list.draw_cam.proj_matrix();
+            shrd_data.view_matrix = p_list_->draw_cam.view_matrix();
+            shrd_data.proj_matrix = p_list_->draw_cam.proj_matrix();
 
-            shrd_data.uTaaInfo[0] = list.draw_cam.px_offset()[0];
+            shrd_data.uTaaInfo[0] = p_list_->draw_cam.px_offset()[0];
 #if defined(USE_VK_RENDER)
-            shrd_data.uTaaInfo[1] = -list.draw_cam.px_offset()[1];
+            shrd_data.uTaaInfo[1] = -p_list_->draw_cam.px_offset()[1];
 #else
-            shrd_data.uTaaInfo[1] = list.draw_cam.px_offset()[1];
+            shrd_data.uTaaInfo[1] = p_list_->draw_cam.px_offset()[1];
 #endif
             shrd_data.uTaaInfo[2] = reinterpret_cast<const float &>(view_state_.frame_index);
 
             { // Ray Tracing Gems II, Listing 49-1
-                const Ren::Plane &l = list.draw_cam.frustum_plane(Ren::eCamPlane::Left);
-                const Ren::Plane &r = list.draw_cam.frustum_plane(Ren::eCamPlane::Right);
-                const Ren::Plane &b = list.draw_cam.frustum_plane(Ren::eCamPlane::Bottom);
-                const Ren::Plane &t = list.draw_cam.frustum_plane(Ren::eCamPlane::Top);
+                const Ren::Plane &l = p_list_->draw_cam.frustum_plane(Ren::eCamPlane::Left);
+                const Ren::Plane &r = p_list_->draw_cam.frustum_plane(Ren::eCamPlane::Right);
+                const Ren::Plane &b = p_list_->draw_cam.frustum_plane(Ren::eCamPlane::Bottom);
+                const Ren::Plane &t = p_list_->draw_cam.frustum_plane(Ren::eCamPlane::Top);
 
                 const float x0 = l.n[2] / l.n[0];
                 const float x1 = r.n[2] / r.n[0];
@@ -266,8 +267,8 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
                 shrd_data.uFrustumInfo[3] = y0 - y1;
             }
 
-            shrd_data.proj_matrix[2][0] += list.draw_cam.px_offset()[0];
-            shrd_data.proj_matrix[2][1] += list.draw_cam.px_offset()[1];
+            shrd_data.proj_matrix[2][0] += p_list_->draw_cam.px_offset()[0];
+            shrd_data.proj_matrix[2][1] += p_list_->draw_cam.px_offset()[1];
 
             shrd_data.view_proj_matrix = shrd_data.proj_matrix * shrd_data.view_matrix;
             shrd_data.view_proj_prev_matrix = view_state_.prev_clip_from_world;
@@ -278,20 +279,22 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
             shrd_data.delta_matrix =
                 view_state_.prev_clip_from_view * (view_state_.down_buf_view_from_world * shrd_data.inv_view_matrix);
 
-            if (list.shadow_regions.count) {
-                assert(list.shadow_regions.count <= REN_MAX_SHADOWMAPS_TOTAL);
-                memcpy(&shrd_data.shadowmap_regions[0], &list.shadow_regions.data[0],
-                       sizeof(ShadowMapRegion) * list.shadow_regions.count);
+            if (p_list_->shadow_regions.count) {
+                assert(p_list_->shadow_regions.count <= REN_MAX_SHADOWMAPS_TOTAL);
+                memcpy(&shrd_data.shadowmap_regions[0], &p_list_->shadow_regions.data[0],
+                       sizeof(ShadowMapRegion) * p_list_->shadow_regions.count);
             }
 
-            shrd_data.sun_dir = Ren::Vec4f{list.env.sun_dir[0], list.env.sun_dir[1], list.env.sun_dir[2], 0.0f};
-            shrd_data.sun_col = Ren::Vec4f{list.env.sun_col[0], list.env.sun_col[1], list.env.sun_col[2], 0.0f};
+            shrd_data.sun_dir =
+                Ren::Vec4f{p_list_->env.sun_dir[0], p_list_->env.sun_dir[1], p_list_->env.sun_dir[2], 0.0f};
+            shrd_data.sun_col =
+                Ren::Vec4f{p_list_->env.sun_col[0], p_list_->env.sun_col[1], p_list_->env.sun_col[2], 0.0f};
 
             // actual resolution and full resolution
             shrd_data.res_and_fres = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
                                                 float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
 
-            const float near = list.draw_cam.near(), far = list.draw_cam.far();
+            const float near = p_list_->draw_cam.near(), far = p_list_->draw_cam.far();
             const float time_s = 0.001f * Sys::GetTimeMs();
             const float transparent_near = near;
             const float transparent_far = 16.0f;
@@ -310,19 +313,21 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
             shrd_data.clip_info = Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
             view_state_.clip_info = shrd_data.clip_info;
 
-            const Ren::Vec3f &cam_pos = list.draw_cam.world_position();
+            const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
             const Ren::Vec3f cam_delta = cam_pos - view_state_.prev_cam_pos;
             shrd_data.cam_delta = Ren::Vec4f{cam_delta[0], cam_delta[1], cam_delta[2], 0.0f};
             shrd_data.cam_pos_and_gamma = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 2.2f};
-            shrd_data.wind_scroll = Ren::Vec4f{list.env.curr_wind_scroll_lf[0], list.env.curr_wind_scroll_lf[1],
-                                               list.env.curr_wind_scroll_hf[0], list.env.curr_wind_scroll_hf[1]};
-            shrd_data.wind_scroll_prev = Ren::Vec4f{list.env.prev_wind_scroll_lf[0], list.env.prev_wind_scroll_lf[1],
-                                                    list.env.prev_wind_scroll_hf[0], list.env.prev_wind_scroll_hf[1]};
+            shrd_data.wind_scroll =
+                Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],
+                           p_list_->env.curr_wind_scroll_hf[0], p_list_->env.curr_wind_scroll_hf[1]};
+            shrd_data.wind_scroll_prev =
+                Ren::Vec4f{p_list_->env.prev_wind_scroll_lf[0], p_list_->env.prev_wind_scroll_lf[1],
+                           p_list_->env.prev_wind_scroll_hf[0], p_list_->env.prev_wind_scroll_hf[1]};
 
-            memcpy(&shrd_data.probes[0], list.probes.data, sizeof(ProbeItem) * list.probes.count);
-            memcpy(&shrd_data.ellipsoids[0], list.ellipsoids.data, sizeof(EllipsItem) * list.ellipsoids.count);
+            memcpy(&shrd_data.probes[0], p_list_->probes.data, sizeof(ProbeItem) * p_list_->probes.count);
+            memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data, sizeof(EllipsItem) * p_list_->ellipsoids.count);
 
-            Ren::UpdateBufferContents(&shrd_data, sizeof(SharedDataBlock), *list.shared_data_stage_buf,
+            Ren::UpdateBufferContents(&shrd_data, sizeof(SharedDataBlock), *p_list_->shared_data_stage_buf,
                                       ctx.backend_frame() * SharedDataBlockSize, SharedDataBlockSize,
                                       *shared_data_buf.ref, 0, ctx.current_cmd_buf());
         }
@@ -331,13 +336,12 @@ void Renderer::AddBuffersUpdatePass(const DrawList &list, CommonBuffers &common_
     });
 }
 
-void Renderer::AddSkydomePass(const DrawList &list, const CommonBuffers &common_buffers, const bool clear,
-                              FrameTextures &frame_textures) {
-    if (list.env.env_map) {
+void Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bool clear, FrameTextures &frame_textures) {
+    if (p_list_->env.env_map) {
         auto &skymap = rp_builder_.AddPass("SKYDOME");
         RpResRef shared_data_buf = skymap.AddUniformBufferInput(
             common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-        RpResRef env_tex = skymap.AddTextureInput(list.env.env_map, Ren::eStageBits::FragmentShader);
+        RpResRef env_tex = skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
         RpResRef vtx_buf1 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf1());
         RpResRef vtx_buf2 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf2());
         RpResRef ndx_buf = skymap.AddIndexBufferInput(ctx_.default_indices_buf());
@@ -346,7 +350,7 @@ void Renderer::AddSkydomePass(const DrawList &list, const CommonBuffers &common_
         frame_textures.specular = skymap.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
         frame_textures.depth = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-        rp_skydome_.Setup(list, &view_state_, clear, vtx_buf1, vtx_buf2, ndx_buf, shared_data_buf, env_tex,
+        rp_skydome_.Setup(*p_list_, &view_state_, clear, vtx_buf1, vtx_buf2, ndx_buf, shared_data_buf, env_tex,
                           frame_textures.color, frame_textures.specular, frame_textures.depth);
         skymap.set_executor(&rp_skydome_);
     } else {
@@ -354,9 +358,8 @@ void Renderer::AddSkydomePass(const DrawList &list, const CommonBuffers &common_
     }
 }
 
-void Renderer::AddGBufferFillPass(const DrawList &list, const CommonBuffers &common_buffers,
-                                  const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
-                                  FrameTextures &frame_textures) {
+void Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                  const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     auto &gbuf_fill = rp_builder_.AddPass("GBUFFER FILL");
     const RpResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
     const RpResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
@@ -395,16 +398,15 @@ void Renderer::AddGBufferFillPass(const DrawList &list, const CommonBuffers &com
     frame_textures.specular = gbuf_fill.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_gbuffer_fill_.Setup(list, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
+    rp_gbuffer_fill_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
                            noise_tex, dummy_black, instances_buf, instances_indices_buf, shared_data_buf, cells_buf,
                            items_buf, decals_buf, frame_textures.albedo, frame_textures.normal, frame_textures.specular,
                            frame_textures.depth);
     gbuf_fill.set_executor(&rp_gbuffer_fill_);
 }
 
-void Renderer::AddForwardOpaquePass(const DrawList &list, const CommonBuffers &common_buffers,
-                                    const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
-                                    FrameTextures &frame_textures) {
+void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                    const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     auto &opaque = rp_builder_.AddPass("OPAQUE");
     const RpResRef vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
     const RpResRef vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
@@ -413,8 +415,7 @@ void Renderer::AddForwardOpaquePass(const DrawList &list, const CommonBuffers &c
     const RpResRef materials_buf =
         opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf =
-        opaque.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
+    const RpResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
 #else
     const RpResRef textures_buf = {};
 #endif
@@ -448,8 +449,8 @@ void Renderer::AddForwardOpaquePass(const DrawList &list, const CommonBuffers &c
 
     RpResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
-        if (list.env.lm_indir_sh[i]) {
-            lmap_tex[i] = opaque.AddTextureInput(list.env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
+        if (p_list_->env.lm_indir_sh[i]) {
+            lmap_tex[i] = opaque.AddTextureInput(p_list_->env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
         }
     }
 
@@ -458,7 +459,7 @@ void Renderer::AddForwardOpaquePass(const DrawList &list, const CommonBuffers &c
     frame_textures.specular = opaque.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = opaque.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_opaque_.Setup(list, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+    rp_opaque_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                      persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
                      dummy_white, instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
                      lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
@@ -466,13 +467,8 @@ void Renderer::AddForwardOpaquePass(const DrawList &list, const CommonBuffers &c
     opaque.set_executor(&rp_opaque_);
 }
 
-void Renderer::AddForwardTransparentPass(const DrawList &list, const CommonBuffers &common_buffers,
-                                         const PersistentGpuData &persistent_data, const BindlessTextureData &bindless,
-                                         FrameTextures &frame_textures) {
-    if (list.alpha_blend_start_index == -1) {
-        // There is no transparent objects in the scene
-        return;
-    }
+void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                         const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     auto &transparent = rp_builder_.AddPass("TRANSPARENT");
     const RpResRef vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
     const RpResRef vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
@@ -517,8 +513,8 @@ void Renderer::AddForwardTransparentPass(const DrawList &list, const CommonBuffe
 
     RpResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
-        if (list.env.lm_indir_sh[i]) {
-            lmap_tex[i] = transparent.AddTextureInput(list.env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
+        if (p_list_->env.lm_indir_sh[i]) {
+            lmap_tex[i] = transparent.AddTextureInput(p_list_->env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
         }
     }
 
@@ -527,7 +523,7 @@ void Renderer::AddForwardTransparentPass(const DrawList &list, const CommonBuffe
     frame_textures.specular = transparent.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
     frame_textures.depth = transparent.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-    rp_transparent_.Setup(list, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
+    rp_transparent_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                           persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
                           dummy_white, instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
                           lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
@@ -681,8 +677,7 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
 
     { // Upscale SSAO pass
         auto &ssao_upscale = rp_builder_.AddPass("UPSCALE");
-        const RpResRef depth_down_2x_res =
-            ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        const RpResRef depth_down_2x_res = ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
         const RpResRef depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
         const RpResRef ssao_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
 

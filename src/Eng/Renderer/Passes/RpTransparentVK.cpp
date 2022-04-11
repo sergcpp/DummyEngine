@@ -26,11 +26,11 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
                                    BackendInfo &backend_info);*/
 } // namespace RpSharedInternal
 
-void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf, RpAllocBuf &instance_indices_buf,
-                                           RpAllocBuf &unif_shared_data_buf, RpAllocBuf &materials_buf,
-                                           RpAllocBuf &cells_buf, RpAllocBuf &items_buf, RpAllocBuf &lights_buf,
-                                           RpAllocBuf &decals_buf, RpAllocTex &shad_tex, RpAllocTex &color_tex,
-                                           RpAllocTex &ssao_tex) {
+void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
+                                           RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
+                                           RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
+                                           RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
+                                           RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
     using namespace RpSharedInternal;
 
     auto &ctx = builder.ctx();
@@ -51,7 +51,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
     }
 
-    if (!probe_storage_ || alpha_blend_start_index_ == -1) {
+    if (!(*p_list_)->probe_storage || (*p_list_)->alpha_blend_start_index == -1) {
         return;
     }
 
@@ -66,7 +66,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
         VkDescriptorImageInfo lm_infos[4];
 
-        if ((render_flags_ & EnableLightmap) && env_->lm_direct) {
+        if (((*p_list_)->render_flags & EnableLightmap) && (*p_list_)->env.lm_direct) {
             for (int sh_l = 0; sh_l < 4; sh_l++) {
                 lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
             }
@@ -78,14 +78,15 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         const VkDescriptorImageInfo decal_info = dummy_black.ref->vk_desc_image_info();
         VkDescriptorImageInfo ssao_info;
-        if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
+        if (((*p_list_)->render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
             ssao_info = ssao_tex.ref->vk_desc_image_info();
         } else {
             ssao_info = dummy_white.ref->vk_desc_image_info();
         }
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo env_info = {probe_storage_->handle().sampler, probe_storage_->handle().views[0],
+        const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
+                                                (*p_list_)->probe_storage->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
         const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
@@ -98,7 +99,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         const VkDescriptorBufferInfo ubuf_info = {unif_shared_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         const VkBufferView instances_buf_view = instances_buf.tbos[0]->view();
-        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo instance_indices_buf_info = {instance_indices_buf.ref->vk_handle(), 0,
+                                                                  VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_buf_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
 
         Ren::SmallVector<VkWriteDescriptorSet, 16> descr_writes;
@@ -297,8 +299,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         draw_pass_vi_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-        for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
-            const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
+        for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+            const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
             if (!batch.alpha_blend_bit || !batch.two_sided_bit) {
                 continue;
             }
@@ -308,7 +310,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
             }
 
             if (cur_mat_id != batch.mat_id) {
-                const uint32_t pipe_id = (*materials_)[batch.mat_id].pipelines[1].index();
+                const uint32_t pipe_id = (*(*p_list_)->materials)[batch.mat_id].pipelines[1].index();
 
                 if (cur_pipe_id != pipe_id) {
                     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());
@@ -340,14 +342,14 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         cur_mat_id = 0xffffffffffffffff;
 
-        for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
-            const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
+        for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+            const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
             if (!batch.instance_count) {
                 continue;
             }
 
             if (cur_mat_id != batch.mat_id) {
-                const uint32_t pipe_id = (*materials_)[batch.mat_id].pipelines[0].index();
+                const uint32_t pipe_id = (*(*p_list_)->materials)[batch.mat_id].pipelines[0].index();
 
                 if (cur_pipe_id != pipe_id) {
                     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());

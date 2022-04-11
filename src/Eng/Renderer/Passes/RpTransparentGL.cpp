@@ -17,7 +17,8 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
                                BackendInfo &backend_info);
 
 uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
+                                   const Ren::Pipeline pipelines[],
+                                   const DynArrayConstRef<CustomDrawBatch> &main_batches,
                                    const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    BackendInfo &backend_info);
@@ -33,7 +34,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
-    if (render_flags_ & DebugWireframe) {
+    if ((*p_list_)->render_flags & DebugWireframe) {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
     } else {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
@@ -79,15 +80,19 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
     RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
 
+    if (!(*p_list_)->probe_storage || (*p_list_)->alpha_blend_start_index == -1) {
+        return;
+    }
+
     glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, unif_shared_data_buf.ref->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shad_tex.ref->id());
 
-    if (decals_atlas_) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, decals_atlas_->tex_id(0));
+    if ((*p_list_)->decals_atlas) {
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
+    if (((*p_list_)->render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
     } else {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white.ref->id());
@@ -95,9 +100,9 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut.ref->id());
 
-    if ((render_flags_ & EnableLightmap) && env_->lm_direct) {
+    if (((*p_list_)->render_flags & EnableLightmap) && (*p_list_)->env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, env_->lm_indir_sh[sh_l]->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, (*p_list_)->env.lm_indir_sh[sh_l]->id());
         }
     } else {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
@@ -106,7 +111,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     }
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
-                               probe_storage_ ? probe_storage_->handle().id : 0);
+                               (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, GLuint(lights_buf.tbos[0]->id()));
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, GLuint(decals_buf.tbos[0]->id()));
@@ -129,8 +134,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
     BackendInfo backend_info;
 
-    for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
-        const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
+    for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+        const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
         if (!batch.alpha_blend_bit || !batch.two_sided_bit) {
             continue;
         }
@@ -155,7 +160,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
 
         if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials_->at(batch.mat_id);
+            const Ren::Material &mat = (*p_list_)->materials->at(batch.mat_id);
             _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
@@ -177,8 +182,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
 
-    for (int j = int(main_batch_indices_.count) - 1; j >= alpha_blend_start_index_; j--) {
-        const auto &batch = main_batches_.data[main_batch_indices_.data[j]];
+    for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+        const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
         if (!batch.instance_count) {
             continue;
         }
@@ -199,7 +204,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
 
         if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials_->at(batch.mat_id);
+            const Ren::Material &mat = (*p_list_)->materials->at(batch.mat_id);
             _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 

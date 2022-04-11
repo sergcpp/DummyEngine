@@ -19,12 +19,8 @@ class RpShadowMaps : public RenderPassExecutor {
     Ren::Framebuffer shadow_fb_;
 
     // temp data (valid only between Setup and Execute calls)
-    const Ren::MaterialStorage *materials_ = nullptr;
+    const DrawList **p_list_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
-    DynArrayConstRef<BasicDrawBatch> shadow_batches_;
-    DynArrayConstRef<uint32_t> shadow_batch_indices_;
-    DynArrayConstRef<ShadowList> shadow_lists_;
-    DynArrayConstRef<ShadowMapRegion> shadow_regions_;
 
     // inputs
     RpResRef vtx_buf1_;
@@ -47,16 +43,12 @@ class RpShadowMaps : public RenderPassExecutor {
   public:
     RpShadowMaps(int w, int h) : w_(w), h_(h) {}
 
-    void Setup(const DrawList &list, const RpResRef vtx_buf1, const RpResRef vtx_buf2, const RpResRef ndx_buf,
+    void Setup(const DrawList **p_list, const RpResRef vtx_buf1, const RpResRef vtx_buf2, const RpResRef ndx_buf,
                const RpResRef materials_buf, const BindlessTextureData *bindless_tex, const RpResRef textures_buf,
                const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
                const RpResRef noise_tex, const RpResRef shadowmap_tex) {
-        materials_ = list.materials;
+        p_list_ = p_list;
         bindless_tex_ = bindless_tex;
-        shadow_batches_ = list.shadow_batches;
-        shadow_batch_indices_ = list.shadow_batch_indices;
-        shadow_lists_ = list.shadow_lists;
-        shadow_regions_ = list.shadow_regions;
 
         vtx_buf1_ = vtx_buf1;
         vtx_buf2_ = vtx_buf2;
