@@ -83,8 +83,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
     int draw_calls_count = 0;
 
-    for (int i = 0; i < int(shadow_lists_.count); i++) {
-        const ShadowList &sh_list = shadow_lists_.data[i];
+    for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
         if (!sh_list.shadow_batch_count) {
             continue;
         }
@@ -96,11 +96,12 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
             region_cleared[i] = true;
         }
 
-        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(shadow_regions_.data[i].clip_from_world));
+        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
+                           Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
 
         for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
              ++j) {
-            const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+            const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
             if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits == BasicDrawBatch::TypeVege) {
                 continue;
             }
@@ -118,8 +119,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
     glBindVertexArray(vi_depth_pass_vege_solid_.gl_vao());
     glUseProgram(pi_vege_solid_.prog()->id());
 
-    for (int i = 0; i < int(shadow_lists_.count); i++) {
-        const ShadowList &sh_list = shadow_lists_.data[i];
+    for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
         if (!sh_list.shadow_batch_count) {
             continue;
         }
@@ -131,11 +132,12 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
             region_cleared[i] = true;
         }
 
-        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(shadow_regions_.data[i].clip_from_world));
+        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
+                           Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
 
         for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
              ++j) {
-            const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+            const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
             if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
                 continue;
             }
@@ -153,8 +155,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
     glBindVertexArray(vi_depth_pass_transp_.gl_vao());
     glUseProgram(pi_transp_.prog()->id());
 
-    for (int i = 0; i < int(shadow_lists_.count); i++) {
-        const ShadowList &sh_list = shadow_lists_.data[i];
+    for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
         if (!sh_list.shadow_batch_count) {
             continue;
         }
@@ -166,18 +168,19 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
             region_cleared[i] = true;
         }
 
-        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(shadow_regions_.data[i].clip_from_world));
+        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
+                           Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
 
         uint32_t cur_mat_id = 0xffffffff;
         for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
              ++j) {
-            const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+            const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
             if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits == BasicDrawBatch::TypeVege) {
                 continue;
             }
 
             if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
-                const Ren::Material &mat = materials_->at(batch.material_index);
+                const Ren::Material &mat = (*p_list_)->materials->at(batch.material_index);
                 _bind_texture3_and_sampler3(builder.ctx(), mat, builder.temp_samplers);
                 cur_mat_id = batch.material_index;
             }
@@ -195,8 +198,8 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
     glBindVertexArray(vi_depth_pass_vege_transp_.gl_vao());
     glUseProgram(pi_vege_transp_.prog()->id());
 
-    for (int i = 0; i < int(shadow_lists_.count); i++) {
-        const ShadowList &sh_list = shadow_lists_.data[i];
+    for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
+        const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
         if (!sh_list.shadow_batch_count) {
             continue;
         }
@@ -208,18 +211,19 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
             region_cleared[i] = true;
         }
 
-        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE, Ren::ValuePtr(shadow_regions_.data[i].clip_from_world));
+        glUniformMatrix4fv(Shadow::U_M_MATRIX_LOC, 1, GL_FALSE,
+                           Ren::ValuePtr((*p_list_)->shadow_regions.data[i].clip_from_world));
 
         uint32_t cur_mat_id = 0xffffffff;
         for (uint32_t j = sh_list.shadow_batch_start; j < sh_list.shadow_batch_start + sh_list.shadow_batch_count;
              ++j) {
-            const auto &batch = shadow_batches_.data[shadow_batch_indices_.data[j]];
+            const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
             if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
                 continue;
             }
 
             if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
-                const Ren::Material &mat = materials_->at(batch.material_index);
+                const Ren::Material &mat = (*p_list_)->materials->at(batch.material_index);
                 _bind_texture3_and_sampler3(builder.ctx(), mat, builder.temp_samplers);
                 cur_mat_id = batch.material_index;
             }

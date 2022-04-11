@@ -131,14 +131,14 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-    if (render_flags_ & DebugWireframe) {
+    if ((*p_list_)->render_flags & DebugWireframe) {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
     } else {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
     }
 
     rast_state.depth.test_enabled = true;
-    if ((render_flags_ & (EnableZFill | DebugWireframe)) == EnableZFill) {
+    if (((*p_list_)->render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
     } else {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);
@@ -204,11 +204,11 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shad_tex.ref->id());
 
-    if (decals_atlas_) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, decals_atlas_->tex_id(0));
+    if ((*p_list_)->decals_atlas) {
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    if ((render_flags_ & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
+    if (((*p_list_)->render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
     } else {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white.ref->id());
@@ -221,7 +221,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     }
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
-                               probe_storage_ ? probe_storage_->handle().id : 0);
+                               (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, GLuint(lights_buf.tbos[0]->id()));
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, GLuint(decals_buf.tbos[0]->id()));
@@ -233,6 +233,10 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
+
+    const auto &batches = (*p_list_)->custom_batches;
+    const auto &batch_indices = (*p_list_)->custom_batch_indices;
+    const auto &materials = (*p_list_)->materials;
 
     BackendInfo _dummy = {};
 
@@ -252,8 +256,8 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i, 0ull,
-                                      cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
+            i = _draw_list_range_full(builder, materials, pipelines_, batches, batch_indices, i, 0ull, cur_mat_id,
+                                      cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // two-sided1
@@ -263,8 +267,8 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
-                                      CDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
+            i = _draw_list_range_full(builder, materials, pipelines_, batches, batch_indices, i, CDB::BitTwoSided,
+                                      cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // one-sided2
@@ -274,8 +278,8 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
-                                      CDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
+            i = _draw_list_range_full(builder, materials, pipelines_, batches, batch_indices, i, CDB::BitAlphaTest,
+                                      cur_mat_id, cur_pipe_id, cur_prog_id, _dummy);
         }
 
         { // two-sided2
@@ -285,7 +289,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_list_range_full(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
+            i = _draw_list_range_full(builder, materials, pipelines_, batches, batch_indices, i,
                                       CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id, cur_pipe_id, cur_prog_id,
                                       _dummy);
         }
@@ -297,8 +301,8 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_list_range_full_rev(builder, materials_, pipelines_, main_batches_, main_batch_indices_,
-                                          main_batch_indices_.count - 1,
+            i = _draw_list_range_full_rev(builder, materials, pipelines_, batches, batch_indices,
+                                          batch_indices.count - 1,
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id,
                                           cur_pipe_id, cur_prog_id, _dummy);
         }
@@ -310,7 +314,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            _draw_list_range_full_rev(builder, materials_, pipelines_, main_batches_, main_batch_indices_, i,
+            _draw_list_range_full_rev(builder, materials, pipelines_, batches, batch_indices, i,
                                       CDB::BitAlphaBlend | CDB::BitAlphaTest, cur_mat_id, cur_pipe_id, cur_prog_id,
                                       _dummy);
         }

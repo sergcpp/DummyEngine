@@ -55,7 +55,8 @@ uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_desc
 
 uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                    const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
+                                   const Ren::Pipeline pipelines[],
+                                   const DynArrayConstRef<CustomDrawBatch> &main_batches,
                                    const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
                                    const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id,
                                    uint32_t &bound_descr_id, BackendInfo &backend_info) {
@@ -141,7 +142,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
     }
 
-    if (!probe_storage_) {
+    if (!(*p_list_)->probe_storage) {
         return;
     }
 
@@ -159,12 +160,14 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
         }
 
-        const VkDescriptorImageInfo decal_info =
-            decals_atlas_ ? decals_atlas_->vk_desc_image_info() : dummy_black.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo decal_info = (*p_list_)->decals_atlas
+                                                     ? (*p_list_)->decals_atlas->vk_desc_image_info()
+                                                     : dummy_black.ref->vk_desc_image_info();
         const VkDescriptorImageInfo ssao_info = ssao_tex->ref->vk_desc_image_info();
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo env_info = {probe_storage_->handle().sampler, probe_storage_->handle().views[0],
+        const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
+                                                (*p_list_)->probe_storage->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
         const VkDescriptorImageInfo cone_rt_info = cone_rt_lut.ref->vk_desc_image_info();
         const VkDescriptorImageInfo brdf_info = brdf_lut.ref->vk_desc_image_info();
@@ -360,6 +363,9 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
+    const auto &batches = (*p_list_)->custom_batches;
+    const auto &batch_indices = (*p_list_)->custom_batch_indices;
+
     BackendInfo _dummy = {};
 
     { // actual drawing
@@ -380,44 +386,44 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
         { // one-sided1
             Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-1");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                      main_batches_, main_batch_indices_, i, 0ull, materials_per_descriptor,
-                                      cur_pipe_id, bound_descr_id, _dummy);
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
+                                      batch_indices, i, 0ull, materials_per_descriptor, cur_pipe_id, bound_descr_id,
+                                      _dummy);
         }
 
         { // two-sided1
             Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-1");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                      main_batches_, main_batch_indices_, i, CDB::BitTwoSided, materials_per_descriptor,
-                                      cur_pipe_id, bound_descr_id, _dummy);
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
+                                      batch_indices, i, CDB::BitTwoSided, materials_per_descriptor, cur_pipe_id,
+                                      bound_descr_id, _dummy);
         }
 
         { // one-sided2
             Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-2");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                      main_batches_, main_batch_indices_, i, CDB::BitAlphaTest,
-                                      materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
+                                      batch_indices, i, CDB::BitAlphaTest, materials_per_descriptor, cur_pipe_id,
+                                      bound_descr_id, _dummy);
         }
 
         { // two-sided2
             Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-2");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                      main_batches_, main_batch_indices_, i, CDB::BitAlphaTest | CDB::BitTwoSided,
-                                      materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
+                                      batch_indices, i, CDB::BitAlphaTest | CDB::BitTwoSided, materials_per_descriptor,
+                                      cur_pipe_id, bound_descr_id, _dummy);
         }
 
         { // two-sided-tested-blended
             Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-TESTED-BLENDED");
             i = _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                          main_batches_, main_batch_indices_, main_batch_indices_.count - 1,
+                                          batches, batch_indices, batch_indices.count - 1,
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided,
                                           materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }
 
         { // one-sided-tested-blended
             Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-TESTED-BLENDED");
-            _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                      main_batches_, main_batch_indices_, i, CDB::BitAlphaBlend | CDB::BitAlphaTest,
+            _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
+                                      batch_indices, i, CDB::BitAlphaBlend | CDB::BitAlphaTest,
                                       materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }
 
