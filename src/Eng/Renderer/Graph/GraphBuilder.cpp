@@ -390,13 +390,12 @@ RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSt
     ++tex.write_count;
     ++pass.ref_count_;
 
+    if (slot_index == -1) {
 #ifndef NDEBUG
-    for (size_t i = 0; i < pass.output_.size(); i++) {
-        assert(pass.output_[i].type != eRpResType::Texture || pass.output_[i].index != ret.index);
-    }
+        for (size_t i = 0; i < pass.output_.size(); i++) {
+            assert(pass.output_[i].type != eRpResType::Texture || pass.output_[i].index != ret.index);
+        }
 #endif
-
-    if (slot_index) {
         // Add new output
         pass.output_.push_back(ret);
     } else if (pass.output_[slot_index]) {
@@ -410,6 +409,9 @@ RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSt
             } else {
                 ++i;
             }
+        }
+        if (pass.output_[slot_index].index == ret.index) {
+            --ret.write_count;
         }
         pass.output_[slot_index] = ret;
     }
