@@ -57,6 +57,26 @@ class LinearAlloc {
         return (*this);
     }
 
+    void Resize(const uint32_t total_size) {
+        uint32_t new_block_count = (total_size + block_size_ - 1) / block_size_;
+        new_block_count = BitmapGranularity * ((new_block_count + BitmapGranularity - 1) / BitmapGranularity);
+
+        auto *new_bitmap = new uint64_t[new_block_count / BitmapGranularity];
+
+        const uint32_t blocks_to_copy = std::min(block_count_, new_block_count);
+        memcpy(new_bitmap, bitmap_, sizeof(uint64_t) * (blocks_to_copy / BitmapGranularity));
+
+        if (blocks_to_copy < new_block_count) {
+            memset(new_bitmap + (blocks_to_copy / BitmapGranularity), 0xff,
+                   sizeof(uint64_t) * ((new_block_count - blocks_to_copy) / BitmapGranularity));
+        }
+
+        delete[] bitmap_;
+
+        block_count_ = new_block_count;
+        bitmap_ = new_bitmap;
+    }
+
     uint32_t size() const { return block_size_ * block_count_; }
 
     uint32_t Alloc(uint32_t req_size, const char *tag);

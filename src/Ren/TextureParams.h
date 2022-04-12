@@ -89,7 +89,9 @@ enum class eTexUsageBits : uint8_t {
 using eTexUsage = eTexUsageBits;
 
 inline eTexUsage operator|(eTexUsageBits a, eTexUsageBits b) { return eTexUsageBits(uint8_t(a) | uint8_t(b)); }
+inline eTexUsage &operator|=(eTexUsage &a, eTexUsage b) { return a = eTexUsageBits(uint8_t(a) | uint8_t(b)); }
 inline eTexUsage operator&(eTexUsageBits a, eTexUsageBits b) { return eTexUsageBits(uint8_t(a) & uint8_t(b)); }
+inline eTexUsage &operator&=(eTexUsage &a, eTexUsage b) { return a = eTexUsageBits(uint8_t(a) & uint8_t(b)); }
 
 struct Tex2DParams {
     uint16_t w = 0, h = 0;
