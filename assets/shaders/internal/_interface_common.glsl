@@ -11,6 +11,7 @@
 #define IVEC3_TYPE Ren::Vec3i
 #define IVEC4_TYPE Ren::Vec4i
 
+#define UINT_TYPE uint32_t
 #define UVEC2_TYPE Ren::Vec2u
 #define UVEC3_TYPE Ren::Vec3u
 #define UVEC4_TYPE Ren::Vec4u
@@ -32,6 +33,7 @@
 #define IVEC3_TYPE ivec3
 #define IVEC4_TYPE ivec4
 
+#define UINT_TYPE uint
 #define UVEC2_TYPE uvec2
 #define UVEC3_TYPE uvec3
 #define UVEC4_TYPE uvec4

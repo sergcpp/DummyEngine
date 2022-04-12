@@ -42,7 +42,12 @@ layout(std430, binding = RAY_LIST_SLOT) writeonly buffer RayList {
 layout(std430, binding = TILE_LIST_SLOT) writeonly buffer TileList {
     uint g_tile_list[];
 };
+layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
+layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
+layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
+
 layout(binding = REFL_IMG_SLOT, r11f_g11f_b10f) uniform writeonly image2D g_refl_img;
+layout(binding = NOISE_IMG_SLOT, rg8) uniform writeonly image2D g_noise_img;
 
 bool IsReflectiveSurface(ivec2 px_coords) {
     float depth = texelFetch(g_depth_tex, px_coords, 0).r;
@@ -188,9 +193,41 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
     }
 }
 
+//
+// https://eheitzresearch.wordpress.com/762-2/
+//
+float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
+    // wrap arguments
+    uint pixel_i = pixel.x & 127u;
+    uint pixel_j = pixel.y & 127u;
+    sample_index = sample_index & 255u;
+    sample_dimension = sample_dimension & 255u;
+
+    // xor index based on optimized ranking
+    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+
+    // fetch value in sequence
+    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
+
+    // if the dimension is optimized, xor sequence value based on optimized scrambling
+    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+
+    // convert to float and return
+    return (float(value) + 0.5) / 256.0;
+}
+
+vec2 SampleRandomVector2D(uvec2 pixel) {
+    vec2 u = vec2(fract(SampleRandomNumber(pixel, 0, 0u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                  fract(SampleRandomNumber(pixel, 0, 1u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
+    return u;
+}
+
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
+    if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {
+        imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), vec4(SampleRandomVector2D(gl_GlobalInvocationID.xy), 0, 0));
+    }
     uvec2 group_id = gl_WorkGroupID.xy;
     uint group_index = gl_LocalInvocationIndex;
     uvec2 group_thread_id = RemapLane8x8(group_index);

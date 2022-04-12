@@ -592,7 +592,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     probe_storage_ = list.probe_storage;
 
     if (rebuild_renderpasses) {
-        const uint64_t renderpass_setup_beg_us = Sys::GetTimeUs();
+        const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
 
         rp_builder_.Reset();
         backbuffer_sources_.clear();
@@ -1307,9 +1307,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 #endif
 
         rp_builder_.Compile(backbuffer_sources_.data(), int(backbuffer_sources_.size()));
-        const uint64_t renderpass_setup_end_us = Sys::GetTimeUs();
-        ctx_.log()->Info("Renderpass setup is done in %.2fms",
-                         (renderpass_setup_end_us - renderpass_setup_beg_us) * 0.001);
+        const uint64_t rp_setup_end_us = Sys::GetTimeUs();
+        ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
     } else {
         assert(!(list.render_flags & EnableFxaa));
         // Use correct backbuffer image (assume topology is not changed)

@@ -59,7 +59,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
     }
 
     RpResRef ray_list, tile_list;
-    RpResRef refl_tex;
+    RpResRef refl_tex, noise_tex;
 
     { // Classify pixel quads
         auto &ssr_classify = rp_builder_.AddPass("SSR CLASSIFY");
@@ -68,16 +68,22 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpResRef depth;
             RpResRef normal;
             RpResRef variance_history;
+            RpResRef sobol, scrambling_tile, ranking_tile;
             RpResRef ray_counter;
             RpResRef ray_list;
             RpResRef tile_list;
-            RpResRef out_refl_tex;
+            RpResRef out_refl_tex, out_noise_tex;
         };
 
         auto *data = ssr_classify.AllocPassData<PassData>();
         data->depth = ssr_classify.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
         data->variance_history = ssr_classify.AddTextureInput(variance_tex_[0], Ren::eStageBits::ComputeShader);
+        data->sobol = ssr_classify.AddStorageReadonlyInput(sobol_seq_buf_, Ren::eStageBits::ComputeShader);
+        data->scrambling_tile =
+            ssr_classify.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
+        data->ranking_tile =
+            ssr_classify.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
         ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
 
         { // packed ray list
@@ -106,16 +112,46 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             refl_tex = data->out_refl_tex =
                 ssr_classify.AddStorageImageOutput("SSR Temp 2", params, Ren::eStageBits::ComputeShader);
         }
+        { // blue noise texture
+            Ren::Tex2DParams params;
+            params.w = params.h = 128;
+            params.format = Ren::eTexFormat::RawRG88;
+            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
+            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            params.sampling.wrap = Ren::eTexWrap::Repeat;
+            noise_tex = data->out_noise_tex =
+                ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Ren::eStageBits::ComputeShader);
+        }
 
         ssr_classify.set_execute_cb([this, data](RpBuilder &builder) {
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
             RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
+            RpAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
+            RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
+            RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
 
             RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
             RpAllocBuf &ray_list_buf = builder.GetWriteBuffer(data->ray_list);
             RpAllocBuf &tile_list_buf = builder.GetWriteBuffer(data->tile_list);
             RpAllocTex &refl_tex = builder.GetWriteTexture(data->out_refl_tex);
+            RpAllocTex &noise_tex = builder.GetWriteTexture(data->out_noise_tex);
+
+            // Initialize texel buffers if needed
+            if (!sobol_buf.tbos[0]) {
+                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::RawR32UI,
+                                                         0, sobol_buf.ref->size());
+            }
+            if (!scrambling_tile_buf.tbos[0]) {
+                scrambling_tile_buf.tbos[0] =
+                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::RawR32UI,
+                                         0, scrambling_tile_buf.ref->size());
+            }
+            if (!ranking_tile_buf.tbos[0]) {
+                ranking_tile_buf.tbos[0] =
+                    ctx_.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::RawR32UI, 0,
+                                         ranking_tile_buf.ref->size());
+            }
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2D, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
@@ -124,7 +160,11 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                 {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
                 {Ren::eBindTarget::SBuf, SSRClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Ren::eBindTarget::Image, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref}};
+                {Ren::eBindTarget::TBuf, SSRClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
+                {Ren::eBindTarget::TBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
+                {Ren::eBindTarget::TBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                {Ren::eBindTarget::Image, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
+                {Ren::eBindTarget::Image, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + SSRClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
@@ -137,6 +177,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
+            uniform_params.frame_index = view_state_.frame_index;
 
             Ren::DispatchCompute(pi_ssr_classify_tiles_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
                                  sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -184,7 +225,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         auto &ssr_trace_hq = rp_builder_.AddPass("SSR TRACE HQ");
 
         struct PassData {
-            RpResRef sobol, scrambling_tile, ranking_tile;
+            RpResRef noise_tex;
             RpResRef shared_data;
             RpResRef color_tex, normal_tex, depth_hierarchy;
 
@@ -193,12 +234,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = ssr_trace_hq.AllocPassData<PassData>();
-        data->sobol = ssr_trace_hq.AddStorageReadonlyInput(sobol_seq_buf_, Ren::eStageBits::ComputeShader);
-        data->scrambling_tile =
-            ssr_trace_hq.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
-        data->ranking_tile =
-            ssr_trace_hq.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
-
+        data->noise_tex = ssr_trace_hq.AddTextureInput(noise_tex, Ren::eStageBits::ComputeShader);
         data->shared_data =
             ssr_trace_hq.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
         data->color_tex = ssr_trace_hq.AddTextureInput(frame_textures.color, Ren::eStageBits::ComputeShader);
@@ -233,9 +269,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         }
 
         ssr_trace_hq.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
-            RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
-            RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
+            RpAllocTex &noise_tex = builder.GetReadTexture(data->noise_tex);
             RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             RpAllocTex &color_tex = builder.GetReadTexture(data->color_tex);
             RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
@@ -248,31 +282,13 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
-            // Initialize texel buffers if needed
-            if (!sobol_buf.tbos[0]) {
-                sobol_buf.tbos[0] = ctx_.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::RawR32UI,
-                                                         0, sobol_buf.ref->size());
-            }
-            if (!scrambling_tile_buf.tbos[0]) {
-                scrambling_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::RawR32UI,
-                                         0, scrambling_tile_buf.ref->size());
-            }
-            if (!ranking_tile_buf.tbos[0]) {
-                ranking_tile_buf.tbos[0] =
-                    ctx_.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref, Ren::eTexFormat::RawR32UI, 0,
-                                         ranking_tile_buf.ref->size());
-            }
-
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2D, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
                 {Ren::eBindTarget::Tex2D, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
                 {Ren::eBindTarget::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
+                {Ren::eBindTarget::Tex2D, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
                 {Ren::eBindTarget::SBuf, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Ren::eBindTarget::TBuf, SSRTraceHQ::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Ren::eBindTarget::TBuf, SSRTraceHQ::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Ren::eBindTarget::TBuf, SSRTraceHQ::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
                 {Ren::eBindTarget::Image, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Ren::eBindTarget::Image, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
                 {Ren::eBindTarget::SBuf, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
@@ -333,15 +349,13 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             const Ren::eStageBits stage =
                 ctx_.capabilities.ray_query ? Ren::eStageBits::ComputeShader : Ren::eStageBits::RayTracingShader;
 
-            data->sobol = rt_refl.AddStorageReadonlyInput(sobol_seq_buf_, stage);
-            data->scrambling_tile = rt_refl.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, stage);
-            data->ranking_tile = rt_refl.AddStorageReadonlyInput(ranking_tile_1spp_buf_, stage);
             data->geo_data = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
             data->materials = rt_refl.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
             data->vtx_buf1 = rt_refl.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
             data->vtx_buf2 = rt_refl.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
             data->ndx_buf = rt_refl.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
             data->shared_data = rt_refl.AddUniformBufferInput(common_buffers.shared_data_res, stage);
+            data->noise_tex = rt_refl.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_refl.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_refl.AddTextureInput(frame_textures.normal, stage);
             data->env_tex = rt_refl.AddTextureInput(env_map, stage);
@@ -664,12 +678,12 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
         data->in_depth = copy_hist.AddTransferImageInput(frame_textures.depth);
         data->in_normal = copy_hist.AddTransferImageInput(frame_textures.normal);
-        data->in_variance = copy_hist.AddTransferImageInput(variance_tex_[0]);
+        data->in_variance = copy_hist.AddTransferImageInput(variance_tex_[1]);
         data->in_sample_count = copy_hist.AddTransferImageInput(sample_count_tex_[0]);
 
         data->out_depth = copy_hist.AddTransferImageOutput(depth_history_tex_);
         data->out_normal = copy_hist.AddTransferImageOutput(norm_history_tex_);
-        data->out_variance = copy_hist.AddTransferImageOutput(variance_tex_[1]);
+        data->out_variance = copy_hist.AddTransferImageOutput(variance_tex_[0]);
         data->out_sample_count = copy_hist.AddTransferImageOutput(sample_count_tex_[1]);
 
         // Make sure history copying pass will not be culled (temporary solution)
