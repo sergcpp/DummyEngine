@@ -18,6 +18,26 @@ static const int g_block_res[][2] = {
     {12, 12}  // _12x12
 };
 static_assert(sizeof(g_block_res) / sizeof(g_block_res[0]) == int(eTexBlock::_None), "!");
+
+const eTexUsage g_tex_usage_per_state[] = {
+    {},                      // Undefined
+    {},                      // VertexBuffer
+    {},                      // UniformBuffer
+    {},                      // IndexBuffer
+    eTexUsage::RenderTarget, // RenderTarget
+    eTexUsage::Storage,      // UnorderedAccess
+    eTexUsage::RenderTarget, // DepthRead
+    eTexUsage::RenderTarget, // DepthWrite
+    eTexUsage::RenderTarget, // StencilTestDepthFetch
+    eTexUsage::Sampled,      // ShaderResource
+    {},                      // IndirectArgument
+    eTexUsage::Transfer,     // CopyDst
+    eTexUsage::Transfer,     // CopySrc
+    {},                      // BuildASRead
+    {},                      // BuildASWrite
+    {}                       // RayTracing
+};
+static_assert(sizeof(g_tex_usage_per_state) / sizeof(g_tex_usage_per_state[0]) == int(eResState::_Count), "!");
 } // namespace Ren
 
 bool Ren::IsCompressedFormat(const eTexFormat format) {
@@ -240,3 +260,5 @@ int Ren::BlockLenFromGLInternalFormat(uint32_t gl_internal_format) {
     }
     return -1;
 }
+
+Ren::eTexUsage Ren::TexUsageFromState(Ren::eResState state) { return g_tex_usage_per_state[int(state)]; }
