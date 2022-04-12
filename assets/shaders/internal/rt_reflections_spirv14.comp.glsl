@@ -60,51 +60,18 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     uint g_ray_list[];
 };
 
-layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
-layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
-layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
-
+layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
 
 layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform writeonly restrict image2D g_out_color_img;
 layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform writeonly restrict image2D g_out_raylen_img;
 
 //layout(location = 0) rayPayloadEXT RayPayload g_pld;
 
-//
-// https://eheitzresearch.wordpress.com/762-2/
-//
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
-    // wrap arguments
-    uint pixel_i = pixel.x & 127u;
-    uint pixel_j = pixel.y & 127u;
-    sample_index = sample_index & 255u;
-    sample_dimension = sample_dimension & 255u;
-
-    // xor index based on optimized ranking
-    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
-
-    // fetch value in sequence
-    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
-
-    // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
-
-    // convert to float and return
-    return (float(value) + 0.5) / 256.0;
-}
-
-vec2 SampleRandomVector2D(uvec2 pixel) {
-    uint frame_index = floatBitsToUint(g_shrd_data.taa_info[2]);
-    vec2 u = vec2(mod(SampleRandomNumber(pixel, 0, 0u) + float(frame_index & 0xFFu) * GOLDEN_RATIO, 1.0),
-                  mod(SampleRandomNumber(pixel, 0, 1u) + float(frame_index & 0xFFu) * GOLDEN_RATIO, 1.0));
-    return u;
-}
-
 vec3 SampleReflectionVector(vec3 view_direction, vec3 normal, float roughness, ivec2 dispatch_thread_id) {
     mat3 tbn_transform = CreateTBN(normal);
     vec3 view_direction_tbn = tbn_transform * (-view_direction);
 
-    vec2 u = SampleRandomVector2D(dispatch_thread_id);
+    vec2 u = texelFetch(g_noise_tex, ivec2(dispatch_thread_id) % 128, 0).rg;
 
     vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y);
 #ifdef PERFECT_REFLECTIONS

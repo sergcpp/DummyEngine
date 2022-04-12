@@ -13,15 +13,13 @@
 void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf &sobol_buf = builder.GetReadBuffer(pass_data_->sobol);
-    RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(pass_data_->scrambling_tile);
-    RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(pass_data_->ranking_tile);
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocBuf &noise_tex = builder.GetReadBuffer(pass_data_->noise_tex);
     RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
     RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
@@ -44,21 +42,6 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    // Initialize texel buffers if needed
-    if (!sobol_buf.tbos[0]) {
-        sobol_buf.tbos[0] =
-            ctx.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::RawR32UI, 0, sobol_buf.ref->size());
-    }
-    if (!scrambling_tile_buf.tbos[0]) {
-        scrambling_tile_buf.tbos[0] =
-            ctx.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::RawR32UI, 0,
-                                scrambling_tile_buf.ref->size());
-    }
-    if (!ranking_tile_buf.tbos[0]) {
-        ranking_tile_buf.tbos[0] = ctx.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref,
-                                                       Ren::eTexFormat::RawR32UI, 0, ranking_tile_buf.ref->size());
-    }
-
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
@@ -67,10 +50,7 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::TBuf, RTReflections::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTReflections::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTReflections::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
-        //{Ren::eBindTarget::SBuf, RTReflections::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::AccStruct, RTReflections::TLAS_SLOT, *acc_struct},
@@ -113,15 +93,13 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
 void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    RpAllocBuf &sobol_buf = builder.GetReadBuffer(pass_data_->sobol);
-    RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(pass_data_->scrambling_tile);
-    RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(pass_data_->ranking_tile);
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
+    RpAllocTex &noise_tex = builder.GetReadTexture(pass_data_->noise_tex);
     RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
     RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
@@ -144,21 +122,6 @@ void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    // Initialize texel buffers if needed
-    if (!sobol_buf.tbos[0]) {
-        sobol_buf.tbos[0] =
-            ctx.CreateTexture1D("SobolSequenceTex", sobol_buf.ref, Ren::eTexFormat::RawR32UI, 0, sobol_buf.ref->size());
-    }
-    if (!scrambling_tile_buf.tbos[0]) {
-        scrambling_tile_buf.tbos[0] =
-            ctx.CreateTexture1D("ScramblingTile32SppTex", scrambling_tile_buf.ref, Ren::eTexFormat::RawR32UI, 0,
-                                scrambling_tile_buf.ref->size());
-    }
-    if (!ranking_tile_buf.tbos[0]) {
-        ranking_tile_buf.tbos[0] = ctx.CreateTexture1D("RankingTile32SppTex", ranking_tile_buf.ref,
-                                                       Ren::eTexFormat::RawR32UI, 0, ranking_tile_buf.ref->size());
-    }
-
     auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
@@ -167,9 +130,7 @@ void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::TBuf, RTReflections::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTReflections::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-        {Ren::eBindTarget::TBuf, RTReflections::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+        {Ren::eBindTarget::Tex2D, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
