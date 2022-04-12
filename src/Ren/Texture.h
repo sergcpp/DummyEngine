@@ -38,4 +38,6 @@ using Texture2DStorage = Storage<Texture2D>;
 using Tex1DRef = StrongRef<Texture1D>;
 using WeakTex1DRef = WeakRef<Texture1D>;
 using Texture1DStorage = Storage<Texture1D>;
+
+eTexUsage TexUsageFromState(eResState state);
 } // namespace Ren

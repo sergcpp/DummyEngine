@@ -232,6 +232,11 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
         size_ *= 2;
     }
 
+    if (old_size) {
+        LinearAlloc::Resize(size_);
+        assert(size_ == size());
+    }
+
     VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     buf_create_info.size = VkDeviceSize(new_size);
     buf_create_info.usage = GetVkBufferUsageFlags(api_ctx_, type_);
@@ -281,11 +286,15 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
             vkCmdCopyBuffer(cmd_buf, handle_.buf, new_buf, 1, &region_to_copy);
 
             EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, cmd_buf, api_ctx_->temp_command_pool);
-        }
 
-        // destroy previous buffer
-        vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
-        vkFreeMemory(api_ctx_->device, mem_, nullptr);
+            // destroy previous buffer
+            vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
+            vkFreeMemory(api_ctx_->device, mem_, nullptr);
+        } else {
+            // destroy previous buffer
+            api_ctx_->bufs_to_destroy[api_ctx_->backend_frame].push_back(handle_.buf);
+            api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_);
+        }
     }
 
     handle_.buf = new_buf;

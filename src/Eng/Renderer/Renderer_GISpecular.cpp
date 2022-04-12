@@ -15,7 +15,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
     static const int SamplesPerQuad = 1;
     static const bool VarianceGuided = true;
 
-    RpResRef ray_counter;
+    RpResRef ray_counter, raylen_tex;
 
     { // Prepare atomic counter and ray length texture
         auto &ssr_prepare = rp_builder_.AddPass("SSR PREPARE");
@@ -34,16 +34,15 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
             ray_counter = data->ray_counter = ssr_prepare.AddTransferOutput("Ray Counter", desc);
         }
-        {
+        { // ray length
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RawR16F;
-            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            data->ray_length_tex = ssr_prepare.AddTransferImageOutput("Refl Ray Length", params);
+            raylen_tex = data->ray_length_tex = ssr_prepare.AddTransferImageOutput("Refl Ray Length", params);
         }
 
         ssr_prepare.set_execute_cb([data](RpBuilder &builder) {
@@ -106,7 +105,6 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             refl_tex = data->out_refl_tex =
@@ -116,7 +114,6 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             Ren::Tex2DParams params;
             params.w = params.h = 128;
             params.format = Ren::eTexFormat::RawRG88;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =
@@ -219,7 +216,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         });
     }
 
-    RpResRef raylen_tex, ray_rt_list;
+    RpResRef ray_rt_list;
 
     { // Trace rays
         auto &ssr_trace_hq = rp_builder_.AddPass("SSR TRACE HQ");
@@ -246,19 +243,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         ray_counter = data->inout_ray_counter =
             ssr_trace_hq.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
         refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Ren::eStageBits::ComputeShader);
+        raylen_tex = data->raylen_tex = ssr_trace_hq.AddStorageImageOutput(raylen_tex, Ren::eStageBits::ComputeShader);
 
-        { // Ray length texture
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR16F;
-            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            raylen_tex = data->raylen_tex =
-                ssr_trace_hq.AddStorageImageOutput("Refl Ray Length", params, Ren::eStageBits::ComputeShader);
-        }
         { // packed ray list
             RpBufDesc desc;
             desc.type = Ren::eBufType::Storage;
@@ -425,7 +411,6 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -437,7 +422,6 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 7) / 8;
             params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -526,7 +510,6 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -739,7 +722,6 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::RawRGB10_A2;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -761,7 +743,6 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
             params.w = view_state_.scr_res[0] / 2;
             params.h = view_state_.scr_res[1] / 2;
             params.format = Ren::eTexFormat::RawRGB10_A2;
-            params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
