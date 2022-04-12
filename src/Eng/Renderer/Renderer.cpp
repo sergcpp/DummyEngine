@@ -697,7 +697,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 params.w = SHADOWMAP_WIDTH;
                 params.h = SHADOWMAP_HEIGHT;
                 params.format = Ren::eTexFormat::Depth16;
-                params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                 params.sampling.min_lod.from_float(0.0f);
                 params.sampling.max_lod.from_float(0.0f);
                 params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
@@ -718,8 +717,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         frame_textures.depth_params.format = ctx_.capabilities.depth24_stencil8_format
                                                  ? Ren::eTexFormat::Depth24Stencil8
                                                  : Ren::eTexFormat::Depth32Stencil8;
-        frame_textures.depth_params.usage =
-            (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         frame_textures.depth_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.depth_params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -732,9 +729,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 #else
         frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
 #endif
-        // Ren::eTexUsage::Storage is needed for rt debugging, consider removing this
-        frame_textures.color_params.usage =
-            (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage | Ren::eTexUsage::RenderTarget);
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -743,7 +737,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         frame_textures.specular_params.h = view_state_.scr_res[1];
         frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
         frame_textures.specular_params.flags = Ren::TexSRGB;
-        frame_textures.specular_params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -755,8 +748,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 #else
         frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;
 #endif
-        frame_textures.normal_params.usage =
-            (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.normal_params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -765,8 +756,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         frame_textures.albedo_params.h = view_state_.scr_res[1];
         frame_textures.albedo_params.format = Ren::eTexFormat::RawRGBA8888;
         frame_textures.albedo_params.flags = Ren::TexSRGB;
-        frame_textures.albedo_params.usage =
-            (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         if (!deferred_shading) {
@@ -808,7 +797,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 params.w = view_state_.scr_res[0];
                 params.h = view_state_.scr_res[1];
                 params.format = Ren::eTexFormat::RawRG16Snorm;
-                params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
                 params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -842,7 +830,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = view_state_.scr_res[0] / 2;
                     params.h = view_state_.scr_res[1] / 2;
                     params.format = Ren::eTexFormat::RawR32F;
-                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                     depth_down_2x = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
@@ -865,7 +852,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 params.h = ((view_state_.scr_res[1] + RpDepthHierarchy::TileSize - 1) / RpDepthHierarchy::TileSize) *
                            RpDepthHierarchy::TileSize;
                 params.format = Ren::eTexFormat::RawR32F;
-                params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage);
                 params.mip_count = RpDepthHierarchy::MipCount;
                 params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
                 params.sampling.filter = Ren::eTexFilter::NearestMipmap;
@@ -1012,7 +998,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = view_state_.scr_res[0];
                     params.h = view_state_.scr_res[1];
                     params.format = Ren::eTexFormat::RawRG11F_B10F;
-                    params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1111,7 +1096,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = view_state_.scr_res[0] / 4;
                     params.h = view_state_.scr_res[1] / 4;
                     params.format = Ren::eTexFormat::RawRG11F_B10F;
-                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1132,7 +1116,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = view_state_.scr_res[0] / 4;
                     params.h = view_state_.scr_res[1] / 4;
                     params.format = Ren::eTexFormat::RawRG11F_B10F;
-                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1160,7 +1143,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = 16;
                     params.h = 8;
                     params.format = Ren::eTexFormat::RawR32F;
-                    params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::RenderTarget);
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1182,7 +1164,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = 1;
                     params.h = 1;
                     params.format = Ren::eTexFormat::RawR32F;
-                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -1257,7 +1238,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.w = view_state_.scr_res[0];
                     params.h = view_state_.scr_res[1];
                     params.format = Ren::eTexFormat::RawRGB888;
-                    params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

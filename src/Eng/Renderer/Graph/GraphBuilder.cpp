@@ -89,6 +89,7 @@ RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desi
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
+    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, handle.index};
 
     assert(tex.write_count == handle.write_count);
@@ -110,6 +111,7 @@ RpResRef RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_s
     assert(tex_index && "Texture does not exist!");
 
     RpAllocTex &tex = textures_[*tex_index];
+    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, *tex_index};
 
     ++tex.read_count;
@@ -251,7 +253,7 @@ RpResRef RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSt
     }
 
     RpAllocBuf &buf = buffers_[ret.index];
-    assert(buf.desc.size == ref->size() && buf.desc.type == ref->type());
+    assert(buf.desc.size <= ref->size() && buf.desc.type == ref->type());
     buf.ref = ref;
     ret._generation = buf._generation;
     ret.desired_state = desired_state;
@@ -277,6 +279,7 @@ RpResRef RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState des
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
+    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     auto ret = RpResource{eRpResType::Texture, tex._generation, desired_state, stages, handle.index};
 
     assert(tex.write_count == handle.write_count);
@@ -301,6 +304,7 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_
     assert(tex_index && "Texture does not exist!");
 
     RpAllocTex &tex = textures_[*tex_index];
+    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     auto ret = RpResource{eRpResType::Texture, tex._generation, desired_state, stages, *tex_index};
 
     tex.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
@@ -339,7 +343,10 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, co
     }
 
     RpAllocTex &tex = textures_[ret.index];
+    const Ren::eTexUsage prev_usage = tex.desc.usage;
     tex.desc = p;
+    tex.desc.usage = prev_usage | Ren::TexUsageFromState(desired_state);
+
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
     ret.stages = stages;
@@ -461,17 +468,21 @@ void RpBuilder::AllocateNeededResources(RenderPass &pass) {
         if (res.type == eRpResType::Buffer) {
             RpAllocBuf &buf = buffers_.at(res.index);
             if (!buf.ref || buf.desc.type != buf.ref->type() || buf.desc.size > buf.ref->size()) {
+                const uint32_t size_before = buf.ref ? buf.ref->size() : 0;
                 buf.strong_ref = ctx_.LoadBuffer(buf.name.c_str(), buf.desc.type, buf.desc.size);
+                if (buf.ref) {
+                    ctx_.log()->Info("Reinit buf %s (%u bytes -> %u bytes)", buf.name.c_str(), size_before,
+                                     buf.ref->size());
+                }
                 buf.ref = buf.strong_ref;
             }
         } else if (res.type == eRpResType::Texture) {
             RpAllocTex &tex = textures_.at(res.index);
             if (!tex.ref || tex.desc != tex.ref->params) {
-#ifndef NDEBUG
-                if (tex.ref && tex.desc.usage != tex.ref->params.usage) {
-                    ctx_.log()->Error("Conflicting usage flags detected: %s", tex.name.c_str());
+                if (tex.ref) {
+                    ctx_.log()->Info("Reinit tex %s (%ix%i -> %ix%i)", tex.name.c_str(), tex.ref->params.w,
+                                     tex.ref->params.h, tex.desc.w, tex.desc.h);
                 }
-#endif
                 Ren::eTexLoadStatus status;
                 tex.strong_ref = ctx_.LoadTexture2D(tex.name.c_str(), tex.desc, ctx_.default_mem_allocs(), &status);
                 tex.ref = tex.strong_ref;
@@ -503,6 +514,7 @@ void RpBuilder::Reset() {
     }
     for (RpAllocTex &tex : textures_) {
         tex._generation = 0;
+        tex.desc.usage = {}; // gather usage flags again
         tex.used_in_stages = Ren::eStageBits::None;
         tex.written_in_passes.clear();
         if (tex.ref) {
