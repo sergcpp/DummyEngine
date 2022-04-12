@@ -343,6 +343,7 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, co
     }
 
     RpAllocTex &tex = textures_[ret.index];
+    assert(tex.desc.format == Ren::eTexFormat::Undefined || tex.desc.format == p.format);
     const Ren::eTexUsage prev_usage = tex.desc.usage;
     tex.desc = p;
     tex.desc.usage = prev_usage | Ren::TexUsageFromState(desired_state);
@@ -514,6 +515,7 @@ void RpBuilder::Reset() {
     }
     for (RpAllocTex &tex : textures_) {
         tex._generation = 0;
+        tex.desc.format = Ren::eTexFormat::Undefined;
         tex.desc.usage = {}; // gather usage flags again
         tex.used_in_stages = Ren::eStageBits::None;
         tex.written_in_passes.clear();
