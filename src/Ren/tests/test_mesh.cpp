@@ -196,7 +196,7 @@ void test_mesh() {
                                            const char *arg2, const char *arg3, const char *arg4,
                                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {};
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
+        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), nullptr, &status);
@@ -263,7 +263,7 @@ void test_mesh() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
+        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), nullptr, &status);

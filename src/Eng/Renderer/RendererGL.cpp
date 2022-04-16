@@ -73,18 +73,6 @@ void Renderer::InitRendererInternal() {
     }
 
     Ren::CheckError("[InitRendererInternal]: temp framebuffer", ctx_.log());
-
-    {                                                      // Create timer queries
-        for (int i = 0; i < Ren::MaxFramesInFlight; i++) { // NOLINT
-            glGenQueries(TimersCount, queries_[i]);
-
-            for (int j = 0; j < TimersCount; j++) {
-                glQueryCounter(queries_[i][j], GL_TIMESTAMP);
-            }
-        }
-    }
-
-    Ren::CheckError("[InitRendererInternal]: timer queries", ctx_.log());
 }
 
 void Renderer::DestroyRendererInternal() {
@@ -111,11 +99,6 @@ void Renderer::DestroyRendererInternal() {
         //assert(vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_));
         //assert(vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_));
         //assert(ndx_buf->FreeSubRegion(temp_buf_ndx_offset_));
-    }
-
-    for (int i = 0; i < Ren::MaxFramesInFlight; i++) {
-        static_assert(sizeof(queries_[0][0]) == sizeof(GLuint), "!");
-        glDeleteQueries(TimersCount, queries_[i]);
     }
 }
 
