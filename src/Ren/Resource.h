@@ -25,17 +25,17 @@ enum class eStageBits : uint16_t {
     Transfer = (1u << 11u),
     AccStructureBuild = (1u << 12u)
 };
-inline eStageBits operator|(const eStageBits &lhs, const eStageBits &rhs) {
+inline eStageBits operator|(const eStageBits lhs, const eStageBits rhs) {
     return eStageBits(uint16_t(lhs) | uint16_t(rhs));
 }
-inline eStageBits operator&(const eStageBits &lhs, const eStageBits &rhs) {
+inline eStageBits operator&(const eStageBits lhs, const eStageBits rhs) {
     return eStageBits(uint16_t(lhs) & uint16_t(rhs));
 }
-inline eStageBits operator|=(eStageBits &lhs, const eStageBits &rhs) {
+inline eStageBits operator|=(eStageBits &lhs, const eStageBits rhs) {
     lhs = eStageBits(uint16_t(lhs) | uint16_t(rhs));
     return lhs;
 }
-inline eStageBits operator&=(eStageBits &lhs, const eStageBits &rhs) {
+inline eStageBits operator&=(eStageBits &lhs, const eStageBits rhs) {
     lhs = eStageBits(uint16_t(lhs) & uint16_t(rhs));
     return lhs;
 }

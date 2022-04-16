@@ -289,7 +289,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
 }
 
 void Ren::Texture2D::Free() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & TexNoOwnership)) {
+    if (params.format != eTexFormat::Undefined && !bool(params.flags & eTexFlagBits::NoOwnership)) {
         assert(IsMainThread());
 
         for (VkImageView view : handle_.views) {
@@ -517,9 +517,9 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     params.w = w;
     params.h = h;
     if (is_srgb) {
-        params.flags |= TexSRGB;
+        params.flags |= eTexFlagBits::SRGB;
     } else {
-        params.flags &= ~TexSRGB;
+        params.flags &= ~eTexFlagBits::SRGB;
     }
     params.mip_count = mip_count;
     params.samples = samples;
@@ -554,7 +554,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_vk_formats[size_t(p.format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -602,7 +602,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
         view_info.format = g_vk_formats[size_t(p.format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
         if (IsDepthStencilFormat(p.format)) {
@@ -820,7 +820,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
 
     Free();
     Realloc(int(header.dwWidth), int(header.dwHeight), int(header.dwMipMapCount), 1, format, block,
-            (p.flags & TexSRGB) != 0, _cmd_buf, mem_allocs, log);
+            bool(p.flags & eTexFlagBits::SRGB), _cmd_buf, mem_allocs, log);
 
     params.flags = p.flags;
     params.block = block;
@@ -962,13 +962,13 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
     bool is_srgb_format;
     eTexFormat format = FormatFromGLInternalFormat(header.gl_internal_format, &block, &is_srgb_format);
 
-    if (is_srgb_format && (params.flags & TexSRGB) == 0) {
+    if (is_srgb_format && !bool(params.flags & eTexFlagBits::SRGB)) {
         log->Warning("Loading SRGB texture as non-SRGB!");
     }
 
     Free();
     Realloc(int(header.pixel_width), int(header.pixel_height), int(header.mipmap_levels_count), 1, format, block,
-            (p.flags & TexSRGB) != 0, nullptr, nullptr, log);
+            bool(p.flags & eTexFlagBits::SRGB), nullptr, nullptr, log);
 
     params.flags = p.flags;
     params.block = block;
@@ -1108,7 +1108,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         img_info.mipLevels = mip_count;
         img_info.arrayLayers = 1;
         img_info.format = g_vk_formats[size_t(p.format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -1155,7 +1155,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1433,7 +1433,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         img_info.mipLevels = first_mip_count;
         img_info.arrayLayers = 6;
         img_info.format = g_vk_formats[size_t(first_format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -1480,7 +1480,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -1647,7 +1647,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
     bool is_srgb_format;
     params.format = FormatFromGLInternalFormat(first_header->gl_internal_format, &params.block, &is_srgb_format);
 
-    if (is_srgb_format && (params.flags & TexSRGB) == 0) {
+    if (is_srgb_format && !bool(params.flags & eTexFlagBits::SRGB)) {
         log->Warning("Loading SRGB texture as non-SRGB!");
     }
 
@@ -1660,7 +1660,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         img_info.mipLevels = first_header->mipmap_levels_count;
         img_info.arrayLayers = 6;
         img_info.format = g_vk_formats[size_t(params.format)];
-        if (params.flags & TexSRGB) {
+        if (bool(params.flags & eTexFlagBits::SRGB)) {
             img_info.format = ToSRGBFormat(img_info.format);
         }
         img_info.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -1707,7 +1707,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
         view_info.format = g_vk_formats[size_t(p.format)];
-        if (p.flags & TexSRGB) {
+        if (bool(p.flags & eTexFlagBits::SRGB)) {
             view_info.format = ToSRGBFormat(view_info.format);
         }
         view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

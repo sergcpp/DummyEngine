@@ -28,4 +28,4 @@ const eStageBits g_stage_bits_per_state[] = {
 static_assert(sizeof(g_stage_bits_per_state) / sizeof(g_stage_bits_per_state[0]) == int(eResState::_Count), "!");
 } // namespace Ren
 
-Ren::eStageBits Ren::StageBitsForState(eResState state) { return g_stage_bits_per_state[int(state)]; }
+Ren::eStageBits Ren::StageBitsForState(const eResState state) { return g_stage_bits_per_state[int(state)]; }

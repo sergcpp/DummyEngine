@@ -345,7 +345,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
 }
 
 void Ren::Texture2D::Free() {
-    if (params.format != eTexFormat::Undefined && !(params.flags & TexNoOwnership)) {
+    if (params.format != eTexFormat::Undefined && !bool(params.flags & eTexFlagBits::NoOwnership)) {
         assert(IsMainThread());
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
@@ -412,9 +412,9 @@ void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     params.w = w;
     params.h = h;
     if (is_srgb) {
-        params.flags |= TexSRGB;
+        params.flags |= eTexFlagBits::SRGB;
     } else {
-        params.flags &= ~TexSRGB;
+        params.flags &= ~eTexFlagBits::SRGB;
     }
     params.mip_count = mip_count;
     params.samples = samples;
@@ -437,7 +437,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     initialized_mips_ = 0;
 
     const auto format = (GLenum)GLFormatFromTexFormat(p.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format, (p.flags & eTexFlags::TexSRGB) != 0),
+               internal_format = (GLenum)GLInternalFormatFromTexFormat(p.format, bool(p.flags & eTexFlagBits::SRGB)),
                type = (GLenum)GLTypeFromTexFormat(p.format);
 
     auto mip_count = GLsizei(p.mip_count);
@@ -446,7 +446,7 @@ void Ren::Texture2D::InitFromRAWData(const Buffer *sbuf, int data_off, const Tex
     }
 
     if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-        if (p.flags & TexMutable) {
+        if (bool(p.flags & eTexFlagBits::Mutable)) {
             glBindTexture(GL_TEXTURE_2D, tex_id);
             for (int i = 0; i < mip_count; i++) {
                 const int w = std::max(p.w << i, 1);
@@ -566,13 +566,13 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
 
     Free();
     Realloc(int(header.dwWidth), int(header.dwHeight), int(header.dwMipMapCount), 1, format, block,
-            (p.flags & TexSRGB) != 0, nullptr, nullptr, log);
+            bool(p.flags & eTexFlagBits::SRGB), nullptr, nullptr, log);
 
     params.flags = p.flags;
     params.block = block;
     params.sampling = p.sampling;
 
-    const GLuint internal_format = GLInternalFormatFromTexFormat(params.format, (p.flags & TexSRGB) != 0);
+    const GLuint internal_format = GLInternalFormatFromTexFormat(params.format, bool(p.flags & eTexFlagBits::SRGB));
 
     int w = params.w, h = params.h;
     uint32_t bytes_left = uint32_t(size) - sizeof(DDSHeader);
@@ -643,13 +643,13 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
     bool is_srgb_format;
     eTexFormat format = FormatFromGLInternalFormat(header.gl_internal_format, &block, &is_srgb_format);
 
-    if (is_srgb_format && (params.flags & TexSRGB) == 0) {
+    if (is_srgb_format && bool(params.flags & eTexFlagBits::SRGB)) {
         log->Warning("Loading SRGB texture as non-SRGB!");
     }
 
     Free();
     Realloc(int(header.pixel_width), int(header.pixel_height), int(header.mipmap_levels_count), 1, format, block,
-            (p.flags & TexSRGB) != 0, nullptr, nullptr, log);
+            bool(p.flags & eTexFlagBits::SRGB), nullptr, nullptr, log);
 
     params.flags = p.flags;
     params.block = block;
@@ -689,8 +689,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
 
         ren_glCompressedTextureSubImage2D_Comp(
             GL_TEXTURE_2D, GLuint(handle_.id), i, 0, 0, w, h,
-            GLInternalFormatFromTexFormat(params.format, (params.flags & TexSRGB) != 0), GLsizei(img_size),
-            reinterpret_cast<const GLvoid *>(uintptr_t(data_offset)));
+            GLInternalFormatFromTexFormat(params.format, bool(params.flags & eTexFlagBits::SRGB)),
+            GLsizei(img_size), reinterpret_cast<const GLvoid *>(uintptr_t(data_offset)));
         initialized_mips_ |= (1u << i);
         data_offset += img_size;
 
@@ -720,7 +720,8 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     params = p;
 
     const auto format = (GLenum)GLFormatFromTexFormat(params.format),
-               internal_format = (GLenum)GLInternalFormatFromTexFormat(params.format, (p.flags & TexSRGB) != 0),
+               internal_format =
+                   (GLenum)GLInternalFormatFromTexFormat(params.format, bool(p.flags & eTexFlagBits::SRGB)),
                type = (GLenum)GLTypeFromTexFormat(params.format);
 
     const int w = p.w, h = p.h;
@@ -1019,7 +1020,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
     bool is_srgb_format;
     params.format = FormatFromGLInternalFormat(first_header->gl_internal_format, &params.block, &is_srgb_format);
 
-    if (is_srgb_format && (params.flags & TexSRGB) == 0) {
+    if (is_srgb_format && !bool(params.flags & eTexFlagBits::SRGB)) {
         log->Warning("Loading SRGB texture as non-SRGB!");
     }
 
@@ -1093,14 +1094,14 @@ void Ren::Texture2D::ApplySampling(SamplingParams sampling, ILog *log) {
 
 #ifndef __ANDROID__
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_LOD_BIAS,
-                                     (params.flags & eTexFlags::TexNoBias) ? 0.0f : sampling.lod_bias.to_float());
+                                     bool(params.flags & eTexFlagBits::NoBias) ? 0.0f : sampling.lod_bias.to_float());
 #endif
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MIN_LOD, sampling.min_lod.to_float());
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_LOD, sampling.max_lod.to_float());
 
         ren_glTextureParameterf_Comp(GL_TEXTURE_2D, tex_id, GL_TEXTURE_MAX_ANISOTROPY_EXT, AnisotropyLevel);
 
-        const bool custom_mip_filter = (params.flags & (eTexFlags::TexMIPMin | eTexFlags::TexMIPMax));
+        const bool custom_mip_filter = bool(params.flags & (eTexFlagBits::MIPMin | eTexFlagBits::MIPMax));
 
         if (!IsCompressedFormat(params.format) &&
             (sampling.filter == eTexFilter::Trilinear || sampling.filter == eTexFilter::Bilinear) &&
@@ -1157,7 +1158,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
     if (IsCompressedFormat(format)) {
         ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
                                                GLint(offsety), GLsizei(sizex), GLsizei(sizey),
-                                               GLInternalFormatFromTexFormat(format, (params.flags & TexSRGB) != 0),
+                                               GLInternalFormatFromTexFormat(format, bool(params.flags & eTexFlagBits::SRGB)),
                                                GLsizei(data_len), data);
     } else {
         ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
@@ -1184,7 +1185,7 @@ Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, c
     if (IsCompressedFormat(format)) {
         ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
                                                GLint(offsety), GLsizei(sizex), GLsizei(sizey),
-                                               GLInternalFormatFromTexFormat(format, (params.flags & TexSRGB) != 0),
+                                               GLInternalFormatFromTexFormat(format, bool(params.flags & eTexFlagBits::SRGB)),
                                                GLsizei(data_len), reinterpret_cast<const void *>(uintptr_t(data_off)));
     } else {
         ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx, offsety, sizex, sizey,
@@ -1217,7 +1218,7 @@ void Ren::Texture2D::DownloadTextureData(const eTexFormat format, void *out_data
 #endif
 }
 
-void Ren::Texture2D::CopyTextureData(const Buffer& sbuf, void* _cmd_buf, int data_off) {
+void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, GLuint(handle_.id));
 
@@ -1242,7 +1243,6 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
 void Ren::ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
     glClearTexImage(tex.id(), 0, GL_RGBA, GL_FLOAT, rgba);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////
 

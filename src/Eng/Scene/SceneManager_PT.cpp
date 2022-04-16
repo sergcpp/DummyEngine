@@ -650,7 +650,7 @@ void SceneManager::InitScene_PT(bool _override) {
                                 tex_desc.h = params.h;
                                 tex_desc.data = &tex_data[0];
                                 tex_desc.generate_mipmaps = true;
-                                tex_desc.is_srgb = (params.flags & Ren::TexSRGB) != 0;
+                                tex_desc.is_srgb = bool(params.flags & Ren::eTexFlagBits::SRGB);
 
                                 const uint32_t new_tex = ray_scene_->AddTexture(tex_desc);
                                 tex_it = loaded_textures.emplace(tex_name, new_tex).first;
