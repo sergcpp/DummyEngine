@@ -32,11 +32,12 @@ struct TexHandle {
 
     explicit operator bool() const { return img != VK_NULL_HANDLE; }
 };
-inline bool operator==(const TexHandle lhs, const TexHandle rhs) {
+static_assert(sizeof(TexHandle) == 56, "!");
+inline bool operator==(const TexHandle &lhs, const TexHandle &rhs) {
     return std::memcmp(&lhs, &rhs, sizeof(TexHandle)) == 0;
 }
-inline bool operator!=(const TexHandle lhs, const TexHandle rhs) { return !operator==(lhs, rhs); }
-inline bool operator<(const TexHandle lhs, const TexHandle rhs) {
+inline bool operator!=(const TexHandle &lhs, const TexHandle &rhs) { return !operator==(lhs, rhs); }
+inline bool operator<(const TexHandle &lhs, const TexHandle &rhs) {
     if (lhs.img < rhs.img) {
         return true;
     } else if (lhs.img == rhs.img) {

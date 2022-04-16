@@ -13,14 +13,6 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-#include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
-#include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
-#include "../assets/shaders/internal/ssr_reproject_interface.glsl"
-#include "../assets/shaders/internal/ssr_resolve_temporal_interface.glsl"
-#include "../assets/shaders/internal/ssr_trace_hq_interface.glsl"
-#include "../assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.glsl"
-#include "../assets/shaders/internal/ssr_write_indirect_args_interface.glsl"
-
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
 
