@@ -266,9 +266,9 @@ Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6
     return ref;
 }
 
-void Ren::Context::VisitTextures(uint32_t mask, const std::function<void(Texture2D &tex)> &callback) {
+void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback) {
     for (Texture2D &tex : textures_) {
-        if (tex.params.flags & mask) {
+        if (bool(tex.params.flags & mask)) {
             callback(tex);
         }
     }

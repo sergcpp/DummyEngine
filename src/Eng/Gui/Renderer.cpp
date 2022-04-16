@@ -130,7 +130,7 @@ bool Gui::Renderer::Init() {
         const auto &p = ctx_.backbuffer_ref()->params;
         Ren::RenderTargetInfo rt_info = {p.format, p.samples, Ren::eImageLayout::ColorAttachmentOptimal,
                                          Ren::eLoadOp::Load, Ren::eStoreOp::Store};
-        rt_info.flags = (p.flags & ~Ren::TexNoOwnership);
+        rt_info.flags = (p.flags & ~Ren::eTexFlagBits::NoOwnership);
 
         if (!render_pass_.Setup(ctx_.api_ctx(), &rt_info, 1, {}, ctx_.log())) {
             ctx_.log()->Error("[Gui::Renderer::Init]: Failed to create render pass!");

@@ -52,7 +52,7 @@ inline bool operator==(const RenderTarget &lhs, const RenderTarget &rhs) {
 struct RenderTargetInfo {
     eTexFormat format = eTexFormat::Undefined;
     uint8_t samples = 1;
-    uint16_t flags = 0;
+    eTexFlags flags = {};
     eImageLayout layout = eImageLayout::Undefined;
     eLoadOp load = eLoadOp::DontCare;
     eStoreOp store = eStoreOp::DontCare;

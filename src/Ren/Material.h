@@ -27,7 +27,7 @@ enum class eMatFlags {
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
 
-using texture_load_callback = std::function<Tex2DRef(const char *name, const uint8_t color[4], uint32_t flags)>;
+using texture_load_callback = std::function<Tex2DRef(const char *name, const uint8_t color[4], eTexFlags flags)>;
 using sampler_load_callback = std::function<SamplerRef(SamplingParams params)>;
 using pipelines_load_callback =
     std::function<void(const char *prog_name, uint32_t flags, const char *arg1, const char *arg2, const char *arg3,

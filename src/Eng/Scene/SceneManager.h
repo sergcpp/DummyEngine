@@ -164,7 +164,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void OnLoadPipelines(const char *name, uint32_t flags, const char *v_shader, const char *f_shader,
                          const char *tc_shader, const char *te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], uint32_t flags);
+    Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], Ren::eTexFlags flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
     Ren::MeshRef LoadMesh(const char *name, std::istream *data, const Ren::material_load_callback &on_mat_load,

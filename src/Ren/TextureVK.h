@@ -16,19 +16,6 @@ namespace Ren {
 class ILog;
 class MemoryAllocators;
 
-enum eTexFlags {
-    TexNoOwnership = (1u << 0u),
-    TexMutable = (1u << 1u),
-    TexSigned = (1u << 2u),
-    TexSRGB = (1u << 3u),
-    TexNoRepeat = (1u << 4u),
-    TexMIPMin = (1u << 5u),
-    TexMIPMax = (1u << 6u),
-    TexNoBias = (1u << 7u),
-    TexUsageScene = (1u << 8u),
-    TexUsageUI = (1u << 9u)
-};
-
 struct TexHandle {
     VkImage img = VK_NULL_HANDLE;
     SmallVector<VkImageView, 1> views;

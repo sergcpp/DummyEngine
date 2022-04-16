@@ -80,6 +80,25 @@ enum class eTexBlock : uint8_t {
     _None
 };
 
+enum class eTexFlagBits : uint16_t {
+    NoOwnership = (1u << 0u),
+    Mutable = (1u << 1u), // TODO: remove this
+    Signed = (1u << 2u),
+    SRGB = (1u << 3u),
+    NoRepeat = (1u << 4u),
+    MIPMin = (1u << 5u),
+    MIPMax = (1u << 6u),
+    NoBias = (1u << 7u),
+    UsageScene = (1u << 8u),
+    UsageUI = (1u << 9u)
+};
+using eTexFlags = eTexFlagBits;
+inline eTexFlags operator|(eTexFlags a, eTexFlags b) { return eTexFlags(uint16_t(a) | uint16_t(b)); }
+inline eTexFlags &operator|=(eTexFlags &a, eTexFlags b) { return a = eTexFlags(uint16_t(a) | uint16_t(b)); }
+inline eTexFlags operator&(eTexFlags a, eTexFlags b) { return eTexFlags(uint16_t(a) & uint16_t(b)); }
+inline eTexFlags &operator&=(eTexFlags &a, eTexFlags b) { return a = eTexFlags(uint16_t(a) & uint16_t(b)); }
+inline eTexFlags operator~(eTexFlags a) { return eTexFlags(~uint16_t(a)); }
+
 enum class eTexUsageBits : uint8_t {
     Transfer = (1u << 0u),
     Sampled = (1u << 1u),
@@ -88,14 +107,14 @@ enum class eTexUsageBits : uint8_t {
 };
 using eTexUsage = eTexUsageBits;
 
-inline eTexUsage operator|(eTexUsageBits a, eTexUsageBits b) { return eTexUsageBits(uint8_t(a) | uint8_t(b)); }
-inline eTexUsage &operator|=(eTexUsage &a, eTexUsage b) { return a = eTexUsageBits(uint8_t(a) | uint8_t(b)); }
-inline eTexUsage operator&(eTexUsageBits a, eTexUsageBits b) { return eTexUsageBits(uint8_t(a) & uint8_t(b)); }
-inline eTexUsage &operator&=(eTexUsage &a, eTexUsage b) { return a = eTexUsageBits(uint8_t(a) & uint8_t(b)); }
+inline eTexUsage operator|(eTexUsage a, eTexUsage b) { return eTexUsage(uint8_t(a) | uint8_t(b)); }
+inline eTexUsage &operator|=(eTexUsage &a, eTexUsage b) { return a = eTexUsage(uint8_t(a) | uint8_t(b)); }
+inline eTexUsage operator&(eTexUsage a, eTexUsage b) { return eTexUsage(uint8_t(a) & uint8_t(b)); }
+inline eTexUsage &operator&=(eTexUsage &a, eTexUsage b) { return a = eTexUsage(uint8_t(a) & uint8_t(b)); }
 
 struct Tex2DParams {
     uint16_t w = 0, h = 0;
-    uint16_t flags = 0;
+    eTexFlags flags = {};
     uint8_t mip_count = 0;
     eTexUsage usage = {};
     uint8_t cube = 0;
