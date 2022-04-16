@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
   <Type Name="Ren::StrongRef&lt;*&gt;">
-    <DisplayString Condition="storage_ != nullptr">{{ [{storage_->data_[index_].counter_} strong ref] }}</DisplayString>
+    <DisplayString Condition="storage_ != nullptr">{{ [{storage_->data_[index_].ctrl_->strong_refs} strong refs], [{storage_->data_[index_].ctrl_->weak_refs} weak refs] }}</DisplayString>
 	<DisplayString Condition="storage_ == nullptr">empty</DisplayString>
     <Expand>
       <Item Name="[storage]" ExcludeView="simple">storage_</Item>
@@ -10,7 +10,7 @@
     </Expand>
   </Type>
   <Type Name="Ren::WeakRef&lt;*&gt;">
-    <DisplayString Condition="storage_ != nullptr">{{ [{storage_->data_[index_].counter_} strong ref] }}</DisplayString>
+    <DisplayString Condition="storage_ != nullptr">{{ [{storage_->data_[index_].ctrl_->strong_refs} strong refs], [{storage_->data_[index_].ctrl_->weak_refs} weak refs] }}</DisplayString>
 	<DisplayString Condition="storage_ == nullptr">empty</DisplayString>
     <Expand>
       <Item Name="[storage]" ExcludeView="simple">storage_</Item>
