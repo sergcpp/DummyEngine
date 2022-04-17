@@ -89,7 +89,6 @@ RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desi
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
-    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, handle.index};
 
     assert(tex.write_count == handle.write_count);
@@ -111,7 +110,6 @@ RpResRef RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_s
     assert(tex_index && "Texture does not exist!");
 
     RpAllocTex &tex = textures_[*tex_index];
-    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, *tex_index};
 
     ++tex.read_count;
@@ -279,7 +277,6 @@ RpResRef RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState des
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
-    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     auto ret = RpResource{eRpResType::Texture, tex._generation, desired_state, stages, handle.index};
 
     assert(tex.write_count == handle.write_count);
@@ -304,7 +301,6 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_
     assert(tex_index && "Texture does not exist!");
 
     RpAllocTex &tex = textures_[*tex_index];
-    tex.desc.usage |= Ren::TexUsageFromState(desired_state);
     auto ret = RpResource{eRpResType::Texture, tex._generation, desired_state, stages, *tex_index};
 
     tex.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
@@ -344,9 +340,7 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, co
 
     RpAllocTex &tex = textures_[ret.index];
     assert(tex.desc.format == Ren::eTexFormat::Undefined || tex.desc.format == p.format);
-    const Ren::eTexUsage prev_usage = tex.desc.usage;
     tex.desc = p;
-    tex.desc.usage = prev_usage | Ren::TexUsageFromState(desired_state);
 
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
@@ -599,6 +593,25 @@ void RpBuilder::TraversePassDependencies(const RenderPass *pass, const int recur
     }
 }
 
+void RpBuilder::PrepareAllocResources() {
+    for (RenderPass *cur_pass : reordered_render_passes_) {
+        for (size_t i = 0; i < cur_pass->input_.size(); ++i) {
+            const RpResource &r = cur_pass->input_[i];
+            if (r.type == eRpResType::Texture) {
+                RpAllocTex &tex = textures_[r.index];
+                tex.desc.usage |= Ren::TexUsageFromState(r.desired_state);
+            }
+        }
+        for (size_t i = 0; i < cur_pass->output_.size(); ++i) {
+            const RpResource &r = cur_pass->output_[i];
+            if (r.type == eRpResType::Texture) {
+                RpAllocTex &tex = textures_[r.index];
+                tex.desc.usage |= Ren::TexUsageFromState(r.desired_state);
+            }
+        }
+    }
+}
+
 void RpBuilder::BuildResourceLinkedLists() {
     std::vector<RpResource *> all_resources;
 
@@ -773,6 +786,8 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
         // Use all passes as is
         reordered_render_passes_.assign(std::begin(render_passes_), std::end(render_passes_));
     }
+
+    PrepareAllocResources();
 }
 
 void RpBuilder::Execute() {

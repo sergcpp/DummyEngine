@@ -91,6 +91,7 @@ class RpBuilder {
     int16_t FindPreviousWrittenInPass(RpResRef handle);
     void TraversePassDependencies(const RenderPass *pass, int recursion_depth, std::vector<RenderPass *> &out_pass_stack);
 
+    void PrepareAllocResources();
     void BuildResourceLinkedLists();
 
     static const int AllocBufSize = 4 * 1024 * 1024;
