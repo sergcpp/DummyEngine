@@ -114,9 +114,9 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
     template <class T, class C = typename std::decay<T>::type,
               class = typename std::enable_if<!IsInplaceFunction<C>::value>::type>
     InplaceFunction(T &&func) {
-        static_assert(std::is_copy_constructible<C>::value);
-        static_assert(sizeof(C) <= Capacity);
-        static_assert(Alignment % alignof(C) == 0);
+        static_assert(std::is_copy_constructible<C>::value, "!");
+        static_assert(sizeof(C) <= Capacity, "!");
+        static_assert(Alignment % alignof(C) == 0, "!");
 
         static const func_table_t<R, Args...> func_table(type_wrapper<C>{});
         func_table_ = &func_table;
@@ -139,15 +139,15 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
     template <size_t Cap, size_t Align>
     InplaceFunction(const InplaceFunction<R(Args...), Cap, Align> &rhs)
         : InplaceFunction(rhs.func_table_, rhs.func_table_->copy_ptr, rhs.storage_) {
-        static_assert(Capacity >= Cap);
-        static_assert((Alignment % Align) == 0);
+        static_assert(Capacity >= Cap, "!");
+        static_assert((Alignment % Align) == 0, "!");
     }
 
     template <size_t Cap, size_t Align>
     InplaceFunction(InplaceFunction<R(Args...), Cap, Align> &&rhs)
         : InplaceFunction(rhs.func_table_, rhs.func_table_->move_ptr, rhs.storage_) {
-        static_assert(Capacity >= Cap);
-        static_assert((Alignment % Align) == 0);
+        static_assert(Capacity >= Cap, "!");
+        static_assert((Alignment % Align) == 0, "!");
         rhs.func_table_ = func_table_t<R, Args...>::empty_func_table();
     }
 
