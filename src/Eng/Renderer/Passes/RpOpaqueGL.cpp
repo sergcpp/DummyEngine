@@ -15,9 +15,9 @@ void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
         glBindSampler(REN_MAT_TEX0_SLOT + j, mat.samplers[j]->id());
     }
 }
-uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
-                               const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t i, uint64_t mask,
+uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage &materials,
+                               const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+                               Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                BackendInfo &backend_info) {
     auto &ctx = builder.ctx();
@@ -32,8 +32,8 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
         }
     }
 
-    for (; i < main_batch_indices.count; i++) {
-        const auto &batch = main_batches.data[main_batch_indices.data[i]];
+    for (; i < main_batch_indices.size(); i++) {
+        const auto &batch = main_batches[main_batch_indices[i]];
         if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -57,7 +57,7 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
         }
 
         if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials->at(batch.mat_id);
+            const Ren::Material &mat = materials.at(batch.mat_id);
             _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
@@ -76,17 +76,16 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *m
     return i;
 }
 
-uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[],
-                                   const DynArrayConstRef<CustomDrawBatch> &main_batches,
-                                   const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
+uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage &materials,
+                                   const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+                                   Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
                                    BackendInfo &backend_info) {
     auto &ctx = builder.ctx();
 
     int i = int(ndx);
     for (; i >= 0; i--) {
-        const auto &batch = main_batches.data[main_batch_indices.data[i]];
+        const auto &batch = main_batches[main_batch_indices[i]];
         if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -105,7 +104,7 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
         }
 
         if (!ctx.capabilities.bindless_texture && cur_mat_id != batch.mat_id) {
-            const Ren::Material &mat = materials->at(batch.mat_id);
+            const Ren::Material &mat = materials.at(batch.mat_id);
             _bind_textures_and_samplers(builder.ctx(), mat, builder.temp_samplers);
         }
 
@@ -234,9 +233,11 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
 
-    const auto &batches = (*p_list_)->custom_batches;
-    const auto &batch_indices = (*p_list_)->custom_batch_indices;
-    const auto &materials = (*p_list_)->materials;
+    const Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches.data,
+                                                      (*p_list_)->custom_batches.count};
+    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices.data,
+                                                     (*p_list_)->custom_batch_indices.count};
+    const auto &materials = *(*p_list_)->materials;
 
     BackendInfo _dummy = {};
 
@@ -302,7 +303,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             i = _draw_list_range_full_rev(builder, materials, pipelines_, batches, batch_indices,
-                                          batch_indices.count - 1,
+                                          uint32_t(batch_indices.size() - 1),
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided, cur_mat_id,
                                           cur_pipe_id, cur_prog_id, _dummy);
         }

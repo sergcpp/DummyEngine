@@ -4,6 +4,7 @@
 #include <Ren/DebugMarker.h>
 #include <Ren/DescriptorPool.h>
 #include <Ren/RastState.h>
+#include <Ren/Span.h>
 #include <Ren/VKCtx.h>
 
 #include "../Renderer_Structs.h"
@@ -11,12 +12,12 @@
 namespace RpSharedInternal {
 uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                               const Ren::Pipeline pipelines[], const DynArrayConstRef<CustomDrawBatch> &main_batches,
-                               const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t i, uint64_t mask,
+                               const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+                               Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id, uint32_t &bound_descr_id,
                                BackendInfo &backend_info) {
-    for (; i < main_batch_indices.count; i++) {
-        const CustomDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
+    for (; i < main_batch_indices.size(); i++) {
+        const CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
         if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -55,14 +56,13 @@ uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_desc
 
 uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                    const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                                   const Ren::Pipeline pipelines[],
-                                   const DynArrayConstRef<CustomDrawBatch> &main_batches,
-                                   const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
+                                   const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+                                   Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id,
                                    uint32_t &bound_descr_id, BackendInfo &backend_info) {
     int i = int(ndx);
     for (; i >= 0; i--) {
-        const CustomDrawBatch &batch = main_batches.data[main_batch_indices.data[i]];
+        const CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
         if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -363,8 +363,9 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
-    const auto &batches = (*p_list_)->custom_batches;
-    const auto &batch_indices = (*p_list_)->custom_batch_indices;
+    Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches.data, (*p_list_)->custom_batches.count};
+    Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices.data,
+                                               (*p_list_)->custom_batch_indices.count};
 
     BackendInfo _dummy = {};
 
@@ -415,7 +416,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         { // two-sided-tested-blended
             Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-TESTED-BLENDED");
             i = _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                          batches, batch_indices, batch_indices.count - 1,
+                                          batches, batch_indices, uint32_t(batch_indices.size() - 1),
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided,
                                           materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }
