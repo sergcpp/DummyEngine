@@ -85,4 +85,14 @@
   <Type Name="Ren::Fixed&lt;*&gt;">
     <DisplayString>{{ {float(value_) / One} }}</DisplayString>
   </Type>
+  <Type Name="Ren::Span&lt;*&gt;">
+	<DisplayString>{{ size={size_} }}</DisplayString>
+	<Expand>
+		<Item Name="[size]" ExcludeView="simple">size_</Item>
+		<ArrayItems>
+			<Size>size_</Size>
+			<ValuePointer>p_data_</ValuePointer>
+		</ArrayItems>
+	</Expand>
+  </Type>
 </AutoVisualizer>
