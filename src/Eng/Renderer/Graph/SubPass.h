@@ -7,33 +7,33 @@
 
 // class RpBuilder;
 
-class RenderPassExecutor {
+class RpExecutor {
   public:
-    virtual ~RenderPassExecutor() {}
+    virtual ~RpExecutor() {}
 
     virtual void Execute(RpBuilder &builder) = 0;
 };
 
-class RenderPass {
+class RpSubpass {
   private:
     friend class RpBuilder;
 
-    int16_t index_ = -1;
+    int16_t index_ = -1, actual_pass_index_ = -1;
     Ren::String name_;
     RpBuilder &builder_;
     Ren::SmallVector<RpResource, 16> input_;
     Ren::SmallVector<RpResource, 16> output_;
     uint32_t ref_count_ = 0;
 
-    std::unique_ptr<RenderPassExecutor> executor_;
-    RenderPassExecutor *p_executor_ = nullptr;
+    std::unique_ptr<RpExecutor> executor_;
+    RpExecutor *p_executor_ = nullptr;
     Sys::InplaceFunction<void(RpBuilder &builder), 24> execute_cb_;
 
     mutable Ren::SmallVector<int16_t, 16> depends_on_passes_;
     mutable bool visited_ = false;
 
   public:
-    RenderPass(const int index, const char *name, RpBuilder &builder) : index_(index), name_(name), builder_(builder) {}
+    RpSubpass(const int index, const char *name, RpBuilder &builder) : index_(index), name_(name), builder_(builder) {}
 
     template <typename T, class... Args> T *AllocPassData(Args &&...args) {
         return builder_.AllocPassData<T>(std::forward<Args>(args)...);
@@ -41,7 +41,7 @@ class RenderPass {
 
     template <typename F> void set_execute_cb(F &&f) { execute_cb_ = f; }
 
-    void set_executor(std::unique_ptr<RenderPassExecutor> &&exec) {
+    void set_executor(std::unique_ptr<RpExecutor> &&exec) {
         executor_ = std::move(exec);
         p_executor_ = executor_.get();
     }
@@ -52,7 +52,7 @@ class RenderPass {
     }
 
     // Non-owning version
-    void set_executor(RenderPassExecutor *exec) { p_executor_ = exec; }
+    void set_executor(RpExecutor *exec) { p_executor_ = exec; }
 
     RpResRef AddTransferInput(const Ren::WeakBufferRef &buf);
     RpResRef AddTransferOutput(const char *name, const RpBufDesc &desc);

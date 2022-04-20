@@ -75,7 +75,7 @@ class Pipeline : public RefCounter {
 #endif
 
     bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,
-              const RenderPass *render_pass, ILog *log);
+              const RenderPass *render_pass, uint32_t subpass_index, ILog *log);
     bool Init(ApiContext *api_ctx, ProgramRef prog, ILog *log);
 };
 

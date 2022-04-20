@@ -62,13 +62,13 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_bu
         rast_state.stencil.write_mask = 0xff;
         rast_state.stencil.pass = unsigned(Ren::eStencilOp::Replace);
 
-        if (!pipeline_[0].Init(ctx.api_ctx(), rast_state, skydome_prog, &vtx_input_, &render_pass_[0], ctx.log())) {
+        if (!pipeline_[0].Init(ctx.api_ctx(), rast_state, skydome_prog, &vtx_input_, &render_pass_[0], 0, ctx.log())) {
             ctx.log()->Error("[RpSkydome::LazyInit]: Failed to initialize pipeline!");
         }
 
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Always);
 
-        if (!pipeline_[1].Init(ctx.api_ctx(), rast_state, skydome_prog, &vtx_input_, &render_pass_[1], ctx.log())) {
+        if (!pipeline_[1].Init(ctx.api_ctx(), rast_state, skydome_prog, &vtx_input_, &render_pass_[1], 0, ctx.log())) {
             ctx.log()->Error("[RpSkydome::LazyInit]: Failed to initialize pipeline!");
         }
 

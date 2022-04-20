@@ -18,8 +18,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
     // Reflection settings
     static const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
     static const float MirrorThreshold = 0.0001f;
-    static const int SamplesPerQuad = 1;
-    static const bool VarianceGuided = true;
+    static const int SamplesPerQuad = 4;
+    static const bool VarianceGuided = false;
 
     RpResRef ray_counter, raylen_tex;
 

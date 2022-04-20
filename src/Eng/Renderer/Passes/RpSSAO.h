@@ -5,7 +5,7 @@
 class PrimDraw;
 struct ViewState;
 
-class RpSSAO : public RenderPassExecutor {
+class RpSSAO : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

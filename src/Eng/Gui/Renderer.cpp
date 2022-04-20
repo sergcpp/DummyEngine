@@ -158,7 +158,7 @@ bool Gui::Renderer::Init() {
         rast_state.blend.src = uint8_t(Ren::eBlendFactor::SrcAlpha);
         rast_state.blend.dst = uint8_t(Ren::eBlendFactor::OneMinusSrcAlpha);
 
-        if (!pipeline_.Init(api_ctx, rast_state, std::move(ui_program), &vtx_input_, &render_pass_, ctx_.log())) {
+        if (!pipeline_.Init(api_ctx, rast_state, std::move(ui_program), &vtx_input_, &render_pass_, 0, ctx_.log())) {
             ctx_.log()->Error("[Gui::Renderer::Init]: Failed to create graphics pipeline!");
             return false;
         }

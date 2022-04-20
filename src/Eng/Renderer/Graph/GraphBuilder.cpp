@@ -3,33 +3,34 @@
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
 
-#include "RenderPass.h"
+#include "SubPass.h"
 
 Ren::ILog *RpBuilder::log() { return ctx_.log(); }
 
-RenderPass &RpBuilder::AddPass(const char *name) {
-    auto *new_rp = reinterpret_cast<RenderPass *>(alloc_.allocate(sizeof(RenderPass)));
-    alloc_.construct(new_rp, int(render_passes_.size()), name, *this);
-    render_passes_.emplace_back(new_rp);
-    return *render_passes_.back();
+RpSubpass &RpBuilder::AddPass(const char *name) {
+    auto *new_rp = reinterpret_cast<RpSubpass *>(alloc_.allocate(sizeof(RpSubpass)));
+    alloc_.construct(new_rp, int(subpasses_.size()), name, *this);
+    subpasses_.emplace_back(new_rp);
+    return *subpasses_.back();
 }
 
-RenderPass *RpBuilder::FindPass(const char *name) {
-    auto it = std::find_if(std::begin(render_passes_), std::end(render_passes_),
-                           [name](const RenderPass *pass) { return strcmp(pass->name(), name) == 0; });
-    if (it != std::end(render_passes_)) {
+RpSubpass *RpBuilder::FindPass(const char *name) {
+    auto it = std::find_if(std::begin(subpasses_), std::end(subpasses_),
+                           [name](const RpSubpass *pass) { return strcmp(pass->name(), name) == 0; });
+    if (it != std::end(subpasses_)) {
         return (*it);
     }
     return nullptr;
 }
 
 RpResRef RpBuilder::ReadBuffer(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                               RenderPass &pass) {
+                               RpSubpass &pass) {
     assert(handle.type == eRpResType::Buffer);
 
     RpAllocBuf &buf = buffers_[handle.index];
     const RpResource ret = {eRpResType::Buffer, buf._generation, desired_state, stages, handle.index};
 
+    buf.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
     assert(buf.write_count == handle.write_count);
     ++buf.read_count;
 
@@ -45,7 +46,7 @@ RpResRef RpBuilder::ReadBuffer(const RpResRef handle, const Ren::eResState desir
 }
 
 RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
-                               const Ren::eStageBits stages, RenderPass &pass) {
+                               const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -71,6 +72,7 @@ RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSta
     ret.desired_state = desired_state;
     ret.stages = stages;
 
+    buf.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
     ++buf.read_count;
     ++pass.ref_count_;
 
@@ -85,12 +87,13 @@ RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSta
 }
 
 RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                RenderPass &pass) {
+                                RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, handle.index};
 
+    tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
     assert(tex.write_count == handle.write_count);
     ++tex.read_count;
 
@@ -105,13 +108,14 @@ RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desi
 }
 
 RpResRef RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                RenderPass &pass) {
+                                RpSubpass &pass) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
 
     RpAllocTex &tex = textures_[*tex_index];
     const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages, *tex_index};
 
+    tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
     ++tex.read_count;
 
 #ifndef NDEBUG
@@ -125,7 +129,7 @@ RpResRef RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_s
 }
 
 RpResRef RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
-                                const Ren::eStageBits stages, RenderPass &pass) {
+                                const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -151,6 +155,7 @@ RpResRef RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSta
     ret.desired_state = desired_state;
     ret.stages = stages;
 
+    tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
     ++tex.read_count;
     ++pass.ref_count_;
 
@@ -166,14 +171,13 @@ RpResRef RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSta
 }
 
 RpResRef RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                RenderPass &pass) {
+                                RpSubpass &pass) {
     assert(handle.type == eRpResType::Buffer);
 
     RpAllocBuf &buf = buffers_[handle.index];
-    buf.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
-
     auto ret = RpResource{eRpResType::Buffer, buf._generation, desired_state, stages, handle.index};
 
+    buf.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
     assert(buf.write_count == handle.write_count);
     ++buf.write_count;
     ++pass.ref_count_;
@@ -190,7 +194,7 @@ RpResRef RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eResState desi
 }
 
 RpResRef RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const Ren::eResState desired_state,
-                                const Ren::eStageBits stages, RenderPass &pass) {
+                                const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -211,11 +215,11 @@ RpResRef RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const R
 
     RpAllocBuf &buf = buffers_[ret.index];
     buf.desc = desc;
-    buf.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
     ret._generation = buf._generation;
     ret.desired_state = desired_state;
     ret.stages = stages;
 
+    buf.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
     ++buf.write_count;
     ++pass.ref_count_;
 
@@ -231,7 +235,7 @@ RpResRef RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const R
 }
 
 RpResRef RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
-                                const Ren::eStageBits stages, RenderPass &pass) {
+                                const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -273,7 +277,7 @@ RpResRef RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSt
 }
 
 RpResRef RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState desired_state,
-                                 const Ren::eStageBits stages, RenderPass &pass) {
+                                 const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
@@ -296,7 +300,7 @@ RpResRef RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState des
 }
 
 RpResRef RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                 RenderPass &pass) {
+                                 RpSubpass &pass) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
 
@@ -319,7 +323,7 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_
 }
 
 RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, const Ren::eResState desired_state,
-                                 const Ren::eStageBits stages, RenderPass &pass) {
+                                 const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -362,7 +366,7 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, co
 }
 
 RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
-                                 const Ren::eStageBits stages, RenderPass &pass, const int slot_index) {
+                                 const Ren::eStageBits stages, RpSubpass &pass, const int slot_index) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -457,7 +461,7 @@ RpAllocTex &RpBuilder::GetWriteTexture(const RpResRef handle) {
     return tex;
 }
 
-void RpBuilder::AllocateNeededResources(RenderPass &pass) {
+void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
     for (size_t i = 0; i < pass.output_.size(); i++) {
         RpResource res = pass.output_[i];
         if (res.type == eRpResType::Buffer) {
@@ -473,7 +477,13 @@ void RpBuilder::AllocateNeededResources(RenderPass &pass) {
             }
         } else if (res.type == eRpResType::Texture) {
             RpAllocTex &tex = textures_.at(res.index);
-            if (!tex.ref || tex.desc != tex.ref->params) {
+            if (tex.alias_of != -1) {
+                const RpAllocTex &orig_tex = textures_.at(tex.alias_of);
+                assert(orig_tex.alias_of == -1);
+                tex.ref = orig_tex.ref;
+                tex.strong_ref = {};
+                ctx_.log()->Info("Tex %s will be alias of %s", tex.name.c_str(), orig_tex.name.c_str());
+            } else if (!tex.ref || tex.desc != tex.ref->params) {
                 if (tex.ref) {
                     ctx_.log()->Info("Reinit tex %s (%ix%i -> %ix%i)", tex.name.c_str(), tex.ref->params.w,
                                      tex.ref->params.h, tex.desc.w, tex.desc.h);
@@ -489,11 +499,11 @@ void RpBuilder::AllocateNeededResources(RenderPass &pass) {
 }
 
 void RpBuilder::Reset() {
-    for (int i = int(render_passes_.size()) - 1; i >= 0; --i) {
-        alloc_.destroy(render_passes_[i]);
+    for (int i = int(subpasses_.size()) - 1; i >= 0; --i) {
+        alloc_.destroy(subpasses_[i]);
     }
-    render_passes_.clear();
-    render_pass_data_.clear();
+    subpasses_.clear();
+    subpass_data_.clear();
     alloc_.Reset();
 
     //
@@ -502,6 +512,7 @@ void RpBuilder::Reset() {
     for (RpAllocBuf &buf : buffers_) {
         buf._generation = 0;
         buf.used_in_stages = Ren::eStageBits::None;
+        buf.read_in_passes.clear();
         buf.written_in_passes.clear();
         if (buf.ref) {
             buf.used_in_stages = Ren::StageBitsForState(buf.ref->resource_state);
@@ -509,9 +520,11 @@ void RpBuilder::Reset() {
     }
     for (RpAllocTex &tex : textures_) {
         tex._generation = 0;
+        tex.alias_of = -1;
         tex.desc.format = Ren::eTexFormat::Undefined;
         tex.desc.usage = {}; // gather usage flags again
         tex.used_in_stages = Ren::eStageBits::None;
+        tex.read_in_passes.clear();
         tex.written_in_passes.clear();
         if (tex.ref) {
             tex.used_in_stages = Ren::StageBitsForState(tex.ref->resource_state);
@@ -529,7 +542,7 @@ int16_t RpBuilder::FindPreviousWrittenInPass(const RpResRef handle) {
     }
 
     for (const rp_write_pass_t i : *written_in_passes) {
-        RenderPass *pass = render_passes_[i.pass_index];
+        RpSubpass *pass = subpasses_[i.pass_index];
         assert(pass->output_[i.slot_index].type == handle.type && pass->output_[i.slot_index].index == handle.index);
         if (pass->output_[i.slot_index].write_count == handle.write_count - 1) {
             return i.pass_index;
@@ -542,7 +555,7 @@ bool RpBuilder::DependsOn_r(const int16_t dst_pass, const int16_t src_pass) {
     if (dst_pass == src_pass) {
         return true;
     }
-    for (const int16_t dep : render_passes_[dst_pass]->depends_on_passes_) {
+    for (const int16_t dep : subpasses_[dst_pass]->depends_on_passes_) {
         if (DependsOn_r(dep, src_pass)) {
             return true;
         }
@@ -550,9 +563,9 @@ bool RpBuilder::DependsOn_r(const int16_t dst_pass, const int16_t src_pass) {
     return false;
 }
 
-void RpBuilder::TraversePassDependencies(const RenderPass *pass, const int recursion_depth,
-                                         std::vector<RenderPass *> &out_pass_stack) {
-    assert(recursion_depth <= render_passes_.size());
+void RpBuilder::TraversePassDependencies(const RpSubpass *pass, const int recursion_depth,
+                                         std::vector<RpSubpass *> &out_pass_stack) {
+    assert(recursion_depth <= subpasses_.size());
     Ren::SmallVector<int16_t, 32> written_in_passes;
     for (size_t i = 0; i < pass->input_.size(); i++) {
         const int16_t prev_pass = FindPreviousWrittenInPass(pass->input_[i]);
@@ -581,7 +594,7 @@ void RpBuilder::TraversePassDependencies(const RenderPass *pass, const int recur
     }
 
     for (const int16_t i : written_in_passes) {
-        RenderPass *_pass = render_passes_[i];
+        RpSubpass *_pass = subpasses_[i];
         assert(_pass != pass);
         const auto it =
             std::find(std::begin(pass->depends_on_passes_), std::end(pass->depends_on_passes_), _pass->index_);
@@ -594,7 +607,7 @@ void RpBuilder::TraversePassDependencies(const RenderPass *pass, const int recur
 }
 
 void RpBuilder::PrepareAllocResources() {
-    for (RenderPass *cur_pass : reordered_render_passes_) {
+    for (RpSubpass *cur_pass : reordered_subpasses_) {
         for (size_t i = 0; i < cur_pass->input_.size(); ++i) {
             const RpResource &r = cur_pass->input_[i];
             if (r.type == eRpResType::Texture) {
@@ -612,39 +625,252 @@ void RpBuilder::PrepareAllocResources() {
     }
 }
 
+void RpBuilder::BuildRenderPasses() {
+    auto should_merge = [](const RpSubpass *prev, const RpSubpass *next) {
+        // TODO: merge similar renderpasses
+        return false;
+    };
+
+    render_passes_.clear();
+    render_passes_.reserve(reordered_subpasses_.size());
+
+    for (int beg = 0; beg < int(reordered_subpasses_.size());) {
+        int end = beg + 1;
+        for (; end < int(reordered_subpasses_.size()); ++end) {
+            if (!should_merge(reordered_subpasses_[beg], reordered_subpasses_[end])) {
+                break;
+            }
+        }
+
+        for (int i = beg; i < end; ++i) {
+            reordered_subpasses_[i]->actual_pass_index_ = int(render_passes_.size());
+        }
+
+        render_passes_.emplace_back();
+        auto &new_pass = render_passes_.back();
+        new_pass.subpass_beg = beg;
+        new_pass.subpass_end = end;
+
+        beg = end;
+    }
+}
+
+void RpBuilder::BuildTransientResources() {
+    for (RpAllocTex &tex : textures_) {
+        // TODO: check if texture has history etc.
+        tex.transient = true;
+    }
+
+    std::vector<int> actual_pass_used(textures_.size(), -1);
+    for (auto it = textures_.begin(); it != textures_.end(); ++it) {
+        RpAllocTex &tex = *it;
+        for (const rp_write_pass_t &p : tex.written_in_passes) {
+            const int actual_pass_index = subpasses_[p.pass_index]->actual_pass_index_;
+            if (actual_pass_used[it.index()] != -1 && actual_pass_used[it.index()] != actual_pass_index) {
+                tex.transient = false;
+                break;
+            }
+            actual_pass_used[it.index()] = actual_pass_index;
+        }
+    }
+    // TODO: actually use this information
+}
+
+void RpBuilder::BuildAliases() {
+    struct range_t {
+        int first_write_pass = std::numeric_limits<int>::max();
+        int last_write_pass = -1;
+        int first_read_pass = std::numeric_limits<int>::max();
+        int last_read_pass = -1;
+
+        bool has_writer() const { return first_write_pass <= last_write_pass; }
+        bool has_reader() const { return first_read_pass <= last_read_pass; }
+        bool is_used() const { return has_writer() || has_reader(); }
+
+        bool can_alias() const {
+            if (has_reader() && has_writer() && first_read_pass <= first_write_pass) {
+                return false;
+            }
+            return true;
+        }
+
+        int last_used_pass() const {
+            int last_pass = 0;
+            if (has_writer()) {
+                last_pass = std::max(last_pass, last_write_pass);
+            }
+            if (has_reader()) {
+                last_pass = std::max(last_pass, last_read_pass);
+            }
+            return last_pass;
+        }
+
+        int first_used_pass() const {
+            int first_pass = std::numeric_limits<int>::max();
+            if (has_writer()) {
+                first_pass = std::min(first_pass, first_write_pass);
+            }
+            if (has_reader()) {
+                first_pass = std::min(first_pass, first_read_pass);
+            }
+            return first_pass;
+        }
+    };
+
+    auto disjoint_lifetimes = [](const range_t &r1, const range_t &r2) -> bool {
+        if (!r1.is_used() || !r2.is_used() || !r1.can_alias() || !r2.can_alias()) {
+            return false;
+        }
+        return r1.last_used_pass() < r2.first_used_pass() || r2.last_used_pass() < r1.first_used_pass();
+    };
+
+    std::vector<range_t> ranges(textures_.size());
+
+    // Gather pass ranges
+    for (const RpSubpass *subpass : reordered_subpasses_) {
+        for (const auto &res : subpass->input_) {
+            if (res.type == eRpResType::Texture) {
+                range_t &range = ranges[res.index];
+                range.first_read_pass = std::min(range.first_read_pass, int(subpass->index_));
+                range.last_read_pass = std::max(range.last_read_pass, int(subpass->index_));
+            }
+        }
+        for (const auto &res : subpass->output_) {
+            if (res.type == eRpResType::Texture) {
+                range_t &range = ranges[res.index];
+                range.first_write_pass = std::min(range.first_write_pass, int(subpass->index_));
+                range.last_write_pass = std::max(range.last_write_pass, int(subpass->index_));
+            }
+        }
+    }
+
+    // Determine aliases
+    for (const RpSubpass *subpass : reordered_subpasses_) {
+        Ren::SmallVector<int, 32> pass_textures;
+        for (const auto &res : subpass->input_) {
+            if (res.type == eRpResType::Texture) {
+                pass_textures.push_back(res.index);
+            }
+        }
+        for (const auto &res : subpass->output_) {
+            if (res.type == eRpResType::Texture) {
+                pass_textures.push_back(res.index);
+            }
+        }
+    }
+
+    alias_chains_.clear();
+    alias_chains_.resize(textures_.size());
+
+    for (auto i = textures_.begin(); i != textures_.end(); ++i) {
+        RpAllocTex &tex1 = *i;
+        const range_t &range1 = ranges[i.index()];
+
+        for (auto j = textures_.begin(); j < i; ++j) {
+            RpAllocTex &tex2 = *j;
+            const range_t &range2 = ranges[j.index()];
+
+            if (tex1.desc.format == tex2.desc.format && tex1.desc.w == tex2.desc.w && tex1.desc.h == tex2.desc.h &&
+                tex1.desc.mip_count == tex2.desc.mip_count && disjoint_lifetimes(range1, range2)) {
+                if (alias_chains_[j.index()].empty()) {
+                    alias_chains_[j.index()].push_back(j.index());
+                }
+                alias_chains_[j.index()].push_back(i.index());
+                break;
+            }
+        }
+    }
+
+    for (auto &chain : alias_chains_) {
+        if (chain.empty()) {
+            continue;
+        }
+
+        std::sort(std::begin(chain), std::end(chain), [&](const int lhs, const int rhs) {
+            return ranges[lhs].last_used_pass() < ranges[rhs].first_used_pass();
+        });
+
+        RpAllocTex &first_tex = textures_[chain[0]];
+        for (int i = 1; i < int(chain.size()); ++i) {
+            RpAllocTex &tex = textures_[chain[i]];
+            tex.alias_of = chain[0];
+            // propagate usage
+            first_tex.desc.usage |= tex.desc.usage;
+        }
+    }
+}
+
 void RpBuilder::BuildResourceLinkedLists() {
     std::vector<RpResource *> all_resources;
 
-    for (RenderPass *cur_pass : reordered_render_passes_) {
+    auto resource_compare = [](const RpResource *lhs, const RpResource *rhs) {
+        return RpResource::LessThanTypeAndIndex(*lhs, *rhs);
+    };
+
+    for (RpSubpass *cur_pass : reordered_subpasses_) {
         for (size_t i = 0; i < cur_pass->input_.size(); i++) {
             RpResource *r = &cur_pass->input_[i];
 
-            auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r,
-                                       [](const RpResource *lhs, const RpResource *rhs) {
-                                           return RpResource::LessThanTypeAndIndex(*lhs, *rhs);
-                                       });
+            auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r, resource_compare);
             if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
                 (*it)->next_use = r;
                 (*it) = r;
             } else {
-                r->next_use = nullptr;
-                all_resources.insert(it, r);
+                if (r->type == eRpResType::Texture && textures_[r->index].alias_of != -1) {
+                    const auto &chain = alias_chains_[textures_[r->index].alias_of];
+                    auto curr_it = std::find(std::begin(chain), std::end(chain), r->index);
+                    assert(curr_it != std::begin(chain));
+
+                    RpResource to_find;
+                    to_find.type = eRpResType::Texture;
+                    to_find.index = *--curr_it;
+
+                    auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), &to_find,
+                                               resource_compare);
+                    if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(to_find, **it)) {
+                        (*it)->next_use = r;
+                        (*it) = r;
+                    } else {
+                        r->next_use = nullptr;
+                        all_resources.insert(it, r);
+                    }
+                } else {
+                    r->next_use = nullptr;
+                    all_resources.insert(it, r);
+                }
             }
         }
 
         for (size_t i = 0; i < cur_pass->output_.size(); i++) {
             RpResource *r = &cur_pass->output_[i];
 
-            auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r,
-                                       [](const RpResource *lhs, const RpResource *rhs) {
-                                           return RpResource::LessThanTypeAndIndex(*lhs, *rhs);
-                                       });
+            auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r, resource_compare);
             if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
                 (*it)->next_use = r;
                 (*it) = r;
             } else {
-                r->next_use = nullptr;
-                all_resources.insert(it, r);
+                if (r->type == eRpResType::Texture && textures_[r->index].alias_of != -1) {
+                    const auto &chain = alias_chains_[textures_[r->index].alias_of];
+                    auto curr_it = std::find(std::begin(chain), std::end(chain), r->index);
+                    assert(curr_it != std::begin(chain));
+
+                    RpResource to_find;
+                    to_find.type = eRpResType::Texture;
+                    to_find.index = *--curr_it;
+
+                    auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), &to_find,
+                                               resource_compare);
+                    if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(to_find, **it)) {
+                        (*it)->next_use = r;
+                        (*it) = r;
+                    } else {
+                        r->next_use = nullptr;
+                        all_resources.insert(it, r);
+                    }
+                } else {
+                    r->next_use = nullptr;
+                    all_resources.insert(it, r);
+                }
             }
         }
     }
@@ -659,7 +885,7 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
     uint32_t stack_size = 0;
 
     { // gather unreferenced resources
-        for (RenderPass *cur_pass : render_passes_) {
+        for (RenderPass *cur_pass : subpasses_) {
             for (size_t i = 0; i < cur_pass->output_.size(); i++) {
                 if (cur_pass->output_[i].read_count == 0) {
                     stack[stack_size++] = {cur_pass, cur_pass->output_[i]};
@@ -686,55 +912,55 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
     }
 #endif
 
-    reordered_render_passes_.clear();
-    reordered_render_passes_.reserve(render_passes_.size());
+    reordered_subpasses_.clear();
+    reordered_subpasses_.reserve(subpasses_.size());
 
     if (backbuffer_sources_count) {
         //
         // Sorting and culling
         //
-        Ren::SmallVector<RenderPass *, 32> written_in_passes;
+        Ren::SmallVector<RpSubpass *, 32> written_in_passes;
         for (int i = 0; i < backbuffer_sources_count; ++i) {
             const int16_t prev_pass = FindPreviousWrittenInPass(backbuffer_sources[i]);
             if (prev_pass != -1) {
-                written_in_passes.push_back(render_passes_[prev_pass]);
+                written_in_passes.push_back(subpasses_[prev_pass]);
             }
         }
 
-        reordered_render_passes_.assign(std::begin(written_in_passes), std::end(written_in_passes));
+        reordered_subpasses_.assign(std::begin(written_in_passes), std::end(written_in_passes));
 
-        for (const RenderPass *pass : written_in_passes) {
-            TraversePassDependencies(pass, 0, reordered_render_passes_);
+        for (const RpSubpass *pass : written_in_passes) {
+            TraversePassDependencies(pass, 0, reordered_subpasses_);
         }
 
-        std::reverse(std::begin(reordered_render_passes_), std::end(reordered_render_passes_));
+        std::reverse(std::begin(reordered_subpasses_), std::end(reordered_subpasses_));
 
         int out_index = 0;
-        for (int in_index = 0; in_index < int(reordered_render_passes_.size()); ++in_index) {
-            if (!reordered_render_passes_[in_index]->visited_) {
-                reordered_render_passes_[out_index++] = reordered_render_passes_[in_index];
-                reordered_render_passes_[in_index]->visited_ = true;
+        for (int in_index = 0; in_index < int(reordered_subpasses_.size()); ++in_index) {
+            if (!reordered_subpasses_[in_index]->visited_) {
+                reordered_subpasses_[out_index++] = reordered_subpasses_[in_index];
+                reordered_subpasses_[in_index]->visited_ = true;
             }
         }
-        reordered_render_passes_.resize(out_index);
+        reordered_subpasses_.resize(out_index);
 
-        if (!reordered_render_passes_.empty()) {
-            std::vector<RenderPass *> scheduled_passes;
-            scheduled_passes.reserve(reordered_render_passes_.size());
+        if (!reordered_subpasses_.empty()) {
+            std::vector<RpSubpass *> scheduled_passes;
+            scheduled_passes.reserve(reordered_subpasses_.size());
 
             // schedule the first pass
-            scheduled_passes.push_back(reordered_render_passes_.front());
-            reordered_render_passes_.erase(reordered_render_passes_.begin());
+            scheduled_passes.push_back(reordered_subpasses_.front());
+            reordered_subpasses_.erase(reordered_subpasses_.begin());
 
-            while (!reordered_render_passes_.empty()) {
+            while (!reordered_subpasses_.empty()) {
                 int best_ovelap_score = -1;
                 int best_candidate = 0;
 
-                for (int i = 0; i < int(reordered_render_passes_.size()); ++i) {
+                for (int i = 0; i < int(reordered_subpasses_.size()); ++i) {
                     int overlap_score = 0;
 
                     for (int j = int(scheduled_passes.size()) - 1; j >= 0; --j) {
-                        if (DependsOn_r(reordered_render_passes_[i]->index_, scheduled_passes[j]->index_)) {
+                        if (DependsOn_r(reordered_subpasses_[i]->index_, scheduled_passes[j]->index_)) {
                             break;
                         }
                         ++overlap_score;
@@ -746,18 +972,18 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
 
                     bool possible_candidate = true;
                     for (int j = 0; j < i; ++j) {
-                        if (DependsOn_r(reordered_render_passes_[i]->index_, reordered_render_passes_[j]->index_)) {
+                        if (DependsOn_r(reordered_subpasses_[i]->index_, reordered_subpasses_[j]->index_)) {
                             possible_candidate = false;
                             break;
                         }
                     }
 
-                    for (int j = 0; j < int(reordered_render_passes_.size()) && possible_candidate; ++j) {
+                    for (int j = 0; j < int(reordered_subpasses_.size()) && possible_candidate; ++j) {
                         if (j == i) {
                             continue;
                         }
-                        for (const auto &output : reordered_render_passes_[i]->output_) {
-                            for (const auto &input : reordered_render_passes_[j]->input_) {
+                        for (const auto &output : reordered_subpasses_[i]->output_) {
+                            for (const auto &input : reordered_subpasses_[j]->input_) {
                                 if (output.type == input.type && output.index == input.index &&
                                     output.write_count >= input.write_count) {
                                     possible_candidate = false;
@@ -776,18 +1002,25 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
                     }
                 }
 
-                scheduled_passes.push_back(reordered_render_passes_[best_candidate]);
-                reordered_render_passes_.erase(reordered_render_passes_.begin() + best_candidate);
+                scheduled_passes.push_back(reordered_subpasses_[best_candidate]);
+                reordered_subpasses_.erase(reordered_subpasses_.begin() + best_candidate);
             }
 
-            reordered_render_passes_ = std::move(scheduled_passes);
+            reordered_subpasses_ = std::move(scheduled_passes);
         }
     } else {
         // Use all passes as is
-        reordered_render_passes_.assign(std::begin(render_passes_), std::end(render_passes_));
+        reordered_subpasses_.assign(std::begin(subpasses_), std::end(subpasses_));
     }
 
+    BuildTransientResources();
     PrepareAllocResources();
+    BuildAliases();
+    BuildRenderPasses();
+
+    for (RpSubpass *subpass : reordered_subpasses_) {
+        AllocateNeededResources(*subpass);
+    }
 }
 
 void RpBuilder::Execute() {
@@ -817,27 +1050,28 @@ void RpBuilder::Execute() {
     // Write timestamp at the beginning of execution
     const int query_beg = ctx_.WriteTimestamp(true);
 
-    for (int i = 0; i < int(reordered_render_passes_.size()); ++i) {
-        RenderPass &cur_pass = *reordered_render_passes_[i];
+    for (int j = 0; j < int(render_passes_.size()); ++j) {
+        for (int i = render_passes_[j].subpass_beg; i < render_passes_[j].subpass_end; ++i) {
+            RpSubpass &cur_pass = *reordered_subpasses_[i];
 
 #if !defined(NDEBUG) && defined(USE_GL_RENDER)
-        Ren::ResetGLState();
+            Ren::ResetGLState();
 #endif
 
-        Ren::DebugMarker _(ctx_.current_cmd_buf(), cur_pass.name());
+            Ren::DebugMarker _(ctx_.current_cmd_buf(), cur_pass.name());
 
-        // Start timestamp
-        pass_timing_t &pass_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
-        pass_interval.name = cur_pass.name();
-        pass_interval.query_beg = ctx_.WriteTimestamp(true);
+            // Start timestamp
+            pass_timing_t &pass_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
+            pass_interval.name = cur_pass.name();
+            pass_interval.query_beg = ctx_.WriteTimestamp(true);
 
-        AllocateNeededResources(cur_pass);
-        InsertResourceTransitions(cur_pass);
+            InsertResourceTransitions(cur_pass);
 
-        cur_pass.Execute(*this);
+            cur_pass.Execute(*this);
 
-        // End timestamp
-        pass_interval.query_end = ctx_.WriteTimestamp(false);
+            // End timestamp
+            pass_interval.query_end = ctx_.WriteTimestamp(false);
+        }
     }
 
     // Write timestamp at the end of execution
@@ -847,7 +1081,7 @@ void RpBuilder::Execute() {
     initial_interval.query_end = ctx_.WriteTimestamp(false);
 }
 
-void RpBuilder::InsertResourceTransitions(RenderPass &pass) {
+void RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
     auto cmd_buf = reinterpret_cast<VkCommandBuffer>(ctx_.current_cmd_buf());
 
     Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;
@@ -868,7 +1102,7 @@ void RpBuilder::InsertResourceTransitions(RenderPass &pass) {
                                   int(res_transitions.size()));
 }
 
-void RpBuilder::CheckResourceStates(RenderPass &pass) {
+void RpBuilder::CheckResourceStates(RpSubpass &pass) {
     for (size_t i = 0; i < pass.input_.size(); i++) {
         const RpResource &res = pass.input_[i];
         if (res.type == eRpResType::Buffer) {
@@ -913,14 +1147,19 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
         }
         buf.used_in_stages |= res.stages;
     } else if (res.type == eRpResType::Texture) {
-        RpAllocTex &tex = textures_.at(res.index);
-        if (tex.ref->resource_state != res.desired_state ||
-            tex.ref->resource_state == Ren::eResState::UnorderedAccess) {
-            src_stages |= tex.used_in_stages;
-            dst_stages |= res.stages;
-            tex.used_in_stages = Ren::eStageBits::None;
-            res_transitions.emplace_back(tex.ref.get(), res.desired_state);
+        RpAllocTex *tex = &textures_.at(res.index);
+        if (tex->alias_of != -1) {
+            tex = &textures_.at(tex->alias_of);
+            assert(tex->alias_of == -1);
         }
-        tex.used_in_stages |= res.stages;
+
+        if (tex->ref->resource_state != res.desired_state ||
+            tex->ref->resource_state == Ren::eResState::UnorderedAccess) {
+            src_stages |= tex->used_in_stages;
+            dst_stages |= res.stages;
+            tex->used_in_stages = Ren::eStageBits::None;
+            res_transitions.emplace_back(tex->ref.get(), res.desired_state);
+        }
+        tex->used_in_stages |= res.stages;
     }
 }

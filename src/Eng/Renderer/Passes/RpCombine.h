@@ -18,7 +18,7 @@ struct RpCombineData {
     float gamma = 1.0f, exposure = 1.0f, fade = 0.0f;
 };
 
-class RpCombine : public RenderPassExecutor {
+class RpCombine : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

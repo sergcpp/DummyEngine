@@ -10,7 +10,7 @@ struct RpDownColorData {
     RpResRef output_tex;
 };
 
-class RpDownColor : public RenderPassExecutor {
+class RpDownColor : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

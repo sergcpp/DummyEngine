@@ -1703,7 +1703,7 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
     const uint32_t new_index = pipelines_.emplace();
     Ren::Pipeline &new_pipeline = pipelines_.at(new_index);
 
-    const bool res = new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, ctx_.log());
+    const bool res = new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, 0, ctx_.log());
     if (!res) {
         LOGE("Failed to initialize pipeline!");
     }
