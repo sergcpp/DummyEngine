@@ -285,6 +285,7 @@ void Ren::Context::Resize(int w, int h) {
             params.format = eTexFormat::RawBGRA8888;
             params.flags |= eTexFlagBits::SRGB;
         }
+        params.usage = eTexUsageBits::RenderTarget;
         params.flags |= eTexFlagBits::NoOwnership;
 
         Tex2DRef ref = textures_.FindByName(name_buf);
