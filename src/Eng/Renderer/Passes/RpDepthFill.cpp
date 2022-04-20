@@ -1,15 +1,16 @@
 #include "RpDepthFill.h"
 
 #include <Ren/Context.h>
+#include <Ren/Span.h>
 
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
 namespace RpSharedInternal {
-uint32_t _skip_range(const DynArrayConstRef<uint32_t> &batch_indices, const DynArrayConstRef<BasicDrawBatch> &batches,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches,
                      uint32_t i, const uint32_t mask) {
-    for (; i < batch_indices.count; i++) {
-        const auto &batch = batches.data[batch_indices.data[i]];
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }

@@ -13,11 +13,10 @@ void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT, mat.textures[0]->id());
     glBindSampler(REN_MAT_TEX3_SLOT, mat.samplers[0]->id());
 }
-uint32_t _draw_range(const DynArrayConstRef<uint32_t> &zfill_batch_indices,
-                     const DynArrayConstRef<BasicDrawBatch> &zfill_batches, uint32_t i, uint32_t mask,
-                     int *draws_count) {
-    for (; i < zfill_batch_indices.count; i++) {
-        const auto &batch = zfill_batches.data[zfill_batch_indices.data[i]];
+uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const BasicDrawBatch> zfill_batches,
+                     uint32_t i, uint32_t mask, int *draws_count) {
+    for (; i < zfill_batch_indices.size(); i++) {
+        const auto &batch = zfill_batches[zfill_batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -37,13 +36,12 @@ uint32_t _draw_range(const DynArrayConstRef<uint32_t> &zfill_batch_indices,
 }
 
 uint32_t _draw_range_ext(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                         const DynArrayConstRef<uint32_t> &batch_indices,
-                         const DynArrayConstRef<BasicDrawBatch> &batches, uint32_t i, uint32_t mask,
-                         uint32_t &cur_mat_id, int *draws_count) {
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                         uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
-    for (; i < batch_indices.count; i++) {
-        const auto &batch = batches.data[batch_indices.data[i]];
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -101,8 +99,10 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         glClear(GL_STENCIL_BUFFER_BIT);
     }
 
-    const auto &zfill_batches = (*p_list_)->basic_batches;
-    const auto &zfill_batch_indices = (*p_list_)->basic_batch_indices;
+    const Ren::Span<const BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches.data,
+                                                           (*p_list_)->basic_batches.count};
+    const Ren::Span<const uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices.data,
+                                                           (*p_list_)->basic_batch_indices.count};
 
     int draws_count = 0;
     uint32_t i = 0;
