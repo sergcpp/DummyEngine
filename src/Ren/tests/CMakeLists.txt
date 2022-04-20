@@ -63,6 +63,7 @@ set(SOURCE_FILES main.cpp
 				 test_mat.cpp
                  test_material.cpp
                  test_mesh.cpp
+                 test_span.cpp
                  test_sparse_array.cpp
                  test_storage.cpp
                  test_string.cpp
