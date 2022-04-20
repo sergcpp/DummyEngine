@@ -5,7 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
-class RpShadowMaps : public RenderPassExecutor {
+class RpShadowMaps : public RpExecutor {
     bool initialized = false;
     int w_, h_;
 

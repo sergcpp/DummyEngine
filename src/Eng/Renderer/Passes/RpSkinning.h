@@ -5,7 +5,7 @@
 
 struct DrawList;
 
-class RpSkinningExecutor : public RenderPassExecutor {
+class RpSkinningExecutor : public RpExecutor {
     const Ren::Pipeline &pi_skinning_;
     const DrawList *&p_list_;
 

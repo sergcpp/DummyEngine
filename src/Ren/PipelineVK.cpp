@@ -112,7 +112,8 @@ void Ren::Pipeline::Destroy() {
 }
 
 bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog,
-                         const VertexInput *vtx_input, const RenderPass *render_pass, ILog *log) {
+                         const VertexInput *vtx_input, const RenderPass *render_pass, uint32_t subpass_index,
+                         ILog *log) {
     Destroy();
 
     SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
@@ -272,7 +273,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         pipeline_create_info.pDynamicState = &dynamic_state_ci;
         pipeline_create_info.layout = layout_;
         pipeline_create_info.renderPass = render_pass->handle();
-        pipeline_create_info.subpass = 0;
+        pipeline_create_info.subpass = subpass_index;
         pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE;
         pipeline_create_info.basePipelineIndex = 0;
 
@@ -471,7 +472,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
                     memcpy(p_dst, handles_data.cdata() + off, handle_size);
                     p_dst += hit_region_.stride;
                 }
-                //p_dst = p_sbt_stage + rgen_region_.size + miss_region_.size + hit_region_.size;
+                // p_dst = p_sbt_stage + rgen_region_.size + miss_region_.size + hit_region_.size;
 
                 sbt_stage_buf.Unmap();
             }

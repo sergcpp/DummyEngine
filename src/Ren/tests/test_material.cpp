@@ -132,7 +132,7 @@ void test_material() {
             Ren::ProgramRef prog = test.LoadProgram(prog_name, {}, {}, {}, {}, &status);
             const uint32_t new_index = test.pipelines.emplace();
             const bool res = test.pipelines[new_index].Init(test.api_ctx(), rast_state, std::move(prog),
-                                                            &test.vtx_input, &test.render_pass, test.log());
+                                                            &test.vtx_input, &test.render_pass, 0, test.log());
             require(res);
 
             out_pipelines.emplace_back(&test.pipelines, new_index);

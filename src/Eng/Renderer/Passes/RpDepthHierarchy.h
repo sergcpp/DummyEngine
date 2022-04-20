@@ -6,7 +6,7 @@
 
 struct ViewState;
 
-class RpDepthHierarchy : public RenderPassExecutor {
+class RpDepthHierarchy : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data

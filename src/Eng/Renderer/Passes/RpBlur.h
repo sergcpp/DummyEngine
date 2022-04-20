@@ -10,7 +10,7 @@ struct RpBlurData {
     RpResRef output_tex;
 };
 
-class RpBlur : public RenderPassExecutor {
+class RpBlur : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

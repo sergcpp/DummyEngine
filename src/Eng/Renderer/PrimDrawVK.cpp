@@ -243,7 +243,7 @@ const Ren::Pipeline *PrimDraw::FindOrCreatePipeline(const Ren::ProgramRef p, con
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
     Ren::Pipeline &new_pipeline = pipelines_.emplace_back();
 
-    if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, rp, ctx_->log())) {
+    if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, rp, 0, ctx_->log())) {
         ctx_->log()->Error("Failed to initialize pipeline!");
         pipelines_.pop_back();
         return nullptr;

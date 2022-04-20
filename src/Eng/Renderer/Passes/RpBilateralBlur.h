@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../Graph/RenderPass.h"
+#include "../Graph/SubPass.h"
 
 class PrimDraw;
 struct ViewState;
 
-class RpBilateralBlur : public RenderPassExecutor {
+class RpBilateralBlur : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
