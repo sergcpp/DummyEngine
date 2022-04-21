@@ -1369,6 +1369,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     uint32_t stage_len = 0;
 
     eTexFormat first_format = eTexFormat::None;
+    eTexBlock first_block = eTexBlock::_None;
     uint32_t first_mip_count = 0;
     int first_block_size_bytes = 0;
 
@@ -1402,10 +1403,12 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
         if (i == 0) {
             first_format = format;
+            first_block = block;
             first_mip_count = header->dwMipMapCount;
             first_block_size_bytes = block_size_bytes;
         } else {
             assert(format == first_format);
+            assert(block == first_block);
             assert(first_mip_count == header->dwMipMapCount);
             assert(block_size_bytes == first_block_size_bytes);
         }
@@ -1421,6 +1424,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
     handle_.generation = TextureHandleCounter++;
     params = p;
+    params.block = first_block;
     params.cube = 1;
     initialized_mips_ = 0;
 
