@@ -16,7 +16,7 @@ struct RpTAAData {
     RpResRef output_tex;
 };
 
-class RpTAA : public RenderPassExecutor {
+class RpTAA : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

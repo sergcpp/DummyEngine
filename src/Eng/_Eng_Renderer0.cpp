@@ -12,7 +12,7 @@
 #include "Renderer/Renderer_Passes.cpp"
 
 #include "Renderer/Graph/GraphBuilder.cpp"
-#include "Renderer/Graph/RenderPass.cpp"
+#include "Renderer/Graph/SubPass.cpp"
 #include "Renderer/Passes/RpBilateralBlur.cpp"
 #include "Renderer/Passes/RpBlur.cpp"
 #include "Renderer/Passes/RpBuildAccStructures.cpp"

@@ -4,7 +4,7 @@
 #include "Utils.h"
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,
-                                const eTexFormat *formats, const uint32_t *flags, eTexFilter filter, ILog *log)
+                                const eTexFormat formats[], const eTexFlags flags[], eTexFilter filter, ILog *log)
     : splitter_(w, h) {
     filter_ = filter;
 
@@ -17,9 +17,11 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
 
         const GLenum compressed_tex_format =
 #if !defined(__ANDROID__)
-            (flags[i] & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            bool(flags[i] & eTexFlagBits::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT
+                                                : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 #else
-            (flags[i] & TexSRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            bool(flags[i] & eTexFlagBits::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR
+                                                : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
 
         formats_[i] = formats[i];
@@ -43,7 +45,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             }
             internal_format = compressed_tex_format;
         } else {
-            internal_format = GLInternalFormatFromTexFormat(formats_[i], (flags[i] & TexSRGB) != 0);
+            internal_format = GLInternalFormatFromTexFormat(formats_[i], bool(flags[i] & eTexFlagBits::SRGB));
         }
 
         ren_glTextureStorage2D_Comp(GL_TEXTURE_2D, tex_id, mip_count, internal_format, w, h);
@@ -132,7 +134,7 @@ int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
 }
 
 void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, void *cmd_buf,
-                                   const eTexFormat format, const uint32_t flags, const int layer, const int level,
+                                   const eTexFormat format, const eTexFlags flags, const int layer, const int level,
                                    const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
     if (level == 0) {
@@ -148,9 +150,11 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
     if (IsCompressedFormat(format)) {
         const GLenum tex_format =
 #if !defined(__ANDROID__)
-            (flags & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            bool(flags & eTexFlagBits::SRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT
+                                             : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
 #else
-            (flags & TexSRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
+            bool(flags & eTexFlagBits::SRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR
+                                             : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
 #endif
         ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(tex_ids_[layer]), level, pos[0], pos[1], res[0],
                                                res[1], tex_format, data_len,

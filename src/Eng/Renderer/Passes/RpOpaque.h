@@ -5,7 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
-class RpOpaque : public RenderPassExecutor {
+class RpOpaque : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data

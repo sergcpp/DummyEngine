@@ -194,7 +194,7 @@ class Context : public TaskExecutor {
     Tex2DRef LoadTextureCube(const char *name, const void *data[6], const int size[6], const Tex2DParams &p,
                              StageBufs &stage_bufs, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
 
-    void VisitTextures(uint32_t mask, const std::function<void(Texture2D &tex)> &callback);
+    void VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback);
     int NumTexturesNotReady();
     void Release2DTextures();
 

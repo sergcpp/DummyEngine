@@ -159,25 +159,6 @@ DebugEllipsoids*/
     Ren::VertexInput temp_vtx_input_;
     //::Tex1DRef lights_tbo_[FrameSyncWindow], decals_tbo_[FrameSyncWindow];
     uint32_t /*reduce_pbo_[FrameSyncWindow], */ probe_sample_pbo_;
-    // int cur_reduce_pbo_ = 0;
-
-    enum {
-        TimeDrawStart,
-        TimeSkinningStart,
-        TimeShadowMapStart,
-        TimeDepthOpaqueStart,
-        TimeAOPassStart,
-        TimeOpaqueStart,
-        TimeTranspStart,
-        TimeReflStart,
-        TimeTaaStart,
-        TimeBlurStart,
-        TimeBlitStart,
-        TimeDrawEnd,
-        TimersCount
-    };
-    uint32_t queries_[Ren::MaxFramesInFlight][TimersCount];
-    int cur_query_ = 0;
 #endif
 
     DynArray<ShadReg> allocated_shadow_regions_;

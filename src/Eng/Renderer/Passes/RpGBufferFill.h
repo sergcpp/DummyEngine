@@ -5,7 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
-class RpGBufferFill : public RenderPassExecutor {
+class RpGBufferFill : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data

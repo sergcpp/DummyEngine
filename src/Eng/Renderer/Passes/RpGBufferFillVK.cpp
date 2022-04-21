@@ -4,18 +4,18 @@
 #include <Ren/DebugMarker.h>
 #include <Ren/DescriptorPool.h>
 #include <Ren/RastState.h>
+#include <Ren/Span.h>
 #include <Ren/VKCtx.h>
 
 #include "../Renderer_Structs.h"
 
 namespace RpSharedInternal {
 uint32_t _draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         const DynArrayConstRef<uint32_t> &batch_indices,
-                         const DynArrayConstRef<BasicDrawBatch> &batches, uint32_t i, uint32_t mask,
-                         const uint32_t materials_per_descriptor,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                         uint32_t mask, const uint32_t materials_per_descriptor,
                          const Ren::SmallVectorImpl<VkDescriptorSet> &descr_sets, int *draws_count);
-uint32_t _skip_range(const DynArrayConstRef<uint32_t> &batch_indices, const DynArrayConstRef<BasicDrawBatch> &batches,
-                     uint32_t i, uint32_t mask);
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                     uint32_t mask);
 } // namespace RpSharedInternal
 
 void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
@@ -169,8 +169,9 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const auto &batches = (*p_list_)->basic_batches;
-    const auto &batch_indices = (*p_list_)->basic_batch_indices;
+    const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};
+    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices.data,
+                                                     (*p_list_)->basic_batch_indices.count};
 
     int draws_count = 0;
     uint32_t i = 0;

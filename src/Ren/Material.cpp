@@ -147,7 +147,7 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             const std::string texture_name = std::string(p, q);
 
             uint8_t texture_color[] = {0, 255, 255, 255};
-            uint32_t texture_flags = 0;
+            eTexFlags texture_flags = {};
 
             const char *_p = q + 1;
             const char *_q = std::strpbrk(_p, delims);
@@ -168,18 +168,18 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
                     texture_color[2] = from_hex_char(flag[5]) * 16 + from_hex_char(flag[6]);
                     texture_color[3] = from_hex_char(flag[7]) * 16 + from_hex_char(flag[8]);
                 } else if (strncmp(flag, "signed", flag_len) == 0) {
-                    texture_flags |= TexSigned;
+                    texture_flags |= eTexFlagBits::Signed;
                 } else if (strncmp(flag, "srgb", flag_len) == 0) {
-                    texture_flags |= TexSRGB;
+                    texture_flags |= eTexFlagBits::SRGB;
                 } else if (strncmp(flag, "norepeat", flag_len) == 0) {
-                    texture_flags |= TexNoRepeat;
+                    texture_flags |= eTexFlagBits::NoRepeat;
                     sampler_params.wrap = eTexWrap::ClampToEdge;
                 } else if (strncmp(flag, "mip_min", flag_len) == 0) {
-                    texture_flags |= TexMIPMin;
+                    texture_flags |= eTexFlagBits::MIPMin;
                 } else if (strncmp(flag, "mip_max", flag_len) == 0) {
-                    texture_flags |= TexMIPMax;
+                    texture_flags |= eTexFlagBits::MIPMax;
                 } else if (strncmp(flag, "nobias", flag_len) == 0) {
-                    texture_flags |= TexNoBias;
+                    texture_flags |= eTexFlagBits::NoBias;
                 } else {
                     break;
                 }

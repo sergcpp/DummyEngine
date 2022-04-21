@@ -16,19 +16,6 @@ namespace Ren {
 class ILog;
 class MemoryAllocators;
 
-enum eTexFlags {
-    TexNoOwnership = (1u << 0u),
-    TexMutable = (1u << 1u),
-    TexSigned = (1u << 2u),
-    TexSRGB = (1u << 3u),
-    TexNoRepeat = (1u << 4u),
-    TexMIPMin = (1u << 5u),
-    TexMIPMax = (1u << 6u),
-    TexNoBias = (1u << 7u),
-    TexUsageScene = (1u << 8u),
-    TexUsageUI = (1u << 9u)
-};
-
 struct TexHandle {
     VkImage img = VK_NULL_HANDLE;
     SmallVector<VkImageView, 1> views;
@@ -45,11 +32,12 @@ struct TexHandle {
 
     explicit operator bool() const { return img != VK_NULL_HANDLE; }
 };
-inline bool operator==(const TexHandle lhs, const TexHandle rhs) {
+static_assert(sizeof(TexHandle) == 56, "!");
+inline bool operator==(const TexHandle &lhs, const TexHandle &rhs) {
     return std::memcmp(&lhs, &rhs, sizeof(TexHandle)) == 0;
 }
-inline bool operator!=(const TexHandle lhs, const TexHandle rhs) { return !operator==(lhs, rhs); }
-inline bool operator<(const TexHandle lhs, const TexHandle rhs) {
+inline bool operator!=(const TexHandle &lhs, const TexHandle &rhs) { return !operator==(lhs, rhs); }
+inline bool operator<(const TexHandle &lhs, const TexHandle &rhs) {
     if (lhs.img < rhs.img) {
         return true;
     } else if (lhs.img == rhs.img) {

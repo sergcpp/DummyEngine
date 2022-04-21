@@ -9,7 +9,7 @@ struct RpReadBrightnessData {
     RpResRef exposure_tex;
 };
 
-class RpReadBrightness : public RenderPassExecutor {
+class RpReadBrightness : public RpExecutor {
     bool initialized_ = false;
     float reduced_average_ = 1.0f;
 

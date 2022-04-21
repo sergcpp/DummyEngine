@@ -21,10 +21,9 @@ struct SamplingParams {
     Fixed8 min_lod = Fixed8::lowest(), max_lod = Fixed8::max();
 
     SamplingParams() = default;
-    SamplingParams(eTexFilter _filter, eTexWrap _wrap, eTexCompare _compare, Fixed8 _lod_bias, Fixed8 _min_lod,
-                   Fixed8 _max_lod)
-        : filter(_filter), wrap(_wrap), compare(_compare), lod_bias(_lod_bias), min_lod(_min_lod),
-          max_lod(_max_lod) {}
+    SamplingParams(const eTexFilter _filter, const eTexWrap _wrap, const eTexCompare _compare, const Fixed8 _lod_bias,
+                   const Fixed8 _min_lod, const Fixed8 _max_lod)
+        : filter(_filter), wrap(_wrap), compare(_compare), lod_bias(_lod_bias), min_lod(_min_lod), max_lod(_max_lod) {}
 };
 static_assert(sizeof(SamplingParams) == 6, "!");
 

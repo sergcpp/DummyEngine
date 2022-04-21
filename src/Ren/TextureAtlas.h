@@ -11,7 +11,7 @@ class TextureAtlas {
     static const int MaxTextureCount = 8;
 
     TextureAtlas() : splitter_(0, 0) {}
-    TextureAtlas(ApiContext *api_ctx, int w, int h, int min_res, const eTexFormat formats[], const uint32_t *flags,
+    TextureAtlas(ApiContext *api_ctx, int w, int h, int min_res, const eTexFormat formats[], const eTexFlags flags[],
                  eTexFilter filter, ILog *log);
     ~TextureAtlas();
 
@@ -37,7 +37,7 @@ class TextureAtlas {
 #endif
 
     int AllocateRegion(const int res[2], int out_pos[2]);
-    void InitRegion(const Buffer &sbuf, int data_off, int data_len, void *cmd_buf, eTexFormat format, uint32_t flags,
+    void InitRegion(const Buffer &sbuf, int data_off, int data_len, void *cmd_buf, eTexFormat format, eTexFlags flags,
                     int layer, int level, const int pos[2], const int res[2], ILog *log);
 
     bool Free(const int pos[2]);

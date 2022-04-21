@@ -23,7 +23,7 @@ struct RpDebugRTData {
     RpResRef output_tex;
 };
 
-class RpDebugRT : public RenderPassExecutor {
+class RpDebugRT : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data

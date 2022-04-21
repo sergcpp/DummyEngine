@@ -10,7 +10,7 @@ struct RpSampleBrightnessData {
     RpResRef reduced_tex;
 };
 
-class RpSampleBrightness : public RenderPassExecutor {
+class RpSampleBrightness : public RpExecutor {
     PrimDraw &prim_draw_;
     Ren::Vec2i res_;
     bool initialized_ = false;

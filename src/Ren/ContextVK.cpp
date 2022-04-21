@@ -208,14 +208,15 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
             params.format = eTexFormat::RawRGBA8888;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_R8G8B8A8_SRGB) {
             params.format = eTexFormat::RawRGBA8888;
-            params.flags |= eTexFlags::TexSRGB;
+            params.flags |= eTexFlagBits::SRGB;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_UNORM) {
             params.format = eTexFormat::RawBGRA8888;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
             params.format = eTexFormat::RawBGRA8888;
-            params.flags |= eTexFlags::TexSRGB;
+            params.flags |= eTexFlagBits::SRGB;
         }
-        params.flags |= eTexFlags::TexNoOwnership;
+        params.usage = eTexUsageBits::RenderTarget;
+        params.flags |= eTexFlagBits::NoOwnership;
 
         api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i],
                                                                 api_ctx_->present_image_views[i], VkSampler{}, params,
@@ -282,9 +283,10 @@ void Ren::Context::Resize(int w, int h) {
             params.format = eTexFormat::RawBGRA8888;
         } else if (api_ctx_->surface_format.format == VK_FORMAT_B8G8R8A8_SRGB) {
             params.format = eTexFormat::RawBGRA8888;
-            params.flags |= eTexFlags::TexSRGB;
+            params.flags |= eTexFlagBits::SRGB;
         }
-        params.flags |= eTexFlags::TexNoOwnership;
+        params.usage = eTexUsageBits::RenderTarget;
+        params.flags |= eTexFlagBits::NoOwnership;
 
         Tex2DRef ref = textures_.FindByName(name_buf);
         if (ref) {

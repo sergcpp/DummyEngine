@@ -112,8 +112,8 @@ set(SCENE_SOURCES   Scene/__cam_rig.inl
 
 set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
                     Renderer/Graph/GraphBuilder.cpp
-                    Renderer/Graph/RenderPass.h
-                    Renderer/Graph/RenderPass.cpp
+                    Renderer/Graph/SubPass.h
+                    Renderer/Graph/SubPass.cpp
                     Renderer/Graph/Resource.h)
 
 set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h

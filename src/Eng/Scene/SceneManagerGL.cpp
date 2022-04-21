@@ -149,7 +149,7 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
         Ren::Pipeline &new_pipeline = scene_data_.persistent_data.pipelines.at(new_index);
 
         const bool res =
-            new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, ren_ctx_.log());
+            new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0, ren_ctx_.log());
         if (!res) {
             ren_ctx_.log()->Error("Failed to initialize pipeline!");
         }

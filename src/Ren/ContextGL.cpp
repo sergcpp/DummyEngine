@@ -142,7 +142,8 @@ bool Ren::Context::Init(int w, int h, ILog *log, const char *) {
 
         Tex2DParams params;
         params.format = eTexFormat::RawRGBA8888;
-        params.flags = eTexFlags::TexNoOwnership;
+        params.flags = eTexFlagBits::NoOwnership;
+        params.usage = eTexUsageBits::RenderTarget;
 
         api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), 0, nullptr, params, log_));
     }

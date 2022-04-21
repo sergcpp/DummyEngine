@@ -13,7 +13,7 @@ struct RpSSRTraceData {
     RpResRef output_tex;
 };
 
-class RpSSRTrace : public RenderPassExecutor {
+class RpSSRTrace : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

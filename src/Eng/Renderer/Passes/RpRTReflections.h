@@ -30,7 +30,7 @@ struct RpRTReflectionsData {
     RpResRef out_raylen_tex;
 };
 
-class RpRTReflections : public RenderPassExecutor {
+class RpRTReflections : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data
