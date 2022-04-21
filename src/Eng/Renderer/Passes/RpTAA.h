@@ -14,6 +14,7 @@ struct RpTAAData {
     RpResRef history_tex;
 
     RpResRef output_tex;
+    RpResRef output_history_tex;
 };
 
 class RpTAA : public RpExecutor {
@@ -32,7 +33,7 @@ class RpTAA : public RpExecutor {
     const RpTAAData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex, RpAllocTex &velocity_tex,
-                  RpAllocTex &history_tex, RpAllocTex &output_tex);
+                  RpAllocTex &history_tex, RpAllocTex &output_tex, RpAllocTex &output_history_tex);
 
   public:
     RpTAA(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}

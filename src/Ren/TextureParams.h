@@ -115,7 +115,7 @@ inline eTexUsage &operator&=(eTexUsage &a, eTexUsage b) { return a = eTexUsage(u
 struct Tex2DParams {
     uint16_t w = 0, h = 0;
     eTexFlags flags = {};
-    uint8_t mip_count = 0;
+    uint8_t mip_count = 1;
     eTexUsage usage = {};
     uint8_t cube = 0;
     uint8_t samples = 1;

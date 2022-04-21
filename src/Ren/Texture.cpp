@@ -38,6 +38,43 @@ const eTexUsage g_tex_usage_per_state[] = {
     {}                       // RayTracing
 };
 static_assert(sizeof(g_tex_usage_per_state) / sizeof(g_tex_usage_per_state[0]) == int(eResState::_Count), "!");
+
+const int g_per_pixel_data_len[] = {
+    -1, // Undefined
+    3,  // RawRGB888
+    4,  // RawRGBA8888
+    4,  // RawRGBA8888Snorm
+    4,  // RawBGRA8888
+    4,  // RawR32F
+    2,  // RawR16F
+    1,  // RawR8
+    4,  // RawR32UI
+    2,  // RawRG88
+    12, // RawRGB32F
+    16, // RawRGBA32F
+    4,  // RawRGBE8888
+    6,  // RawRGB16F
+    8,  // RawRGBA16F
+    4,  // RawRG16Snorm
+    4,  // RawRG16
+    4,  // RawRG16F
+    8,  // RawRG32F
+    8,  // RawRG32UI
+    4,  // RawRGB10_A2
+    4,  // RawRG11F_B10F
+    2,  // Depth16
+    4,  // Depth24Stencil8
+    5,  // Depth32Stencil8
+#ifndef __ANDROID__
+    4, // Depth32
+#endif
+    -1, // Compressed_DXT1
+    -1, // Compressed_DXT3
+    -1, // Compressed_DXT5
+    -1, // Compressed_ASTC
+    -1  // None
+};
+static_assert(sizeof(g_per_pixel_data_len) / sizeof(g_per_pixel_data_len[0]) == int(eTexFormat::_Count), "!");
 } // namespace Ren
 
 bool Ren::IsCompressedFormat(const eTexFormat format) {
@@ -89,21 +126,22 @@ int Ren::GetBlockCount(const int w, const int h, const eTexBlock block) {
 }
 
 uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
-    if (IsCompressedFormat(params.format)) {
-        uint32_t total_len = 0;
-        for (int i = 0; i < params.mip_count; i++) {
-            const int w = std::max(params.w >> i, 1);
-            const int h = std::max(params.h >> i, 1);
+    uint32_t total_len = 0;
+    for (int i = 0; i < params.mip_count; i++) {
+        const int w = std::max(params.w >> i, 1);
+        const int h = std::max(params.h >> i, 1);
 
+        if (IsCompressedFormat(params.format)) {
             const int block_len = GetBlockLenBytes(params.format, params.block);
             const int block_cnt = GetBlockCount(w, h, params.block);
 
             total_len += uint32_t(block_len) * block_cnt;
+        } else {
+            assert(g_per_pixel_data_len[int(params.format)] != -1);
+            total_len += w * h * g_per_pixel_data_len[int(params.format)];
         }
-        return total_len;
-    } else {
-        return 0;
     }
+    return params.cube ? 6 * total_len : total_len;
 }
 
 //
