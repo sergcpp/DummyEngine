@@ -80,6 +80,7 @@ class RpSubpass {
     RpResRef AddColorOutput(const char *name);
     // RpResRef AddColorOutput(const char *name, const Ren::Tex2DParams &params);
     RpResRef AddDepthOutput(const char *name, const Ren::Tex2DParams &params);
+    RpResRef AddDepthOutput(const Ren::WeakTex2DRef &tex);
 
     // TODO: try to get rid of this
     RpResRef ReplaceColorOutput(int slot_index, const Ren::WeakTex2DRef &tex);
