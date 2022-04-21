@@ -296,6 +296,22 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
     InitPipelines();
     InitRendererInternal();
 
+    { // shadow map texture
+        Ren::Tex2DParams params;
+        params.w = SHADOWMAP_WIDTH;
+        params.h = SHADOWMAP_HEIGHT;
+        params.format = Ren::eTexFormat::Depth16;
+        params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
+        params.sampling.min_lod.from_float(0.0f);
+        params.sampling.max_lod.from_float(0.0f);
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.sampling.compare = Ren::eTexCompare::LEqual;
+
+        Ren::eTexLoadStatus status;
+        shadow_map_tex_ = ctx_.LoadTexture2D("Shadow Map", params, ctx_.default_mem_allocs(), &status);
+    }
+
     {
         const int TEMP_BUF_SIZE = 256;
 
@@ -684,19 +700,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 #endif
             RpResRef noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
-            { // shadow map buffer
-                Ren::Tex2DParams params;
-                params.w = SHADOWMAP_WIDTH;
-                params.h = SHADOWMAP_HEIGHT;
-                params.format = Ren::eTexFormat::Depth16;
-                params.sampling.min_lod.from_float(0.0f);
-                params.sampling.max_lod.from_float(0.0f);
-                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                params.sampling.compare = Ren::eTexCompare::LEqual;
-
-                frame_textures.shadowmap = shadow_maps.AddDepthOutput(SHADOWMAP_TEX, params);
-            }
+            frame_textures.shadowmap = shadow_maps.AddDepthOutput(shadow_map_tex_);
 
             rp_shadow_maps_.Setup(&p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
                                   textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,

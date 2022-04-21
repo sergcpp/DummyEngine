@@ -87,6 +87,10 @@ RpResRef RpSubpass::AddDepthOutput(const char *name, const Ren::Tex2DParams &par
     return builder_.WriteTexture(name, params, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
+RpResRef RpSubpass::AddDepthOutput(const Ren::WeakTex2DRef &tex) {
+    return builder_.WriteTexture(tex, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
+}
+
 RpResRef RpSubpass::ReplaceColorOutput(const int slot_index, const Ren::WeakTex2DRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this,
                                  slot_index);
