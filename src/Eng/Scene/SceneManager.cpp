@@ -126,7 +126,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
 
     { // Alloc texture for decals atlas
         const Ren::eTexFormat formats[] = {Ren::DefaultCompressedRGBA, Ren::eTexFormat::Undefined};
-        const uint32_t flags[] = {0};
+        const Ren::eTexFlags flags[] = {{}};
         scene_data_.decals_atlas =
             Ren::TextureAtlas{ren_ctx.api_ctx(),          DECALS_ATLAS_RESX, DECALS_ATLAS_RESY, 64, formats, flags,
                               Ren::eTexFilter::Trilinear, ren_ctx_.log()};
@@ -278,7 +278,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
              Ren::eLoadOp::Load, Ren::eStoreOp::Store}
         };
 
-        color_rts[2].flags = Ren::TexSRGB;
+        color_rts[2].flags = Ren::eTexFlagBits::SRGB;
 
         const auto depth_format = ren_ctx.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
                                                                                : Ren::eTexFormat::Depth32Stencil8;
@@ -351,7 +351,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
         lm_indir_tex_name += tex_ext;
 
         const uint8_t default_l0_color[] = {255, 255, 255, 255};
-        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str(), default_l0_color, 0);
+        scene_data_.env.lm_direct = OnLoadTexture(lm_direct_tex_name.c_str(), default_l0_color, Ren::eTexFlags{});
         // scene_data_.env.lm_indir = OnLoadTexture(lm_indir_tex_name.c_str(), 0);
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             std::string lm_indir_sh_tex_name = lm_base_tex_name;
@@ -361,7 +361,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             const uint8_t default_l1_color[] = {0, 0, 0, 0};
             scene_data_.env.lm_indir_sh[sh_l] =
-                OnLoadTexture(lm_indir_sh_tex_name.c_str(), default_l1_color, Ren::TexNoRepeat);
+                OnLoadTexture(lm_indir_sh_tex_name.c_str(), default_l1_color, Ren::eTexFlagBits::NoRepeat);
         }
     }
 
@@ -1215,15 +1215,15 @@ void SceneManager::OnLoadPipelines(const char *name, uint32_t flags, const char 
     InitPipelinesForProgram(ret, flags, out_pipelines);
 }
 
-Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[4], const uint32_t flags) {
+Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
     using namespace SceneManagerConstants;
 
     Ren::Tex2DParams p;
-    p.flags = flags | Ren::TexUsageScene;
+    p.flags = flags | Ren::eTexFlagBits::UsageScene;
     memcpy(p.fallback_color, color, 4);
 
     p.sampling.filter = Ren::eTexFilter::Trilinear;
-    if (p.flags & Ren::TexNoRepeat) {
+    if (bool(p.flags & Ren::eTexFlagBits::NoRepeat)) {
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
     } else {
         p.sampling.wrap = Ren::eTexWrap::Repeat;
@@ -1387,7 +1387,7 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
         }
 
         scene_data_.decals_atlas.InitRegion(*stage_buf.buf, data_off, len, stage_buf.cmd_buf,
-                                            Ren::DefaultCompressedRGBA, 0, 0, level, _pos, _res, ren_ctx_.log());
+                                            Ren::DefaultCompressedRGBA, {}, 0, level, _pos, _res, ren_ctx_.log());
 
         data_off += len;
         data_len -= len;

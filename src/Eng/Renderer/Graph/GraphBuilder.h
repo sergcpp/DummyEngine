@@ -41,6 +41,7 @@ struct RpAllocBuf {
 
     Ren::eStageBits used_in_stages;
     Ren::SmallVector<rp_write_pass_t, 32> written_in_passes;
+    Ren::SmallVector<rp_write_pass_t, 32> read_in_passes;
 
     std::string name;
     RpBufDesc desc;
@@ -60,14 +61,17 @@ struct RpAllocTex {
 
     Ren::eStageBits used_in_stages;
     Ren::SmallVector<rp_write_pass_t, 32> written_in_passes;
+    Ren::SmallVector<rp_write_pass_t, 32> read_in_passes;
 
     std::string name;
+    bool transient = false;
+    int alias_of = -1;
     Ren::Tex2DParams desc;
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
 };
 
-class RenderPass;
+class RpSubpass;
 
 class RpBuilder {
     Ren::Context &ctx_;
@@ -81,30 +85,40 @@ class RpBuilder {
     Ren::SparseArray<RpAllocTex> textures_;
     Ren::HashMap32<std::string, uint16_t> name_to_texture_;
 
-    void AllocateNeededResources(RenderPass &pass);
-    void InsertResourceTransitions(RenderPass &pass);
+    void AllocateNeededResources(RpSubpass &pass);
+    void InsertResourceTransitions(RpSubpass &pass);
     void HandleResourceTransition(const RpResource &res, Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
                                   Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages);
-    void CheckResourceStates(RenderPass &pass);
+    void CheckResourceStates(RpSubpass &pass);
 
     bool DependsOn_r(int16_t dst_pass, int16_t src_pass);
     int16_t FindPreviousWrittenInPass(RpResRef handle);
-    void TraversePassDependencies(const RenderPass *pass, int recursion_depth, std::vector<RenderPass *> &out_pass_stack);
+    void TraversePassDependencies(const RpSubpass *pass, int recursion_depth, std::vector<RpSubpass *> &out_pass_stack);
 
+    void PrepareAllocResources();
+    void BuildRenderPasses();
+    void BuildTransientResources();
+    void BuildAliases();
     void BuildResourceLinkedLists();
 
     static const int AllocBufSize = 4 * 1024 * 1024;
     std::unique_ptr<char[]> alloc_buf_;
     Sys::MonoAlloc<char> alloc_;
-    std::vector<RenderPass *> render_passes_;
-    std::vector<RenderPass *> reordered_render_passes_;
-    std::vector<std::unique_ptr<void, void (*)(void *)>> render_pass_data_;
+    std::vector<RpSubpass *> subpasses_;
+    std::vector<RpSubpass *> reordered_subpasses_;
+    std::vector<std::unique_ptr<void, void (*)(void *)>> subpass_data_;
 
     template <typename T> static void pass_data_deleter(void *_ptr) {
         T *ptr = reinterpret_cast<T *>(_ptr);
         ptr->~T();
         // no deallocation is needed
     }
+
+    struct RenderPass {
+        int subpass_beg, subpass_end;
+    };
+    std::vector<RenderPass> render_passes_;
+    std::vector<std::vector<int>> alias_chains_;
 
   public:
     RpBuilder(Ren::Context &ctx, ShaderLoader &sh)
@@ -116,39 +130,39 @@ class RpBuilder {
 
     Ren::RastState &rast_state() { return rast_state_; }
 
-    bool ready() const { return !reordered_render_passes_.empty(); }
+    bool ready() const { return !reordered_subpasses_.empty(); }
 
-    RenderPass &AddPass(const char *name);
-    RenderPass *FindPass(const char *name);
+    RpSubpass &AddPass(const char *name);
+    RpSubpass *FindPass(const char *name);
 
     template <typename T, class... Args> T *AllocPassData(Args &&...args) {
         auto *new_data = reinterpret_cast<T *>(alloc_.allocate(sizeof(T)));
         alloc_.construct(new_data, std::forward<Args>(args)...);
-        render_pass_data_.push_back(std::unique_ptr<T, void (*)(void *)>(new_data, pass_data_deleter<T>));
+        subpass_data_.push_back(std::unique_ptr<T, void (*)(void *)>(new_data, pass_data_deleter<T>));
         return new_data;
     }
 
-    RpResRef ReadBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef ReadBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                        RenderPass &pass);
+                        RpSubpass &pass);
 
-    RpResRef ReadTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResRef ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef ReadTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
+    RpResRef ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                         RenderPass &pass);
+                         RpSubpass &pass);
 
-    RpResRef WriteBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef WriteBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteBuffer(const char *name, const RpBufDesc &desc, Ren::eResState desired_state, Ren::eStageBits stages,
-                         RenderPass &pass);
+                         RpSubpass &pass);
     RpResRef WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                         RenderPass &pass);
+                         RpSubpass &pass);
 
-    RpResRef WriteTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
-    RpResRef WriteTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RenderPass &pass);
+    RpResRef WriteTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
+    RpResRef WriteTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteTexture(const char *name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
-                          Ren::eStageBits stages, RenderPass &pass);
+                          Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                          RenderPass &pass, int slot_index = -1);
+                          RpSubpass &pass, int slot_index = -1);
 
     RpAllocBuf &GetReadBuffer(RpResRef handle);
     RpAllocTex &GetReadTexture(RpResRef handle);

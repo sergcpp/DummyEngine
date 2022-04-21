@@ -72,6 +72,7 @@ set(SOURCE_FILES Anim.h
                  SamplingParams.h
                  Shader.h
                  SmallVector.h
+                 Span.h
                  SparseArray.h
                  Storage.h
                  String.h

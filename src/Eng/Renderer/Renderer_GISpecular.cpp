@@ -1,6 +1,12 @@
 #include "Renderer.h"
 
 #include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
+#include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
+#include "../assets/shaders/internal/ssr_reproject_interface.glsl"
+#include "../assets/shaders/internal/ssr_resolve_temporal_interface.glsl"
+#include "../assets/shaders/internal/ssr_trace_hq_interface.glsl"
+#include "../assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.glsl"
+#include "../assets/shaders/internal/ssr_write_indirect_args_interface.glsl"
 
 void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                    const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
@@ -12,8 +18,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
     // Reflection settings
     static const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
     static const float MirrorThreshold = 0.0001f;
-    static const int SamplesPerQuad = 1;
-    static const bool VarianceGuided = true;
+    static const int SamplesPerQuad = 4;
+    static const bool VarianceGuided = false;
 
     RpResRef ray_counter, raylen_tex;
 

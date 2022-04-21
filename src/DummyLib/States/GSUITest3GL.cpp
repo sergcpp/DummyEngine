@@ -21,7 +21,7 @@ void GSUITest3::InitBookMaterials() {
         params.sampling.wrap = page_buf_.attachments[0].desc.wrap;
 
         // prevent texture deletion
-        params.flags = Ren::TexNoOwnership;
+        params.flags = Ren::eTexFlagBits::NoOwnership;
 
         page_tex_ =
             ren_ctx_->textures().Add("__book_page_texture__", ren_ctx_->api_ctx(), page_buf_.attachments[0].tex->id(),

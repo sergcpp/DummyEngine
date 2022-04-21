@@ -94,7 +94,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
 
         auto &att_desc = pass_attachments.emplace_back();
         att_desc.format = VKFormatFromTexFormat(_color_rts[i].format);
-        if (_color_rts[i].flags & TexSRGB) {
+        if (bool(_color_rts[i].flags & eTexFlagBits::SRGB)) {
             att_desc.format = ToSRGBFormat(att_desc.format);
         }
         att_desc.samples = VkSampleCountFlagBits(_color_rts[i].samples);

@@ -3,7 +3,7 @@
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
-class RpBuildAccStructuresExecutor : public RenderPassExecutor {
+class RpBuildAccStructuresExecutor : public RpExecutor {
     const DrawList *&p_list_;
     const AccelerationStructureData *acc_struct_data_;
 

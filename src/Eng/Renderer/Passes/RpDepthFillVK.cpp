@@ -6,14 +6,14 @@
 #include <Ren/DebugMarker.h>
 #include <Ren/DescriptorPool.h>
 #include <Ren/RastState.h>
+#include <Ren/Span.h>
 #include <Ren/VKCtx.h>
 
 namespace RpSharedInternal {
-uint32_t _draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                     const DynArrayConstRef<uint32_t> &batch_indices, const DynArrayConstRef<BasicDrawBatch> &batches,
-                     uint32_t i, const uint32_t mask, int *draws_count) {
-    for (; i < batch_indices.count; i++) {
-        const auto &batch = batches.data[batch_indices.data[i]];
+uint32_t _draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline, Ren::Span<const uint32_t> batch_indices,
+                     Ren::Span<const BasicDrawBatch> batches, uint32_t i, const uint32_t mask, int *draws_count) {
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -34,13 +34,12 @@ uint32_t _draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
 }
 
 uint32_t _draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         const DynArrayConstRef<uint32_t> &batch_indices,
-                         const DynArrayConstRef<BasicDrawBatch> &batches, uint32_t i, const uint32_t mask,
-                         const uint32_t materials_per_descriptor,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                         const uint32_t mask, const uint32_t materials_per_descriptor,
                          const Ren::SmallVectorImpl<VkDescriptorSet> &descr_sets, int *draws_count) {
     uint32_t bound_descr_id = 0;
-    for (; i < batch_indices.count; i++) {
-        const auto &batch = batches.data[batch_indices.data[i]];
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -220,8 +219,9 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
-    const auto &zfill_batches = (*p_list_)->basic_batches;
-    const auto &zfill_batch_indices = (*p_list_)->basic_batch_indices;
+    const Ren::Span<BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};
+    const Ren::Span<uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices.data,
+                                                     (*p_list_)->basic_batch_indices.count};
 
     int draws_count = 0;
 

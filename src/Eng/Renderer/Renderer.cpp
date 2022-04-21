@@ -13,14 +13,6 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-#include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
-#include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
-#include "../assets/shaders/internal/ssr_reproject_interface.glsl"
-#include "../assets/shaders/internal/ssr_resolve_temporal_interface.glsl"
-#include "../assets/shaders/internal/ssr_trace_hq_interface.glsl"
-#include "../assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.glsl"
-#include "../assets/shaders/internal/ssr_write_indirect_args_interface.glsl"
-
 namespace RendererInternal {
 bool bbox_test(const float p[3], const float bbox_min[3], const float bbox_max[3]);
 
@@ -405,7 +397,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             // TODO: Replace this with usage of sampler objects
             int counter = 0;
-            ctx_.VisitTextures(Ren::TexUsageScene, [&counter, this](Ren::Texture2D &tex) {
+            ctx_.VisitTextures(Ren::eTexFlagBits::UsageScene, [&counter, this](Ren::Texture2D &tex) {
                 Ren::Tex2DParams p = tex.params;
                 if (p.sampling.lod_bias.to_float() > -1.0f) {
                     p.sampling.lod_bias.from_float(-1.0f);
@@ -421,7 +413,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             log->Info("Setting texture lod bias to 0.0");
 
             int counter = 0;
-            ctx_.VisitTextures(Ren::TexUsageScene, [&counter, this](Ren::Texture2D &tex) {
+            ctx_.VisitTextures(Ren::eTexFlagBits::UsageScene, [&counter, this](Ren::Texture2D &tex) {
                 Ren::Tex2DParams p = tex.params;
                 if (p.sampling.lod_bias.to_float() < 0.0f) {
                     p.sampling.lod_bias.from_float(0.0f);
@@ -736,7 +728,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         frame_textures.specular_params.w = view_state_.scr_res[0];
         frame_textures.specular_params.h = view_state_.scr_res[1];
         frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
-        frame_textures.specular_params.flags = Ren::TexSRGB;
+        frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
 
@@ -755,7 +747,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         frame_textures.albedo_params.w = view_state_.scr_res[0];
         frame_textures.albedo_params.h = view_state_.scr_res[1];
         frame_textures.albedo_params.format = Ren::eTexFormat::RawRGBA8888;
-        frame_textures.albedo_params.flags = Ren::TexSRGB;
+        frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         if (!deferred_shading) {

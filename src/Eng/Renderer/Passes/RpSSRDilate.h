@@ -11,7 +11,7 @@ struct RpSSRDilateData {
     RpResRef output_tex;
 };
 
-class RpSSRDilate : public RenderPassExecutor {
+class RpSSRDilate : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

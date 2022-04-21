@@ -132,7 +132,7 @@ void test_material() {
             Ren::ProgramRef prog = test.LoadProgram(prog_name, {}, {}, {}, {}, &status);
             const uint32_t new_index = test.pipelines.emplace();
             const bool res = test.pipelines[new_index].Init(test.api_ctx(), rast_state, std::move(prog),
-                                                            &test.vtx_input, &test.render_pass, test.log());
+                                                            &test.vtx_input, &test.render_pass, 0, test.log());
             require(res);
 
             out_pipelines.emplace_back(&test.pipelines, new_index);
@@ -143,7 +143,7 @@ void test_material() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], uint32_t flags) {
+        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
             return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), nullptr, &status);

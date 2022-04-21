@@ -76,14 +76,14 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
             rast_state.depth.test_enabled = true;
             rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
-            if (!pi_simple_[1].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_,
+            if (!pi_simple_[1].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_, 0,
                                     ctx.log())) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-            if (!pi_simple_[0].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_,
+            if (!pi_simple_[0].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_, 0,
                                     ctx.log())) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
             }
@@ -95,14 +95,14 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
             rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
             if (!pi_vegetation_[1].Init(ctx.api_ctx(), rast_state, gbuf_vegetation_prog, &vi_vegetation_,
-                                        &rp_main_draw_, ctx.log())) {
+                                        &rp_main_draw_, 0, ctx.log())) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_vegetation_[0].Init(ctx.api_ctx(), rast_state, gbuf_vegetation_prog, &vi_vegetation_,
-                                        &rp_main_draw_, ctx.log())) {
+                                        &rp_main_draw_, 0, ctx.log())) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
             }
         }

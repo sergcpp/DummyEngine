@@ -16,7 +16,7 @@ struct RpSSRCompose2Data {
     RpResRef output_tex;
 };
 
-class RpSSRCompose2 : public RenderPassExecutor {
+class RpSSRCompose2 : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 

@@ -7,14 +7,13 @@
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
-uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                          const DynArrayConstRef<uint32_t> &batch_indices,
-                          const DynArrayConstRef<BasicDrawBatch> &batches, uint32_t i, uint32_t mask,
-                          uint32_t &cur_mat_id, int *draws_count) {
+uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage &materials,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                          uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
-    for (; i < batch_indices.count; i++) {
-        const auto &batch = batches.data[batch_indices.data[i]];
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -24,7 +23,7 @@ uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage *materi
         }
 
         if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
-            const Ren::Material &mat = materials->at(batch.material_index);
+            const Ren::Material &mat = materials.at(batch.material_index);
 
             for (int j = 0; j < 3; ++j) {
                 ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j, mat.textures[j]->id());
@@ -44,8 +43,8 @@ uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage *materi
     return i;
 }
 
-uint32_t _skip_range(const DynArrayConstRef<uint32_t> &batch_indices, const DynArrayConstRef<BasicDrawBatch> &batches,
-                     uint32_t i, uint32_t mask);
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<BasicDrawBatch> batches, uint32_t i,
+                     uint32_t mask);
 } // namespace RpSharedInternal
 
 void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
@@ -120,9 +119,10 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
 
-    const auto &batches = (*p_list_)->basic_batches;
-    const auto &batch_indices = (*p_list_)->basic_batch_indices;
-    const auto &materials = (*p_list_)->materials;
+    const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};
+    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices.data,
+                                                     (*p_list_)->basic_batch_indices.count};
+    const auto &materials = *(*p_list_)->materials;
 
     int draws_count = 0;
     uint32_t i = 0;
@@ -145,8 +145,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, 0, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, 0, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, BDB::BitCustomShaded);
         }
 
@@ -159,8 +158,8 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, BDB::BitTwoSided,
-                                 cur_mat_id, &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, BDB::BitTwoSided, cur_mat_id,
+                                 &draws_count);
             i = _skip_range(batch_indices, batches, i, BDB::BitTwoSided | BDB::BitCustomShaded);
         }
 
@@ -188,8 +187,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -202,8 +200,8 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, BDB::BitAlphaTest,
-                                 cur_mat_id, &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, BDB::BitAlphaTest, cur_mat_id,
+                                 &draws_count);
             i = _skip_range(batch_indices, batches, i, BDB::BitAlphaTest | BDB::BitCustomShaded);
         }
 
@@ -217,8 +215,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -232,8 +229,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -247,8 +243,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
     }
@@ -283,8 +278,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -298,8 +292,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -313,8 +306,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -328,8 +320,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -343,8 +334,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -358,8 +348,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -373,8 +362,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsVege | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
     }
@@ -394,8 +382,8 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             rast_state.ApplyChanged(builder.rast_state());
             builder.rast_state() = rast_state;
 
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, BDB::BitsSkinned,
-                                 cur_mat_id, &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, BDB::BitsSkinned, cur_mat_id,
+                                 &draws_count);
             i = _skip_range(batch_indices, batches, i, BDB::BitsSkinned | BDB::BitCustomShaded);
         }
 
@@ -409,8 +397,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -424,8 +411,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -439,8 +425,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -454,8 +439,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -469,8 +453,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -484,8 +467,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
 
@@ -499,8 +481,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             builder.rast_state() = rast_state;
 
             const uint32_t DrawMask = BDB::BitsSkinned | BDB::BitMoving | BDB::BitAlphaTest | BDB::BitTwoSided;
-            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id,
-                                 &draws_count);
+            i = _draw_range_ext2(builder, materials, batch_indices, batches, i, DrawMask, cur_mat_id, &draws_count);
             i = _skip_range(batch_indices, batches, i, DrawMask | BDB::BitCustomShaded);
         }
     }

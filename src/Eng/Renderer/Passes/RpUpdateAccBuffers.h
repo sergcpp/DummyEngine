@@ -3,7 +3,7 @@
 #include "../Graph/GraphBuilder.h"
 #include "../Renderer_DrawList.h"
 
-class RpUpdateAccBuffersExecutor : public RenderPassExecutor {
+class RpUpdateAccBuffersExecutor : public RpExecutor {
     const DrawList *&p_list_;
 
     RpResRef rt_obj_instances_buf_;

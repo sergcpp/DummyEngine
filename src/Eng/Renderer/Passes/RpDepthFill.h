@@ -6,7 +6,7 @@
 #include <Ren/Pipeline.h>
 #include <Ren/VertexInput.h>
 
-class RpDepthFill : public RenderPassExecutor {
+class RpDepthFill : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data

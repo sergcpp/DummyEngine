@@ -1,15 +1,16 @@
 #include "RpDepthFill.h"
 
 #include <Ren/Context.h>
+#include <Ren/Span.h>
 
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
 namespace RpSharedInternal {
-uint32_t _skip_range(const DynArrayConstRef<uint32_t> &batch_indices, const DynArrayConstRef<BasicDrawBatch> &batches,
-                     uint32_t i, const uint32_t mask) {
-    for (; i < batch_indices.count; i++) {
-        const auto &batch = batches.data[batch_indices.data[i]];
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                     const uint32_t mask) {
+    for (; i < batch_indices.size(); i++) {
+        const auto &batch = batches[batch_indices[i]];
         if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
             break;
         }
@@ -188,24 +189,24 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             rast_state.stencil.reference = 0;
 
             if (!pi_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_solid_, &rp_depth_only_[0],
-                                          ctx.log())) {
+                                          0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_transp_,
-                                           &rp_depth_only_[0], ctx.log())) {
+                                           &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_static_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_solid_, &rp_depth_only_[0],
-                                          ctx.log())) {
+                                          0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_transp_,
-                                           &rp_depth_only_[0], ctx.log())) {
+                                           &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
         }
@@ -223,24 +224,24 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             rast_state.stencil.reference = 1;
 
             if (!pi_moving_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_solid_,
-                                          &rp_depth_velocity_[0], ctx.log())) {
+                                          &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_moving_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_transp_,
-                                           &rp_depth_velocity_[0], ctx.log())) {
+                                           &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_moving_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_solid_,
-                                          &rp_depth_velocity_[0], ctx.log())) {
+                                          &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_moving_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_transp_,
-                                           &rp_depth_velocity_[0], ctx.log())) {
+                                           &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
         }
@@ -258,44 +259,44 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             rast_state.stencil.reference = 1;
 
             if (!pi_vege_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_prog, &vi_vege_solid_,
-                                               &rp_depth_only_[0], ctx.log())) {
+                                               &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_static_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_prog,
-                                                   &vi_vege_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_vege_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_prog, &vi_vege_transp_,
-                                                &rp_depth_only_[0], ctx.log())) {
+                                                &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_static_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_prog,
-                                                    &vi_vege_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_vege_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_vege_static_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_prog, &vi_vege_solid_,
-                                               &rp_depth_only_[0], ctx.log())) {
+                                               &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_static_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_prog,
-                                                   &vi_vege_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_vege_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_prog, &vi_vege_transp_,
-                                                &rp_depth_only_[0], ctx.log())) {
+                                                &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_static_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_prog,
-                                                    &vi_vege_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_vege_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
         }
@@ -313,24 +314,24 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             rast_state.stencil.reference = 1;
 
             if (!pi_vege_moving_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_mov_prog,
-                                                   &vi_vege_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_vege_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_moving_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_mov_prog,
-                                                    &vi_vege_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_vege_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_vege_moving_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_solid_vel_mov_prog,
-                                                   &vi_vege_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_vege_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_vege_moving_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_vege_transp_vel_mov_prog,
-                                                    &vi_vege_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_vege_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
         }
@@ -348,44 +349,44 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             rast_state.stencil.reference = 1;
 
             if (!pi_skin_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_prog, &vi_solid_,
-                                               &rp_depth_only_[0], ctx.log())) {
+                                               &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_static_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_prog,
-                                                   &vi_skin_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_skin_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_prog, &vi_transp_,
-                                                &rp_depth_only_[0], ctx.log())) {
+                                                &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_static_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_prog,
-                                                    &vi_skin_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_skin_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_skin_static_solid_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_prog, &vi_solid_,
-                                               &rp_depth_only_[0], ctx.log())) {
+                                               &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_static_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_prog,
-                                                   &vi_skin_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_skin_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_prog, &vi_transp_,
-                                                &rp_depth_only_[0], ctx.log())) {
+                                                &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_static_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_prog,
-                                                    &vi_skin_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_skin_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
         }
@@ -403,24 +404,24 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             rast_state.stencil.reference = 1;
 
             if (!pi_skin_moving_solid_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_mov_prog,
-                                                   &vi_skin_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_skin_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_moving_transp_vel_[1].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_mov_prog,
-                                                    &vi_skin_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_skin_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_skin_moving_solid_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_solid_vel_mov_prog,
-                                                   &vi_skin_solid_, &rp_depth_velocity_[0], ctx.log())) {
+                                                   &vi_skin_solid_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
             if (!pi_skin_moving_transp_vel_[0].Init(ctx.api_ctx(), rast_state, fillz_skin_transp_vel_mov_prog,
-                                                    &vi_skin_transp_, &rp_depth_velocity_[0], ctx.log())) {
+                                                    &vi_skin_transp_, &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
         }
