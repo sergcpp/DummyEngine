@@ -442,29 +442,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         }
 
         if (cur_hq_ssr_enabled) {
-            Ren::Tex2DParams params;
-            params.w = cur_scr_w;
-            params.h = cur_scr_h;
-            params.format = ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
-                                                                      : Ren::eTexFormat::Depth32Stencil8;
-            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            Ren::eTexLoadStatus status;
-            depth_history_tex_ = ctx_.LoadTexture2D("Depth History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                   status == Ren::eTexLoadStatus::Reinitialized);
-
-#if REN_USE_OCT_PACKED_NORMALS == 1
-            params.format = Ren::eTexFormat::RawRGB10_A2;
-#else
-            params.format = Ren::eTexFormat::RawRGBA8888;
-#endif
-            norm_history_tex_ = ctx_.LoadTexture2D("Normal History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                   status == Ren::eTexLoadStatus::Reinitialized);
-
             {
                 Ren::Tex2DParams refl_tex_params;
                 refl_tex_params.w = cur_scr_w;
@@ -475,6 +452,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 refl_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 refl_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
+                Ren::eTexLoadStatus status;
                 refl_history_tex_ =
                     ctx_.LoadTexture2D("Reflection Hist", refl_tex_params, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
@@ -494,6 +472,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 variance_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                 variance_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
+                Ren::eTexLoadStatus status;
                 variance_tex_[i] =
                     ctx_.LoadTexture2D(temp_buf, variance_tex_params, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
@@ -516,8 +495,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                        status == Ren::eTexLoadStatus::Reinitialized);
             }
         } else {
-            depth_history_tex_ = {};
-            norm_history_tex_ = {};
             refl_history_tex_ = {};
             for (int i = 0; i < 2; ++i) {
                 variance_tex_[i] = {};

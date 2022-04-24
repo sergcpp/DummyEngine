@@ -399,8 +399,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         data->depth_tex = ssr_reproject.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
         data->norm_tex = ssr_reproject.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
         data->velocity_tex = ssr_reproject.AddTextureInput(frame_textures.velocity, Ren::eStageBits::ComputeShader);
-        data->depth_hist_tex = ssr_reproject.AddTextureInput(depth_history_tex_, Ren::eStageBits::ComputeShader);
-        data->norm_hist_tex = ssr_reproject.AddTextureInput(norm_history_tex_, Ren::eStageBits::ComputeShader);
+        data->depth_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        data->norm_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
         data->refl_hist_tex = ssr_reproject.AddTextureInput(refl_history_tex_, Ren::eStageBits::ComputeShader);
         data->variance_hist_tex = ssr_reproject.AddTextureInput(variance_tex_[0], Ren::eStageBits::ComputeShader);
         data->sample_count_hist_tex =
@@ -656,45 +656,26 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         auto &copy_hist = rp_builder_.AddPass("SSR COPY HIST");
 
         struct PassData {
-            RpResRef in_depth, in_normal;
-            RpResRef out_depth, out_normal;
-
             RpResRef in_variance, in_sample_count;
             RpResRef out_variance, out_sample_count;
         };
 
         auto *data = copy_hist.AllocPassData<PassData>();
 
-        data->in_depth = copy_hist.AddTransferImageInput(frame_textures.depth);
-        data->in_normal = copy_hist.AddTransferImageInput(frame_textures.normal);
         data->in_variance = copy_hist.AddTransferImageInput(variance_tex_[1]);
         data->in_sample_count = copy_hist.AddTransferImageInput(sample_count_tex_[0]);
 
-        data->out_depth = copy_hist.AddTransferImageOutput(depth_history_tex_);
-        data->out_normal = copy_hist.AddTransferImageOutput(norm_history_tex_);
         data->out_variance = copy_hist.AddTransferImageOutput(variance_tex_[0]);
         data->out_sample_count = copy_hist.AddTransferImageOutput(sample_count_tex_[1]);
 
         // Make sure history copying pass will not be culled (temporary solution)
-        backbuffer_sources_.push_back(data->out_depth);
+        backbuffer_sources_.push_back(data->out_sample_count);
 
         copy_hist.set_execute_cb([this, data](RpBuilder &builder) {
-            RpAllocTex &in_depth = builder.GetReadTexture(data->in_depth);
-            RpAllocTex &in_normal = builder.GetReadTexture(data->in_normal);
             RpAllocTex &in_variance = builder.GetReadTexture(data->in_variance);
             RpAllocTex &in_sample_count = builder.GetReadTexture(data->in_sample_count);
-            RpAllocTex &out_depth = builder.GetWriteTexture(data->out_depth);
-            RpAllocTex &out_normal = builder.GetWriteTexture(data->out_normal);
             RpAllocTex &out_variance = builder.GetWriteTexture(data->out_variance);
             RpAllocTex &out_sample_count = builder.GetWriteTexture(data->out_sample_count);
-
-            assert(in_depth.ref->params.format == out_depth.ref->params.format);
-            Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_depth.ref, 0, 0, 0, *out_depth.ref, 0, 0, 0,
-                                  view_state_.act_res[0], view_state_.act_res[1]);
-
-            assert(in_normal.ref->params.format == out_normal.ref->params.format);
-            Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_normal.ref, 0, 0, 0, *out_normal.ref, 0, 0, 0,
-                                  view_state_.act_res[0], view_state_.act_res[1]);
 
             // TODO: avoid copying here
             assert(in_variance.ref->params.format == out_variance.ref->params.format);
