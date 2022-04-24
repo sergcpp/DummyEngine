@@ -35,6 +35,7 @@ LAYOUT_PARAMS uniform UniformParams {
 LAYOUT(location = 0) in highp vec2 g_vtx_uvs;
 
 layout(location = 0) out vec3 g_out_color;
+layout(location = 1) out vec3 g_out_history;
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
@@ -213,4 +214,5 @@ void main() {
     col = YCoCg_to_RGB(col);
 #endif
     g_out_color = TonemapInvert(col);
+    g_out_history = g_out_color;
 }

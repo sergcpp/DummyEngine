@@ -64,8 +64,10 @@ struct RpAllocTex {
     Ren::SmallVector<rp_write_pass_t, 32> read_in_passes;
 
     std::string name;
-    bool transient = false;
+    bool transient = false; // unused for now
     int alias_of = -1;
+    int history_of = -1;
+    int history_index = -1;
     Ren::Tex2DParams desc;
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
@@ -150,6 +152,8 @@ class RpBuilder {
     RpResRef ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          RpSubpass &pass);
+
+    RpResRef ReadHistoryTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
 
     RpResRef WriteBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteBuffer(const char *name, const RpBufDesc &desc, Ren::eResState desired_state, Ren::eStageBits stages,
