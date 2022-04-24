@@ -296,6 +296,22 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::Thr
     InitPipelines();
     InitRendererInternal();
 
+    { // shadow map texture
+        Ren::Tex2DParams params;
+        params.w = SHADOWMAP_WIDTH;
+        params.h = SHADOWMAP_HEIGHT;
+        params.format = Ren::eTexFormat::Depth16;
+        params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
+        params.sampling.min_lod.from_float(0.0f);
+        params.sampling.max_lod.from_float(0.0f);
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.sampling.compare = Ren::eTexCompare::LEqual;
+
+        Ren::eTexLoadStatus status;
+        shadow_map_tex_ = ctx_.LoadTexture2D("Shadow Map", params, ctx_.default_mem_allocs(), &status);
+    }
+
     {
         const int TEMP_BUF_SIZE = 256;
 
@@ -381,18 +397,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rendertarget_changed = true;
 
         if (cur_taa_enabled) {
-            Ren::Tex2DParams params;
-            params.w = cur_scr_w;
-            params.h = cur_scr_h;
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget);
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            Ren::eTexLoadStatus status;
-            taa_history_tex_ = ctx_.LoadTexture2D("Color History tex", params, ctx_.default_mem_allocs(), &status);
-            assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Reinitialized);
-
             log->Info("Setting texture lod bias to -1.0");
 
             // TODO: Replace this with usage of sampler objects
@@ -408,8 +412,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             log->Info("Textures processed: %i", counter);
         } else {
-            taa_history_tex_ = {};
-
             log->Info("Setting texture lod bias to 0.0");
 
             int counter = 0;
@@ -474,14 +476,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 refl_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                 refl_history_tex_ =
-                    ctx_.LoadTexture2D("Reflection History tex", refl_tex_params, ctx_.default_mem_allocs(), &status);
+                    ctx_.LoadTexture2D("Reflection Hist", refl_tex_params, ctx_.default_mem_allocs(), &status);
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                        status == Ren::eTexLoadStatus::Reinitialized);
             }
 
             for (int i = 0; i < 2; ++i) {
                 char temp_buf[32];
-                snprintf(temp_buf, sizeof(temp_buf), "Variance History tex [%i]", i);
+                snprintf(temp_buf, sizeof(temp_buf), "Variance Hist [%i]", i);
 
                 Ren::Tex2DParams variance_tex_params;
                 variance_tex_params.w = cur_scr_w;
@@ -497,7 +499,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                        status == Ren::eTexLoadStatus::Reinitialized);
 
-                snprintf(temp_buf, sizeof(temp_buf), "Sample Count tex [%i]", i);
+                snprintf(temp_buf, sizeof(temp_buf), "Sample Count [%i]", i);
 
                 Ren::Tex2DParams sample_count_tex_params;
                 sample_count_tex_params.w = cur_scr_w;
@@ -684,19 +686,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 #endif
             RpResRef noise_tex_res = shadow_maps.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader);
 
-            { // shadow map buffer
-                Ren::Tex2DParams params;
-                params.w = SHADOWMAP_WIDTH;
-                params.h = SHADOWMAP_HEIGHT;
-                params.format = Ren::eTexFormat::Depth16;
-                params.sampling.min_lod.from_float(0.0f);
-                params.sampling.max_lod.from_float(0.0f);
-                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-                params.sampling.compare = Ren::eTexCompare::LEqual;
-
-                frame_textures.shadowmap = shadow_maps.AddDepthOutput(SHADOWMAP_TEX, params);
-            }
+            frame_textures.shadowmap = shadow_maps.AddDepthOutput(shadow_map_tex_);
 
             rp_shadow_maps_.Setup(&p_list_, vtx_buf1_res, vtx_buf2_res, ndx_buf_res, materials_buf_res, &bindless_tex,
                                   textures_buf_res, instances_res, instance_indices_res, shared_data_res, noise_tex_res,
@@ -983,7 +973,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
                 data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
                 data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
-                data->history_tex = taa.AddTextureInput(taa_history_tex_, Ren::eStageBits::FragmentShader);
 
                 { // Texture that holds resolved color
                     Ren::Tex2DParams params;
@@ -994,35 +983,13 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                     resolved_color = data->output_tex = taa.AddColorOutput(RESOLVED_COLOR_TEX, params);
+                    data->output_history_tex = taa.AddColorOutput("Color History", params);
                 }
+                data->history_tex =
+                    taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
 
                 rp_taa_.Setup(rp_builder_, &view_state_, reduced_average_, list.draw_cam.max_exposure, data);
                 taa.set_executor(&rp_taa_);
-            }
-
-            { // Copy texture to history
-                auto &taa_copy_tex = rp_builder_.AddPass("TAA COPY HIST");
-
-                struct PassData {
-                    RpResRef in_tex;
-                    RpResRef out_tex;
-                };
-
-                auto *data = taa_copy_tex.AllocPassData<PassData>();
-                data->in_tex = taa_copy_tex.AddTransferImageInput(resolved_color);
-                data->out_tex = taa_copy_tex.AddTransferImageOutput(taa_history_tex_);
-
-                // Make sure history copying pass will not be culled (temporary solution)
-                backbuffer_sources_.push_back(data->out_tex);
-
-                taa_copy_tex.set_execute_cb([this, data](RpBuilder &builder) {
-                    RpAllocTex &in_tex = builder.GetReadTexture(data->in_tex);
-                    RpAllocTex &out_tex = builder.GetWriteTexture(data->out_tex);
-
-                    assert(in_tex.ref->params.format == out_tex.ref->params.format);
-                    Ren::CopyImageToImage(builder.ctx().current_cmd_buf(), *in_tex.ref, 0, 0, 0, *out_tex.ref, 0, 0, 0,
-                                          view_state_.act_res[0], view_state_.act_res[1]);
-                });
             }
         }
 

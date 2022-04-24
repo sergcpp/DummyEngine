@@ -18,8 +18,9 @@ void RpTAA::Execute(RpBuilder &builder) {
     RpAllocTex &velocity_tex = builder.GetReadTexture(pass_data_->velocity_tex);
     RpAllocTex &history_tex = builder.GetReadTexture(pass_data_->history_tex);
     RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
+    RpAllocTex &output_history_tex = builder.GetWriteTexture(pass_data_->output_history_tex);
 
-    LazyInit(builder.ctx(), builder.sh(), depth_tex, velocity_tex, history_tex, output_tex);
+    LazyInit(builder.ctx(), builder.sh(), depth_tex, velocity_tex, history_tex, output_tex, output_history_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -43,12 +44,13 @@ void RpTAA::Execute(RpBuilder &builder) {
         uniform_params.exposure = exposure;
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, resolve_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, 4, &uniform_params, sizeof(TempAA::Params), 0);
+                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params, sizeof(TempAA::Params),
+                            0);
     }
 }
 
 void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex, RpAllocTex &velocity_tex,
-                     RpAllocTex &history_tex, RpAllocTex &output_tex) {
+                     RpAllocTex &history_tex, RpAllocTex &output_tex, RpAllocTex &output_history_tex) {
     if (!initialized) {
         blit_taa_prog_ = sh.LoadProgram(ctx, "blit_taa_prog", "internal/blit_taa.vert.glsl",
                                         "internal/blit_taa.frag.glsl@USE_CLIPPING;USE_TONEMAP");
@@ -57,14 +59,15 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
         initialized = true;
     }
 
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                                                {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, COUNT_OF(render_targets), {}, ctx.log())) {
         ctx.log()->Error("RpCombine: render_pass_ init failed!");
     }
 
     if (!resolve_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                           1)) {
+                           COUNT_OF(render_targets))) {
         ctx.log()->Error("RpTAA: resolve_fb_ init failed!");
     }
 }

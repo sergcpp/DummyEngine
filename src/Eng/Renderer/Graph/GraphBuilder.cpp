@@ -5,6 +5,10 @@
 
 #include "SubPass.h"
 
+namespace GraphBuilderInternal {
+const bool EnableTextureAliasing = true;
+}
+
 Ren::ILog *RpBuilder::log() { return ctx_.log(); }
 
 RpSubpass &RpBuilder::AddPass(const char *name) {
@@ -165,6 +169,47 @@ RpResRef RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSta
     }
 #endif
 
+    pass.input_.push_back(ret);
+
+    return ret;
+}
+
+RpResRef RpBuilder::ReadHistoryTexture(const RpResRef handle, const Ren::eResState desired_state,
+                                       const Ren::eStageBits stages, RpSubpass &pass) {
+    assert(handle.type == eRpResType::Texture);
+
+    RpAllocTex *orig_tex = &textures_[handle.index];
+    if (orig_tex->history_index == -1) {
+        // allocate new history texture
+        RpAllocTex new_tex;
+        new_tex.read_count = 0;
+        new_tex.write_count = 0;
+        new_tex.used_in_stages = Ren::eStageBits::None;
+        new_tex.name = orig_tex->name + " [Previous]";
+        new_tex.desc = orig_tex->desc;
+        new_tex.history_of = handle.index;
+
+        const uint16_t new_index = textures_.emplace(new_tex);
+        name_to_texture_[new_tex.name] = new_index;
+
+        orig_tex = &textures_[handle.index];
+        orig_tex->history_index = new_index;
+    }
+    RpAllocTex &tex = textures_[orig_tex->history_index];
+
+    const RpResource ret = {eRpResType::Texture, tex._generation, desired_state, stages,
+                            uint16_t(orig_tex->history_index)};
+
+    tex.desc = orig_tex->desc;
+    tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
+    // assert(tex.write_count == handle.write_count);
+    ++tex.read_count;
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.input_.size(); i++) {
+        assert(pass.input_[i].type != eRpResType::Texture || pass.input_[i].index != ret.index);
+    }
+#endif
     pass.input_.push_back(ret);
 
     return ret;
@@ -477,6 +522,36 @@ void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
             }
         } else if (res.type == eRpResType::Texture) {
             RpAllocTex &tex = textures_.at(res.index);
+
+            if (tex.history_index != -1) {
+                RpAllocTex &hist_tex = textures_.at(tex.history_index);
+                // combine usage flags
+                tex.desc.usage |= hist_tex.desc.usage;
+                hist_tex.desc.usage = tex.desc.usage;
+
+                tex.ref = tex.strong_ref;
+                hist_tex.ref = hist_tex.strong_ref;
+
+                if (!hist_tex.ref || hist_tex.desc != hist_tex.ref->params) {
+                    if (hist_tex.ref) {
+                        const uint32_t mem_before = Ren::EstimateMemory(hist_tex.ref->params);
+                        const uint32_t mem_after = Ren::EstimateMemory(hist_tex.desc);
+                        ctx_.log()->Info("Reinit tex %s (%ix%i %f MB -> %ix%i %f MB)", hist_tex.name.c_str(),
+                                         hist_tex.ref->params.w, hist_tex.ref->params.h, float(mem_before) * 0.000001f,
+                                         hist_tex.desc.w, hist_tex.desc.h, float(mem_after) * 0.000001f);
+                    } else {
+                        ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", hist_tex.name.c_str(), hist_tex.desc.w,
+                                         hist_tex.desc.h, float(Ren::EstimateMemory(hist_tex.desc)) * 0.000001f);
+                    }
+                    Ren::eTexLoadStatus status;
+                    hist_tex.strong_ref =
+                        ctx_.LoadTexture2D(hist_tex.name.c_str(), hist_tex.desc, ctx_.default_mem_allocs(), &status);
+                    hist_tex.ref = hist_tex.strong_ref;
+                    assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
+                           status == Ren::eTexLoadStatus::Reinitialized);
+                }
+            }
+
             if (tex.alias_of != -1) {
                 const RpAllocTex &orig_tex = textures_.at(tex.alias_of);
                 assert(orig_tex.alias_of == -1);
@@ -485,8 +560,14 @@ void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
                 ctx_.log()->Info("Tex %s will be alias of %s", tex.name.c_str(), orig_tex.name.c_str());
             } else if (!tex.ref || tex.desc != tex.ref->params) {
                 if (tex.ref) {
-                    ctx_.log()->Info("Reinit tex %s (%ix%i -> %ix%i)", tex.name.c_str(), tex.ref->params.w,
-                                     tex.ref->params.h, tex.desc.w, tex.desc.h);
+                    const uint32_t mem_before = Ren::EstimateMemory(tex.ref->params);
+                    const uint32_t mem_after = Ren::EstimateMemory(tex.desc);
+                    ctx_.log()->Info("Reinit tex %s (%ix%i %f MB -> %ix%i %f MB)", tex.name.c_str(), tex.ref->params.w,
+                                     tex.ref->params.h, float(mem_before) * 0.000001f, tex.desc.w, tex.desc.h,
+                                     float(mem_after) * 0.000001f);
+                } else {
+                    ctx_.log()->Info("Alloc tex %s (%ix%i %f MB)", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                                     float(Ren::EstimateMemory(tex.desc)) * 0.000001f);
                 }
                 Ren::eTexLoadStatus status;
                 tex.strong_ref = ctx_.LoadTexture2D(tex.name.c_str(), tex.desc, ctx_.default_mem_allocs(), &status);
@@ -657,8 +738,7 @@ void RpBuilder::BuildRenderPasses() {
 
 void RpBuilder::BuildTransientResources() {
     for (RpAllocTex &tex : textures_) {
-        // TODO: check if texture has history etc.
-        tex.transient = true;
+        tex.transient = (tex.history_index == -1 && tex.history_of == -1);
     }
 
     std::vector<int> actual_pass_used(textures_.size(), -1);
@@ -744,21 +824,6 @@ void RpBuilder::BuildAliases() {
         }
     }
 
-    // Determine aliases
-    for (const RpSubpass *subpass : reordered_subpasses_) {
-        Ren::SmallVector<int, 32> pass_textures;
-        for (const auto &res : subpass->input_) {
-            if (res.type == eRpResType::Texture) {
-                pass_textures.push_back(res.index);
-            }
-        }
-        for (const auto &res : subpass->output_) {
-            if (res.type == eRpResType::Texture) {
-                pass_textures.push_back(res.index);
-            }
-        }
-    }
-
     alias_chains_.clear();
     alias_chains_.resize(textures_.size());
 
@@ -766,9 +831,17 @@ void RpBuilder::BuildAliases() {
         RpAllocTex &tex1 = *i;
         const range_t &range1 = ranges[i.index()];
 
+        if (tex1.history_index != -1 || tex1.history_of != -1) {
+            continue;
+        }
+
         for (auto j = textures_.begin(); j < i; ++j) {
             RpAllocTex &tex2 = *j;
             const range_t &range2 = ranges[j.index()];
+
+            if (tex2.history_index != -1 || tex2.history_of != -1) {
+                continue;
+            }
 
             if (tex1.desc.format == tex2.desc.format && tex1.desc.w == tex2.desc.w && tex1.desc.h == tex2.desc.h &&
                 tex1.desc.mip_count == tex2.desc.mip_count && disjoint_lifetimes(range1, range2)) {
@@ -792,10 +865,10 @@ void RpBuilder::BuildAliases() {
 
         RpAllocTex &first_tex = textures_[chain[0]];
         for (int i = 1; i < int(chain.size()); ++i) {
-            RpAllocTex &tex = textures_[chain[i]];
-            tex.alias_of = chain[0];
+            RpAllocTex &next_tex = textures_[chain[i]];
+            next_tex.alias_of = chain[0];
             // propagate usage
-            first_tex.desc.usage |= tex.desc.usage;
+            first_tex.desc.usage |= next_tex.desc.usage;
         }
     }
 }
@@ -1015,15 +1088,79 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
 
     BuildTransientResources();
     PrepareAllocResources();
-    BuildAliases();
+    if (GraphBuilderInternal::EnableTextureAliasing) {
+        BuildAliases();
+    }
     BuildRenderPasses();
 
     for (RpSubpass *subpass : reordered_subpasses_) {
         AllocateNeededResources(*subpass);
     }
+
+#if 0
+    ctx_.log()->Info("======================================================================");
+    uint32_t total_buffer_memory = 0;
+    for (const RpAllocBuf &buf : buffers_) {
+        if (buf.strong_ref) {
+            ctx_.log()->Info("Buf %16s (%f MB)\t| %f MB", buf.name.c_str(), float(buf.strong_ref->size()) * 0.000001f,
+                             float(total_buffer_memory) * 0.000001f);
+            total_buffer_memory += buf.strong_ref->size();
+        }
+    }
+    ctx_.log()->Info("----------------------------------------------------------------------");
+    ctx_.log()->Info("Total graph buffer memory: %f MB", float(total_buffer_memory) * 0.000001f);
+    ctx_.log()->Info("======================================================================");
+#endif
+#if 1
+    ctx_.log()->Info("======================================================================");
+    std::vector<Ren::WeakTex2DRef> not_handled_textures;
+    not_handled_textures.reserve(textures_.size());
+    uint32_t total_texture_memory = 0;
+    for (const RpAllocTex &tex : textures_) {
+        if (tex.alias_of != -1) {
+            const RpAllocTex &orig_tex = textures_[tex.alias_of];
+            ctx_.log()->Info("Tex %12s alias of %12s\t\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
+                             float(total_texture_memory) * 0.000001f);
+            continue;
+        }
+        if (tex.strong_ref) {
+            if (tex.history_of == -1) {
+                ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                                 float(Ren::EstimateMemory(tex.desc)) * 0.000001f,
+                                 float(total_texture_memory) * 0.000001f);
+                total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
+            } else {
+                ctx_.log()->Info("Hist %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                                 float(Ren::EstimateMemory(tex.desc)) * 0.000001f,
+                                 float(total_texture_memory) * 0.000001f);
+                total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
+            }
+        } else if (tex.ref) {
+            not_handled_textures.push_back(tex.ref);
+        }
+    }
+    ctx_.log()->Info("----------------------------------------------------------------------");
+    ctx_.log()->Info("Graph owned texture memory:\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
+    ctx_.log()->Info("----------------------------------------------------------------------");
+    for (const auto &ref : not_handled_textures) {
+        ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
+                         float(Ren::EstimateMemory(ref->params)) * 0.000001f, float(total_texture_memory) * 0.000001f);
+        total_texture_memory += Ren::EstimateMemory(ref->params);
+    }
+    ctx_.log()->Info("----------------------------------------------------------------------");
+    ctx_.log()->Info("Total graph texture memory: \t\t\t%f MB", float(total_texture_memory) * 0.000001f);
+    ctx_.log()->Info("======================================================================");
+#endif
 }
 
 void RpBuilder::Execute() {
+    // Swap history images
+    for (RpAllocTex &tex : textures_) {
+        if (tex.history_index != -1) {
+            auto &hist_tex = textures_.at(tex.history_index);
+            std::swap(tex.ref, hist_tex.ref);
+        }
+    }
     // Reset resources
     for (RpAllocBuf &buf : buffers_) {
         buf._generation = 0;
@@ -1148,6 +1285,11 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
         buf.used_in_stages |= res.stages;
     } else if (res.type == eRpResType::Texture) {
         RpAllocTex *tex = &textures_.at(res.index);
+
+        if (res.index == 33 && res.desired_state == Ren::eResState::RenderTarget) {
+            volatile int ii = 0;
+        }
+
         if (tex->alias_of != -1) {
             tex = &textures_.at(tex->alias_of);
             assert(tex->alias_of == -1);
