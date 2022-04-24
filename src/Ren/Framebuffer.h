@@ -48,15 +48,21 @@ class Framebuffer {
     uint32_t id() const { return id_; }
 #endif
 
+    bool Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
+                 const WeakTex2DRef _stencil_attachment, const WeakTex2DRef _color_attachments[],
+                 const int _color_attachments_count) const;
+
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
                WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachments[], int color_attachments_count,
-               bool is_multisampled);
+               bool is_multisampled, ILog *log);
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget &depth_target,
-               const RenderTarget &stencil_target, const RenderTarget color_attachments[], int color_attachments_count);
+               const RenderTarget &stencil_target, const RenderTarget color_attachments[], int color_attachments_count,
+               ILog *log);
     bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTex2DRef depth_attachment,
-               const WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachment, const bool is_multisampled) {
+               const WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachment, const bool is_multisampled,
+               ILog *log) {
         return Setup(api_ctx, renderpass, w, h, depth_attachment, stencil_attachment, &color_attachment, 1,
-                     is_multisampled);
+                     is_multisampled, log);
     }
 };
 } // namespace Ren

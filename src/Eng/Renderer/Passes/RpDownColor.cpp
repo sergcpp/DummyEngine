@@ -49,7 +49,7 @@ void RpDownColor::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &outp
     }
 
     if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          1)) {
+                          1, ctx.log())) {
         ctx.log()->Error("RpDownColor: output_fb_ init failed!");
     }
 }

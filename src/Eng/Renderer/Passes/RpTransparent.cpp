@@ -84,22 +84,25 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
         draw_pass_vi_.Setup(attribs, 5, ndx_buf.ref);
     }
 
-    if (!transparent_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_transparent_, color_tex.desc.w,
-                                                         color_tex.desc.h, depth_target, depth_target, color_targets,
-                                                         3)) {
+    fb_to_use_ = (fb_to_use_ + 1) % 2;
+
+    if (!transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_transparent_, color_tex.desc.w,
+                                                                     color_tex.desc.h, depth_target, depth_target,
+                                                                     color_targets, 3, ctx.log())) {
         ctx.log()->Error("RpTransparent: transparent_draw_fb_ init failed!");
     }
 
 #if !defined(USE_VK_RENDER)
-    if (!color_only_fb_.Setup(ctx.api_ctx(), {}, color_tex.desc.w, color_tex.desc.h, color_tex.ref, depth_tex.ref,
-                              depth_tex.ref, view_state_->is_multisampled)) {
+    if (!color_only_fb_[fb_to_use_].Setup(ctx.api_ctx(), {}, color_tex.desc.w, color_tex.desc.h, color_tex.ref, depth_tex.ref,
+                              depth_tex.ref, view_state_->is_multisampled, ctx.log())) {
         ctx.log()->Error("RpTransparent: color_only_fb_ init failed!");
     }
 
-    //if (!resolved_fb_.Setup(ctx.api_ctx(), {}, transparent_tex.desc.w, transparent_tex.desc.h, transparent_tex.ref, {},
-    //                        {}, false)) {
-    //    ctx.log()->Error("RpTransparent: resolved_fb_ init failed!");
-    //}
+    // if (!resolved_fb_.Setup(ctx.api_ctx(), {}, transparent_tex.desc.w, transparent_tex.desc.h, transparent_tex.ref,
+    // {},
+    //                         {}, false)) {
+    //     ctx.log()->Error("RpTransparent: resolved_fb_ init failed!");
+    // }
 #endif
 
     /*if (moments_b0_.id && moments_z_and_z2_.id && moments_z3_and_z4_.id) {

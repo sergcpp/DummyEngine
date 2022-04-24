@@ -293,7 +293,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_transparent_.handle();
-        rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()].handle();
+        rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
         vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
