@@ -1119,28 +1119,28 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
     for (const RpAllocTex &tex : textures_) {
         if (tex.alias_of != -1) {
             const RpAllocTex &orig_tex = textures_[tex.alias_of];
-            ctx_.log()->Info("Tex %12s alias of %12s\t\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
+            ctx_.log()->Info("Tex %-24.24s alias of %12s\t\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
                              float(total_texture_memory) * 0.000001f);
             continue;
         }
         if (tex.strong_ref) {
             total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
-            ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
+            ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
                              float(Ren::EstimateMemory(tex.desc)) * 0.000001f, float(total_texture_memory) * 0.000001f);
         } else if (tex.ref) {
             not_handled_textures.push_back(tex.ref);
         }
     }
     ctx_.log()->Info("----------------------------------------------------------------------");
-    ctx_.log()->Info("Graph owned texture memory:\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
+    ctx_.log()->Info("Graph owned texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     ctx_.log()->Info("----------------------------------------------------------------------");
     for (const auto &ref : not_handled_textures) {
         total_texture_memory += Ren::EstimateMemory(ref->params);
-        ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
+        ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
                          float(Ren::EstimateMemory(ref->params)) * 0.000001f, float(total_texture_memory) * 0.000001f);
     }
     ctx_.log()->Info("----------------------------------------------------------------------");
-    ctx_.log()->Info("Total graph texture memory: \t\t\t%f MB", float(total_texture_memory) * 0.000001f);
+    ctx_.log()->Info("Total graph texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     ctx_.log()->Info("======================================================================");
 #endif
 }
