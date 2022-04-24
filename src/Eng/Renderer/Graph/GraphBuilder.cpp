@@ -1124,17 +1124,9 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
             continue;
         }
         if (tex.strong_ref) {
-            if (tex.history_of == -1) {
-                ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                 float(Ren::EstimateMemory(tex.desc)) * 0.000001f,
-                                 float(total_texture_memory) * 0.000001f);
-                total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
-            } else {
-                ctx_.log()->Info("Hist %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                                 float(Ren::EstimateMemory(tex.desc)) * 0.000001f,
-                                 float(total_texture_memory) * 0.000001f);
-                total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
-            }
+            total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
+            ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                             float(Ren::EstimateMemory(tex.desc)) * 0.000001f, float(total_texture_memory) * 0.000001f);
         } else if (tex.ref) {
             not_handled_textures.push_back(tex.ref);
         }
@@ -1143,9 +1135,9 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
     ctx_.log()->Info("Graph owned texture memory:\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     ctx_.log()->Info("----------------------------------------------------------------------");
     for (const auto &ref : not_handled_textures) {
+        total_texture_memory += Ren::EstimateMemory(ref->params);
         ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
                          float(Ren::EstimateMemory(ref->params)) * 0.000001f, float(total_texture_memory) * 0.000001f);
-        total_texture_memory += Ren::EstimateMemory(ref->params);
     }
     ctx_.log()->Info("----------------------------------------------------------------------");
     ctx_.log()->Info("Total graph texture memory: \t\t\t%f MB", float(total_texture_memory) * 0.000001f);
@@ -1285,10 +1277,6 @@ void RpBuilder::HandleResourceTransition(const RpResource &res,
         buf.used_in_stages |= res.stages;
     } else if (res.type == eRpResType::Texture) {
         RpAllocTex *tex = &textures_.at(res.index);
-
-        if (res.index == 33 && res.desired_state == Ren::eResState::RenderTarget) {
-            volatile int ii = 0;
-        }
 
         if (tex->alias_of != -1) {
             tex = &textures_.at(tex->alias_of);
