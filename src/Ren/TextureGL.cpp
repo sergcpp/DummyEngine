@@ -890,21 +890,26 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     uint32_t stage_len = 0;
 
     GLenum first_format = 0;
+    eTexBlock first_block = eTexBlock::_None;
 
     for (int i = 0; i < 6; ++i) {
         const DDSHeader *header = reinterpret_cast<const DDSHeader *>(data[i]);
 
         GLenum format = 0;
+        eTexBlock block;
 
         switch ((header->sPixelFormat.dwFourCC >> 24u) - '0') {
         case 1:
             format = GL_COMPRESSED_RGBA_S3TC_DXT1_EXT;
+            block = eTexBlock::_4x4;
             break;
         case 3:
             format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;
+            block = eTexBlock::_4x4;
             break;
         case 5:
             format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+            block = eTexBlock::_4x4;
             break;
         default:
             log->Error("Unknown DDS format %i", int((header->sPixelFormat.dwFourCC >> 24u) - '0'));
@@ -913,8 +918,10 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
         if (i == 0) {
             first_format = format;
+            first_block = block;
         } else {
             assert(format == first_format);
+            assert(block == first_block);
         }
 
         memcpy(stage_data + stage_len, data[i], size[i]);
@@ -937,6 +944,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
     handle_ = {tex_id, TextureHandleCounter++};
     params = p;
+    params.block = first_block;
     initialized_mips_ = 0;
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.handle().id);
