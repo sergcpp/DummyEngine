@@ -2,6 +2,10 @@
 
 #include "VKCtx.h"
 
+#ifndef NDEBUG
+#define VERBOSE_LOGGING
+#endif
+
 Ren::Framebuffer &Ren::Framebuffer::operator=(Framebuffer &&rhs) noexcept {
     if (&rhs == this) {
         return (*this);
@@ -30,10 +34,9 @@ void Ren::Framebuffer::Destroy() {
     }
 }
 
-bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
-                             const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
-                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
-                             const bool is_multisampled) {
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
+                               const WeakTex2DRef _stencil_attachment, const WeakTex2DRef _color_attachments[],
+                               const int _color_attachments_count) const {
     if (renderpass_ == render_pass.handle() &&
         ((!_depth_attachment && !depth_attachment.ref) ||
          (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
@@ -44,14 +47,19 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
                    [](const WeakTex2DRef &lhs, const Attachment &rhs) {
                        return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
                    })) {
+        return false;
+    }
+    return true;
+}
+
+bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
+                             const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
+                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
+                             const bool is_multisampled, ILog *log) {
+    if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments, _color_attachments_count)) {
         // nothing has changed
         return true;
     }
-
-    /*if (_color_attachments_count == 1 && !_color_attachments[0]) {
-        // default backbuffer
-        return true;
-    }*/
 
     Destroy();
 
@@ -96,22 +104,24 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     framebuf_create_info.layers = 1;
 
     const VkResult res = vkCreateFramebuffer(api_ctx->device, &framebuf_create_info, nullptr, &handle_);
+    if (res != VK_SUCCESS) {
+        log->Error("Framebuffer creation failed (error %i)", int(res));
+#ifdef VERBOSE_LOGGING
+    } else {
+        log->Info("Framebuffer %p created (%i attachments)", handle_, int(image_views.size()));
+#endif
+    }
     return res == VK_SUCCESS;
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
-                             const RenderTarget _color_targets[], int _color_targets_count) {
-    if (renderpass_ == render_pass.handle() &&
-        ((!_depth_target && !depth_attachment.ref) ||
-         (_depth_target && _depth_target.ref->handle() == depth_attachment.handle)) &&
-        ((!_stencil_target && !stencil_attachment.ref) ||
-         (_stencil_target && _stencil_target.ref->handle() == stencil_attachment.handle)) &&
-        _color_targets_count == color_attachments.size() &&
-        std::equal(_color_targets, _color_targets + _color_targets_count, color_attachments.data(),
-                   [](const RenderTarget &lhs, const Attachment &rhs) {
-                       return (!lhs && !rhs.ref) || (lhs && lhs.ref->handle() == rhs.handle);
-                   })) {
+                             const RenderTarget _color_targets[], int _color_targets_count, ILog *log) {
+    Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;
+    for (int i = 0; i < _color_targets_count; ++i) {
+        color_refs.push_back(_color_targets[i].ref);
+    }
+    if (!Changed(render_pass, _depth_target.ref, _stencil_target.ref, color_refs.data(), int(color_refs.size()))) {
         // nothing has changed
         return true;
     }
@@ -164,5 +174,15 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     framebuf_create_info.layers = 1;
 
     const VkResult res = vkCreateFramebuffer(api_ctx->device, &framebuf_create_info, nullptr, &handle_);
+    if (res != VK_SUCCESS) {
+        log->Error("Framebuffer creation failed (error %i)", int(res));
+#ifdef VERBOSE_LOGGING
+    } else {
+        log->Info("Framebuffer %p created (%i attachments)", handle_, int(image_views.size()));
+#endif
+    }
+
     return res == VK_SUCCESS;
 }
+
+#undef VERBOSE_LOGGING

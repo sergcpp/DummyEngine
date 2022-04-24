@@ -2,6 +2,10 @@
 
 #include "VKCtx.h"
 
+#ifndef NDEBUG
+#define VERBOSE_LOGGING
+#endif
+
 namespace Ren {
 static_assert(int(eImageLayout::Undefined) == VK_IMAGE_LAYOUT_UNDEFINED, "!");
 static_assert(int(eImageLayout::General) == VK_IMAGE_LAYOUT_GENERAL, "!");
@@ -134,6 +138,10 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
     if (res != VK_SUCCESS) {
         log->Error("Failed to create render pass!");
         return false;
+#ifdef VERBOSE_LOGGING
+    } else {
+        log->Info("RenderPass %p created", handle_);
+#endif
     }
 
     api_ctx_ = api_ctx;
@@ -176,3 +184,5 @@ bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTargetInfo _color_r
     }
     return Init(api_ctx, _color_rts, _color_rts_count, _depth_rt, log);
 }
+
+#undef VERBOSE_LOGGING

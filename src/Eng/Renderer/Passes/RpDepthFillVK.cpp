@@ -235,7 +235,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
@@ -284,13 +284,13 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_moving_solid_[0];
             pipeline_twosided = &pi_moving_solid_[1];
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_static_solid_[0];
             pipeline_twosided = &pi_static_solid_[1];
         }
@@ -333,7 +333,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+        rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
         rp_begin_info.pClearValues = &clear_value;
         rp_begin_info.clearValueCount = 1;
@@ -386,13 +386,13 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_moving_transp_[0];
             pipeline_twosided = &pi_moving_transp_[1];
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_static_transp_[0];
             pipeline_twosided = &pi_static_transp_[1];
         }
@@ -446,13 +446,13 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_static_solid_vel_[0];
             pipeline_twosided = &pi_vege_static_solid_vel_[1];
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_static_solid_[0];
             pipeline_twosided = &pi_vege_static_solid_[1];
         }
@@ -502,13 +502,13 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_moving_solid_vel_[0];
             pipeline_twosided = &pi_vege_moving_solid_vel_[1];
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_static_solid_[0];
             pipeline_twosided = &pi_vege_static_solid_[1];
         }
@@ -558,13 +558,13 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_static_transp_vel_[0];
             pipeline_twosided = &pi_vege_static_transp_vel_[1];
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_static_transp_[0];
             pipeline_twosided = &pi_vege_static_transp_[1];
         }
@@ -618,13 +618,13 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_moving_transp_vel_[0];
             pipeline_twosided = &pi_vege_moving_transp_vel_[1];
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_vege_static_transp_[0];
             pipeline_twosided = &pi_vege_static_transp_[1];
         }
@@ -679,7 +679,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_static_solid_vel_[0];
             pipeline_twosided = &pi_skin_static_solid_vel_[1];
 
@@ -687,7 +687,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_static_solid_[0];
             pipeline_twosided = &pi_skin_static_solid_[1];
 
@@ -737,7 +737,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_moving_solid_vel_[0];
             pipeline_twosided = &pi_skin_moving_solid_vel_[1];
 
@@ -745,7 +745,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_static_solid_[0];
             pipeline_twosided = &pi_skin_static_solid_[1];
 
@@ -795,7 +795,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_static_transp_vel_[0];
             pipeline_twosided = &pi_skin_static_transp_vel_[1];
 
@@ -803,7 +803,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_static_transp_[0];
             pipeline_twosided = &pi_skin_static_transp_[1];
 
@@ -857,7 +857,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_moving_transp_vel_[0];
             pipeline_twosided = &pi_skin_moving_transp_vel_[1];
 
@@ -865,7 +865,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         } else {
             // Write depth only
             rp_begin_info.renderPass = rp_depth_only_[rp_index].handle();
-            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()].handle();
+            rp_begin_info.framebuffer = depth_fill_fb_[ctx.backend_frame()][fb_to_use_].handle();
             pipeline_onesided = &pi_skin_static_transp_[0];
             pipeline_twosided = &pi_skin_static_transp_[1];
 

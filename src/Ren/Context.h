@@ -230,6 +230,7 @@ class Context : public TaskExecutor {
 
     int frontend_frame = 0;
     int backend_frame() const;
+    int active_present_image() const;
 
     Ren::Tex2DRef backbuffer_ref() const;
 

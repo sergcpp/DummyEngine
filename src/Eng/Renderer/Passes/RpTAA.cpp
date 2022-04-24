@@ -43,9 +43,10 @@ void RpTAA::Execute(RpBuilder &builder) {
         uniform_params.tex_size = Ren::Vec2f{float(view_state_->act_res[0]), float(view_state_->act_res[1])};
         uniform_params.exposure = exposure;
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, resolve_fb_, render_pass_, rast_state,
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, resolve_fb_[fb_to_use_], render_pass_, rast_state,
                             builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params, sizeof(TempAA::Params),
                             0);
+        fb_to_use_ = (fb_to_use_ + 1) % 2;
     }
 }
 
@@ -66,8 +67,8 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
         ctx.log()->Error("RpCombine: render_pass_ init failed!");
     }
 
-    if (!resolve_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                           COUNT_OF(render_targets))) {
+    if (!resolve_fb_[fb_to_use_].Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {},
+                                       render_targets, COUNT_OF(render_targets), ctx.log())) {
         ctx.log()->Error("RpTAA: resolve_fb_ init failed!");
     }
 }
