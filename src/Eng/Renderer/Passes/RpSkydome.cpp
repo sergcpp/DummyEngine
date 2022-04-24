@@ -75,8 +75,11 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_bu
         initialized = true;
     }
 
-    if (!framebuf_[ctx.backend_frame()].Setup(ctx.api_ctx(), render_pass_[0], depth_tex.desc.w, depth_tex.desc.h,
-                                              depth_load_target, depth_load_target, color_load_targets, 3)) {
+    fb_to_use_ = (fb_to_use_ + 1) % 2;
+
+    if (!framebuf_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), render_pass_[0], depth_tex.desc.w,
+                                                          depth_tex.desc.h, depth_load_target, depth_load_target,
+                                                          color_load_targets, 3, ctx.log())) {
         ctx.log()->Error("[RpSkydome::LazyInit]: fbo init failed!");
     }
 }

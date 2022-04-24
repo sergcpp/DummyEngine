@@ -301,6 +301,24 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
     }
 };
 
+template <typename T, int AlignmentOfT = alignof(T)>
+bool operator==(const SmallVectorImpl<T, AlignmentOfT> &lhs, const SmallVectorImpl<T, AlignmentOfT> &rhs) {
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    for (const T *lhs_it = lhs.begin(), *rhs_it = rhs.begin(); lhs_it != lhs.end(); ++lhs_it, ++rhs_it) {
+        if (*lhs_it != *rhs_it) {
+            return false;
+        }
+    }
+    return true;
+}
+
+template <typename T, int AlignmentOfT = alignof(T)>
+bool operator!=(const SmallVectorImpl<T, AlignmentOfT> &lhs, const SmallVectorImpl<T, AlignmentOfT> &rhs) {
+    return operator==(lhs, rhs);
+}
+
 template <typename T, int N, int AlignmentOfT = alignof(T)>
 class SmallVector : public SmallVectorImpl<T, AlignmentOfT> {
     alignas(AlignmentOfT) char buffer_[sizeof(T) * N];

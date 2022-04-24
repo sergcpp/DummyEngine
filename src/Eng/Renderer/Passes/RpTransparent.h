@@ -15,7 +15,8 @@ class RpTransparent : public RpExecutor {
     Ren::ProgramRef blit_ms_resolve_prog_;
     Ren::VertexInput draw_pass_vi_;
     Ren::RenderPass rp_transparent_;
-    Ren::Framebuffer transparent_draw_fb_[Ren::MaxFramesInFlight], color_only_fb_, resolved_fb_, moments_fb_;
+    Ren::Framebuffer transparent_draw_fb_[Ren::MaxFramesInFlight][2], color_only_fb_[2], resolved_fb_, moments_fb_;
+    int fb_to_use_ = 0;
 #if defined(USE_VK_RENDER)
     VkDescriptorSetLayout descr_set_layout_ = VK_NULL_HANDLE;
 #endif

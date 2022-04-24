@@ -64,7 +64,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
     VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     render_pass_begin_info.renderPass = render_pass_[rp_index].handle();
-    render_pass_begin_info.framebuffer = framebuf_[ctx.backend_frame()].handle();
+    render_pass_begin_info.framebuffer = framebuf_[ctx.backend_frame()][fb_to_use_].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     VkClearValue clear_values[3] = {{}, {}, {}};
     render_pass_begin_info.pClearValues = clear_values;

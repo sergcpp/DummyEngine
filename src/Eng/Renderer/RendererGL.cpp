@@ -96,9 +96,9 @@ void Renderer::DestroyRendererInternal() {
     }
 
     {
-        //assert(vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_));
-        //assert(vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_));
-        //assert(ndx_buf->FreeSubRegion(temp_buf_ndx_offset_));
+        // assert(vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_));
+        // assert(vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_));
+        // assert(ndx_buf->FreeSubRegion(temp_buf_ndx_offset_));
     }
 }
 
@@ -1118,7 +1118,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
 
         if (!down_tex_4x_fb_.Setup(ctx_.api_ctx(), {}, down_tex_4x_->params.w, down_tex_4x_->params.h, down_tex_4x_, {},
-                                   {}, false)) {
+                                   {}, false, ctx_.log())) {
             ctx_.log()->Error("Failed to init down_tex_4x_fb_");
         }
 
@@ -1527,7 +1527,8 @@ void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const i
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 }
 
-bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration, LightProbe &probe) {
+bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
+                             LightProbe &probe) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),

@@ -23,7 +23,8 @@ class RpFillStaticVel : public RpExecutor {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex, RpAllocTex &velocity_tex);
 
     Ren::RenderPass render_pass_;
-    Ren::Framebuffer velocity_fb_;
+    Ren::Framebuffer velocity_fb_[2];
+    int fb_to_use_ = 0;
 
   public:
     RpFillStaticVel(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}

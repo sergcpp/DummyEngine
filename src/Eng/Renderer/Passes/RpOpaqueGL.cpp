@@ -150,7 +150,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     rast_state.viewport[2] = view_state_->scr_res[0];
     rast_state.viewport[3] = view_state_->scr_res[1];
 #else
-    glBindFramebuffer(GL_FRAMEBUFFER, opaque_draw_fb_[0].id());
+    glBindFramebuffer(GL_FRAMEBUFFER, opaque_draw_fb_[0][fb_to_use_].id());
 
     rast_state.viewport[2] = view_state_->act_res[0];
     rast_state.viewport[3] = view_state_->act_res[1];

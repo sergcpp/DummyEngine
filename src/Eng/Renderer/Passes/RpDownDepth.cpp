@@ -57,7 +57,7 @@ void RpDownDepth::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down
     }
 
     if (!depth_down_fb_.Setup(ctx.api_ctx(), render_pass_, down_depth_2x_tex.desc.w, down_depth_2x_tex.desc.h, {}, {},
-                              render_targets, 1)) {
+                              render_targets, 1, ctx.log())) {
         ctx.log()->Error("RpDownDepth: depth_down_fb_ init failed!");
     }
 }

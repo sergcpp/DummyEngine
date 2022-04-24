@@ -85,7 +85,7 @@ void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTe
     }
 
     if (!reduced_fb_.Setup(ctx.api_ctx(), render_pass_, reduced_tex.desc.w, reduced_tex.desc.h, {}, {}, render_targets,
-                           1)) {
+                           1, ctx.log())) {
         ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

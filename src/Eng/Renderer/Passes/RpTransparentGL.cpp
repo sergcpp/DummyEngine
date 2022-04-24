@@ -54,7 +54,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     rast_state.viewport[2] = view_state_->scr_res[0];
     rast_state.viewport[3] = view_state_->scr_res[1];
 #else
-    glBindFramebuffer(GL_FRAMEBUFFER, transparent_draw_fb_[0].id());
+    glBindFramebuffer(GL_FRAMEBUFFER, transparent_draw_fb_[0][fb_to_use_].id());
 
     rast_state.viewport[2] = view_state_->act_res[0];
     rast_state.viewport[3] = view_state_->act_res[1];

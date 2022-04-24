@@ -218,8 +218,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
     // (Re)create framebuffer
     //
 
-    if (!framebuffers_[api_ctx->backend_frame].Setup(api_ctx, render_pass_, w, h, ctx_.backbuffer_ref(), {}, {},
-                                                     false)) {
+    if (!framebuffers_[api_ctx->active_present_image].Setup(api_ctx, render_pass_, w, h, ctx_.backbuffer_ref(), {}, {},
+                                                            false, ctx_.log())) {
         ctx_.log()->Error("Failed to create framebuffer!");
     }
 
@@ -260,7 +260,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
     VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
     render_pass_begin_info.renderPass = render_pass_.handle();
-    render_pass_begin_info.framebuffer = framebuffers_[api_ctx->backend_frame].handle();
+    render_pass_begin_info.framebuffer = framebuffers_[api_ctx->active_present_image].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(w), uint32_t(h)};
 
     vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);

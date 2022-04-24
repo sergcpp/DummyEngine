@@ -48,7 +48,8 @@ class RpDepthFill : public RpExecutor {
     Ren::Pipeline pi_skin_static_transp_[2], pi_skin_static_transp_vel_[2];
     Ren::Pipeline pi_skin_moving_solid_vel_[2], pi_skin_moving_transp_vel_[2];
 
-    Ren::Framebuffer depth_fill_fb_[Ren::MaxFramesInFlight], depth_fill_vel_fb_[Ren::MaxFramesInFlight];
+    Ren::Framebuffer depth_fill_fb_[Ren::MaxFramesInFlight][2], depth_fill_vel_fb_[Ren::MaxFramesInFlight][2];
+    int fb_to_use_ = 0;
 
   public:
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state, bool clear_depth,
