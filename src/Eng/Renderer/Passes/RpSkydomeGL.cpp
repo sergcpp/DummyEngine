@@ -26,7 +26,7 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 #if defined(REN_DIRECT_DRAWING)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 #else
-    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(framebuf_[builder.ctx().backend_frame()].id()));
+    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(framebuf_[builder.ctx().backend_frame()][fb_to_use_].id()));
 #endif
     glUseProgram(pipeline_[rp_index].prog()->id());
 

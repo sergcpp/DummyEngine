@@ -92,7 +92,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_[ctx.backend_frame()].id()));
+    glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id()));
     if (clear_depth_) {
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     } else {
@@ -150,11 +150,11 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
             glUseProgram(pi_moving_solid_[0].prog()->id());
         } else {
             // Write depth only
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
         }
 
         { // one-sided
@@ -191,7 +191,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         { // simple meshes (depth only)
             Ren::DebugMarker _m(ctx.current_cmd_buf(), "STATIC-ALPHA-SIMPLE");
 
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
             glBindVertexArray(vi_transp_.gl_vao());
             glUseProgram(pi_static_transp_[0].prog()->id());
 
@@ -232,11 +232,11 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
 
             if (((*p_list_)->render_flags & EnableTaa) != 0) {
                 // Write depth and velocity
-                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
+                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
                 glUseProgram(pi_moving_transp_[0].prog()->id());
             } else {
                 // Write depth only
-                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
+                glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
             }
 
             { // one-sided
@@ -278,11 +278,11 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         glBindVertexArray(vi_vege_solid_.gl_vao());
         if (((*p_list_)->render_flags & EnableTaa) != 0) {
             // Write depth and velocity
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()].id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].id());
             glUseProgram(pi_vege_static_solid_vel_[0].prog()->id());
         } else {
             // Write depth only
-            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()].id());
+            glBindFramebuffer(GL_FRAMEBUFFER, depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id());
             glUseProgram(pi_vege_static_solid_[0].prog()->id());
         }
 

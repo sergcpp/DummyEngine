@@ -56,9 +56,11 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf
         draw_pass_vi_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref);
     }
 
-    if (!opaque_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_opaque_, depth_tex.desc.w, depth_tex.desc.h,
-                                                    depth_target, depth_target, color_targets,
-                                                    COUNT_OF(color_targets))) {
+    fb_to_use_ = (fb_to_use_ + 1) % 2;
+
+    if (!opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_opaque_, depth_tex.desc.w,
+                                                                depth_tex.desc.h, depth_target, depth_target,
+                                                                color_targets, COUNT_OF(color_targets), ctx.log())) {
         ctx.log()->Error("RpOpaque: opaque_draw_fb_ init failed!");
     }
 }

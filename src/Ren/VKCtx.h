@@ -6,6 +6,8 @@
 #include "VK.h"
 
 namespace Ren {
+class ILog;
+
 class Texture2D;
 using Tex2DRef = StrongRef<Texture2D>;
 
@@ -49,8 +51,7 @@ struct ApiContext {
 
     uint32_t max_combined_image_samplers = 0;
 
-    bool raytracing_supported = false;
-    bool ray_query_supported = false;
+    bool raytracing_supported = false, ray_query_supported = false;
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR rt_props = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 

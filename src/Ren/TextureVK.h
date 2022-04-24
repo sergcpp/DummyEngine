@@ -34,7 +34,8 @@ struct TexHandle {
 };
 static_assert(sizeof(TexHandle) == 56, "!");
 inline bool operator==(const TexHandle &lhs, const TexHandle &rhs) {
-    return std::memcmp(&lhs, &rhs, sizeof(TexHandle)) == 0;
+    return lhs.img == rhs.img && lhs.views == rhs.views && lhs.sampler == rhs.sampler &&
+           lhs.generation == rhs.generation;
 }
 inline bool operator!=(const TexHandle &lhs, const TexHandle &rhs) { return !operator==(lhs, rhs); }
 inline bool operator<(const TexHandle &lhs, const TexHandle &rhs) {
@@ -113,11 +114,11 @@ class Texture2D : public RefCounter {
     Texture2D &operator=(Texture2D &&rhs) noexcept;
 
     void Init(const Tex2DParams &params, MemoryAllocators *mem_allocs, ILog *log);
-	void Init(VkImage img, VkImageView view, VkSampler sampler, const Tex2DParams &_params, ILog *log) {
+    void Init(VkImage img, VkImageView view, VkSampler sampler, const Tex2DParams &_params, ILog *log) {
         handle_ = {img, view, VK_NULL_HANDLE, sampler, 0};
-		params = _params;
+        params = _params;
         ready_ = true;
-	}
+    }
     void Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
     void Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,

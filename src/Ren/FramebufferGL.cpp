@@ -2,6 +2,10 @@
 
 #include "GL.h"
 
+#ifndef NDEBUG
+#define VERBOSE_LOGGING
+#endif
+
 Ren::Framebuffer::~Framebuffer() {
     if (id_) {
         auto fb = GLuint(id_);
@@ -9,11 +13,9 @@ Ren::Framebuffer::~Framebuffer() {
     }
 }
 
-bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
-                             const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
-                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
-
-                             const bool is_multisampled) {
+bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
+                               const WeakTex2DRef _stencil_attachment, const WeakTex2DRef _color_attachments[],
+                               const int _color_attachments_count) const {
     if (((!_depth_attachment && !depth_attachment.ref) ||
          (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
         ((!_stencil_attachment && !stencil_attachment.ref) ||
@@ -23,6 +25,16 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
                    [](const WeakTex2DRef &lhs, const Attachment &rhs) {
                        return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
                    })) {
+        return false;
+    }
+    return true;
+}
+
+bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
+                             const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
+                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
+                             const bool is_multisampled, ILog *log) {
+    if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments, _color_attachments_count)) {
         // nothing has changed
         return true;
     }
@@ -39,21 +51,17 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 
     return Setup(api_ctx, render_pass, w, h, RenderTarget(_depth_attachment, eLoadOp::DontCare, eStoreOp::DontCare),
                  RenderTarget(_stencil_attachment, eLoadOp::DontCare, eStoreOp::DontCare), color_targets.data(),
-                 int(color_targets.size()));
+                 int(color_targets.size()), log);
 }
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
-                             const RenderTarget _color_targets[], int _color_targets_count) {
-    if (((!_depth_target && !depth_attachment.ref) ||
-         (_depth_target && _depth_target.ref->handle() == depth_attachment.handle)) &&
-        ((!_stencil_target && !stencil_attachment.ref) ||
-         (_stencil_target && _stencil_target.ref->handle() == stencil_attachment.handle)) &&
-        _color_targets_count == color_attachments.size() &&
-        std::equal(_color_targets, _color_targets + _color_targets_count, color_attachments.data(),
-                   [](const RenderTarget &lhs, const Attachment &rhs) {
-                       return (!lhs && !rhs.ref) || (lhs && lhs.ref->handle() == rhs.handle);
-                   })) {
+                             const RenderTarget _color_targets[], int _color_targets_count, ILog *log) {
+    Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;
+    for (int i = 0; i < _color_targets_count; ++i) {
+        color_refs.push_back(_color_targets[i].ref);
+    }
+    if (!Changed(render_pass, _depth_target.ref, _stencil_target.ref, color_refs.data(), int(color_refs.size()))) {
         // nothing has changed
         return true;
     }
@@ -127,5 +135,14 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     const GLenum s = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+    if (s != GL_FRAMEBUFFER_COMPLETE) {
+        log->Error("Framebuffer creation failed (error %i)", int(s));
+#ifdef VERBOSE_LOGGING
+    } else {
+        log->Info("Framebuffer %i created", id_);
+#endif
+    }
     return (s == GL_FRAMEBUFFER_COMPLETE);
 }
+
+#undef VERBOSE_LOGGING

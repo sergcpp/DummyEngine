@@ -429,15 +429,17 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
         initialized = true;
     }
 
-    if (!depth_fill_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_depth_only_[0], depth_tex.desc.w, depth_tex.desc.h,
-                                                   depth_tex.ref, depth_tex.ref, nullptr, 0,
-                                                   view_state_->is_multisampled)) {
+    fb_to_use_ = (fb_to_use_ + 1) % 2;
+
+    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_depth_only_[0], depth_tex.desc.w,
+                                                               depth_tex.desc.h, depth_tex.ref, depth_tex.ref, nullptr,
+                                                               0, view_state_->is_multisampled, ctx.log())) {
         ctx.log()->Error("[RpDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 
-    if (!depth_fill_vel_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_depth_velocity_[0], depth_tex.desc.w,
-                                                       depth_tex.desc.h, depth_tex.ref, depth_tex.ref, velocity_tex.ref,
-                                                       view_state_->is_multisampled)) {
+    if (!depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].Setup(
+            ctx.api_ctx(), rp_depth_velocity_[0], depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
+            velocity_tex.ref, view_state_->is_multisampled, ctx.log())) {
         ctx.log()->Error("[RpDepthFill::LazyInit]: depth_fill_vel_load_fb_ init failed!");
     }
 }

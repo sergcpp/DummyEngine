@@ -116,7 +116,8 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
     }
 
     if (!main_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_main_draw_, depth_tex.desc.w, depth_tex.desc.h,
-                                                  depth_target, depth_target, color_targets, COUNT_OF(color_targets))) {
+                                                  depth_target, depth_target, color_targets, COUNT_OF(color_targets),
+                                                  ctx.log())) {
         ctx.log()->Error("[RpGBufferFill::LazyInit]: main_draw_fb_ init failed!");
     }
 }

@@ -24,7 +24,8 @@ class RpSkydome : public RpExecutor {
     Ren::RenderPass render_pass_[2];
     Ren::VertexInput vtx_input_;
     Ren::Pipeline pipeline_[2];
-    Ren::Framebuffer framebuf_[Ren::MaxFramesInFlight];
+    Ren::Framebuffer framebuf_[Ren::MaxFramesInFlight][2];
+    int fb_to_use_ = 0;
 
     RpResRef shared_data_buf_;
     RpResRef env_tex_;
