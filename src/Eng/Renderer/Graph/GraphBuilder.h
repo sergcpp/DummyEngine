@@ -98,7 +98,6 @@ class RpBuilder {
     void TraversePassDependencies_r(const RpSubpass *pass, int recursion_depth, std::vector<RpSubpass *> &out_pass_stack);
 
     void PrepareAllocResources();
-    void ReleaseUnusedResources();
     void BuildRenderPasses();
     void BuildTransientResources();
     void BuildAliases();
