@@ -114,7 +114,7 @@ windows-build-job:
   extends:
     - .windows-build-job
   tags:
-    - windows
+    - windows,x86_64
     
 linux-build-job:
   extends:
