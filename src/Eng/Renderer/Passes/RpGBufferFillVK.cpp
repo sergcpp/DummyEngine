@@ -179,7 +179,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     { // solid meshes
         VkRenderPassBeginInfo rp_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         rp_begin_info.renderPass = rp_main_draw_.handle();
-        rp_begin_info.framebuffer = main_draw_fb_[api_ctx->backend_frame].handle();
+        rp_begin_info.framebuffer = main_draw_fb_[api_ctx->backend_frame][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
         vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 

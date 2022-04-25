@@ -115,9 +115,11 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
         initialized = true;
     }
 
-    if (!main_draw_fb_[ctx.backend_frame()].Setup(ctx.api_ctx(), rp_main_draw_, depth_tex.desc.w, depth_tex.desc.h,
-                                                  depth_target, depth_target, color_targets, COUNT_OF(color_targets),
-                                                  ctx.log())) {
+    fb_to_use_ = (fb_to_use_ + 1) % 2;
+
+    if (!main_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_main_draw_, depth_tex.desc.w,
+                                                              depth_tex.desc.h, depth_target, depth_target,
+                                                              color_targets, COUNT_OF(color_targets), ctx.log())) {
         ctx.log()->Error("[RpGBufferFill::LazyInit]: main_draw_fb_ init failed!");
     }
 }
