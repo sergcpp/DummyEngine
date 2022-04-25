@@ -16,7 +16,8 @@ class RpGBufferFill : public RpExecutor {
     Ren::Pipeline pi_simple_[2];
     Ren::Pipeline pi_vegetation_[2];
 
-    Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight];
+    Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight][2];
+    int fb_to_use_ = 0;
 #if defined(USE_VK_RENDER)
     VkDescriptorSetLayout descr_set_layout_ = VK_NULL_HANDLE;
 #endif
