@@ -749,8 +749,6 @@ void RpBuilder::PrepareAllocResources() {
     }
 }
 
-void RpBuilder::ReleaseUnusedResources() {}
-
 void RpBuilder::BuildRenderPasses() {
     auto should_merge = [](const RpSubpass *prev, const RpSubpass *next) {
         // TODO: merge similar renderpasses
@@ -1142,8 +1140,6 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
         // Must be allocated in order of pass execution (because of how aliasing works)
         AllocateNeededResources(*subpass);
     }
-
-    ReleaseUnusedResources();
 
 #if 0
     ctx_.log()->Info("======================================================================");
