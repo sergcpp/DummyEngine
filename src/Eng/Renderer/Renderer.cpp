@@ -441,67 +441,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                    status == Ren::eTexLoadStatus::Reinitialized);
         }
 
-        if (cur_hq_ssr_enabled) {
-            {
-                Ren::Tex2DParams refl_tex_params;
-                refl_tex_params.w = cur_scr_w;
-                refl_tex_params.h = cur_scr_h;
-                refl_tex_params.format = Ren::eTexFormat::RawRG11F_B10F;
-                refl_tex_params.usage =
-                    (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Storage);
-                refl_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                refl_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                Ren::eTexLoadStatus status;
-                refl_history_tex_ =
-                    ctx_.LoadTexture2D("Reflection Hist", refl_tex_params, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                       status == Ren::eTexLoadStatus::Reinitialized);
-            }
-
-            for (int i = 0; i < 2; ++i) {
-                char temp_buf[32];
-                snprintf(temp_buf, sizeof(temp_buf), "Variance Hist [%i]", i);
-
-                Ren::Tex2DParams variance_tex_params;
-                variance_tex_params.w = cur_scr_w;
-                variance_tex_params.h = cur_scr_h;
-                variance_tex_params.format = Ren::eTexFormat::RawR16F;
-                variance_tex_params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget |
-                                             Ren::eTexUsage::Storage | Ren::eTexUsage::Transfer);
-                variance_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                variance_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                Ren::eTexLoadStatus status;
-                variance_tex_[i] =
-                    ctx_.LoadTexture2D(temp_buf, variance_tex_params, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                       status == Ren::eTexLoadStatus::Reinitialized);
-
-                snprintf(temp_buf, sizeof(temp_buf), "Sample Count [%i]", i);
-
-                Ren::Tex2DParams sample_count_tex_params;
-                sample_count_tex_params.w = cur_scr_w;
-                sample_count_tex_params.h = cur_scr_h;
-                sample_count_tex_params.format = Ren::eTexFormat::RawR16F;
-                sample_count_tex_params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::RenderTarget |
-                                                 Ren::eTexUsage::Storage | Ren::eTexUsage::Transfer);
-                sample_count_tex_params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                sample_count_tex_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                sample_count_tex_[i] =
-                    ctx_.LoadTexture2D(temp_buf, sample_count_tex_params, ctx_.default_mem_allocs(), &status);
-                assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
-                       status == Ren::eTexLoadStatus::Reinitialized);
-            }
-        } else {
-            refl_history_tex_ = {};
-            for (int i = 0; i < 2; ++i) {
-                variance_tex_[i] = {};
-                sample_count_tex_[i] = {};
-            }
-        }
-
         view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
         view_state_.is_multisampled = cur_msaa_enabled;
         taa_enabled_ = cur_taa_enabled;

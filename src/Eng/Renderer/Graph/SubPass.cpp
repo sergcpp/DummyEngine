@@ -116,6 +116,10 @@ RpResRef RpSubpass::AddHistoryTextureInput(RpResRef handle, Ren::eStageBits stag
     return builder_.ReadHistoryTexture(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
+RpResRef RpSubpass::AddHistoryTextureInput(const char* name, Ren::eStageBits stages) {
+    return builder_.ReadHistoryTexture(name, Ren::eResState::ShaderResource, stages, *this);
+}
+
 RpResRef RpSubpass::AddCustomTextureInput(const RpResRef handle, const Ren::eResState desired_state,
                                           const Ren::eStageBits stages) {
     return builder_.ReadTexture(handle, desired_state, stages, *this);
