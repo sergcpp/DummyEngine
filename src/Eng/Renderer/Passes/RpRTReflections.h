@@ -25,6 +25,7 @@ struct RpRTReflectionsData {
     RpResRef ray_counter;
     RpResRef ray_list;
     RpResRef indir_args;
+    RpResRef tlas_buf; // fake read for now
 
     RpResRef out_refl_tex;
     RpResRef out_raylen_tex;

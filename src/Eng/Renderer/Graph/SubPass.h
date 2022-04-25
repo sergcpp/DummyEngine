@@ -92,6 +92,7 @@ class RpSubpass {
     RpResRef AddTextureInput(const char *name, Ren::eStageBits stages);
 
     RpResRef AddHistoryTextureInput(RpResRef handle, Ren::eStageBits stages);
+    RpResRef AddHistoryTextureInput(const char *name, Ren::eStageBits stages);
 
     RpResRef AddCustomTextureInput(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages);
 
