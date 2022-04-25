@@ -9,6 +9,12 @@
     (slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(res.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(res.x))
 #endif
 
+// Rounds value to the nearest multiple of 8
+uvec2 RoundUp8(uvec2 value) {
+    uvec2 round_down = value & ~7u; // 0b111
+    return (round_down == value) ? value : value + 8;
+}
+
 vec3 heatmap(float t) {
     vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
     return vec3(1.0) - r * r;
@@ -93,4 +99,46 @@ vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {
     vec4 vv = vec4(SH_A0, SH_A1 * normal.yzx);
 
     return vec3(dot(sh_coeffs[0], vv), dot(sh_coeffs[1], vv), dot(sh_coeffs[2], vv));
+}
+
+//  LANE TO 8x8 MAPPING
+//  ===================
+//  00 01 08 09 10 11 18 19
+//  02 03 0a 0b 12 13 1a 1b
+//  04 05 0c 0d 14 15 1c 1d
+//  06 07 0e 0f 16 17 1e 1f
+//  20 21 28 29 30 31 38 39
+//  22 23 2a 2b 32 33 3a 3b
+//  24 25 2c 2d 34 35 3c 3d
+//  26 27 2e 2f 36 37 3e 3f
+uvec2 RemapLane8x8(uint lane) {
+    return uvec2(bitfieldInsert(bitfieldExtract(lane, 2, 3), lane, 0, 1),
+                 bitfieldInsert(bitfieldExtract(lane, 3, 3), bitfieldExtract(lane, 1, 2), 0, 2));
+}
+
+uint ReverseBits4(uint x) {
+    x = ((x & 0x5u) << 1u) | (( x & 0xAu) >> 1u);
+    x = ((x & 0x3u) << 2u) | (( x & 0xCu) >> 2u);
+    return x;
+}
+
+// https://en.wikipedia.org/wiki/Ordered_dithering
+// RESULT: [0; 15]
+uint Bayer4x4ui(uvec2 sample_pos, uint frame) {
+    uvec2 sample_pos_wrap = sample_pos & 3;
+    uint a = 2068378560u * (1u - (sample_pos_wrap.x >> 1u)) + 1500172770u * (sample_pos_wrap.x >> 1u);
+    uint b = (sample_pos_wrap.y + ((sample_pos_wrap.x & 1u) << 2u)) << 2u;
+
+    uint sampleOffset = frame;
+#if 1 // BAYER_REVERSEBITS
+    sampleOffset = ReverseBits4(sampleOffset);
+#endif
+
+    return ((a >> b) + sampleOffset) & 0xFu;
+}
+
+// RESULT: [0; 1)
+float Bayer4x4(uvec2 sample_pos, uint frame) {
+    uint bayer = Bayer4x4ui(sample_pos, frame);
+    return float(bayer) / 16.0;
 }

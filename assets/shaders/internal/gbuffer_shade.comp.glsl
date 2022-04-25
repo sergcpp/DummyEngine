@@ -40,6 +40,7 @@ layout(binding = LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buffer;
 layout(binding = DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
 layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
 layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
+layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_texture;
 
 layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
 
@@ -187,11 +188,18 @@ void main() {
         visibility = GetSunVisibility(lin_depth, g_shadow_texture, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 
-    vec2 ao_uvs = vec2(ix, iy) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
+    vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
+    vec4 gi = textureLod(g_gi_texture, ao_uvs, 0.0);
+    //vec3 gi = vec3(textureLod(g_gi_texture, ao_uvs, 0.0).a * 0.01);
+    //float ao = (gi.a * 0.01);
     vec3 diffuse_color = albedo * (g_shrd_data.sun_col.xyz * lambert * visibility +
-                                   ambient_occlusion * ambient_occlusion * indirect_col +
+                                   gi.rgb + /*ao * indirect_col +*/
                                    additional_light);
+
+    //float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
+    //vec3 diffuse_color = albedo * (g_shrd_data.sun_col.xyz * lambert * visibility +
+    //                               ambient_occlusion * ambient_occlusion * indirect_col +
+    //                               additional_light);
 
     imageStore(g_out_color_img, icoord, vec4(diffuse_color, 0.0));
 }

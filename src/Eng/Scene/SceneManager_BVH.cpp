@@ -19,8 +19,7 @@ float surface_area(const bvh_node_t &n) {
 }
 
 float surface_area_of_union(const bvh_node_t &n1, const bvh_node_t &n2) {
-    const Ren::Vec3f d =
-        Ren::Max(n1.bbox_max, n2.bbox_max) - Ren::Min(n1.bbox_min, n2.bbox_max);
+    const Ren::Vec3f d = Max(n1.bbox_max, n2.bbox_max) - Min(n1.bbox_min, n2.bbox_max);
     return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
 }
 
@@ -29,9 +28,7 @@ struct insert_candidate_t {
     float direct_cost;
 };
 
-bool insert_candidate_compare(insert_candidate_t c1, insert_candidate_t c2) {
-    return c1.direct_cost > c2.direct_cost;
-}
+bool insert_candidate_compare(insert_candidate_t c1, insert_candidate_t c2) { return c1.direct_cost > c2.direct_cost; }
 
 void sort_children(const bvh_node_t *nodes, bvh_node_t &node) {
     const uint32_t ch0 = node.left_child, ch1 = node.right_child;
@@ -58,16 +55,12 @@ void sort_children(const bvh_node_t *nodes, bvh_node_t &node) {
 }
 
 void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
-    node.bbox_min =
-        Ren::Min(nodes[node.left_child].bbox_min, nodes[node.right_child].bbox_min);
-    node.bbox_max =
-        Ren::Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
+    node.bbox_min = Min(nodes[node.left_child].bbox_min, nodes[node.right_child].bbox_min);
+    node.bbox_max = Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
 
-__itt_string_handle *itt_rebuild_bvh_str =
-    __itt_string_handle_create("SceneManager::RebuildSceneBVH");
-__itt_string_handle *itt_update_bvh_str =
-    __itt_string_handle_create("SceneManager::UpdateBVH");
+__itt_string_handle *itt_rebuild_bvh_str = __itt_string_handle_create("SceneManager::RebuildSceneBVH");
+__itt_string_handle *itt_update_bvh_str = __itt_string_handle_create("SceneManager::UpdateBVH");
 } // namespace SceneManagerInternal
 
 void SceneManager::RebuildSceneBVH() {
@@ -75,8 +68,7 @@ void SceneManager::RebuildSceneBVH() {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);
 
-    auto *transforms =
-        (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
@@ -85,8 +77,7 @@ void SceneManager::RebuildSceneBVH() {
         if (obj.comp_mask & CompTransformBit) {
             const Transform &tr = transforms[obj.components[CompTransform]];
             const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
-            primitives.push_back(
-                {tr.bbox_min_ws - BoundsMargin * d, tr.bbox_max_ws + BoundsMargin * d});
+            primitives.push_back({tr.bbox_min_ws - BoundsMargin * d, tr.bbox_max_ws + BoundsMargin * d});
         }
     }
 
@@ -101,8 +92,7 @@ void SceneManager::RebuildSceneBVH() {
         Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
                    max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() = default;
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min,
-                     const Ren::Vec3f &_max)
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
@@ -125,10 +115,9 @@ void SceneManager::RebuildSceneBVH() {
     s.node_traversal_cost = 0.0f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(
-            &primitives[0], prim_lists.back().indices.data(),
-            (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min,
-            prim_lists.back().max, root_min, root_max, s);
+        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(),
+                                                      (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min,
+                                                      prim_lists.back().max, root_min, root_max, s);
         prim_lists.pop_back();
 
         const uint32_t leaf_index = (uint32_t)scene_data_.nodes.size();
@@ -138,8 +127,7 @@ void SceneManager::RebuildSceneBVH() {
             // skip bound checks in debug mode
             const bvh_node_t *_out_nodes = &scene_data_.nodes[0];
             for (uint32_t i = leaf_index - 1; i >= scene_data_.root_node; i--) {
-                if (_out_nodes[i].left_child == leaf_index ||
-                    _out_nodes[i].right_child == leaf_index) {
+                if (_out_nodes[i].left_child == leaf_index || _out_nodes[i].right_child == leaf_index) {
                     parent_index = uint32_t(i);
                     break;
                 }
@@ -147,44 +135,33 @@ void SceneManager::RebuildSceneBVH() {
         }
 
         if (split_data.right_indices.empty()) {
-            const Ren::Vec3f bbox_min = split_data.left_bounds[0],
-                             bbox_max = split_data.left_bounds[1];
+            const Ren::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
 
             const auto new_node_index = (uint32_t)scene_data_.nodes.size();
 
             for (const uint32_t i : split_data.left_indices) {
-                Transform &tr =
-                    transforms[scene_data_.objects[i].components[CompTransform]];
+                Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
                 tr.node_index = new_node_index;
             }
 
             assert(split_data.left_indices.size() == 1 && "Wrong split!");
 
-            scene_data_.nodes.push_back(
-                {split_data.left_indices[0], (uint32_t)split_data.left_indices.size(), 0,
-                 0, Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]}, parent_index,
-                 Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]}, 0});
+            scene_data_.nodes.push_back({split_data.left_indices[0], (uint32_t)split_data.left_indices.size(), 0, 0,
+                                         Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]}, parent_index,
+                                         Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]}, 0});
         } else {
             auto index = (uint32_t)nodes_count;
 
-            const Ren::Vec3f c_left =
-                                 (split_data.left_bounds[0] + split_data.left_bounds[1]) /
-                                 2.0f,
-                             c_right = (split_data.right_bounds[0] +
-                                        split_data.right_bounds[1]) /
-                                       2.0f;
+            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
+                             c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
             const Ren::Vec3f dist = Abs(c_left - c_right);
 
             const uint32_t space_axis =
-                (dist[0] > dist[1] && dist[0] > dist[2])
-                    ? 0
-                    : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
+                (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
 
-            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0],
-                                            split_data.right_bounds[0]),
-                             bbox_max = Max(split_data.left_bounds[1],
-                                            split_data.right_bounds[1]);
+            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+                             bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             scene_data_.nodes.push_back({
                 0,
@@ -197,11 +174,9 @@ void SceneManager::RebuildSceneBVH() {
                 space_axis,
             });
 
-            prim_lists.emplace_front(std::move(split_data.left_indices),
-                                     split_data.left_bounds[0],
+            prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0],
                                      split_data.left_bounds[1]);
-            prim_lists.emplace_front(std::move(split_data.right_indices),
-                                     split_data.right_bounds[0],
+            prim_lists.emplace_front(std::move(split_data.right_indices), split_data.right_bounds[0],
                                      split_data.right_bounds[1]);
 
             nodes_count += 2;
@@ -231,8 +206,7 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
     if (node.parent != 0xffffffff) {
         bvh_node_t &parent = nodes[node.parent];
 
-        const uint32_t other_child =
-            (parent.left_child == node_index) ? parent.right_child : parent.left_child;
+        const uint32_t other_child = (parent.left_child == node_index) ? parent.right_child : parent.left_child;
         uint32_t up_parent = parent.parent;
 
         if (up_parent != 0xffffffff) {
@@ -246,13 +220,10 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
 
             // update hierarchy boxes
             while (up_parent != 0xffffffff) {
-                const uint32_t ch0 = nodes[up_parent].left_child,
-                               ch1 = nodes[up_parent].right_child;
+                const uint32_t ch0 = nodes[up_parent].left_child, ch1 = nodes[up_parent].right_child;
 
-                nodes[up_parent].bbox_min =
-                    Ren::Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
-                nodes[up_parent].bbox_max =
-                    Ren::Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
+                nodes[up_parent].bbox_min = Min(nodes[ch0].bbox_min, nodes[ch1].bbox_min);
+                nodes[up_parent].bbox_max = Max(nodes[ch0].bbox_max, nodes[ch1].bbox_max);
 
                 sort_children(nodes, nodes[up_parent]);
 
@@ -276,8 +247,7 @@ void SceneManager::UpdateObjects() {
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
 
     const auto *physes = (Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();
-    auto *transforms =
-        (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     scene_data_.update_counter++;
 
@@ -313,7 +283,7 @@ void SceneManager::UpdateObjects() {
                 }
             }
 
-            tr.world_from_object = Ren::Scale(tr.world_from_object, tr.scale);
+            tr.world_from_object = Scale(tr.world_from_object, tr.scale);
 
             obj.change_mask |= CompTransformBit;
             obj.change_mask ^= CompPhysicsBit;
@@ -326,12 +296,10 @@ void SceneManager::UpdateObjects() {
                 assert(tr.node_index < scene_data_.nodes.size());
                 const bvh_node_t &node = nodes[tr.node_index];
 
-                const bool is_fully_inside = tr.bbox_min_ws[0] >= node.bbox_min[0] &&
-                                             tr.bbox_min_ws[1] >= node.bbox_min[1] &&
-                                             tr.bbox_min_ws[2] >= node.bbox_min[2] &&
-                                             tr.bbox_max_ws[0] <= node.bbox_max[0] &&
-                                             tr.bbox_max_ws[1] <= node.bbox_max[1] &&
-                                             tr.bbox_max_ws[2] <= node.bbox_max[2];
+                const bool is_fully_inside =
+                    tr.bbox_min_ws[0] >= node.bbox_min[0] && tr.bbox_min_ws[1] >= node.bbox_min[1] &&
+                    tr.bbox_min_ws[2] >= node.bbox_min[2] && tr.bbox_max_ws[0] <= node.bbox_max[0] &&
+                    tr.bbox_max_ws[1] <= node.bbox_max[1] && tr.bbox_max_ws[2] <= node.bbox_max[2];
 
                 if (is_fully_inside) {
                     // Update is not needed (object is still inside of node bounds)
@@ -369,8 +337,7 @@ void SceneManager::UpdateObjects() {
             new_node.prim_count = 1;
 
             Sys::MonoAlloc<insert_candidate_t> m_alloc(temp_buf.data(), temp_buf.size());
-            Sys::BinaryTree<insert_candidate_t, decltype(&insert_candidate_compare),
-                            Sys::MonoAlloc<insert_candidate_t>>
+            Sys::BinaryTree<insert_candidate_t, decltype(&insert_candidate_compare), Sys::MonoAlloc<insert_candidate_t>>
                 candidates(insert_candidate_compare, m_alloc);
 
             const float node_cost = surface_area(new_node);
@@ -388,8 +355,7 @@ void SceneManager::UpdateObjects() {
 
                 while (parent != 0xffffffff) {
                     // add change in surface area
-                    inherited_cost += surface_area_of_union(nodes[parent], new_node) -
-                                      surface_area(nodes[parent]);
+                    inherited_cost += surface_area_of_union(nodes[parent], new_node) - surface_area(nodes[parent]);
                     parent = nodes[parent].parent;
                 }
 
@@ -402,18 +368,14 @@ void SceneManager::UpdateObjects() {
                 // consider children next
                 if (!nodes[c.node_index].prim_count) {
                     const float candidate_cost = surface_area(nodes[c.node_index]);
-                    const float lower_cost_bound =
-                        node_cost + inherited_cost +
-                        surface_area_of_union(nodes[c.node_index], new_node) -
-                        candidate_cost;
+                    const float lower_cost_bound = node_cost + inherited_cost +
+                                                   surface_area_of_union(nodes[c.node_index], new_node) -
+                                                   candidate_cost;
 
                     if (lower_cost_bound < best_cost) {
-                        const uint32_t ch0 = nodes[c.node_index].left_child,
-                                       ch1 = nodes[c.node_index].right_child;
-                        candidates.push(
-                            {ch0, surface_area_of_union(nodes[ch0], new_node)});
-                        candidates.push(
-                            {ch1, surface_area_of_union(nodes[ch1], new_node)});
+                        const uint32_t ch0 = nodes[c.node_index].left_child, ch1 = nodes[c.node_index].right_child;
+                        candidates.push({ch0, surface_area_of_union(nodes[ch0], new_node)});
+                        candidates.push({ch1, surface_area_of_union(nodes[ch1], new_node)});
                     }
                 }
             }
@@ -454,20 +416,16 @@ void SceneManager::UpdateObjects() {
             while (parent != 0xffffffff) {
                 bvh_node_t &par_node = nodes[parent];
 
-                par_node.bbox_min = Ren::Min(left_child_of(par_node).bbox_min,
-                                             right_child_of(par_node).bbox_min);
-                par_node.bbox_max = Ren::Max(left_child_of(par_node).bbox_max,
-                                             right_child_of(par_node).bbox_max);
+                par_node.bbox_min = Min(left_child_of(par_node).bbox_min, right_child_of(par_node).bbox_min);
+                par_node.bbox_max = Max(left_child_of(par_node).bbox_max, right_child_of(par_node).bbox_max);
 
                 // rotate left_child with children of right_child
                 if (!right_child_of(par_node).prim_count) {
                     float cost_before = surface_area(nodes[par_node.right_child]);
 
                     float rotation_costs[2] = {
-                        surface_area_of_union(left_child_of(par_node),
-                                              right_child_of(right_child_of(par_node))),
-                        surface_area_of_union(left_child_of(par_node),
-                                              left_child_of(right_child_of(par_node)))};
+                        surface_area_of_union(left_child_of(par_node), right_child_of(right_child_of(par_node))),
+                        surface_area_of_union(left_child_of(par_node), left_child_of(right_child_of(par_node)))};
 
                     int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
                     if (rotation_costs[best_rot] < cost_before) {
@@ -476,13 +434,11 @@ void SceneManager::UpdateObjects() {
                         if (best_rot == 0) {
                             left_child_of(right_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.left_child,
-                                      right_child_of(par_node).left_child);
+                            std::swap(par_node.left_child, right_child_of(par_node).left_child);
                         } else {
                             right_child_of(right_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.left_child,
-                                      right_child_of(par_node).right_child);
+                            std::swap(par_node.left_child, right_child_of(par_node).right_child);
                         }
 
                         update_bbox(nodes, nodes[par_node.right_child]);
@@ -498,10 +454,8 @@ void SceneManager::UpdateObjects() {
                     const float cost_before = surface_area(left_child_of(par_node));
 
                     const float rotation_costs[2] = {
-                        surface_area_of_union(right_child_of(par_node),
-                                              right_child_of(left_child_of(par_node))),
-                        surface_area_of_union(right_child_of(par_node),
-                                              left_child_of(left_child_of(par_node)))};
+                        surface_area_of_union(right_child_of(par_node), right_child_of(left_child_of(par_node))),
+                        surface_area_of_union(right_child_of(par_node), left_child_of(left_child_of(par_node)))};
 
                     const int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
                     if (rotation_costs[best_rot] < cost_before) {
@@ -510,13 +464,11 @@ void SceneManager::UpdateObjects() {
                         if (best_rot == 0) {
                             left_child_of(left_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.right_child,
-                                      left_child_of(par_node).left_child);
+                            std::swap(par_node.right_child, left_child_of(par_node).left_child);
                         } else {
                             right_child_of(left_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.right_child,
-                                      left_child_of(par_node).right_child);
+                            std::swap(par_node.right_child, left_child_of(par_node).right_child);
                         }
 
                         update_bbox(nodes, nodes[par_node.left_child]);
@@ -539,8 +491,7 @@ void SceneManager::UpdateObjects() {
         }
     }
 
-    scene_data_.free_nodes.erase(scene_data_.free_nodes.begin(),
-                                 scene_data_.free_nodes.begin() + free_nodes_pos);
+    scene_data_.free_nodes.erase(scene_data_.free_nodes.begin(), scene_data_.free_nodes.begin() + free_nodes_pos);
     last_changed_objects_ = std::move(changed_objects_);
 
     __itt_task_end(__g_itt_domain);

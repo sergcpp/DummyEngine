@@ -318,7 +318,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             const Vec3f &cam_pos = list.draw_cam.world_position();
-            const float cam_dist2 = Ren::Distance2(cam_pos, 0.5f * (n->bbox_min + n->bbox_max));
+            const float cam_dist2 = Distance2(cam_pos, 0.5f * (n->bbox_min + n->bbox_max));
 
             if (culling_enabled && cam_visibility != eVisResult::Invisible) {
                 // do not question visibility of the node in which we are inside
@@ -2012,11 +2012,11 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     list.skin_transforms.count += uint32_t(2 * skel->bones_count);
 
     for (int i = 0; i < skel->bones_count; i++) {
-        const Ren::Mat4f matr_curr_trans = Ren::Transpose(as.matr_palette_curr[i]);
-        memcpy(out_matr_palette[2 * i + 0].matr, Ren::ValuePtr(matr_curr_trans), 12 * sizeof(float));
+        const Ren::Mat4f matr_curr_trans = Transpose(as.matr_palette_curr[i]);
+        memcpy(out_matr_palette[2 * i + 0].matr, ValuePtr(matr_curr_trans), 12 * sizeof(float));
 
-        const Ren::Mat4f matr_prev_trans = Ren::Transpose(as.matr_palette_prev[i]);
-        memcpy(out_matr_palette[2 * i + 1].matr, Ren::ValuePtr(matr_prev_trans), 12 * sizeof(float));
+        const Ren::Mat4f matr_prev_trans = Transpose(as.matr_palette_prev[i]);
+        memcpy(out_matr_palette[2 * i + 1].matr, ValuePtr(matr_prev_trans), 12 * sizeof(float));
     }
 
     const Ren::BufferRange &sk_buf = mesh->sk_attribs_buf();
@@ -2081,9 +2081,7 @@ uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage, const R
 
 void RendererInternal::__record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat, const bool is_animated,
                                          const uint16_t distance) {
-    static const int TexPriorities[] = {
-        0, 1, 2, 0, 4, 5, 6, 7
-    };
+    static const int TexPriorities[] = {0, 1, 2, 0, 4, 5, 6, 7};
     for (int i = 0; i < int(mat->textures.size()); ++i) {
         int prio = TexPriorities[i];
         if (!is_animated) {

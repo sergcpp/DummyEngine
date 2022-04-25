@@ -11,7 +11,7 @@
     precision highp float;
 #endif
 
-#include "_common.glsl"
+#include "_cs_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_classify_tiles_interface.glsl"
 

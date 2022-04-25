@@ -697,7 +697,7 @@ void SceneManager::InitScene_PT(bool _override) {
                 auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
                     obj.components[CompTransform]);
                 tr->pt_mi = ray_scene_->AddMeshInstance(
-                    mesh_it->second, Ren::ValuePtr(tr->world_from_object));
+                    mesh_it->second, ValuePtr(tr->world_from_object));
             }
         }
     }
@@ -730,11 +730,11 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(0, cam_desc);
 
-    Ren::Vec3f fwd = Ren::Normalize(target - origin);
+    Ren::Vec3f fwd = Normalize(target - origin);
 
-    memcpy(&cam_desc.origin[0], Ren::ValuePtr(origin), 3 * sizeof(float));
-    memcpy(&cam_desc.fwd[0], Ren::ValuePtr(fwd), 3 * sizeof(float));
-    memcpy(&cam_desc.up[0], Ren::ValuePtr(up), 3 * sizeof(float));
+    memcpy(&cam_desc.origin[0], ValuePtr(origin), 3 * sizeof(float));
+    memcpy(&cam_desc.fwd[0], ValuePtr(fwd), 3 * sizeof(float));
+    memcpy(&cam_desc.up[0], ValuePtr(up), 3 * sizeof(float));
 
     cam_desc.fov = fov;
 

@@ -426,7 +426,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
             const double x = js_dir.at(0).as_num().val, y = js_dir.at(1).as_num().val, z = js_dir.at(2).as_num().val;
 
             scene_data_.env.sun_dir = Ren::Vec3f{float(x), float(y), float(z)};
-            scene_data_.env.sun_dir = -Ren::Normalize(scene_data_.env.sun_dir);
+            scene_data_.env.sun_dir = -Normalize(scene_data_.env.sun_dir);
         }
         if (js_env.Has("sun_col")) {
             const JsArrayP &js_col = js_env.at("sun_col").as_arr();
@@ -806,7 +806,7 @@ void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
     last_cam_time_s_ = cur_time_s;
 
     const Ren::Vec3f fwd_up[2] = {cam_.fwd(), cam_.up()};
-    snd_ctx_.SetupListener(Ren::ValuePtr(origin), Ren::ValuePtr(velocity), Ren::ValuePtr(fwd_up[0]));
+    snd_ctx_.SetupListener(ValuePtr(origin), ValuePtr(velocity), ValuePtr(fwd_up[0]));
 }
 
 void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
@@ -936,8 +936,8 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Re
         }
     }
 
-    obj_bbox[0] = Ren::Min(obj_bbox[0], dr->mesh->bbox_min());
-    obj_bbox[1] = Ren::Max(obj_bbox[1], dr->mesh->bbox_max());
+    obj_bbox[0] = Min(obj_bbox[0], dr->mesh->bbox_min());
+    obj_bbox[1] = Max(obj_bbox[1], dr->mesh->bbox_max());
 }
 
 void SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
@@ -968,8 +968,8 @@ void SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Re
         assert(status == Ren::eMeshLoadStatus::CreatedFromData);
     }
 
-    obj_bbox[0] = Ren::Min(obj_bbox[0], occ->mesh->bbox_min());
-    obj_bbox[1] = Ren::Max(obj_bbox[1], occ->mesh->bbox_max());
+    obj_bbox[0] = Min(obj_bbox[0], occ->mesh->bbox_min());
+    obj_bbox[1] = Max(obj_bbox[1], occ->mesh->bbox_max());
 }
 
 void SceneManager::PostloadLightmap(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
@@ -1002,19 +1002,19 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
     const auto _dir = Ren::Vec3f{dir[0], dir[1], dir[2]};
     const Ren::Vec3f p1 = _dir * ls->influence;
 
-    bbox_min = Ren::Min(bbox_min, p1);
-    bbox_max = Ren::Max(bbox_max, p1);
+    bbox_min = Min(bbox_min, p1);
+    bbox_max = Max(bbox_max, p1);
 
     const Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
 
     const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
 
-    bbox_min = Ren::Min(bbox_min, p2 - Ren::Vec3f{d, 0.0f, d});
-    bbox_max = Ren::Max(bbox_max, p2 + Ren::Vec3f{d, 0.0f, d});
+    bbox_min = Min(bbox_min, p2 - Ren::Vec3f{d, 0.0f, d});
+    bbox_max = Max(bbox_max, p2 + Ren::Vec3f{d, 0.0f, d});
 
     if (ls->spot < 0.0f) {
-        bbox_min = Ren::Min(bbox_min, p1 - Ren::Vec3f{ls->influence, 0.0f, ls->influence});
-        bbox_max = Ren::Max(bbox_max, p1 + Ren::Vec3f{ls->influence, 0.0f, ls->influence});
+        bbox_min = Min(bbox_min, p1 - Ren::Vec3f{ls->influence, 0.0f, ls->influence});
+        bbox_max = Max(bbox_max, p1 + Ren::Vec3f{ls->influence, 0.0f, ls->influence});
     }
 
     auto up = Ren::Vec3f{1.0f, 0.0f, 0.0f};
@@ -1024,7 +1024,7 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
         up = Ren::Vec3f{0.0f, 0.0f, 1.0f};
     }
 
-    const Ren::Vec3f side = Ren::Cross(_dir, up);
+    const Ren::Vec3f side = Cross(_dir, up);
 
     Transform ls_transform;
     ls_transform.world_from_object = Ren::Mat4f{
@@ -1036,8 +1036,8 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
     ls_transform.UpdateBBox();
 
     // Combine light's bounding box with object's
-    obj_bbox[0] = Ren::Min(obj_bbox[0], ls_transform.bbox_min_ws);
-    obj_bbox[1] = Ren::Max(obj_bbox[1], ls_transform.bbox_max_ws);
+    obj_bbox[0] = Min(obj_bbox[0], ls_transform.bbox_min_ws);
+    obj_bbox[1] = Max(obj_bbox[1], ls_transform.bbox_max_ws);
 }
 
 void SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
@@ -1091,7 +1091,7 @@ void SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::
         }
     }
 
-    const Ren::Mat4f world_from_clip = Ren::Inverse(de->proj * de->view);
+    const Ren::Mat4f world_from_clip = Inverse(de->proj * de->view);
 
     Ren::Vec4f points[] = {Ren::Vec4f{-1.0f, -1.0f, -1.0f, 1.0f}, Ren::Vec4f{-1.0f, 1.0f, -1.0f, 1.0f},
                            Ren::Vec4f{1.0f, 1.0f, -1.0f, 1.0f},   Ren::Vec4f{1.0f, -1.0f, -1.0f, 1.0f},
@@ -1104,8 +1104,8 @@ void SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::
         point /= point[3];
 
         // Combine decals's bounding box with object's
-        obj_bbox[0] = Ren::Min(obj_bbox[0], Ren::Vec3f{point});
-        obj_bbox[1] = Ren::Max(obj_bbox[1], Ren::Vec3f{point});
+        obj_bbox[0] = Min(obj_bbox[0], Ren::Vec3f{point});
+        obj_bbox[1] = Max(obj_bbox[1], Ren::Vec3f{point});
     }
 }
 
@@ -1115,15 +1115,15 @@ void SceneManager::PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, 
     pr->layer_index = scene_data_.probe_storage.Allocate();
 
     // Combine probe's bounding box with object's
-    obj_bbox[0] = Ren::Min(obj_bbox[0], pr->offset - Ren::Vec3f{pr->radius});
-    obj_bbox[1] = Ren::Max(obj_bbox[1], pr->offset + Ren::Vec3f{pr->radius});
+    obj_bbox[0] = Min(obj_bbox[0], pr->offset - Ren::Vec3f{pr->radius});
+    obj_bbox[1] = Max(obj_bbox[1], pr->offset + Ren::Vec3f{pr->radius});
 }
 
 void SceneManager::PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     auto *snd = (SoundSource *)comp;
 
     const Ren::Vec3f center = 0.5f * (obj_bbox[0] + obj_bbox[1]);
-    snd->snd_src.Init(1.0f, Ren::ValuePtr(center));
+    snd->snd_src.Init(1.0f, ValuePtr(center));
 }
 
 void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
@@ -1172,8 +1172,8 @@ void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp
         }
     }
 
-    obj_bbox[0] = Ren::Min(obj_bbox[0], acc->mesh->bbox_min());
-    obj_bbox[1] = Ren::Max(obj_bbox[1], acc->mesh->bbox_max());
+    obj_bbox[0] = Min(obj_bbox[0], acc->mesh->bbox_min());
+    obj_bbox[1] = Max(obj_bbox[1], acc->mesh->bbox_max());
 }
 
 Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {

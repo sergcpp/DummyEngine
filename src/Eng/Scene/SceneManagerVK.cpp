@@ -337,8 +337,8 @@ void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const ui
             new_index = scene_data_.persistent_data.pipelines.emplace();
             Ren::Pipeline &new_pipeline = scene_data_.persistent_data.pipelines.at(new_index);
 
-            const bool res =
-                new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0, ren_ctx_.log());
+            const bool res = new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0,
+                                               ren_ctx_.log());
             if (!res) {
                 ren_ctx_.log()->Error("Failed to initialize pipeline!");
             }
@@ -647,7 +647,7 @@ void SceneManager::InitHWAccStructures() {
             geo.flags = 0;
             if (lm) {
                 geo.flags |= RTGeoLightmappedBit;
-                memcpy(&geo.lmap_transform[0], Ren::ValuePtr(lm->xform), 4 * sizeof(float));
+                memcpy(&geo.lmap_transform[0], ValuePtr(lm->xform), 4 * sizeof(float));
             } else {
                 if (closest_probe == 0xffffffff) {
                     // find closest probe
@@ -662,8 +662,8 @@ void SceneManager::InitHWAccStructures() {
                         const LightProbe &probe_pr = probes[probe.components[CompProbe]];
 
                         const float dist2 =
-                            Ren::Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),
-                                           0.5f * (probe_tr.bbox_min_ws + probe_tr.bbox_max_ws) + probe_pr.offset);
+                            Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),
+                                      0.5f * (probe_tr.bbox_min_ws + probe_tr.bbox_max_ws) + probe_pr.offset);
                         if (dist2 < min_dist2) {
                             closest_probe = probe_pr.layer_index;
                             min_dist2 = dist2;

@@ -3174,6 +3174,6 @@
 		], 
 		"fwd_speed" : 0.025, 
 		"fov" : 29, 
-		"max_exposure" : 1000
+		"max_exposure" : 4
 	}
 }

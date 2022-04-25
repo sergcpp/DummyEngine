@@ -28,6 +28,8 @@ struct Frustum {
                        Plane{Ren::Uninitialize}, Plane{Ren::Uninitialize}};
     int planes_count = 6;
 
+    void UpdateFromMatrix(const Mat4f &xform);
+
     eVisResult CheckVisibility(const Vec3f &point) const;
     eVisResult CheckVisibility(const float bbox[8][3]) const;
     eVisResult CheckVisibility(const Vec3f &bbox_min, const Vec3f &bbox_max) const;
@@ -42,7 +44,7 @@ class Camera {
     Vec3f world_position_;
     uint32_t render_mask_ = 0xffffffff;
 
-    Frustum frustum_;
+    Frustum frustum_, frustum_vs_;
     bool is_orthographic_ = false;
 
     float angle_ = 0.0f, aspect_ = 1.0f, near_ = 0.0f, far_ = 0.0f;
@@ -84,6 +86,9 @@ class Camera {
 
     const Plane &frustum_plane(const int i) const { return frustum_.planes[i]; }
     const Plane &frustum_plane(const eCamPlane i) const { return frustum_.planes[int(i)]; }
+
+    const Plane &frustum_plane_vs(const int i) const { return frustum_vs_.planes[i]; }
+    const Plane &frustum_plane_vs(const eCamPlane i) const { return frustum_vs_.planes[int(i)]; }
 
     bool is_orthographic() const { return is_orthographic_; }
 

@@ -6,7 +6,7 @@
     precision highp float;
 #endif
 
-#include "_common.glsl"
+#include "_cs_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_reproject_interface.glsl"
 
@@ -448,5 +448,5 @@ void main() {
     uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
     uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
-    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 0.7 /* temporal_stability */, 32);
+    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 0.7 /* temporal_stability */, 64);
 }

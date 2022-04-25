@@ -401,7 +401,7 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
         { // update param
             const Ren::Vec3f &p1 = cam_follow_path_[cam_follow_point_], &p2 = cam_follow_path_[next_point];
 
-            cam_follow_param_ += 0.000005f * dt_us / Ren::Distance(p1, p2);
+            cam_follow_param_ += 0.000005f * dt_us / Distance(p1, p2);
             while (cam_follow_param_ > 1.0f) {
                 cam_follow_point_ = (cam_follow_point_ + 1) % int(cam_follow_path_.size());
                 cam_follow_param_ -= 1.0f;
@@ -431,31 +431,31 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     SceneObject *monkey1 = scene_manager_->GetObject(monkey_ids[0]);
     if ((monkey1->comp_mask & mask) == mask) {
         auto *tr = monkey1->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
     SceneObject *monkey2 = scene_manager_->GetObject(monkey_ids[1]);
     if ((monkey2->comp_mask & mask) == mask) {
         auto *tr = monkey2->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
+        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
     }
 
     SceneObject *monkey3 = scene_manager_->GetObject(monkey_ids[2]);
     if ((monkey3->comp_mask & mask) == mask) {
         auto *tr = monkey3->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
+        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(1.5f + t), 0.05f + 0.04f * std::cos(t) });
     }
 
     SceneObject *monkey4 = scene_manager_->GetObject(monkey_ids[3]);
     if ((monkey4->comp_mask & mask) == mask) {
         auto *tr = monkey4->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
     SceneObject *monkey5 = scene_manager_->GetObject(monkey_ids[4]);
     if ((monkey5->comp_mask & mask) == mask) {
         auto *tr = monkey5->tr.get();
-        tr->mat = Ren::Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
+        tr->mat = Translate(tr->mat, Ren::Vec3f{ 0.0f, 0.0f + 0.02f * std::cos(t), 0.05f + 0.04f * std::cos(t) });
     }
 
     scene_manager_->InvalidateObjects(monkey_ids, 5, CompTransformBit);
@@ -480,20 +480,20 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
 
                 tr->world_from_object_prev = tr->world_from_object;
                 tr->world_from_object = Ren::Mat4f{1.0f};
-                tr->world_from_object = Ren::Translate(tr->world_from_object, rot_center);
+                tr->world_from_object = Translate(tr->world_from_object, rot_center);
 
                 if (i < 8) {
                     // inner circle
                     tr->world_from_object =
-                        Ren::Rotate(tr->world_from_object, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(),
-                                    Ren::Vec3f{0.0f, 1.0f, 0.0f});
-                    tr->world_from_object = Ren::Translate(tr->world_from_object, Ren::Vec3f{6.5f, 0.0f, 0.0f});
+                        Rotate(tr->world_from_object, scooters_angle_ + float(i) * 0.25f * Ren::Pi<float>(),
+                               Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    tr->world_from_object = Translate(tr->world_from_object, Ren::Vec3f{6.5f, 0.0f, 0.0f});
                 } else {
                     // outer circle
                     tr->world_from_object =
-                        Ren::Rotate(tr->world_from_object, -scooters_angle_ + float(i - 8) * 0.25f * Ren::Pi<float>(),
-                                    Ren::Vec3f{0.0f, 1.0f, 0.0f});
-                    tr->world_from_object = Ren::Translate(tr->world_from_object, Ren::Vec3f{-8.5f, 0.0f, 0.0f});
+                        Rotate(tr->world_from_object, -scooters_angle_ + float(i - 8) * 0.25f * Ren::Pi<float>(),
+                               Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    tr->world_from_object = Translate(tr->world_from_object, Ren::Vec3f{-8.5f, 0.0f, 0.0f});
                 }
             }
         }
@@ -511,7 +511,7 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     }
 
     scene.env.wind_vec = 0.99f * scene.env.wind_vec + 0.01f * wind_vector_goal_;
-    scene.env.wind_turbulence = (1.0f / 32.0f) * Ren::Length(scene.env.wind_vec);
+    scene.env.wind_turbulence = (1.0f / 32.0f) * Length(scene.env.wind_vec);
 }
 
 bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
@@ -745,8 +745,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
                 {
                     Ren::Mat4f xform;
-                    // xform = Ren::Rotate(xform, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
-                    xform = Ren::Translate(xform, delta_time_s * Ren::Vec3f{0.1f, 0.0f, 0.0f});
+                    // xform = Rotate(xform, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                    xform = Translate(xform, delta_time_s * Ren::Vec3f{0.1f, 0.0f, 0.0f});
 
                     tr->world_from_object_prev = tr->world_from_object;
                     tr->world_from_object = xform * tr->world_from_object;
@@ -895,8 +895,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
             auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(leaf_tree->components[CompTransform]);
 
             Ren::Mat4f rot_mat;
-            rot_mat = Ren::Rotate(rot_mat, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
-            //rot_mat = Ren::Translate(rot_mat, Ren::Vec3f{0.001f, 0.0f, 0.0f});
+            rot_mat = Rotate(rot_mat, 0.5f * delta_time_s, Ren::Vec3f{0.0f, 1.0f, 0.0f});
+            //rot_mat = Translate(rot_mat, Ren::Vec3f{0.001f, 0.0f, 0.0f});
 
             tr->world_from_object_prev = tr->world_from_object;
             tr->world_from_object = rot_mat * tr->world_from_object;
@@ -909,7 +909,7 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
     scene.env.prev_wind_scroll_hf = scene.env.curr_wind_scroll_hf;
 
     scene.env.curr_wind_scroll_lf =
-        Ren::Fract(scene.env.curr_wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
+        Fract(scene.env.curr_wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
     scene.env.curr_wind_scroll_hf =
-        Ren::Fract(scene.env.curr_wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
+        Fract(scene.env.curr_wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
 }
