@@ -26,6 +26,7 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
     RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(pass_data_->ray_counter);
     RpAllocBuf &ray_list_buf = builder.GetReadBuffer(pass_data_->ray_list);
     RpAllocBuf &indir_args_buf = builder.GetReadBuffer(pass_data_->indir_args);
+    RpAllocBuf &tlas_buf = builder.GetReadBuffer(pass_data_->tlas_buf);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
@@ -106,6 +107,7 @@ void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
     RpAllocBuf &ray_counter_buf = builder.GetReadBuffer(pass_data_->ray_counter);
     RpAllocBuf &ray_list_buf = builder.GetReadBuffer(pass_data_->ray_list);
     RpAllocBuf &indir_args_buf = builder.GetReadBuffer(pass_data_->indir_args);
+    RpAllocBuf &tlas_buf = builder.GetReadBuffer(pass_data_->tlas_buf);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
