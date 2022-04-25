@@ -215,6 +215,29 @@ RpResRef RpBuilder::ReadHistoryTexture(const RpResRef handle, const Ren::eResSta
     return ret;
 }
 
+RpResRef RpBuilder::ReadHistoryTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
+                                       RpSubpass &pass) {
+    RpResRef ret;
+    ret.type = eRpResType::Texture;
+
+    const uint16_t *ptex_index = name_to_texture_.Find(name);
+    if (!ptex_index) {
+        RpAllocTex new_tex;
+        new_tex.read_count = 0;
+        new_tex.write_count = 0;
+        new_tex.used_in_stages = Ren::eStageBits::None;
+        new_tex.name = name;
+        // desc must be initialized later
+
+        ret.index = textures_.emplace(new_tex);
+        name_to_texture_[new_tex.name] = ret.index;
+    } else {
+        ret.index = *ptex_index;
+    }
+
+    return ReadHistoryTexture(ret, desired_state, stages, pass);
+}
+
 RpResRef RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
                                 RpSubpass &pass) {
     assert(handle.type == eRpResType::Buffer);
@@ -522,12 +545,11 @@ void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
             }
         } else if (res.type == eRpResType::Texture) {
             RpAllocTex &tex = textures_.at(res.index);
-
             if (tex.history_index != -1) {
                 RpAllocTex &hist_tex = textures_.at(tex.history_index);
                 // combine usage flags
                 tex.desc.usage |= hist_tex.desc.usage;
-                hist_tex.desc.usage = tex.desc.usage;
+                hist_tex.desc = tex.desc;
 
                 tex.ref = tex.strong_ref;
                 hist_tex.ref = hist_tex.strong_ref;
@@ -644,8 +666,8 @@ bool RpBuilder::DependsOn_r(const int16_t dst_pass, const int16_t src_pass) {
     return false;
 }
 
-void RpBuilder::TraversePassDependencies(const RpSubpass *pass, const int recursion_depth,
-                                         std::vector<RpSubpass *> &out_pass_stack) {
+void RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int recursion_depth,
+                                           std::vector<RpSubpass *> &out_pass_stack) {
     assert(recursion_depth <= subpasses_.size());
     Ren::SmallVector<int16_t, 32> written_in_passes;
     for (size_t i = 0; i < pass->input_.size(); i++) {
@@ -664,7 +686,6 @@ void RpBuilder::TraversePassDependencies(const RpSubpass *pass, const int recurs
             pass->output_[i].desired_state != Ren::eResState::UnorderedAccess) {
             continue;
         }
-
         const int16_t prev_pass = FindPreviousWrittenInPass(pass->output_[i]);
         if (prev_pass != -1) {
             const auto it = std::find(std::begin(written_in_passes), std::end(written_in_passes), prev_pass);
@@ -683,28 +704,52 @@ void RpBuilder::TraversePassDependencies(const RpSubpass *pass, const int recurs
             pass->depends_on_passes_.push_back(_pass->index_);
         }
         out_pass_stack.push_back(_pass);
-        TraversePassDependencies(_pass, recursion_depth + 1, out_pass_stack);
+        TraversePassDependencies_r(_pass, recursion_depth + 1, out_pass_stack);
     }
 }
 
 void RpBuilder::PrepareAllocResources() {
+    std::vector<bool> visited_buffers(buffers_.capacity(), false);
+    std::vector<bool> visited_textures(textures_.capacity(), false);
+
     for (RpSubpass *cur_pass : reordered_subpasses_) {
         for (size_t i = 0; i < cur_pass->input_.size(); ++i) {
             const RpResource &r = cur_pass->input_[i];
-            if (r.type == eRpResType::Texture) {
+            if (r.type == eRpResType::Buffer) {
+                visited_buffers[r.index] = true;
+            } else if (r.type == eRpResType::Texture) {
                 RpAllocTex &tex = textures_[r.index];
                 tex.desc.usage |= Ren::TexUsageFromState(r.desired_state);
+                visited_textures[r.index] = true;
             }
         }
         for (size_t i = 0; i < cur_pass->output_.size(); ++i) {
             const RpResource &r = cur_pass->output_[i];
-            if (r.type == eRpResType::Texture) {
+            if (r.type == eRpResType::Buffer) {
+                visited_buffers[r.index] = true;
+            } else if (r.type == eRpResType::Texture) {
                 RpAllocTex &tex = textures_[r.index];
                 tex.desc.usage |= Ren::TexUsageFromState(r.desired_state);
+                visited_textures[r.index] = true;
             }
         }
     }
+
+    // Release unused resources
+    for (auto it = buffers_.begin(); it != buffers_.end(); ++it) {
+        if (!visited_buffers[it.index()]) {
+            it->ref = it->strong_ref = {};
+        }
+    }
+    for (auto it = textures_.begin(); it != textures_.end(); ++it) {
+        if (!visited_textures[it.index()] && (it->history_of == -1 || !visited_textures[it->history_of]) &&
+            (it->history_index == -1 || !visited_textures[it->history_index])) {
+            it->ref = it->strong_ref = {};
+        }
+    }
 }
+
+void RpBuilder::ReleaseUnusedResources() {}
 
 void RpBuilder::BuildRenderPasses() {
     auto should_merge = [](const RpSubpass *prev, const RpSubpass *next) {
@@ -1003,7 +1048,7 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
         reordered_subpasses_.assign(std::begin(written_in_passes), std::end(written_in_passes));
 
         for (const RpSubpass *pass : written_in_passes) {
-            TraversePassDependencies(pass, 0, reordered_subpasses_);
+            TraversePassDependencies_r(pass, 0, reordered_subpasses_);
         }
 
         std::reverse(std::begin(reordered_subpasses_), std::end(reordered_subpasses_));
@@ -1094,8 +1139,11 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
     BuildRenderPasses();
 
     for (RpSubpass *subpass : reordered_subpasses_) {
+        // Must be allocated in order of pass execution (because of how aliasing works)
         AllocateNeededResources(*subpass);
     }
+
+    ReleaseUnusedResources();
 
 #if 0
     ctx_.log()->Info("======================================================================");
@@ -1119,28 +1167,29 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
     for (const RpAllocTex &tex : textures_) {
         if (tex.alias_of != -1) {
             const RpAllocTex &orig_tex = textures_[tex.alias_of];
-            ctx_.log()->Info("Tex %12s alias of %12s\t\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
+            ctx_.log()->Info("Tex %-24.24s alias of %12s\t\t| %-f MB", tex.name.c_str(), orig_tex.name.c_str(),
                              float(total_texture_memory) * 0.000001f);
             continue;
         }
         if (tex.strong_ref) {
             total_texture_memory += Ren::EstimateMemory(tex.strong_ref->params);
-            ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
-                             float(Ren::EstimateMemory(tex.desc)) * 0.000001f, float(total_texture_memory) * 0.000001f);
+            ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", tex.name.c_str(), tex.desc.w, tex.desc.h,
+                             float(Ren::EstimateMemory(tex.ref->params)) * 0.000001f,
+                             float(total_texture_memory) * 0.000001f);
         } else if (tex.ref) {
             not_handled_textures.push_back(tex.ref);
         }
     }
     ctx_.log()->Info("----------------------------------------------------------------------");
-    ctx_.log()->Info("Graph owned texture memory:\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
+    ctx_.log()->Info("Graph owned texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     ctx_.log()->Info("----------------------------------------------------------------------");
     for (const auto &ref : not_handled_textures) {
         total_texture_memory += Ren::EstimateMemory(ref->params);
-        ctx_.log()->Info("Tex %16s (%ix%i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
+        ctx_.log()->Info("Tex %-24.24s (%4ix%-4i %f MB)\t\t| %f MB", ref->name().c_str(), ref->params.w, ref->params.h,
                          float(Ren::EstimateMemory(ref->params)) * 0.000001f, float(total_texture_memory) * 0.000001f);
     }
     ctx_.log()->Info("----------------------------------------------------------------------");
-    ctx_.log()->Info("Total graph texture memory: \t\t\t%f MB", float(total_texture_memory) * 0.000001f);
+    ctx_.log()->Info("Total graph texture memory:\t\t\t\t\t| %f MB", float(total_texture_memory) * 0.000001f);
     ctx_.log()->Info("======================================================================");
 #endif
 }
