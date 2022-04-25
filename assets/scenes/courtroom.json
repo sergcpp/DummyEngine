@@ -32,6 +32,9 @@
 			}, 
 			"drawable" : {
 				"mesh_file" : "courtroom/light_blocker.mesh"
+			},
+			"acc_structure" : {
+				"mesh_file" : "courtroom/light_blocker.mesh"
 			}
 		}, 
 		{
@@ -52,6 +55,9 @@
 			}, 
 			"lightmap" : {
 				"res" : 512
+			},
+			"acc_structure" : {
+				"mesh_file" : "courtroom/floor.mesh"
 			}
 		}, 
 		{
@@ -72,6 +78,9 @@
 			}, 
 			"lightmap" : {
 				"res" : 512
+			},
+			"acc_structure" : {
+				"mesh_file" : "courtroom/walls.mesh"
 			}
 		}, 
 		{
@@ -92,6 +101,9 @@
 			}, 
 			"lightmap" : {
 				"res" : 512
+			},
+			"acc_structure" : {
+				"mesh_file" : "courtroom/ceil.mesh"
 			}
 		}, 
 		{
@@ -112,6 +124,9 @@
 			}, 
 			"lightmap" : {
 				"res" : 256
+			},
+			"acc_structure" : {
+				"mesh_file" : "courtroom/seats2.mesh"
 			}
 		}, 
 		{

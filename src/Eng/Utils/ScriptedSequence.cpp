@@ -521,11 +521,11 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
             tr.world_from_object_prev = tr.world_from_object;
             tr.world_from_object = Ren::Mat4f{1.0f};
             tr.world_from_object =
-                Ren::Rotate(tr.world_from_object, new_rot[2] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{0.0f, 0.0f, 1.0f});
+                Rotate(tr.world_from_object, new_rot[2] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{0.0f, 0.0f, 1.0f});
             tr.world_from_object =
-                Ren::Rotate(tr.world_from_object, new_rot[0] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{1.0f, 0.0f, 0.0f});
+                Rotate(tr.world_from_object, new_rot[0] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{1.0f, 0.0f, 0.0f});
             tr.world_from_object =
-                Ren::Rotate(tr.world_from_object, new_rot[1] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{0.0f, 1.0f, 0.0f});
+                Rotate(tr.world_from_object, new_rot[1] * Ren::Pi<float>() / 180.0f, Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
             const Ren::Vec3f new_pos = Mix(Ren::MakeVec3(action.pos_beg), Ren::MakeVec3(action.pos_end), t_norm);
             memcpy(&tr.world_from_object[3][0], ValuePtr(new_pos), 3 * sizeof(float));
@@ -565,7 +565,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
                 }
 
                 const Ren::Vec4f pos = tr.world_from_object * Ren::Vec4f{0.0f, 1.0f, 0.0f, 1.0f};
-                ss.snd_src.set_position(Ren::ValuePtr(pos));
+                ss.snd_src.set_position(ValuePtr(pos));
 
                 if (play_sound) {
                     if (t >= action.sound_offset && t < (action.sound_offset + action.sound_ref->GetDurationS())) {
@@ -619,7 +619,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         const Ren::Vec3f trg = pos - Ren::Vec3f{cam_mat[2]};
 
         cam.focus_depth = 3.0f;
-        cam.focus_distance = Ren::Distance(pos, Ren::Vec3f{target_mat[3]});
+        cam.focus_distance = Distance(pos, Ren::Vec3f{target_mat[3]});
         cam.focus_far_mul = cam.focus_near_mul = action.dof ? 1.0f : 0.0f;
         cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
         cam.max_exposure = 32.0f;
@@ -628,7 +628,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
 
         Snd::Source &amb_sound = scene_manager_.ambient_sound();
         if (action.sound_ref) {
-            amb_sound.set_position(Ren::ValuePtr(cam.world_position()));
+            amb_sound.set_position(ValuePtr(cam.world_position()));
 
             if (play_sound) {
                 if (t >= action.sound_offset && t < (action.sound_offset + action.sound_ref->GetDurationS())) {

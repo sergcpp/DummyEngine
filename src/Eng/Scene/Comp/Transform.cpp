@@ -21,7 +21,7 @@ void Transform::UpdateBBox() {
     }
 }
 
-void Transform::UpdateInvMatrix() { object_from_world = Ren::Inverse(world_from_object); }
+void Transform::UpdateInvMatrix() { object_from_world = Inverse(world_from_object); }
 
 void Transform::Read(const JsObjectP &js_in, Transform &tr) {
     tr.world_from_object = Ren::Mat4f{1.0f};
@@ -29,30 +29,25 @@ void Transform::Read(const JsObjectP &js_in, Transform &tr) {
     if (js_in.Has("pos")) {
         const JsArrayP &js_pos = js_in.at("pos").as_arr();
 
-        const auto pos =
-            Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
-                       float(js_pos.at(2).as_num().val)};
+        const auto pos = Ren::Vec3f{float(js_pos.at(0).as_num().val), float(js_pos.at(1).as_num().val),
+                                    float(js_pos.at(2).as_num().val)};
 
-        tr.world_from_object = Ren::Translate(tr.world_from_object, pos);
+        tr.world_from_object = Translate(tr.world_from_object, pos);
     }
 
     if (js_in.Has("rot")) {
         const JsArrayP &js_rot = js_in.at("rot").as_arr();
 
         // angles in degrees
-        tr.euler_angles_rad =
-            Ren::Vec3f{float(js_rot.at(0).as_num().val), float(js_rot.at(1).as_num().val),
-                       float(js_rot.at(2).as_num().val)};
+        tr.euler_angles_rad = Ren::Vec3f{float(js_rot.at(0).as_num().val), float(js_rot.at(1).as_num().val),
+                                         float(js_rot.at(2).as_num().val)};
 
         // convert to radians
         tr.euler_angles_rad *= Ren::Pi<float>() / 180.0f;
 
-        const Ren::Mat4f rot_z = Ren::Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[2],
-                                             Ren::Vec3f{0.0f, 0.0f, 1.0f}),
-                         rot_x = Ren::Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[0],
-                                             Ren::Vec3f{1.0f, 0.0f, 0.0f}),
-                         rot_y = Ren::Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[1],
-                                             Ren::Vec3f{0.0f, 1.0f, 0.0f});
+        const Ren::Mat4f rot_z = Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[2], Ren::Vec3f{0.0f, 0.0f, 1.0f}),
+                         rot_x = Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[0], Ren::Vec3f{1.0f, 0.0f, 0.0f}),
+                         rot_y = Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[1], Ren::Vec3f{0.0f, 1.0f, 0.0f});
 
         const Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
         tr.world_from_object = tr.world_from_object * rot_all;
@@ -65,7 +60,7 @@ void Transform::Read(const JsObjectP &js_in, Transform &tr) {
         tr.scale[1] = float(js_scale[1].as_num().val);
         tr.scale[2] = float(js_scale[2].as_num().val);
 
-        tr.world_from_object = Ren::Scale(tr.world_from_object, tr.scale);
+        tr.world_from_object = Scale(tr.world_from_object, tr.scale);
     } else {
         tr.scale = Ren::Vec3f{1.0f, 1.0f, 1.0f};
     }
@@ -89,8 +84,7 @@ void Transform::Write(const Transform &tr, JsObjectP &js_out) {
     { // write rotation
         JsArrayP js_rot(alloc);
 
-        const Ren::Vec3f euler_angles_deg =
-            tr.euler_angles_rad * 180.0f / Ren::Pi<float>();
+        const Ren::Vec3f euler_angles_deg = tr.euler_angles_rad * 180.0f / Ren::Pi<float>();
 
         js_rot.Push(JsNumber(euler_angles_deg[0]));
         js_rot.Push(JsNumber(euler_angles_deg[1]));

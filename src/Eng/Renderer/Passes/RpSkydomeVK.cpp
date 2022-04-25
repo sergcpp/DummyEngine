@@ -84,10 +84,10 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
                             nullptr);
 
     Ren::Mat4f translate_matrix;
-    translate_matrix = Ren::Translate(translate_matrix, draw_cam_pos_);
+    translate_matrix = Translate(translate_matrix, draw_cam_pos_);
 
     Ren::Mat4f scale_matrix;
-    scale_matrix = Ren::Scale(scale_matrix, Ren::Vec3f{5000.0f, 5000.0f, 5000.0f});
+    scale_matrix = Scale(scale_matrix, Ren::Vec3f{5000.0f, 5000.0f, 5000.0f});
 
     const Ren::Mat4f push_constant_data = translate_matrix * scale_matrix;
     vkCmdPushConstants(cmd_buf, pipeline_[rp_index].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Ren::Mat4f),

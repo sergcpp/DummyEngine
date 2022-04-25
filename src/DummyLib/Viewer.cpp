@@ -8,6 +8,7 @@
 
 #include <Eng/GameStateManager.h>
 #include <Eng/Log.h>
+#include <Eng/Random.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/PhysicsManager.h>
 #include <Eng/Scene/SceneManager.h>
@@ -98,7 +99,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const char *devi
     {
         auto sh_loader = GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
         auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
-        auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, threads);
+        auto random = GetComponent<Random>(RANDOM_KEY);
+        auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, *random, threads);
         AddComponent(RENDERER_KEY, renderer);
 
         Ray::settings_t s;

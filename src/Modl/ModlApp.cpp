@@ -807,8 +807,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                 const Ren::Vec3f orig_normal = Ren::MakeVec3(&normals[key.index * 3ull]);
                 const Ren::Vec3f orig_tangent = Ren::MakeVec3(&tangents[key.index * 3ull]);
                 const Ren::Vec3f tran_normal = orig_normal + Ren::MakeVec3(key.delta.dn);
-                const Ren::Vec3f tran_binormal = Ren::Cross(tran_normal, orig_tangent);
-                const Ren::Vec3f tran_tangent = Ren::Normalize(Ren::Cross(tran_binormal, tran_normal));
+                const Ren::Vec3f tran_binormal = Cross(tran_normal, orig_tangent);
+                const Ren::Vec3f tran_tangent = Normalize(Cross(tran_binormal, tran_normal));
 
                 key.delta.db[0] = tran_tangent[0] - orig_tangent[0];
                 key.delta.db[1] = tran_tangent[1] - orig_tangent[1];
@@ -1373,8 +1373,8 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
             primitives.emplace_back();
             prim_t &new_prim = primitives.back();
 
-            new_prim.bbox_min = Ren::Min(v0, Ren::Min(v1, v2));
-            new_prim.bbox_max = Ren::Max(v0, Ren::Max(v1, v2));
+            new_prim.bbox_min = Min(v0, Min(v1, v2));
+            new_prim.bbox_max = Max(v0, Max(v1, v2));
         }
     }
 

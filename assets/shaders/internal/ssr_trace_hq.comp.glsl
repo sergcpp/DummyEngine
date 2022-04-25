@@ -240,12 +240,13 @@ void main() {
     vec3 out_color = vec3(0.0);
     bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, hit_point);
     if (hit_found) {
+        vec2 uv = hit_point.xy;
 #if defined(VULKAN)
-        hit_point.y = -hit_point.y;
+        uv.y = -uv.y;
 #endif // VULKAN
-        hit_point.xy = 0.5 * hit_point.xy + 0.5;
+        uv.xy = 0.5 * uv.xy + 0.5;
 
-        out_color += textureLod(color_texture, hit_point.xy, 0.0).rgb;
+        out_color += textureLod(color_texture, uv, 0.0).rgb;
     }
 
     { // schedule rt rays

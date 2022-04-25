@@ -166,7 +166,7 @@ void main(void) {
         albedo_color = mix(albedo_color, vec3(0.0), clamp(v + 0.5, 0.0, 1.0));
     }
 
-    vec2 ao_uvs = vec2(ix, iy) / g_shrd_data.res_and_fres.zw;
+    vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                          ambient_occlusion * indirect_col + additional_light);

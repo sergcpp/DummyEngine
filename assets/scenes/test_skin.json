@@ -10,7 +10,8 @@
     "camera" : {
         "view_origin" : [ -3.590890, 0.949173, 0.888698 ],
         "view_dir" : [ -0.707662, -0.288812, -0.644756 ],
-        "fwd_speed" : 0.1
+        "fwd_speed" : 0.1,
+        "max_exposure" : 4
     },
     "decals" : {
     },
