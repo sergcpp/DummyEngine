@@ -111,30 +111,6 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         desc.size = InstanceIndicesBufChunkSize;
         common_buffers.instance_indices_res = update_bufs.AddTransferOutput(INSTANCE_INDICES_BUF, desc);
     }
-    { // create cells buffer
-        RpBufDesc desc;
-        desc.type = Ren::eBufType::Texture;
-        desc.size = CellsBufChunkSize;
-        common_buffers.cells_res = update_bufs.AddTransferOutput(CELLS_BUF, desc);
-    }
-    { // create lights buffer
-        RpBufDesc desc;
-        desc.type = Ren::eBufType::Texture;
-        desc.size = LightsBufChunkSize;
-        common_buffers.lights_res = update_bufs.AddTransferOutput(LIGHTS_BUF, desc);
-    }
-    { // create decals buffer
-        RpBufDesc desc;
-        desc.type = Ren::eBufType::Texture;
-        desc.size = DecalsBufChunkSize;
-        common_buffers.decals_res = update_bufs.AddTransferOutput(DECALS_BUF, desc);
-    }
-    { // create items buffer
-        RpBufDesc desc;
-        desc.type = Ren::eBufType::Texture;
-        desc.size = ItemsBufChunkSize;
-        common_buffers.items_res = update_bufs.AddTransferOutput(ITEMS_BUF, desc);
-    }
     { // create uniform buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Uniform;
@@ -154,10 +130,6 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
         RpAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
         RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices_res);
-        RpAllocBuf &cells_buf = builder.GetWriteBuffer(common_buffers.cells_res);
-        RpAllocBuf &lights_buf = builder.GetWriteBuffer(common_buffers.lights_res);
-        RpAllocBuf &decals_buf = builder.GetWriteBuffer(common_buffers.decals_res);
-        RpAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items_res);
         RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(common_buffers.shared_data_res);
         RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
 
@@ -188,49 +160,6 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                                   *p_list_->instance_indices_stage_buf,
                                   ctx.backend_frame() * InstanceIndicesBufChunkSize, InstanceIndicesBufChunkSize,
                                   *instance_indices_buf.ref, 0, ctx.current_cmd_buf());
-
-        if (!cells_buf.tbos[0]) {
-            cells_buf.tbos[0] =
-                ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RawRG32UI, 0, CellsBufChunkSize);
-        }
-
-        Ren::UpdateBufferContents(p_list_->cells.data, p_list_->cells.count * sizeof(CellData),
-                                  *p_list_->cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
-                                  *cells_buf.ref, 0, ctx.current_cmd_buf());
-
-        if (!lights_buf.tbos[0]) {
-            lights_buf.tbos[0] =
-                ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, LightsBufChunkSize);
-        }
-
-        Ren::UpdateBufferContents(p_list_->lights.data, p_list_->lights.count * sizeof(LightItem),
-                                  *p_list_->lights_stage_buf, ctx.backend_frame() * LightsBufChunkSize,
-                                  LightsBufChunkSize, *lights_buf.ref, 0, ctx.current_cmd_buf());
-
-        if (!decals_buf.tbos[0]) {
-            decals_buf.tbos[0] =
-                ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, DecalsBufChunkSize);
-        }
-
-        Ren::UpdateBufferContents(p_list_->decals.data, p_list_->decals.count * sizeof(DecalItem),
-                                  *p_list_->decals_stage_buf, ctx.backend_frame() * DecalsBufChunkSize,
-                                  DecalsBufChunkSize, *decals_buf.ref, 0, ctx.current_cmd_buf());
-
-        if (!items_buf.tbos[0]) {
-            items_buf.tbos[0] =
-                ctx.CreateTexture1D("Items TBO", items_buf.ref, Ren::eTexFormat::RawRG32UI, 0, ItemsBufChunkSize);
-        }
-
-        if (p_list_->items.count) {
-            Ren::UpdateBufferContents(p_list_->items.data, p_list_->items.count * sizeof(ItemData),
-                                      *p_list_->items_stage_buf, ctx.backend_frame() * ItemsBufChunkSize,
-                                      ItemsBufChunkSize, *items_buf.ref, 0, ctx.current_cmd_buf());
-        } else {
-            const ItemData dummy = {};
-            Ren::UpdateBufferContents(&dummy, sizeof(ItemData), *p_list_->items_stage_buf,
-                                      ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, *items_buf.ref, 0,
-                                      ctx.current_cmd_buf());
-        }
 
         { // Prepare data that is shared for all instances
             SharedDataBlock shrd_data;
@@ -333,6 +262,86 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         }
 
         Ren::FillBuffer(*atomic_cnt_buf.ref, 0, sizeof(uint32_t), 0, ctx.current_cmd_buf());
+    });
+}
+
+void Renderer::AddLightBuffersUpdatePass(CommonBuffers& common_buffers) {
+    auto &update_light_bufs = rp_builder_.AddPass("UPDATE LBUFFERS");
+
+    { // create cells buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Texture;
+        desc.size = CellsBufChunkSize;
+        common_buffers.cells_res = update_light_bufs.AddTransferOutput(CELLS_BUF, desc);
+    }
+    { // create lights buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Texture;
+        desc.size = LightsBufChunkSize;
+        common_buffers.lights_res = update_light_bufs.AddTransferOutput(LIGHTS_BUF, desc);
+    }
+    { // create decals buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Texture;
+        desc.size = DecalsBufChunkSize;
+        common_buffers.decals_res = update_light_bufs.AddTransferOutput(DECALS_BUF, desc);
+    }
+    { // create items buffer
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Texture;
+        desc.size = ItemsBufChunkSize;
+        common_buffers.items_res = update_light_bufs.AddTransferOutput(ITEMS_BUF, desc);
+    }
+
+    update_light_bufs.set_execute_cb([this, &common_buffers](RpBuilder &builder) {
+        Ren::Context &ctx = builder.ctx();
+        RpAllocBuf &cells_buf = builder.GetWriteBuffer(common_buffers.cells_res);
+        RpAllocBuf &lights_buf = builder.GetWriteBuffer(common_buffers.lights_res);
+        RpAllocBuf &decals_buf = builder.GetWriteBuffer(common_buffers.decals_res);
+        RpAllocBuf &items_buf = builder.GetWriteBuffer(common_buffers.items_res);
+
+        if (!cells_buf.tbos[0]) {
+            cells_buf.tbos[0] =
+                ctx.CreateTexture1D("Cells TBO", cells_buf.ref, Ren::eTexFormat::RawRG32UI, 0, CellsBufChunkSize);
+        }
+
+        Ren::UpdateBufferContents(p_list_->cells.data, p_list_->cells.count * sizeof(CellData),
+                                  *p_list_->cells_stage_buf, ctx.backend_frame() * CellsBufChunkSize, CellsBufChunkSize,
+                                  *cells_buf.ref, 0, ctx.current_cmd_buf());
+
+        if (!lights_buf.tbos[0]) {
+            lights_buf.tbos[0] =
+                ctx.CreateTexture1D("Lights TBO", lights_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, LightsBufChunkSize);
+        }
+
+        Ren::UpdateBufferContents(p_list_->lights.data, p_list_->lights.count * sizeof(LightItem),
+                                  *p_list_->lights_stage_buf, ctx.backend_frame() * LightsBufChunkSize,
+                                  LightsBufChunkSize, *lights_buf.ref, 0, ctx.current_cmd_buf());
+
+        if (!decals_buf.tbos[0]) {
+            decals_buf.tbos[0] =
+                ctx.CreateTexture1D("Decals TBO", decals_buf.ref, Ren::eTexFormat::RawRGBA32F, 0, DecalsBufChunkSize);
+        }
+
+        Ren::UpdateBufferContents(p_list_->decals.data, p_list_->decals.count * sizeof(DecalItem),
+                                  *p_list_->decals_stage_buf, ctx.backend_frame() * DecalsBufChunkSize,
+                                  DecalsBufChunkSize, *decals_buf.ref, 0, ctx.current_cmd_buf());
+
+        if (!items_buf.tbos[0]) {
+            items_buf.tbos[0] =
+                ctx.CreateTexture1D("Items TBO", items_buf.ref, Ren::eTexFormat::RawRG32UI, 0, ItemsBufChunkSize);
+        }
+
+        if (p_list_->items.count) {
+            Ren::UpdateBufferContents(p_list_->items.data, p_list_->items.count * sizeof(ItemData),
+                                      *p_list_->items_stage_buf, ctx.backend_frame() * ItemsBufChunkSize,
+                                      ItemsBufChunkSize, *items_buf.ref, 0, ctx.current_cmd_buf());
+        } else {
+            const ItemData dummy = {};
+            Ren::UpdateBufferContents(&dummy, sizeof(ItemData), *p_list_->items_stage_buf,
+                                      ctx.backend_frame() * ItemsBufChunkSize, ItemsBufChunkSize, *items_buf.ref, 0,
+                                      ctx.current_cmd_buf());
+        }
     });
 }
 
