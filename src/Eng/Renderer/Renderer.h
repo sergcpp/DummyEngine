@@ -252,6 +252,7 @@ DebugEllipsoids*/
     };
 
     void AddBuffersUpdatePass(CommonBuffers &common_buffers);
+    void AddLightBuffersUpdatePass(CommonBuffers &common_buffers);
     void AddSkydomePass(const CommonBuffers &common_buffers, bool clear, FrameTextures &frame_textures);
     void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                             const BindlessTextureData &bindless, FrameTextures &frame_textures);
