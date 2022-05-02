@@ -376,7 +376,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
             sample_count = min(s_max_samples, sample_count + 1);
             /* mediump */ float new_variance = ComputeTemporalVariance(refl, reprojection);
             if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
-                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(1.0, 0.0, 0.0, 0.0));
+                imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0, 0.0, 0.0, 0.0));
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(1.0));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(1.0));
             } else {
