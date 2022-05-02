@@ -169,6 +169,8 @@ void main() {
         }
     }
 
+    float ray_len = 0.0;
+
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
         col = clamp(RGBMDecode(textureLod(g_env_texture, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
     } else {
@@ -234,25 +236,27 @@ void main() {
                                               g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
                                               g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
         }
+
+        ray_len = hit_t;
     }
 
     imageStore(g_out_color_img, icoord, vec4(col, 1.0));
-    imageStore(g_out_raylen_img, icoord, vec4(0.0));
+    imageStore(g_out_raylen_img, icoord, vec4(ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
         imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(0.0));
+        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_vertical) {
         ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
         imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(0.0));
+        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_diagonal) {
         ivec2 copy_coords = copy_target;
         imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(0.0));
+        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
 }
