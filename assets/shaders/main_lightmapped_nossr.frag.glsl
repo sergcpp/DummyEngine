@@ -264,7 +264,7 @@ void main(void) {
         visibility = GetSunVisibility(lin_depth, g_shadow_texture, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 
-    vec2 ao_uvs = vec2(ix, iy) / g_shrd_data.res_and_fres.zw;
+    vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
     float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
     vec3 diffuse_color = diff_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * ambient_occlusion * indirect_col +

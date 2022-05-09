@@ -267,7 +267,7 @@ struct ViewState {
     int frame_index;
     Ren::Vec3f prev_cam_pos;
     Ren::Mat4f prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
-    mutable Ren::Vec4f clip_info;
+    mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[3];
     bool is_multisampled = false;
 };
 

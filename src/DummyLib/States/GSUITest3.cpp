@@ -293,7 +293,7 @@ void GSUITest3::Draw() {
     }
 
     auto up_vector = Ren::Vec3f{0.0f, 1.0f, 0.0f};
-    if (Ren::Length2(Ren::Cross(view_dir_, up_vector)) < 0.001f) {
+    if (Length2(Cross(view_dir_, up_vector)) < 0.001f) {
         up_vector = Ren::Vec3f{-1.0f, 0.0f, 0.0f};
     }
 
