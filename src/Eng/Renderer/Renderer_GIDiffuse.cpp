@@ -374,9 +374,7 @@ void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::Wea
             data->vtx_buf2 = rt_gi.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
             data->ndx_buf = rt_gi.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
             data->shared_data = rt_gi.AddUniformBufferInput(common_buffers.shared_data_res, stage);
-            data->sobol = rt_gi.AddStorageReadonlyInput(sobol_seq_buf_, stage);
-            data->scrambling_tile = rt_gi.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, stage);
-            data->ranking_tile = rt_gi.AddStorageReadonlyInput(ranking_tile_1spp_buf_, stage);
+            data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_gi.AddTextureInput(frame_textures.normal, stage);
             //data->flat_normal_tex = rt_gi.AddTextureInput(flat_normals_tex, stage);

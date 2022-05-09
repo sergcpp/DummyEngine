@@ -60,78 +60,20 @@ layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     uint g_ray_list[];
 };
 
-layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
-layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
-layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
+layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
 
 layout(binding = OUT_GI_IMG_SLOT, rgba16f) uniform writeonly restrict image2D g_out_color_img;
-
-//
-// https://eheitzresearch.wordpress.com/762-2/
-//
-float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
-    // wrap arguments
-    uint pixel_i = pixel.x & 127u;
-    uint pixel_j = pixel.y & 127u;
-    sample_index = sample_index & 255u;
-    sample_dimension = sample_dimension & 255u;
-
-    // xor index based on optimized ranking
-    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
-
-    // fetch value in sequence
-    uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
-
-    // if the dimension is optimized, xor sequence value based on optimized scrambling
-    value = value ^ texelFetch(g_scrambling_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
-
-    // convert to float and return
-    return (float(value) + 0.5) / 256.0;
-}
-
-vec2 SampleRandomVector2D(uvec2 pixel) {
-    vec2 u = vec2(fract(SampleRandomNumber(pixel, 0, 0u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                  fract(SampleRandomNumber(pixel, 0, 1u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
-    return u;
-}
-
-vec3 SampleCosineHemisphere(float u, float v) {
-    float phi = 2.0 * M_PI * v;
-
-    float cos_phi = cos(phi);
-    float sin_phi = sin(phi);
-
-    float dir = sqrt(u);
-    float k = sqrt(1.0 - u);
-    return vec3(dir * cos_phi, dir * sin_phi, k);
-}
 
 vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id) {
     mat3 tbn_transform = CreateTBN(normal);
 
-    vec2 u = SampleRandomVector2D(dispatch_thread_id % 128u);
+    vec2 u = texelFetch(g_noise_tex, ivec2(dispatch_thread_id) % 128, 0).rg;
 
     vec3 direction_tbn = SampleCosineHemisphere(u.x, u.y);
 
     // Transform reflected_direction back to the initial space.
     mat3 inv_tbn_transform = transpose(tbn_transform);
     return (inv_tbn_transform * direction_tbn);
-}
-
-vec3 offset_ray(vec3 p, vec3 n) {
-    const float Origin = 1.0f / 32.0f;
-    const float FloatScale = 1.0f / 65536.0f;
-    const float IntScale = 256.0f;
-
-    ivec3 of_i = ivec3(IntScale * n);
-
-    vec3 p_i = vec3(intBitsToFloat(floatBitsToInt(p.x) + ((p.x < 0.0) ? -of_i.x : of_i.x)),
-                    intBitsToFloat(floatBitsToInt(p.y) + ((p.y < 0.0) ? -of_i.y : of_i.y)),
-                    intBitsToFloat(floatBitsToInt(p.z) + ((p.z < 0.0) ? -of_i.z : of_i.z)));
-
-    return vec3(abs(p[0]) < Origin ? (p[0] + FloatScale * n[0]) : p_i[0],
-                abs(p[1]) < Origin ? (p[1] + FloatScale * n[1]) : p_i[1],
-                abs(p[2]) < Origin ? (p[2] + FloatScale * n[2]) : p_i[2]);
 }
 
 layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
@@ -164,8 +106,8 @@ void main() {
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, icoord);
-    vec3 refl_ray_ws = (g_shrd_data.inv_view_matrix * vec4(refl_ray_vs.xyz, 0.0)).xyz;
+    vec3 gi_ray_vs = SampleDiffuseVector(normal_vs, icoord);
+    vec3 gi_ray_ws = (g_shrd_data.inv_view_matrix * vec4(gi_ray_vs.xyz, 0.0)).xyz;
 
     vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
@@ -187,7 +129,7 @@ void main() {
                           0xff,             // cullMask
                           ray_origin_ws.xyz,// origin
                           t_min,            // tMin
-                          refl_ray_ws.xyz,  // direction
+                          gi_ray_ws.xyz,  // direction
                           t_max             // tMax
                           );
     while(rayQueryProceedEXT(rq)) {
@@ -221,7 +163,7 @@ void main() {
     float ray_len = t_max;
 
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-        col = clamp(RGBMDecode(textureLod(g_env_texture, refl_ray_ws.xyz, 4.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
+        col = clamp(RGBMDecode(textureLod(g_env_texture, gi_ray_ws.xyz, 4.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
     } else {
         int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
         int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
