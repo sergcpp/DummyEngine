@@ -54,9 +54,9 @@ void RpSSRCompose2::Execute(RpBuilder &builder) {
         SSRCompose2::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, output_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
-                            0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, output_fb_[fb_to_use_], render_pass_,
+                            rast_state, builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
+                            sizeof(uniform_params), 0);
     }
 }
 
@@ -75,8 +75,9 @@ void RpSSRCompose2::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &ou
         ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
     }
 
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          1, ctx.log())) {
+    fb_to_use_ = (fb_to_use_ + 1) % 2;
+    if (!output_fb_[fb_to_use_].Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {},
+                                      render_targets, 1, ctx.log())) {
         ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

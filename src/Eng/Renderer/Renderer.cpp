@@ -86,8 +86,8 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
         (max)[2], (min)[0], (max)[1], (min)[2], (max)[0], (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0],  \
         (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::ThreadPool> threads)
-    : ctx_(ctx), sh_(sh), threads_(std::move(threads)), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
+Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::shared_ptr<Sys::ThreadPool> threads)
+    : ctx_(ctx), sh_(sh), rand_(rand), threads_(std::move(threads)), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
       rp_builder_(ctx_, sh_) {
     using namespace RendererInternal;
 
@@ -772,9 +772,29 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
         }
 
+        if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
+            assert(!view_state_.is_multisampled);
+            auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
+
+            const RpResRef shared_data_buf = static_vel.AddUniformBufferInput(
+                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+            const RpResRef depth_tex =
+                static_vel.AddCustomTextureInput(frame_textures.depth, Ren::eResState::StencilTestDepthFetch,
+                                                 Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
+            frame_textures.velocity = static_vel.AddColorOutput(frame_textures.velocity);
+
+            rp_fill_static_vel_.Setup(&view_state_, shared_data_buf, depth_tex, frame_textures.velocity);
+            static_vel.set_executor(&rp_fill_static_vel_);
+        }
+
         if (deferred_shading) {
             // GBuffer filling pass
             AddGBufferFillPass(common_buffers, persistent_data, bindless_tex, frame_textures);
+
+            // GI
+            AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugDenoise) != 0,
+                             list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                             depth_hierarchy_tex, frame_textures);
 
             // GBuffer shading pass
             AddDeferredShadingPass(common_buffers, frame_textures);
@@ -790,21 +810,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         // Transparent pass
         AddForwardTransparentPass(common_buffers, persistent_data, bindless_tex, frame_textures);
-
-        if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
-            assert(!view_state_.is_multisampled);
-            auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
-
-            const RpResRef shared_data_buf = static_vel.AddUniformBufferInput(
-                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            const RpResRef depth_tex =
-                static_vel.AddCustomTextureInput(frame_textures.depth, Ren::eResState::StencilTestDepthFetch,
-                                                 Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
-            frame_textures.velocity = static_vel.AddColorOutput(frame_textures.velocity);
-
-            rp_fill_static_vel_.Setup(&view_state_, shared_data_buf, depth_tex, frame_textures.velocity);
-            static_vel.set_executor(&rp_fill_static_vel_);
-        }
 
         //
         // Reflections pass

@@ -28,6 +28,7 @@ extern "C" {
 #include "Passes/RpGBufferFill.h"
 #include "Passes/RpGBufferShade.h"
 #include "Passes/RpOpaque.h"
+#include "Passes/RpRTGI.h"
 #include "Passes/RpRTReflections.h"
 #include "Passes/RpReadBrightness.h"
 #include "Passes/RpSSAO.h"
@@ -56,11 +57,12 @@ template <typename T> class MonoAlloc;
 class ThreadPool;
 } // namespace Sys
 
+class Random;
 class ShaderLoader;
 
 class Renderer {
   public:
-    Renderer(Ren::Context &ctx, ShaderLoader &sh, std::shared_ptr<Sys::ThreadPool> threads);
+    Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::shared_ptr<Sys::ThreadPool> threads);
     ~Renderer();
 
     uint64_t render_flags() const { return render_flags_; }
@@ -89,6 +91,7 @@ class Renderer {
   private:
     Ren::Context &ctx_;
     ShaderLoader &sh_;
+    Random &rand_;
     std::shared_ptr<Sys::ThreadPool> threads_;
     SWcull_ctx cull_ctx_ = {};
     Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_,
@@ -196,6 +199,7 @@ DebugEllipsoids*/
     RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
+    RpRTGI rp_rt_gi_;
     RpRTReflections rp_rt_reflections_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
@@ -225,8 +229,14 @@ DebugEllipsoids*/
     // HQ SSR
     Ren::Pipeline pi_ssr_classify_tiles_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
-    // Denoiser stuff
+    // SSR Denoiser stuff
     Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_resolve_temporal_;
+    // GI
+    Ren::Pipeline pi_gi_classify_tiles_, pi_gi_write_indirect_, pi_gi_trace_ss_;
+    Ren::Pipeline pi_gi_rt_write_indirect_;
+    Ren::Pipeline pi_reconstruct_normals_;
+    // GI Denoiser stuff
+    Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_resolve_temporal_, pi_gi_blur_, pi_gi_post_blur_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
@@ -249,6 +259,7 @@ DebugEllipsoids*/
 
         RpResRef shadowmap;
         RpResRef ssao;
+        RpResRef gi;
     };
 
     void AddBuffersUpdatePass(CommonBuffers &common_buffers);
@@ -272,6 +283,13 @@ DebugEllipsoids*/
                              FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              RpResRef depth_down_2x, FrameTextures &frame_textures);
+
+    void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
+                          const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
+                          const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
+                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                          const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
+                          FrameTextures &frame_textures);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 

@@ -6,7 +6,7 @@
     precision highp float;
 #endif
 
-#include "_common.glsl"
+#include "_cs_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_prefilter_interface.glsl"
 
@@ -210,12 +210,6 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, neighborhoo
 
     resolved_radiance = accumulated_radiance;
     resolved_variance = accumulated_variance;
-}
-
-// Rounds value to the nearest multiple of 8
-uvec2 RoundUp8(uvec2 value) {
-    uvec2 round_down = value & ~7u; // 0b111
-    return (round_down == value) ? value : value + 8;
 }
 
 void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {

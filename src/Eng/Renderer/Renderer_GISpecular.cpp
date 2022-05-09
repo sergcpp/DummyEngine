@@ -368,8 +368,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
             data->dummy_black = rt_refl.AddTextureInput(dummy_black_, stage);
 
-            raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
             refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
+            raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
 
             rp_rt_reflections_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
             rt_refl.set_executor(&rp_rt_reflections_);

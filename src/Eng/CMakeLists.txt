@@ -84,6 +84,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_DrawList.cpp
                         Renderer/Renderer_Frontend.cpp
                         Renderer/Renderer_Gen.cpp
+                        Renderer/Renderer_GIDiffuse.cpp
                         Renderer/Renderer_GISpecular.cpp
                         Renderer/Renderer_Names.h
                         Renderer/Renderer_Passes.cpp
@@ -144,6 +145,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpOpaque.cpp
                     Renderer/Passes/RpReadBrightness.h
                     Renderer/Passes/RpReadBrightness.cpp
+                    Renderer/Passes/RpRTGI.h
+                    Renderer/Passes/RpRTGI.cpp
                     Renderer/Passes/RpRTReflections.h
                     Renderer/Passes/RpRTReflections.cpp
                     Renderer/Passes/RpSampleBrightness.h
@@ -208,6 +211,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpDepthHierarchyGL.cpp
                         Renderer/Passes/RpGBufferFillGL.cpp
                         Renderer/Passes/RpOpaqueGL.cpp
+                        Renderer/Passes/RpRTGI_GL.cpp
                         Renderer/Passes/RpRTReflections_GL.cpp
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
@@ -230,6 +234,7 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/Passes/RpDepthHierarchyVK.cpp
                         Renderer/Passes/RpGBufferFillVK.cpp
                         Renderer/Passes/RpOpaqueVK.cpp
+                        Renderer/Passes/RpRTGI_VK.cpp
                         Renderer/Passes/RpRTReflections_VK.cpp
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp
