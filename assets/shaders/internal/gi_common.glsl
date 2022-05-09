@@ -46,38 +46,31 @@ void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out bool copy_horizon
     copy_diagonal = ((packed_ray >> 31u) & 1u) != 0u; // 0b1
 }
 
-// http://jcgt.org/published/0007/04/01/paper.pdf
-// Input Ve: view direction
-// Input alpha_x, alpha_y: roughness parameters
-// Input U1, U2: uniform random numbers
-// Output Ne: normal sampled with PDF D_Ve(Ne) = G1(Ve) * max(0, dot(Ve, Ne)) * D(Ne) / Ve.z
-vec3 SampleGGXVNDF(vec3 Ve, float alpha_x, float alpha_y, float U1, float U2) {
-    // Section 3.2: transforming the view direction to the hemisphere configuration
-    vec3 Vh = normalize(vec3(alpha_x * Ve.x, alpha_y * Ve.y, Ve.z));
-    // Section 4.1: orthonormal basis (with special case if cross product is zero)
-    float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
-    vec3 T1 = lensq > 0 ? vec3(-Vh.y, Vh.x, 0) * inversesqrt(lensq) : vec3(1, 0, 0);
-    vec3 T2 = cross(Vh, T1);
-    // Section 4.2: parameterization of the projected area
-    float r = sqrt(U1);
-    float phi = 2.0 * M_PI * U2;
-    float t1 = r * cos(phi);
-    float t2 = r * sin(phi);
-    float s = 0.5 * (1.0 + Vh.z);
-    t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
-    // Section 4.3: reprojection onto hemisphere
-    vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * Vh;
-    // Section 3.4: transforming the normal back to the ellipsoid configuration
-    vec3 Ne = normalize(vec3(alpha_x * Nh.x, alpha_y * Nh.y, max(0.0, Nh.z)));
-    return Ne;
+vec3 SampleCosineHemisphere(float u, float v) {
+    float phi = 2.0 * M_PI * v;
+
+    float cos_phi = cos(phi);
+    float sin_phi = sin(phi);
+
+    float dir = sqrt(u);
+    float k = sqrt(1.0 - u);
+    return vec3(dir * cos_phi, dir * sin_phi, k);
 }
 
-vec3 Sample_GGX_VNDF_Ellipsoid(vec3 Ve, float alpha_x, float alpha_y, float U1, float U2) {
-    return SampleGGXVNDF(Ve, alpha_x, alpha_y, U1, U2);
-}
+vec3 offset_ray(vec3 p, vec3 n) {
+    const float Origin = 1.0f / 32.0f;
+    const float FloatScale = 1.0f / 65536.0f;
+    const float IntScale = 256.0f;
 
-vec3 Sample_GGX_VNDF_Hemisphere(vec3 Ve, float alpha, float U1, float U2) {
-    return Sample_GGX_VNDF_Ellipsoid(Ve, alpha, alpha, U1, U2);
+    ivec3 of_i = ivec3(IntScale * n);
+
+    vec3 p_i = vec3(intBitsToFloat(floatBitsToInt(p.x) + ((p.x < 0.0) ? -of_i.x : of_i.x)),
+                    intBitsToFloat(floatBitsToInt(p.y) + ((p.y < 0.0) ? -of_i.y : of_i.y)),
+                    intBitsToFloat(floatBitsToInt(p.z) + ((p.z < 0.0) ? -of_i.z : of_i.z)));
+
+    return vec3(abs(p[0]) < Origin ? (p[0] + FloatScale * n[0]) : p_i[0],
+                abs(p[1]) < Origin ? (p[1] + FloatScale * n[1]) : p_i[1],
+                abs(p[2]) < Origin ? (p[2] + FloatScale * n[2]) : p_i[2]);
 }
 
 mat3 CreateTBN(vec3 N) {
