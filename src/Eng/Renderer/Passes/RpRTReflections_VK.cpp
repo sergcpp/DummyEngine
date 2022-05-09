@@ -19,7 +19,7 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
-    RpAllocBuf &noise_tex = builder.GetReadBuffer(pass_data_->noise_tex);
+    RpAllocTex &noise_tex = builder.GetReadTexture(pass_data_->noise_tex);
     RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
     RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);

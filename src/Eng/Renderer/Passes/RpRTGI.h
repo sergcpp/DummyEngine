@@ -10,7 +10,7 @@ class PrimDraw;
 struct ViewState;
 
 struct RpRTGIData {
-    RpResRef sobol, scrambling_tile, ranking_tile;
+    RpResRef noise_tex;
     RpResRef geo_data;
     RpResRef materials;
     RpResRef vtx_buf1;
