@@ -9,7 +9,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "ssr_common.glsl"
+#include "gi_common.glsl"
 #include "gi_trace_ss_interface.glsl"
 
 /*
@@ -57,17 +57,6 @@ layout(std430, binding = INOUT_RAY_COUNTER_SLOT) coherent buffer RayCounter {
 
 void StoreRay(uint ray_index, uvec2 ray_coord, bool copy_horizontal, bool copy_vertical, bool copy_diagonal) {
     g_out_ray_list[ray_index] = PackRay(ray_coord, copy_horizontal, copy_vertical, copy_diagonal); // Store out pixel to trace
-}
-
-vec3 SampleCosineHemisphere(float u, float v) {
-    float phi = 2.0 * M_PI * v;
-
-    float cos_phi = cos(phi);
-    float sin_phi = sin(phi);
-
-    float dir = sqrt(u);
-    float k = sqrt(1.0 - u);
-    return vec3(dir * cos_phi, dir * sin_phi, k);
 }
 
 vec3 SampleDiffuseVector(vec3 normal, ivec2 dispatch_thread_id) {
@@ -123,7 +112,7 @@ void main() {
     bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, hit_point);
 
     // TODO: turn on screen-space tracing!!!
-    //hit_found = false;
+    hit_found = false;
 
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {
