@@ -1,6 +1,7 @@
 #include "BVHSplit.h"
 
 #include <algorithm>
+#include <limits>
 
 struct bbox_t {
     Ren::Vec3f min = Ren::Vec3f{ std::numeric_limits<float>::max() },
