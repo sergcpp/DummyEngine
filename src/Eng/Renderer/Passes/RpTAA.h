@@ -23,9 +23,6 @@ class RpTAA : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_taa_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer resolve_fb_[2];
-    int fb_to_use_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

@@ -25,6 +25,8 @@ void RpUpscale::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = res_[1];
 
     { // upsample ao
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
         const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Upscale::DEPTH_TEX_SLOT, *depth_tex.ref},
                                          {Ren::eBindTarget::Tex2D, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
                                          {Ren::eBindTarget::Tex2D, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
@@ -34,9 +36,8 @@ void RpUpscale::Execute(RpBuilder &builder) {
         uniform_params.resolution = Ren::Vec4f{float(res_[0]), float(res_[1]), float(res_[2]), float(res_[3])};
         uniform_params.clip_info = clip_info_;
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, output_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
-                            sizeof(Upscale::Params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, render_targets, {}, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(Upscale::Params), 0);
     }
 }
 
@@ -47,16 +48,5 @@ void RpUpscale::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output
         assert(blit_upscale_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpUpscale: render_pass_ init failed!");
-    }
-
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          ctx.log())) {
-        ctx.log()->Error("RpUpscale: output_fb_ init failed!");
     }
 }

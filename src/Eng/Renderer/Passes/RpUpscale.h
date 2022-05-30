@@ -11,8 +11,6 @@ class RpUpscale : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_upscale_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer output_fb_;
 
     // temp data (valid only between Setup and Execute calls)
     Ren::Vec4i res_;

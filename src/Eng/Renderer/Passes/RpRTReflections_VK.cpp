@@ -70,7 +70,7 @@ void RpRTReflections::ExecuteRTPipeline(RpBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_reflections_.prog()->descr_set_layouts()[0], bindings,
-                                              COUNT_OF(bindings), ctx.default_descr_alloc(), ctx.log());
+                                              ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_reflections_.handle());
@@ -152,7 +152,7 @@ void RpRTReflections::ExecuteRTInline(RpBuilder &builder) {
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_reflections_inline_.prog()->descr_set_layouts()[0],
-                                              bindings, COUNT_OF(bindings), ctx.default_descr_alloc(), ctx.log());
+                                              bindings, ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_reflections_inline_.handle());

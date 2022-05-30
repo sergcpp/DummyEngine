@@ -104,7 +104,7 @@ void RpGBufferShade::Execute(RpBuilder &builder) {
     GBufferShade::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
 
-    Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+    Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, &uniform_params,
                          sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
 }
 #endif

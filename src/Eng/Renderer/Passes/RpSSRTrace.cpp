@@ -31,6 +31,8 @@ void RpSSRTrace::Execute(RpBuilder &builder) {
         view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D;
 
     { // screen space tracing
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
         const Ren::ProgramRef ssr_program = view_state_->is_multisampled ? blit_ssr_ms_prog_ : blit_ssr_prog_;
 
         const Ren::Binding bindings[] = {
@@ -42,9 +44,8 @@ void RpSSRTrace::Execute(RpBuilder &builder) {
         uniform_params.transform =
             Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0] / 2), float(view_state_->act_res[1] / 2)};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, ssr_program, output_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
-                            sizeof(SSRTrace::Params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, ssr_program, render_targets, {}, rast_state, builder.rast_state(),
+                            bindings, &uniform_params, sizeof(SSRTrace::Params), 0);
     }
 }
 
@@ -57,16 +58,5 @@ void RpSSRTrace::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &outpu
         assert(blit_ssr_ms_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpSSRTrace: render_pass_ init failed!");
-    }
-
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          ctx.log())) {
-        ctx.log()->Error("RpSSRTrace: output_fb_ init failed!");
     }
 }

@@ -22,9 +22,6 @@ class RpSSRCompose2 : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_ssr_compose_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer output_fb_[2];
-    int fb_to_use_ = 0;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

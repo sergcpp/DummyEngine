@@ -27,12 +27,10 @@ int g_param_buf_binding;
 
 uint32_t Ren::GLBindTarget(const eBindTarget binding) { return gl_binding_targets[size_t(binding)]; }
 
-void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const Binding bindings[],
-                          const int bindings_count, const void *uniform_data, int uniform_data_len,
+void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
+                          const void *uniform_data, int uniform_data_len,
                           DescrMultiPoolAlloc *descr_alloc, ILog *log) {
-    for (int i = 0; i < bindings_count; ++i) {
-        const auto &b = bindings[i];
-
+    for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
@@ -73,12 +71,10 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const 
 }
 
 void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
-                                  const uint32_t indir_buf_offset, const Binding bindings[], const int bindings_count,
+                                  const uint32_t indir_buf_offset, Span<const Binding> bindings,
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
                                   ILog *log) {
-    for (int i = 0; i < bindings_count; ++i) {
-        const auto &b = bindings[i];
-
+    for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {

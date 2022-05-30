@@ -31,9 +31,10 @@ void RpSSAO::Execute(RpBuilder &builder) {
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_->act_res[0] / 2, view_state_->act_res[1] / 2};
         uniform_params.resolution = Ren::Vec2f{float(view_state_->act_res[0]), float(view_state_->act_res[1])};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, output_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params, sizeof(SSAO::Params),
-                            0);
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, render_targets, {}, rast_state, builder.rast_state(),
+                            bindings, &uniform_params, sizeof(SSAO::Params), 0);
     }
 }
 
@@ -43,16 +44,5 @@ void RpSSAO::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_te
         assert(blit_ao_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpSSAO: render_pass_ init failed!");
-    }
-
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          ctx.log())) {
-        ctx.log()->Error("RpSSAO: output_fb_ init failed!");
     }
 }

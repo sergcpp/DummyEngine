@@ -165,3 +165,48 @@ void PrimDraw::CleanUp() {
         ndx_buf->FreeSubRegion(temp_buf_ndx_offset_, TempBufSize);
     }
 }
+
+const Ren::Framebuffer *PrimDraw::FindOrCreateFramebuffer(const Ren::RenderPass *rp,
+                                                          Ren::Span<const Ren::RenderTarget> color_targets,
+                                                          Ren::RenderTarget depth_target,
+                                                          Ren::RenderTarget stencil_target) {
+    int w = -1, h = -1;
+
+    Ren::SmallVector<Ren::WeakTex2DRef, Ren::MaxRTAttachments> color_refs;
+    for (const auto &rt : color_targets) {
+        color_refs.push_back(rt.ref);
+        if (w == -1 && rt.ref) {
+            w = rt.ref->params.w;
+            h = rt.ref->params.h;
+        }
+    }
+
+    Ren::WeakTex2DRef depth_ref = depth_target.ref, stencil_ref = stencil_target.ref;
+
+    if (w == -1 && depth_ref) {
+        w = depth_ref->params.w;
+        h = depth_ref->params.h;
+    }
+
+    if (w == -1 && stencil_ref) {
+        w = stencil_ref->params.w;
+        h = stencil_ref->params.h;
+    }
+
+    for (size_t i = 0; i < framebuffers_.size(); ++i) {
+        if (!framebuffers_[i].Changed(*rp, depth_ref, stencil_ref, color_refs)) {
+            return &framebuffers_[i];
+        }
+    }
+
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+    Ren::Framebuffer &new_framebuffer = framebuffers_.emplace_back();
+
+    if (!new_framebuffer.Setup(api_ctx, *rp, w, h, depth_target, stencil_target, color_targets, ctx_->log())) {
+        ctx_->log()->Error("Failed to create framebuffer!");
+        framebuffers_.pop_back();
+        return nullptr;
+    }
+
+    return &new_framebuffer;
+}

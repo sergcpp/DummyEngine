@@ -53,6 +53,8 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
             blit_ssr_compose_prog = blit_ssr_compose_hq_prog_;
         }
 
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+
         // TODO: get rid of global binding slots
         const Ren::Binding bindings[] = {
             {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, *spec_tex.ref},
@@ -73,9 +75,8 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
         SSRCompose::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog, output_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
-                            sizeof(SSRCompose::Params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog, render_targets, {}, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(SSRCompose::Params), 0);
     }
 }
 
@@ -93,15 +94,5 @@ void RpSSRCompose::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &out
         assert(blit_ssr_compose_hq_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
-    }
-
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets, ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

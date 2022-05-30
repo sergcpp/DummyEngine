@@ -11,8 +11,6 @@ class RpDownDepth : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_down_depth_prog_, blit_down_depth_ms_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer depth_down_fb_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

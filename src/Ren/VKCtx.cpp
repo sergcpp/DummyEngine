@@ -180,7 +180,8 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                                  VkPhysicalDeviceMemoryProperties &out_mem_properties,
                                  uint32_t &out_present_family_index, uint32_t &out_graphics_family_index,
                                  bool &out_raytracing_supported, bool &out_ray_query_supported,
-                                 const char *preferred_device, VkInstance instance, VkSurfaceKHR surface, ILog *log) {
+                                 bool &out_dynamic_rendering_supported, const char *preferred_device,
+                                 VkInstance instance, VkSurfaceKHR surface, ILog *log) {
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
 
@@ -193,7 +194,8 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
         VkPhysicalDeviceProperties device_properties = {};
         vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
 
-        bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false;
+        bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
+             dynamic_rendering_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -216,9 +218,12 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                     raytracing_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME) == 0) {
                     ray_query_supported = true;
+                } else if (strcmp(ext.extensionName, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0) {
+                    dynamic_rendering_supported = true;
                 }
 
-                if (swapchain_supported && acc_struct_supported && raytracing_supported) {
+                if (swapchain_supported && acc_struct_supported && raytracing_supported &&
+                    dynamic_rendering_supported) {
                     // all needed extensions were found
                     break;
                 }
@@ -279,6 +284,10 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 score += 500;
             }
 
+            if (dynamic_rendering_supported) {
+                score += 100;
+            }
+
             if (preferred_device && strstr(device_properties.deviceName, preferred_device)) {
                 // preffered device found
                 score += 100000;
@@ -294,6 +303,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 out_graphics_family_index = graphics_family_index;
                 out_raytracing_supported = (acc_struct_supported && raytracing_supported);
                 out_ray_query_supported = ray_query_supported;
+                out_dynamic_rendering_supported = dynamic_rendering_supported;
             }
         }
     }
@@ -310,7 +320,8 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
 
 bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint32_t present_family_index,
                        uint32_t graphics_family_index, bool enable_raytracing, bool enable_ray_query,
-                       const char *enabled_layers[], int enabled_layers_count, ILog *log) {
+                       bool enable_dynamic_rendering, const char *enabled_layers[], int enabled_layers_count,
+                       ILog *log) {
     VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
     const float queue_priorities[] = {1.0f};
 
@@ -361,6 +372,10 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
         if (enable_ray_query) {
             device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
         }
+    }
+
+    if (enable_dynamic_rendering) {
+        device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
     }
 
     device_info.enabledExtensionCount = uint32_t(device_extensions.size());
@@ -418,6 +433,15 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
             (*pp_next) = &rt_query_features;
             pp_next = &rt_query_features.pNext;
         }
+    }
+
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR};
+    dynamic_rendering_features.dynamicRendering = VK_TRUE;
+
+    if (enable_dynamic_rendering) {
+        (*pp_next) = &dynamic_rendering_features;
+        pp_next = &dynamic_rendering_features.pNext;
     }
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)

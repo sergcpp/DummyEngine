@@ -109,6 +109,10 @@ inline bool operator==(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
            lhs.stencil_store == rhs.stencil_store;
 }
 
+inline bool operator!=(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
+    return !operator==(lhs, rhs);
+}
+
 class RenderPass {
     ApiContext *api_ctx_ = nullptr;
 #if defined(USE_VK_RENDER)
@@ -133,6 +137,8 @@ class RenderPass {
 #if defined(USE_VK_RENDER)
     VkRenderPass handle() const { return handle_; }
 #endif
+
+    bool IsCompatibleWith(Span<const RenderTarget> color_rts, RenderTarget depth_rt);
 
     bool Setup(ApiContext *api_ctx, Span<const RenderTarget> rts, RenderTarget depth_rt, ILog *log);
     bool Setup(ApiContext *api_ctx, Span<const RenderTargetInfo> rts, RenderTargetInfo depth_rt, ILog *log);

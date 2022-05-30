@@ -40,6 +40,7 @@ void RpSSRCompose2::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->scr_res[1];
 
     { // compose reflections on top of clean buffer
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
 
         // TODO: get rid of global binding slots
         const Ren::Binding bindings[] = {
@@ -54,9 +55,8 @@ void RpSSRCompose2::Execute(RpBuilder &builder) {
         SSRCompose2::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, output_fb_[fb_to_use_], render_pass_,
-                            rast_state, builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
-                            sizeof(uniform_params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, render_targets, {}, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
     }
 }
 
@@ -67,17 +67,5 @@ void RpSSRCompose2::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &ou
         assert(blit_ssr_compose_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
-    }
-
-    fb_to_use_ = (fb_to_use_ + 1) % 2;
-    if (!output_fb_[fb_to_use_].Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {},
-                                      render_targets, ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

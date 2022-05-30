@@ -25,6 +25,8 @@ void RpSSRDilate::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->scr_res[1] / 2;
 
     { // dilate ssr buffer
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
         Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
 
         const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
@@ -32,9 +34,8 @@ void RpSSRDilate::Execute(RpBuilder &builder) {
         SSRDilate::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_dilate_prog_, output_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
-                            sizeof(SSRDilate::Params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_dilate_prog_, render_targets, {}, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(SSRDilate::Params), 0);
     }
 }
 
@@ -45,16 +46,5 @@ void RpSSRDilate::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &outp
         assert(blit_ssr_dilate_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
-    }
-
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

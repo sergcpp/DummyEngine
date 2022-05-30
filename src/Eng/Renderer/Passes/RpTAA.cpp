@@ -29,6 +29,10 @@ void RpTAA::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->act_res[1];
 
     { // Blit taa
+        const Ren::RenderTarget render_targets[] = {
+            {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+            {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
         // exposure from previous frame
         float exposure = reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
         exposure = std::min(exposure, max_exposure_);
@@ -43,10 +47,8 @@ void RpTAA::Execute(RpBuilder &builder) {
         uniform_params.tex_size = Ren::Vec2f{float(view_state_->act_res[0]), float(view_state_->act_res[1])};
         uniform_params.exposure = exposure;
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, resolve_fb_[fb_to_use_], render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params, sizeof(TempAA::Params),
-                            0);
-        fb_to_use_ = (fb_to_use_ + 1) % 2;
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, render_targets, {}, rast_state, builder.rast_state(),
+                            bindings, &uniform_params, sizeof(TempAA::Params), 0);
     }
 }
 
@@ -58,17 +60,5 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
         assert(blit_taa_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
-                                                {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpCombine: render_pass_ init failed!");
-    }
-
-    if (!resolve_fb_[fb_to_use_].Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {},
-                                       render_targets, ctx.log())) {
-        ctx.log()->Error("RpTAA: resolve_fb_ init failed!");
     }
 }
