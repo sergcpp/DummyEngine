@@ -238,8 +238,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])}}};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings, 1,
-                            uniforms, 1);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings, uniforms);
     }
 #endif
 }

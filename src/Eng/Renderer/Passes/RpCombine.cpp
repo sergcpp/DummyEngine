@@ -45,9 +45,11 @@ void RpCombine::Execute(RpBuilder &builder) {
     const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
                                      {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_combine_prog_, output_fb_[builder.ctx().active_present_image()],
-                        render_pass_[builder.ctx().active_present_image()], rast_state, builder.rast_state(), bindings,
-                        2, &uniform_params, sizeof(BlitCombine::Params), 0);
+    const Ren::WeakTex2DRef output = output_tex ? output_tex->ref : Ren::WeakTex2DRef(builder.ctx().backbuffer_ref());
+    const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_combine_prog_, render_targets, {}, rast_state, builder.rast_state(),
+                        bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
 }
 
 void RpCombine::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex) {
@@ -57,18 +59,5 @@ void RpCombine::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output
         assert(blit_combine_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::WeakTex2DRef output = output_tex ? output_tex->ref : Ren::WeakTex2DRef(ctx.backbuffer_ref());
-    const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_[ctx.active_present_image()].Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpCombine: render_pass_ init failed!");
-    }
-
-    if (!output_fb_[ctx.active_present_image()].Setup(
-            ctx.api_ctx(), render_pass_[ctx.active_present_image()], output_tex ? output_tex->desc.w : ctx.w(),
-            output_tex ? output_tex->desc.h : ctx.h(), {}, {}, output, false, ctx.log())) {
-        ctx.log()->Error("RpCombine: output_fb_ init failed!");
     }
 }

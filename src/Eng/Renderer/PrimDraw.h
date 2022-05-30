@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Ren/DrawCall.h>
+#include <Ren/Framebuffer.h>
 #include <Ren/Fwd.h>
 #include <Ren/MMat.h>
 #include <Ren/Pipeline.h>
@@ -14,10 +15,6 @@
 
 class ProbeStorage;
 class ShaderLoader;
-
-namespace Ren {
-class Framebuffer;
-}
 
 class PrimDraw {
   public:
@@ -39,11 +36,21 @@ class PrimDraw {
 
     Ren::Context *ctx_ = nullptr;
 #if defined(USE_VK_RENDER)
-    Ren::SmallVector<Ren::Pipeline, 16> pipelines_;
+    Ren::SmallVector<Ren::RenderPass, 128> render_passes_;
+    Ren::SmallVector<Ren::Pipeline, 128> pipelines_;
 
-    const Ren::Pipeline *FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp, const Ren::RastState *rs,
-                                              const Ren::Binding bindings[], const int bindings_count);
+    const Ren::RenderPass *FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
+                                                  Ren::RenderTarget depth_target);
+    const Ren::Pipeline *FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp,
+                                              Ren::Span<const Ren::RenderTarget> color_targets,
+                                              Ren::RenderTarget depth_target, const Ren::RastState *rs);
 #endif
+    Ren::SmallVector<Ren::Framebuffer, 128> framebuffers_;
+
+    const Ren::Framebuffer *FindOrCreateFramebuffer(const Ren::RenderPass *rp,
+                                                    Ren::Span<const Ren::RenderTarget> color_targets,
+                                                    Ren::RenderTarget depth_target, Ren::RenderTarget stencil_target);
+
   public:
     ~PrimDraw();
 
@@ -99,10 +106,14 @@ class PrimDraw {
     };
 
     enum class ePrim { Quad, Sphere };
-    void DrawPrim(ePrim prim, const RenderTarget &rt, Ren::Program *p, const Ren::Binding bindings[],
-                  int bindings_count, const Uniform uniforms[], int uniforms_count);
-    void DrawPrim(ePrim prim, const Ren::ProgramRef &p, const Ren::Framebuffer &fb, const Ren::RenderPass &rp,
-                  const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
-                  const Ren::Binding bindings[], int bindings_count, const void *uniform_data, int uniform_data_len,
+#if defined(USE_GL_RENDER)
+    // TODO: remove this
+    void DrawPrim(ePrim prim, const RenderTarget &rt, Ren::Program *p, Ren::Span<const Ren::Binding> bindings,
+                  Ren::Span<const Uniform> uniforms);
+#endif
+
+    void DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
+                  Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state, Ren::RastState &applied_rast_state,
+                  Ren::Span<const Ren::Binding> bindings, const void *uniform_data, int uniform_data_len,
                   int uniform_data_offset);
 };

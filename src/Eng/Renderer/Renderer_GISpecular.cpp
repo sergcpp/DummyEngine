@@ -182,8 +182,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
 
-            Ren::DispatchCompute(pi_ssr_classify_tiles_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
-                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+            Ren::DispatchCompute(pi_ssr_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -217,8 +217,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                 {Ren::eBindTarget::SBuf, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Ren::eBindTarget::SBuf, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
-            Ren::DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, COUNT_OF(bindings), nullptr,
-                                 0, builder.ctx().default_descr_alloc(), builder.ctx().log());
+            Ren::DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -290,8 +290,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             uniform_params.resolution =
                 Ren::Vec4u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1]), 0, 0};
 
-            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_, *indir_args_buf.ref, 0, bindings, COUNT_OF(bindings),
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+            Ren::DispatchComputeIndirect(pi_ssr_trace_hq_, *indir_args_buf.ref, 0, bindings, &uniform_params,
+                                         sizeof(uniform_params), builder.ctx().default_descr_alloc(),
                                          builder.ctx().log());
         });
     }
@@ -328,8 +328,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                     {Ren::eBindTarget::SBuf, SSRWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                     {Ren::eBindTarget::SBuf, SSRWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
 
-                Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, COUNT_OF(bindings),
-                                     nullptr, 0, builder.ctx().default_descr_alloc(), builder.ctx().log());
+                Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                                     builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
         }
 
@@ -503,8 +503,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, 0.0f};
 
             Ren::DispatchComputeIndirect(pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
-                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
+                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                         builder.ctx().log());
         });
     }
 
@@ -591,8 +591,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
             Ren::DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
-                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
+                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
+                                         builder.ctx().log());
         });
     }
 
@@ -677,7 +677,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
             Ren::DispatchComputeIndirect(pi_ssr_resolve_temporal_, *indir_args_buf.ref, data->indir_args_offset,
-                                         bindings, COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
+                                         bindings, &uniform_params, sizeof(uniform_params),
                                          builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }

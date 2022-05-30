@@ -18,8 +18,6 @@ class RpSampleBrightness : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_red_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer reduced_fb_;
 
     // temp data (valid only between Setup and Execute calls)
     const RpSampleBrightnessData *pass_data_ = nullptr;

@@ -53,6 +53,8 @@ void RpSampleBrightness::Execute(RpBuilder &builder) {
     { // Sample texture
         const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Reduced::SRC_TEX_SLOT, *input_tex.ref}};
 
+        const Ren::RenderTarget render_targets[] = {{reduced_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
         Reduced::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
         uniform_params.offset[0] = 0.5f * poisson_disk[cur_offset_][0] * offset_step[0];
@@ -60,9 +62,8 @@ void RpSampleBrightness::Execute(RpBuilder &builder) {
 
         cur_offset_ = (cur_offset_ + 1) % 64;
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_red_prog_, reduced_fb_, render_pass_, rast_state,
-                            builder.rast_state(), bindings, COUNT_OF(bindings), &uniform_params,
-                            sizeof(Reduced::Params), 0);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_red_prog_, render_targets, {}, rast_state, builder.rast_state(),
+                            bindings, &uniform_params, sizeof(Reduced::Params), 0);
     }
 }
 
@@ -76,16 +77,5 @@ void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTe
                                        4 * res_[0] * res_[1] * sizeof(float) * Ren::MaxFramesInFlight);
 
         initialized_ = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{reduced_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
-    }
-
-    if (!reduced_fb_.Setup(ctx.api_ctx(), render_pass_, reduced_tex.desc.w, reduced_tex.desc.h, {}, {}, render_targets,
-                           ctx.log())) {
-        ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

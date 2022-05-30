@@ -65,7 +65,7 @@ void RpSSRVSDepth::Execute(RpBuilder &builder) {
     SSRVSDepth::Params uniform_params;
     uniform_params.resolution = view_state_->act_res;
 
-    Ren::DispatchCompute(pi_ssr_vs_depth_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+    Ren::DispatchCompute(pi_ssr_vs_depth_, grp_count, bindings, &uniform_params,
                          sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
 }
 #endif

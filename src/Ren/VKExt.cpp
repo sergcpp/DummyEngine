@@ -254,6 +254,9 @@ bool Ren::LoadVulkanExtensions(VkInstance instance, ILog *log) {
 
     LOAD_VK_FUN(vkCreateRayTracingPipelinesKHR)
 
+    LOAD_VK_FUN(vkCmdBeginRenderingKHR)
+    LOAD_VK_FUN(vkCmdEndRenderingKHR)
+
     return true;
 
 #undef LOAD_VK_FUN

@@ -34,8 +34,10 @@ void RpDownDepth::Execute(RpBuilder &builder) {
     uniform_params.clip_info = view_state_->clip_info;
     uniform_params.linearize = 1.0f;
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, down_depth_prog, depth_down_fb_, render_pass_, rast_state,
-                        builder.rast_state(), bindings, 1, &uniform_params, sizeof(DownDepth::Params), 0);
+    const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, down_depth_prog, render_targets, {}, rast_state, builder.rast_state(),
+                        bindings, &uniform_params, sizeof(DownDepth::Params), 0);
 }
 
 void RpDownDepth::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_2x_tex) {
@@ -48,16 +50,5 @@ void RpDownDepth::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down
         assert(blit_down_depth_ms_prog_->ready());
 
         initialized = true;
-    }
-
-    const Ren::RenderTarget render_targets[] = {{down_depth_2x_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
-
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
-        ctx.log()->Error("RpDownDepth: render_pass_ init failed!");
-    }
-
-    if (!depth_down_fb_.Setup(ctx.api_ctx(), render_pass_, down_depth_2x_tex.desc.w, down_depth_2x_tex.desc.h, {}, {},
-                              render_targets, ctx.log())) {
-        ctx.log()->Error("RpDownDepth: depth_down_fb_ init failed!");
     }
 }

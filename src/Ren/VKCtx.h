@@ -55,6 +55,8 @@ struct ApiContext {
     VkPhysicalDeviceRayTracingPipelinePropertiesKHR rt_props = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
 
+    bool dynamic_rendering_supported = false;
+
     // resources scheduled for deferred destruction
     SmallVector<VkImage, 128> images_to_destroy[MaxFramesInFlight];
     SmallVector<VkImageView, 128> image_views_to_destroy[MaxFramesInFlight];
@@ -82,11 +84,11 @@ bool InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log);
 bool ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &device_properties,
                             VkPhysicalDeviceMemoryProperties &mem_properties, uint32_t &present_family_index,
                             uint32_t &graphics_family_index, bool &out_raytracing_supported,
-                            bool &out_ray_query_supported, const char *preferred_device, VkInstance instance,
-                            VkSurfaceKHR surface, ILog *log);
+                            bool &out_ray_query_supported, bool &out_dynamic_rendering_supported,
+                            const char *preferred_device, VkInstance instance, VkSurfaceKHR surface, ILog *log);
 bool InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint32_t present_family_index,
                   uint32_t graphics_family_index, bool enable_raytracing, bool enable_ray_query,
-                  const char *enabled_layers[], int enabled_layers_count, ILog *log);
+                  bool enable_dynamic_rendering, const char *enabled_layers[], int enabled_layers_count, ILog *log);
 bool InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_format, VkExtent2D &extent,
                    VkPresentModeKHR &present_mode, int w, int h, VkDevice device, VkPhysicalDevice physical_device,
                    uint32_t present_family_index, uint32_t graphics_family_index, VkSurfaceKHR surface, ILog *log);

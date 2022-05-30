@@ -177,8 +177,7 @@ void Renderer::InitPipelines() {
         }
     }
     { // Sun shadows
-        Ren::ProgramRef prog =
-            sh_.LoadProgram(ctx_, "sun_shadows", "internal/sun_shadows.comp.glsl");
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "sun_shadows", "internal/sun_shadows.comp.glsl");
         assert(prog->ready());
 
         if (!pi_sun_shadows_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
@@ -186,7 +185,8 @@ void Renderer::InitPipelines() {
         }
     }
     { // Prepare sun shadow mask
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "rt_shadow_prepare_mask", "internal/rt_shadow_prepare_mask.comp.glsl");
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "rt_shadow_prepare_mask", "internal/rt_shadow_prepare_mask.comp.glsl");
         assert(prog->ready());
 
         if (!pi_shadow_prepare_mask_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
@@ -221,8 +221,7 @@ void Renderer::InitPipelines() {
         }
     }
     { // Sun RT Shadow filter 2
-        Ren::ProgramRef prog =
-            sh_.LoadProgram(ctx_, "rt_shadow_filter_2", "internal/rt_shadow_filter.comp.glsl");
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "rt_shadow_filter_2", "internal/rt_shadow_filter.comp.glsl");
         assert(prog->ready());
 
         if (!pi_shadow_filter_[2].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
@@ -801,8 +800,8 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
         GBufferShade::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-        Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
-                             sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                             builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
 

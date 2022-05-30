@@ -267,6 +267,7 @@ class Context : public TaskExecutor {
         int unif_buf_offset_alignment = 1;
         bool depth24_stencil8_format = false;
         uint32_t max_combined_image_samplers = 16;
+        bool dynamic_rendering = false;
     } capabilities;
 #elif defined(USE_SW_RENDER)
     int max_uniform_vec4 = 0;

@@ -2,8 +2,8 @@
 
 #include "ProbeStorage.h"
 
-VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, const Binding bindings[],
-                                          const int bindings_count, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
+                                          Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     VkDescriptorImageInfo img_sampler_infos[16];
     VkDescriptorImageInfo img_storage_infos[16];
     VkDescriptorBufferInfo ubuf_infos[16];
@@ -13,9 +13,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
     SmallVector<VkWriteDescriptorSet, 48> descr_writes;
 
-    for (int i = 0; i < bindings_count; ++i) {
-        const auto &b = bindings[i];
-
+    for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             info.sampler = b.handle.tex->handle().sampler;
@@ -132,13 +130,12 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     return descr_set;
 }
 
-void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const Binding bindings[],
-                          const int bindings_count, const void *uniform_data, int uniform_data_len,
-                          DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
+                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
-    VkDescriptorSet descr_set = PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings,
-                                                     bindings_count, descr_alloc, log);
+    VkDescriptorSet descr_set =
+        PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log);
     if (!descr_set) {
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;
@@ -159,13 +156,13 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const 
 }
 
 void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf,
-                                  const uint32_t indir_buf_offset, const Binding bindings[], const int bindings_count,
+                                  const uint32_t indir_buf_offset, Span<const Binding> bindings,
                                   const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
                                   ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
-    VkDescriptorSet descr_set = PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings,
-                                                     bindings_count, descr_alloc, log);
+    VkDescriptorSet descr_set =
+        PrepareDescriptorSet(api_ctx, comp_pipeline.prog()->descr_set_layouts()[0], bindings, descr_alloc, log);
     if (!descr_set) {
         log->Error("Failed to allocate descriptor set, skipping draw call!");
         return;

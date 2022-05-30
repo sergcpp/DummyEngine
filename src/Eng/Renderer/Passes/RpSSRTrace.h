@@ -19,8 +19,6 @@ class RpSSRTrace : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_ssr_prog_, blit_ssr_ms_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer output_fb_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

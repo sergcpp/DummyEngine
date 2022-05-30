@@ -1114,7 +1114,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
         glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
                          (GLuint)unif_shared_data_buf.ref->id());*/
 
-        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *temp_tex_};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *temp_tex_}};
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
 
         if (!down_tex_4x_fb_.Setup(ctx_.api_ctx(), {}, down_tex_4x_->params.w, down_tex_4x_->params.h, down_tex_4x_, {},
@@ -1122,7 +1122,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
             ctx_.log()->Error("Failed to init down_tex_4x_fb_");
         }
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&down_tex_4x_fb_, 0}, cur_program, &binding, 1, uniforms, 1);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&down_tex_4x_fb_, 0}, cur_program, bindings, uniforms);
     }
 
     { // prepare blurred buffer

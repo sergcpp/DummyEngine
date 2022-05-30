@@ -11,8 +11,6 @@ class RpSSAO : public RpExecutor {
 
     // lazily initialized data
     Ren::ProgramRef blit_ao_prog_;
-    Ren::RenderPass render_pass_;
-    Ren::Framebuffer output_fb_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

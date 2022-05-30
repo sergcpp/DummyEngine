@@ -17,7 +17,7 @@ static_assert(int(eImageLayout::ShaderReadOnlyOptimal) == VK_IMAGE_LAYOUT_SHADER
 static_assert(int(eImageLayout::TransferSrcOptimal) == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, "!");
 static_assert(int(eImageLayout::TransferDstOptimal) == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, "!");
 
-const VkAttachmentLoadOp vk_load_ops[] = {
+extern const VkAttachmentLoadOp vk_load_ops[] = {
     VK_ATTACHMENT_LOAD_OP_LOAD,      // Load
     VK_ATTACHMENT_LOAD_OP_CLEAR,     // Clear
     VK_ATTACHMENT_LOAD_OP_DONT_CARE, // DontCare
@@ -25,7 +25,7 @@ const VkAttachmentLoadOp vk_load_ops[] = {
 };
 static_assert((sizeof(vk_load_ops) / sizeof(vk_load_ops[0])) == int(eLoadOp::_Count), "!");
 
-const VkAttachmentStoreOp vk_store_ops[] = {
+extern const VkAttachmentStoreOp vk_store_ops[] = {
     VK_ATTACHMENT_STORE_OP_STORE,     // Store
     VK_ATTACHMENT_STORE_OP_DONT_CARE, // DontCare
     VK_ATTACHMENT_STORE_OP_NONE_EXT   // None
@@ -155,6 +155,26 @@ void Ren::RenderPass::Destroy() {
     }
     color_rts.clear();
     depth_rt = {};
+}
+
+bool Ren::RenderPass::IsCompatibleWith(Span<const RenderTarget> _color_rts, RenderTarget _depth_rt) {
+    if (_color_rts.size() != color_rts.size() || bool(_depth_rt) != bool(depth_rt)) {
+        return false;
+    }
+
+    for (int i = 0; i < _color_rts.size(); ++i) {
+        if (color_rts[i] != _color_rts[i]) {
+            return false;
+        }
+    }
+
+    if (depth_rt) {
+        if (depth_rt != _depth_rt) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTarget> _color_rts, const RenderTarget _depth_rt,

@@ -22,6 +22,7 @@ VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT f
     auto *ctx = reinterpret_cast<const Context *>(pUserData);
 
     bool ignore = ignore_optick_errors && (location == 0x45e90123 || location == 0xffffffff9cacd67a);
+    ignore |= (location == 0x0000000079de34d4); // dynamic rendering support is incomplete
     if (!ignore) {
         ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
     }
@@ -140,14 +141,15 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     if (!ChooseVkPhysicalDevice(api_ctx_->physical_device, api_ctx_->device_properties, api_ctx_->mem_properties,
                                 api_ctx_->present_family_index, api_ctx_->graphics_family_index,
-                                api_ctx_->raytracing_supported, api_ctx_->ray_query_supported, preferred_device,
-                                api_ctx_->instance, api_ctx_->surface, log)) {
+                                api_ctx_->raytracing_supported, api_ctx_->ray_query_supported,
+                                api_ctx_->dynamic_rendering_supported, preferred_device, api_ctx_->instance,
+                                api_ctx_->surface, log)) {
         return false;
     }
 
     if (!InitVkDevice(api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
                       api_ctx_->graphics_family_index, api_ctx_->raytracing_supported, api_ctx_->ray_query_supported,
-                      enabled_layers, enabled_layers_count, log)) {
+                      api_ctx_->dynamic_rendering_supported, enabled_layers, enabled_layers_count, log)) {
         return false;
     }
 
@@ -192,6 +194,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     capabilities.raytracing = api_ctx_->raytracing_supported;
     capabilities.ray_query = api_ctx_->ray_query_supported;
+    capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 
     default_memory_allocs_.reset(new MemoryAllocators(

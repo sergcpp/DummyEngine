@@ -13,15 +13,14 @@ extern const int SphereIndicesCount;
 
 PrimDraw::~PrimDraw() = default;
 
-void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *p, const Ren::Binding bindings[],
-                        int bindings_count, const Uniform uniforms[], int uniforms_count) {
+void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *p,
+                        Ren::Span<const Ren::Binding> bindings, Ren::Span<const Uniform> uniforms) {
     using namespace PrimDrawInternal;
 
     glBindFramebuffer(GL_FRAMEBUFFER, rt.fb->id());
     // glViewport(rt.viewport[0], rt.viewport[1], rt.viewport[2], rt.viewport[3]);
 
-    for (int i = 0; i < bindings_count; i++) {
-        const auto &b = bindings[i];
+    for (const auto &b : bindings) {
         if (b.trg == Ren::eBindTarget::UBuf) {
             if (b.offset) {
                 assert(b.size != 0);
@@ -41,8 +40,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
 
     glUseProgram(p->id());
 
-    for (int i = 0; i < uniforms_count; i++) {
-        const auto &u = uniforms[i];
+    for (const auto &u : uniforms) {
         if (u.type == Ren::eType::Float32) {
             if (u.size == 1) {
                 glUniform1f(GLint(u.loc), u.fdata[0]);
@@ -86,20 +84,23 @@ void PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *
 #endif
 }
 
-void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, const Ren::Framebuffer &fb,
-                        const Ren::RenderPass &rp, const Ren::RastState &new_rast_state,
-                        Ren::RastState &applied_rast_state, const Ren::Binding bindings[], const int bindings_count,
-                        const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
+void PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
+                        Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
+                        Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
+                        const void *uniform_data, int uniform_data_len, int uniform_data_offset) {
     using namespace PrimDrawInternal;
+
+    const Ren::Framebuffer *fb =
+        FindOrCreateFramebuffer(nullptr, color_rts, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
+                                new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{});
 
     new_rast_state.ApplyChanged(applied_rast_state);
     applied_rast_state = new_rast_state;
 
-    glBindFramebuffer(GL_FRAMEBUFFER, fb.id());
+    glBindFramebuffer(GL_FRAMEBUFFER, fb->id());
     // glViewport(rt.viewport[0], rt.viewport[1], rt.viewport[2], rt.viewport[3]);
 
-    for (int i = 0; i < bindings_count; i++) {
-        const auto &b = bindings[i];
+    for (const auto &b : bindings) {
         if (b.trg == Ren::eBindTarget::UBuf) {
             if (b.offset) {
                 assert(b.size != 0);

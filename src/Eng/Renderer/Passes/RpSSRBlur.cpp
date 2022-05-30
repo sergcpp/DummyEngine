@@ -75,7 +75,7 @@ void RpSSRBlur::Execute(RpBuilder &builder) {
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.thresholds = Ren::Vec2f{glossy_thres_, mirror_thres_};
 
-    Ren::DispatchCompute(pi_ssr_blur_, grp_count, bindings, COUNT_OF(bindings), &uniform_params, sizeof(uniform_params),
+    Ren::DispatchCompute(pi_ssr_blur_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                          builder.ctx().default_descr_alloc(), builder.ctx().log());
 }
 #endif

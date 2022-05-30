@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "MVec.h"
+#include "Span.h"
 
 #if defined(USE_VK_RENDER)
 struct VkDescriptorSet_T;
@@ -68,13 +69,13 @@ struct Binding {
 static_assert(sizeof(Binding) == sizeof(void *) + 8, "!");
 
 #if defined(USE_VK_RENDER)
-VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, const Binding bindings[],
-                                     const int bindings_count, DescrMultiPoolAlloc *descr_alloc, ILog *log);
+VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, Span<const Binding> bindings,
+                                     DescrMultiPoolAlloc *descr_alloc, ILog *log);
 #endif
 
-void DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, const Binding bindings[], const int bindings_count,
+void DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
                      const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
 void DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &indir_buf, uint32_t indir_buf_offset,
-                             const Binding bindings[], const int bindings_count, const void *uniform_data,
-                             int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log);
+                             Span<const Binding> bindings, const void *uniform_data, int uniform_data_len,
+                             DescrMultiPoolAlloc *descr_alloc, ILog *log);
 } // namespace Ren
