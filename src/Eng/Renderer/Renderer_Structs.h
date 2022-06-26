@@ -217,6 +217,7 @@ enum eRenderFlags : uint64_t {
     EnableFxaa = (1ull << 16u),
     EnableTimers = (1ull << 17u),
     EnableDeferred = (1ull << 18u),
+    EnableRTShadows = (1ull << 19u),
     DebugWireframe = (1ull << 31u),
     DebugCulling = (1ull << 32u),
     DebugShadow = (1ull << 33u),
@@ -230,7 +231,9 @@ enum eRenderFlags : uint64_t {
     DebugProbes = (1ull << 41u),
     DebugEllipsoids = (1ull << 42u),
     DebugRT = (1ull << 43u),
-    DebugDenoise = (1ull << 44u)
+    DebugRTShadow = (1ull << 44u),
+    DebugDenoise = (1ull << 45u),
+    DebugFreezeFrontend = (1ull << 46u)
 };
 
 struct FrontendInfo {
@@ -330,9 +333,9 @@ struct BindlessTextureData {
 };
 
 struct AccelerationStructureData {
-    Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf;
+    Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf;
     uint32_t rt_tlas_build_scratch_size = 0;
-    Ren::IAccStructure *rt_tlas = nullptr;
+    Ren::IAccStructure *rt_tlas[2] = {};
 };
 
 // Constant that controls buffers orphaning

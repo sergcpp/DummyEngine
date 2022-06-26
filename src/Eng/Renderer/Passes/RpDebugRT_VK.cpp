@@ -34,7 +34,7 @@ void RpDebugRT::Execute(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas);
+    const auto *acc_struct = static_cast<const Ren::AccStructureVK *>(tlas_to_debug_);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 

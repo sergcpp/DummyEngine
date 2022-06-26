@@ -27,12 +27,12 @@ uniform SharedDataBlock {
 layout(binding = REN_REFL_SSR_TEX_SLOT) uniform sampler2D g_texture;
 #if defined(MSAA_4)
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_mul_texture;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_texture;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS g_norm_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_tex;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS g_norm_tex;
 #else
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_mul_texture;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_texture;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D g_norm_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_tex;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D g_norm_tex;
 #endif
 layout(binding = REN_REFL_PREV_TEX_SLOT) uniform mediump sampler2D g_prev_texture;
 layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_texture;
@@ -49,7 +49,7 @@ in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    float depth = texelFetch(g_depth_texture, hit_pixel, 0).r;
+    float depth = texelFetch(g_depth_tex, hit_pixel, 0).r;
     return g_shrd_data.clip_info[0] / (depth * (g_shrd_data.clip_info[1] - g_shrd_data.clip_info[2]) + g_shrd_data.clip_info[2]);
 }
 
@@ -71,14 +71,14 @@ void main() {
     );
 
     float norm_weights[4];
-    vec3 normal = 2.0 * texelFetch(g_norm_texture, ivec2(g_vtx_uvs), 0).xyz - 1.0;
+    vec3 normal = 2.0 * texelFetch(g_norm_tex, ivec2(g_vtx_uvs), 0).xyz - 1.0;
     for (int i = 0; i < 4; i++) {
-        vec3 norm_coarse = 2.0 * texelFetch(g_norm_texture, pix_uvs + 2 * offsets[i], 0).xyz - 1.0;
+        vec3 norm_coarse = 2.0 * texelFetch(g_norm_tex, pix_uvs + 2 * offsets[i], 0).xyz - 1.0;
         norm_weights[i] = 0.0 + step(0.8, dot(norm_coarse, normal));
     }
 
     float depth_weights[4];
-    float depth = texelFetch(g_depth_texture, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(g_vtx_uvs), 0).r;
     float lin_depth = g_shrd_data.clip_info[0] / (depth * (g_shrd_data.clip_info[1] - g_shrd_data.clip_info[2]) + g_shrd_data.clip_info[2]);
     for (int i = 0; i < 4; i++) {
         float depth_coarse = LinearDepthTexelFetch(pix_uvs + 2 * offsets[i]);

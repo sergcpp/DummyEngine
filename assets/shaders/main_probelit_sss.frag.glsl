@@ -19,7 +19,7 @@ $ModifyWarning
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_sss_texture;
 layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D g_norm_detail_texture;
@@ -51,7 +51,7 @@ LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
 LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs[4];
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 8) in flat TEX_HANDLE g_diff_texture;
-    LAYOUT(location = 9) in flat TEX_HANDLE g_norm_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 10) in flat TEX_HANDLE g_spec_texture;
     LAYOUT(location = 11) in flat TEX_HANDLE g_sss_texture;
     LAYOUT(location = 12) in flat TEX_HANDLE g_norm_detail_texture;
@@ -77,7 +77,7 @@ void main(void) {
     vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), aVertexUVAndCurvature_.xy)));
 
     vec2 duv_dx = dFdx(aVertexUVAndCurvature_.xy), duv_dy = dFdy(aVertexUVAndCurvature_.xy);
-    vec3 normal_color = texture(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy).wyz;
+    vec3 normal_color = texture(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy).wyz;
     vec3 normal_detail_color = texture(SAMPLER2D(g_norm_detail_texture), aVertexUVAndCurvature_.xy * material_params.w).wyz;
 
     normal_color.xy += normal_detail_color.xy;
@@ -85,17 +85,17 @@ void main(void) {
     const vec3 lod_offsets = { 3.0, 2.0, 1.0 };
     const vec3 der_muls = material_params.xyz;//{ 8.0, 4.0, 2.0 };
 
-    vec3 normal_color_r = textureGrad(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy,
+    vec3 normal_color_r = textureGrad(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy,
                                       der_muls.x * dFdx(aVertexUVAndCurvature_.xy), der_muls.x * dFdy(aVertexUVAndCurvature_.xy)).wyz;
-    vec3 normal_color_g = textureGrad(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy,
+    vec3 normal_color_g = textureGrad(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy,
                                       der_muls.y * dFdx(aVertexUVAndCurvature_.xy), der_muls.y * dFdy(aVertexUVAndCurvature_.xy)).wyz;
-    vec3 normal_color_b = textureGrad(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy,
+    vec3 normal_color_b = textureGrad(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy,
                                       der_muls.z * dFdx(aVertexUVAndCurvature_.xy), der_muls.z * dFdy(aVertexUVAndCurvature_.xy)).wyz;
 
-    /*float lod = textureQueryLod(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy).x;
-    vec3 normal_color_r = textureLod(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
-    vec3 normal_color_g = textureLod(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
-    vec3 normal_color_b = textureLod(SAMPLER2D(g_norm_texture), aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
+    /*float lod = textureQueryLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy).x;
+    vec3 normal_color_r = textureLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy, lod + lod_offsets.x).wyz;
+    vec3 normal_color_g = textureLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy, lod + lod_offsets.y).wyz;
+    vec3 normal_color_b = textureLod(SAMPLER2D(g_norm_tex), aVertexUVAndCurvature_.xy, lod + lod_offsets.z).wyz;*/
 
     vec4 spec_color = texture(SAMPLER2D(g_spec_texture), aVertexUVAndCurvature_.xy);
 

@@ -698,19 +698,112 @@ void SceneManager::InitHWAccStructures() {
 
     scene_data_.persistent_data.rt_instance_buf =
         ren_ctx_.LoadBuffer("RT Instance Buf", Ren::eBufType::Storage,
-                            uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
-    Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
-                                   uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
+                            uint32_t(REN_MAX_RT_OBJ_INSTANCES * sizeof(VkAccelerationStructureInstanceKHR)));
+    //Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
+    //                               uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
 
-    {
+    /*{
         uint8_t *instance_stage = instance_stage_buf.Map(Ren::BufMapWrite);
         memcpy(instance_stage, tlas_instances.data(),
                tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR));
         instance_stage_buf.Unmap();
-    }
+    }*/
 
     VkDeviceAddress instance_buf_addr = scene_data_.persistent_data.rt_instance_buf->vk_device_address();
 
+#if 1
+    VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+
+    Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
+                            geo_data_stage_buf.size(), cmd_buf);
+
+    { // Make sure compaction copying of BLASes has finished
+        VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+        mem_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        mem_barrier.dstAccessMask = VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR;
+
+        vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                             VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, 0, 1, &mem_barrier, 0, nullptr, 0,
+                             nullptr);
+    }
+
+    const uint32_t max_instance_count = REN_MAX_RT_OBJ_INSTANCES; // allocate for worst case
+
+    VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
+    instances_data.data.deviceAddress = instance_buf_addr;
+
+    VkAccelerationStructureGeometryKHR tlas_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
+    tlas_geo.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR;
+    tlas_geo.geometry.instances = instances_data;
+
+    VkAccelerationStructureBuildGeometryInfoKHR tlas_build_info = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
+    tlas_build_info.flags =
+        VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR | VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_NV;
+    tlas_build_info.geometryCount = 1;
+    tlas_build_info.pGeometries = &tlas_geo;
+    tlas_build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
+    tlas_build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+    tlas_build_info.srcAccelerationStructure = VK_NULL_HANDLE;
+
+    VkAccelerationStructureBuildSizesInfoKHR size_info = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+    vkGetAccelerationStructureBuildSizesKHR(api_ctx->device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                            &tlas_build_info, &max_instance_count, &size_info);
+
+    scene_data_.persistent_data.rt_tlas_buf =
+        ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
+    scene_data_.persistent_data.rt_sh_tlas_buf =
+        ren_ctx_.LoadBuffer("TLAS Shadow Buf", Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
+
+    Ren::BufferRef tlas_scratch_buf =
+        ren_ctx_.LoadBuffer("TLAS Scratch Buf", Ren::eBufType::Storage, uint32_t(size_info.buildScratchSize));
+
+    { // Main TLAS
+        VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+        create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        create_info.buffer = scene_data_.persistent_data.rt_tlas_buf->vk_handle();
+        create_info.offset = 0;
+        create_info.size = size_info.accelerationStructureSize;
+
+        VkAccelerationStructureKHR tlas_handle;
+        VkResult res = vkCreateAccelerationStructureKHR(api_ctx->device, &create_info, nullptr, &tlas_handle);
+        if (res != VK_SUCCESS) {
+            ren_ctx_.log()->Error("[SceneManager::InitHWAccStructures]: Failed to create acceleration structure!");
+        }
+
+        std::unique_ptr<Ren::AccStructureVK> vk_tlas(new Ren::AccStructureVK);
+        if (!vk_tlas->Init(api_ctx, tlas_handle)) {
+            ren_ctx_.log()->Error("[SceneManager::InitHWAccStructures]: Failed to init TLAS!");
+        }
+        scene_data_.persistent_data.rt_tlas = std::move(vk_tlas);
+    }
+
+    { // Shadow TLAS
+        VkAccelerationStructureCreateInfoKHR create_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR};
+        create_info.type = VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+        create_info.buffer = scene_data_.persistent_data.rt_sh_tlas_buf->vk_handle();
+        create_info.offset = 0;
+        create_info.size = size_info.accelerationStructureSize;
+
+        VkAccelerationStructureKHR tlas_handle;
+        VkResult res = vkCreateAccelerationStructureKHR(api_ctx->device, &create_info, nullptr, &tlas_handle);
+        if (res != VK_SUCCESS) {
+            ren_ctx_.log()->Error("[SceneManager::InitHWAccStructures]: Failed to create acceleration structure!");
+        }
+
+        std::unique_ptr<Ren::AccStructureVK> vk_tlas(new Ren::AccStructureVK);
+        if (!vk_tlas->Init(api_ctx, tlas_handle)) {
+            ren_ctx_.log()->Error("[SceneManager::InitHWAccStructures]: Failed to init TLAS!");
+        }
+        scene_data_.persistent_data.rt_sh_tlas = std::move(vk_tlas);
+    }
+
+    scene_data_.persistent_data.rt_tlas_build_scratch_size = uint32_t(size_info.buildScratchSize);
+
+    Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+#else
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
 
     Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
@@ -781,7 +874,8 @@ void SceneManager::InitHWAccStructures() {
 
         VkAccelerationStructureBuildRangeInfoKHR range_info = {};
         range_info.primitiveOffset = 0;
-        range_info.primitiveCount = instance_count;
+        range_info.primitiveCount = 0;
+        //instance_count;
         range_info.firstVertex = 0;
         range_info.transformOffset = 0;
 
@@ -798,4 +892,5 @@ void SceneManager::InitHWAccStructures() {
     }
 
     Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+#endif
 }

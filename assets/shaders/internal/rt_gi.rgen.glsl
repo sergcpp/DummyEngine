@@ -23,8 +23,8 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_texture;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
 
 layout(std430, binding = RAY_LIST_SLOT) readonly buffer RayList {
     uint g_ray_list[];
@@ -57,8 +57,8 @@ void main() {
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
     ivec2 icoord = ivec2(ray_coords);
-    float depth = texelFetch(g_depth_texture, icoord, 0).r;
-    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_texture, icoord, 0)).xyz;
+    float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
     vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
 
     vec2 px_center = vec2(icoord) + 0.5;

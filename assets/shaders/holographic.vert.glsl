@@ -46,7 +46,7 @@ LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 8) out flat TEX_HANDLE g_diff_texture;
-    LAYOUT(location = 9) out flat TEX_HANDLE g_norm_texture;
+    LAYOUT(location = 9) out flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 10) out flat TEX_HANDLE g_spec_texture;
 #endif // GL_ARB_bindless_texture
 
@@ -69,7 +69,7 @@ void main(void) {
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
     g_diff_texture = GET_HANDLE(mat.texture_indices[0]);
-    g_norm_texture = GET_HANDLE(mat.texture_indices[1]);
+    g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
     g_spec_texture = GET_HANDLE(mat.texture_indices[2]);
 #endif // GL_ARB_bindless_texture
 

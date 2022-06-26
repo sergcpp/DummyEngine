@@ -160,10 +160,28 @@ void Renderer::InitPipelines() {
         }
     }
     { // GI post-blur
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "gi_post_blur", "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "gi_post_blur", "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
         assert(prog->ready());
 
         if (!pi_gi_post_blur_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+    { // Sun RT Shadow classify
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "sun_rt_sh_classify", "internal/rt_shadow_classify.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_shadow_classify_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+    { // Sun shadows
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "sun_shadows", "internal/sun_shadows.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_sun_shadows_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -662,7 +680,7 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     struct PassData {
         RpResRef shared_data;
         RpResRef cells_buf, items_buf, lights_buf, decals_buf;
-        RpResRef shadowmap_tex, ssao_tex, gi_tex;
+        RpResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
         RpResRef depth_tex, albedo_tex, normal_tex, spec_tex;
         RpResRef output_tex;
     };
@@ -679,6 +697,7 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     data->shadowmap_tex = gbuf_shade.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::ComputeShader);
     data->ssao_tex = gbuf_shade.AddTextureInput(frame_textures.ssao, Ren::eStageBits::ComputeShader);
     data->gi_tex = gbuf_shade.AddTextureInput(frame_textures.gi, Ren::eStageBits::ComputeShader);
+    data->sun_shadow_tex = gbuf_shade.AddTextureInput(frame_textures.sun_shadow, Ren::eStageBits::ComputeShader);
 
     data->depth_tex = gbuf_shade.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
     data->albedo_tex = gbuf_shade.AddTextureInput(frame_textures.albedo, Ren::eStageBits::ComputeShader);
@@ -703,6 +722,7 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
         RpAllocTex &shad_tex = builder.GetReadTexture(data->shadowmap_tex);
         RpAllocTex &ssao_tex = builder.GetReadTexture(data->ssao_tex);
         RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
+        RpAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
 
         RpAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
@@ -719,6 +739,7 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
             {Ren::eBindTarget::Tex2D, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
             {Ren::eBindTarget::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

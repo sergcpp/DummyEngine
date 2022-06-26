@@ -27,7 +27,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(std430, binding = ATOMIC_CNT_SLOT) buffer AtomicCounter {
     uint g_atomic_counter;
 };
@@ -47,10 +47,10 @@ ivec2 limit_coords(ivec2 icoord) {
 #define REDUCE_OP min
 
 float ReduceSrcDepth4(ivec2 base) {
-    float v0 = texelFetch(g_depth_texture, limit_coords(base + ivec2(0, 0)), 0).r;
-    float v1 = texelFetch(g_depth_texture, limit_coords(base + ivec2(0, 1)), 0).r;
-    float v2 = texelFetch(g_depth_texture, limit_coords(base + ivec2(1, 0)), 0).r;
-    float v3 = texelFetch(g_depth_texture, limit_coords(base + ivec2(1, 1)), 0).r;
+    float v0 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 0)), 0).r;
+    float v1 = texelFetch(g_depth_tex, limit_coords(base + ivec2(0, 1)), 0).r;
+    float v2 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 0)), 0).r;
+    float v3 = texelFetch(g_depth_tex, limit_coords(base + ivec2(1, 1)), 0).r;
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
@@ -215,7 +215,7 @@ void main() {
             ivec2 icoord = ivec2(2 * gl_GlobalInvocationID.x + i, 8 * gl_GlobalInvocationID.y + j);
             float depth_val = 0.0;
             if (icoord.x < g_params.depth_size.x && icoord.y < g_params.depth_size.y) {
-                depth_val = texelFetch(g_depth_texture, icoord, 0).r;
+                depth_val = texelFetch(g_depth_tex, icoord, 0).r;
             }
             imageStore(g_depth_hierarchy[0], icoord, vec4(depth_val));
         }

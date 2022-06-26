@@ -16,7 +16,7 @@ $ModifyWarning
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
@@ -45,7 +45,7 @@ LAYOUT(location = 2) in mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 8) in flat TEX_HANDLE g_diff_texture;
-    LAYOUT(location = 9) in flat TEX_HANDLE g_norm_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 10) in flat TEX_HANDLE g_spec_texture;
 #endif // BINDLESS_TEXTURES
 
@@ -61,7 +61,7 @@ void main(void) {
         2.0 * (log(lin_depth) - g_shrd_data.transp_params_and_time[0]) /
             g_shrd_data.transp_params_and_time[1] - 1.0;
 
-    vec3 normal_color = texture(SAMPLER2D(g_norm_texture), g_vtx_uvs).wyz;
+    vec3 normal_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
 
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent),

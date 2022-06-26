@@ -30,12 +30,12 @@ uniform SharedDataBlock {
 
 #if defined(MSAA_4)
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS g_spec_texture;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2DMS g_depth_texture;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2DMS g_norm_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2DMS g_depth_tex;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2DMS g_norm_tex;
 #else
 layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform highp sampler2D g_spec_texture;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2D g_norm_texture;
+layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
+layout(binding = REN_REFL_NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 #endif
 layout(binding = REN_REFL_DEPTH_LOW_TEX_SLOT) uniform highp sampler2D g_depth_low_texture;
 layout(binding = REN_REFL_SSR_TEX_SLOT) uniform highp sampler2D g_ssr_texture;
@@ -69,7 +69,7 @@ void main() {
 #endif
     if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
-    float depth = texelFetch(g_depth_texture, icoord, 0).r;
+    float depth = texelFetch(g_depth_tex, icoord, 0).r;
     float d0 = LinearizeDepth(depth, g_shrd_data.clip_info);
 
 #if defined(HALFRES)
@@ -100,7 +100,7 @@ void main() {
     vec3 ssr_uvs = texelFetch(g_ssr_texture, icoord, 0).rgb;
 #endif // HALFRES
 
-    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_texture, icoord, 0)).xyz;
+    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
 
     float tex_lod = 6.0 * specular.a;
     float N_dot_V;

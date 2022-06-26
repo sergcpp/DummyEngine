@@ -23,7 +23,7 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 
 LAYOUT(location = 0) in highp vec2 g_vtx_uvs;
 
@@ -32,7 +32,7 @@ layout(location = 0) out highp vec2 g_out_velocity;
 void main() {
     ivec2 pix_uvs = ivec2(g_vtx_uvs);
 
-    float depth = texelFetch(g_depth_texture, pix_uvs, 0).r;
+    float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
 
     vec4 point_cs = vec4(g_vtx_uvs.xy / g_shrd_data.res_and_fres.xy, depth, 1.0);
 #if defined(VULKAN)

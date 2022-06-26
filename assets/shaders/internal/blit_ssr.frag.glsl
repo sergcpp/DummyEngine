@@ -31,11 +31,11 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 #if defined(MSAA_4)
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS g_norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS g_norm_tex;
 #else
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 #endif
 
 LAYOUT(location = 0) in vec2 g_vtx_uvs;
@@ -48,7 +48,7 @@ float distance2(vec2 P0, vec2 P1) {
 }
 
 float LinearDepthTexelFetch(ivec2 hit_pixel) {
-    return texelFetch(g_depth_texture, hit_pixel / 2, 0).r;
+    return texelFetch(g_depth_tex, hit_pixel / 2, 0).r;
 }
 
 bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hit_pixel, out vec3 hit_point) {
@@ -193,11 +193,11 @@ void main() {
     ivec2 pix_uvs = ivec2(g_vtx_uvs + vec2(0.5));
     vec2 norm_uvs = 2.0 * g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_fetch = texelFetch(g_norm_texture, 2 * pix_uvs, 0);
+    vec4 normal_fetch = texelFetch(g_norm_tex, 2 * pix_uvs, 0);
     vec4 normal_roughness = UnpackNormalAndRoughness(normal_fetch);
     if (normal_roughness.w > 0.95) return;
 
-    float depth = DelinearizeDepth(texelFetch(g_depth_texture, pix_uvs, 0).r, g_shrd_data.clip_info);
+    float depth = DelinearizeDepth(texelFetch(g_depth_tex, pix_uvs, 0).r, g_shrd_data.clip_info);
 
     vec3 normal_ws = normal_roughness.xyz;
     vec3 normal_vs = (g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz;

@@ -55,7 +55,7 @@ layout(location = 3) out mediump vec3 g_vtx_tangent_cs;
 layout(location = 4) out highp vec3 g_vtx_sh_uvs_cs[4];
 #if defined(GL_ARB_bindless_texture)
 layout(location = 9) out flat uvec2 g_diff_texture;
-layout(location = 10) out flat uvec2 g_norm_texture;
+layout(location = 10) out flat uvec2 g_norm_tex;
 layout(location = 11) out flat uvec2 g_spec_texture;
 layout(location = 12) out flat uvec2 g_bump_texture;
 #endif // GL_ARB_bindless_texture
@@ -67,7 +67,7 @@ out mediump vec3 g_vtx_tangent_cs;
 out highp vec3 g_vtx_sh_uvs_cs[4];
 #if defined(GL_ARB_bindless_texture)
 out flat uvec2 g_diff_texture;
-out flat uvec2 g_norm_texture;
+out flat uvec2 g_norm_tex;
 out flat uvec2 g_spec_texture;
 out flat uvec2 g_bump_texture;
 #endif // GL_ARB_bindless_texture
@@ -106,7 +106,7 @@ void main(void) {
 #if defined(GL_ARB_bindless_texture)
     MaterialData mat = g_materials[instance.y];
     g_diff_texture = texture_handles[mat.texture_indices[0]];
-    g_norm_texture = texture_handles[mat.texture_indices[1]];
+    g_norm_tex = texture_handles[mat.texture_indices[1]];
     g_spec_texture = texture_handles[mat.texture_indices[2]];
     g_bump_texture = texture_handles[mat.texture_indices[3]];
 #endif // GL_ARB_bindless_texture

@@ -144,8 +144,6 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const char *devi
     state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
 }
 
-void Viewer::Resize(const int w, const int h) { GameBase::Resize(w, h); }
-
 void Viewer::Frame() {
     auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
     Ren::ApiContext *api_ctx = ctx->api_ctx();

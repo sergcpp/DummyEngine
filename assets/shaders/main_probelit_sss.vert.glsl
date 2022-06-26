@@ -47,7 +47,7 @@ LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
 LAYOUT(location = 4) out highp vec3 g_vtx_sh_uvs[4];
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 8) out flat TEX_HANDLE g_diff_texture;
-    LAYOUT(location = 9) out flat TEX_HANDLE g_norm_texture;
+    LAYOUT(location = 9) out flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 10) out flat TEX_HANDLE g_spec_texture;
     LAYOUT(location = 11) out flat TEX_HANDLE g_sss_texture;
     LAYOUT(location = 12) out flat TEX_HANDLE g_norm_detail_texture;
@@ -91,7 +91,7 @@ void main(void) {
     material_params = mat.params;
 #if defined(BINDLESS_TEXTURES)
     g_diff_texture = GET_HANDLE(mat.texture_indices[0]);
-    g_norm_texture = GET_HANDLE(mat.texture_indices[1]);
+    g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
     g_spec_texture = GET_HANDLE(mat.texture_indices[2]);
     g_sss_texture = GET_HANDLE(mat.texture_indices[3]);
     g_norm_detail_texture = GET_HANDLE(mat.texture_indices[4]);

@@ -26,8 +26,8 @@ uniform SharedDataBlock {
 };
 
 layout(binding = SPEC_TEX_SLOT) uniform highp sampler2D g_spec_texture;
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 layout(binding = REFL_TEX_SLOT) uniform highp sampler2D g_refl_texture;
 layout(binding = BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_texture;
 
@@ -47,10 +47,10 @@ void main() {
     vec4 specular = texelFetch(g_spec_texture, icoord, 0);
     if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
-    float depth = texelFetch(g_depth_texture, icoord, 0).r;
+    float depth = texelFetch(g_depth_tex, icoord, 0).r;
     float d0 = LinearizeDepth(depth, g_shrd_data.clip_info);
 
-    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_texture, icoord, 0)).xyz;
+    vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
 
     float tex_lod = 6.0 * specular.a;
     float N_dot_V;

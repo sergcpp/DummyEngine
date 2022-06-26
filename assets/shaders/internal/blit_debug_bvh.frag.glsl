@@ -24,9 +24,9 @@ uniform SharedDataBlock {
 };
 
 #if defined(MSAA_4)
-layout(binding = 0) uniform mediump sampler2DMS g_depth_texture;
+layout(binding = 0) uniform mediump sampler2DMS g_depth_tex;
 #else
-layout(binding = 0) uniform mediump sampler2D g_depth_texture;
+layout(binding = 0) uniform mediump sampler2D g_depth_tex;
 #endif
 layout(binding = 1) uniform highp samplerBuffer g_nodes_buffer;
 
@@ -69,7 +69,7 @@ bool _bbox_test(vec3 o, vec3 inv_d, float t, vec3 bbox_min, vec3 bbox_max) {
 void main() {
     vec2 norm_uvs = g_vtx_uvs / g_shrd_data.res_and_fres.xy;
 
-    float depth = texelFetch(g_depth_texture, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_depth_tex, ivec2(g_vtx_uvs), 0).r;
     depth = 2.0 * depth - 1.0;
 
     vec4 ray_start_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, 0.0, 1.0);
