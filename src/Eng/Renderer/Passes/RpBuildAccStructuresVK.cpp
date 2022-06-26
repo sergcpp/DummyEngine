@@ -8,7 +8,7 @@ void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *vk_tlas = reinterpret_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas);
+    auto *vk_tlas = reinterpret_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas[rt_index_]);
 
     VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
@@ -49,7 +49,7 @@ void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
 
     VkAccelerationStructureBuildRangeInfoKHR range_info = {};
     range_info.primitiveOffset = 0;
-    range_info.primitiveCount = p_list_->rt_obj_instances.count;
+    range_info.primitiveCount = p_list_->rt_obj_instances[rt_index_].count;
     range_info.firstVertex = 0;
     range_info.transformOffset = 0;
 

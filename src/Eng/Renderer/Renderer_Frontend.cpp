@@ -131,6 +131,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         list.temp_nodes = {};
     }
 
+    if (list.render_flags & DebugFreezeFrontend) {
+        return;
+    }
+
     list.lights.count = 0;
     list.decals.count = 0;
     list.probes.count = 0;
@@ -151,7 +155,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.skin_vertices_count = 0;
 
     list.rt_geo_instances.count = 0;
-    list.rt_obj_instances.count = 0;
+    for (auto &rt : list.rt_obj_instances) {
+        rt.count = 0;
+    }
 
     list.visible_textures.count = 0;
     list.desired_textures.count = 0;
@@ -399,23 +405,39 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
-                    proc_objects_.data[n->prim_index].instance_index = int32_t(list.instances.count);
+                    if (cam_visibility != eVisResult::Invisible) {
+                        proc_objects_.data[n->prim_index].instance_index = int32_t(list.instances.count);
 
-                    InstanceData &curr_instance = list.instances.data[list.instances.count++];
-                    memcpy(&curr_instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                        InstanceData &curr_instance = list.instances.data[list.instances.count++];
+                        memcpy(&curr_instance.model_matrix[0][0], ValuePtr(world_from_object_trans),
+                               12 * sizeof(float));
 
-                    if (obj.comp_mask & CompLightmapBit) {
-                        const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
-                        memcpy(&curr_instance.lmap_transform[0], ValuePtr(lm.xform), 4 * sizeof(float));
-                    } else if (obj.comp_mask & CompVegStateBit) {
-                        const VegState &vs = vegs[obj.components[CompVegState]];
-                        __init_wind_params(vs, list.env, tr.object_from_world, curr_instance);
+                        if (obj.comp_mask & CompLightmapBit) {
+                            const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
+                            memcpy(&curr_instance.lmap_transform[0], ValuePtr(lm.xform), 4 * sizeof(float));
+                        } else if (obj.comp_mask & CompVegStateBit) {
+                            const VegState &vs = vegs[obj.components[CompVegState]];
+                            __init_wind_params(vs, list.env, tr.object_from_world, curr_instance);
+                        }
                     }
 
                     const Mat4f view_from_object = view_from_world * tr.world_from_object,
                                 clip_from_object = clip_from_view * view_from_object;
 
-                    if (obj.comp_mask & CompDrawableBit) {
+                    if (ext_frustum_visibility != eVisResult::Invisible && (obj.comp_mask & CompAccStructureBit)) {
+                        const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+
+                        if (acc) {
+                            RTObjInstance &new_instance =
+                                list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
+                            memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                            new_instance.custom_index = acc->geo_index;
+                            new_instance.mask = 0xff;
+                            new_instance.blas_ref = acc;
+                        }
+                    }
+
+                    if (cam_visibility != eVisResult::Invisible && (obj.comp_mask & CompDrawableBit)) {
                         const Drawable &dr = drawables[obj.components[CompDrawable]];
                         if (!(dr.vis_mask & render_mask)) {
                             continue;
@@ -434,18 +456,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         proc_objects_.data[n->prim_index].base_vertex = base_vertex;
 
                         __push_ellipsoids(dr, tr.world_from_object, list);
-
-                        if (ext_frustum_visibility != eVisResult::Invisible && (obj.comp_mask & CompAccStructureBit)) {
-                            const Ren::IAccStructure *acc =
-                                acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
-                            if (acc) {
-                                RTObjInstance &new_instance = list.rt_obj_instances.data[list.rt_obj_instances.count++];
-                                memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
-                                new_instance.custom_index = acc->geo_index;
-                                new_instance.mask = 0xff;
-                                new_instance.blas_ref = acc;
-                            }
-                        }
 
                         const uint32_t indices_start = mesh->indices_buf().offset;
                         for (const auto &grp : mesh->groups()) {
@@ -909,7 +919,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             sun_shadow_cache_[casc].valid &= (cached_dist < 1.0f && cached_dir_dist < 0.1f);
 
             const uint8_t pattern_bit = (1u << uint8_t(frame_index_ % 8));
-            bool should_update = (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
+            bool should_update = true;
+            //(pattern_bit & SunShadowUpdatePattern[casc]) != 0;
 
             if (EnableSunCulling && casc > 0 && should_update) {
                 // Check if cascade is visible to main camera
@@ -999,6 +1010,24 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 const AnimState &as = anims[obj.components[CompAnimState]];
                                 proc_objects_.data[n->prim_index].base_vertex =
                                     __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
+                            }
+                        }
+
+                        if (proc_objects_.data[n->prim_index].rt_sh_index == -1 &&
+                            (obj.comp_mask & CompAccStructureBit)) {
+                            proc_objects_.data[n->prim_index].rt_sh_index = list.rt_obj_instances[1].count;
+
+                            const Ren::IAccStructure *acc =
+                                acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+                            if (acc) {
+                                const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
+
+                                RTObjInstance &new_instance =
+                                    list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
+                                memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                                new_instance.custom_index = acc->geo_index;
+                                new_instance.mask = 0xff;
+                                new_instance.blas_ref = acc;
                             }
                         }
 

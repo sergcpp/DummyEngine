@@ -13,7 +13,7 @@ UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
 */
 
-layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_tex;
 layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D g_rand_texture;
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -30,7 +30,7 @@ layout(location = 0) out vec4 g_out_color;
 
 float SampleDepthTexel(vec2 texcoord) {
     ivec2 coord = ivec2(texcoord);
-    return texelFetch(g_depth_texture, coord, 0).r;
+    return texelFetch(g_depth_tex, coord, 0).r;
 }
 
 void main() {

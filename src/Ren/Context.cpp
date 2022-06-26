@@ -434,7 +434,7 @@ void Ren::Context::ReleaseBuffers() {
     }
     log_->Error("---------REMAINING BUFFERS--------");
     for (const Buffer &b : buffers_) {
-        log_->Error("%u", b.size());
+        log_->Error("%s\t: %u", b.name().c_str(), b.size());
     }
     log_->Error("-----------------------------------");
     buffers_.clear();

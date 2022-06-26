@@ -21,7 +21,7 @@ $ModifyWarning
 
 #if !defined(GL_ARB_bindless_texture)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_texture;
 #endif // GL_ARB_bindless_texture
@@ -52,7 +52,7 @@ layout(location = 4) in highp vec3 g_vtx_sh_uvs[4];
 layout(location = 8) in lowp float g_tex_height;
 #if defined(GL_ARB_bindless_texture)
 layout(location = 9) in flat uvec2 g_diff_texture;
-layout(location = 10) in flat uvec2 g_norm_texture;
+layout(location = 10) in flat uvec2 g_norm_tex;
 layout(location = 11) in flat uvec2 g_spec_texture;
 layout(location = 12) in flat uvec2 g_bump_texture;
 #endif // GL_ARB_bindless_texture
@@ -65,7 +65,7 @@ in highp vec3 g_vtx_sh_uvs[4];
 in lowp float g_tex_height;
 #if defined(GL_ARB_bindless_texture)
 in flat uvec2 g_diff_texture;
-in flat uvec2 g_norm_texture;
+in flat uvec2 g_norm_tex;
 in flat uvec2 g_spec_texture;
 in flat uvec2 g_bump_texture;
 #endif // GL_ARB_bindless_texture
@@ -177,7 +177,7 @@ void main(void) {
     vec3 albedo_color = texture(g_diff_texture, modified_uvs).rgb;
 
     vec2 duv_dx = dFdx(modified_uvs), duv_dy = dFdy(modified_uvs);
-    vec3 normal_color = texture(g_norm_texture, modified_uvs).wyz;
+    vec3 normal_color = texture(g_norm_tex, modified_uvs).wyz;
     vec4 specular_color = texture(g_spec_texture, modified_uvs);
 
     vec3 dp_dx = dFdx(g_vtx_pos);

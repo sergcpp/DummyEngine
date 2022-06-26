@@ -19,7 +19,7 @@ $ModifyWarning
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
@@ -51,7 +51,7 @@ LAYOUT(location = 5) in highp vec4 g_vtx_sh_uvs1;
 LAYOUT(location = 6) in highp vec4 g_vtx_sh_uvs2;
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 7) in flat TEX_HANDLE g_diff_texture;
-    LAYOUT(location = 8) in flat TEX_HANDLE g_norm_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 9) in flat TEX_HANDLE g_spec_texture;
     LAYOUT(location = 10) in flat TEX_HANDLE g_mat3_texture; // unused
 #endif // BINDLESS_TEXTURES
@@ -73,7 +73,7 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 diff_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), g_vtx_uvs)));
-    vec3 norm_color = texture(SAMPLER2D(g_norm_texture), g_vtx_uvs).wyz;
+    vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
     vec4 spec_color = texture(SAMPLER2D(g_spec_texture), g_vtx_uvs);
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);

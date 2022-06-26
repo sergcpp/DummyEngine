@@ -31,7 +31,7 @@ class RpDebugRT : public RpExecutor {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    const AccelerationStructureData *acc_struct_data_ = nullptr;
+    const Ren::IAccStructure *tlas_to_debug_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
     int depth_w_ = 0, depth_h_ = 0;
 
@@ -40,10 +40,10 @@ class RpDebugRT : public RpExecutor {
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const AccelerationStructureData *acc_struct_data,
+    void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,
                const BindlessTextureData *bindless_tex, const RpDebugRTData *pass_data) {
         view_state_ = view_state;
-        acc_struct_data_ = acc_struct_data;
+        tlas_to_debug_ = tlas_to_debug;
         bindless_tex_ = bindless_tex;
         pass_data_ = pass_data;
     }

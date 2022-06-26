@@ -18,7 +18,7 @@ $ModifyWarning
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
@@ -41,7 +41,7 @@ LAYOUT(location = 2) in mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 4) in flat TEX_HANDLE g_diff_texture;
-    LAYOUT(location = 5) in flat TEX_HANDLE g_norm_texture;
+    LAYOUT(location = 5) in flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 6) in flat TEX_HANDLE g_spec_texture;
 #endif // BINDLESS_TEXTURES
 
@@ -64,7 +64,7 @@ void main(void) {
                                           bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), g_vtx_uvs));
-    vec3 norm_color = texture(SAMPLER2D(g_norm_texture), g_vtx_uvs).wyz;
+    vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
     vec4 spec_color = texture(SAMPLER2D(g_spec_texture), g_vtx_uvs);
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);

@@ -36,9 +36,9 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_texture;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_texture;
+layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
 
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
@@ -87,9 +87,9 @@ void main() {
 
     vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_fetch = texelFetch(g_norm_texture, pix_uvs, 0);
+    vec4 normal_fetch = texelFetch(g_norm_tex, pix_uvs, 0);
     vec3 normal_ws = UnpackNormalAndRoughness(normal_fetch).xyz;
-    float depth = texelFetch(g_depth_texture, pix_uvs, 0).r;
+    float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
 
     vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
 

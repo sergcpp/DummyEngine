@@ -30,6 +30,7 @@ extern "C" {
 #include "Passes/RpOpaque.h"
 #include "Passes/RpRTGI.h"
 #include "Passes/RpRTReflections.h"
+#include "Passes/RpRTShadows.h"
 #include "Passes/RpReadBrightness.h"
 #include "Passes/RpSSAO.h"
 #include "Passes/RpSSRBlur.h"
@@ -111,10 +112,8 @@ class Renderer {
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows /*| EnableOIT*/ | EnableTonemap | EnableBloom |
-         EnableTaa /*EnableMsaa | EnableFxaa*/ | EnableTimers | EnableDOF /*| DebugRT*/ /*|
-DebugEllipsoids*/
-         /*| DebugDeferred*/);
+         EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa | EnableTimers | EnableDOF /*|
+         EnableRTShadows | EnableDeferred*/);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -127,6 +126,7 @@ DebugEllipsoids*/
     struct ProcessedObjData {
         int32_t instance_index;
         uint32_t base_vertex;
+        int32_t rt_sh_index;
     };
     DynArray<ProcessedObjData> proc_objects_;
     DynArray<BBox> decals_boxes_;
@@ -201,6 +201,7 @@ DebugEllipsoids*/
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTGI rp_rt_gi_;
     RpRTReflections rp_rt_reflections_;
+    RpRTShadows rp_rt_shadows_;
     RpFillStaticVel rp_fill_static_vel_ = {prim_draw_};
     RpTAA rp_taa_ = {prim_draw_};
     RpBlur rp_blur_h_ = {prim_draw_}, rp_blur_v_ = {prim_draw_};
@@ -237,6 +238,8 @@ DebugEllipsoids*/
     Ren::Pipeline pi_reconstruct_normals_;
     // GI Denoiser stuff
     Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_resolve_temporal_, pi_gi_blur_, pi_gi_post_blur_;
+    // Sun shadows
+    Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
@@ -260,6 +263,7 @@ DebugEllipsoids*/
         RpResRef shadowmap;
         RpResRef ssao;
         RpResRef gi;
+        RpResRef sun_shadow;
     };
 
     void AddBuffersUpdatePass(CommonBuffers &common_buffers);
@@ -290,6 +294,13 @@ DebugEllipsoids*/
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                           const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                           FrameTextures &frame_textures);
+
+    void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                               FrameTextures &frame_textures);
+    void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                               FrameTextures &frame_textures);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 

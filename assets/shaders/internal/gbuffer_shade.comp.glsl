@@ -30,7 +30,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_texture;
-layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORMAL_TEX_SLOT) uniform sampler2D g_normal_texture;
 layout(binding = SPECULAR_TEX_SLOT) uniform sampler2D g_specular_texture;
 
@@ -41,10 +41,17 @@ layout(binding = DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
 layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
 layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_texture;
+layout(binding = SUN_SHADOW_TEX_SLOT) uniform usampler2D g_sun_shadow_texture;
 
 layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+
+// TODO: remove this!
+uvec2 RemapLane8x8(uint lane) {
+    return uvec2(bitfieldInsert(bitfieldExtract(lane, 2, 3), lane, 0, 1),
+                 bitfieldInsert(bitfieldExtract(lane, 3, 3), bitfieldExtract(lane, 1, 2), 0, 2));
+}
 
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
@@ -54,7 +61,7 @@ void main() {
     ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    highp float depth = texelFetch(g_depth_texture, icoord, 0).r;
+    highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
     highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
     highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = int(floor(k * float(REN_GRID_RES_Z)));
@@ -156,8 +163,11 @@ void main() {
     indirect_col /= max(total_fade, 1.0);
     indirect_col = max(1.0 * indirect_col, vec3(0.0));
 
+    vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
+
     float lambert = clamp(dot(normal.xyz, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
     float visibility = 0.0;
+#if 0
     if (lambert > 0.00001) {
         vec4 g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2;
 
@@ -187,16 +197,20 @@ void main() {
 
         visibility = GetSunVisibility(lin_depth, g_shadow_texture, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
+#else
+    uint sun_mask = texelFetch(g_sun_shadow_texture, ivec2(ix, iy) / ivec2(8, 4), 0).r;
+    ivec2 group_id = ivec2(ix, iy) % ivec2(8, 4);
+    visibility = (sun_mask & (1u << (group_id.y * 8 + group_id.x))) != 0 ? 0.0 : 1.0;
+#endif
 
-    vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    vec4 gi = textureLod(g_gi_texture, ao_uvs, 0.0);
-    //vec3 gi = vec3(textureLod(g_gi_texture, ao_uvs, 0.0).a * 0.01);
+    vec4 gi = textureLod(g_gi_texture, px_uvs, 0.0);
+    //vec3 gi = vec3(textureLod(g_gi_texture, px_uvs, 0.0).a * 0.01);
     //float ao = (gi.a * 0.01);
     vec3 diffuse_color = albedo * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                    gi.rgb + /*ao * indirect_col +*/
                                    additional_light);
 
-    //float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
+    //float ambient_occlusion = textureLod(g_ao_texture, px_uvs, 0.0).r;
     //vec3 diffuse_color = albedo * (g_shrd_data.sun_col.xyz * lambert * visibility +
     //                               ambient_occlusion * ambient_occlusion * indirect_col +
     //                               additional_light);

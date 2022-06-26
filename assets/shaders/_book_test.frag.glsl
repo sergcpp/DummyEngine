@@ -17,7 +17,7 @@ $ModifyWarning
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
 layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
@@ -75,7 +75,7 @@ void main(void) {
     vec3 albedo_color = texture(g_diff_texture, g_vtx_uvs).rgb;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
-    vec3 normal_color = texture(g_norm_texture, g_vtx_uvs).wyz;
+    vec3 normal_color = texture(g_norm_tex, g_vtx_uvs).wyz;
     vec4 specular_color = texture(g_spec_texture, g_vtx_uvs);
 
     vec3 normal = normal_color * 2.0 - 1.0;

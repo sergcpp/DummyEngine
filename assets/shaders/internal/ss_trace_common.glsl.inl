@@ -57,7 +57,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
     int iter = 0;
     while (iter++ < MAX_STEPS && cur_mip >= MOST_DETAILED_MIP) {
         vec2 cur_pos_px = cur_mip_res * cur_pos_ss.xy;
-        float surf_z = texelFetch(g_depth_texture, clamp(ivec2(cur_pos_px), ivec2(0), ivec2(cur_mip_res - 1)), cur_mip).r;
+        float surf_z = texelFetch(g_depth_tex, clamp(ivec2(cur_pos_px), ivec2(0), ivec2(cur_mip_res - 1)), cur_mip).r;
         bool increment_mip = cur_mip < LEAST_DETAILED_MIP;
 
         { // advance ray
@@ -96,7 +96,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
     }
 
     // Reject if we hit surface from the back
-    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_texture, cur_pos_ss.xy, 0.0)).xyz;
+    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_tex, cur_pos_ss.xy, 0.0)).xyz;
     vec3 hit_normal_vs = (g_shrd_data.view_matrix * vec4(hit_normal_ws, 0.0)).xyz;
     if (dot(hit_normal_vs, ray_dir_vs) > 0.0) {
         return false;
@@ -115,7 +115,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
     vec4 hit_point_vs = g_shrd_data.inv_proj_matrix * vec4(hit_point_cs, 1.0);
     hit_point_vs.xyz /= hit_point_vs.w;
 
-    float hit_depth_fetch = texelFetch(g_depth_texture, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
+    float hit_depth_fetch = texelFetch(g_depth_tex, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
     vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);
 #if !defined(VULKAN)
     hit_surf_cs.z = 2.0 * hit_surf_cs.z - 1.0;

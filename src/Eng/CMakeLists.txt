@@ -89,6 +89,7 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_Names.h
                         Renderer/Renderer_Passes.cpp
                         Renderer/Renderer_Structs.h
+                        Renderer/Renderer_SunShadows.cpp
                         Renderer/__brdf_lut.inl
                         Renderer/__cone_rt_lut.inl
                         Renderer/__noise.inl
@@ -149,6 +150,8 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpRTGI.cpp
                     Renderer/Passes/RpRTReflections.h
                     Renderer/Passes/RpRTReflections.cpp
+                    Renderer/Passes/RpRTShadows.h
+                    Renderer/Passes/RpRTShadows.cpp
                     Renderer/Passes/RpSampleBrightness.h
                     Renderer/Passes/RpSampleBrightness.cpp
                     Renderer/Passes/RpShadowMaps.h
@@ -213,6 +216,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpOpaqueGL.cpp
                         Renderer/Passes/RpRTGI_GL.cpp
                         Renderer/Passes/RpRTReflections_GL.cpp
+                        Renderer/Passes/RpRTShadows_GL.cpp
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
@@ -236,6 +240,7 @@ elseif(${RENDERER} STREQUAL "VK")
                         Renderer/Passes/RpOpaqueVK.cpp
                         Renderer/Passes/RpRTGI_VK.cpp
                         Renderer/Passes/RpRTReflections_VK.cpp
+                        Renderer/Passes/RpRTShadows_VK.cpp
                         Renderer/Passes/RpShadowMapsVK.cpp
                         Renderer/Passes/RpSkinningVK.cpp
                         Renderer/Passes/RpSkydomeVK.cpp

@@ -88,6 +88,8 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
         ren_ctx_->LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, DecalsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer(
         "RT Obj Instances (Stage)", Ren::eBufType::Stage, RTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_sh_obj_instances_stage_buf = ren_ctx_->LoadBuffer(
+        "RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage, RTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
 
     Ren::BufferRef shared_data_stage_buf =
         ren_ctx_->LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage, SharedDataBlockSize * Ren::MaxFramesInFlight);
@@ -98,7 +100,8 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     for (int i = 0; i < 2; i++) {
         main_view_lists_[i].Init(shared_data_stage_buf, instances_stage_buf, instance_indices_stage_buf,
                                  skin_transforms_stage_buf, shape_keys_stage_buf, cells_stage_buf, items_stage_buf,
-                                 lights_stage_buf, decals_stage_buf, rt_obj_instances_stage_buf);
+                                 lights_stage_buf, decals_stage_buf, rt_obj_instances_stage_buf,
+                                 rt_sh_obj_instances_stage_buf);
     }
 }
 
@@ -502,7 +505,16 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugRT;
+            if (argc > 1) {
+                if (argv[1].val > 0.5) {
+                    flags |= DebugRTShadow;
+                } else {
+                    flags |= DebugRT;
+                }
+            } else {
+                flags &= ~DebugRTShadow;
+                flags &= ~DebugRT;
+            }
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -513,6 +525,16 @@ void GSBaseState::Enter() {
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
             flags ^= DebugDenoise;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_freezeFrontend", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint64_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugFreezeFrontend;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -829,8 +851,8 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     if (!use_pt_ && !use_lm_) {
         const int back_list = (front_list_ + 1) % 2;
 
-        uint64_t render_flags = renderer_->render_flags();
-        FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
+        const uint64_t render_flags = renderer_->render_flags();
+        const FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
         const BackendInfo &back_info = renderer_->backend_info();
 
         /*const uint64_t

@@ -24,8 +24,8 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_texture;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_texture;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
+layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_texture;
 
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
@@ -97,8 +97,8 @@ void main() {
     UnpackRayCoords(packed_coords, ray_coords, copy_horizontal, copy_vertical, copy_diagonal);
 
     ivec2 icoord = ivec2(ray_coords);
-    float depth = texelFetch(g_depth_texture, icoord, 0).r;
-    vec4 normal_roughness = UnpackNormalAndRoughness(texelFetch(g_norm_texture, icoord, 0));
+    float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    vec4 normal_roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0));
     vec3 normal_ws = normal_roughness.xyz;
     vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
 

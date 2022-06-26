@@ -43,7 +43,7 @@ void RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas);
+    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas[0]);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -123,7 +123,7 @@ void RpRTGI::ExecuteRTInline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas);
+    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas[0]);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
