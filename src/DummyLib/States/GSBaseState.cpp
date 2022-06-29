@@ -813,6 +813,17 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
             }
             cur_y -= font_height;
         }
+
+        if (!cmdline_history_.empty() && !cmdline_history_.back().empty()) {
+            const char *cmd = cmdline_history_.back().c_str();
+            Ren::String hint_str;
+            int index = cmdline_->NextHint(cmd, -1, hint_str);
+            while (index != -1) {
+                font_->DrawText(r, hint_str.c_str(), Ren::Vec2f{-1.0f, cur_y}, text_color, root);
+                cur_y -= font_height;
+                index = cmdline_->NextHint(cmd, index, hint_str);
+            }
+        }
     }
 
     if (!use_pt_ && !use_lm_) {

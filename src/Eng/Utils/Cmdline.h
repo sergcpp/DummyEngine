@@ -22,7 +22,10 @@ public:
 
     void RegisterCommand(const char *cmd, const CommandHandler &handler);
     bool Execute(const char *str);
-private:
+
+    int NextHint(const char *str, int i, Ren::String &out_str) const;
+
+  private:
     Ren::HashMap32<Ren::String, CommandHandler> cmd_handlers_;
 
     bool Parse(const char *str, ArgData *out_argv, int &out_argc);

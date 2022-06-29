@@ -23,6 +23,17 @@ bool Cmdline::Execute(const char *str) {
     return false;
 }
 
+int Cmdline::NextHint(const char *str, const int i, Ren::String &out_str) const {
+    auto it = (i == -1) ? cmd_handlers_.cbegin() : ++cmd_handlers_.citer_at(i);
+    for (; it != cmd_handlers_.cend(); ++it) {
+        if (it->key.StartsWith(str)) {
+            out_str = it->key;
+            return it.index();
+        }
+    }
+    return -1;
+}
+
 bool Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
     const char *s = str;
     // skip white space
