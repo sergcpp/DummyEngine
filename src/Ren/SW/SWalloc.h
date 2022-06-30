@@ -1,32 +1,38 @@
 #ifndef SW_ALLOC_H
 #define SW_ALLOC_H
 
-#if defined(_WIN32) || defined(__linux__)
-#include <malloc.h>
-#endif
+#include <assert.h>
+#include <stdint.h>
 
 inline void* sw_aligned_malloc(size_t size, size_t alignment) {
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    return _mm_malloc(size, alignment);
-#elif __STDC_VERSION__ >= 201112L
-    return aligned_alloc(alignment, size);
-#elif defined(__APPLE__)
-    void* p = nullptr;
-    size_t mod = alignment % sizeof(void*);
-    if (mod) alignment += sizeof(void*) - mod;
-    posix_memalign(&p, alignment, size);
-    return p;
-#else
-    return memalign(alignment, size);
-#endif
+    assert(alignment > sizeof(void *));
+    size_t space = size + (alignment - 1);
+
+    void *ptr = malloc(space + sizeof(void *));
+    void *original_ptr = ptr;
+
+    char *ptr_bytes = (char *)ptr;
+    ptr_bytes += sizeof(void *);
+
+    size_t off = (size_t)((uintptr_t)(ptr_bytes) % alignment);
+    if (off) {
+        off = alignment - off;
+    }
+    ptr_bytes += off;
+    assert(((uintptr_t)(ptr_bytes) % alignment) == 0);
+
+    ptr = ptr_bytes;
+    ptr_bytes -= sizeof(void *);
+
+    memcpy(ptr_bytes, &original_ptr, sizeof(void *));
+
+    return ptr;
 }
 
 inline void sw_aligned_free(void* p) {
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    _mm_free(p);
-#else
-    free(p);
-#endif
+    if (p) {
+        free(((void **)p)[-1]);
+    }
 }
 
 #endif // SW_ALLOC_H
