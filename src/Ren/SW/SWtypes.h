@@ -52,8 +52,6 @@ typedef struct SWuniform {
 #endif
 #ifdef _MSC_VER
 //#define sw_inline __forceinline
-#define sw_aligned_alloc _aligned_malloc
-#define sw_aligned_free _aligned_free
 
 #define RESTRICT __restrict
 
