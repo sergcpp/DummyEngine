@@ -1,43 +1,42 @@
 #pragma once
 
 #include <cassert>
-
-#if !defined(__APPLE__)
-#include <malloc.h>
-#endif
+#include <cstring>
 
 #include <atomic>
 
 namespace Ren {
 #ifndef REN_ALIGNED_MALLOC_DEFINED
 inline void *aligned_malloc(size_t size, size_t alignment) {
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    return _mm_malloc(size, alignment);
-#elif __STDC_VERSION__ >= 201112L
-    return aligned_alloc(alignment, size);
-#else
-#ifdef __APPLE__
-    void *p = nullptr;
-    size_t mod = alignment % sizeof(void *);
-    if (mod) {
-        alignment += sizeof(void *) - mod;
+    while (alignment < sizeof(void *)) {
+        alignment *= 2;
     }
-    posix_memalign(&p, alignment, size);
-    return p;
-#else
-    return memalign(alignment, size);
-#endif
-#endif
+    size_t space = size + (alignment - 1);
+
+    void *ptr = malloc(space + sizeof(void *));
+    void *original_ptr = ptr;
+
+    char *ptr_bytes = static_cast<char *>(ptr);
+    ptr_bytes += sizeof(void *);
+
+    size_t off = static_cast<size_t>(reinterpret_cast<uintptr_t>(ptr_bytes) % alignment);
+    if (off) {
+        off = alignment - off;
+    }
+    ptr_bytes += off;
+
+    ptr = static_cast<void *>(ptr_bytes);
+    ptr_bytes -= sizeof(void *);
+
+    memcpy(ptr_bytes, &original_ptr, sizeof(void *));
+
+    return ptr;
 }
 
 inline void aligned_free(void *p) {
-#if defined(_MSC_VER) || defined(__MINGW32__)
-    _mm_free(p);
-#elif __STDC_VERSION__ >= 201112L
-    free(p);
-#else
-    free(p);
-#endif
+    if (p) {
+        free(static_cast<void **>(p)[-1]);
+    }
 }
 #define REN_ALIGNED_MALLOC_DEFINED
 #endif
