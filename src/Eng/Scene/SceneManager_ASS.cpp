@@ -36,7 +36,7 @@ extern const char *TEXTURES_PATH;
 extern const char *MATERIALS_PATH;
 extern const char *SHADERS_PATH;
 
-void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data) {
+void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
 
     std::vector<char> in_file_data(in_file_size);
@@ -139,10 +139,10 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
     return temp_pixels1;
 }
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bool flip_y) {
+std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bool flip_y) {
     const Ren::Tex2DParams &params = tex_ref->params;
 
-    std::unique_ptr<Ray::pixel_color8_t[]> tex_data(new Ray::pixel_color8_t[params.w * params.h]);
+    std::unique_ptr<Ray::color_rgba8_t[]> tex_data(new Ray::color_rgba8_t[params.w * params.h]);
 #if defined(__ANDROID__)
     Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);

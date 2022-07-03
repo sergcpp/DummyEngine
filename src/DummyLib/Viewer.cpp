@@ -107,8 +107,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const char *devi
         s.w = w;
         s.h = h;
 
-        auto ray_renderer = Ray::CreateRenderer(s, Ray::RendererRef | Ray::RendererSSE2 | Ray::RendererAVX |
-                                                       Ray::RendererAVX2 /*| Ray::RendererOCL*/);
+        auto ray_renderer = std::shared_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
         auto scene_manager = std::make_shared<SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads);

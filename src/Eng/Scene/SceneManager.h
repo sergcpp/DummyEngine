@@ -203,7 +203,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ray::RendererBase &ray_renderer_;
     Sys::ThreadPool &threads_;
     std::vector<Ray::RegionContext> ray_reg_ctx_;
-    std::shared_ptr<Ray::SceneBase> ray_scene_;
+    std::unique_ptr<Ray::SceneBase> ray_scene_;
 
     Ren::Camera cam_;
     Ren::Vec3f last_cam_pos_;

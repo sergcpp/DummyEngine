@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
 //  Windows
 #include <intrin.h>
 #ifdef __GNUC__
@@ -28,7 +28,8 @@ inline unsigned long long _xgetbv(unsigned int index) {
 
 #else
 
-#if !defined(__arm__) && !defined(__aarch64__) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+#if !defined(__arm__) && !defined(__aarch64__) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__) &&                 \
+    !defined(_M_ARM) && !defined(_M_ARM64)
 //  GCC Intrinsics
 #include <cpuid.h>
 #include <immintrin.h>
@@ -60,7 +61,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 #endif
 #endif
 
-#if defined(__linux) && !defined(__ANDROID__)
+#if defined(__linux) && !defined(__ANDROID__) && !defined(_M_ARM) && !defined(_M_ARM64)
 
 #include <sys/sysinfo.h>
 #include <sys/types.h>
@@ -80,7 +81,7 @@ void swCPUInfoInit(SWcpu_info *info) {
     info->num_cpus = 0;
     info->physical_memory = 0;
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
     int CPUInfo[4] = { -1 };
     unsigned nExIds, i = 0;
     char CPUBrandString[0x40];
@@ -117,7 +118,7 @@ void swCPUInfoInit(SWcpu_info *info) {
     memcpy(vendor + 4, &CPUInfo[2], 4); // copy ECX
     memcpy(vendor + 8, &CPUInfo[3], 4); // copy EDX
     vendor[12] = '\0';
-#elif !defined(__ANDROID__)
+#elif !defined(__ANDROID__) && !defined(_M_ARM) && !defined(_M_ARM64)
 #if !defined(__APPLE__)
     struct sysinfo mem_info;
     sysinfo(&mem_info);
@@ -158,7 +159,7 @@ void swCPUInfoInit(SWcpu_info *info) {
 #endif
 #endif
 
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
     int cpu_info[4];
     cpuid(cpu_info, 0);
     int ids_count = cpu_info[0];

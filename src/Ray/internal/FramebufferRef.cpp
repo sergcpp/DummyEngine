@@ -3,15 +3,13 @@
 #include <cassert>
 #include <cstring>
 
-Ray::Ref::Framebuffer::Framebuffer(int w, int h) : w_(0), h_(0) {
-    Resize(w, h, false);
-}
+Ray::Ref::Framebuffer::Framebuffer(const int w, const int h) : w_(0), h_(0) { Resize(w, h, false); }
 
-void Ray::Ref::Framebuffer::Resize(int w, int h, bool alloc_sh) {
+void Ray::Ref::Framebuffer::Resize(const int w, const int h, const bool alloc_sh) {
     assert(w > 0 && h > 0);
 
     if (alloc_sh) {
-        size_t buf_size = (size_t)w * h;
+        const size_t buf_size = size_t(w) * h;
         if (sh_data_.size() != buf_size) {
             sh_data_.resize(buf_size, {});
         }
@@ -22,8 +20,8 @@ void Ray::Ref::Framebuffer::Resize(int w, int h, bool alloc_sh) {
     if (w_ != w || h_ != h) {
         w_ = w;
         h_ = h;
-        size_t buf_size = (size_t)w * h;
-        pixels_.resize(buf_size, pixel_color_t{ 0.0f, 0.0f, 0.0f, 0.0f });
+        const size_t buf_size = size_t(w) * h;
+        pixels_.resize(buf_size, pixel_color_t{0.0f, 0.0f, 0.0f, 0.0f});
     }
 }
 
@@ -61,7 +59,7 @@ void Ray::Ref::Framebuffer::ComputeSHData(const rect_t &rect) {
 
             shl1_data_t &sh_data = sh_data_[i];
             const float *sh_coeff = sh_data.coeff_r;
-            const float inv_weight = sh_data.coeff_g[0] > FLT_EPS ? (1.0f / sh_data.coeff_g[0]) : 0.0f;
+            const float inv_weight = sh_data.coeff_g[0] > FLT_EPS ? (2.0f * PI / sh_data.coeff_g[0]) : 0.0f;
 
             pixel_color_t p = pixels_[i];
             p.r *= inv_weight;
@@ -85,7 +83,7 @@ void Ray::Ref::Framebuffer::MixWith(const Framebuffer &f2, const rect_t &rect, f
     }
 }
 
-void Ray::Ref::Framebuffer::MixSHWith(const Framebuffer &f2, const rect_t &rect, float k) {
+void Ray::Ref::Framebuffer::MixWith_SH(const Framebuffer &f2, const rect_t &rect, float k) {
     for (int y = rect.y; y < rect.y + rect.h; y++) {
         for (int x = rect.x; x < rect.x + rect.w; x++) {
             this->MixSHData(x, y, f2.GetSHData(x, y), k);

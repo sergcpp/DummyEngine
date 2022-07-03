@@ -1,8 +1,4 @@
 
-extern "C" {
-#include "SW/_SW.c"
-}
-
 #if defined(USE_VK_RENDER)
 #include "VKExt.cpp"
 #include "VKCtx.cpp"
