@@ -3,70 +3,113 @@ stages:
   - test
   - deploy
 
-.windows-build-job:
+.windows-x86_64-gl-build-job:
   stage: build
   tags:
     - windows
   script:
     - echo "Compiling the code..."
     - mkdir build_gl
-    - mkdir build_vk
     - cd build_gl
     - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
+    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 4
+    - echo "Compile complete."
+    - mkdir windows-x86_64-gl
+    - copy build_gl/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-gl
+    - copy build_gl/src/Ray/tests/Release/test_Ray.exe windows-x86_64-gl
+    - copy build_gl/src/Ren/tests/Release/test_Ren.exe windows-x86_64-gl
+    - copy build_gl/src/Ren/SW/tests/Release/test_SW.exe windows-x86_64-gl
+    - copy build_gl/src/Sys/tests/Release/test_Sys.exe windows-x86_64-gl
+    - copy build_gl/src/Net/tests/Release/test_Net.exe windows-x86_64-gl
+    - copy build_gl/src/DummyLib/tests/Release/test_DummyLib.exe windows-x86_64-gl
+    - copy DummyAppGL.exe windows-x86_64-gl
+  artifacts:
+    name: windows-x86_64-gl
+    paths:
+      - windows-x86_64-gl/
+    expire_in: 1 week
+    
+.windows-x86_64-vk-build-job:
+  stage: build
+  tags:
+    - windows
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk
     - cd build_vk
     - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 4
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release --parallel 4
     - echo "Compile complete."
-    - mkdir win64_gl
-    - copy build_gl/src/Eng/_tests/Release/test_Eng.exe win64_gl
-    - copy build_gl/src/Ray/tests/Release/test_Ray.exe win64_gl
-    - copy build_gl/src/Ren/tests/Release/test_Ren.exe win64_gl
-    - copy build_gl/src/Ren/SW/tests/Release/test_SW.exe win64_gl
-    - copy build_gl/src/Sys/tests/Release/test_Sys.exe win64_gl
-    - copy build_gl/src/Net/tests/Release/test_Net.exe win64_gl
-    - copy build_gl/src/DummyLib/tests/Release/test_DummyLib.exe win64_gl
-    - copy DummyAppGL.exe win64_gl
-    - mkdir win64_vk
-    - copy build_vk/src/Eng/_tests/Release/test_Eng.exe win64_vk
-    - copy build_vk/src/Ray/tests/Release/test_Ray.exe win64_vk
-#    - copy build_vk/src/Ren/tests/Release/test_Ren.exe win64_vk
-    - copy build_vk/src/Ren/SW/tests/Release/test_SW.exe win64_vk
-    - copy build_vk/src/Sys/tests/Release/test_Sys.exe win64_vk
-    - copy build_vk/src/Net/tests/Release/test_Net.exe win64_vk
-    - copy build_vk/src/DummyLib/tests/Release/test_DummyLib.exe win64_vk
-    - copy DummyAppVK.exe win64_vk
+    - mkdir windows-x86_64-vk
+    - copy build_vk/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-vk
+    - copy build_vk/src/Ray/tests/Release/test_Ray.exe windows-x86_64-vk
+#    - copy build_vk/src/Ren/tests/Release/test_Ren.exe windows-x86_64-vk
+    - copy build_vk/src/Ren/SW/tests/Release/test_SW.exe windows-x86_64-vk
+    - copy build_vk/src/Sys/tests/Release/test_Sys.exe windows-x86_64-vk
+    - copy build_vk/src/Net/tests/Release/test_Net.exe windows-x86_64-vk
+    - copy build_vk/src/DummyLib/tests/Release/test_DummyLib.exe windows-x86_64-vk
+    - copy DummyAppVK.exe windows-x86_64-vk
   artifacts:
-    name: win64
+    name: windows-x86_64-vk
     paths:
-      - win64_gl/
-      - win64_vk/
-    
-.linux-build-job:
+      - windows-x86_64-vk/
+    expire_in: 1 week
+
+.linux-x86_64-gl-build-job:
   stage: build
   tags:
     - linux
   script:
     - echo "Compiling the code..."
     - mkdir build_gl
-    - mkdir build_vk
     - cd build_gl
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
+    - cmake --build build_gl --target all --config Release  --parallel 4
+    - echo "Compile complete."
+    - mkdir linux-x86_64-gl
+    - cp build_gl/src/Eng/_tests/test_Eng linux-x86_64-gl
+    - cp build_gl/src/Ray/tests/test_Ray linux-x86_64-gl
+    - cp build_gl/src/Ren/tests/test_Ren linux-x86_64-gl
+    - cp build_gl/src/Ren/SW/tests/test_SW linux-x86_64-gl
+    - cp build_gl/src/Sys/tests/test_Sys linux-x86_64-gl
+    - cp build_gl/src/Net/tests/test_Net linux-x86_64-gl
+    - cp build_gl/src/DummyLib/tests/test_DummyLib linux-x86_64-gl
+    - cp DummyAppGL linux-x86_64-gl
+  artifacts:
+    name: linux-x86_64-gl
+    paths:
+      - linux-x86_64-gl/
+    expire_in: 1 week
+
+.linux-x86_64-vk-build-job:
+  stage: build
+  tags:
+    - linux
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk
     - cd build_vk
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target all --config Release  --parallel 4
-    - cmake --build build_vk --target DummyApp --config Release  --parallel 4
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release  --parallel 4
     - echo "Compile complete."
+    - mkdir linux-x86_64-vk
+    - cp build_vk/src/Eng/_tests/test_Eng linux-x86_64-vk
+    - cp build_vk/src/Ray/tests/test_Ray linux-x86_64-vk
+#    - cp build_vk/src/Ren/tests/test_Ren linux-x86_64-vk
+    - cp build_vk/src/Ren/SW/tests/test_SW linux-x86_64-vk
+    - cp build_vk/src/Sys/tests/test_Sys linux-x86_64-vk
+    - cp build_vk/src/Net/tests/test_Net linux-x86_64-vk
+    - cp build_vk/src/DummyLib/tests/test_DummyLib linux-x86_64-vk
+    - cp DummyAppVK linux-x86_64-vk
   artifacts:
+    name: linux-x86_64-vk
     paths:
-      - build_gl/*
-      - ./DummyAppGL
-      - build_vk/*
-      - ./DummyAppVK
+      - linux-x86_64-vk/
+    expire_in: 1 week
     
 .macos-build-job:
   stage: build
@@ -85,42 +128,77 @@ stages:
 #      - build_vk/
 #      - DummyAppVK
 
-.test-job-common:
+.windows-test-job-common:
   stage: test
   script:
-    - echo "Running common tests..."
-    - win64_vk/test_Ray
-    - win64_vk/test_SW
-    - win64_vk/test_Sys
-    - win64_vk/test_Net
+    - echo "Running tests..."
+    - '& "$BIN_DIR/test_SW"'
+    - '& "$BIN_DIR/test_Sys"'
+    - '& "$BIN_DIR/test_Net"'
 
-.test-job-gl:
+.windows-test-job-gl:
   stage: test
   script:
     - echo "Running GL tests..."
-    - win64_gl/test_Eng
-    - win64_gl/test_Ren
-    - win64_gl/test_DummyLib
-
-.test-job-vk:
+    - '& "$BIN_DIR/test_Eng"'
+    - '& "$BIN_DIR/test_Ren"'
+    - '& "$BIN_DIR/test_DummyLib"'
+    
+.windows-test-job-vk:
   stage: test
   script:
     - echo "Running VK tests..."
-    - win64_vk/test_Eng
-#    - win64_vk/test_Ren
-    - win64_vk/test_DummyLib
+    - '& "$BIN_DIR/test_Eng"'
+#    - '& "$BIN_DIR/test_Ren"'
+    - '& "$BIN_DIR/test_DummyLib"'
 
-windows-build-job:
+.linux-test-job-common:
+  stage: test
+  script:
+    - echo "Running tests..."
+    - $BIN_DIR/test_SW
+    - $BIN_DIR/test_Sys
+    - $BIN_DIR/test_Net
+
+.linux-test-job-gl:
+  stage: test
+  script:
+    - echo "Running GL tests..."
+    - $BIN_DIR/test_Eng
+    - $BIN_DIR/test_Ren
+    - $BIN_DIR/test_DummyLib
+
+.linux-test-job-vk:
+  stage: test
+  script:
+    - echo "Running VK tests..."
+    - $BIN_DIR/test_Eng
+#    - $BIN_DIR/test_Ren
+    - $BIN_DIR/test_DummyLib
+
+windows-x86_64-gl-build-job:
   extends:
-    - .windows-build-job
+    - .windows-x86_64-gl-build-job
   tags:
     - windows,x86_64
     
-linux-build-job:
+windows-x86_64-vk-build-job:
   extends:
-    - .linux-build-job
+    - .windows-x86_64-vk-build-job
   tags:
-    - linux
+    - windows,x86_64
+    
+linux-x86_64-gl-build-job:
+  extends:
+    - .linux-x86_64-gl-build-job
+  tags:
+    - linux,x86_64
+    
+linux-x86_64-vk-build-job:
+  extends:
+    - .linux-x86_64-vk-build-job
+  tags:
+    - linux,x86_64
     
 #macos-build-and-test-job:
 #  extends:
@@ -130,36 +208,82 @@ linux-build-job:
 #    - macos
 
 windows-x86_64-test-job-common:
+  variables:
+    BIN_DIR: windows-x86_64-vk
   stage: test
   extends:
-    - .test-job-common
-  dependencies:
-    - windows-build-job
+    - .windows-test-job-common
+  needs:
+    - windows-x86_64-vk-build-job
   tags:
     - windows,x86_64
 
 windows-x86_64-test-job-gl:
+  variables:
+    BIN_DIR: windows-x86_64-gl
   stage: test
   extends:
-    - .test-job-gl
-  dependencies:
-    - windows-build-job
+    - .windows-test-job-gl
+  needs:
+    - windows-x86_64-gl-build-job
   tags:
     - windows,x86_64
 
 windows-x86_64-test-job-vk:
+  variables:
+    BIN_DIR: windows-x86_64-vk
   stage: test
   extends:
-    - .test-job-vk
-  dependencies:
-    - windows-build-job
+    - .windows-test-job-vk
+  needs:
+    - windows-x86_64-vk-build-job
   tags:
     - windows,x86_64
+
+linux-x86_64-test-job-common:
+  variables:
+    BIN_DIR: linux-x86_64-vk
+  stage: test
+  extends:
+    - .linux-test-job-common
+  needs:
+    - linux-x86_64-vk-build-job
+  tags:
+    - linux,x86_64
+
+linux-x86_64-test-job-gl:
+  variables:
+    BIN_DIR: linux-x86_64-gl
+  stage: test
+  extends:
+    - .linux-test-job-gl
+  needs:
+    - linux-x86_64-gl-build-job
+  tags:
+    - linux,x86_64
+
+linux-x86_64-test-job-vk:
+  variables:
+    BIN_DIR: linux-x86_64-vk
+  stage: test
+  extends:
+    - .linux-test-job-vk
+  needs:
+    - linux-x86_64-vk-build-job
+  tags:
+    - linux,x86_64
 
 deploy-job:
   stage: deploy
   variables:
     GIT_STRATEGY: none
+  needs:
+    - windows-x86_64-test-job-common
+    - windows-x86_64-test-job-gl
+    - windows-x86_64-test-job-vk
+    - linux-x86_64-test-job-common
+    - linux-x86_64-test-job-gl
+    - linux-x86_64-test-job-vk
   script:
     - echo "Deploying application..."
 #    - ./DummyAppVK --prepare_assets pc --norun
