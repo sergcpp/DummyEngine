@@ -1,4 +1,5 @@
 
+#include "RendererBase.cpp"
 #include "RendererFactory.cpp"
 #include "SceneBase.cpp"
 
@@ -13,51 +14,15 @@
 #include "internal/SceneRef.cpp"
 #include "internal/TextureAtlasRef.cpp"
 #include "internal/TextureUtilsRef.cpp"
+#include "internal/Time.cpp"
 
-#if defined(__ARM_NEON__) || defined(__aarch64__)
-#include "internal/RendererNEON.cpp"
+#if defined(__ARM_NEON__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+//#include "internal/RendererNEON.cpp"
 #endif
 
-#if defined(__aarch64__) || defined(DISABLE_OCL)
-#else
-#include "internal/RendererOCL.cpp"
-#include "internal/SceneOCL.cpp"
-#include "internal/TextureAtlasOCL.cpp"
+#if !defined(__ANDROID__) && !defined(DISABLE_OCL)
+//#include "internal/RendererOCL.cpp"
+//#include "internal/SceneOCL.cpp"
+//#include "internal/TextureAtlasOCL.cpp"
 #endif
 
-#include "internal/simd/detect.cpp"
-
-// TODO:
-// consider transparency in shadow from punctual lights
-// add deletion functions for OpenCL backend
-// add tests for intersection
-// add more validation tests (use Cycles)
-
-// DONE:
-// add SH lightmap generation
-// add lightmap generation (simple)
-// add geometry camera (for lightmapping)
-// add hdr env map
-// add punctual lights support
-// try using image for node buffer (utilize texture cache)
-// compare traversal algorithm with stack
-// add tent filter
-// add depth of field
-// try again with spatial splits or remove unnecessary indirection
-// proper Ray termination
-// add validation tests (use Cycles)
-// make camera fov work
-// add neon support
-// add android build
-// add shading to cpu implementations
-// catch up CPU backends
-// fix precision issues
-// add deletion functions for CPU backends
-// macro tree for OpenCL
-// split shade kernel
-// simple textures
-// texture atlas
-// rethink 'shapes' in mesh description
-// Ray differentials
-// sky and sun colors
-// make render process incremental

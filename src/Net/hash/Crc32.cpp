@@ -25,12 +25,16 @@
   #define __BIG_ENDIAN    4321
   #define __BYTE_ORDER    __LITTLE_ENDIAN
 
+#if defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+  #define PREFETCH(location) ;
+#else
   #include <xmmintrin.h>
   #ifdef __MINGW32__
     #define PREFETCH(location) __builtin_prefetch(location)
   #else
     #define PREFETCH(location) _mm_prefetch(location, _MM_HINT_T0)
   #endif
+#endif
 #else
   // defines __BYTE_ORDER as __LITTLE_ENDIAN or __BIG_ENDIAN
   #include <sys/param.h>

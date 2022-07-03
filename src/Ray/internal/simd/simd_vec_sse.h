@@ -8,6 +8,7 @@
 #ifdef __GNUC__
 #pragma GCC push_options
 #pragma GCC target ("sse2")
+#pragma clang attribute push(__attribute__((target("sse2"))), apply_to = function)
 #endif
 
 namespace Ray {
@@ -33,7 +34,7 @@ public:
     force_inline simd_vec(float f1, float f2, float f3, float f4) {
         vec_ = _mm_setr_ps(f1, f2, f3, f4);
     }
-    force_inline simd_vec(const float *f) {
+    force_inline explicit simd_vec(const float *f) {
         vec_ = _mm_loadu_ps(f);
     }
     force_inline simd_vec(const float *f, simd_mem_aligned_tag) {
@@ -41,7 +42,7 @@ public:
     }
 
     force_inline float &operator[](int i) { return comp_[i]; }
-    force_inline float operator[](int i) const { return comp_[i]; }
+    force_inline const float &operator[](int i) const { return comp_[i]; }
 
     force_inline simd_vec<float, 4> &operator+=(const simd_vec<float, 4> &rhs) {
         vec_ = _mm_add_ps(vec_, rhs.vec_);
@@ -182,8 +183,9 @@ public:
 #if 0 // requires sse4.1
         vec_ = _mm_blendv_ps(vec_, v1.vec_, mask.vec_);
 #else
-        __m128 cond = _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(mask.vec_), 31));
-        vec_ = _mm_or_ps(_mm_andnot_ps(cond, vec_), _mm_and_ps(cond, v1.vec_));
+        __m128 temp1 = _mm_and_ps(mask.vec_, v1.vec_);
+        __m128 temp2 = _mm_andnot_ps(mask.vec_, vec_);
+        vec_ = _mm_or_ps(temp1, temp2);
 #endif
     }
 
@@ -191,8 +193,9 @@ public:
 #if 0 // requires sse4.1
         vec_ = _mm_blendv_ps(v1.vec_, vec_, mask.vec_);
 #else
-        __m128 cond = _mm_castsi128_ps(_mm_srai_epi32(_mm_castps_si128(mask.vec_), 31));
-        vec_ = _mm_or_ps(_mm_and_ps(cond, vec_), _mm_andnot_ps(cond, v1.vec_));
+        __m128 temp1 = _mm_andnot_ps(mask.vec_, v1.vec_);
+        __m128 temp2 = _mm_and_ps(mask.vec_, vec_);
+        vec_ = _mm_or_ps(temp1, temp2);
 #endif
     }
 
@@ -372,7 +375,7 @@ public:
     force_inline simd_vec(int i1, int i2, int i3, int i4) {
         vec_ = _mm_setr_epi32(i1, i2, i3, i4);
     }
-    force_inline simd_vec(const int *f) {
+    force_inline explicit simd_vec(const int *f) {
         vec_ = _mm_loadu_si128((const __m128i *)f);
     }
     force_inline simd_vec(const int *f, simd_mem_aligned_tag) {
@@ -380,7 +383,7 @@ public:
     }
 
     force_inline int &operator[](int i) { return comp_[i]; }
-    force_inline int operator[](int i) const { return comp_[i]; }
+    force_inline const int &operator[](int i) const { return comp_[i]; }
 
     force_inline simd_vec<int, 4> &operator+=(const simd_vec<int, 4> &rhs) {
         vec_ = _mm_add_epi32(vec_, rhs.vec_);
@@ -534,20 +537,18 @@ public:
 
     force_inline bool all_zeros() const {
 #if 0 // requires sse4.1
-        if (!_mm_test_all_zeros(vec_, vec_)) return false;
+        return _mm_test_all_zeros(vec_, vec_));
 #else
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(vec_, _mm_setzero_si128())) != 0xFFFF) return false;
+        return _mm_movemask_epi8(_mm_cmpeq_epi32(vec_, _mm_setzero_si128())) == 0xFFFF;
 #endif
-        return true;
     }
 
     force_inline bool all_zeros(const simd_vec<int, 4> &mask) const { 
 #if 0 // requires sse4.1
-        if (!_mm_test_all_zeros(vec_, mask.vec_)) return false;
+        return _mm_test_all_zeros(vec_, mask.vec_);
 #else
-        if (_mm_movemask_epi8(_mm_cmpeq_epi32(_mm_and_si128(vec_, mask.vec_), _mm_setzero_si128())) != 0xFFFF) return false;
+        return _mm_movemask_epi8(_mm_cmpeq_epi32(_mm_and_si128(vec_, mask.vec_), _mm_setzero_si128())) == 0xFFFF;
 #endif
-        return true;
     }
 
     force_inline bool not_all_zeros() const {
@@ -707,14 +708,10 @@ force_inline simd_vec<float, 4>::operator simd_vec<int, 4>() const {
     return ret;
 }
 
-#if defined(USE_SSE2)
-using native_simd_fvec = simd_vec<float, 4>;
-using native_simd_ivec = simd_vec<int, 4>;
-#endif
-
 }
 }
 
 #ifdef __GNUC__
 #pragma GCC pop_options
+#pragma clang attribute pop
 #endif

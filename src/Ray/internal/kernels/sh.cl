@@ -15,10 +15,6 @@ float4 SH_EvaluateL1(const float3 v) {
     return (float4)(SH_Y0, SH_Y1 * v.y, SH_Y1 * v.z, SH_Y1 * v.x);
 }
 
-float4 SH_ProjectL1(const float3 v) {
-    return (float4)(1.0f, v.y, v.z, v.x);
-}
-
 float4 SH_ApplyDiffuseConvolutionL1(const float4 coeff) {
     return coeff * (float4)(SH_A0, SH_A1, SH_A1, SH_A1);
 }
@@ -40,7 +36,7 @@ void StoreSHCoeffs(const __global ray_packet_t *rays, int w, __global shl1_data_
     const int2 px = (int2)(rays[i].o.w, rays[i].d.w);
     const int index = px.y * w + px.x;
 
-    out_sh_data[index].coeff_r = SH_ProjectL1(rays[i].d.xyz);
+    out_sh_data[index].coeff_r = SH_EvaluateL1(rays[i].d.xyz);
     out_sh_data[index].coeff_g.x = rays[i].c.x;
 }
 
@@ -52,7 +48,7 @@ void ComputeSHData(__read_only image2d_t clean_buf, int w, __global shl1_data_t 
     __global shl1_data_t *sh_data = &in_out_sh_data[j * w + i];
 
     float4 sh_coeff = sh_data->coeff_r;
-    const float inv_weight = sh_data->coeff_g.x > FLT_EPS ? (1.0f / sh_data->coeff_g.x) : 0.0f;
+    const float inv_weight = sh_data->coeff_g.x > FLT_EPS ? (2.0f * PI / sh_data->coeff_g.x) : 0.0f;
 
     float4 col = read_imagef(clean_buf, i_fbuf_sampler, (int2)(i, j));
     col *= inv_weight;

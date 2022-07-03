@@ -26,13 +26,13 @@ bool Write_RGBM(const float *out_data, int w, int h, int channels, bool flip_y,
                 const char *name);
 bool Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
 
-void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::pixel_color8_t *out_data);
+void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data);
 
 std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width,
                                            int height, float invalid_threshold,
                                            int filter_size);
 
-std::unique_ptr<Ray::pixel_color8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
+std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref,
                                                       bool flip_y);
 } // namespace SceneManagerInternal
 
@@ -41,7 +41,8 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
         return nullptr;
 
     if (ray_reg_ctx_.empty()) {
-        if (ray_renderer_.type() == Ray::RendererOCL) {
+        //if (ray_renderer_.type() == Ray::RendererOCL) {
+        if (0) {
             ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, ren_ctx_.w(), ren_ctx_.h()});
         } else {
             const int TILE_SIZE = 64;
@@ -69,11 +70,11 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
     // main view camera
     ray_scene_->set_current_cam(0);
 
-    if (ray_renderer_.type() == Ray::RendererOCL) {
-        ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
+    //if (ray_renderer_.type() == Ray::RendererOCL) {
+    if (0) {
+        //ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
     } else {
-        auto render_task = [this](int i) {
-            ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]);
+        auto render_task = [this](int i) { ray_renderer_.RenderScene(ray_scene_.get(), ray_reg_ctx_[i]);
         };
         std::vector<std::future<void>> ev(ray_reg_ctx_.size());
         for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
@@ -147,7 +148,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const int res = lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
-        if (ray_renderer_.type() == Ray::RendererOCL) {
+        //if (ray_renderer_.type() == Ray::RendererOCL) {
+        if (0) {
             ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, res, res});
             ray_renderer_.Resize(res, res);
         } else {
@@ -166,7 +168,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const std::pair<int, int> &cur_size = ray_renderer_.size();
 
     if (cur_size.first != res || cur_size.second != res) {
-        if (ray_renderer_.type() == Ray::RendererOCL) {
+        //if (ray_renderer_.type() == Ray::RendererOCL) {
+        if (0) {
             ray_reg_ctx_[0] = Ray::RegionContext{{0, 0, res, res}};
         } else {
             ray_reg_ctx_.clear();
@@ -425,11 +428,12 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     }
 
     for (int i = 0; i < LmSamplesPerPass; i++) {
-        if (ray_renderer_.type() == Ray::RendererOCL) {
-            ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
+        //if (ray_renderer_.type() == Ray::RendererOCL) {
+        if (0) {
+            //ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[0]);
         } else {
             auto render_task = [this](int i) {
-                ray_renderer_.RenderScene(ray_scene_, ray_reg_ctx_[i]);
+                ray_renderer_.RenderScene(ray_scene_.get(), ray_reg_ctx_[i]);
             };
             std::vector<std::future<void>> ev(ray_reg_ctx_.size());
             for (int i = 0; i < (int)ray_reg_ctx_.size(); i++) {
@@ -470,7 +474,7 @@ void SceneManager::InitScene_PT(bool _override) {
         }
     }
 
-    ray_scene_ = ray_renderer_.CreateScene();
+    ray_scene_.reset(ray_renderer_.CreateScene());
     ray_reg_ctx_.clear();
 
     { // Setup environment
@@ -485,7 +489,7 @@ void SceneManager::InitScene_PT(bool _override) {
             const std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
-            tex_desc.data = (const Ray::pixel_color8_t *)&tex_data[0];
+            tex_desc.data = (const Ray::color_rgba8_t *)&tex_data[0];
             tex_desc.w = w;
             tex_desc.h = h;
             tex_desc.generate_mipmaps = false;
@@ -534,8 +538,7 @@ void SceneManager::InitScene_PT(bool _override) {
     // Add sun lamp
     if (Ren::Dot(scene_data_.env.sun_dir, scene_data_.env.sun_dir) > 0.00001f &&
         Ren::Dot(scene_data_.env.sun_col, scene_data_.env.sun_col) > 0.00001f) {
-        Ray::light_desc_t sun_desc;
-        sun_desc.type = Ray::DirectionalLight;
+        Ray::directional_light_desc_t sun_desc;
 
         sun_desc.direction[0] = -scene_data_.env.sun_dir[0];
         sun_desc.direction[1] = -scene_data_.env.sun_dir[1];
@@ -553,7 +556,7 @@ void SceneManager::InitScene_PT(bool _override) {
     uint32_t default_white_tex;
 
     { //  Add default white texture
-        const Ray::pixel_color8_t white = {255, 255, 255, 255};
+        const Ray::color_rgba8_t white = {255, 255, 255, 255};
 
         Ray::tex_desc_t tex_desc;
         tex_desc.data = &white;
@@ -597,7 +600,7 @@ void SceneManager::InitScene_PT(bool _override) {
                 Ray::mesh_desc_t mesh_desc;
                 mesh_desc.prim_type = Ray::TriangleList;
                 mesh_desc.layout = (mesh->type() == Ren::eMeshType::Colored)
-                                       ? Ray::PxyzNxyzBxyzTuvX
+                                       ? Ray::PxyzNxyzBxyzTuv
                                        : Ray::PxyzNxyzBxyzTuvTuv;
                 mesh_desc.vtx_attrs = (const float *)mesh->attribs();
                 mesh_desc.vtx_attrs_count = (uint32_t)(mesh->attribs_buf1().size / 16);
@@ -620,9 +623,9 @@ void SceneManager::InitScene_PT(bool _override) {
 
                     auto mat_it = loaded_materials.find(mat_name);
                     if (mat_it == loaded_materials.end()) {
-                        Ray::mat_desc_t mat_desc;
-                        mat_desc.main_color[0] = mat_desc.main_color[1] =
-                            mat_desc.main_color[2] = 1.0f;
+                        Ray::shading_node_desc_t mat_desc;
+                        mat_desc.base_color[0] = mat_desc.base_color[1] =
+                            mat_desc.base_color[2] = 1.0f;
 
                         Ren::Tex2DRef tex_ref;
 
@@ -630,7 +633,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         //    mat_desc.type = Ray::TransparentMaterial;
                         //    tex_ref = mat->texture(0);
                         //} else {
-                        mat_desc.type = Ray::DiffuseMaterial;
+                        mat_desc.type = Ray::DiffuseNode;
                         tex_ref = mat->textures[0];
                         //}
 
@@ -639,7 +642,7 @@ void SceneManager::InitScene_PT(bool _override) {
 
                             auto tex_it = loaded_textures.find(tex_name);
                             if (tex_it == loaded_textures.end()) {
-                                std::unique_ptr<Ray::pixel_color8_t[]> tex_data =
+                                std::unique_ptr<Ray::color_rgba8_t[]> tex_data =
                                     SceneManagerInternal::GetTextureData(
                                         tex_ref, true /* flip_y */);
 
@@ -656,7 +659,7 @@ void SceneManager::InitScene_PT(bool _override) {
                                 tex_it = loaded_textures.emplace(tex_name, new_tex).first;
                             }
 
-                            mat_desc.main_texture = tex_it->second;
+                            mat_desc.base_texture = tex_it->second;
                         }
 
                         const uint32_t new_mat = ray_scene_->AddMaterial(mat_desc);

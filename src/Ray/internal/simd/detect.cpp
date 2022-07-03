@@ -1,6 +1,6 @@
 #include "detect.h"
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_M_ARM) && !defined(_M_ARM64)
 //  Windows
 #include <intrin.h>
 #ifdef __GNUC__
@@ -25,7 +25,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 
 #else
 
-#if !defined(__arm__) && !defined(__aarch64__) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+#if !defined(__arm__) && !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64) && !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
 //  GCC Intrinsics
 #include <cpuid.h>
 #include <immintrin.h>
@@ -49,7 +49,7 @@ inline unsigned long long _xgetbv(unsigned int index) {
 
 Ray::CpuFeatures Ray::GetCpuFeatures() {
     CpuFeatures ret = {};
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
     int info[4];
     cpuid(info, 0);
     int ids_count = info[0];
@@ -84,6 +84,16 @@ Ray::CpuFeatures Ray::GetCpuFeatures() {
             bool cpu_AVX2_support = (info[1] & (1 << 5)) != 0;
             // use fma in conjunction with avx2 support (like microsoft compiler does)
             ret.avx2_supported = os_saves_YMM && cpu_AVX2_support && cpu_FMA_support;
+
+            ret.avx512_supported = (info[1] & (1 << 16)) != 0;      // HW_AVX512F
+            //ret.avx512_supported &= (info[1] & (1 << 28)) != 0;   // HW_AVX512CD
+            //ret.avx512_supported &= (info[1] & (1 << 26)) != 0;   // HW_AVX512PF
+            //ret.avx512_supported &= (info[1] & (1 << 27)) != 0;   // HW_AVX512ER
+            //ret.avx512_supported &= (info[1] & (1 << 31)) != 0;   // HW_AVX512VL
+            ret.avx512_supported &= (info[1] & (1 << 30)) != 0;     // HW_AVX512BW
+            ret.avx512_supported &= (info[1] & (1 << 17)) != 0;     // HW_AVX512DQ
+            //ret.avx512_supported &= (info[1] & (1 << 21)) != 0;   // HW_AVX512IFMA
+            //ret.avx512_supported &= (info[2] & (1 << 1)) != 0;    // HW_AVX512VBMI
         }
     }
 #elif defined(__i386__) || defined(__x86_64__)

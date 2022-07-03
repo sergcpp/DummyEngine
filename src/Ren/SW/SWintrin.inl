@@ -1,8 +1,12 @@
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
 #include <float.h>
 #include <arm_neon.h>
 
+#ifdef _MSC_VER
+#define force_inline __forceinline
+#else
 #define force_inline __attribute__((always_inline)) inline
+#endif
 #else
 #include <emmintrin.h>
 #include <immintrin.h>
@@ -328,11 +332,21 @@ static inline int _mmXXX_testz_siXXX(__m512i a, __m512i b) {
     return mask == 0xFFFF;
 }
 
-#elif defined(__aarch64__)
+#elif defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
 #define POSTFIX NEON
 #define SIMD_WIDTH 4
 
-#define SIMD_LANE_NDX (int32x4_t){ 0, 1, 2, 3 }
+#ifdef _MSC_VER
+#define INITu32x4(w,x,y,z) { ((w) + (unsigned long long(x) << 32)), ((y) + (unsigned long long(z) << 32)) }
+#else
+#define INITu32x4(w,x,y,z) { (w), (x), (y), (z) }
+#endif
+
+#ifdef _MSC_VER
+#define SIMD_LANE_NDX _mmXXX_setr_epi32(0, 1, 2, 3)
+#else
+#define SIMD_LANE_NDX (int32x4_t){0, 1, 2, 3}
+#endif
 
 typedef float32x4_t __mXXX;
 typedef int32x4_t __mXXXi;
@@ -345,14 +359,22 @@ typedef int32x4_t __mXXXi;
 #define _mmXXX_set1_ps(v) vdupq_n_f32(v)
 
 force_inline float32x4_t _mmXXX_setr_ps(float w, float z, float y, float x) {
+#ifdef _MSC_VER
+    float __declspec(align(16)) data[4] = {w, z, y, x};
+#else
     float __attribute__((aligned(16))) data[4] = {w, z, y, x};
+#endif
     return vld1q_f32(data);
 }
 
 #define _mmXXX_set1_epi32 vdupq_n_s32
 
 force_inline int32x4_t _mmXXX_setr_epi32(int32_t w, int32_t z, int32_t y, int32_t x) {
+#ifdef _MSC_VER
+    int32_t __declspec(align(16)) data[4] = {w, z, y, x};
+#else
     int32_t __attribute__((aligned(16))) data[4] = {w, z, y, x};
+#endif
     return vld1q_s32(data);
 }
 
@@ -398,8 +420,12 @@ force_inline int32x4_t _mmXXX_setr_epi32(int32_t w, int32_t z, int32_t y, int32_
 
 force_inline int _mmXXX_movemask_ps(float32x4_t a) {
     uint32x4_t input = vreinterpretq_u32_f32(a);
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
+#ifdef _MSC_VER
+    static const int32x4_t shift = {.n128_i32 = {0, 1, 2, 3}};
+#else
     static const int32x4_t shift = {0, 1, 2, 3};
+#endif
     uint32x4_t tmp = vshrq_n_u32(input, 31);
     return vaddvq_u32(vshlq_u32(tmp, shift));
 #else
@@ -418,8 +444,13 @@ force_inline int _mmXXX_movemask_ps(float32x4_t a) {
 #define _mmXXX_fmadd_ps(a, b, c) vaddq_f32(vmulq_f32(a, b), c)
 #define _mmXXX_fmsub_ps(a, b, c) vsubq_f32(vmulq_f32(a, b), c)
 
+#ifdef _MSC_VER
+#define _likely(x) x
+#define _unlikely(x) x
+#else
 #define _likely(x) __builtin_expect(!!(x), 1)
 #define _unlikely(x) __builtin_expect(!!(x), 0)
+#endif
 
 force_inline float32x4_t _mmXXX_slli_epi32(int32x4_t a, int imm) {
     if (_unlikely(imm & ~31)) {
@@ -428,28 +459,26 @@ force_inline float32x4_t _mmXXX_slli_epi32(int32x4_t a, int imm) {
     return vreinterpretq_f32_s32(vshlq_s32(a, vdupq_n_s32(imm)));
 }
 
-#define _mmXXX_srli_epi32(a, imm)                                            \
-    __extension__({                                                          \
-        int32x4_t ret;                                                       \
-        if (_unlikely((imm) & ~31)) {                                        \
-            ret = vdupq_n_s32(0);                                            \
-        } else {                                                             \
-            ret = vreinterpretq_s32_u32(                                     \
-                vshlq_u32(vreinterpretq_u32_s32(a), vdupq_n_s32(-(imm))));   \
-        }                                                                    \
-        ret;                                                                 \
-    })
+force_inline int32x4_t _mmXXX_srli_epi32(int32x4_t a, int imm) {
+    int32x4_t ret;
+    if (_unlikely((imm) & ~31)) {
+        ret = vdupq_n_s32(0);
+    } else {
+        ret = vreinterpretq_s32_u32(
+            vshlq_u32(vreinterpretq_u32_s32(a), vdupq_n_s32(-(imm))));
+    }
+    return ret;
+}
 
-#define _mmXXX_srai_epi32(a, imm)                                            \
-    __extension__({                                                          \
-        int32x4_t ret;                                                       \
-        if (0 < (imm) && (imm) < 32) {                                       \
-            ret = vshlq_s32(a, vdupq_n_s32(-imm));                           \
-        } else {                                                             \
-            ret = vshrq_n_s32(a, 31);                                        \
-        }                                                                    \
-        ret;                                                                 \
-    })
+force_inline int32x4_t _mmXXX_srai_epi32(int32x4_t a, int imm) {
+    int32x4_t ret;
+    if (0 < (imm) && (imm) < 32) {
+        ret = vshlq_s32(a, vdupq_n_s32(-imm));
+    } else {
+        ret = vshrq_n_s32(a, 31);
+    }
+    return ret;
+}
 
 force_inline int32x4_t _mmXXX_sllv_ones(const int32x4_t ishift) {
     union {
@@ -483,7 +512,7 @@ force_inline int32x4_t _mm_shuffle_epi8(int32x4_t a, int32x4_t b) {
     int8x16_t tbl = vreinterpretq_s8_s32(a);   // input a
     uint8x16_t idx = vreinterpretq_u8_s32(b);  // input b
     uint8x16_t idx_masked = vandq_u8(idx, vdupq_n_u8(0x8F));  // avoid using meaningless bits
-#if defined(__aarch64__)
+#if defined(__aarch64__) || defined(_M_ARM64)
     return vreinterpretq_s32_s8(vqtbl1q_s8(tbl, idx_masked));
 #elif defined(__GNUC__)
     int8x16_t ret;
@@ -504,24 +533,26 @@ force_inline int32x4_t _mm_shuffle_epi8(int32x4_t a, int32x4_t b) {
 #endif
 }
 
+force_inline int32x4_t _mm_srli_epi16(int32x4_t a, int imm) {
+    int32x4_t ret;
+    if (_unlikely((imm) & ~15)) {
+        ret = vdupq_n_s32(0);
+    } else {
+        ret = vreinterpretq_s32_u16(vshlq_u16(vreinterpretq_u16_s32(a), vdupq_n_s16(-(imm))));
+    }
+    return ret;
+}
+
 force_inline int32x4_t _mmXXX_transpose_epi8(int32x4_t v) {
     // Perform transpose through two 16->8 bit pack and byte shifts
+#ifdef _MSC_VER
+    int8_t __declspec(align(16)) data[16] = {~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0};
+#else
     int8_t __attribute__((aligned(16)))
             data[16] = {~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0, ~0, 0};
+#endif
     const int32x4_t mask = vld1q_s8(data);
-    
-#define _mm_srli_epi16(a, imm)                                               \
-    __extension__({                                                          \
-        int32x4_t ret;                                                       \
-        if (_unlikely((imm) & ~15)) {                                        \
-            ret = vdupq_n_s32(0);                                            \
-        } else {                                                             \
-            ret = vreinterpretq_s32_u16(                                     \
-                vshlq_u16(vreinterpretq_u16_s32(a), vdupq_n_s16(-(imm))));   \
-        }                                                                    \
-        ret;                                                                 \
-    })
-    
+
 #define _mm_packus_epi16(a, b)                                               \
     vreinterpretq_s32_u8(                                                    \
             vcombine_u8(vqmovun_s16(vreinterpretq_s16_s32(a)),               \
@@ -544,7 +575,7 @@ force_inline int _mmXXX_testz_siXXX(int32x4_t a, int32x4_t b) {
 
 #endif
 
-#if !defined(__aarch64__)
+#if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
 #define _mm128_setzero_si128 _mm_setzero_si128
 #define _mm128_set1_ps _mm_set1_ps
 #define _mm128_setr_ps _mm_setr_ps
@@ -584,10 +615,6 @@ typedef int32x4_t __m128i;
 #define _mm128_set1_ps vdupq_n_f32
 #define _mm128_setr_ps _mmXXX_setr_ps
 #define _mm128_setr_epi32 _mmXXX_setr_epi32
-
-static void __test() {
-    int32x4_t a = _mm128_setr_epi32(0, 1, 2, 3);
-}
 
 #define _mm128_add_ps vaddq_f32
 #define _mm128_sub_ps vsubq_f32

@@ -721,6 +721,7 @@ SWint _swProcessTriangle_Ref(SWcull_ctx *ctx, SWfloat v0[3], SWfloat v1[3], SWfl
     return res;
 }
 
+#undef SIMD_WIDTH
 #define SIMD_WIDTH 1
 #define SW_MAX_CLIPPED (8 * SIMD_WIDTH)
 

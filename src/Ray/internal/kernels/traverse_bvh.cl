@@ -143,7 +143,7 @@ void Traverse_MicroTree_Stackless(const float3 r_o, const float3 r_d, const floa
         cur = near_child(rd, &nodes[cur]);
     }
 
-    while (cur != InvalidNodeIndex) {
+    while (cur != 0xffffffff) {
         __global const bvh_node_t *n = &nodes[cur];
         
         if (n->prim_index & LEAF_NODE_BIT) {
@@ -310,7 +310,7 @@ float Traverse_MicroTree_Occlusion_Stackless(const float3 r_o, const float3 r_d,
         cur = near_child(rd, &nodes[cur]);
     }
 
-    while (cur != InvalidNodeIndex) {
+    while (cur != 0xffffffff) {
         __global const bvh_node_t *n = &nodes[cur];
         
         if (n->prim_index & LEAF_NODE_BIT) {
@@ -425,7 +425,7 @@ void Traverse_MacroTree_Stackless(const float3 orig_r_o, const float3 orig_r_d, 
         cur = near_child(orig_rd, &nodes[cur]);
     }
 
-    while (cur != InvalidNodeIndex) {
+    while (cur != 0xffffffff) {
         __global const bvh_node_t *n = &nodes[cur];
 
         if (n->prim_index & LEAF_NODE_BIT) {
@@ -675,7 +675,7 @@ float Traverse_MacroTree_Occlusion_Stackless(const float3 orig_r_o, const float3
         cur = near_child(orig_rd, &nodes[cur]);
     }
 
-    while (cur != InvalidNodeIndex) {
+    while (cur != 0xffffffff) {
         __global const bvh_node_t *n = &nodes[cur];
 
         if (n->prim_index & LEAF_NODE_BIT) {
