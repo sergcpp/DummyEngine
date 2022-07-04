@@ -52,7 +52,8 @@ void test_span() {
         require(test5[3] == data[3]);
         require(test5[4] == data[4]);
 
-        Ren::Span<const int> test6({1, 2, 3, 4, 5});
+        const int arr_values[] = {1, 2, 3, 4, 5};
+        Ren::Span<const int> test6(arr_values);
         require(!test6.empty());
         require(test6.size() == 5);
         require(test6[0] == 1);
@@ -70,7 +71,8 @@ void test_span() {
         require(test8[2] == 3);
     }
     { // loop
-        Ren::Span<const int> test0({1, 2, 3, 4, 5});
+        const int arr_values[] = {1, 2, 3, 4, 5};
+        Ren::Span<const int> test0(arr_values);
         int sum = 0;
         for (const int i : test0) {
             sum += i;
