@@ -165,7 +165,7 @@ stages:
   script:
     - echo "Running GL tests..."
     - $BIN_DIR/test_Eng
-    - $BIN_DIR/test_Ren
+#    - $BIN_DIR/test_Ren
     - $BIN_DIR/test_DummyLib
 
 .linux-test-job-vk:
