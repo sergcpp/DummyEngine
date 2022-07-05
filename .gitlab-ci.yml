@@ -13,7 +13,9 @@ stages:
     - cd build_gl
     - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 4
+    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 8
+    - cmake --build build_gl --target ALL_BUILD --config Debug --parallel 8
+    - cmake --build build_gl --target ALL_BUILD --config RelWithDebInfo --parallel 8
     - echo "Compile complete."
     - mkdir windows-x86_64-gl
     - copy build_gl/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-gl
@@ -40,7 +42,9 @@ stages:
     - cd build_vk
     - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release --parallel 4
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release --parallel 8
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Debug --parallel 8
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config RelWithDebInfo --parallel 8
     - echo "Compile complete."
     - mkdir windows-x86_64-vk
     - copy build_vk/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-vk
@@ -67,7 +71,17 @@ stages:
     - cd build_gl
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target all --config Release  --parallel 4
+    - mkdir build_gl_dbg
+    - cd build_gl_dbg
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - mkdir build_gl_dev
+    - cd build_gl_dev
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl --target all --parallel 8
+    - cmake --build build_gl_dbg --target all --parallel 8
+    - cmake --build build_gl_dev --target all --parallel 8
     - echo "Compile complete."
     - mkdir linux-x86_64-gl
     - cp build_gl/src/Eng/_tests/test_Eng linux-x86_64-gl
@@ -94,7 +108,17 @@ stages:
     - cd build_vk
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release  --parallel 4
+    - mkdir build_vk_dbg
+    - cd build_vk_dbg
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - mkdir build_vk_dev
+    - cd build_vk_dev
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_vk_dev --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
     - echo "Compile complete."
     - mkdir linux-x86_64-vk
     - cp build_vk/src/Eng/_tests/test_Eng linux-x86_64-vk
@@ -121,7 +145,17 @@ stages:
     - cd build_vk
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --config Release  --parallel 4
+    - mkdir build_vk_dbg
+    - cd build_vk_dbg
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - mkdir build_vk_dev
+    - cd build_vk_dev
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_vk_dev --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
     - echo "Compile complete."
 #  artifacts:
 #    paths:
