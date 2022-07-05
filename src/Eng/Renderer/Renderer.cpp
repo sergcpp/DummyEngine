@@ -913,6 +913,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 rp_taa_.Setup(rp_builder_, &view_state_, reduced_average_, list.draw_cam.max_exposure, data);
                 taa.set_executor(&rp_taa_);
             }
+        } else {
+            resolved_color = frame_textures.color;
         }
 
         //
