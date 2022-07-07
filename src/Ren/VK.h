@@ -159,6 +159,7 @@
 #define vkCmdCopyImageToBuffer ren_vkCmdCopyImageToBuffer
 #define vkCmdCopyBuffer ren_vkCmdCopyBuffer
 #define vkCmdFillBuffer ren_vkCmdFillBuffer
+#define vkCmdUpdateBuffer ren_vkCmdUpdateBuffer
 #define vkCmdPushConstants ren_vkCmdPushConstants
 #define vkCmdBlitImage ren_vkCmdBlitImage
 #define vkCmdClearColorImage ren_vkCmdClearColorImage
@@ -336,6 +337,7 @@ EXTERN_FUNC PFN_vkCmdCopyBufferToImage ren_vkCmdCopyBufferToImage;
 EXTERN_FUNC PFN_vkCmdCopyImageToBuffer ren_vkCmdCopyImageToBuffer;
 EXTERN_FUNC PFN_vkCmdCopyBuffer ren_vkCmdCopyBuffer;
 EXTERN_FUNC PFN_vkCmdFillBuffer ren_vkCmdFillBuffer;
+EXTERN_FUNC PFN_vkCmdUpdateBuffer ren_vkCmdUpdateBuffer;
 EXTERN_FUNC PFN_vkCmdPushConstants ren_vkCmdPushConstants;
 EXTERN_FUNC PFN_vkCmdBlitImage ren_vkCmdBlitImage;
 EXTERN_FUNC PFN_vkCmdClearColorImage ren_vkCmdClearColorImage;

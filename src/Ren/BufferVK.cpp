@@ -471,3 +471,34 @@ void Ren::FillBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t size
 
     dst.resource_state = eResState::CopyDst;
 }
+
+void Ren::UpdateBuffer(Buffer& dst, uint32_t dst_offset, uint32_t size, const void* data, void* _cmd_buf) {
+    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
+
+    VkPipelineStageFlags src_stages = 0, dst_stages = 0;
+    SmallVector<VkBufferMemoryBarrier, 1> barriers;
+
+    if (dst.resource_state != eResState::CopyDst) {
+        auto &new_barrier = barriers.emplace_back();
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+        new_barrier.srcAccessMask = VKAccessFlagsForState(dst.resource_state);
+        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
+        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        new_barrier.buffer = dst.vk_handle();
+        new_barrier.offset = VkDeviceSize{dst_offset};
+        new_barrier.size = VkDeviceSize{size};
+
+        src_stages |= VKPipelineStagesForState(dst.resource_state);
+        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
+    }
+
+    if (!barriers.empty()) {
+        vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
+                             barriers.cdata(), 0, nullptr);
+    }
+
+    vkCmdUpdateBuffer(cmd_buf, dst.vk_handle(), VkDeviceSize{dst_offset}, VkDeviceSize{size}, data);
+
+    dst.resource_state = eResState::CopyDst;
+}

@@ -190,6 +190,7 @@ bool Ren::LoadVulkan(ILog *log) {
     LOAD_VK_FUN(vkCmdCopyImageToBuffer)
     LOAD_VK_FUN(vkCmdCopyBuffer)
     LOAD_VK_FUN(vkCmdFillBuffer)
+    LOAD_VK_FUN(vkCmdUpdateBuffer)
     LOAD_VK_FUN(vkCmdPushConstants)
     LOAD_VK_FUN(vkCmdBlitImage)
     LOAD_VK_FUN(vkCmdClearColorImage)
