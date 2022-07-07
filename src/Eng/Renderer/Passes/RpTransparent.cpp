@@ -57,7 +57,7 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
 
         ////////////////////////////////////////
 
-        if (!rp_transparent_.Setup(ctx.api_ctx(), color_targets, 3, depth_target, ctx.log())) {
+        if (!rp_transparent_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
             ctx.log()->Error("[RpOpaque::LazyInit]: Failed to init render pass!");
         }
 
@@ -81,14 +81,14 @@ void RpTransparent::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
             {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
             {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
 
-        draw_pass_vi_.Setup(attribs, 5, ndx_buf.ref);
+        draw_pass_vi_.Setup(attribs, ndx_buf.ref);
     }
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
     if (!transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_transparent_, color_tex.desc.w,
                                                                      color_tex.desc.h, depth_target, depth_target,
-                                                                     color_targets, 3, ctx.log())) {
+                                                                     color_targets, ctx.log())) {
         ctx.log()->Error("RpTransparent: transparent_draw_fb_ init failed!");
     }
 

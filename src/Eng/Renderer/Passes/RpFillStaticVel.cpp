@@ -54,14 +54,14 @@ void RpFillStaticVel::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::None, Ren::eStoreOp::None, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::None};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, depth_target, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, depth_target, ctx.log())) {
         ctx.log()->Error("RpFillStaticVel: render_pass_ init failed!");
     }
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
     if (!velocity_fb_[fb_to_use_].Setup(ctx.api_ctx(), render_pass_, velocity_tex.desc.w, velocity_tex.desc.h, {},
-                                        depth_target, render_targets, 1, ctx.log())) {
+                                        depth_target, render_targets, ctx.log())) {
         ctx.log()->Error("RpFillStaticVel: output_fb_ init failed!");
     }
 }

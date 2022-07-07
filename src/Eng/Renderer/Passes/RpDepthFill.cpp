@@ -104,18 +104,18 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM");
         assert(fillz_skin_transp_vel_mov_prog->ready());
 
-        if (!rp_depth_only_[0].Setup(ctx.api_ctx(), nullptr, 0, depth_clear_target, ctx.log())) {
+        if (!rp_depth_only_[0].Setup(ctx.api_ctx(), {}, depth_clear_target, ctx.log())) {
             ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth only pass!");
         }
 
-        if (!rp_depth_only_[1].Setup(ctx.api_ctx(), nullptr, 0, depth_load_target, ctx.log())) {
+        if (!rp_depth_only_[1].Setup(ctx.api_ctx(), {}, depth_load_target, ctx.log())) {
             ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth only pass!");
         }
 
-        if (!rp_depth_velocity_[0].Setup(ctx.api_ctx(), &velocity_target, 1, depth_clear_target, ctx.log())) {
+        if (!rp_depth_velocity_[0].Setup(ctx.api_ctx(), {&velocity_target, 1}, depth_clear_target, ctx.log())) {
             ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth-velocity pass!");
         }
-        if (!rp_depth_velocity_[1].Setup(ctx.api_ctx(), &velocity_target, 1, depth_load_target, ctx.log())) {
+        if (!rp_depth_velocity_[1].Setup(ctx.api_ctx(), {&velocity_target, 1}, depth_load_target, ctx.log())) {
             ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth-velocity pass!");
         }
 
@@ -124,7 +124,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
         { // VAO for solid depth-fill pass (uses position attribute only)
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            if (!vi_solid_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_solid_ init failed!");
             }
         }
@@ -133,7 +133,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_vege_solid_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_vege_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_vege_solid_ init failed!");
             }
         }
@@ -142,7 +142,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-            if (!vi_transp_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_transp_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_transp_ init failed!");
             }
         }
@@ -152,7 +152,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
                 {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
                 {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_vege_transp_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_vege_transp_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_vege_transp_vao_ init failed!");
             }
         }
@@ -161,7 +161,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, REN_MAX_SKIN_VERTICES_TOTAL * 16}};
-            if (!vi_skin_solid_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_skin_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_skin_solid_vao_ init failed!");
             }
         }
@@ -171,7 +171,7 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
                 {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
                 {vtx_buf1.ref, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, REN_MAX_SKIN_VERTICES_TOTAL * 16}};
-            if (!vi_skin_transp_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_skin_transp_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_skin_transp_vao_ init failed!");
             }
         }
@@ -431,9 +431,9 @@ void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
-    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_depth_only_[0], depth_tex.desc.w,
-                                                               depth_tex.desc.h, depth_tex.ref, depth_tex.ref, nullptr,
-                                                               0, view_state_->is_multisampled, ctx.log())) {
+    if (!depth_fill_fb_[ctx.backend_frame()][fb_to_use_].Setup(
+            ctx.api_ctx(), rp_depth_only_[0], depth_tex.desc.w, depth_tex.desc.h, depth_tex.ref, depth_tex.ref,
+            Ren::Span<const Ren::WeakTex2DRef>{}, view_state_->is_multisampled, ctx.log())) {
         ctx.log()->Error("[RpDepthFill::LazyInit]: depth_fill_fb_ init failed!");
     }
 

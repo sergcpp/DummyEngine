@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Fwd.h"
+#include "Span.h"
 #include "Texture.h"
 #include "VK.h"
 
@@ -114,8 +115,7 @@ class RenderPass {
     VkRenderPass handle_ = VK_NULL_HANDLE;
 #endif
 
-    bool Init(ApiContext *api_ctx, const RenderTargetInfo rts[], int color_rts_count, RenderTargetInfo depth_rt,
-              ILog *log);
+    bool Init(ApiContext *api_ctx, Span<const RenderTargetInfo> rts, RenderTargetInfo depth_rt, ILog *log);
     void Destroy();
 
   public:
@@ -134,8 +134,7 @@ class RenderPass {
     VkRenderPass handle() const { return handle_; }
 #endif
 
-    bool Setup(ApiContext *api_ctx, const RenderTarget rts[], int color_rts_count, RenderTarget depth_rt, ILog *log);
-    bool Setup(ApiContext *api_ctx, const RenderTargetInfo rts[], int color_rts_count, RenderTargetInfo depth_rt,
-               ILog *log);
+    bool Setup(ApiContext *api_ctx, Span<const RenderTarget> rts, RenderTarget depth_rt, ILog *log);
+    bool Setup(ApiContext *api_ctx, Span<const RenderTargetInfo> rts, RenderTargetInfo depth_rt, ILog *log);
 };
 } // namespace Ren

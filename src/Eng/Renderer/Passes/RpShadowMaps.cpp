@@ -36,7 +36,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
                            "internal/shadow.frag.glsl@TRANSPARENT_PERM");
         assert(shadow_vege_transp_prog->ready());
 
-        if (!rp_depth_only_.Setup(ctx.api_ctx(), nullptr, 0, depth_target, ctx.log())) {
+        if (!rp_depth_only_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {
             ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to init depth only pass!");
         }
 
@@ -45,7 +45,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
         { // VAO for solid shadow pass (uses position attribute only)
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
-            if (!vi_depth_pass_solid_.Setup(attribs, 1, ndx_buf.ref->handle())) {
+            if (!vi_depth_pass_solid_.Setup(attribs, ndx_buf.ref->handle())) {
                 ctx.log()->Error("RpShadowMaps: vi_depth_pass_solid_ init failed!");
             }
         }
@@ -54,7 +54,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf2.ref->handle(), REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_depth_pass_vege_solid_.Setup(attribs, 2, ndx_buf.ref->handle())) {
+            if (!vi_depth_pass_vege_solid_.Setup(attribs, ndx_buf.ref->handle())) {
                 ctx.log()->Error("RpShadowMaps: vi_depth_pass_vege_solid_ init failed!");
             }
         }
@@ -63,7 +63,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
-            if (!vi_depth_pass_transp_.Setup(attribs, 2, ndx_buf.ref->handle())) {
+            if (!vi_depth_pass_transp_.Setup(attribs, ndx_buf.ref->handle())) {
                 ctx.log()->Error("RpShadowMaps: vi_depth_pass_transp_ init failed!");
             }
         }
@@ -74,7 +74,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
                 {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
                 {vtx_buf2.ref->handle(), REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_depth_pass_vege_transp_.Setup(attribs, 3, ndx_buf.ref->handle())) {
+            if (!vi_depth_pass_vege_transp_.Setup(attribs, ndx_buf.ref->handle())) {
                 ctx.log()->Error("RpShadowMaps: depth_pass_vege_transp_vao_ init failed!");
             }
         }
@@ -112,7 +112,8 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
         initialized = true;
     }
 
-    if (!shadow_fb_.Setup(ctx.api_ctx(), rp_depth_only_, w_, h_, shadowmap_tex.ref, {}, nullptr, 0, false, ctx.log())) {
+    if (!shadow_fb_.Setup(ctx.api_ctx(), rp_depth_only_, w_, h_, shadowmap_tex.ref, {},
+                          Ren::Span<const Ren::WeakTex2DRef>{}, false, ctx.log())) {
         ctx.log()->Error("RpShadowMaps: shadow_fb_ init failed!");
     }
 }

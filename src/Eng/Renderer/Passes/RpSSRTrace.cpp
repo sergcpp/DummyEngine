@@ -61,12 +61,12 @@ void RpSSRTrace::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &outpu
 
     const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
         ctx.log()->Error("RpSSRTrace: render_pass_ init failed!");
     }
 
     if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
-                          1, ctx.log())) {
+                          ctx.log())) {
         ctx.log()->Error("RpSSRTrace: output_fb_ init failed!");
     }
 }

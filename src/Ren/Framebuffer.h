@@ -4,6 +4,7 @@
 
 #include "RenderPass.h"
 #include "SmallVector.h"
+#include "Span.h"
 #include "Texture.h"
 #include "TextureParams.h"
 
@@ -49,19 +50,17 @@ class Framebuffer {
 #endif
 
     bool Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
-                 const WeakTex2DRef _stencil_attachment, const WeakTex2DRef _color_attachments[],
-                 const int _color_attachments_count) const;
+                 const WeakTex2DRef _stencil_attachment, Span<const WeakTex2DRef> _color_attachments) const;
 
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
-               WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachments[], int color_attachments_count,
-               bool is_multisampled, ILog *log);
-    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget &depth_target,
-               const RenderTarget &stencil_target, const RenderTarget color_attachments[], int color_attachments_count,
+               WeakTex2DRef stencil_attachment, Span<const WeakTex2DRef> color_attachments, bool is_multisampled,
                ILog *log);
+    bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, const RenderTarget &depth_target,
+               const RenderTarget &stencil_target, Span<const RenderTarget> color_attachments, ILog *log);
     bool Setup(ApiContext *api_ctx, const RenderPass &renderpass, int w, int h, const WeakTex2DRef depth_attachment,
                const WeakTex2DRef stencil_attachment, const WeakTex2DRef color_attachment, const bool is_multisampled,
                ILog *log) {
-        return Setup(api_ctx, renderpass, w, h, depth_attachment, stencil_attachment, &color_attachment, 1,
+        return Setup(api_ctx, renderpass, w, h, depth_attachment, stencil_attachment, {&color_attachment, 1},
                      is_multisampled, log);
     }
 };

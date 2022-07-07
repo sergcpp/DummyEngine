@@ -29,7 +29,7 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        if (!rp_opaque_.Setup(ctx.api_ctx(), color_targets, 3, depth_target, ctx.log())) {
+        if (!rp_opaque_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
             ctx.log()->Error("[RpOpaque::LazyInit]: Failed to init render pass!");
         }
 
@@ -53,14 +53,14 @@ void RpOpaque::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf
             {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)},
             {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
 
-        draw_pass_vi_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref);
+        draw_pass_vi_.Setup(attribs, ndx_buf.ref);
     }
 
     fb_to_use_ = (fb_to_use_ + 1) % 2;
 
     if (!opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_opaque_, depth_tex.desc.w,
                                                                 depth_tex.desc.h, depth_target, depth_target,
-                                                                color_targets, COUNT_OF(color_targets), ctx.log())) {
+                                                                color_targets, ctx.log())) {
         ctx.log()->Error("RpOpaque: opaque_draw_fb_ init failed!");
     }
 }

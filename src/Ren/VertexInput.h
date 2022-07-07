@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Buffer.h"
+#include "Span.h"
 
 namespace Ren {
 struct VtxAttribDesc {
@@ -44,9 +45,9 @@ class VertexInput {
     uint32_t gl_vao() const { return gl_vao_; }
 #endif
 
-    bool Setup(const VtxAttribDesc attribs[], int attribs_count, const BufHandle &elem_buf);
-    bool Setup(const VtxAttribDesc attribs[], const int attribs_count, const BufferRef &elem_buf) {
-        return Setup(attribs, attribs_count, elem_buf->handle());
+    bool Setup(Span<const VtxAttribDesc> attribs, const BufHandle &elem_buf);
+    bool Setup(Span<const VtxAttribDesc> attribs, const BufferRef &elem_buf) {
+        return Setup(attribs, elem_buf->handle());
     }
 };
 } // namespace Ren

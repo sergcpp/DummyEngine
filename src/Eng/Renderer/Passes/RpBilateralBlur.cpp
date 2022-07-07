@@ -49,11 +49,11 @@ void RpBilateralBlur::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &
 
     const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
         ctx.log()->Error("RpBilateralBlur: render_pass_ init failed!");
     }
 
-    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets, 1,
+    if (!output_fb_.Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {}, render_targets,
                           ctx.log())) {
         ctx.log()->Error("RpBilateralBlur: output_fb_ init failed!");
     }

@@ -63,12 +63,12 @@ void RpTAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &depth_tex,
     const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
                                                 {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, COUNT_OF(render_targets), {}, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
         ctx.log()->Error("RpCombine: render_pass_ init failed!");
     }
 
     if (!resolve_fb_[fb_to_use_].Setup(ctx.api_ctx(), render_pass_, output_tex.desc.w, output_tex.desc.h, {}, {},
-                                       render_targets, COUNT_OF(render_targets), ctx.log())) {
+                                       render_targets, ctx.log())) {
         ctx.log()->Error("RpTAA: resolve_fb_ init failed!");
     }
 }

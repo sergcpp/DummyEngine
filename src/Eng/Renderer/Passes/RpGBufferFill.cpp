@@ -37,7 +37,7 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
         assert(gbuf_vegetation_prog->ready());
 
         const bool res =
-            rp_main_draw_.Setup(ctx.api_ctx(), color_targets, COUNT_OF(color_targets), depth_target, ctx.log());
+            rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());
         if (!res) {
             ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize render pass!");
         }
@@ -52,7 +52,7 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
                 // Attributes from buffer 2
                 {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
                 {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)}};
-            if (!vi_simple_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: vi_simple_ init failed!");
             }
         }
@@ -66,7 +66,7 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
                 {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
                 {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)},
                 {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
-            if (!vi_vegetation_.Setup(attribs, COUNT_OF(attribs), ndx_buf.ref)) {
+            if (!vi_vegetation_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: vi_vegetation_ init failed!");
             }
         }
@@ -119,7 +119,7 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vt
 
     if (!main_draw_fb_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), rp_main_draw_, depth_tex.desc.w,
                                                               depth_tex.desc.h, depth_target, depth_target,
-                                                              color_targets, COUNT_OF(color_targets), ctx.log())) {
+                                                              color_targets, ctx.log())) {
         ctx.log()->Error("[RpGBufferFill::LazyInit]: main_draw_fb_ init failed!");
     }
 }

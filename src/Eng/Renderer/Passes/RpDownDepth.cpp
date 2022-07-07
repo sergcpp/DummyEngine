@@ -52,12 +52,12 @@ void RpDownDepth::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down
 
     const Ren::RenderTarget render_targets[] = {{down_depth_2x_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
         ctx.log()->Error("RpDownDepth: render_pass_ init failed!");
     }
 
     if (!depth_down_fb_.Setup(ctx.api_ctx(), render_pass_, down_depth_2x_tex.desc.w, down_depth_2x_tex.desc.h, {}, {},
-                              render_targets, 1, ctx.log())) {
+                              render_targets, ctx.log())) {
         ctx.log()->Error("RpDownDepth: depth_down_fb_ init failed!");
     }
 }
