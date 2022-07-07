@@ -62,7 +62,7 @@ void RpCombine::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output
     const Ren::WeakTex2DRef output = output_tex ? output_tex->ref : Ren::WeakTex2DRef(ctx.backbuffer_ref());
     const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_[ctx.active_present_image()].Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+    if (!render_pass_[ctx.active_present_image()].Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
         ctx.log()->Error("RpCombine: render_pass_ init failed!");
     }
 

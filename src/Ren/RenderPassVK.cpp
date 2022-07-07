@@ -56,8 +56,8 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
     return (*this);
 }
 
-bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rts[], int _color_rts_count,
-                           RenderTargetInfo _depth_rt, ILog *log) {
+bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _color_rts, RenderTargetInfo _depth_rt,
+                           ILog *log) {
     Destroy();
 
     SmallVector<VkAttachmentDescription, MaxRTAttachments> pass_attachments;
@@ -67,7 +67,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
     }
     VkAttachmentReference depth_attachment_ref = {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
 
-    color_rts.resize(_color_rts_count);
+    color_rts.resize(_color_rts.size());
     depth_rt = {};
 
     if (_depth_rt) {
@@ -89,7 +89,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
         depth_rt = _depth_rt;
     }
 
-    for (int i = 0; i < _color_rts_count; ++i) {
+    for (int i = 0; i < _color_rts.size(); ++i) {
         if (!_color_rts[i]) {
             continue;
         }
@@ -122,7 +122,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, const RenderTargetInfo _color_rt
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = _color_rts_count;
+    subpass.colorAttachmentCount = uint32_t(_color_rts.size());
     subpass.pColorAttachments = color_attachment_refs;
     if (depth_attachment_ref.attachment != VK_ATTACHMENT_UNUSED) {
         subpass.pDepthStencilAttachment = &depth_attachment_ref;
@@ -157,32 +157,31 @@ void Ren::RenderPass::Destroy() {
     depth_rt = {};
 }
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTarget _color_rts[], const int _color_rts_count,
-                            const RenderTarget _depth_rt, ILog *log) {
-    if (_color_rts_count == color_rts.size() &&
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTarget> _color_rts, const RenderTarget _depth_rt,
+                            ILog *log) {
+    if (_color_rts.size() == color_rts.size() &&
         std::equal(
-            _color_rts, _color_rts + _color_rts_count, color_rts.data(),
+            _color_rts.begin(), _color_rts.end(), color_rts.data(),
             [](const RenderTarget &rt, const RenderTargetInfo &i) { return (!rt.ref && !i) || (rt.ref && i == rt); }) &&
         ((!_depth_rt.ref && !depth_rt) || (_depth_rt.ref && depth_rt == _depth_rt))) {
         return true;
     }
 
     SmallVector<RenderTargetInfo, MaxRTAttachments> infos;
-    for (int i = 0; i < _color_rts_count; ++i) {
+    for (int i = 0; i < _color_rts.size(); ++i) {
         infos.emplace_back(_color_rts[i]);
     }
 
-    return Init(api_ctx, infos.data(), _color_rts_count, RenderTargetInfo{_depth_rt}, log);
+    return Init(api_ctx, infos, RenderTargetInfo{_depth_rt}, log);
 }
 
-bool Ren::RenderPass::Setup(ApiContext *api_ctx, const RenderTargetInfo _color_rts[], int _color_rts_count,
-                            RenderTargetInfo _depth_rt, ILog *log) {
-    if (_color_rts_count == color_rts.size() &&
-        std::equal(_color_rts, _color_rts + _color_rts_count, color_rts.data()) &&
+bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTargetInfo> _color_rts, RenderTargetInfo _depth_rt,
+                            ILog *log) {
+    if (_color_rts.size() == color_rts.size() && std::equal(_color_rts.begin(), _color_rts.end(), color_rts.data()) &&
         ((!_depth_rt && !depth_rt) || (_depth_rt && depth_rt == _depth_rt))) {
         return true;
     }
-    return Init(api_ctx, _color_rts, _color_rts_count, _depth_rt, log);
+    return Init(api_ctx, _color_rts, _depth_rt, log);
 }
 
 #undef VERBOSE_LOGGING

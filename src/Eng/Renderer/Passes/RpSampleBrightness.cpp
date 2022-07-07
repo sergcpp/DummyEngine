@@ -80,12 +80,12 @@ void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTe
 
     const Ren::RenderTarget render_targets[] = {{reduced_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, 1, {}, ctx.log())) {
+    if (!render_pass_.Setup(ctx.api_ctx(), render_targets, {}, ctx.log())) {
         ctx.log()->Error("RpSSRDilate: render_pass_ init failed!");
     }
 
     if (!reduced_fb_.Setup(ctx.api_ctx(), render_pass_, reduced_tex.desc.w, reduced_tex.desc.h, {}, {}, render_targets,
-                           1, ctx.log())) {
+                           ctx.log())) {
         ctx.log()->Error("RpSSRDilate: output_fb_ init failed!");
     }
 }

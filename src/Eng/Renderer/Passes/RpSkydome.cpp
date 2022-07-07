@@ -36,11 +36,11 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_bu
             sh.LoadProgram(ctx, "skydome", "internal/skydome.vert.glsl", "internal/skydome.frag.glsl");
         assert(skydome_prog->ready());
 
-        if (!render_pass_[0].Setup(ctx.api_ctx(), color_load_targets, 3, depth_load_target, ctx.log())) {
+        if (!render_pass_[0].Setup(ctx.api_ctx(), color_load_targets, depth_load_target, ctx.log())) {
             ctx.log()->Error("[RpSkydome::LazyInit]: Failed to create render pass!");
         }
 
-        if (!render_pass_[1].Setup(ctx.api_ctx(), color_clear_targets, 3, depth_clear_target, ctx.log())) {
+        if (!render_pass_[1].Setup(ctx.api_ctx(), color_clear_targets, depth_clear_target, ctx.log())) {
             ctx.log()->Error("[RpSkydome::LazyInit]: Failed to create render pass!");
         }
 
@@ -48,7 +48,7 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_bu
         const Ren::VtxAttribDesc attribs[] = {
             {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
 
-        if (!vtx_input_.Setup(attribs, 1, ndx_buf.ref)) {
+        if (!vtx_input_.Setup(attribs, ndx_buf.ref)) {
             ctx.log()->Error("[RpSkydome::LazyInit]: Failed to initialize vertex input!");
         }
 
@@ -79,7 +79,7 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_bu
 
     if (!framebuf_[ctx.backend_frame()][fb_to_use_].Setup(ctx.api_ctx(), render_pass_[0], depth_tex.desc.w,
                                                           depth_tex.desc.h, depth_load_target, depth_load_target,
-                                                          color_load_targets, 3, ctx.log())) {
+                                                          color_load_targets, ctx.log())) {
         ctx.log()->Error("[RpSkydome::LazyInit]: fbo init failed!");
     }
 }

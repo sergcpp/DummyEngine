@@ -35,15 +35,15 @@ void Ren::Framebuffer::Destroy() {
 }
 
 bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
-                               const WeakTex2DRef _stencil_attachment, const WeakTex2DRef _color_attachments[],
-                               const int _color_attachments_count) const {
+                               const WeakTex2DRef _stencil_attachment,
+                               Span<const WeakTex2DRef> _color_attachments) const {
     if (renderpass_ == render_pass.handle() &&
         ((!_depth_attachment && !depth_attachment.ref) ||
          (_depth_attachment && _depth_attachment->handle() == depth_attachment.handle)) &&
         ((!_stencil_attachment && !stencil_attachment.ref) ||
          (_stencil_attachment && _stencil_attachment->handle() == stencil_attachment.handle)) &&
-        _color_attachments_count == color_attachments.size() &&
-        std::equal(_color_attachments, _color_attachments + _color_attachments_count, color_attachments.data(),
+        _color_attachments.size() == color_attachments.size() &&
+        std::equal(_color_attachments.begin(), _color_attachments.end(), color_attachments.data(),
                    [](const WeakTex2DRef &lhs, const Attachment &rhs) {
                        return (!lhs && !rhs.ref) || (lhs && lhs->handle() == rhs.handle);
                    })) {
@@ -54,9 +54,8 @@ bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
                              const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
-                             const WeakTex2DRef _color_attachments[], const int _color_attachments_count,
-                             const bool is_multisampled, ILog *log) {
-    if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments, _color_attachments_count)) {
+                             Span<const WeakTex2DRef> _color_attachments, const bool is_multisampled, ILog *log) {
+    if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments)) {
         // nothing has changed
         return true;
     }
@@ -82,7 +81,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         }
     }
 
-    for (int i = 0; i < _color_attachments_count; i++) {
+    for (int i = 0; i < _color_attachments.size(); i++) {
         if (_color_attachments[i]) {
             image_views.push_back(_color_attachments[i]->handle().views[0]);
             color_attachments.push_back({_color_attachments[i], _color_attachments[i]->handle()});
@@ -116,12 +115,12 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
 
 bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
-                             const RenderTarget _color_targets[], int _color_targets_count, ILog *log) {
+                             Span<const RenderTarget> _color_targets, ILog *log) {
     Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;
-    for (int i = 0; i < _color_targets_count; ++i) {
+    for (int i = 0; i < _color_targets.size(); ++i) {
         color_refs.push_back(_color_targets[i].ref);
     }
-    if (!Changed(render_pass, _depth_target.ref, _stencil_target.ref, color_refs.data(), int(color_refs.size()))) {
+    if (!Changed(render_pass, _depth_target.ref, _stencil_target.ref, color_refs)) {
         // nothing has changed
         return true;
     }
@@ -152,7 +151,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         }
     }
 
-    for (int i = 0; i < _color_targets_count; i++) {
+    for (int i = 0; i < _color_targets.size(); i++) {
         if (_color_targets[i]) {
             image_views.push_back(_color_targets[i].ref->handle().views[0]);
             color_attachments.push_back({_color_targets[i].ref, _color_targets[i].ref->handle()});

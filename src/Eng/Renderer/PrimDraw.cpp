@@ -120,13 +120,13 @@ bool PrimDraw::LazyInit(Ren::Context &ctx) {
             {vtx_buf1->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
              uint32_t(quad_vtx1_offset_ + 8 * sizeof(float))}};
 
-        fs_quad_vtx_input_.Setup(attribs, 2, ndx_buf);
+        fs_quad_vtx_input_.Setup(attribs, ndx_buf);
     }
 
     { // setup sphere vertices
         const Ren::VtxAttribDesc attribs[] = {
             {vtx_buf1->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_offset_}};
-        sphere_vtx_input_.Setup(attribs, 1, ndx_buf);
+        sphere_vtx_input_.Setup(attribs, ndx_buf);
     }
 
     return true;

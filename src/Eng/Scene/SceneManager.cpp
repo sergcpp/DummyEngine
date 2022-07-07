@@ -260,7 +260,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
             {vtx_buf2, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
             {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
 
-        draw_pass_vi_.Setup(attribs, COUNT_OF(attribs), ndx_buf);
+        draw_pass_vi_.Setup(attribs, ndx_buf);
     }
 
     {
@@ -288,7 +288,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
                                                 Ren::eStoreOp::Store};
 
         const bool res =
-            rp_main_draw_.Setup(ren_ctx.api_ctx(), color_rts, COUNT_OF(color_rts), depth_rt, ren_ctx.log());
+            rp_main_draw_.Setup(ren_ctx.api_ctx(), color_rts, depth_rt, ren_ctx.log());
         if (!res) {
             ren_ctx.log()->Error("Failed to initialize render pass!");
         }

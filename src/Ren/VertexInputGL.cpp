@@ -52,8 +52,8 @@ Ren::VertexInput &Ren::VertexInput::operator=(VertexInput &&rhs) noexcept {
     return (*this);
 }
 
-bool Ren::VertexInput::Setup(const VtxAttribDesc _attribs[], const int _attribs_count, const BufHandle &_elem_buf) {
-    if (_attribs_count == attribs.size() && std::equal(_attribs, _attribs + _attribs_count, attribs.data()) &&
+bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle &_elem_buf) {
+    if (_attribs.size() == attribs.size() && std::equal(_attribs.begin(), _attribs.end(), attribs.data()) &&
         _elem_buf == elem_buf) {
         return true;
     }
@@ -62,7 +62,7 @@ bool Ren::VertexInput::Setup(const VtxAttribDesc _attribs[], const int _attribs_
 
     attribs.clear();
 
-    for (int i = 0; i < _attribs_count; i++) {
+    for (int i = 0; i < _attribs.size(); i++) {
         const VtxAttribDesc &a = _attribs[i];
 
         glBindBuffer(GL_ARRAY_BUFFER, a.buf.id);

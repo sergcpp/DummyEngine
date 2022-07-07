@@ -113,13 +113,13 @@ void Ren::VertexInput::FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDe
     }
 }
 
-bool Ren::VertexInput::Setup(const VtxAttribDesc _attribs[], const int _attribs_count, const BufHandle &_elem_buf) {
-    if (_attribs_count == attribs.size() && std::equal(_attribs, _attribs + _attribs_count, attribs.data()) &&
+bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle &_elem_buf) {
+    if (_attribs.size() == attribs.size() && std::equal(_attribs.begin(), _attribs.end(), attribs.data()) &&
         elem_buf == _elem_buf) {
         return true;
     }
 
-    attribs.assign(_attribs, _attribs + _attribs_count);
+    attribs.assign(_attribs.begin(), _attribs.end());
     elem_buf = _elem_buf;
 
     return true;

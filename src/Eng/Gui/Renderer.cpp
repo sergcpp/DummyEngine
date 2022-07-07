@@ -132,7 +132,7 @@ bool Gui::Renderer::Init() {
                                          Ren::eLoadOp::Load, Ren::eStoreOp::Store};
         rt_info.flags = (p.flags & ~Ren::eTexFlagBits::NoOwnership);
 
-        if (!render_pass_.Setup(ctx_.api_ctx(), &rt_info, 1, {}, ctx_.log())) {
+        if (!render_pass_.Setup(ctx_.api_ctx(), {&rt_info, 1}, {}, ctx_.log())) {
             ctx_.log()->Error("[Gui::Renderer::Init]: Failed to create render pass!");
             return false;
         }
@@ -144,7 +144,7 @@ bool Gui::Renderer::Init() {
             {vertex_buf_->handle(), VTX_COL_LOC, 4, Ren::eType::Uint8UNorm, sizeof(vertex_t), offsetof(vertex_t, col)},
             {vertex_buf_->handle(), VTX_UVS_LOC, 4, Ren::eType::Uint16UNorm, sizeof(vertex_t),
              offsetof(vertex_t, uvs)}};
-        if (!vtx_input_.Setup(attribs, 3, index_buf_)) {
+        if (!vtx_input_.Setup(attribs, index_buf_)) {
             ctx_.log()->Error("[Gui::Renderer::Init]: Failed to initialize vertex input!");
             return false;
         }
