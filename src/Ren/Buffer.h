@@ -142,6 +142,9 @@ class Buffer : public RefCounter, public LinearAlloc {
     void FlushMappedRange(uint32_t offset, uint32_t size);
     void Unmap();
 
+    void Fill(uint32_t dst_offset, uint32_t size, uint32_t data, void *_cmd_buf);
+    void UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, void *_cmd_buf);
+
     void Print(ILog *log);
 
     mutable eResState resource_state = eResState::Undefined;
@@ -149,11 +152,9 @@ class Buffer : public RefCounter, public LinearAlloc {
 
 void CopyBufferToBuffer(Buffer &src, uint32_t src_offset, Buffer &dst, uint32_t dst_offset, uint32_t size,
                         void *_cmd_buf);
-void FillBuffer(Buffer &dst, uint32_t dst_offset, uint32_t size, uint32_t data, void *_cmd_buf);
-void UpdateBuffer(Buffer &dst, uint32_t dst_offset, uint32_t size, const void *data, void *_cmd_buf);
-
-bool UpdateBufferContents(const void *data, uint32_t data_size, Buffer &stage, uint32_t map_offset, uint32_t map_size,
-                          Buffer &dst, uint32_t dst_offset, void *_cmd_buf);
+// Update buffer using stage buffer
+bool UpdateBuffer(Buffer &dst, uint32_t dst_offset, uint32_t data_size, const void *data, Buffer &stage,
+                  uint32_t map_offset, uint32_t map_size, void *_cmd_buf);
 
 #if defined(USE_GL_RENDER)
 void GLUnbindBufferUnits(int start, int count);

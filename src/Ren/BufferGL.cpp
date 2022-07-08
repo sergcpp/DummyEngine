@@ -238,6 +238,19 @@ void Ren::Buffer::Unmap() {
     mapped_ptr_ = nullptr;
 }
 
+void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
+    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
+    glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED,
+                         GL_UNSIGNED_INT, &data);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+}
+
+void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, void *_cmd_buf) {
+    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
+    glBufferSubData(GL_COPY_WRITE_BUFFER, GLintptr(dst_offset), size, data);
+    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
+}
+
 void Ren::Buffer::Print(ILog *log) {
 #if 0
     log->Info("=================================================================");
@@ -256,19 +269,6 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
     glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset /* readOffset */,
                         dst_offset /* writeOffset */, size);
     glBindBuffer(GL_COPY_READ_BUFFER, 0);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-}
-
-void Ren::FillBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
-    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
-    glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED,
-                         GL_UNSIGNED_INT, &data);
-    glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
-}
-
-void Ren::UpdateBuffer(Buffer& dst, uint32_t dst_offset, uint32_t size, const void* data, void* _cmd_buf) {
-    glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
-    glBufferSubData(GL_COPY_WRITE_BUFFER, GLintptr(dst_offset), size, data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 

@@ -93,7 +93,7 @@ void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::Wea
             RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
 
             Ren::Context &ctx = builder.ctx();
-            Ren::FillBuffer(*ray_counter_buf.ref, 0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
+            ray_counter_buf.ref->Fill(0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
         });
     }
 
@@ -377,7 +377,7 @@ void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::Wea
             data->noise_tex = rt_gi.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_gi.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_gi.AddTextureInput(frame_textures.normal, stage);
-            //data->flat_normal_tex = rt_gi.AddTextureInput(flat_normals_tex, stage);
+            // data->flat_normal_tex = rt_gi.AddTextureInput(flat_normals_tex, stage);
             data->env_tex = rt_gi.AddTextureInput(env_map, stage);
             data->ray_counter = rt_gi.AddStorageReadonlyInput(ray_counter, stage);
             data->ray_list = rt_gi.AddStorageReadonlyInput(ray_rt_list, stage);
