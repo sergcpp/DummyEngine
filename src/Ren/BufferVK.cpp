@@ -379,6 +379,68 @@ void Ren::Buffer::Unmap() {
     mapped_offset_ = 0xffffffff;
 }
 
+void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
+    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
+
+    VkPipelineStageFlags src_stages = 0, dst_stages = 0;
+    SmallVector<VkBufferMemoryBarrier, 1> barriers;
+
+    if (resource_state != eResState::CopyDst) {
+        auto &new_barrier = barriers.emplace_back();
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+        new_barrier.srcAccessMask = VKAccessFlagsForState(resource_state);
+        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
+        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        new_barrier.buffer = handle_.buf;
+        new_barrier.offset = VkDeviceSize{dst_offset};
+        new_barrier.size = VkDeviceSize{size};
+
+        src_stages |= VKPipelineStagesForState(resource_state);
+        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
+    }
+
+    if (!barriers.empty()) {
+        vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
+                             barriers.cdata(), 0, nullptr);
+    }
+
+    vkCmdFillBuffer(cmd_buf, handle_.buf, VkDeviceSize{dst_offset}, VkDeviceSize{size}, data);
+
+    resource_state = eResState::CopyDst;
+}
+
+void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, void *_cmd_buf) {
+    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
+
+    VkPipelineStageFlags src_stages = 0, dst_stages = 0;
+    SmallVector<VkBufferMemoryBarrier, 1> barriers;
+
+    if (resource_state != eResState::CopyDst) {
+        auto &new_barrier = barriers.emplace_back();
+        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
+        new_barrier.srcAccessMask = VKAccessFlagsForState(resource_state);
+        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
+        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        new_barrier.buffer = handle_.buf;
+        new_barrier.offset = VkDeviceSize{dst_offset};
+        new_barrier.size = VkDeviceSize{size};
+
+        src_stages |= VKPipelineStagesForState(resource_state);
+        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
+    }
+
+    if (!barriers.empty()) {
+        vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
+                             barriers.cdata(), 0, nullptr);
+    }
+
+    vkCmdUpdateBuffer(cmd_buf, handle_.buf, VkDeviceSize{dst_offset}, VkDeviceSize{size}, data);
+
+    resource_state = eResState::CopyDst;
+}
+
 void Ren::Buffer::Print(ILog *log) {
 #if 0
     log->Info("=================================================================");
@@ -438,67 +500,5 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
     vkCmdCopyBuffer(cmd_buf, src.vk_handle(), dst.vk_handle(), 1, &region_to_copy);
 
     src.resource_state = eResState::CopySrc;
-    dst.resource_state = eResState::CopyDst;
-}
-
-void Ren::FillBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
-    VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-    SmallVector<VkBufferMemoryBarrier, 1> barriers;
-
-    if (dst.resource_state != eResState::CopyDst) {
-        auto &new_barrier = barriers.emplace_back();
-        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-        new_barrier.srcAccessMask = VKAccessFlagsForState(dst.resource_state);
-        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
-        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = dst.vk_handle();
-        new_barrier.offset = VkDeviceSize{dst_offset};
-        new_barrier.size = VkDeviceSize{size};
-
-        src_stages |= VKPipelineStagesForState(dst.resource_state);
-        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
-    }
-
-    if (!barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
-                             barriers.cdata(), 0, nullptr);
-    }
-
-    vkCmdFillBuffer(cmd_buf, dst.vk_handle(), VkDeviceSize{dst_offset}, VkDeviceSize{size}, data);
-
-    dst.resource_state = eResState::CopyDst;
-}
-
-void Ren::UpdateBuffer(Buffer& dst, uint32_t dst_offset, uint32_t size, const void* data, void* _cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
-    VkPipelineStageFlags src_stages = 0, dst_stages = 0;
-    SmallVector<VkBufferMemoryBarrier, 1> barriers;
-
-    if (dst.resource_state != eResState::CopyDst) {
-        auto &new_barrier = barriers.emplace_back();
-        new_barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER};
-        new_barrier.srcAccessMask = VKAccessFlagsForState(dst.resource_state);
-        new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
-        new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        new_barrier.buffer = dst.vk_handle();
-        new_barrier.offset = VkDeviceSize{dst_offset};
-        new_barrier.size = VkDeviceSize{size};
-
-        src_stages |= VKPipelineStagesForState(dst.resource_state);
-        dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
-    }
-
-    if (!barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
-                             barriers.cdata(), 0, nullptr);
-    }
-
-    vkCmdUpdateBuffer(cmd_buf, dst.vk_handle(), VkDeviceSize{dst_offset}, VkDeviceSize{size}, data);
-
     dst.resource_state = eResState::CopyDst;
 }

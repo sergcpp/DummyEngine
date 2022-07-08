@@ -56,7 +56,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpAllocTex &raylen_tex = builder.GetWriteTexture(data->ray_length_tex);
 
             Ren::Context &ctx = builder.ctx();
-            Ren::FillBuffer(*ray_counter_buf.ref, 0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
+            ray_counter_buf.ref->Fill(0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
 
             float clear_color[4] = {};
             Ren::ClearColorImage(*raylen_tex.ref, clear_color, ctx.current_cmd_buf());
