@@ -77,14 +77,16 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
 #ifndef NO_SUBGROUP_EXTENSIONS
     mask = subgroupOr(mask);
 
+    uint light_mask = ~0u;
+
     const uint TileTolerance = 1;
     bool discard_tile = subgroupBallotBitCount(uvec4(mask, 0, 0, 0)) <= TileTolerance;
-    if (subgroupElect()) {
+    if (gl_LocalInvocationIndex == 0) {
         if (!discard_tile) {
             uint tile_index = atomicAdd(g_tile_counter[0], 1);
             g_tile_list[tile_index] = PackTile(group_id, mask, 0.0 /* min_t */, 1000.0 /* max_t */);
         }
-        imageStore(g_ray_hits_img, ivec2(group_id), uvec4(mask));
+        imageStore(g_ray_hits_img, ivec2(group_id), uvec4(light_mask));
     }
 #else
     // TODO:...
@@ -130,8 +132,8 @@ void main() {
     uint group_index = gl_LocalInvocationIndex;
     uvec2 group_thread_id = RemapLane8x8(group_index);
     uvec2 dispatch_thread_id = group_id * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + group_thread_id;
-    if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
-        return;
-    }
+    //if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
+    //    return;
+    //}
     ClassifyTiles(dispatch_thread_id, group_thread_id, group_id, true /* use_normal */);
 }

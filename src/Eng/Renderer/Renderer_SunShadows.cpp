@@ -1,14 +1,15 @@
 #include "Renderer.h"
 
 #include "../assets/shaders/internal/rt_shadow_classify_interface.glsl"
+#include "../assets/shaders/internal/rt_shadow_classify_tiles_interface.glsl"
+#include "../assets/shaders/internal/rt_shadow_filter_interface.glsl"
+#include "../assets/shaders/internal/rt_shadow_prepare_mask_interface.glsl"
 #include "../assets/shaders/internal/rt_shadows_interface.glsl"
 #include "../assets/shaders/internal/sun_shadows_interface.glsl"
 
 void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, FrameTextures &frame_textures) {
-    RpResRef shadow_tex;
-
     RpResRef indir_args;
 
     { // Prepare atomic counter and ray length texture
@@ -177,13 +178,368 @@ void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const 
         data->tile_list_buf = rt_shadows.AddStorageReadonlyInput(tile_list, stage);
         data->indir_args = rt_shadows.AddIndirectBufferInput(indir_args);
 
-        shadow_tex = data->out_shadow_tex = rt_shadows.AddStorageImageOutput(ray_hits_tex, stage);
+        ray_hits_tex = data->out_shadow_tex = rt_shadows.AddStorageImageOutput(ray_hits_tex, stage);
 
         rp_rt_shadows_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
         rt_shadows.set_executor(&rp_rt_shadows_);
     }
 
-    frame_textures.sun_shadow = shadow_tex;
+    RpResRef shadow_mask;
+
+    { // Prepare shadow mask
+        auto &rt_prep_mask = rp_builder_.AddPass("RT SH PREPARE");
+
+        struct PassData {
+            RpResRef hit_mask_tex;
+            RpResRef out_shadow_mask_buf;
+        };
+
+        auto *data = rt_prep_mask.AllocPassData<PassData>();
+        data->hit_mask_tex = rt_prep_mask.AddTextureInput(ray_hits_tex, Ren::eStageBits::ComputeShader);
+
+        { // shadow mask buffer
+            RpBufDesc desc;
+            desc.type = Ren::eBufType::Storage;
+
+            const uint32_t x_tiles = (view_state_.scr_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.scr_res[1] + 4u - 1u) / 4;
+            desc.size = x_tiles * y_tiles * sizeof(uint32_t);
+            shadow_mask = data->out_shadow_mask_buf =
+                rt_prep_mask.AddStorageOutput("RT SH Mask", desc, Ren::eStageBits::ComputeShader);
+        }
+
+        rt_prep_mask.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &hit_mask_tex = builder.GetReadTexture(data->hit_mask_tex);
+
+            RpAllocBuf &out_shadow_mask_buf = builder.GetWriteBuffer(data->out_shadow_mask_buf);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::Tex2D, RTShadowPrepareMask::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
+                {Ren::eBindTarget::SBuf, RTShadowPrepareMask::SHADOW_MASK_BUF_SLOT, *out_shadow_mask_buf.ref}};
+
+            const uint32_t x_tiles = (view_state_.act_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.act_res[1] + 4u - 1u) / 4;
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{(x_tiles + 4u - 1u) / 4u, (y_tiles + 4u - 1u) / 4u, 1u};
+
+            RTShadowPrepareMask::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_shadow_prepare_mask_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+
+    RpResRef repro_results, tiles_metadata;
+
+    { // Classify tiles
+        auto &rt_classify_tiles = rp_builder_.AddPass("RT SH CLASSIFY TILES");
+
+        struct PassData {
+            RpResRef depth;
+            RpResRef velocity;
+            RpResRef normal;
+            RpResRef hist;
+            RpResRef prev_depth;
+            RpResRef prev_moments;
+            RpResRef ray_hits;
+            RpResRef shared_data;
+
+            RpResRef out_tile_metadata_buf;
+            RpResRef out_repro_results_img;
+            RpResRef out_moments_img;
+        };
+
+        auto *data = rt_classify_tiles.AllocPassData<PassData>();
+        data->depth = rt_classify_tiles.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        data->velocity = rt_classify_tiles.AddTextureInput(frame_textures.velocity, Ren::eStageBits::ComputeShader);
+        data->normal = rt_classify_tiles.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
+        data->hist = rt_classify_tiles.AddHistoryTextureInput("SH Filter 0 Tex", Ren::eStageBits::ComputeShader);
+        data->prev_depth =
+            rt_classify_tiles.AddHistoryTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        data->prev_moments = rt_classify_tiles.AddHistoryTextureInput("SH Moments Tex", Ren::eStageBits::ComputeShader);
+        data->ray_hits = rt_classify_tiles.AddStorageReadonlyInput(shadow_mask, Ren::eStageBits::ComputeShader);
+        data->shared_data =
+            rt_classify_tiles.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
+
+        { // metadata buffer
+            RpBufDesc desc;
+            desc.type = Ren::eBufType::Storage;
+
+            const uint32_t x_tiles = (view_state_.scr_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.scr_res[1] + 4u - 1u) / 4;
+            desc.size = x_tiles * y_tiles * sizeof(uint32_t);
+            tiles_metadata = data->out_tile_metadata_buf =
+                rt_classify_tiles.AddStorageOutput("RT SH Tile Meta", desc, Ren::eStageBits::ComputeShader);
+        }
+
+        { // reprojected texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRG16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            repro_results = data->out_repro_results_img =
+                rt_classify_tiles.AddStorageImageOutput("SH Reproj Tex", params, Ren::eStageBits::ComputeShader);
+        }
+
+        { // moments texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            data->out_moments_img =
+                rt_classify_tiles.AddStorageImageOutput("SH Moments Tex", params, Ren::eStageBits::ComputeShader);
+        }
+
+        rt_classify_tiles.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
+            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity);
+            RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
+            RpAllocTex &hist_tex = builder.GetReadTexture(data->hist);
+            RpAllocTex &prev_depth_tex = builder.GetReadTexture(data->prev_depth);
+            RpAllocTex &prev_moments_tex = builder.GetReadTexture(data->prev_moments);
+            RpAllocBuf &ray_hits_buf = builder.GetReadBuffer(data->ray_hits);
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+
+            RpAllocBuf &out_tile_metadata_buf = builder.GetWriteBuffer(data->out_tile_metadata_buf);
+            RpAllocTex &out_repro_results_img = builder.GetWriteTexture(data->out_repro_results_img);
+            RpAllocTex &out_moments_img = builder.GetWriteTexture(data->out_moments_img);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::HISTORY_TEX_SLOT, *hist_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::PREV_DEPTH_TEX_SLOT, *prev_depth_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::PREV_MOMENTS_TEX_SLOT, *prev_moments_tex.ref},
+                {Ren::eBindTarget::SBuf, RTShadowClassifyTiles::RAY_HITS_BUF_SLOT, *ray_hits_buf.ref},
+                {Ren::eBindTarget::SBuf, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT, *out_tile_metadata_buf.ref},
+                {Ren::eBindTarget::Image, RTShadowClassifyTiles::OUT_REPROJ_RESULTS_IMG_SLOT,
+                 *out_repro_results_img.ref},
+                {Ren::eBindTarget::Image, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, *out_moments_img.ref},
+            };
+
+            const Ren::Vec3u grp_count =
+                Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
+                               RTShadowClassifyTiles::LOCAL_GROUP_SIZE_X,
+                           (view_state_.act_res[1] + RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y - 1u) /
+                               RTShadowClassifyTiles::LOCAL_GROUP_SIZE_Y,
+                           1u};
+
+            RTShadowClassifyTiles::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.inv_img_size =
+                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_shadow_classify_tiles_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+
+    RpResRef output_tex;
+
+    { // Filter shadow 0
+        auto &rt_filter = rp_builder_.AddPass("RT SH FILTER 0");
+
+        struct PassData {
+            RpResRef depth;
+            RpResRef normal;
+            RpResRef input;
+            RpResRef tile_metadata;
+            RpResRef shared_data;
+
+            RpResRef out_history_img;
+        };
+
+        auto *data = rt_filter.AllocPassData<PassData>();
+        data->depth = rt_filter.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        data->normal = rt_filter.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
+        data->input = rt_filter.AddTextureInput(repro_results, Ren::eStageBits::ComputeShader);
+        data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Ren::eStageBits::ComputeShader);
+        data->shared_data =
+            rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
+
+        { // out result texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRG16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            output_tex = data->out_history_img =
+                rt_filter.AddStorageImageOutput("SH Filter 0 Tex", params, Ren::eStageBits::ComputeShader);
+        }
+
+        rt_filter.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
+            RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
+            RpAllocTex &input_tex = builder.GetReadTexture(data->input);
+            RpAllocBuf &tile_metadata_buf = builder.GetReadBuffer(data->tile_metadata);
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+
+            RpAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::SBuf, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
+                {Ren::eBindTarget::Image, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+            };
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
+                1u};
+
+            RTShadowFilter::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.inv_img_size =
+                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_shadow_filter_[0], grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+
+    { // Filter shadow 1
+        auto &rt_filter = rp_builder_.AddPass("RT SH FILTER 1");
+
+        struct PassData {
+            RpResRef depth;
+            RpResRef normal;
+            RpResRef input;
+            RpResRef tile_metadata;
+            RpResRef shared_data;
+
+            RpResRef out_history_img;
+        };
+
+        auto *data = rt_filter.AllocPassData<PassData>();
+        data->depth = rt_filter.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        data->normal = rt_filter.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
+        data->input = rt_filter.AddTextureInput(output_tex, Ren::eStageBits::ComputeShader);
+        data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Ren::eStageBits::ComputeShader);
+        data->shared_data =
+            rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
+
+        { // out result texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRG16F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            output_tex = data->out_history_img =
+                rt_filter.AddStorageImageOutput("SH Filter 1 Tex", params, Ren::eStageBits::ComputeShader);
+        }
+
+        rt_filter.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
+            RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
+            RpAllocTex &input_tex = builder.GetReadTexture(data->input);
+            RpAllocBuf &tile_metadata_buf = builder.GetReadBuffer(data->tile_metadata);
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+
+            RpAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::SBuf, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
+                {Ren::eBindTarget::Image, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+            };
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
+                1u};
+
+            RTShadowFilter::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.inv_img_size =
+                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_shadow_filter_[1], grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+
+    { // Filter shadow 2
+        auto &rt_filter = rp_builder_.AddPass("RT SH FILTER 2");
+
+        struct PassData {
+            RpResRef depth;
+            RpResRef normal;
+            RpResRef input;
+            RpResRef tile_metadata;
+            RpResRef shared_data;
+
+            RpResRef out_history_img;
+        };
+
+        auto *data = rt_filter.AllocPassData<PassData>();
+        data->depth = rt_filter.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
+        data->normal = rt_filter.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
+        data->input = rt_filter.AddTextureInput(output_tex, Ren::eStageBits::ComputeShader);
+        data->tile_metadata = rt_filter.AddStorageReadonlyInput(tiles_metadata, Ren::eStageBits::ComputeShader);
+        data->shared_data =
+            rt_filter.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
+
+        { // out result texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawR8;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            output_tex = data->out_history_img =
+                rt_filter.AddStorageImageOutput("SH Filter 2 Tex", params, Ren::eStageBits::ComputeShader);
+        }
+
+        rt_filter.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
+            RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
+            RpAllocTex &input_tex = builder.GetReadTexture(data->input);
+            RpAllocBuf &tile_metadata_buf = builder.GetReadBuffer(data->tile_metadata);
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+
+            RpAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
+                {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::SBuf, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
+                {Ren::eBindTarget::Image, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+            };
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + RTShadowFilter::LOCAL_GROUP_SIZE_X - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + RTShadowFilter::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowFilter::LOCAL_GROUP_SIZE_Y,
+                1u};
+
+            RTShadowFilter::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+            uniform_params.inv_img_size =
+                1.0f / Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_shadow_filter_[2], grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+
+    frame_textures.sun_shadow = output_tex;
+    // ray_hits_tex;
 }
 
 void Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,

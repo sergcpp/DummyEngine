@@ -231,7 +231,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         /* mediump */ float accumulation_speed = 1.0 / max(sample_count, 1.0);
         /* mediump */ float weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
-        new_signal = mix(new_signal, avg_radiance, 1.0 / max(sample_count + 1.0f, 1.0));
+        new_signal = mix(new_signal, avg_radiance, 1.0 / max(sample_count + 1.0, 1.0));
         // Clip outliers
         {
             /* mediump */ vec3 radiance_min = avg_radiance - color_std * 1.0;

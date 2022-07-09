@@ -41,7 +41,7 @@ layout(binding = DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
 layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
-layout(binding = SUN_SHADOW_TEX_SLOT) uniform usampler2D g_sun_shadow_tex;
+layout(binding = SUN_SHADOW_TEX_SLOT) uniform sampler2D g_sun_shadow_tex;
 
 layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
 
@@ -198,9 +198,18 @@ void main() {
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 #else
-    uint sun_mask = texelFetch(g_sun_shadow_tex, ivec2(ix, iy) / ivec2(8, 4), 0).r;
-    ivec2 group_id = ivec2(ix, iy) % ivec2(8, 4);
-    visibility = (sun_mask & (1u << (group_id.y * 8 + group_id.x))) != 0 ? 0.0 : 1.0;
+    //uint sun_mask = texelFetch(g_sun_shadow_tex, ivec2(ix, iy) / ivec2(8, 4), 0).r;
+    //ivec2 group_id = ivec2(ix, iy) % ivec2(8, 4);
+    //visibility = (sun_mask & (1u << (group_id.y * 8 + group_id.x))) != 0 ? 0.0 : 1.0;
+
+    vec4 debug_col = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0);
+    //imageStore(g_out_color_img, icoord, vec4(debug_col.rg, 0.0, 0.0));
+    //imageStore(g_out_color_img, icoord, debug_col.rrrr);
+    //return;
+
+    if (lambert > 0.00001) {
+        visibility = debug_col.r;
+    }
 #endif
 
     vec4 gi = textureLod(g_gi_tex, px_uvs, 0.0);

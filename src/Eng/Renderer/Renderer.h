@@ -238,7 +238,8 @@ class Renderer {
     // GI Denoiser stuff
     Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_resolve_temporal_, pi_gi_blur_, pi_gi_post_blur_;
     // Sun shadows
-    Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_;
+    Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
+        pi_shadow_filter_[3];
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
