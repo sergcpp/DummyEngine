@@ -18,19 +18,19 @@ $ModifyWarning
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_mat3_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_mat3_tex;
 #endif // BINDLESS_TEXTURES
-layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
-layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
-layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
-layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buffer;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
+layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
+layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
+layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D g_cone_rt_lut;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -48,10 +48,10 @@ LAYOUT(location = 2) in mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
 LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs[4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 8) in flat TEX_HANDLE g_diff_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE g_diff_tex;
     LAYOUT(location = 9) in flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 10) in flat TEX_HANDLE g_spec_texture;
-    LAYOUT(location = 11) in flat TEX_HANDLE g_mat3_texture;
+    LAYOUT(location = 10) in flat TEX_HANDLE g_spec_tex;
+    LAYOUT(location = 11) in flat TEX_HANDLE g_mat3_tex;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
@@ -71,12 +71,12 @@ vec2 ParallaxMapping(vec3 dir, vec2 uvs) {
     vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = texture(SAMPLER2D(g_mat3_texture), cur_uvs).r;
+    float height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
 
     while (height > cur_layer_height) {
         cur_layer_height += layer_height;
         cur_uvs -= duvs;
-        height = texture(SAMPLER2D(g_mat3_texture), cur_uvs).r;
+        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
     }
 
     return cur_uvs;
@@ -95,12 +95,12 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
     vec2 duvs = ParallaxScale * dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = texture(SAMPLER2D(g_mat3_texture), cur_uvs).r;
+    float height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
 
     while (height < cur_layer_height) {
         cur_layer_height -= layer_height;
         cur_uvs -= duvs;
-        height = texture(SAMPLER2D(g_mat3_texture), cur_uvs).r;
+        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
     }
 
     duvs = 0.5 * duvs;
@@ -113,7 +113,7 @@ vec2 ReliefParallaxMapping(vec3 dir, vec2 uvs) {
     for (int i = 0; i < BinSearchInterations; i++) {
         duvs = 0.5 * duvs;
         layer_height = 0.5 * layer_height;
-        height = texture(SAMPLER2D(g_mat3_texture), cur_uvs).r;
+        height = texture(SAMPLER2D(g_mat3_tex), cur_uvs).r;
         if (height > cur_layer_height) {
             cur_uvs += duvs;
             cur_layer_height += layer_height;
@@ -137,18 +137,18 @@ vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs, out float iterations) {
     vec2 duvs = dir.xy / dir.z / layer_count;
     vec2 cur_uvs = uvs;
 
-    float height = 1.0 - texture(SAMPLER2D(g_mat3_texture), cur_uvs).g;
+    float height = 1.0 - texture(SAMPLER2D(g_mat3_tex), cur_uvs).g;
 
     while (height < cur_layer_height) {
         cur_layer_height -= layer_height;
         cur_uvs += duvs;
-        height = 1.0 - texture(SAMPLER2D(g_mat3_texture), cur_uvs).g;
+        height = 1.0 - texture(SAMPLER2D(g_mat3_tex), cur_uvs).g;
     }
 
     vec2 prev_uvs = cur_uvs - duvs;
 
     float next_height = height - cur_layer_height;
-    float prev_height = 1.0 - texture(SAMPLER2D(g_mat3_texture), prev_uvs).g - cur_layer_height - layer_height;
+    float prev_height = 1.0 - texture(SAMPLER2D(g_mat3_tex), prev_uvs).g - cur_layer_height - layer_height;
 
     float weight = next_height / (next_height - prev_height);
     vec2 final_uvs = mix(cur_uvs, prev_uvs, weight);
@@ -158,12 +158,12 @@ vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs, out float iterations) {
 }
 
 vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
-    ivec2 tex_size = textureSize(SAMPLER2D(g_mat3_texture), 0);
+    ivec2 tex_size = textureSize(SAMPLER2D(g_mat3_tex), 0);
     float w = 1.0 / float(max(tex_size.x, tex_size.y));
 
     float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
 
-    vec2 h = textureLod(SAMPLER2D(g_mat3_texture), uvs, 0.0).rg;
+    vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs, 0.0).rg;
     h.g = max(h.g, 1.0/255.0);
 
     int counter = 0;
@@ -171,7 +171,7 @@ vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
     float t = 0.0;
     while (1.0 - dir.z * t > h.r) {
         t += w + (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-        h = textureLod(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy, 0.0).rg;
+        h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).rg;
         h.g = max(h.g, 1.0/255.0);
 
         counter += 1;
@@ -189,29 +189,29 @@ vec2 ConeSteppingExact(vec3 dir, vec2 uvs) {
 vec2 ConeSteppingFixed(vec3 dir, vec2 uvs) {
     float iz = sqrt(1.0 - clamp(dir.z * dir.z, 0.0, 1.0));
 
-    vec2 h = texture(SAMPLER2D(g_mat3_texture), uvs).rg;
+    vec2 h = texture(SAMPLER2D(g_mat3_tex), uvs).rg;
     float t = (1.0 - h.r) / (dir.z + iz / (h.g * h.g));
 
     // repeate 4 times
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
 
     // and 5 more times
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
-    h = texture(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy).rg;
+    h = texture(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy).rg;
     t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
 
     return uvs - t * dir.xy;
@@ -227,7 +227,7 @@ vec2 ConeSteppingLoop(vec3 dir, vec2 uvs) {
     float t = 0.0;
 
     for (int i = 0; i < steps_count; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy, 0.0).rg;
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).rg;
         t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
     }
 
@@ -244,7 +244,7 @@ vec2 ConeSteppingLoop32(vec3 dir, vec2 uvs) {
     float t = 0.0;
 
     for (int i = 0; i < steps_count; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_texture), uvs - t * dir.xy, 0.0).rg;
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), uvs - t * dir.xy, 0.0).rg;
         t += (1.0 - dir.z * t - h.r) / (dir.z + iz / (h.g * h.g));
     }
 
@@ -261,7 +261,7 @@ vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
 
     vec3 pos = vec3(uvs, 0.0);
     for (int i = 0; i < ConeSteps; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_texture), pos.xy, 0.0).rg;
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), pos.xy, 0.0).rg;
         float height = clamp(h.r - pos.z, 0.0, 1.0);
         float d = h.g * height / (ray_ratio + h.g);
         pos += dir * d;
@@ -271,7 +271,7 @@ vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
     vec3 bs_pos = pos - bs_range;
 
     for (int i = 0; i < BinarySteps; i++) {
-        vec2 h = textureLod(SAMPLER2D(g_mat3_texture), bs_pos.xy, 0.0).rg;
+        vec2 h = textureLod(SAMPLER2D(g_mat3_tex), bs_pos.xy, 0.0).rg;
         bs_range *= 0.5;
         if (bs_pos.z < h.r) {
             bs_pos += bs_range;
@@ -292,16 +292,16 @@ vec2 ConeSteppingRelaxed(vec3 dir, vec2 uvs) {
 
 vec2 QuadTreeDisplacement(highp vec3 dir, highp vec2 uvs, out float iterations) {
     // max mip level of texture itself
-    float max_level = float(textureQueryLevels(SAMPLER2D(g_mat3_texture))) - 1.0;
+    float max_level = float(textureQueryLevels(SAMPLER2D(g_mat3_tex))) - 1.0;
     // max mip level that we will access
-    float lim_level = min(max_level - textureQueryLod(SAMPLER2D(g_mat3_texture), uvs).x - 1.0, DISP_MAX_MIP);
-    float lim_lod = max(textureQueryLod(SAMPLER2D(g_mat3_texture), uvs).x, max(max_level - DISP_MAX_MIP, 0.0));
+    float lim_level = min(max_level - textureQueryLod(SAMPLER2D(g_mat3_tex), uvs).x - 1.0, DISP_MAX_MIP);
+    float lim_lod = max(textureQueryLod(SAMPLER2D(g_mat3_tex), uvs).x, max(max_level - DISP_MAX_MIP, 0.0));
 
     vec2 cursor = uvs;
     vec2 start_point = uvs;
     // defines which planes pair of pixel's bounding box will be checked for intersection
     vec2 quadrant = vec2(0.5) + 0.5 * sign(dir.xy);
-    vec2 tex_size = vec2(textureSize(SAMPLER2D(g_mat3_texture), int(max_level - lim_level)));
+    vec2 tex_size = vec2(textureSize(SAMPLER2D(g_mat3_tex), int(max_level - lim_level)));
     float delta = 0.5 / tex_size.x;
 
     // defines forward/backward step for approximate bilinear interpolation of height map
@@ -312,7 +312,7 @@ vec2 QuadTreeDisplacement(highp vec3 dir, highp vec2 uvs, out float iterations) 
     float t_cursor = 0.0;
 
     // keep track of current resolution (it is faster than calling textureSize every iteration)
-    vec2 cur_tex_size = vec2(textureSize(SAMPLER2D(g_mat3_texture), int(max_level)));
+    vec2 cur_tex_size = vec2(textureSize(SAMPLER2D(g_mat3_tex), int(max_level)));
 
     int iter = 0;
     while (iter++ < DISP_MAX_ITER) {
@@ -320,12 +320,12 @@ vec2 QuadTreeDisplacement(highp vec3 dir, highp vec2 uvs, out float iterations) 
         if (lod <= lim_lod) {
             // advance forward by a half of a pixel
             vec3 next_ray_pos = vec3(start_point, 0.0) + dir * (t_cursor + adv);
-            float next_height = textureLod(SAMPLER2D(g_mat3_texture), next_ray_pos.xy, lim_lod).g - next_ray_pos.z;
+            float next_height = textureLod(SAMPLER2D(g_mat3_tex), next_ray_pos.xy, lim_lod).g - next_ray_pos.z;
             // check if we intersect interpolated height map
             if (next_height <= 0.0) {
                 // step backward by a half of a pixel
                 vec3 prev_ray_pos = vec3(start_point, 0.0) + dir * (t_cursor - adv);
-                float prev_height = textureLod(SAMPLER2D(g_mat3_texture), prev_ray_pos.xy, lim_lod).g - prev_ray_pos.z;
+                float prev_height = textureLod(SAMPLER2D(g_mat3_tex), prev_ray_pos.xy, lim_lod).g - prev_ray_pos.z;
                 // compute interpolation factor
                 float weight = prev_height / (prev_height - next_height);
                 // final cursor position at intersection point
@@ -337,11 +337,11 @@ vec2 QuadTreeDisplacement(highp vec3 dir, highp vec2 uvs, out float iterations) 
 #if 0
         // fetch max bump map height at current level (manually because nearest sampling is required)
         highp ivec2 icursor = ivec2(fract(vec2(1.0) + fract(cursor)) * cur_tex_size);
-        highp float max_height = texelFetch(SAMPLER2D(g_mat3_texture), icursor, int(lod)).g;
+        highp float max_height = texelFetch(SAMPLER2D(g_mat3_tex), icursor, int(lod)).g;
 #else
         // snap cursor to pixel's center to emulate nearest sampling
         highp vec2 snapped_cursor = (vec2(0.5) + floor(cursor * cur_tex_size)) / cur_tex_size;
-        highp float max_height = textureLod(SAMPLER2D(g_mat3_texture), snapped_cursor, lod).g;
+        highp float max_height = textureLod(SAMPLER2D(g_mat3_tex), snapped_cursor, lod).g;
 #endif
         // intersection of ray with z-plane of pixel's bounding box
         float t = max_height / dir.z;
@@ -402,7 +402,7 @@ void main(void) {
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buffer, cell_index).xy;
+    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
@@ -453,23 +453,23 @@ void main(void) {
     //modified_uvs = ConeSteppingFixed(view_ray_ts, g_vtx_uvs);
 
 
-    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), modified_uvs)));
+    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), modified_uvs)));
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     vec3 normal_color = texture(SAMPLER2D(g_norm_tex), modified_uvs).wyz;
-    vec4 spec_color = texture(SAMPLER2D(g_spec_texture), g_vtx_uvs);
+    vec4 spec_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
 
     vec3 dp_dx = dFdx(g_vtx_pos);
     vec3 dp_dy = dFdy(g_vtx_pos);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int di = int(bitfieldExtract(item_data, 12, 12));
 
         mat4 de_proj;
-        de_proj[0] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 0);
-        de_proj[1] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 1);
-        de_proj[2] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 2);
+        de_proj[0] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 0);
+        de_proj[1] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 1);
+        de_proj[2] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 2);
         de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
         de_proj = transpose(de_proj);
 
@@ -484,30 +484,30 @@ void main(void) {
 
         if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
             float decal_influence = 1.0;
-            vec4 mask_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 3);
+            vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
-                decal_influence = textureGrad(g_decals_texture, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
+                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
             }
 
-            vec4 diff_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 4);
+            vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 4);
             if (diff_uvs_tr.z > 0.0) {
                 vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
-                vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_texture, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
+                vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_tex, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
                 albedo_color = mix(albedo_color, SRGBToLinear(decal_diff), decal_influence);
             }
 
-            vec4 norm_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 5);
+            vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 5);
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
-                vec3 decal_norm = textureGrad(g_decals_texture, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).wyz;
+                vec3 decal_norm = textureGrad(g_decals_tex, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).wyz;
                 normal_color = mix(normal_color, decal_norm, decal_influence);
             }
 
-            vec4 spec_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 6);
+            vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 6);
             if (spec_uvs_tr.z > 0.0) {
                 vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;
-                vec4 decal_spec = textureGrad(g_decals_texture, spec_uvs, spec_uvs_tr.zw * duv_dx, spec_uvs_tr.zw * duv_dy);
+                vec4 decal_spec = textureGrad(g_decals_tex, spec_uvs, spec_uvs_tr.zw * duv_dx, spec_uvs_tr.zw * duv_dy);
                 spec_color = mix(spec_color, decal_spec, decal_influence);
             }
         }
@@ -520,12 +520,12 @@ void main(void) {
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
 
-        vec4 pos_and_radius = texelFetch(g_lights_buffer, li * 3 + 0);
-        highp vec4 col_and_index = texelFetch(g_lights_buffer, li * 3 + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buffer, li * 3 + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, li * 3 + 0);
+        highp vec4 col_and_index = texelFetch(g_lights_buf, li * 3 + 1);
+        vec4 dir_and_spot = texelFetch(g_lights_buf, li * 3 + 2);
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);
@@ -562,7 +562,7 @@ void main(void) {
 #if defined(VULKAN)
                 pp.y = 1.0 - pp.y;
 #endif // VULKAN
-                atten *= SampleShadowPCF5x5(g_shadow_texture, pp.xyz);
+                atten *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
             }
 
             additional_light += col_and_index.xyz * atten *
@@ -574,7 +574,7 @@ void main(void) {
     float total_fade = 0.0;
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
         float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, g_vtx_pos);
@@ -593,11 +593,11 @@ void main(void) {
     float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
-        visibility = GetSunVisibility(lin_depth, g_shadow_texture, g_vtx_sh_uvs);
+        visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
     vec3 diff_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                          ambient_occlusion * ambient_occlusion * indirect_col +
                                          additional_light);

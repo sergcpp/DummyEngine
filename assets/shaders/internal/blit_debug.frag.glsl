@@ -14,12 +14,12 @@ PERM @MSAA_4
 */
 
 #if defined(MSAA_4)
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS g_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS g_tex;
 #else
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D g_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D g_tex;
 #endif
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -42,7 +42,7 @@ in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    float depth = texelFetch(g_texture, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_tex, ivec2(g_vtx_uvs), 0).r;
     depth = g_clip_info[0] / (depth * (g_clip_info[1] - g_clip_info[2]) + g_clip_info[2]);
 
     float k = log2(depth / g_clip_info[1]) / g_clip_info[3];
@@ -51,7 +51,7 @@ void main() {
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / g_res.y) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / g_res.x);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buffer, cell_index).xy;
+    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 

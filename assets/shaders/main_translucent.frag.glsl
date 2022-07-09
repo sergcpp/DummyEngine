@@ -18,20 +18,20 @@ $ModifyWarning
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_mask_texture;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_mask_tex;
 #endif // BINDLESS_TEXTURES
-layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
+layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4];
-layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
-layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
-layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buffer;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
+layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
+layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
+layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D g_cone_rt_lut;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -51,10 +51,10 @@ LAYOUT(location = 4) in highp vec4 g_vtx_sh_uvs0;
 LAYOUT(location = 5) in highp vec4 g_vtx_sh_uvs1;
 LAYOUT(location = 6) in highp vec4 g_vtx_sh_uvs2;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 7) in flat TEX_HANDLE g_diff_texture;
+    LAYOUT(location = 7) in flat TEX_HANDLE g_diff_tex;
     LAYOUT(location = 8) in flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 9) in flat TEX_HANDLE g_spec_texture;
-    LAYOUT(location = 10) in flat TEX_HANDLE g_mask_texture;
+    LAYOUT(location = 9) in flat TEX_HANDLE g_spec_tex;
+    LAYOUT(location = 10) in flat TEX_HANDLE g_mask_tex;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
@@ -68,8 +68,8 @@ void main(void) {
     highp float transp_z =
         2.0 * (log(lin_depth) - g_shrd_data.transp_params_and_time[0]) / g_shrd_data.transp_params_and_time[1] - 1.0;
 
-    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_texture), g_vtx_uvs)));
-    float mask_value = texture(SAMPLER2D(g_mask_texture), g_vtx_uvs).r;
+    vec3 albedo_color = SRGBToLinear(YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs)));
+    float mask_value = texture(SAMPLER2D(g_mask_tex), g_vtx_uvs).r;
 
     highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     int slice = int(floor(k * float(REN_GRID_RES_Z)));
@@ -77,26 +77,26 @@ void main(void) {
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buffer, cell_index).xy;
+    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 normal_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
-    vec4 specular_color = texture(SAMPLER2D(g_spec_texture), g_vtx_uvs);
+    vec4 specular_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
 
     vec3 dp_dx = dFdx(g_vtx_pos);
     vec3 dp_dy = dFdy(g_vtx_pos);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int di = int(bitfieldExtract(item_data, 12, 12));
 
         mat4 de_proj;
-        de_proj[0] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 0);
-        de_proj[1] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 1);
-        de_proj[2] = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 2);
+        de_proj[0] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 0);
+        de_proj[1] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 1);
+        de_proj[2] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 2);
         de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
         de_proj = transpose(de_proj);
 
@@ -111,32 +111,32 @@ void main(void) {
 
         if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
             float decal_influence = 1.0;
-            vec4 mask_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 3);
+            vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
-                decal_influence = textureGrad(g_decals_texture, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
+                decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
             }
 
-            vec4 diff_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 4);
+            vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 4);
             if (diff_uvs_tr.z > 0.0) {
                 vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
-                vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_texture, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
+                vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_tex, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
                 albedo_color = mix(albedo_color, SRGBToLinear(decal_diff), decal_influence);
             }
 
-            vec4 norm_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 5);
+            vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 5);
 
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
-                vec3 decal_norm = textureGrad(g_decals_texture, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).wyz;
+                vec3 decal_norm = textureGrad(g_decals_tex, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).wyz;
                 normal_color = mix(normal_color, decal_norm, decal_influence);
             }
 
-            vec4 spec_uvs_tr = texelFetch(g_decals_buffer, di * REN_DECALS_BUF_STRIDE + 6);
+            vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 6);
 
             if (spec_uvs_tr.z > 0.0) {
                 vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;
-                vec4 decal_spec = textureGrad(g_decals_texture, spec_uvs, spec_uvs_tr.zw * duv_dx, spec_uvs_tr.zw * duv_dy);
+                vec4 decal_spec = textureGrad(g_decals_tex, spec_uvs, spec_uvs_tr.zw * duv_dx, spec_uvs_tr.zw * duv_dy);
                 specular_color = mix(specular_color, decal_spec, decal_influence);
             }
         }
@@ -149,12 +149,12 @@ void main(void) {
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
 
-        vec4 pos_and_radius = texelFetch(g_lights_buffer, li * 3 + 0);
-        highp vec4 col_and_index = texelFetch(g_lights_buffer, li * 3 + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buffer, li * 3 + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, li * 3 + 0);
+        highp vec4 col_and_index = texelFetch(g_lights_buf, li * 3 + 1);
+        vec4 dir_and_spot = texelFetch(g_lights_buf, li * 3 + 2);
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);
@@ -191,7 +191,7 @@ void main(void) {
 #if defined(VULKAN)
                 pp.y = 1.0 - pp.y;
 #endif // VULKAN
-                atten *= SampleShadowPCF5x5(g_shadow_texture, pp.xyz);
+                atten *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
             }
 
             additional_light += col_and_index.xyz * atten *
@@ -203,7 +203,7 @@ void main(void) {
     float total_fade = 0.0;
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
         float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, g_vtx_pos);
@@ -223,7 +223,7 @@ void main(void) {
     float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
-        visibility = GetSunVisibility(lin_depth, g_shadow_texture, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
+        visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 
     vec3 diff_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility + indirect_col + additional_light);

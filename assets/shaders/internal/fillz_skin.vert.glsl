@@ -32,7 +32,7 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
 
 layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndices {
     ivec2 g_instance_indices[];
@@ -52,7 +52,7 @@ layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
         LAYOUT(location = 3) out vec3 g_vtx_pos_ls;
     #endif // HASHED_TRANSPARENCY
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 4) out flat TEX_HANDLE g_alpha_texture;
+        LAYOUT(location = 4) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
@@ -60,10 +60,10 @@ invariant gl_Position;
 
 void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
-    mat4 model_matrix_curr = FetchModelMatrix(g_instances_buffer, instance.x);
+    mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
 
 #ifdef MOVING_PERM
-    mat4 model_matrix_prev = FetchModelMatrix(g_instances_buffer, instance.x + 1);
+    mat4 model_matrix_prev = FetchModelMatrix(g_instances_buf, instance.x + 1);
 #endif
 
 #ifdef TRANSPARENT_PERM
@@ -71,7 +71,7 @@ void main() {
 
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
-    g_alpha_texture = GET_HANDLE(mat.texture_indices[3]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
 #endif // BINDLESS_TEXTURES
 #ifdef HASHED_TRANSPARENCY
     g_vtx_pos_ls = g_in_vtx_pos_curr;

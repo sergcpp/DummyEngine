@@ -32,7 +32,7 @@ layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndi
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) out highp vec3 g_vtx_pos;
@@ -53,7 +53,7 @@ invariant gl_Position;
 void main(void) {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(g_instances_buffer, instance.x);
+    mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
     vec3 vtx_pos_ws = (model_matrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(g_in_vtx_normal.xyz, 0.0)).xyz);

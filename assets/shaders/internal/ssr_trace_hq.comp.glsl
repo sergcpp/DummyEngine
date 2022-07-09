@@ -37,7 +37,7 @@ uniform SharedDataBlock {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_texture;
+layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_tex;
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
 
@@ -126,7 +126,7 @@ void main() {
 #endif // VULKAN
         uv.xy = 0.5 * uv.xy + 0.5;
 
-        out_color += textureLod(color_texture, uv, 0.0).rgb;
+        out_color += textureLod(color_tex, uv, 0.0).rgb;
     }
 
     { // schedule rt rays

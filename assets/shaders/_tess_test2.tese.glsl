@@ -48,7 +48,7 @@ out mediump vec3 g_vtx_tangent;
 out highp vec3 g_vtx_sh_uvs[4];
 #endif
 
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_texture;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_tex;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)

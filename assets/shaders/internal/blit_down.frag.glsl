@@ -17,7 +17,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = SRC_TEX_SLOT) uniform sampler2D g_texture;
+layout(binding = SRC_TEX_SLOT) uniform sampler2D g_tex;
 
 LAYOUT(location = 0) in vec2 g_vtx_uvs;
 
@@ -34,10 +34,10 @@ void main() {
     sample_positions[3] = norm_uvs + vec2(-px_offset.x, px_offset.y);
 
     vec3 color = vec3(0.0);
-    color += textureLod(g_texture, sample_positions[0], 0.0).rgb;
-    color += textureLod(g_texture, sample_positions[1], 0.0).rgb;
-    color += textureLod(g_texture, sample_positions[2], 0.0).rgb;
-    color += textureLod(g_texture, sample_positions[3], 0.0).rgb;
+    color += textureLod(g_tex, sample_positions[0], 0.0).rgb;
+    color += textureLod(g_tex, sample_positions[1], 0.0).rgb;
+    color += textureLod(g_tex, sample_positions[2], 0.0).rgb;
+    color += textureLod(g_tex, sample_positions[3], 0.0).rgb;
     color /= 4.0;
 
     g_out_color = vec4(color, 1.0);

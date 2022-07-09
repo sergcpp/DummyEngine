@@ -14,7 +14,7 @@ UNIFORM_BLOCKS
 */
 
 layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_tex;
-layout(binding = INPUT_TEX_SLOT) uniform lowp sampler2D g_input_texture;
+layout(binding = INPUT_TEX_SLOT) uniform lowp sampler2D g_input_tex;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -31,7 +31,7 @@ void main() {
     float closeness = 1.0 / (0.075 + 0.0);
     float weight = closeness * 0.214607;
     g_out_color = vec4(0.0);
-    g_out_color += textureLod(g_input_texture, norm_uvs, 0.0) * weight;
+    g_out_color += textureLod(g_input_tex, norm_uvs, 0.0) * weight;
 
     float normalization = weight;
 
@@ -43,37 +43,37 @@ void main() {
         depth = textureLod(g_depth_tex, norm_uvs - vec2(texel_size.x, 0), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.189879;
-        g_out_color += textureLod(g_input_texture, norm_uvs - vec2(texel_size.x, 0), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs - vec2(texel_size.x, 0), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs + vec2(texel_size.x, 0), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.189879;
-        g_out_color += textureLod(g_input_texture, norm_uvs + vec2(texel_size.x, 0), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs + vec2(texel_size.x, 0), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs - vec2(2.0 * texel_size.x, 0), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.131514;
-        g_out_color += textureLod(g_input_texture, norm_uvs - vec2(2.0 * texel_size.x, 0), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs - vec2(2.0 * texel_size.x, 0), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs + vec2(2.0 * texel_size.x, 0), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.131514;
-        g_out_color += textureLod(g_input_texture, norm_uvs + vec2(2.0 * texel_size.x, 0), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs + vec2(2.0 * texel_size.x, 0), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs - vec2(3.0 * texel_size.x, 0), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.071303;
-        g_out_color += textureLod(g_input_texture, norm_uvs - vec2(3.0 * texel_size.x, 0), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs - vec2(3.0 * texel_size.x, 0), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs + vec2(3.0 * texel_size.x, 0), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.071303;
-        g_out_color += textureLod(g_input_texture, norm_uvs + vec2(3.0 * texel_size.x, 0), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs + vec2(3.0 * texel_size.x, 0), 0) * weight;
         normalization += weight;
     } else {
         float depth;
@@ -81,37 +81,37 @@ void main() {
         depth = textureLod(g_depth_tex, norm_uvs - vec2(0, texel_size.y), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.189879;
-        g_out_color += textureLod(g_input_texture, norm_uvs - vec2(0, texel_size.y), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs - vec2(0, texel_size.y), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs + vec2(0, texel_size.y), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.189879;
-        g_out_color += textureLod(g_input_texture, norm_uvs + vec2(0, texel_size.y), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs + vec2(0, texel_size.y), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs - vec2(0, 2.0 * texel_size.y), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.131514;
-        g_out_color += textureLod(g_input_texture, norm_uvs - vec2(0, 2.0 * texel_size.y), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs - vec2(0, 2.0 * texel_size.y), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs + vec2(0, 2.0 * texel_size.y), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.131514;
-        g_out_color += textureLod(g_input_texture, norm_uvs + vec2(0, 2.0 * texel_size.y), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs + vec2(0, 2.0 * texel_size.y), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs - vec2(0, 3.0 * texel_size.y), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.071303;
-        g_out_color += textureLod(g_input_texture, norm_uvs - vec2(0, 3.0 * texel_size.y), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs - vec2(0, 3.0 * texel_size.y), 0) * weight;
         normalization += weight;
 
         depth = textureLod(g_depth_tex, norm_uvs + vec2(0, 3.0 * texel_size.y), 0).r;
         closeness = 1.0 / (0.075 + abs(center_depth - depth));
         weight = closeness * 0.071303;
-        g_out_color += textureLod(g_input_texture, norm_uvs + vec2(0, 3.0 * texel_size.y), 0) * weight;
+        g_out_color += textureLod(g_input_tex, norm_uvs + vec2(0, 3.0 * texel_size.y), 0) * weight;
         normalization += weight;
     }
 

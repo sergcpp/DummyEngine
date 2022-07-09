@@ -25,11 +25,11 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = SPEC_TEX_SLOT) uniform highp sampler2D g_spec_texture;
+layout(binding = SPEC_TEX_SLOT) uniform highp sampler2D g_spec_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
-layout(binding = REFL_TEX_SLOT) uniform highp sampler2D g_refl_texture;
-layout(binding = BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_texture;
+layout(binding = REFL_TEX_SLOT) uniform highp sampler2D g_refl_tex;
+layout(binding = BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_tex;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -44,7 +44,7 @@ void main() {
 
     ivec2 icoord = ivec2(gl_FragCoord.xy);
 
-    vec4 specular = texelFetch(g_spec_texture, icoord, 0);
+    vec4 specular = texelFetch(g_spec_tex, icoord, 0);
     if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
     float depth = texelFetch(g_depth_tex, icoord, 0).r;
@@ -76,11 +76,11 @@ void main() {
         ray_origin_ws /= ray_origin_ws.w;
 
         N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
-        brdf = texture(g_brdf_lut_texture, vec2(N_dot_V, specular.a)).xy;
+        brdf = texture(g_brdf_lut_tex, vec2(N_dot_V, specular.a)).xy;
     }
 
     vec3 kS = FresnelSchlickRoughness(N_dot_V, specular.rgb, specular.a);
-    vec3 refl_color = texelFetch(g_refl_texture, icoord, 0).rgb;
+    vec3 refl_color = texelFetch(g_refl_tex, icoord, 0).rgb;
 
     g_out_color = vec4(refl_color * (kS * brdf.x + brdf.y), 1.0);
 }

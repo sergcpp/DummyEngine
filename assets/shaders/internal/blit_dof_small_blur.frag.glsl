@@ -7,7 +7,7 @@
 
 #include "_fs_common.glsl"
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -30,10 +30,10 @@ void main() {
     vec2 px_offset = 0.5 / g_transform.zw;
 
     vec4 color = vec4(0.0);
-    color += textureLod(g_texture, norm_uvs - px_offset, 0.0);
-    color += textureLod(g_texture, norm_uvs + vec2(px_offset.x, -px_offset.y), 0.0);
-    color += textureLod(g_texture, norm_uvs + px_offset, 0.0);
-    color += textureLod(g_texture, norm_uvs + vec2(-px_offset.x, px_offset.y), 0.0);
+    color += textureLod(g_tex, norm_uvs - px_offset, 0.0);
+    color += textureLod(g_tex, norm_uvs + vec2(px_offset.x, -px_offset.y), 0.0);
+    color += textureLod(g_tex, norm_uvs + px_offset, 0.0);
+    color += textureLod(g_tex, norm_uvs + vec2(-px_offset.x, px_offset.y), 0.0);
     color /= 4.0;
 
     g_out_color = color;

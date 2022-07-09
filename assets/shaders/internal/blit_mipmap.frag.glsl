@@ -6,7 +6,7 @@
     precision mediump float;
 #endif
 
-layout(binding = 0) uniform mediump samplerCubeArray g_texture;
+layout(binding = 0) uniform mediump samplerCubeArray g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -42,5 +42,5 @@ vec3 gen_cubemap_coord(in vec2 txc, in int face) {
 }
 
 void main() {
-    g_out_color = textureLod(g_texture, vec4(gen_cubemap_coord(g_vtx_uvs, src_face), src_layer), src_level);
+    g_out_color = textureLod(g_tex, vec4(gen_cubemap_coord(g_vtx_uvs, src_face), src_layer), src_level);
 }

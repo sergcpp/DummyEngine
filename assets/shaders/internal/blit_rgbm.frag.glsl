@@ -4,7 +4,7 @@
     precision mediump float;
 #endif
 
-layout(binding = 0) uniform sampler2D g_texture;
+layout(binding = 0) uniform sampler2D g_tex;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -24,5 +24,5 @@ vec4 RGBMEncode(vec3 color) {
 }
 
 void main() {
-    g_out_color = RGBMEncode(texelFetch(g_texture, ivec2(g_vtx_uvs), 0).rgb);
+    g_out_color = RGBMEncode(texelFetch(g_tex, ivec2(g_vtx_uvs), 0).rgb);
 }

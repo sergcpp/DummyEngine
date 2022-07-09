@@ -33,8 +33,8 @@ layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndi
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
-layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_texture;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
+layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData g_materials[];
@@ -46,11 +46,11 @@ LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
 LAYOUT(location = 4) out highp vec3 g_vtx_sh_uvs[4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 8) out flat TEX_HANDLE g_diff_texture;
+    LAYOUT(location = 8) out flat TEX_HANDLE g_diff_tex;
     LAYOUT(location = 9) out flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 10) out flat TEX_HANDLE g_spec_texture;
-    LAYOUT(location = 11) out flat TEX_HANDLE g_sss_texture;
-    LAYOUT(location = 12) out flat TEX_HANDLE g_norm_detail_texture;
+    LAYOUT(location = 10) out flat TEX_HANDLE g_spec_tex;
+    LAYOUT(location = 11) out flat TEX_HANDLE g_sss_tex;
+    LAYOUT(location = 12) out flat TEX_HANDLE g_norm_detail_tex;
 #endif // BINDLESS_TEXTURES
 LAYOUT(location = 13) out flat vec4 material_params;
 
@@ -59,7 +59,7 @@ invariant gl_Position;
 void main(void) {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(g_instances_buffer, instance.x);
+    mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
     vec3 vtx_pos_ls = g_in_vtx_pos;
     float vtx_curvature = unpackUnorm4x8(g_in_vtx_color_packed).r;
@@ -90,11 +90,11 @@ void main(void) {
     MaterialData mat = g_materials[instance.y];
     material_params = mat.params;
 #if defined(BINDLESS_TEXTURES)
-    g_diff_texture = GET_HANDLE(mat.texture_indices[0]);
+    g_diff_tex = GET_HANDLE(mat.texture_indices[0]);
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_spec_texture = GET_HANDLE(mat.texture_indices[2]);
-    g_sss_texture = GET_HANDLE(mat.texture_indices[3]);
-    g_norm_detail_texture = GET_HANDLE(mat.texture_indices[4]);
+    g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
+    g_sss_tex = GET_HANDLE(mat.texture_indices[3]);
+    g_norm_detail_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
 
     gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws, 1.0);

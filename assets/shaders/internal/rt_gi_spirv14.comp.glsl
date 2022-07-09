@@ -26,7 +26,7 @@ uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_texture;
+layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
 
@@ -163,7 +163,7 @@ void main() {
     float ray_len = t_max;
 
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-        col = clamp(RGBMDecode(textureLod(g_env_texture, gi_ray_ws.xyz, 4.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
+        col = clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws.xyz, 4.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
     } else {
         int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
         int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);

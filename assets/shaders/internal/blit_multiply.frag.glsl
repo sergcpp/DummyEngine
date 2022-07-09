@@ -24,21 +24,21 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_REFL_SSR_TEX_SLOT) uniform sampler2D g_texture;
+layout(binding = REN_REFL_SSR_TEX_SLOT) uniform sampler2D g_tex;
 #if defined(MSAA_4)
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_mul_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_mul_tex;
 layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_tex;
 layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS g_norm_tex;
 #else
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_mul_texture;
+layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_mul_tex;
 layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_tex;
 layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D g_norm_tex;
 #endif
-layout(binding = REN_REFL_PREV_TEX_SLOT) uniform mediump sampler2D g_prev_texture;
-layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_texture;
-layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
+layout(binding = REN_REFL_PREV_TEX_SLOT) uniform mediump sampler2D g_prev_tex;
+layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_tex;
+layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -55,12 +55,12 @@ float LinearDepthTexelFetch(ivec2 hit_pixel) {
 
 void main() {
 #if defined(MSAA_4)
-    vec4 specular = 0.25 * (texelFetch(s_mul_texture, ivec2(g_vtx_uvs), 0) +
-                            texelFetch(s_mul_texture, ivec2(g_vtx_uvs), 1) +
-                            texelFetch(s_mul_texture, ivec2(g_vtx_uvs), 2) +
-                            texelFetch(s_mul_texture, ivec2(g_vtx_uvs), 3));
+    vec4 specular = 0.25 * (texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 0) +
+                            texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 1) +
+                            texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 2) +
+                            texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 3));
 #else
-    vec4 specular = texelFetch(s_mul_texture, ivec2(g_vtx_uvs), 0);
+    vec4 specular = texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 0);
 #endif
     if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
@@ -97,7 +97,7 @@ void main() {
     float weight_sum = 0.0, weight_sum1 = 0.0;
     for (int i = 0; i < 4; i++) {
         float weight = sample_weights[i] * norm_weights[i] * depth_weights[i];
-        vec3 uvs = texelFetch(g_texture, ivec2((g_vtx_uvs - vec2(0.5)) / 2.0) + offsets[i], 0).xyz;
+        vec3 uvs = texelFetch(g_tex, ivec2((g_vtx_uvs - vec2(0.5)) / 2.0) + offsets[i], 0).xyz;
 
         ssr_uvs.b += uvs.b * weight;
         weight_sum1 += weight;
@@ -138,30 +138,30 @@ void main() {
         int ix = int(g_vtx_uvs.x), iy = int(g_vtx_uvs.y);
         int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / int(g_shrd_data.res_and_fres.x));
 
-        highp uvec2 cell_data = texelFetch(g_cells_buffer, cell_index).xy;
+        highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);
         highp uint pcount = bitfieldExtract(cell_data.y, 8, 8);
 
         float total_fade = 0.0;
 
         for (uint i = offset; i < offset + pcount; i++) {
-            highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+            highp uint item_data = texelFetch(g_items_buf, int(i)).x;
             int pi = int(bitfieldExtract(item_data, 24, 8));
 
             float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, ray_origin_ws.xyz);
             float fade = 1.0 - smoothstep(0.9, 1.0, dist / g_shrd_data.probes[pi].pos_and_radius.w);
-            c0 += fade * RGBMDecode(textureLod(g_env_texture, vec4(refl_ray_ws, g_shrd_data.probes[pi].unused_and_layer.w), tex_lod));
+            c0 += fade * RGBMDecode(textureLod(g_env_tex, vec4(refl_ray_ws, g_shrd_data.probes[pi].unused_and_layer.w), tex_lod));
             total_fade += fade;
         }
 
         c0 /= max(total_fade, 1.0);
 
         N_dot_V = clamp(dot(normal, -view_ray_ws), 0.0, 1.0);
-        brdf = texture(g_brdf_lut_texture, vec2(N_dot_V, specular.a)).xy;
+        brdf = texture(g_brdf_lut_tex, vec2(N_dot_V, specular.a)).xy;
     }
 
     vec3 kS = FresnelSchlickRoughness(N_dot_V, specular.rgb, specular.a);
 
-    c0 = mix(c0, textureLod(g_prev_texture, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);
+    c0 = mix(c0, textureLod(g_prev_tex, ssr_uvs.rg, /*tex_lod*/ 0.0).xyz, ssr_uvs.b);
     g_out_color = vec4(c0 * (kS * brdf.x + brdf.y), 1.0);
 }

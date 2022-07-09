@@ -32,8 +32,8 @@ layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndi
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
-layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_texture;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
+layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData g_materials[];
@@ -45,7 +45,7 @@ LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
     LAYOUT(location = 9) out flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 10) out flat TEX_HANDLE g_spec_texture;
+    LAYOUT(location = 10) out flat TEX_HANDLE g_spec_tex;
 #endif // BINDLESS_TEXTURES
 
 invariant gl_Position;
@@ -53,7 +53,7 @@ invariant gl_Position;
 void main(void) {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(g_instances_buffer, instance.x);
+    mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
     vec3 vtx_pos_ws = (model_matrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(g_in_vtx_normal.xyz, 0.0)).xyz);
@@ -67,7 +67,7 @@ void main(void) {
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_spec_texture = GET_HANDLE(mat.texture_indices[2]);
+    g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
 
     gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws, 1.0);

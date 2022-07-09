@@ -14,7 +14,7 @@ UNIFORM_BLOCKS
 */
 
 layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_tex;
-layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D g_rand_texture;
+layout(binding = RAND_TEX_SLOT) uniform mediump sampler2D g_rand_tex;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -64,7 +64,7 @@ void main() {
 
     for (int i = 0; i < 3; i++) {
         mat2 transform;
-        transform[0] = texelFetch(g_rand_texture, rcoords, 0).xy;
+        transform[0] = texelFetch(g_rand_tex, rcoords, 0).xy;
         transform[1] = vec2(-transform[0].y, transform[0].x);
 
         vec2 sample_point = transform * sample_points[i];

@@ -16,11 +16,11 @@ PERM @MSAA_4
 */
 
 #if defined(MSAA_4)
-layout(binding = HDR_TEX_SLOT) uniform mediump sampler2DMS g_texture;
+layout(binding = HDR_TEX_SLOT) uniform mediump sampler2DMS g_tex;
 #else
-layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D g_texture;
+layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D g_tex;
 #endif
-layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_texture;
+layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_tex;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -92,15 +92,15 @@ void main() {
     vec3 col;
 
 #if defined(MSAA_4)
-    vec3 c0 = BilinearTexelFetch(g_texture, uvs, 0);
-    vec3 c1 = BilinearTexelFetch(g_texture, uvs, 1);
-    vec3 c2 = BilinearTexelFetch(g_texture, uvs, 2);
-    vec3 c3 = BilinearTexelFetch(g_texture, uvs, 3);
-    vec3 c4 = texture(g_blured_texture, norm_uvs).xyz;
+    vec3 c0 = BilinearTexelFetch(g_tex, uvs, 0);
+    vec3 c1 = BilinearTexelFetch(g_tex, uvs, 1);
+    vec3 c2 = BilinearTexelFetch(g_tex, uvs, 2);
+    vec3 c3 = BilinearTexelFetch(g_tex, uvs, 3);
+    vec3 c4 = texture(g_blured_tex, norm_uvs).xyz;
 
     col = 0.25 * (c0 + c1 + c2 + c3) + 0.1 * c4;
 #else
-    col = BilinearTexelFetch(g_texture, uvs) + 0.1 * texture(g_blured_texture, norm_uvs).xyz;
+    col = BilinearTexelFetch(g_tex, uvs) + 0.1 * texture(g_blured_tex, norm_uvs).xyz;
 #endif
 
     if (g_params.tonemap > 0.5) {
