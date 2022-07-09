@@ -124,10 +124,6 @@ void RpRTShadows::ExecuteRTInline(RpBuilder &builder) {
                        &uniform_params);
 
     vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
-
-    // vkCmdDispatch(cmd_buf,
-    //               (view_state_->act_res[0] + RTShadows::LOCAL_GROUP_SIZE_X - 1) / RTShadows::LOCAL_GROUP_SIZE_X,
-    //               (view_state_->act_res[1] + RTShadows::LOCAL_GROUP_SIZE_Y - 1) / RTShadows::LOCAL_GROUP_SIZE_Y, 1);
 }
 
 void RpRTShadows::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {

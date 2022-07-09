@@ -185,6 +185,50 @@ void Renderer::InitPipelines() {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
+    { // Prepare sun shadow mask
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "rt_shadow_prepare_mask", "internal/rt_shadow_prepare_mask.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_shadow_prepare_mask_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+    { // Sun RT Shadow classify tiles
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "rt_shadow_classify_tiles", "internal/rt_shadow_classify_tiles.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_shadow_classify_tiles_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+    { // Sun RT Shadow filter 0
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "rt_shadow_filter_0", "internal/rt_shadow_filter.comp.glsl@PASS_0");
+        assert(prog->ready());
+
+        if (!pi_shadow_filter_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+    { // Sun RT Shadow filter 1
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "rt_shadow_filter_1", "internal/rt_shadow_filter.comp.glsl@PASS_1");
+        assert(prog->ready());
+
+        if (!pi_shadow_filter_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+    { // Sun RT Shadow filter 2
+        Ren::ProgramRef prog =
+            sh_.LoadProgram(ctx_, "rt_shadow_filter_2", "internal/rt_shadow_filter.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_shadow_filter_[2].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
 }
 
 void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {

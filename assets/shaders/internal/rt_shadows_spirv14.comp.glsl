@@ -57,22 +57,6 @@ layout(std430, binding = TILE_LIST_SLOT) readonly buffer TileList {
 
 layout(binding = OUT_SHADOW_IMG_SLOT, r32ui) uniform restrict uimage2D g_out_shadow_img;
 
-vec3 offset_ray(vec3 p, vec3 n) { // TODO: avoid duplication!
-    const float Origin = 1.0f / 32.0f;
-    const float FloatScale = 1.0f / 65536.0f;
-    const float IntScale = 256.0f;
-
-    ivec3 of_i = ivec3(IntScale * n);
-
-    vec3 p_i = vec3(intBitsToFloat(floatBitsToInt(p.x) + ((p.x < 0.0) ? -of_i.x : of_i.x)),
-                    intBitsToFloat(floatBitsToInt(p.y) + ((p.y < 0.0) ? -of_i.y : of_i.y)),
-                    intBitsToFloat(floatBitsToInt(p.z) + ((p.z < 0.0) ? -of_i.z : of_i.z)));
-
-    return vec3(abs(p[0]) < Origin ? (p[0] + FloatScale * n[0]) : p_i[0],
-                abs(p[1]) < Origin ? (p[1] + FloatScale * n[1]) : p_i[1],
-                abs(p[2]) < Origin ? (p[2] + FloatScale * n[2]) : p_i[2]);
-}
-
 mat2x3 CreateTangentVectors(vec3 normal) {
 	vec3 up = abs(normal.z) < 0.99999 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0);
 
