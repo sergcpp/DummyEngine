@@ -17,7 +17,7 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray g_env_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -42,7 +42,7 @@ void main() {
 
     if (g_mip_level < 5.0) {
         // debug environment map
-        g_out_color.rgb = RGBMDecode(textureLod(g_env_texture, vec4(view_dir_ws, g_shrd_data.probes[g_probe_index].unused_and_layer.w), g_mip_level));
+        g_out_color.rgb = RGBMDecode(textureLod(g_env_tex, vec4(view_dir_ws, g_shrd_data.probes[g_probe_index].unused_and_layer.w), g_mip_level));
     } else {
         g_out_color.rgb = EvalSHIrradiance_NonLinear(view_dir_ws,
                                                   g_shrd_data.probes[g_probe_index].sh_coeffs[0],

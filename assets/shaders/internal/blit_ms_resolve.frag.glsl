@@ -8,7 +8,7 @@
 
 #include "_fs_common.glsl"
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS g_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS g_tex;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -19,8 +19,8 @@ in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    g_out_color = 0.25 * (texelFetch(g_texture, ivec2(g_vtx_uvs), 0) +
-                       texelFetch(g_texture, ivec2(g_vtx_uvs), 1) +
-                       texelFetch(g_texture, ivec2(g_vtx_uvs), 2) +
-                       texelFetch(g_texture, ivec2(g_vtx_uvs), 3));
+    g_out_color = 0.25 * (texelFetch(g_tex, ivec2(g_vtx_uvs), 0) +
+                       texelFetch(g_tex, ivec2(g_vtx_uvs), 1) +
+                       texelFetch(g_tex, ivec2(g_vtx_uvs), 2) +
+                       texelFetch(g_tex, ivec2(g_vtx_uvs), 3));
 }

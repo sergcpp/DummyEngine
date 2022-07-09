@@ -21,7 +21,7 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -226,6 +226,6 @@ vec4 FxaaPixelShader(vec2 pos,
 }
 
 void main() {
-    g_out_color = FxaaPixelShader(g_vtx_uvs * g_shrd_data.res_and_fres.xy / g_shrd_data.res_and_fres.zw, g_texture, texcoord_offset, 0.75, 0.125, 0.0625);
+    g_out_color = FxaaPixelShader(g_vtx_uvs * g_shrd_data.res_and_fres.xy / g_shrd_data.res_and_fres.zw, g_tex, texcoord_offset, 0.75, 0.125, 0.0625);
     g_out_color.a = 1.0;
 }

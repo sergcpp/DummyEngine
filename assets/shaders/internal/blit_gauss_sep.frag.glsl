@@ -7,11 +7,11 @@
 
 /*
 UNIFORMS
-    g_texture : 3
+    g_tex : 3
     vertical : 4
 */
 
-layout(binding = 0) uniform sampler2D g_texture;
+layout(binding = 0) uniform sampler2D g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -30,28 +30,28 @@ in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    vec4 col = texelFetch(g_texture, ivec2(g_vtx_uvs), 0);
+    vec4 col = texelFetch(g_tex, ivec2(g_vtx_uvs), 0);
 
     /*if(vertical < 0.5) {
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(4, 0), 0) * 0.0162162162;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(3, 0), 0) * 0.0540540541;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(2, 0), 0) * 0.1216216216;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(1, 0), 0) * 0.1945945946;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs), 0) * 0.2270270270;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(1, 0), 0) * 0.1945945946;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(2, 0), 0) * 0.1216216216;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(3, 0), 0) * 0.0540540541;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(4, 0), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(4, 0), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(3, 0), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(2, 0), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(1, 0), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs), 0) * 0.2270270270;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(1, 0), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(2, 0), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(3, 0), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(4, 0), 0) * 0.0162162162;
     } else {
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 4), 0) * 0.0162162162;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 3), 0) * 0.0540540541;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 2), 0) * 0.1216216216;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 1), 0) * 0.1945945946;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs), 0) * 0.2270270270;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 1), 0) * 0.1945945946;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 2), 0) * 0.1216216216;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 3), 0) * 0.0540540541;
-        g_out_color += texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 4), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 4), 0) * 0.0162162162;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 3), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 2), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 1), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs), 0) * 0.2270270270;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 1), 0) * 0.1945945946;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 2), 0) * 0.1216216216;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 3), 0) * 0.0540540541;
+        g_out_color += texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 4), 0) * 0.0162162162;
     }*/
 
     float alpha_weightened = 0.0;
@@ -60,76 +60,76 @@ void main() {
 
     if(vertical < 0.5) {
         vec4 c;
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(4, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(4, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0162162162;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(3, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(3, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0540540541;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(2, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(2, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1216216216;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(1, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(1, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1945945946;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.2270270270;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(1, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(1, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1945945946;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(2, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(2, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1216216216;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(3, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(3, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0540540541;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(4, 0), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(4, 0), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0162162162;
     } else {
         vec4 c;
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 4), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 4), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0162162162;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 3), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 3), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0540540541;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 2), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 2), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1216216216;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) - ivec2(0, 1), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) - ivec2(0, 1), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1945945946;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.2270270270;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 1), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 1), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1945945946;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 2), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 2), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.1216216216;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 3), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 3), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0540540541;
 
-        c = texelFetch(g_texture, ivec2(g_vtx_uvs) + ivec2(0, 4), 0);
+        c = texelFetch(g_tex, ivec2(g_vtx_uvs) + ivec2(0, 4), 0);
         g_out_color += c;
         alpha_weightened += c.a * 0.0162162162;
     }

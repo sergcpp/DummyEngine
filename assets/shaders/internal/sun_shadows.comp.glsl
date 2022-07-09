@@ -23,7 +23,7 @@ uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
+layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 
 layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform writeonly restrict image2D g_out_shadow_img;
 
@@ -89,7 +89,7 @@ void main() {
             g_vtx_sh_uvs2[i] = shadow_uvs[2];
         }
 
-        visibility = GetSunVisibility(lin_depth, g_shadow_texture, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
+        visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 
     imageStore(g_out_shadow_img, icoord, vec4(visibility));

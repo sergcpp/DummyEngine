@@ -6,7 +6,7 @@
     precision mediump float;
 #endif
 
-layout(binding = 0) uniform mediump samplerCubeArray g_texture;
+layout(binding = 0) uniform mediump samplerCubeArray g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -128,7 +128,7 @@ vec3 PrefilterEnvMap(float roughness, vec3 r) {
 
             float mip_level = roughness == 0.0 ? 0.0 : 0.5 * log2(sa_sample / sa_texel);
 
-            vec4 col = textureLod(g_texture, vec4(l, src_layer), mip_level);
+            vec4 col = textureLod(g_tex, vec4(l, src_layer), mip_level);
             res_col += RGBMDecode(col) * n_dot_l;
             res_weight += n_dot_l;
         }

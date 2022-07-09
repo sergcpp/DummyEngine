@@ -35,7 +35,7 @@ layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndi
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer g_instances_buffer;
+layout(binding = REN_INST_BUF_SLOT) uniform highp samplerBuffer g_instances_buf;
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData g_materials[];
@@ -54,10 +54,10 @@ layout(location = 2) out mediump vec3 g_vtx_norm_cs;
 layout(location = 3) out mediump vec3 g_vtx_tangent_cs;
 layout(location = 4) out highp vec3 g_vtx_sh_uvs_cs[4];
 #if defined(GL_ARB_bindless_texture)
-layout(location = 9) out flat uvec2 g_diff_texture;
+layout(location = 9) out flat uvec2 g_diff_tex;
 layout(location = 10) out flat uvec2 g_norm_tex;
-layout(location = 11) out flat uvec2 g_spec_texture;
-layout(location = 12) out flat uvec2 g_bump_texture;
+layout(location = 11) out flat uvec2 g_spec_tex;
+layout(location = 12) out flat uvec2 g_bump_tex;
 #endif // GL_ARB_bindless_texture
 #else
 out highp vec3 g_vtx_pos_cs;
@@ -66,10 +66,10 @@ out mediump vec3 g_vtx_norm_cs;
 out mediump vec3 g_vtx_tangent_cs;
 out highp vec3 g_vtx_sh_uvs_cs[4];
 #if defined(GL_ARB_bindless_texture)
-out flat uvec2 g_diff_texture;
+out flat uvec2 g_diff_tex;
 out flat uvec2 g_norm_tex;
-out flat uvec2 g_spec_texture;
-out flat uvec2 g_bump_texture;
+out flat uvec2 g_spec_tex;
+out flat uvec2 g_bump_tex;
 #endif // GL_ARB_bindless_texture
 #endif
 
@@ -78,7 +78,7 @@ out flat uvec2 g_bump_texture;
 void main(void) {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(g_instances_buffer, instance.x);
+    mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
     vec3 vtx_pos_ws = (model_matrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     vec3 vtx_nor_ws = normalize((model_matrix * vec4(g_in_vtx_normal.xyz, 0.0)).xyz);
@@ -105,9 +105,9 @@ void main(void) {
 
 #if defined(GL_ARB_bindless_texture)
     MaterialData mat = g_materials[instance.y];
-    g_diff_texture = texture_handles[mat.texture_indices[0]];
+    g_diff_tex = texture_handles[mat.texture_indices[0]];
     g_norm_tex = texture_handles[mat.texture_indices[1]];
-    g_spec_texture = texture_handles[mat.texture_indices[2]];
-    g_bump_texture = texture_handles[mat.texture_indices[3]];
+    g_spec_tex = texture_handles[mat.texture_indices[2]];
+    g_bump_tex = texture_handles[mat.texture_indices[3]];
 #endif // GL_ARB_bindless_texture
 }

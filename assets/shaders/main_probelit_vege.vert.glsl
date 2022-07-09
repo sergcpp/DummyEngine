@@ -33,8 +33,8 @@ layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndi
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buffer;
-layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_texture;
+layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
+layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 
 layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
     MaterialData g_materials[];
@@ -48,10 +48,10 @@ LAYOUT(location = 4) out highp vec4 g_vtx_sh_uvs0;
 LAYOUT(location = 5) out highp vec4 g_vtx_sh_uvs1;
 LAYOUT(location = 6) out highp vec4 g_vtx_sh_uvs2;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 7) out flat TEX_HANDLE g_diff_texture;
+    LAYOUT(location = 7) out flat TEX_HANDLE g_diff_tex;
     LAYOUT(location = 8) out flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 9) out flat TEX_HANDLE g_spec_texture;
-    LAYOUT(location = 10) out flat TEX_HANDLE g_mat3_texture; // unused
+    LAYOUT(location = 9) out flat TEX_HANDLE g_spec_tex;
+    LAYOUT(location = 10) out flat TEX_HANDLE g_mat3_tex; // unused
 #endif // BINDLESS_TEXTURES
 
 
@@ -60,10 +60,10 @@ invariant gl_Position;
 void main(void) {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(g_instances_buffer, instance.x);
+    mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
 
     // load vegetation properties
-    vec4 veg_params = texelFetch(g_instances_buffer, instance.x * INSTANCE_BUF_STRIDE + 3);
+    vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
 
     vec4 vtx_color = unpackUnorm4x8(g_in_vtx_color_packed);
 
@@ -72,7 +72,7 @@ void main(void) {
     vec4 wind_params = unpackUnorm4x8(floatBitsToUint(veg_params.x));
     vec4 wind_vec_ls = vec4(unpackHalf2x16(floatBitsToUint(veg_params.y)), unpackHalf2x16(floatBitsToUint(veg_params.z)));
 
-    vec3 vtx_pos_ls = TransformVegetation(g_in_vtx_pos, vtx_color, wind_scroll, wind_params, wind_vec_ls, g_noise_texture);
+    vec3 vtx_pos_ls = TransformVegetation(g_in_vtx_pos, vtx_color, wind_scroll, wind_params, wind_vec_ls, g_noise_tex);
     vec3 vtx_pos_ws = (model_matrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
     gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws, 1.0);
@@ -114,8 +114,8 @@ void main(void) {
 
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
-    g_diff_texture = GET_HANDLE(mat.texture_indices[0]);
+    g_diff_tex = GET_HANDLE(mat.texture_indices[0]);
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_spec_texture = GET_HANDLE(mat.texture_indices[2]);
+    g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
 }

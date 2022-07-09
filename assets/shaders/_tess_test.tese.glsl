@@ -22,7 +22,7 @@ LAYOUT(location = 2) in mediump vec3 g_vtx_norm_es[];
 LAYOUT(location = 3) in mediump vec3 g_vtx_tangent_es[];
 LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs_es[][4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 12) out flat TEX_HANDLE g_bump_texture;
+    LAYOUT(location = 12) out flat TEX_HANDLE g_bump_tex;
 #endif // BINDLESS_TEXTURES
 
 LAYOUT(location = 0) out highp vec3 g_vtx_pos;
@@ -33,7 +33,7 @@ LAYOUT(location = 4) out highp vec3 g_vtx_sh_uvs[4];
 LAYOUT(location = 8) out lowp float g_tex_height;
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_texture;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_tex;
 #endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -62,7 +62,7 @@ void main(void) {
     //float k = gl_TessLevelInner[0] / 64.0;
 
     //g_vtx_pos.y += 4.0 * sin(g_vtx_pos.x * 0.1);
-    g_tex_height = 0.5 * texture(SAMPLER2D(g_bump_texture), g_vtx_uvs).r * k;
+    g_tex_height = 0.5 * texture(SAMPLER2D(g_bump_tex), g_vtx_uvs).r * k;
     g_vtx_pos += 1.0 * 0.05 * normalize(g_vtx_normal) * g_tex_height * k;
 
     gl_Position = g_shrd_data.view_proj_matrix * vec4(g_vtx_pos, 1.0);

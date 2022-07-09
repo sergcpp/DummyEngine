@@ -6,7 +6,7 @@
     precision highp float;
 #endif
 
-layout(binding = 0) uniform mediump samplerCubeArray g_texture;
+layout(binding = 0) uniform mediump samplerCubeArray g_tex;
 layout(binding = 1) uniform mediump sampler2D g_rand;
 
 #if defined(VULKAN)
@@ -52,7 +52,7 @@ void main() {
     sh.z = rand_vec.z;
     sh.w = rand_vec.x;
 
-    vec3 color = RGBMDecode(textureLod(g_texture, vec4(rand_vec, src_layer), 0.0));
+    vec3 color = RGBMDecode(textureLod(g_tex, vec4(rand_vec, src_layer), 0.0));
 
     if (x < 8) {
         // red channel

@@ -28,7 +28,7 @@ layout(binding = 0) uniform mediump sampler2DMS g_depth_tex;
 #else
 layout(binding = 0) uniform mediump sampler2D g_depth_tex;
 #endif
-layout(binding = 1) uniform highp samplerBuffer g_nodes_buffer;
+layout(binding = 1) uniform highp samplerBuffer g_nodes_buf;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -107,14 +107,14 @@ void main() {
             };
         */
 
-        vec4 node_data1 = texelFetch(g_nodes_buffer, cur * 3 + 1);
-        vec4 node_data2 = texelFetch(g_nodes_buffer, cur * 3 + 2);
+        vec4 node_data1 = texelFetch(g_nodes_buf, cur * 3 + 1);
+        vec4 node_data2 = texelFetch(g_nodes_buf, cur * 3 + 2);
 
         if (!_bbox_test(ray_start_ws.xyz, inv_dir, 100.0, node_data1.xyz, node_data2.xyz)) continue;
 
         tree_complexity++;
 
-        uvec4 node_data0 = floatBitsToUint(texelFetch(g_nodes_buffer, cur * 3 + 0));
+        uvec4 node_data0 = floatBitsToUint(texelFetch(g_nodes_buf, cur * 3 + 0));
         if (node_data0.y == 0u) {
             stack[stack_size++] = int(node_data0.w);
             stack[stack_size++] = int(node_data0.z);

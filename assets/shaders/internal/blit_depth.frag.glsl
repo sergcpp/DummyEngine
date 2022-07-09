@@ -7,7 +7,7 @@
 
 #include "_fs_common.glsl"
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_texture;
+layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -30,7 +30,7 @@ in vec2 g_vtx_uvs;
 layout(location = 0) out vec4 g_out_color;
 
 void main() {
-    float depth = texelFetch(g_texture, ivec2(g_vtx_uvs), 0).r;
+    float depth = texelFetch(g_tex, ivec2(g_vtx_uvs), 0).r;
     if (near > 0.0001) {
         // cam is not orthographic
         depth = (near * far) / (depth * (near - far) + far);

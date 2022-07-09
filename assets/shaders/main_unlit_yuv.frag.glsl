@@ -18,8 +18,8 @@ $ModifyWarning
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_mat0_texture;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_mat1_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_mat0_tex;
+layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_mat1_tex;
 #endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -33,8 +33,8 @@ uniform SharedDataBlock {
 
 LAYOUT(location = 4) in vec2 g_vtx_uvs0;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 8) in flat TEX_HANDLE g_mat0_texture;
-    LAYOUT(location = 9) in flat TEX_HANDLE g_mat1_texture;
+    LAYOUT(location = 8) in flat TEX_HANDLE g_mat0_tex;
+    LAYOUT(location = 9) in flat TEX_HANDLE g_mat1_tex;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
@@ -42,8 +42,8 @@ layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
 
 void main(void) {
     vec3 col_yuv;
-    col_yuv.x = texture(SAMPLER2D(g_mat0_texture), g_vtx_uvs0).r;
-    col_yuv.yz = texture(SAMPLER2D(g_mat1_texture), g_vtx_uvs0).rg;
+    col_yuv.x = texture(SAMPLER2D(g_mat0_tex), g_vtx_uvs0).r;
+    col_yuv.yz = texture(SAMPLER2D(g_mat1_tex), g_vtx_uvs0).rg;
     col_yuv += vec3(-0.0627451017, -0.501960814, -0.501960814);
 
     vec3 col_rgb;

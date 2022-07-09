@@ -6,7 +6,7 @@
 #endif
 
 layout(binding = 0) uniform mediump sampler2D g_depth_tex;
-layout(binding = 1) uniform lowp sampler2D g_source_texture;
+layout(binding = 1) uniform lowp sampler2D g_source_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -34,7 +34,7 @@ void main() {
     float closeness = 1.0;
     float weight = closeness * 0.214607;
     g_out_color = vec4(0.0);
-    g_out_color += texelFetch(g_source_texture, icoord, 0) * weight;
+    g_out_color += texelFetch(g_source_tex, icoord, 0) * weight;
 
     float normalization = weight;
 
@@ -47,42 +47,42 @@ void main() {
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.189879;
-        g_out_color += texelFetch(g_source_texture, icoord - ivec2(1, 0), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord - ivec2(1, 0), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord + ivec2(1, 0), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.189879;
-        g_out_color += texelFetch(g_source_texture, icoord + ivec2(1, 0), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord + ivec2(1, 0), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord - ivec2(2, 0), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.131514;
-        g_out_color += texelFetch(g_source_texture, icoord - ivec2(2, 0), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord - ivec2(2, 0), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord + ivec2(2, 0), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.131514;
-        g_out_color += texelFetch(g_source_texture, icoord + ivec2(2, 0), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord + ivec2(2, 0), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord - ivec2(3, 0), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.071303;
-        g_out_color += texelFetch(g_source_texture, icoord - ivec2(3, 0), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord - ivec2(3, 0), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord + ivec2(3, 0), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.071303;
-        g_out_color += texelFetch(g_source_texture, icoord + ivec2(3, 0), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord + ivec2(3, 0), 0) * weight;
         normalization += weight;
     } else {
         float depth, diff;
@@ -91,42 +91,42 @@ void main() {
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.189879;
-        g_out_color += texelFetch(g_source_texture, icoord - ivec2(0, 1), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord - ivec2(0, 1), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord + ivec2(0, 1), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.189879;
-        g_out_color += texelFetch(g_source_texture, icoord + ivec2(0, 1), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord + ivec2(0, 1), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord - ivec2(0, 2), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.131514;
-        g_out_color += texelFetch(g_source_texture, icoord - ivec2(0, 2), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord - ivec2(0, 2), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord + ivec2(0, 2), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.131514;
-        g_out_color += texelFetch(g_source_texture, icoord + ivec2(0, 2), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord + ivec2(0, 2), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord - ivec2(0, 3), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.071303;
-        g_out_color += texelFetch(g_source_texture, icoord - ivec2(0, 3), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord - ivec2(0, 3), 0) * weight;
         normalization += weight;
 
         depth = texelFetch(g_depth_tex, icoord + ivec2(0, 3), 0).r;
         diff = abs(depth - cmp_depth);
         closeness = clamp(diff * diff, 0.0, 1.0);
         weight = closeness * 0.071303;
-        g_out_color += texelFetch(g_source_texture, icoord + ivec2(0, 3), 0) * weight;
+        g_out_color += texelFetch(g_source_tex, icoord + ivec2(0, 3), 0) * weight;
         normalization += weight;
     }
 

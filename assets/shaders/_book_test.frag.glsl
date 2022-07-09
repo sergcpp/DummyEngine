@@ -16,16 +16,16 @@ $ModifyWarning
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_texture;
-layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_texture;
-layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_texture;
-layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_texture;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buffer;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buffer;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buffer;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buffer;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
+layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
+layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
+layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
+layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
+layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -66,17 +66,17 @@ void main(void) {
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buffer, cell_index).xy;
+    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
                                           bitfieldExtract(cell_data.x, 24, 8));
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 albedo_color = texture(g_diff_texture, g_vtx_uvs).rgb;
+    vec3 albedo_color = texture(g_diff_tex, g_vtx_uvs).rgb;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     vec3 normal_color = texture(g_norm_tex, g_vtx_uvs).wyz;
-    vec4 specular_color = texture(g_spec_texture, g_vtx_uvs);
+    vec4 specular_color = texture(g_spec_tex, g_vtx_uvs);
 
     vec3 normal = normal_color * 2.0 - 1.0;
     normal = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent),
@@ -85,12 +85,12 @@ void main(void) {
     vec3 additional_light = vec3(0.0, 0.0, 0.0);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
 
-        vec4 pos_and_radius = texelFetch(g_lights_buffer, li * 3 + 0);
-        highp vec4 col_and_index = texelFetch(g_lights_buffer, li * 3 + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buffer, li * 3 + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, li * 3 + 0);
+        highp vec4 col_and_index = texelFetch(g_lights_buf, li * 3 + 1);
+        vec4 dir_and_spot = texelFetch(g_lights_buf, li * 3 + 2);
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);
@@ -121,7 +121,7 @@ void main(void) {
                 pp.xyz = pp.xyz * 0.5 + vec3(0.5);
                 pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
 
-                atten *= SampleShadowPCF5x5(g_shadow_texture, pp.xyz);
+                atten *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
             }
 
             additional_light += col_and_index.xyz * atten *
@@ -133,7 +133,7 @@ void main(void) {
     float total_fade = 0.0;
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buffer, int(i)).x;
+        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
         float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, g_vtx_pos);
@@ -152,10 +152,10 @@ void main(void) {
     float lambert = clamp(dot(normal, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
     float visibility = 0.0;
     if (lambert > 0.00001) {
-        visibility = GetSunVisibility(lin_depth, g_shadow_texture, g_vtx_sh_uvs);
+        visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_vtx_sh_uvs);
     }
 
-    vec4 text_color = textureLod(g_spec_texture, vec2(g_vtx_uvs.x, 1.0 - g_vtx_uvs.y), 0.0);
+    vec4 text_color = textureLod(g_spec_tex, vec2(g_vtx_uvs.x, 1.0 - g_vtx_uvs.y), 0.0);
 
     {   // SDF drawing
         float sig_dist = median(text_color.r, text_color.g, text_color.b);
@@ -167,7 +167,7 @@ void main(void) {
     }
 
     vec2 ao_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
-    float ambient_occlusion = textureLod(g_ao_texture, ao_uvs, 0.0).r;
+    float ambient_occlusion = textureLod(g_ao_tex, ao_uvs, 0.0).r;
     vec3 diffuse_color = albedo_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                          ambient_occlusion * indirect_col + additional_light);
 

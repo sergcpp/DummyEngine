@@ -18,7 +18,7 @@ $ModifyWarning
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_mat0_texture;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_mat0_tex;
 #endif // BINDLESS_TEXTURES
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -32,14 +32,14 @@ uniform SharedDataBlock {
 
 LAYOUT(location = 4) in vec2 g_vtx_uvs0;
 #if defined(BINDLESS_TEXTURES)
-LAYOUT(location = 8) in flat TEX_HANDLE g_mat0_texture;
+LAYOUT(location = 8) in flat TEX_HANDLE g_mat0_tex;
 #endif // BINDLESS_TEXTURES
 
 layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
 layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
 
 void main(void) {
-    vec4 col = texture(SAMPLER2D(g_mat0_texture), g_vtx_uvs0);
+    vec4 col = texture(SAMPLER2D(g_mat0_tex), g_vtx_uvs0);
 
     float scale = (col.b * (255.0 / 8.0)) + 1.0;
     float Y = col.a;
