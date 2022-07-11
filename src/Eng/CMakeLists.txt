@@ -180,8 +180,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpTransparent.cpp
                     Renderer/Passes/RpUpdateAccBuffers.h
                     Renderer/Passes/RpUpdateAccBuffers.cpp
-                    Renderer/Passes/RpUpdateBuffers.h
-                    Renderer/Passes/RpUpdateBuffers.cpp
                     Renderer/Passes/RpUpscale.h
                     Renderer/Passes/RpUpscale.cpp)
 
