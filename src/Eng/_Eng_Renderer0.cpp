@@ -46,7 +46,6 @@
 #include "Renderer/Passes/RpSSAO.cpp"
 #include "Renderer/Passes/RpTransparent.cpp"
 #include "Renderer/Passes/RpUpdateAccBuffers.cpp"
-#include "Renderer/Passes/RpUpdateBuffers.cpp"
 #include "Renderer/Passes/RpUpscale.cpp"
 #if defined(USE_GL_RENDER) // temporarily gl-only
 #include "Renderer/Passes/RpDOF.cpp"

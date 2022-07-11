@@ -46,7 +46,6 @@ extern "C" {
 #include "Passes/RpTAA.h"
 #include "Passes/RpTransparent.h"
 #include "Passes/RpUpdateAccBuffers.h"
-#include "Passes/RpUpdateBuffers.h"
 #include "Passes/RpUpscale.h"
 #include "PrimDraw.h"
 
