@@ -239,7 +239,7 @@ class Renderer {
     Ren::Pipeline pi_gi_reproject_, pi_gi_prefilter_, pi_gi_resolve_temporal_, pi_gi_blur_, pi_gi_post_blur_;
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
-        pi_shadow_filter_[3];
+        pi_shadow_filter_[3], pi_shadow_debug_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
@@ -289,7 +289,7 @@ class Renderer {
                              RpResRef depth_down_2x, FrameTextures &frame_textures);
 
     void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                          const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
+                          const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                           const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
@@ -297,7 +297,7 @@ class Renderer {
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               FrameTextures &frame_textures);
+                               FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                                FrameTextures &frame_textures);

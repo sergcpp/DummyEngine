@@ -524,7 +524,19 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugDenoise;
+            if (argc > 1) {
+                if (argv[1].val < 0.5) {
+                    flags ^= DebugReflDenoise;
+                } else if (argv[1].val < 1.5) {
+                    flags ^= DebugGIDenoise;
+                } else if (argv[2].val < 2.5) {
+                    flags ^= DebugShadowDenoise;
+                }
+            } else {
+                flags &= ~DebugReflDenoise;
+                flags &= ~DebugGIDenoise;
+                flags &= ~DebugShadowDenoise;
+            }
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;

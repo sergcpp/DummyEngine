@@ -403,6 +403,11 @@ void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::Wea
         }
     }
 
+    if (debug_denoise) {
+        frame_textures.gi = gi_tex;
+        return;
+    }
+
     RpResRef reproj_gi_tex, avg_gi_tex;
     RpResRef variance_temp_tex, sample_count_tex;
 
