@@ -2,6 +2,7 @@
 
 #include "../assets/shaders/internal/rt_shadow_classify_interface.glsl"
 #include "../assets/shaders/internal/rt_shadow_classify_tiles_interface.glsl"
+#include "../assets/shaders/internal/rt_shadow_debug_interface.glsl"
 #include "../assets/shaders/internal/rt_shadow_filter_interface.glsl"
 #include "../assets/shaders/internal/rt_shadow_prepare_mask_interface.glsl"
 #include "../assets/shaders/internal/rt_shadows_interface.glsl"
@@ -9,10 +10,11 @@
 
 void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+                                     const BindlessTextureData &bindless, FrameTextures &frame_textures,
+                                     const bool debug_denoise) {
     RpResRef indir_args;
 
-    { // Prepare atomic counter and ray length texture
+    { // Prepare atomic counter
         auto &rt_sh_prepare = rp_builder_.AddPass("RT SH PREPARE");
 
         struct PassData {
@@ -137,12 +139,11 @@ void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const 
                 {Ren::eBindTarget::Image, RTShadowClassify::RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
                 {Ren::eBindTarget::Image, RTShadowClassify::NOISE_IMG_SLOT, *noise_tex.ref}};
 
-            const Ren::Vec3u grp_count =
-                Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
-                               RTShadowClassify::LOCAL_GROUP_SIZE_X,
-                           (view_state_.act_res[1] + RTShadowClassify::LOCAL_GROUP_SIZE_Y - 1u) /
-                               RTShadowClassify::LOCAL_GROUP_SIZE_Y,
-                           1u};
+            const auto grp_count = Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
+                                                  RTShadowClassify::LOCAL_GROUP_SIZE_X,
+                                              (view_state_.act_res[1] + RTShadowClassify::LOCAL_GROUP_SIZE_Y - 1u) /
+                                                  RTShadowClassify::LOCAL_GROUP_SIZE_Y,
+                                              1u};
 
             RTShadowClassify::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
@@ -182,6 +183,55 @@ void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const 
 
         rp_rt_shadows_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
         rt_shadows.set_executor(&rp_rt_shadows_);
+    }
+
+    if (debug_denoise) {
+        auto &rt_shadow_debug = rp_builder_.AddPass("RT SH DEBUG");
+
+        struct PassData {
+            RpResRef hit_mask_tex;
+            RpResRef out_result_img;
+        };
+
+        auto *data = rt_shadow_debug.AllocPassData<PassData>();
+        data->hit_mask_tex = rt_shadow_debug.AddTextureInput(ray_hits_tex, Ren::eStageBits::ComputeShader);
+
+        { // shadow mask buffer
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawR8;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            frame_textures.sun_shadow = data->out_result_img =
+                rt_shadow_debug.AddStorageImageOutput("RT SH Debug", params, Ren::eStageBits::ComputeShader);
+        }
+
+        rt_shadow_debug.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &hit_mask_tex = builder.GetReadTexture(data->hit_mask_tex);
+            RpAllocTex &out_result_img = builder.GetWriteTexture(data->out_result_img);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::Tex2D, RTShadowDebug::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
+                {Ren::eBindTarget::Image, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
+
+            const uint32_t x_tiles = (view_state_.act_res[0] + 8u - 1u) / 8;
+            const uint32_t y_tiles = (view_state_.act_res[1] + 4u - 1u) / 4;
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + RTShadowDebug::LOCAL_GROUP_SIZE_X - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + RTShadowDebug::LOCAL_GROUP_SIZE_Y - 1u) / RTShadowDebug::LOCAL_GROUP_SIZE_Y,
+                1u};
+
+            RTShadowDebug::Params uniform_params;
+            uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+
+            Ren::DispatchCompute(pi_shadow_debug_, grp_count, bindings, COUNT_OF(bindings), &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+
+        return;
     }
 
     RpResRef shadow_mask;
@@ -539,7 +589,6 @@ void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const 
     }
 
     frame_textures.sun_shadow = output_tex;
-    // ray_hits_tex;
 }
 
 void Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,

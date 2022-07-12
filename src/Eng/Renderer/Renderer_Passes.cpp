@@ -229,6 +229,14 @@ void Renderer::InitPipelines() {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
+    { // Sun RT Shadow debug
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "rt_shadow_debug", "internal/rt_shadow_debug.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_shadow_debug_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
 }
 
 void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {

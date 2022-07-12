@@ -831,13 +831,14 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             if (ctx_.capabilities.raytracing && (list.render_flags & EnableRTShadows)) {
                 // RT Sun shadows
-                AddHQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures);
+                AddHQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures,
+                                      (list.render_flags & DebugShadowDenoise) != 0);
             } else {
                 AddLQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures);
             }
 
             // GI
-            AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugDenoise) != 0,
+            AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugGIDenoise) != 0,
                              list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
                              depth_hierarchy_tex, frame_textures);
 
@@ -862,7 +863,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
         if (cur_hq_ssr_enabled) {
-            AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugDenoise) != 0,
+            AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugReflDenoise) != 0,
                                 list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
                                 depth_hierarchy_tex, frame_textures);
         } else {
