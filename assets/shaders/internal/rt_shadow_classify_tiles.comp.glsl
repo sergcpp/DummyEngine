@@ -413,7 +413,8 @@ void TileClassification(uint group_index, uvec2 gid) {
         { // Perform moments and variance calculations
             bool is_disoccluded = IsDisoccluded(did, depth, velocity);
             vec3 previous_moments = is_disoccluded ? vec3(0.0, 0.0, 0.0) // Can't trust previous moments on disocclusion
-                                                   : texelFetch(g_prev_moments_tex, history_pos, 0).xyz;
+                                                   //: texelFetch(g_prev_moments_tex, history_pos, 0).xyz;
+                                                   : textureLod(g_prev_moments_tex, history_uv, 0.0).xyz;
 
             float old_m = previous_moments.x;
             float old_s = previous_moments.y;
@@ -460,8 +461,14 @@ void TileClassification(uint group_index, uvec2 gid) {
         }
 
         // Perform the temporal blend
+#if 1 // original code
         float history_weight = sqrt(max(8.0 - moments_current.z, 0.0) / 8.0);
         shadow_clamped = mix(shadow_clamped, shadow_current, mix(0.05, 1.0, history_weight));
+#else // linear accumulation
+        float accumulation_speed = 1.0 / max(moments_current.z, 1.0);
+        float weight = (1.0 - accumulation_speed);
+        shadow_clamped = mix(shadow_current, shadow_clamped, weight);
+#endif
     }
 
     // Output the results of the temporal pass
