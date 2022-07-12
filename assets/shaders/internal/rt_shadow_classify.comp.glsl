@@ -58,7 +58,7 @@ layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_t
 layout(binding = RAY_HITS_IMG_SLOT, r32ui) uniform writeonly uimage2D g_ray_hits_img;
 layout(binding = NOISE_IMG_SLOT, rg8) uniform writeonly image2D g_noise_img;
 
-void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool use_normal) {
+void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool use_normal, bool use_cascades) {
     bool is_in_viewport = (px_coord.x < g_params.img_size.x && px_coord.y < g_params.img_size.y);
 
     float depth = texelFetch(g_depth_tex, ivec2(px_coord), 0).r;
@@ -70,6 +70,10 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
 
         bool is_facing_sun = dot(normal, g_shrd_data.sun_dir.xyz) > 0.0;
         is_active_lane = is_active_lane && is_facing_sun;
+    }
+
+    if (use_cascades && is_active_lane) {
+        // TODO: ...
     }
 
     uint bit_index = LaneIdToBitShift(group_thread_id);
@@ -135,5 +139,5 @@ void main() {
     //if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
     //    return;
     //}
-    ClassifyTiles(dispatch_thread_id, group_thread_id, group_id, true /* use_normal */);
+    ClassifyTiles(dispatch_thread_id, group_thread_id, group_id, true /* use_normal */, true /* use_cascades */);
 }
