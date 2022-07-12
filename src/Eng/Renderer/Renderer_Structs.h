@@ -251,7 +251,7 @@ struct PassTiming {
 
 struct BackendInfo {
     uint64_t cpu_start_timepoint_us = 0, cpu_end_timepoint_us = 0;
-    uint64_t gpu_start_timepoint_us = 0, gpu_end_timepoint_us = 0;
+    uint64_t gpu_total_duration = 0;
     int64_t gpu_cpu_time_diff_us = 0;
 
     Ren::SmallVector<PassTiming, 256> pass_timings;

@@ -131,6 +131,7 @@ class Renderer {
     DynArray<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
+    int backend_gpu_start_ = -1, backend_gpu_end_ = -1;
     int64_t backend_time_diff_ = 0;
     float reduced_average_ = 0.0f;
     Ren::Vec4f prev_wind_scroll_;

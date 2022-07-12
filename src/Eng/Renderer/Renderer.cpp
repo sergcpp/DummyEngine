@@ -388,6 +388,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         gpu_draw_start = GetGpuTimeBlockingUs();
     }
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
+    // Write timestamp at the beginning of execution
+    backend_gpu_start_ = ctx_.WriteTimestamp(true);
 
     bool rendertarget_changed = false;
 
@@ -1257,10 +1259,18 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     backend_cpu_end_ = cpu_draw_end_us;
     backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
 
+    // Write timestamp at the end of execution
+    backend_gpu_end_ = ctx_.WriteTimestamp(false);
+
     __itt_task_end(__g_itt_domain);
 }
 
 void Renderer::InitBackendInfo() {
+    if (frame_index_ < 10) {
+        // Skip a few initial frames
+        return;
+    }
+
     backend_info_.pass_timings.clear();
     for (auto &t : rp_builder_.pass_timings_[ctx_.backend_frame()]) {
         PassTiming &new_t = backend_info_.pass_timings.emplace_back();
@@ -1270,6 +1280,11 @@ void Renderer::InitBackendInfo() {
 
     backend_info_.cpu_start_timepoint_us = backend_cpu_start_;
     backend_info_.cpu_end_timepoint_us = backend_cpu_end_;
+
+    backend_info_.gpu_total_duration = 0;
+    if (backend_gpu_start_ != -1 && backend_gpu_end_ != -1) {
+        backend_info_.gpu_total_duration = ctx_.GetTimestampIntervalDuration(backend_gpu_start_, backend_gpu_end_);
+    }
 }
 
 #undef BBOX_POINTS
