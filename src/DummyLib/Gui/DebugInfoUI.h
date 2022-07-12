@@ -44,7 +44,7 @@ class DebugInfoUI : public Gui::BaseElement {
     struct {
         uint64_t front_start_timepoint_us = 0, front_end_timepoint_us = 0;
         uint64_t back_cpu_start_timepoint_us = 0, back_cpu_end_timepoint_us = 0;
-        uint64_t back_gpu_start_timepoint_us = 0, back_gpu_end_timepoint_us = 0;
+        uint64_t back_gpu_duration = 0;
         int64_t gpu_cpu_time_diff_us = 0;
         TimeInterval swap_interval;
     } prev_timing_info_, cur_timing_info_;

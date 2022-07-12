@@ -47,6 +47,9 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
     back_info_smooth_.cpu_total_ms +=
         k * us_to_ms(backend_info.cpu_end_timepoint_us - backend_info.cpu_start_timepoint_us);
 
+    back_info_smooth_.gpu_total_ms *= alpha;
+    back_info_smooth_.gpu_total_ms += k * ns_to_ms(backend_info.gpu_total_duration);
+
     items_info_smooth_.lights_count *= alpha;
     items_info_smooth_.lights_count += k * items_info.lights_count;
     items_info_smooth_.decals_count *= alpha;
@@ -61,8 +64,7 @@ void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInf
     cur_timing_info_.front_end_timepoint_us = frontend_info.end_timepoint_us;
     cur_timing_info_.back_cpu_start_timepoint_us = backend_info.cpu_start_timepoint_us;
     cur_timing_info_.back_cpu_end_timepoint_us = backend_info.cpu_end_timepoint_us;
-    cur_timing_info_.back_gpu_start_timepoint_us = backend_info.gpu_start_timepoint_us;
-    cur_timing_info_.back_gpu_end_timepoint_us = backend_info.gpu_end_timepoint_us;
+    cur_timing_info_.back_gpu_duration = backend_info.gpu_total_duration;
     cur_timing_info_.gpu_cpu_time_diff_us = backend_info.gpu_cpu_time_diff_us;
     cur_timing_info_.swap_interval = swap_interval;
 }
@@ -140,6 +142,9 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         }
 
         vertical_offset -= font_height;
+        font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+
+        vertical_offset -= font_height;
         sprintf(text_buffer, "   BACK CPU TOTAL: %.3f ms", back_info_smooth_.cpu_total_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
@@ -166,7 +171,8 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "      DECALS DATA: %.3f kb", items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
+        sprintf(text_buffer, "      DECALS DATA: %.3f kb",
+                items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
@@ -179,26 +185,24 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
     }
 
     if (render_flags_ & DebugTimings) {
-        if (prev_timing_info_.front_end_timepoint_us) {
+        /*if (prev_timing_info_.front_end_timepoint_us) {
             auto prev_front_start = double(prev_timing_info_.front_start_timepoint_us),
                  prev_front_end = double(prev_timing_info_.front_end_timepoint_us),
                  prev_back_cpu_start = double(prev_timing_info_.back_cpu_start_timepoint_us),
                  prev_back_cpu_end = double(prev_timing_info_.back_cpu_end_timepoint_us),
-                 prev_back_gpu_start = double(prev_timing_info_.back_gpu_start_timepoint_us),
-                 prev_back_gpu_end = double(prev_timing_info_.back_gpu_end_timepoint_us),
+                 prev_back_gpu_duration = double(prev_timing_info_.back_gpu_duration),
                  prev_swap_start = double(prev_timing_info_.swap_interval.start_timepoint_us),
                  prev_swap_end = double(prev_timing_info_.swap_interval.end_timepoint_us),
                  next_front_start = double(cur_timing_info_.front_start_timepoint_us),
                  next_front_end = double(cur_timing_info_.front_end_timepoint_us),
                  next_back_cpu_start = double(cur_timing_info_.back_cpu_start_timepoint_us),
                  next_back_cpu_end = double(cur_timing_info_.back_cpu_end_timepoint_us),
-                 next_back_gpu_start = double(cur_timing_info_.back_gpu_start_timepoint_us),
-                 next_back_gpu_end = double(cur_timing_info_.back_gpu_end_timepoint_us),
+                 next_back_gpu_duration = double(cur_timing_info_.back_gpu_duration),
                  next_swap_start = double(cur_timing_info_.swap_interval.start_timepoint_us),
                  next_swap_end = double(cur_timing_info_.swap_interval.end_timepoint_us);
 
             prev_back_gpu_start -= double(prev_timing_info_.gpu_cpu_time_diff_us);
-            prev_back_gpu_end -= double(prev_timing_info_.gpu_cpu_time_diff_us);
+            prev_back_gpu_duration -= double(prev_timing_info_.gpu_cpu_time_diff_us);
             next_back_gpu_start -= double(cur_timing_info_.gpu_cpu_time_diff_us);
             next_back_gpu_end -= double(cur_timing_info_.gpu_cpu_time_diff_us);
 
@@ -298,6 +302,6 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
             vertical_offset -= font_height;
             font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-        }
+        }*/
     }
 }
