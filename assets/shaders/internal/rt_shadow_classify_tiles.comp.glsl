@@ -167,7 +167,7 @@ void SearchSpatialRegion(uvec2 gid, out bool all_in_light, out bool all_in_shado
 bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
     ivec2 dims = ivec2(g_params.img_size);
     vec2 texel_size = g_params.inv_img_size;
-    vec2 uv = (did + 0.5) * texel_size;
+    vec2 uv = (vec2(did) + vec2(0.5)) * texel_size;
     vec2 ndc = (2.0 * uv - 1.0) * vec2(1.0, -1.0);
     vec2 previous_uv = uv - velocity;
 
