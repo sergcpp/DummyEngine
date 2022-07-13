@@ -171,6 +171,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
                 dst_stream << "\r\n#line " << (line_counter + 2) << "\r\n";
             } else if (line.find("PERM ") == 0) { // NOLINT
+                dst_stream << line << "\r\n";
                 permutations.emplace_back(line.substr(5));
             } else {
                 InlineShaderConstants(ctx, line);
