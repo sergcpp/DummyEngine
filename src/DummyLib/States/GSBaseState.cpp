@@ -277,6 +277,16 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_rtShadow", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint64_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableRTShadows;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_updateProbes", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
