@@ -33,7 +33,7 @@ struct SDL_Window;
 class GameBase;
 
 class DummyApp {
-    bool fullscreen_ = false, quit_ = false;
+    bool fullscreen_ = false, minimized_ = false, quit_ = false;
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)
