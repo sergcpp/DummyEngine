@@ -24,7 +24,6 @@ int main() {
     test_packet_queue();
     test_types();
     test_var();
-#ifndef __EMSCRIPTEN__
     test_bitmsg();
     //test_pcp();
     //test_pmp();
@@ -32,6 +31,5 @@ int main() {
     test_tcp_socket();
     test_udp_connection();
     test_udp_socket();
-#endif
     puts("OK");
 }

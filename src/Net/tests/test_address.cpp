@@ -3,7 +3,6 @@
 #include "../Address.h"
 
 void test_address() {
-
     {
         Net::Address addr;
         assert(addr.a() == 0);
