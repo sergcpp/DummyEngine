@@ -52,7 +52,8 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 #endif
         VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME
+        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+        VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME
     };
     const uint32_t number_required_extensions = 2;
     const uint32_t number_optional_extensions = COUNT_OF(desired_extensions) - number_required_extensions;
@@ -105,6 +106,8 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 #ifndef NDEBUG
     const VkValidationFeatureEnableEXT enabled_validation_features[] = {
         VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
+        VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+        VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
         // VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
         //  VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
     };
