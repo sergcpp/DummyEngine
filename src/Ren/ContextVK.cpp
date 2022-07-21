@@ -13,13 +13,18 @@
 #endif
 
 namespace Ren {
+bool ignore_optick_errors = false;
+
 VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT flags,
                                                    const VkDebugReportObjectTypeEXT objectType, const uint64_t object,
                                                    const size_t location, const int32_t messageCode,
                                                    const char *pLayerPrefix, const char *pMessage, void *pUserData) {
     auto *ctx = reinterpret_cast<const Context *>(pUserData);
 
-    ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
+    bool ignore = ignore_optick_errors && (location == 0x45e90123 || location == 0xffffffff9cacd67a);
+    if (!ignore) {
+        ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
+    }
     return VK_FALSE;
 }
 
@@ -33,7 +38,7 @@ Ren::Context::~Context() {
     api_ctx_->present_image_refs.clear();
     ReleaseAll();
 
-    if (api_ctx_) {
+    if (api_ctx_ && api_ctx_->device) {
         vkDeviceWaitIdle(api_ctx_->device);
 
         for (int i = 0; i < MaxFramesInFlight; ++i) {

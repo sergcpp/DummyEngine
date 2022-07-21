@@ -6,6 +6,7 @@
 
 #include "TexUpdateFileBuf.h"
 
+#include <optick/optick.h>
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
@@ -63,6 +64,7 @@ void SceneManager::TextureLoaderProc() {
     using namespace SceneManagerInternal;
 
     __itt_thread_set_name("Texture loader");
+    OPTICK_FRAME("Texture loader");
 
     int iteration = 0;
 
@@ -81,6 +83,8 @@ void SceneManager::TextureLoaderProc() {
             if (tex_loader_stop_) {
                 break;
             }
+
+            OPTICK_EVENT("Texture Request");
 
             for (int i = 0; i < MaxSimultaneousRequests; i++) {
                 if (io_pending_tex_[i].state == eRequestState::Idle) {
@@ -118,6 +122,7 @@ void SceneManager::TextureLoaderProc() {
         }
 
         __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_read_file_str);
+        OPTICK_EVENT("Read File");
 
         req->buf->set_data_len(0);
         req->mip_offset_to_init = 0xff;
@@ -203,6 +208,7 @@ void SceneManager::TextureLoaderProc() {
 }
 
 void SceneManager::EstimateTextureMemory(const int portion_size) {
+    OPTICK_EVENT();
     if (scene_data_.textures.capacity() == 0) {
         return;
     }
@@ -244,6 +250,8 @@ void SceneManager::EstimateTextureMemory(const int portion_size) {
 
 void SceneManager::ProcessPendingTextures(const int portion_size) {
     using namespace SceneManagerConstants;
+
+    OPTICK_GPU_EVENT("ProcessPendingTextures");
 
     //
     // Process io pending textures
@@ -430,6 +438,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
 }
 
 void SceneManager::RebuildMaterialTextureGraph() {
+    OPTICK_EVENT();
+
     // reset texture user
     for (auto &texture : scene_data_.textures) {
         texture.first_user = 0xffffffff;
@@ -466,6 +476,8 @@ void SceneManager::RebuildMaterialTextureGraph() {
 
 void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], const int visible_count,
                                            const TexEntry desired_textures[], const int desired_count) {
+    OPTICK_EVENT();
+
     TexturesGCIteration(visible_textures, visible_count, desired_textures, desired_count);
 
     { // Update requested textures
@@ -514,6 +526,8 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], co
 void SceneManager::TexturesGCIteration(const TexEntry visible_textures[], const int visible_count,
                                        const TexEntry desired_textures[], const int desired_count) {
     using namespace SceneManagerConstants;
+
+    OPTICK_EVENT();
 
     const int FinishedPortion = 16;
 

@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
+#include <optick/optick.h>
 
 #include "SubPass.h"
 
@@ -935,6 +936,7 @@ void RpBuilder::BuildAliases() {
 }
 
 void RpBuilder::BuildResourceLinkedLists() {
+    OPTICK_EVENT();
     std::vector<RpResource *> all_resources;
 
     auto resource_compare = [](const RpResource *lhs, const RpResource *rhs) {
@@ -1001,6 +1003,8 @@ void RpBuilder::BuildResourceLinkedLists() {
 }
 
 void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sources_count) {
+    OPTICK_EVENT();
+
 #if 0 // reference-counted culling
     struct {
         RenderPass *owner;
@@ -1199,6 +1203,8 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
 }
 
 void RpBuilder::Execute() {
+    OPTICK_EVENT();
+
     // Swap history images
     for (RpAllocTex &tex : textures_) {
         if (tex.history_index != -1) {
@@ -1235,6 +1241,8 @@ void RpBuilder::Execute() {
     for (int j = 0; j < int(render_passes_.size()); ++j) {
         for (int i = render_passes_[j].subpass_beg; i < render_passes_[j].subpass_end; ++i) {
             RpSubpass &cur_pass = *reordered_subpasses_[i];
+            OPTICK_GPU_EVENT("Execute Pass");
+            OPTICK_TAG("Pass Name", cur_pass.name());
 
 #if !defined(NDEBUG) && defined(USE_GL_RENDER)
             Ren::ResetGLState();
@@ -1264,6 +1272,7 @@ void RpBuilder::Execute() {
 }
 
 void RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
+    OPTICK_GPU_EVENT("InsertResourceTransitions");
     auto cmd_buf = reinterpret_cast<VkCommandBuffer>(ctx_.current_cmd_buf());
 
     Ren::SmallVector<Ren::TransitionInfo, 32> res_transitions;

@@ -19,6 +19,12 @@
 
 #if defined(USE_VK_RENDER)
 #include <Ren/VKCtx.h>
+
+#include <optick/optick.h>
+
+namespace Ren {
+extern bool ignore_optick_errors;
+}
 #elif defined(USE_GL_RENDER)
 #include <Ren/GLCtx.h>
 #endif
@@ -175,26 +181,30 @@ void Viewer::Frame() {
 
     vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 
-    vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame], api_ctx->query_pools[api_ctx->backend_frame], 0,
-                        Ren::MaxTimestampQueries);
+    { // command buffer scope
+        OPTICK_GPU_CONTEXT(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
+        OPTICK_GPU_EVENT("Frame");
 
-    { // change layout from present_src to attachment_optimal
-        VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-        layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-        layout_transition_barrier.dstAccessMask =
-            VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        layout_transition_barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        layout_transition_barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        layout_transition_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        layout_transition_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        layout_transition_barrier.image = api_ctx->present_images[next_image_index];
-        VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        layout_transition_barrier.subresourceRange = resource_range;
+        vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame], api_ctx->query_pools[api_ctx->backend_frame],
+                            0, Ren::MaxTimestampQueries);
 
-        vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                             &layout_transition_barrier);
-    }
+        { // change layout from present_src to attachment_optimal
+            VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+            layout_transition_barrier.dstAccessMask =
+                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+            layout_transition_barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            layout_transition_barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            layout_transition_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            layout_transition_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            layout_transition_barrier.image = api_ctx->present_images[next_image_index];
+            VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            layout_transition_barrier.subresourceRange = resource_range;
+
+            vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                                 &layout_transition_barrier);
+        }
 #elif defined(USE_GL_RENDER)
     // Make sure all operations have finished
     api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
@@ -203,30 +213,33 @@ void Viewer::Frame() {
     Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
 
-    auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    state_manager->Draw();
+        auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
+        state_manager->Draw();
 
 #if defined(USE_VK_RENDER)
-    { // change layout from  attachment_optimal to present_src
-        VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-        layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
-        layout_transition_barrier.dstAccessMask = 0;
-        layout_transition_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        layout_transition_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-        layout_transition_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        layout_transition_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        layout_transition_barrier.image = api_ctx->present_images[next_image_index];
-        VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
-        layout_transition_barrier.subresourceRange = resource_range;
+        { // change layout from  attachment_optimal to present_src
+            VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            layout_transition_barrier.srcAccessMask = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+            layout_transition_barrier.dstAccessMask = 0;
+            layout_transition_barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+            layout_transition_barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            layout_transition_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            layout_transition_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            layout_transition_barrier.image = api_ctx->present_images[next_image_index];
+            VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
+            layout_transition_barrier.subresourceRange = resource_range;
 
-        vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                             &layout_transition_barrier);
+            vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                                 &layout_transition_barrier);
+        }
     }
 
     vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    Ren::ignore_optick_errors = true;
 
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 
@@ -247,6 +260,9 @@ void Viewer::Frame() {
     if (res != VK_SUCCESS) {
         ctx->log()->Error("Failed to submit into a queue!");
     }
+
+    OPTICK_GPU_FLIP(&api_ctx->swapchain);
+    Ren::ignore_optick_errors = false;
 
     VkPresentInfoKHR present_info = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR};
 
