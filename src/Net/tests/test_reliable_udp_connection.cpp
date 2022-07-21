@@ -1,6 +1,7 @@
 #include "test_common.h"
 
 #include <cstring>
+#include <thread>
 
 #include "../ReliableUDPConnection.h"
 
@@ -270,6 +271,8 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
         assert(client.connected());
         assert(server.connected());
@@ -324,6 +327,8 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
         assert(client.connected());
         assert(server.connected());
@@ -420,6 +425,8 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
         assert(client.connected());
@@ -531,6 +538,8 @@ void test_reliable_udp_connection() {
             all_packets_acked = clientAckCount == packet_count && serverAckCount == packet_count;
 
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
         assert(client.connected());
@@ -650,6 +659,8 @@ void test_reliable_udp_connection() {
             all_packets_acked = clientAckCount == packet_count / 2 && serverAckCount == packet_count / 2;
 
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
         assert(client.connected());
         assert(server.connected());
@@ -748,6 +759,8 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         assert(client.connected());

@@ -36,20 +36,24 @@ void test_tcp_socket() {
         assert(b.Listen());
 
         std::thread thr([&]() {
-            while (true) {
+            for(int i = 0; i < 1000; ++i) {
                 if (b.Accept()) {
-                    char buffer[256];
-                    int bytes_read = b.Receive(buffer, sizeof(buffer));
-                    if (bytes_read) {
-                        assert(bytes_read == sizeof(packet));
-                        assert(b.Send(packet, sizeof(packet)));
-                        bytes_read = a.Receive(buffer, sizeof(buffer));
-                        assert(bytes_read == sizeof(packet));
-                        break;
+                    for(int j = 0; j < 1000; ++j) {
+                        char buffer[256];
+                        int bytes_read = b.Receive(buffer, sizeof(buffer));
+                        if (bytes_read) {
+                            assert(bytes_read == sizeof(packet));
+                            assert(b.Send(packet, sizeof(packet)));
+                            bytes_read = a.Receive(buffer, sizeof(buffer));
+                            assert(bytes_read == sizeof(packet));
+                            return;
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     }
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
+            assert(false);
         });
         assert(a.Connect(Net::Address(127, 0, 0, 1, 30001)));
         assert(a.Send(packet, sizeof(packet)));
