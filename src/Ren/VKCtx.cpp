@@ -53,7 +53,9 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
         VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
         VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+#ifndef NDEBUG
         VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME
+#endif
     };
     const uint32_t number_required_extensions = 2;
     const uint32_t number_optional_extensions = COUNT_OF(desired_extensions) - number_required_extensions;

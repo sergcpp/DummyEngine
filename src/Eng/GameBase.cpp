@@ -11,6 +11,7 @@
 #include <Sys/Json.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
+#include <optick/optick.h>
 
 #include "FlowControl.h"
 #include "GameStateManager.h"
@@ -37,6 +38,7 @@ GameBase::GameBase(const int w, const int h, const char *device_name)
         throw std::runtime_error("Initialization failed!");
     }
     AddComponent(REN_CONTEXT_KEY, ren_ctx);
+    InitOptickGPUProfiler();
 
     auto snd_ctx = std::make_shared<Snd::Context>();
     snd_ctx->Init(log.get());
@@ -105,6 +107,8 @@ void GameBase::Resize(const int w, const int h) {
 void GameBase::Start() {}
 
 void GameBase::Frame() {
+    OPTICK_EVENT("GameBase::Frame");
+
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
@@ -137,8 +141,53 @@ void GameBase::Frame() {
 
     fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
 
-    state_manager->UpdateAnim(fr_info_.delta_time_us);
-    state_manager->Draw();
+    {
+        OPTICK_EVENT("state_manager->UpdateAnim");
+        state_manager->UpdateAnim(fr_info_.delta_time_us);
+    }
+    {
+        OPTICK_EVENT("state_manager->Draw");
+        state_manager->Draw();
+    }
 }
 
 void GameBase::Quit() { terminated = true; }
+
+#if defined(USE_VK_RENDER)
+
+#include <Ren/VKCtx.h>
+
+void GameBase::InitOptickGPUProfiler() {
+    auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    Ren::ApiContext *api_ctx = ren_ctx->api_ctx();
+
+    Optick::VulkanFunctions functions = {
+        vkGetPhysicalDeviceProperties,
+        (PFN_vkCreateQueryPool_)vkCreateQueryPool,
+        (PFN_vkCreateCommandPool_)vkCreateCommandPool,
+        (PFN_vkAllocateCommandBuffers_)vkAllocateCommandBuffers,
+        (PFN_vkCreateFence_)vkCreateFence,
+        vkCmdResetQueryPool,
+        (PFN_vkQueueSubmit_)vkQueueSubmit,
+        (PFN_vkWaitForFences_)vkWaitForFences,
+        (PFN_vkResetCommandBuffer_)vkResetCommandBuffer,
+        (PFN_vkCmdWriteTimestamp_)vkCmdWriteTimestamp,
+        (PFN_vkGetQueryPoolResults_)vkGetQueryPoolResults,
+        (PFN_vkBeginCommandBuffer_)vkBeginCommandBuffer,
+        (PFN_vkEndCommandBuffer_)vkEndCommandBuffer,
+        (PFN_vkResetFences_)vkResetFences,
+        vkDestroyCommandPool,
+        vkDestroyQueryPool,
+        vkDestroyFence,
+        vkFreeCommandBuffers,
+    };
+
+    OPTICK_GPU_INIT_VULKAN(&api_ctx->device, &api_ctx->physical_device, &api_ctx->graphics_queue,
+                           &api_ctx->graphics_family_index, 1, &functions);
+}
+
+#else
+
+void GameBase::InitOptickGPUProfiler() {}
+
+#endif

@@ -5,6 +5,7 @@
 #include <Sys/BinaryTree.h>
 #include <Sys/MonoAlloc.h>
 
+#include <optick/optick.h>
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
@@ -244,6 +245,7 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
 void SceneManager::UpdateObjects() {
     using namespace SceneManagerInternal;
 
+    OPTICK_EVENT("SceneManager::UpdateObjects");
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
 
     const auto *physes = (Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();

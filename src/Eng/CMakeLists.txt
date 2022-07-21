@@ -339,6 +339,6 @@ if(ENABLE_UNITYBUILD)
 endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc ${ITT_LIB} ${VPX_LIB})
+target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${ITT_LIB} ${VPX_LIB})
 
 add_subdirectory(_tests)

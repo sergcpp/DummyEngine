@@ -26,11 +26,11 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
         
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64)
-				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
+                set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64)
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86)
-				set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
+                set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
             endif()
             set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/include)
@@ -59,11 +59,11 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     include_directories(${SDL2_INCLUDE_DIRS})
     link_directories(${SDL2_LIBRARIES})
     link_directories(${ITT_LIBRARIES})
-	
+
     if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
         add_definitions(-DINTEL_NO_ITTNOTIFY_API)
     endif()
-	add_definitions(-DENABLE_OBJ_LABELS)
+    add_definitions(-DENABLE_OBJ_LABELS)
 else()
     add_definitions(-DINTEL_NO_ITTNOTIFY_API)
     set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/arm64-v8a)
@@ -117,6 +117,7 @@ add_subdirectory(Snd)
 add_subdirectory(Sys)
 
 add_subdirectory(libs/astc)
+add_subdirectory(libs/optick)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
@@ -126,31 +127,32 @@ set_target_properties(DummyApp
 
 set_target_properties(Eng
                       Net
-					  Phy
+                      Phy
                       Ray
                       Ren
                       SW
-					  Snd
+                      Snd
                       Sys PROPERTIES FOLDER Libs)
 
 set_target_properties(test_DummyLib
                       test_Eng
                       test_Net
-					  test_Phy
+                      test_Phy
                       test_Ray
                       test_Ren
                       test_SW
-					  test_Snd
+                      test_Snd
                       test_Sys PROPERTIES FOLDER Tests)
                       
 set_target_properties(astc
                       stb
-                      SPIRV-Reflect PROPERTIES FOLDER _)
+                      SPIRV-Reflect
+                      optick PROPERTIES FOLDER _)
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
 add_test(EngTest        Eng/_tests/test_Eng)
 add_test(NetTest        Net/tests/test_Net)
-add_test(PhyTest		Phy/tests/test_Phy)
+add_test(PhyTest        Phy/tests/test_Phy)
 add_test(RayTest        Ray/tests/test_Ray)
 add_test(RenTest        Ren/tests/test_Ren)
 add_test(SWTest         Ren/SW/tests/test_SW)
@@ -164,6 +166,6 @@ add_custom_target(Check COMMAND ${CMAKE_CTEST_COMMAND} DEPENDS test_DummyLib
                                                                test_Ray
                                                                test_Ren
                                                                test_SW
-															   test_Snd
+                                                               test_Snd
                                                                test_Sys)
 set_target_properties(Check PROPERTIES FOLDER Tests)

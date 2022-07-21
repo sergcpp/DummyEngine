@@ -18,6 +18,7 @@
 #include "../Viewer.h"
 
 #include <Ren/stb/stb_image.h>
+#include <optick/optick.h>
 
 namespace GSDrawTestInternal {
 #if defined(__ANDROID__)
@@ -379,6 +380,7 @@ void GSDrawTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) { GSBaseState:
 void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     using namespace GSDrawTestInternal;
 
+    OPTICK_EVENT("GSDrawTest::UpdateFixed");
     GSBaseState::UpdateFixed(dt_us);
 
     const Ren::Vec3f up = Ren::Vec3f{0, 1, 0}, side = Normalize(Cross(view_dir_, up));
@@ -658,6 +660,7 @@ bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
 }
 
 void GSDrawTest::UpdateAnim(uint64_t dt_us) {
+    OPTICK_EVENT();
     const float delta_time_s = dt_us * 0.000001f;
 
     // test test test

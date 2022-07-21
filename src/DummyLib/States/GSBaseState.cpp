@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 
+#include <optick/optick.h>
 #if !defined(RELEASE_FINAL) && !defined(__ANDROID__)
 #include <vtune/ittnotify.h>
 #endif
@@ -668,6 +669,7 @@ void GSBaseState::Exit() {
 }
 
 void GSBaseState::UpdateAnim(const uint64_t dt_us) {
+    OPTICK_EVENT("GSBaseState::UpdateAnim");
     cmdline_cursor_blink_us_ += dt_us;
     if (cmdline_cursor_blink_us_ > 1000000 || !cmdline_input_.empty()) {
         cmdline_cursor_blink_us_ = 0;
@@ -676,6 +678,8 @@ void GSBaseState::UpdateAnim(const uint64_t dt_us) {
 
 void GSBaseState::Draw() {
     using namespace GSBaseStateInternal;
+
+    OPTICK_GPU_EVENT("Draw");
 
     if (cmdline_enabled_) {
         // Process comandline input
@@ -836,6 +840,8 @@ void GSBaseState::Draw() {
 void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSBaseStateInternal;
 
+    OPTICK_EVENT();
+
     const float font_height = font_->height(root);
     const uint8_t text_color[4] = {255, 255, 255, 255};
 
@@ -952,6 +958,7 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
 
 void GSBaseState::BackgroundProc() {
     __itt_thread_set_name("Renderer Frontend Thread");
+    OPTICK_FRAME("Renderer Frontend Thread");
 
     std::unique_lock<std::mutex> lock(mtx_);
     while (!shutdown_) {
@@ -969,6 +976,7 @@ void GSBaseState::BackgroundProc() {
 
 void GSBaseState::UpdateFrame(int list_index) {
     { // Update loop using fixed timestep
+        OPTICK_EVENT("Update Loop");
         auto input_manager = game_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
         FrameInfo &fr = fr_info_;
@@ -1007,6 +1015,8 @@ void GSBaseState::UpdateFrame(int list_index) {
     scene_manager_->UpdateObjects();
 
     if (!use_pt_ && !use_lm_) {
+        OPTICK_EVENT("Prepare Frame");
+
         if (update_all_probes_) {
             if (probes_to_update_.empty()) {
                 const int obj_count = (int)scene_manager_->scene_data().objects.size();

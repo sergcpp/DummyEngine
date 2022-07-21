@@ -5,6 +5,7 @@
 #include <html5.h>
 #endif
 
+#include <optick/optick.h>
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
@@ -193,6 +194,7 @@ int DummyApp::Init(const int w, const int h, const char *device_name) {
 }
 
 void DummyApp::Destroy() {
+    OPTICK_SHUTDOWN();
     viewer_.reset();
 
     ReleaseDC(window_handle_, device_context_);
@@ -266,6 +268,7 @@ int DummyApp::Run(int argc, char *argv[]) {
 
     bool done = false;
     while (!done) {
+        OPTICK_FRAME("Main Thread");
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
 
         MSG msg;
