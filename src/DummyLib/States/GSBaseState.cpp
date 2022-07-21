@@ -696,6 +696,12 @@ void GSBaseState::Draw() {
                 if (cmdline_history_.size() > MAX_CMD_LINES) {
                     cmdline_history_.erase(cmdline_history_.begin());
                 }
+            } else if (evt.key_code == KeyTab) {
+                Ren::String hint_str;
+                const int index = cmdline_->NextHint(cmdline_history_.back().c_str(), -1, hint_str);
+                if (!hint_str.empty()) {
+                    cmdline_history_.back() = hint_str.c_str();
+                }
             } else if (evt.key_code == KeyGrave) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.emplace_back();
@@ -926,11 +932,7 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
     case RawInputEv::KeyDown: {
         if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
             shift_down_ = true;
-        } else if (evt.key_code == KeyDelete) {
-            if (cmdline_enabled_) {
-                cmdline_input_.push_back(evt);
-            }
-        } else if (evt.key_code == KeyReturn) {
+        } else if (evt.key_code == KeyDelete || evt.key_code == KeyReturn || evt.key_code == KeyTab) {
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
             }
