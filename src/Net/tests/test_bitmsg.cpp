@@ -15,7 +15,6 @@ class TestMsg : public Net::BitMsg {
 };
 
 void test_bitmsg() {
-#if !defined(_MSC_VER)
     { // Wrong bits write number should throw runtime_error
         TestMsg msg;
         assert_throws(msg.WriteBits(0, 0));
@@ -237,5 +236,4 @@ void test_bitmsg() {
         float f1 = *reinterpret_cast<float *>(&temp);
         assert(msg.Read<float>() == f1);
     }
-#endif
 }
