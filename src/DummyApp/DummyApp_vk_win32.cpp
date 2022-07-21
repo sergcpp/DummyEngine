@@ -203,10 +203,15 @@ void DummyApp::Destroy() {
     UnregisterClass("MainWindowClass", GetModuleHandle(nullptr));
 }
 
-void DummyApp::Frame() { viewer_->Frame(); }
+void DummyApp::Frame() {
+    if (!minimized_) {
+        viewer_->Frame();
+    }
+}
 
 void DummyApp::Resize(const int w, const int h) {
-    if (viewer_) {
+    minimized_ = (w == 0 || h == 0);
+    if (viewer_ && !minimized_) {
         viewer_->Resize(w, h);
     }
 }
