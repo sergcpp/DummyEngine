@@ -324,9 +324,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
 
                 uint16_t initialized_mips = req->ref->initialized_mips();
                 int last_initialized_mip = 0;
-                while (initialized_mips >>= 1) {
-                    ++last_initialized_mip;
-                }
+                for (uint16_t temp = initialized_mips; temp >>= 1; ++last_initialized_mip)
+                    ;
 
                 const Ren::Tex2DParams &p = req->ref->params;
 
@@ -337,6 +336,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                                   req->orig_format, req->orig_block, bool(p.flags & Ren::eTexFlagBits::SRGB),
                                   stage_buf->cmd_buf, ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
+                initialized_mips = req->ref->initialized_mips();
+
                 int data_off = int(req->buf->data_off());
                 for (int i = int(req->mip_offset_to_init); i < int(req->mip_offset_to_init) + req->mip_count_to_init;
                      i++) {
@@ -346,8 +347,11 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
                     }
                     const int data_len = Ren::GetMipDataLenBytes(w, h, req->orig_format, req->orig_block);
 
-                    req->ref->SetSubImage(i - req->mip_offset_to_init, 0, 0, w, h, req->orig_format,
-                                          stage_buf->stage_buf(), stage_buf->cmd_buf, data_off, data_len);
+                    const int mip_index = i - req->mip_offset_to_init;
+                    if ((initialized_mips & (1u << mip_index)) == 0) {
+                        req->ref->SetSubImage(mip_index, 0, 0, w, h, req->orig_format,
+                                              stage_buf->stage_buf(), stage_buf->cmd_buf, data_off, data_len);
+                    }
 
                     data_off += data_len;
                     w = std::max(w / 2, 1);
@@ -419,8 +423,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
             const int h = std::max(p.h >> p.mip_count, 1);
 
             req.ref->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                             bool(p.flags & Ren::eTexFlagBits::SRGB),
-                             ren_ctx_.current_cmd_buf(), ren_ctx_.default_mem_allocs(), ren_ctx_.log());
+                             bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
+                             ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
             p.sampling.min_lod.from_float(-1.0f);
             req.ref->SetSampling(p.sampling);
@@ -627,6 +631,9 @@ void SceneManager::StopTextureLoader() {
 void SceneManager::ForceTextureReload() {
     StopTextureLoader();
 
+    std::vector<Ren::TransitionInfo> img_transitions;
+    img_transitions.reserve(scene_data_.textures.size());
+
     // Reset textures to 1x1 mip and send to processing
     for (auto it = std::begin(scene_data_.textures); it != std::end(scene_data_.textures); ++it) {
         Ren::Tex2DParams p = it->params;
@@ -636,8 +643,10 @@ void SceneManager::ForceTextureReload() {
         const int h = std::max(p.h >> p.mip_count, 1);
 
         it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
-                    bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(),
-                    ren_ctx_.default_mem_allocs(), ren_ctx_.log());
+                    bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(), ren_ctx_.default_mem_allocs(),
+                    ren_ctx_.log());
+
+        img_transitions.emplace_back(&(*it), Ren::eResState::ShaderResource);
 
         p.sampling.min_lod.from_float(-1.0f);
         it->ApplySampling(p.sampling, ren_ctx_.log());
@@ -648,6 +657,11 @@ void SceneManager::ForceTextureReload() {
         SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, req.ref);
 
         requested_textures_.push_back(std::move(req));
+    }
+
+    if (!img_transitions.empty()) {
+        Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
+                                      img_transitions.data(), int(img_transitions.size()));
     }
 
     std::fill(std::begin(scene_data_.texture_mem_buckets), std::end(scene_data_.texture_mem_buckets), 0);
