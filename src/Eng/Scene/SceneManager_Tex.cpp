@@ -77,8 +77,21 @@ void SceneManager::TextureLoaderProc() {
         {
             std::unique_lock<std::mutex> lock(tex_requests_lock_);
             tex_loader_cnd_.wait(lock, [this, &req] {
-                return tex_loader_stop_ ||
-                       (!requested_textures_.empty() && scene_data_.estimated_texture_mem.load() < TextureMemoryLimit);
+                if (tex_loader_stop_) {
+                    return true;
+                }
+
+                if (requested_textures_.empty() || scene_data_.estimated_texture_mem.load() > TextureMemoryLimit) {
+                    return false;
+                }
+
+                for (int i = 0; i < MaxSimultaneousRequests; i++) {
+                    if (io_pending_tex_[i].state == eRequestState::Idle) {
+                        return true;
+                    }
+                }
+
+                return false;
             });
             if (tex_loader_stop_) {
                 break;
@@ -257,6 +270,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
     // Process io pending textures
     //
     for (int i = 0; i < portion_size; i++) {
+        OPTICK_EVENT("Process io pending textures");
+
         TextureRequestPending *req = nullptr;
         Sys::eFileReadResult res;
         size_t bytes_read = 0;
@@ -311,6 +326,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
         if (req) {
             const Ren::String &tex_name = req->ref->name();
 
+            OPTICK_GPU_EVENT("Process pending texture");
+
             if (res == Sys::eFileReadResult::Successful) {
                 assert(dynamic_cast<TextureUpdateFileBuf *>(req->buf.get()));
                 auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
@@ -349,8 +366,8 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
 
                     const int mip_index = i - req->mip_offset_to_init;
                     if ((initialized_mips & (1u << mip_index)) == 0) {
-                        req->ref->SetSubImage(mip_index, 0, 0, w, h, req->orig_format,
-                                              stage_buf->stage_buf(), stage_buf->cmd_buf, data_off, data_len);
+                        req->ref->SetSubImage(mip_index, 0, 0, w, h, req->orig_format, stage_buf->stage_buf(),
+                                              stage_buf->cmd_buf, data_off, data_len);
                     }
 
                     data_off += data_len;
@@ -391,26 +408,27 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
         }
     }
 
-    //
-    // Animate lod transition to avoid sudden popping
-    //
-    for (auto it = std::begin(lod_transit_textures_); it != std::end(lod_transit_textures_);) {
-        Ren::SamplingParams cur_sampling = (*it)->params.sampling;
-        cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
-        (*it)->SetSampling(cur_sampling);
+    { // Animate lod transition to avoid sudden popping
+        OPTICK_EVENT("lod transition");
+        for (auto it = std::begin(lod_transit_textures_); it != std::end(lod_transit_textures_);) {
+            Ren::SamplingParams cur_sampling = (*it)->params.sampling;
+            cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
+            (*it)->SetSampling(cur_sampling);
 
-        SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, *it);
+            SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, *it);
 
-        if (cur_sampling.min_lod.value() == 0) {
-            // transition is done, remove texture from list
-            it = lod_transit_textures_.erase(it);
-        } else {
-            ++it;
+            if (cur_sampling.min_lod.value() == 0) {
+                // transition is done, remove texture from list
+                it = lod_transit_textures_.erase(it);
+            } else {
+                ++it;
+            }
         }
     }
 
     { // Process GC'ed textures
         std::lock_guard<std::mutex> lock(gc_textures_mtx_);
+        OPTICK_GPU_EVENT("GC textures");
         for (int i = 0; i < portion_size && !gc_textures_.empty(); i++) {
             auto &req = gc_textures_.front();
 
