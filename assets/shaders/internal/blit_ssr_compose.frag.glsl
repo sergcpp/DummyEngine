@@ -126,7 +126,7 @@ void main() {
         ray_origin_ws /= ray_origin_ws.w;
 
         highp float k = log2(d0 / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-        int slice = int(floor(k * float(REN_GRID_RES_Z)));
+        int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
 
         int ix = icoord.x, iy = icoord.y;
         int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / int(g_shrd_data.res_and_fres.x));

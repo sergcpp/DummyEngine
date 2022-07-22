@@ -154,7 +154,7 @@ vec2 ParallaxOcclusionMapping(vec3 dir, vec2 uvs) {
 void main(void) {
     highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
     highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = int(floor(k * float(REN_GRID_RES_Z)));
+    int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
 
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
