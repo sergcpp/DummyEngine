@@ -5,6 +5,7 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
+#include <optick/optick.h>
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
@@ -107,6 +108,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     using namespace RendererInternal;
     using namespace Ren;
 
+    OPTICK_EVENT();
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_gather_str);
 
     const uint64_t iteration_start = Sys::GetTimeUs();
@@ -229,6 +231,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const uint64_t occluders_start = Sys::GetTimeUs();
 
+    OPTICK_PUSH("OCCLUDERS");
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_proc_occluders_str);
 
     const Mat4f &cull_view_from_world = view_from_world, &cull_clip_from_view = list.draw_cam.proj_matrix();
@@ -296,11 +299,14 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    OPTICK_POP();
     __itt_task_end(__g_itt_domain);
 
     /**********************************************************************************/
     /*                        MESHES/LIGHTS/DECALS/PROBES GATHERING                   */
     /**********************************************************************************/
+
+    OPTICK_PUSH("MAIN GATHERING");
 
     const uint64_t main_gather_start = Sys::GetTimeUs();
 
@@ -653,10 +659,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    OPTICK_POP();
+
     /**********************************************************************************/
     /*                                SHADOWMAP GATHERING                             */
     /**********************************************************************************/
 
+    OPTICK_PUSH("SHADOW GATHERING");
     const uint64_t shadow_gather_start = Sys::GetTimeUs();
 
     if (lighting_enabled && scene.root_node != 0xffffffff && shadows_enabled && Length2(list.env.sun_dir) > 0.9f &&
@@ -1310,10 +1319,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
     }
 
+    OPTICK_POP();
+
     /***********************************************************************************/
     /*                                OPTIMIZING DRAW LISTS                            */
     /***********************************************************************************/
 
+    OPTICK_PUSH("OPTIMIZING");
     const uint64_t drawables_sort_start = Sys::GetTimeUs();
 
     { // Sort drawables to optimize state switches
@@ -1543,10 +1555,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     std::sort(list.desired_textures.data, list.desired_textures.data + list.desired_textures.count,
               [](const TexEntry &t1, const TexEntry &t2) { return t1.sort_key < t2.sort_key; });
 
+    OPTICK_POP();
+
     /**********************************************************************************/
     /*                                ASSIGNING TO CLUSTERS                           */
     /**********************************************************************************/
 
+    OPTICK_PUSH("ASSIGNING");
     const uint64_t items_assignment_start = Sys::GetTimeUs();
 
     if (list.lights.count || list.decals.count || list.probes.count) {
@@ -1607,6 +1622,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     ++frame_index_;
 
+    OPTICK_POP();
     __itt_task_end(__g_itt_domain);
 }
 
@@ -1615,6 +1631,8 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
                                          std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
+
+    OPTICK_EVENT();
 
     const float epsilon = 0.001f;
 
