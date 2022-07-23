@@ -185,8 +185,8 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         ifstream mesh_file(view_file_name, ios::binary);
         if (mesh_file) {
             Ren::eMeshLoadStatus load_status;
-            view_mesh_ = ctx_.LoadMesh(out_file_name.c_str(), &mesh_file,
-                                       std::bind(&ModlApp::OnMaterialNeeded, this, _1), &load_status);
+            view_mesh_ = ctx_->LoadMesh(out_file_name.c_str(), &mesh_file,
+                                        std::bind(&ModlApp::OnMaterialNeeded, this, _1), &load_status);
             assert(load_status == Ren::eMeshLoadStatus::CreatedFromData);
 
             Ren::Vec3f bbox_min = view_mesh_->bbox_min(), bbox_max = view_mesh_->bbox_max();
@@ -197,7 +197,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
             if (!anim_file_name.empty()) {
                 ifstream anim_file(anim_file_name, ios::binary);
                 if (anim_file) {
-                    Ren::AnimSeqRef anim_ref = ctx_.LoadAnimSequence(anim_file_name.c_str(), anim_file);
+                    Ren::AnimSeqRef anim_ref = ctx_->LoadAnimSequence(anim_file_name.c_str(), anim_file);
 
                     Ren::Mesh *m = view_mesh_.get();
                     m->skel()->AddAnimSequence(anim_ref);
@@ -252,7 +252,8 @@ int ModlApp::Init(const int w, const int h) {
     SDL_GL_SetSwapInterval(1);
 #endif
 
-    ctx_.Init(w, h, &log_, nullptr);
+    ctx_.reset(new Ren::Context);
+    ctx_->Init(w, h, &log_, nullptr);
     InitInternal();
 
     Sys::InitWorker();
@@ -290,8 +291,8 @@ int ModlApp::Init(const int w, const int h) {
         p.format = Ren::eTexFormat::RawRGB888;
 
         Ren::eTexLoadStatus status;
-        checker_tex_ = ctx_.LoadTexture2D("__diag_checker", &checker_data[0], int(checker_data.size()), p,
-                                          ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        checker_tex_ = ctx_->LoadTexture2D("__diag_checker", &checker_data[0], int(checker_data.size()), p,
+                                           ctx_->default_stage_bufs(), ctx_->default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -320,7 +321,7 @@ void ModlApp::Frame() {
         DrawMeshSkeletal(view_mesh_, dt_s);
     }
 
-    ctx_.ProcessTasks();
+    ctx_->ProcessTasks();
 }
 
 void ModlApp::PollEvents() {
@@ -386,8 +387,12 @@ void ModlApp::Destroy() {
     DestroyInternal();
 
     view_mesh_.Release();
+    diag_prog_.Release();
+    diag_colored_prog_.Release();
+    diag_skinned_prog_.Release();
+    skinning_prog_.Release();
     checker_tex_.Release();
-    ctx_.ReleaseAll();
+    ctx_.reset();
 
     Sys::StopWorker();
 
@@ -965,10 +970,10 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                 unique_ptr<char[]> mat_data(new char[(size_t)file_size]);
                 mat_file.read(mat_data.get(), file_size);
 
-                Ren::MaterialRef mat_ref = ctx_.LoadMaterial(materials[i].c_str(), mat_data.get(), nullptr,
-                                                             std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
-                                                             std::bind(&ModlApp::OnTextureNeeded, this, _1),
-                                                             std::bind(&ModlApp::OnSamplerNeeded, this, _1));
+                Ren::MaterialRef mat_ref = ctx_->LoadMaterial(
+                    materials[i].c_str(), mat_data.get(), nullptr,
+                    std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
+                    std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
                 alpha_test = (bool)(mat->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
             } else {
@@ -1633,18 +1638,18 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
     Ren::eTexLoadStatus status;
     Ren::Tex2DRef ret =
-        ctx_.LoadTexture2D(name, nullptr, 0, {}, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        ctx_->LoadTexture2D(name, nullptr, 0, {}, ctx_->default_stage_bufs(), ctx_->default_mem_allocs(), &status);
     if (!ret->ready()) {
         std::string tex_name = name;
         Sys::LoadAssetComplete((std::string("assets_pc/textures/") + tex_name).c_str(),
                                [this, tex_name](void *data, int size) {
-                                   ctx_.ProcessSingleTask([this, tex_name, data, size]() {
+                                   ctx_->ProcessSingleTask([this, tex_name, data, size]() {
                                        Ren::Tex2DParams p;
                                        p.sampling.filter = Ren::eTexFilter::Trilinear;
 
                                        Ren::eTexLoadStatus status;
-                                       ctx_.LoadTexture2D(tex_name.c_str(), data, size, p, ctx_.default_stage_bufs(),
-                                                          ctx_.default_mem_allocs(), &status);
+                                       ctx_->LoadTexture2D(tex_name.c_str(), data, size, p, ctx_->default_stage_bufs(),
+                                                           ctx_->default_mem_allocs(), &status);
                                        LOGI("Texture %s loaded", tex_name.c_str());
                                    });
                                },
@@ -1656,7 +1661,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
 
 Ren::SamplerRef ModlApp::OnSamplerNeeded(Ren::SamplingParams params) {
     Ren::eSamplerLoadStatus status;
-    return ctx_.LoadSampler(params, &status);
+    return ctx_->LoadSampler(params, &status);
 }
 
 void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const char *vs_shader, const char *fs_shader,
@@ -1664,7 +1669,7 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
                                 Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
-    Ren::ProgramRef prog = ctx_.LoadProgram(prog_name, {}, {}, {}, {}, &status);
+    Ren::ProgramRef prog = ctx_->LoadProgram(prog_name, {}, {}, {}, {}, &status);
     if (!prog->ready()) {
         using namespace std;
 
@@ -1684,12 +1689,12 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
         fs_file.Read((char *)fs_src.data(), fs_size);
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = ctx_.LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vert, &sh_status);
+        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vert, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
-        Ren::ShaderRef fs_ref = ctx_.LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
+        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
 
-        prog = ctx_.LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, &status);
+        prog = ctx_->LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, &status);
         assert(status == Ren::eProgLoadStatus::CreatedFromData);
     }
 
@@ -1703,7 +1708,7 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
     const uint32_t new_index = pipelines_.emplace();
     Ren::Pipeline &new_pipeline = pipelines_.at(new_index);
 
-    const bool res = new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, 0, ctx_.log());
+    const bool res = new_pipeline.Init(ctx_->api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, 0, ctx_->log());
     if (!res) {
         LOGE("Failed to initialize pipeline!");
     }
@@ -1719,7 +1724,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
     using namespace std;
 
     Ren::eMatLoadStatus status;
-    Ren::MaterialRef ret = ctx_.LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
+    Ren::MaterialRef ret = ctx_->LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
     if (!ret->ready()) {
         Sys::AssetFile in_file(string("assets_pc/materials/") + name);
         if (!in_file) {
@@ -1735,9 +1740,9 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
 
         using namespace std::placeholders;
 
-        ret = ctx_.LoadMaterial(name, mat_src.data(), &status, std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
-                                std::bind(&ModlApp::OnTextureNeeded, this, _1),
-                                std::bind(&ModlApp::OnSamplerNeeded, this, _1));
+        ret = ctx_->LoadMaterial(
+            name, mat_src.data(), &status, std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
+            std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
     return ret;

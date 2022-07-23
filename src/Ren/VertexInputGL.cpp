@@ -22,11 +22,7 @@ bool IsNormalizedType(const eType type) {
 }
 } // namespace Ren
 
-Ren::VertexInput::VertexInput() {
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    gl_vao_ = uint32_t(vao);
-}
+Ren::VertexInput::VertexInput() = default;
 
 Ren::VertexInput::~VertexInput() {
     if (gl_vao_) {
@@ -58,6 +54,11 @@ bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle
         return true;
     }
 
+    if (!gl_vao_) {
+        GLuint vao;
+        glGenVertexArrays(1, &vao);
+        gl_vao_ = uint32_t(vao);
+    }
     glBindVertexArray(GLuint(gl_vao_));
 
     attribs.clear();
