@@ -4,6 +4,7 @@
 
 #include "../SceneBase.h"
 #include "../Types.h"
+#include "Span.h"
 
 #ifdef __GNUC__
 #define force_inline __attribute__((always_inline)) inline
@@ -27,30 +28,12 @@
 namespace Ray {
 enum eUninitialize { Uninitialize };
 
-struct tri_accel_t {
-    float nu, nv;
-    float np;
-    float pu, pv;
-    int32_t ci;
-    float e0u, e0v;
-    float e1u, e1v;
-    uint32_t mi, back_mi;
-};
-static_assert(sizeof(tri_accel_t) == 48, "!");
-
-struct alignas(16) tri_accel2_t {
+struct alignas(16) tri_accel_t {
     float n_plane[4];
     float u_plane[4];
     float v_plane[4];
 };
-static_assert(sizeof(tri_accel2_t) == 48, "!");
-
-extern const tri_accel_t InvalidTriangle;
-
-const uint8_t TRI_W_BITS = 0b00000011;
-const uint8_t TRI_AXIS_ALIGNED_BIT = 0b00000100;
-const uint8_t TRI_INV_NORMAL_BIT = 0b00001000;
-const uint8_t TRI_SOLID_BIT = 0b00010000;
+static_assert(sizeof(tri_accel_t) == 48, "!");
 
 const float HIT_BIAS = 0.00001f;
 const float HIT_EPS = 0.000001f;
@@ -83,16 +66,8 @@ struct bvh_node_t {
         uint32_t prim_count; // First two bits are used for separation axis (0, 1 or 2 - x, y or z)
         uint32_t right_child;
     };
-#ifdef USE_STACKLESS_BVH_TRAVERSAL
-    uint32_t parent;
-#endif
 };
-
-#ifdef USE_STACKLESS_BVH_TRAVERSAL
-static_assert(sizeof(bvh_node_t) == 36, "!");
-#else
 static_assert(sizeof(bvh_node_t) == 32, "!");
-#endif
 
 struct alignas(32) mbvh_node_t {
     float bbox_min[3][8];
@@ -177,14 +152,6 @@ struct material_t {
 };
 static_assert(sizeof(material_t) == 80, "!");
 
-struct light_t {
-    float pos[3], radius;
-    float col[3], brightness;
-    float dir[3], spot;
-};
-static_assert(sizeof(light_t) == 48, "!");
-
-
 const int LIGHT_TYPE_SPHERE = 0;
 const int LIGHT_TYPE_SPOT = 1;
 const int LIGHT_TYPE_DIR = 2;
@@ -193,34 +160,38 @@ const int LIGHT_TYPE_RECT = 4;
 const int LIGHT_TYPE_DISK = 5;
 const int LIGHT_TYPE_TRI = 6;
 
-struct light2_t {
+struct light_t {
     uint32_t type : 6;
     uint32_t visible : 1;
     uint32_t sky_portal : 1;
-    uint32_t tr_index : 24;
+    uint32_t _unused : 24;
     float col[3];
     union {
         struct {
-            float pos[3], radius;
+            float pos[3], area;
+            float radius;
+            float _unused[5];
         } sph;
         struct {
-            float width, height;
-            float _unused[2];
+            float pos[3], area;
+            float u[3], v[3];
         } rect;
         struct {
-            float size_x, size_y;
-            float _unused[2];
+            float pos[3], area;
+            float u[3], v[3];
         } disk;
         struct {
-            float _unused[3];
-            uint32_t index;
+            uint32_t tri_index;
+            uint32_t xform_index;
+            float _unused[8];
         } tri;
         struct {
             float dir[3], angle;
+            float _unused[6];
         } dir;
     };
 };
-static_assert(sizeof(light2_t) == 32, "!");
+static_assert(sizeof(light_t) == 56, "!");
 
 struct prim_t;
 
@@ -256,7 +227,7 @@ force_inline bool GetFirstBit(const uint64_t mask, unsigned long *bit_index) {
 
 force_inline int CountTrailingZeroes(const uint64_t mask) {
 #ifdef _MSC_VER
-    //return int(_tzcnt_u64(mask));
+    // return int(_tzcnt_u64(mask));
     if (mask == 0) {
         return 64;
     }
@@ -280,15 +251,12 @@ force_inline long ClearBit(long mask, long index) {
 
 // Creates struct of precomputed triangle data for faster Plucker intersection test
 bool PreprocessTri(const float *p, int stride, tri_accel_t *out_acc);
-bool PreprocessTri(const float *p, int stride, tri_accel2_t *out_acc);
-// Extructs planar triangle normal from precomputed triangle data
-void ExtractPlaneNormal(const tri_accel_t &tri, float *out_normal);
 
 // Builds BVH for mesh and precomputes triangle data
 uint32_t PreprocessMesh(const float *attrs, const uint32_t *vtx_indices, size_t vtx_indices_count, eVertexLayout layout,
                         int base_vertex, uint32_t tris_start, const bvh_settings_t &s,
-                        std::vector<bvh_node_t> &out_nodes, std::vector<tri_accel_t> &out_tris,
-                        std::vector<tri_accel2_t> &out_tris2, std::vector<uint32_t> &out_indices);
+                        std::vector<bvh_node_t> &out_nodes, std::vector<tri_accel_t> &out_tris2,
+                        std::vector<uint32_t> &out_indices);
 
 // Recursively builds linear bvh for a set of primitives
 uint32_t EmitLBVH_Recursive(const prim_t *prims, const uint32_t *indices, const uint32_t *morton_codes,
@@ -402,7 +370,6 @@ struct ray_chunk_t {
 };
 
 struct pass_info_t {
-    int index, rand_index;
     int iteration, bounce;
     pass_settings_t settings;
 
@@ -423,7 +390,7 @@ struct pass_info_t {
         return ((settings.flags & OutputSH) && bounce <= 2);
     }
 };
-static_assert(sizeof(pass_info_t) == 28, "!");
+static_assert(sizeof(pass_info_t) == 20, "!");
 
 struct scene_data_t {
     const environment_t *env;
@@ -436,17 +403,13 @@ struct scene_data_t {
     const bvh_node_t *nodes;
     const mbvh_node_t *mnodes;
     const tri_accel_t *tris;
-    const tri_accel2_t *tris2;
     const uint32_t *tri_indices;
     const tri_mat_data_t *tri_materials;
     const material_t *materials;
     const texture_t *textures;
     const light_t *lights;
-    const uint32_t *li_indices;
-    const light2_t *lights2;
-    uint32_t lights2_count;
-    const uint32_t *visible_lights;
-    uint32_t visible_lights_count;
+    Span<const uint32_t> li_indices;
+    Span<const uint32_t> visible_lights;
 };
 
 } // namespace Ray

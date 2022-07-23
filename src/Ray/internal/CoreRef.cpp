@@ -12,10 +12,11 @@
 //
 #define USE_VNDF_GGX_SAMPLING 1
 #define USE_NEE 1
+#define VECTORIZE_BBOX_INTERSECTION 1
 
 namespace Ray {
 namespace Ref {
-force_inline void _IntersectTri(const ray_packet_t &r, const tri_accel2_t &tri, const uint32_t i, hit_data_t &inter) {
+force_inline void _IntersectTri(const ray_packet_t &r, const tri_accel_t &tri, const uint32_t i, hit_data_t &inter) {
 #define _sign_of(f) (((f) >= 0) ? 1 : -1)
 #define _dot(x, y) ((x)[0] * (y)[0] + (x)[1] * (y)[1] + (x)[2] * (y)[2])
 
@@ -39,8 +40,8 @@ force_inline void _IntersectTri(const ray_packet_t &r, const tri_accel2_t &tri, 
 
     const float rdet = (1.0f / det);
 
-    inter.mask_values[0] = 0xffffffff;
-    inter.prim_indices[0] = (det < 0.0f) ? int(i) : -int(i);
+    inter.mask = 0xffffffff;
+    inter.prim_index = (det < 0.0f) ? int(i) : -int(i) - 1;
     inter.t = dett * rdet;
     inter.u = detu * rdet;
     inter.v = detv * rdet;
@@ -123,50 +124,8 @@ force_inline bool bbox_test_oct(const float p[3], const mbvh_node_t &node, const
 }
 
 force_inline void bbox_test_oct(const float o[3], const float inv_d[3], const mbvh_node_t &node, int res[8],
-                                float dist[8]){ITERATE_8({
-    float lo_x = inv_d[0] * (node.bbox_min[0][i] - o[0]);
-    float hi_x = inv_d[0] * (node.bbox_max[0][i] - o[0]);
-    if (lo_x > hi_x) {
-        const float tmp = lo_x;
-        lo_x = hi_x;
-        hi_x = tmp;
-    }
-
-    float lo_y = inv_d[1] * (node.bbox_min[1][i] - o[1]);
-    float hi_y = inv_d[1] * (node.bbox_max[1][i] - o[1]);
-    if (lo_y > hi_y) {
-        const float tmp = lo_y;
-        lo_y = hi_y;
-        hi_y = tmp;
-    }
-
-    float lo_z = inv_d[2] * (node.bbox_min[2][i] - o[2]);
-    float hi_z = inv_d[2] * (node.bbox_max[2][i] - o[2]);
-    if (lo_z > hi_z) {
-        const float tmp = lo_z;
-        lo_z = hi_z;
-        hi_z = tmp;
-    }
-
-    float tmin = lo_x > lo_y ? lo_x : lo_y;
-    if (lo_z > tmin) {
-        tmin = lo_z;
-    }
-    float tmax = hi_x < hi_y ? hi_x : hi_y;
-    if (hi_z < tmax) {
-        tmax = hi_z;
-    }
-    tmax *= 1.00000024f;
-
-    dist[i] = tmin;
-    res[i] = (tmin <= tmax && tmax > 0) ? 1 : 0;
-})}
-
-force_inline
-    int bbox_test_oct(const float o[3], const float inv_d[3], const float t, const mbvh_node_t &node, float dist[8]) {
-    int mask = 0;
-
-    ITERATE_8({
+                                float dist[8]){
+    ITERATE_8({ // NOLINT
         float lo_x = inv_d[0] * (node.bbox_min[0][i] - o[0]);
         float hi_x = inv_d[0] * (node.bbox_max[0][i] - o[0]);
         if (lo_x > hi_x) {
@@ -202,13 +161,79 @@ force_inline
         tmax *= 1.00000024f;
 
         dist[i] = tmin;
-        mask |= ((tmin <= tmax && tmin <= t && tmax > 0) ? 1 : 0) << i;
-    })
-
-    return mask;
+        res[i] = (tmin <= tmax && tmax > 0) ? 1 : 0;
+    }) // NOLINT
 }
 
-enum eTraversalSource { FromParent, FromChild, FromSibling };
+force_inline long bbox_test_oct(const float o[3], const float inv_d[3], const float t, const mbvh_node_t &node,
+                                float out_dist[8]) {
+    long mask = 0;
+#if VECTORIZE_BBOX_INTERSECTION
+    simd_fvec4 lo, hi, tmin, tmax;
+    ITERATE_2_R({ // NOLINT
+        lo = inv_d[0] * (simd_fvec4{&node.bbox_min[0][4 * i], simd_mem_aligned} - o[0]);
+        hi = inv_d[0] * (simd_fvec4{&node.bbox_max[0][4 * i], simd_mem_aligned} - o[0]);
+        tmin = min(lo, hi);
+        tmax = max(lo, hi);
+
+        lo = inv_d[1] * (simd_fvec4{&node.bbox_min[1][4 * i], simd_mem_aligned} - o[1]);
+        hi = inv_d[1] * (simd_fvec4{&node.bbox_max[1][4 * i], simd_mem_aligned} - o[1]);
+        tmin = max(tmin, min(lo, hi));
+        tmax = min(tmax, max(lo, hi));
+
+        lo = inv_d[2] * (simd_fvec4{&node.bbox_min[2][4 * i], simd_mem_aligned} - o[2]);
+        hi = inv_d[2] * (simd_fvec4{&node.bbox_max[2][4 * i], simd_mem_aligned} - o[2]);
+        tmin = max(tmin, min(lo, hi));
+        tmax = min(tmax, max(lo, hi));
+        tmax *= 1.00000024f;
+
+        const simd_fvec4 fmask = (tmin <= tmax) & (tmin <= t) & (tmax > 0.0f);
+        mask <<= 4;
+        mask |= simd_cast(fmask).movemask();
+        tmin.copy_to(&out_dist[4 * i], simd_mem_aligned);
+    }) // NOLINT
+#else
+    ITERATE_8({ // NOLINT
+        float lo_x = inv_d[0] * (node.bbox_min[0][i] - o[0]);
+        float hi_x = inv_d[0] * (node.bbox_max[0][i] - o[0]);
+        if (lo_x > hi_x) {
+            const float tmp = lo_x;
+            lo_x = hi_x;
+            hi_x = tmp;
+        }
+
+        float lo_y = inv_d[1] * (node.bbox_min[1][i] - o[1]);
+        float hi_y = inv_d[1] * (node.bbox_max[1][i] - o[1]);
+        if (lo_y > hi_y) {
+            const float tmp = lo_y;
+            lo_y = hi_y;
+            hi_y = tmp;
+        }
+
+        float lo_z = inv_d[2] * (node.bbox_min[2][i] - o[2]);
+        float hi_z = inv_d[2] * (node.bbox_max[2][i] - o[2]);
+        if (lo_z > hi_z) {
+            const float tmp = lo_z;
+            lo_z = hi_z;
+            hi_z = tmp;
+        }
+
+        float tmin = lo_x > lo_y ? lo_x : lo_y;
+        if (lo_z > tmin) {
+            tmin = lo_z;
+        }
+        float tmax = hi_x < hi_y ? hi_x : hi_y;
+        if (hi_z < tmax) {
+            tmax = hi_z;
+        }
+        tmax *= 1.00000024f;
+
+        out_dist[i] = tmin;
+        mask |= ((tmin <= tmax && tmin <= t && tmax > 0) ? 1 : 0) << i;
+    }) // NOLINT
+#endif
+    return mask;
+}
 
 struct stack_entry_t {
     uint32_t index;
@@ -721,7 +746,6 @@ simd_fvec4 MapToCone(float r1, float r2, simd_fvec4 N, float radius) {
     return N + uv[0] * LT + uv[1] * LB;
 }
 
-
 simd_fvec4 rotate_around_axis(const simd_fvec4 &p, const simd_fvec4 &axis, const float angle) {
     const float costheta = std::cos(angle);
     const float sintheta = std::sin(angle);
@@ -876,13 +900,18 @@ force_inline simd_fvec4 tangent_from_world(const simd_fvec4 &T, const simd_fvec4
     return simd_fvec4{dot(V, T), dot(V, B), dot(V, N), 0.0f};
 }
 
+force_inline float fract(const float v) {
+    float _unused;
+    return std::modf(v, &_unused);
+}
+
 } // namespace Ref
 } // namespace Ray
 
 Ray::Ref::hit_data_t::hit_data_t() {
-    mask_values[0] = 0;
-    obj_indices[0] = -1;
-    prim_indices[0] = -1;
+    mask = 0;
+    obj_index = -1;
+    prim_index = -1;
     t = MAX_DIST;
 }
 
@@ -919,16 +948,15 @@ void Ray::Ref::GeneratePrimaryRays(int iteration, const camera_t &cam, const rec
 
             const float sample_off[2] = {construct_float(hash_val), construct_float(hash(hash_val))};
 
-            float _unused;
             if (cam.filter == Tent) {
-                float rx = std::modf(halton[RAND_DIM_FILTER_U] + sample_off[0], &_unused);
+                float rx = fract(halton[RAND_DIM_FILTER_U] + sample_off[0]);
                 if (rx < 0.5f) {
                     rx = std::sqrt(2.0f * rx) - 1.0f;
                 } else {
                     rx = 1.0f - std::sqrt(2.0f - 2 * rx);
                 }
 
-                float ry = std::modf(halton[RAND_DIM_FILTER_V] + sample_off[1], &_unused);
+                float ry = fract(halton[RAND_DIM_FILTER_V] + sample_off[1]);
                 if (ry < 0.5f) {
                     ry = std::sqrt(2.0f * ry) - 1.0f;
                 } else {
@@ -938,12 +966,12 @@ void Ray::Ref::GeneratePrimaryRays(int iteration, const camera_t &cam, const rec
                 _x += 0.5f + rx;
                 _y += 0.5f + ry;
             } else {
-                _x += std::modf(halton[RAND_DIM_FILTER_U] + sample_off[0], &_unused);
-                _y += std::modf(halton[RAND_DIM_FILTER_V] + sample_off[1], &_unused);
+                _x += fract(halton[RAND_DIM_FILTER_U] + sample_off[0]);
+                _y += fract(halton[RAND_DIM_FILTER_V] + sample_off[1]);
             }
 
-            const float ff1 = cam.focus_factor * (-0.5f + std::modf(halton[RAND_DIM_LENS_U] + sample_off[0], &_unused));
-            const float ff2 = cam.focus_factor * (-0.5f + std::modf(halton[RAND_DIM_LENS_V] + sample_off[1], &_unused));
+            const float ff1 = cam.focus_factor * (-0.5f + fract(halton[RAND_DIM_LENS_U] + sample_off[0]));
+            const float ff2 = cam.focus_factor * (-0.5f + fract(halton[RAND_DIM_LENS_V] + sample_off[1]));
 
             const simd_fvec4 _origin = cam_origin + side * ff1 + up * ff2;
 
@@ -962,7 +990,7 @@ void Ray::Ref::GeneratePrimaryRays(int iteration, const camera_t &cam, const rec
                 out_r.dd_dy[j] = _dy[j] - _d[j];
             }
 
-            out_r.pdf = 1.0f;
+            out_r.pdf = 1e6f;
             out_r.xy = (x << 16) | y;
             out_r.ray_depth = 0;
         }
@@ -986,8 +1014,7 @@ void Ray::Ref::SampleMeshInTextureSpace(const int iteration, const int obj_index
 
             out_ray.xy = (x << 16) | y;
             out_ray.c[0] = out_ray.c[1] = out_ray.c[2] = 1.0f;
-            out_inter.mask_values[0] = 0;
-            out_inter.xy = out_ray.xy;
+            out_inter.mask = 0;
         }
     }
 
@@ -1037,7 +1064,7 @@ void Ray::Ref::SampleMeshInTextureSpace(const int iteration, const int obj_index
                 ray_packet_t &out_ray = out_rays[i];
                 hit_data_t &out_inter = out_inters[i];
 
-                if (out_inter.mask_values[0]) {
+                if (out_inter.mask) {
                     continue;
                 }
 
@@ -1046,9 +1073,8 @@ void Ray::Ref::SampleMeshInTextureSpace(const int iteration, const int obj_index
 
                 const int hash_val = hash(index);
 
-                float _unused;
-                const float _x = float(x) + std::modf(halton[hi + 0] + construct_float(hash_val), &_unused);
-                const float _y = float(y) + std::modf(halton[hi + 1] + construct_float(hash(hash_val)), &_unused);
+                const float _x = float(x) + fract(halton[hi + 0] + construct_float(hash_val));
+                const float _y = float(y) + fract(halton[hi + 1] + construct_float(hash(hash_val)));
 
                 float u = d01[0] * (_y - t0[1]) - d01[1] * (_x - t0[0]),
                       v = d12[0] * (_y - t1[1]) - d12[1] * (_x - t1[0]),
@@ -1075,9 +1101,9 @@ void Ray::Ref::SampleMeshInTextureSpace(const int iteration, const int obj_index
                     out_ray.dd_dy[0] = out_ray.dd_dy[1] = out_ray.dd_dy[2] = 0.0f;
                     out_ray.ray_depth = 0;
 
-                    out_inter.mask_values[0] = 0xffffffff;
-                    out_inter.prim_indices[0] = tri;
-                    out_inter.obj_indices[0] = obj_index;
+                    out_inter.mask = 0xffffffff;
+                    out_inter.prim_index = tri;
+                    out_inter.obj_index = obj_index;
                     out_inter.t = 1.0f;
                     out_inter.u = w;
                     out_inter.v = u;
@@ -1214,341 +1240,57 @@ void Ray::Ref::SortRays_GPU(ray_packet_t *rays, const size_t rays_count, const f
     }
 }
 
-bool Ray::Ref::IntersectTris_ClosestHit(const ray_packet_t &r, const tri_accel2_t *tris, const int tri_start,
+bool Ray::Ref::IntersectTris_ClosestHit(const ray_packet_t &r, const tri_accel_t *tris, const int tri_start,
                                         const int tri_end, const int obj_index, hit_data_t &out_inter) {
     hit_data_t inter{Uninitialize};
-    inter.mask_values[0] = 0;
-    inter.obj_indices[0] = obj_index;
+    inter.mask = 0;
+    inter.obj_index = obj_index;
     inter.t = out_inter.t;
 
     for (int i = tri_start; i < tri_end; ++i) {
         _IntersectTri(r, tris[i], i, inter);
     }
 
-    out_inter.mask_values[0] |= inter.mask_values[0];
-    out_inter.obj_indices[0] = inter.mask_values[0] ? inter.obj_indices[0] : out_inter.obj_indices[0];
-    out_inter.prim_indices[0] = inter.mask_values[0] ? inter.prim_indices[0] : out_inter.prim_indices[0];
+    out_inter.mask |= inter.mask;
+    out_inter.obj_index = inter.mask ? inter.obj_index : out_inter.obj_index;
+    out_inter.prim_index = inter.mask ? inter.prim_index : out_inter.prim_index;
     out_inter.t = inter.t; // already contains min value
-    out_inter.u = inter.mask_values[0] ? inter.u : out_inter.u;
-    out_inter.v = inter.mask_values[0] ? inter.v : out_inter.v;
+    out_inter.u = inter.mask ? inter.u : out_inter.u;
+    out_inter.v = inter.mask ? inter.v : out_inter.v;
 
-    return inter.mask_values[0] != 0;
+    return inter.mask != 0;
 }
 
-bool Ray::Ref::IntersectTris_AnyHit(const ray_packet_t &r, const tri_accel2_t *tris, const tri_mat_data_t *materials,
+bool Ray::Ref::IntersectTris_AnyHit(const ray_packet_t &r, const tri_accel_t *tris, const tri_mat_data_t *materials,
                                     const uint32_t *indices, const int tri_start, const int tri_end,
                                     const int obj_index, hit_data_t &out_inter) {
     hit_data_t inter{Uninitialize};
-    inter.mask_values[0] = 0;
-    inter.obj_indices[0] = obj_index;
+    inter.mask = 0;
+    inter.obj_index = obj_index;
     inter.t = out_inter.t;
 
     for (int i = tri_start; i < tri_end; ++i) {
         _IntersectTri(r, tris[i], i, inter);
-        if (inter.mask_values[0] &&
-            ((inter.prim_indices[0] > 0 && (materials[indices[i]].front_mi & MATERIAL_SOLID_BIT)) ||
-             (inter.prim_indices[0] < 0 && (materials[indices[i]].back_mi & MATERIAL_SOLID_BIT)))) {
+        if (inter.mask && ((inter.prim_index > 0 && (materials[indices[i]].front_mi & MATERIAL_SOLID_BIT)) ||
+                           (inter.prim_index < 0 && (materials[indices[i]].back_mi & MATERIAL_SOLID_BIT)))) {
             break;
         }
     }
 
-    out_inter.mask_values[0] |= inter.mask_values[0];
-    out_inter.obj_indices[0] = inter.mask_values[0] ? inter.obj_indices[0] : out_inter.obj_indices[0];
-    out_inter.prim_indices[0] = inter.mask_values[0] ? inter.prim_indices[0] : out_inter.prim_indices[0];
+    out_inter.mask |= inter.mask;
+    out_inter.obj_index = inter.mask ? inter.obj_index : out_inter.obj_index;
+    out_inter.prim_index = inter.mask ? inter.prim_index : out_inter.prim_index;
     out_inter.t = inter.t; // already contains min value
-    out_inter.u = inter.mask_values[0] ? inter.u : out_inter.u;
-    out_inter.v = inter.mask_values[0] ? inter.v : out_inter.v;
+    out_inter.u = inter.mask ? inter.u : out_inter.u;
+    out_inter.v = inter.mask ? inter.v : out_inter.v;
 
-    return inter.mask_values[0] != 0;
+    return inter.mask != 0;
 }
-
-#ifdef USE_STACKLESS_BVH_TRAVERSAL
-bool Ray::Ref::Traverse_MacroTree_Stackless_CPU(const ray_packet_t &r, const bvh_node_t *nodes, uint32_t root_index,
-                                                const mesh_instance_t *mesh_instances, const uint32_t *mi_indices,
-                                                const mesh_t *meshes, const transform_t *transforms,
-                                                const tri_accel2_t *tris, const uint32_t *tri_indices,
-                                                hit_data_t &inter) {
-    bool res = false;
-
-    float inv_d[3];
-    safe_invert(r.d, inv_d);
-
-    uint32_t cur = root_index;
-    eTraversalSource src = FromSibling;
-
-    if (!is_leaf_node(nodes[root_index])) {
-        cur = near_child(r, nodes[root_index]);
-        src = FromParent;
-    }
-
-    while (true) {
-        switch (src) {
-        case FromChild:
-            if (cur == root_index || cur == 0xffffffff)
-                return res;
-            if (cur == near_child(r, nodes[nodes[cur].parent])) {
-                cur = other_child(nodes[nodes[cur].parent], cur);
-                src = FromSibling;
-            } else {
-                cur = nodes[cur].parent;
-                src = FromChild;
-            }
-            break;
-        case FromSibling:
-            if (!bbox_test(r.o, inv_d, inter.t, nodes[cur])) {
-                cur = nodes[cur].parent;
-                src = FromChild;
-            } else if (is_leaf_node(nodes[cur])) {
-                // process leaf
-                for (uint32_t i = nodes[cur].prim_index; i < nodes[cur].prim_index + nodes[cur].prim_count; ++i) {
-                    const mesh_instance_t &mi = mesh_instances[mi_indices[i]];
-                    const mesh_t &m = meshes[mi.mesh_index];
-                    const transform_t &tr = transforms[mi.tr_index];
-
-                    if (!bbox_test(r.o, inv_d, inter.t, mi.bbox_min, mi.bbox_max))
-                        continue;
-
-                    ray_packet_t _r = TransformRay(r, tr.inv_xform);
-
-                    float _inv_d[3];
-                    safe_invert(_r.d, _inv_d);
-
-                    res |= Traverse_MicroTree_Stackless_CPU(_r, _inv_d, nodes, m.node_index, tris, tri_indices,
-                                                            (int)mi_indices[i], inter);
-                }
-
-                cur = nodes[cur].parent;
-                src = FromChild;
-            } else {
-                cur = near_child(r, nodes[cur]);
-                src = FromParent;
-            }
-            break;
-        case FromParent:
-            if (!bbox_test(r.o, inv_d, inter.t, nodes[cur])) {
-                cur = other_child(nodes[nodes[cur].parent], cur);
-                src = FromSibling;
-            } else if (is_leaf_node(nodes[cur])) {
-                // process leaf
-                for (uint32_t i = nodes[cur].prim_index; i < nodes[cur].prim_index + nodes[cur].prim_count; ++i) {
-                    const mesh_instance_t &mi = mesh_instances[mi_indices[i]];
-                    const mesh_t &m = meshes[mi.mesh_index];
-                    const transform_t &tr = transforms[mi.tr_index];
-
-                    if (!bbox_test(r.o, inv_d, inter.t, mi.bbox_min, mi.bbox_max))
-                        continue;
-
-                    ray_packet_t _r = TransformRay(r, tr.inv_xform);
-
-                    float _inv_d[3];
-                    safe_invert(_r.d, _inv_d);
-
-                    res |= Traverse_MicroTree_Stackless_CPU(_r, _inv_d, nodes, m.node_index, tris, tri_indices,
-                                                            (int)mi_indices[i], inter);
-                }
-
-                cur = other_child(nodes[nodes[cur].parent], cur);
-                src = FromSibling;
-            } else {
-                cur = near_child(r, nodes[cur]);
-                src = FromParent;
-            }
-            break;
-        }
-    }
-
-    return res;
-}
-
-bool Ray::Ref::Traverse_MacroTree_Stackless_GPU(const ray_packet_t &r, const bvh_node_t *nodes, uint32_t root_index,
-                                                const mesh_instance_t *mesh_instances, const uint32_t *mi_indices,
-                                                const mesh_t *meshes, const transform_t *transforms,
-                                                const tri_accel2_t *tris, const uint32_t *tri_indices,
-                                                hit_data_t &inter) {
-    bool res = false;
-
-    float inv_d[3];
-    safe_invert(r.d, inv_d);
-
-    uint32_t cur = root_index;
-    uint32_t last = root_index;
-
-    if (!is_leaf_node(nodes[cur])) {
-        cur = near_child(r, nodes[cur]);
-    }
-
-    while (true) {
-        if (cur == 0xffffffff)
-            return res;
-
-        if (is_leaf_node(nodes[cur])) {
-            for (uint32_t i = nodes[cur].prim_index; i < nodes[cur].prim_index + nodes[cur].prim_count; ++i) {
-                const mesh_instance_t &mi = mesh_instances[mi_indices[i]];
-                const mesh_t &m = meshes[mi.mesh_index];
-                const transform_t &tr = transforms[mi.tr_index];
-
-                if (!bbox_test(r.o, inv_d, inter.t, mi.bbox_min, mi.bbox_max))
-                    continue;
-
-                ray_packet_t _r = TransformRay(r, tr.inv_xform);
-
-                float _inv_d[3];
-                safe_invert(_r.d, _inv_d);
-                res |= Traverse_MicroTree_Stackless_GPU(_r, _inv_d, nodes, m.node_index, tris, tri_indices,
-                                                        (int)mi_indices[i], inter);
-            }
-            last = cur;
-            cur = nodes[cur].parent;
-            continue;
-        }
-
-        uint32_t near = near_child(r, nodes[cur]);
-        uint32_t far = far_child(r, nodes[cur]);
-
-        if (last == far) {
-            last = cur;
-            cur = nodes[cur].parent;
-            continue;
-        }
-
-        uint32_t try_child = (last == nodes[cur].parent) ? near : far;
-        if (bbox_test(r.o, inv_d, inter.t, nodes[try_child])) {
-            last = cur;
-            cur = try_child;
-        } else {
-            if (try_child == near) {
-                last = near;
-            } else {
-                last = cur;
-                cur = nodes[cur].parent;
-            }
-        }
-    }
-
-    return res;
-}
-
-bool Ray::Ref::Traverse_MicroTree_Stackless_CPU(const ray_packet_t &r, const float inv_d[3], const bvh_node_t *nodes,
-                                                uint32_t root_index, const tri_accel2_t *tris,
-                                                const uint32_t *tri_indices, int obj_index, hit_data_t &inter) {
-    bool res = false;
-
-    uint32_t cur = root_index;
-    eTraversalSource src = FromSibling;
-
-    if (!is_leaf_node(nodes[root_index])) {
-        cur = near_child(r, nodes[root_index]);
-        src = FromParent;
-    }
-
-    while (true) {
-        switch (src) {
-        case FromChild:
-            if (cur == root_index || cur == 0xffffffff)
-                return res;
-            if (cur == near_child(r, nodes[nodes[cur].parent])) {
-                cur = other_child(nodes[nodes[cur].parent], cur);
-                src = FromSibling;
-            } else {
-                cur = nodes[cur].parent;
-                src = FromChild;
-            }
-            break;
-        case FromSibling:
-            if (!bbox_test(r.o, inv_d, inter.t, nodes[cur])) {
-                cur = nodes[cur].parent;
-                src = FromChild;
-            } else if (is_leaf_node(nodes[cur])) {
-                // process leaf
-                res |= IntersectTris_ClosestHit(r, tris, &tri_indices[nodes[cur].prim_index], nodes[cur].prim_count,
-                                                obj_index, inter);
-
-                cur = nodes[cur].parent;
-                src = FromChild;
-            } else {
-                cur = near_child(r, nodes[cur]);
-                src = FromParent;
-            }
-            break;
-        case FromParent:
-            if (!bbox_test(r.o, inv_d, inter.t, nodes[cur])) {
-                cur = other_child(nodes[nodes[cur].parent], cur);
-                src = FromSibling;
-            } else if (is_leaf_node(nodes[cur])) {
-                // process leaf
-                res |= IntersectTris_ClosestHit(r, tris, &tri_indices[nodes[cur].prim_index], nodes[cur].prim_count,
-                                                obj_index, inter);
-
-                cur = other_child(nodes[nodes[cur].parent], cur);
-                src = FromSibling;
-            } else {
-                cur = near_child(r, nodes[cur]);
-                src = FromParent;
-            }
-            break;
-        }
-    }
-
-    return res;
-}
-
-bool Ray::Ref::Traverse_MicroTree_Stackless_GPU(const ray_packet_t &r, const float inv_d[3], const bvh_node_t *nodes,
-                                                uint32_t root_index, const tri_accel2_t *tris, const uint32_t *indices,
-                                                int obj_index, hit_data_t &inter) {
-    bool res = false;
-
-    uint32_t cur = root_index;
-    uint32_t last = root_index;
-
-    if (!is_leaf_node(nodes[root_index])) {
-        cur = near_child(r, nodes[root_index]);
-        // last = cur;
-    }
-
-    while (true) {
-        if (cur == 0xffffffff)
-            return res;
-
-        if (is_leaf_node(nodes[cur])) {
-            res |= IntersectTris_ClosestHit(r, tris, &indices[nodes[cur].prim_index], nodes[cur].prim_count, obj_index,
-                                            inter);
-
-            last = cur;
-            cur = nodes[cur].parent;
-            continue;
-        }
-
-        uint32_t near = near_child(r, nodes[cur]);
-        uint32_t far = far_child(r, nodes[cur]);
-
-        if (last == far) {
-            last = cur;
-            cur = nodes[cur].parent;
-            continue;
-        }
-
-        uint32_t try_child = (last == nodes[cur].parent) ? near : far;
-        if (bbox_test(r.o, inv_d, inter.t, nodes[try_child])) {
-            last = cur;
-            cur = try_child;
-        } else {
-            if (try_child == near) {
-                last = near;
-            } else {
-                last = cur;
-                cur = nodes[cur].parent;
-            }
-        }
-    }
-
-    return res;
-}
-#endif
 
 bool Ray::Ref::Traverse_MacroTree_WithStack_ClosestHit(const ray_packet_t &r, const bvh_node_t *nodes,
                                                        uint32_t root_index, const mesh_instance_t *mesh_instances,
                                                        const uint32_t *mi_indices, const mesh_t *meshes,
-                                                       const transform_t *transforms, const tri_accel2_t *tris,
+                                                       const transform_t *transforms, const tri_accel_t *tris,
                                                        const uint32_t *tri_indices, hit_data_t &inter) {
     bool res = false;
 
@@ -1597,7 +1339,7 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_ClosestHit(const ray_packet_t &r, co
 bool Ray::Ref::Traverse_MacroTree_WithStack_ClosestHit(const ray_packet_t &r, const mbvh_node_t *nodes,
                                                        uint32_t root_index, const mesh_instance_t *mesh_instances,
                                                        const uint32_t *mi_indices, const mesh_t *meshes,
-                                                       const transform_t *transforms, const tri_accel2_t *tris,
+                                                       const transform_t *transforms, const tri_accel_t *tris,
                                                        const uint32_t *tri_indices, hit_data_t &inter) {
     bool res = false;
 
@@ -1616,7 +1358,7 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_ClosestHit(const ray_packet_t &r, co
 
     TRAVERSE:
         if (!is_leaf_node(nodes[cur.index])) {
-            float dist[8];
+            alignas(16) float dist[8];
             long mask = bbox_test_oct(r.o, inv_d, inter.t, nodes[cur.index], dist);
             if (mask) {
                 long i = GetFirstBit(mask);
@@ -1701,7 +1443,7 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_ClosestHit(const ray_packet_t &r, co
 bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const bvh_node_t *nodes,
                                                    const uint32_t root_index, const mesh_instance_t *mesh_instances,
                                                    const uint32_t *mi_indices, const mesh_t *meshes,
-                                                   const transform_t *transforms, const tri_accel2_t *tris,
+                                                   const transform_t *transforms, const tri_accel_t *tris,
                                                    const tri_mat_data_t *materials, const uint32_t *tri_indices,
                                                    hit_data_t &inter) {
     bool res = false;
@@ -1743,8 +1485,8 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const 
                 const bool hit_found = Traverse_MicroTree_WithStack_AnyHit(
                     _r, _inv_d, nodes, m.node_index, tris, materials, tri_indices, int(mi_indices[i]), inter);
                 if (hit_found) {
-                    const bool is_backfacing = inter.prim_indices[0] < 0;
-                    const uint32_t prim_index = is_backfacing ? -inter.prim_indices[0] : inter.prim_indices[0];
+                    const bool is_backfacing = inter.prim_index < 0;
+                    const uint32_t prim_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
                     if ((!is_backfacing && (materials[tri_indices[prim_index]].front_mi & MATERIAL_SOLID_BIT)) ||
                         (is_backfacing && (materials[tri_indices[prim_index]].back_mi & MATERIAL_SOLID_BIT))) {
@@ -1762,7 +1504,7 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const 
 bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const mbvh_node_t *nodes,
                                                    const uint32_t root_index, const mesh_instance_t *mesh_instances,
                                                    const uint32_t *mi_indices, const mesh_t *meshes,
-                                                   const transform_t *transforms, const tri_accel2_t *tris,
+                                                   const transform_t *transforms, const tri_accel_t *tris,
                                                    const tri_mat_data_t *materials, const uint32_t *tri_indices,
                                                    hit_data_t &inter) {
     bool res = false;
@@ -1787,7 +1529,7 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const 
 
     TRAVERSE:
         if (!is_leaf_node(nodes[cur.index])) {
-            float dist[8];
+            alignas(16) float dist[8];
             long mask = bbox_test_oct(r.o, inv_d, inter.t, nodes[cur.index], dist);
             if (mask) {
                 long i = GetFirstBit(mask);
@@ -1863,8 +1605,8 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const 
                 bool hit_found = Traverse_MicroTree_WithStack_AnyHit(_r, _inv_d, nodes, m.node_index, tris, materials,
                                                                      tri_indices, (int)mi_indices[i], inter);
                 if (hit_found) {
-                    const bool is_backfacing = inter.prim_indices[0] < 0;
-                    const uint32_t prim_index = is_backfacing ? -inter.prim_indices[0] : inter.prim_indices[0];
+                    const bool is_backfacing = inter.prim_index < 0;
+                    const uint32_t prim_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
                     if ((!is_backfacing && (materials[tri_indices[prim_index]].front_mi & MATERIAL_SOLID_BIT)) ||
                         (is_backfacing && (materials[tri_indices[prim_index]].back_mi & MATERIAL_SOLID_BIT))) {
@@ -1881,7 +1623,7 @@ bool Ray::Ref::Traverse_MacroTree_WithStack_AnyHit(const ray_packet_t &r, const 
 
 bool Ray::Ref::Traverse_MicroTree_WithStack_ClosestHit(const ray_packet_t &r, const float inv_d[3],
                                                        const bvh_node_t *nodes, const uint32_t root_index,
-                                                       const tri_accel2_t *tris, const uint32_t *tri_indices,
+                                                       const tri_accel_t *tris, const uint32_t *tri_indices,
                                                        int obj_index, hit_data_t &inter) {
     bool res = false;
 
@@ -1910,7 +1652,7 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_ClosestHit(const ray_packet_t &r, co
 
 bool Ray::Ref::Traverse_MicroTree_WithStack_ClosestHit(const ray_packet_t &r, const float inv_d[3],
                                                        const mbvh_node_t *nodes, const uint32_t root_index,
-                                                       const tri_accel2_t *tris, const uint32_t *tri_indices,
+                                                       const tri_accel_t *tris, const uint32_t *tri_indices,
                                                        int obj_index, hit_data_t &inter) {
     bool res = false;
 
@@ -1926,7 +1668,7 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_ClosestHit(const ray_packet_t &r, co
 
     TRAVERSE:
         if (!is_leaf_node(nodes[cur.index])) {
-            float dist[8];
+            alignas(16) float dist[8];
             long mask = bbox_test_oct(r.o, inv_d, inter.t, nodes[cur.index], dist);
             if (mask) {
                 long i = GetFirstBit(mask);
@@ -1995,7 +1737,7 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_ClosestHit(const ray_packet_t &r, co
 }
 
 bool Ray::Ref::Traverse_MicroTree_WithStack_AnyHit(const ray_packet_t &r, const float inv_d[3], const bvh_node_t *nodes,
-                                                   uint32_t root_index, const tri_accel2_t *tris,
+                                                   uint32_t root_index, const tri_accel_t *tris,
                                                    const tri_mat_data_t *materials, const uint32_t *tri_indices,
                                                    int obj_index, hit_data_t &inter) {
     bool res = false;
@@ -2020,8 +1762,8 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_AnyHit(const ray_packet_t &r, const 
             const bool hit_found =
                 IntersectTris_AnyHit(r, tris, materials, tri_indices, tri_start, tri_end, obj_index, inter);
             if (hit_found) {
-                const bool is_backfacing = inter.prim_indices[0] < 0;
-                const uint32_t prim_index = is_backfacing ? -inter.prim_indices[0] : inter.prim_indices[0];
+                const bool is_backfacing = inter.prim_index < 0;
+                const uint32_t prim_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
                 if ((!is_backfacing && (materials[tri_indices[prim_index]].front_mi & MATERIAL_SOLID_BIT)) ||
                     (is_backfacing && (materials[tri_indices[prim_index]].back_mi & MATERIAL_SOLID_BIT))) {
@@ -2037,7 +1779,7 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_AnyHit(const ray_packet_t &r, const 
 
 bool Ray::Ref::Traverse_MicroTree_WithStack_AnyHit(const ray_packet_t &r, const float inv_d[3],
                                                    const mbvh_node_t *nodes, const uint32_t root_index,
-                                                   const tri_accel2_t *tris, const tri_mat_data_t *materials,
+                                                   const tri_accel_t *tris, const tri_mat_data_t *materials,
                                                    const uint32_t *tri_indices, int obj_index, hit_data_t &inter) {
     bool res = false;
 
@@ -2053,7 +1795,7 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_AnyHit(const ray_packet_t &r, const 
 
     TRAVERSE:
         if (!is_leaf_node(nodes[cur.index])) {
-            float dist[8];
+            alignas(16) float dist[8];
             long mask = bbox_test_oct(r.o, inv_d, inter.t, nodes[cur.index], dist);
             if (mask) {
                 long i = GetFirstBit(mask);
@@ -2117,8 +1859,8 @@ bool Ray::Ref::Traverse_MicroTree_WithStack_AnyHit(const ray_packet_t &r, const 
             const bool hit_found =
                 IntersectTris_AnyHit(r, tris, materials, tri_indices, tri_start, tri_end, obj_index, inter);
             if (hit_found) {
-                const bool is_backfacing = inter.prim_indices[0] < 0;
-                const uint32_t prim_index = is_backfacing ? -inter.prim_indices[0] : inter.prim_indices[0];
+                const bool is_backfacing = inter.prim_index < 0;
+                const uint32_t prim_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
                 if ((!is_backfacing && (materials[tri_indices[prim_index]].front_mi & MATERIAL_SOLID_BIT)) ||
                     (is_backfacing && (materials[tri_indices[prim_index]].back_mi & MATERIAL_SOLID_BIT))) {
@@ -2160,18 +1902,18 @@ Ray::Ref::simd_fvec4 Ray::Ref::Evaluate_OrenDiffuse_BSDF(const simd_fvec4 &V, co
 
     ////
 
-    float nl = std::max(dot(N, L), 0.0f);
-    float nv = std::max(dot(N, V), 0.0f);
+    const float nl = std::max(dot(N, L), 0.0f);
+    const float nv = std::max(dot(N, V), 0.0f);
     float t = dot(L, V) - nl * nv;
 
     if (t > 0.0f) {
         t /= std::max(nl, nv) + FLT_MIN;
     }
-    float is = nl * (a + b * t);
+    const float is = nl * (a + b * t);
 
     simd_fvec4 diff_col = is * base_color;
-
     diff_col[3] = 0.5f / PI;
+
     return diff_col;
 }
 
@@ -2686,17 +2428,17 @@ float Ray::Ref::ComputeVisibility(const simd_fvec4 &p, const simd_fvec4 &d, floa
 
         if (sc.mnodes) {
             Traverse_MacroTree_WithStack_AnyHit(r, sc.mnodes, node_index, sc.mesh_instances, sc.mi_indices, sc.meshes,
-                                                sc.transforms, sc.tris2, sc.tri_materials, sc.tri_indices, sh_inter);
+                                                sc.transforms, sc.tris, sc.tri_materials, sc.tri_indices, sh_inter);
         } else {
             Traverse_MacroTree_WithStack_AnyHit(r, sc.nodes, node_index, sc.mesh_instances, sc.mi_indices, sc.meshes,
-                                                sc.transforms, sc.tris2, sc.tri_materials, sc.tri_indices, sh_inter);
+                                                sc.transforms, sc.tris, sc.tri_materials, sc.tri_indices, sh_inter);
         }
-        if (!sh_inter.mask_values[0]) {
+        if (!sh_inter.mask) {
             break;
         }
 
-        const bool is_backfacing = (sh_inter.prim_indices[0] < 0);
-        const uint32_t prim_index = is_backfacing ? -sh_inter.prim_indices[0] : sh_inter.prim_indices[0];
+        const bool is_backfacing = (sh_inter.prim_index < 0);
+        const uint32_t prim_index = is_backfacing ? -sh_inter.prim_index - 1 : sh_inter.prim_index;
 
         const uint32_t tri_index = sc.tri_indices[prim_index];
 
@@ -2710,7 +2452,7 @@ float Ray::Ref::ComputeVisibility(const simd_fvec4 &p, const simd_fvec4 &d, floa
                                     ? &sc.materials[sc.tri_materials[tri_index].back_mi & MATERIAL_INDEX_BITS]
                                     : &sc.materials[sc.tri_materials[tri_index].front_mi & MATERIAL_INDEX_BITS];
 
-        const transform_t *tr = &sc.transforms[sc.mesh_instances[sh_inter.obj_indices[0]].tr_index];
+        const transform_t *tr = &sc.transforms[sc.mesh_instances[sh_inter.obj_index].tr_index];
 
         const vertex_t &v1 = sc.vertices[sc.vtx_indices[tri_index * 3 + 0]];
         const vertex_t &v2 = sc.vertices[sc.vtx_indices[tri_index * 3 + 1]];
@@ -2722,7 +2464,7 @@ float Ray::Ref::ComputeVisibility(const simd_fvec4 &p, const simd_fvec4 &d, floa
         const simd_fvec2 sh_uvs =
             simd_fvec2(v1.t[0]) * w + simd_fvec2(v2.t[0]) * sh_inter.u + simd_fvec2(v3.t[0]) * sh_inter.v;
 
-        const tri_accel2_t &tri = sc.tris2[prim_index];
+        const tri_accel_t &tri = sc.tris[prim_index];
 
         auto sh_plane_N = simd_fvec4{tri.n_plane[0], tri.n_plane[1], tri.n_plane[2], 0.0f};
         sh_plane_N = TransformNormal(sh_plane_N, tr->inv_xform);
@@ -2735,8 +2477,7 @@ float Ray::Ref::ComputeVisibility(const simd_fvec4 &p, const simd_fvec4 &d, floa
             const int sh_rand_hash = hash(rand_hash2);
             const float sh_rand_offset = construct_float(sh_rand_hash);
 
-            float _sh_unused;
-            float sh_r = std::modf(rand_val + sh_rand_offset, &_sh_unused);
+            float sh_r = fract(rand_val + sh_rand_offset);
 
             // resolve mix material
             while (mat->type == MixNode) {
@@ -2772,8 +2513,8 @@ float Ray::Ref::ComputeVisibility(const simd_fvec4 &p, const simd_fvec4 &d, floa
 
 void Ray::Ref::ComputeDerivatives(const simd_fvec4 &I, const float t, const simd_fvec4 &do_dx, const simd_fvec4 &do_dy,
                                   const simd_fvec4 &dd_dx, const simd_fvec4 &dd_dy, const vertex_t &v1,
-                                  const vertex_t &v2, const vertex_t &v3, const transform_t &tr,
-                                  const simd_fvec4 &plane_N, derivatives_t &out_der) {
+                                  const vertex_t &v2, const vertex_t &v3, const simd_fvec4 &plane_N,
+                                  const transform_t &tr, derivatives_t &out_der) {
     // From 'Tracing Ray Differentials' [1999]
 
     const float dot_I_N = -dot(I, plane_N);
@@ -2843,22 +2584,20 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
                                                     const material_t *mat, const derivatives_t &surf_der,
                                                     const pass_info_t &pi, const scene_data_t &sc,
                                                     const TextureAtlasBase *tex_atlases[], const uint32_t node_index,
-                                                    const float halton[], const float sample_off[2]) {
-    float _unused;
-    const float u1 = std::modf(halton[RAND_DIM_LIGHT_PICK] + sample_off[0], &_unused);
-    const auto light_index = std::min(uint32_t(u1 * sc.lights2_count), sc.lights2_count - 1);
+                                                    const int rand_index, const float halton[], const float sample_off[2]) {
+    const float u1 = fract(halton[RAND_DIM_LIGHT_PICK] + sample_off[0]);
+    const auto light_index = std::min(uint32_t(u1 * sc.li_indices.size()), uint32_t(sc.li_indices.size() - 1));
 
-    const light2_t &l = sc.lights2[light_index];
-    const transform_t &ltr = sc.transforms[l.tr_index];
+    const light_t &l = sc.lights[sc.li_indices[light_index]];
 
     simd_fvec4 lcol = simd_fvec4{l.col[0], l.col[1], l.col[2], 0.0f};
-    lcol *= float(sc.lights2_count);
+    lcol *= float(sc.li_indices.size());
 
     simd_fvec4 L;
     float light_area, light_dist, light_pdf = 0.0f;
     if (l.type == LIGHT_TYPE_SPHERE) {
-        const float r1 = std::modf(halton[RAND_DIM_LIGHT_U] + sample_off[0], &_unused);
-        const float r2 = std::modf(halton[RAND_DIM_LIGHT_V] + sample_off[1], &_unused);
+        const float r1 = fract(halton[RAND_DIM_LIGHT_U] + sample_off[0]);
+        const float r2 = fract(halton[RAND_DIM_LIGHT_V] + sample_off[1]);
 
         simd_fvec4 center_to_surface = P - simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f};
         float dist_to_center = length(center_to_surface);
@@ -2882,7 +2621,7 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
         light_dist = length(L);
         L /= light_dist;
 
-        light_area = 4.0f * PI * l.sph.radius * l.sph.radius;
+        light_area = l.sph.area;
         const simd_fvec4 light_forward =
             normalize(light_surf_pos - simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f});
 
@@ -2893,8 +2632,8 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
     } else if (l.type == LIGHT_TYPE_DIR) {
         L = simd_fvec4{l.dir.dir[0], l.dir.dir[1], l.dir.dir[2], 0.0f};
         if (l.dir.angle != 0.0f) {
-            const float r1 = std::modf(halton[RAND_DIM_LIGHT_U] + sample_off[0], &_unused);
-            const float r2 = std::modf(halton[RAND_DIM_LIGHT_V] + sample_off[1], &_unused);
+            const float r1 = fract(halton[RAND_DIM_LIGHT_U] + sample_off[0]);
+            const float r2 = fract(halton[RAND_DIM_LIGHT_V] + sample_off[1]);
 
             const float radius = std::tan(l.dir.angle);
             L = normalize(MapToCone(r1, r2, L, radius));
@@ -2903,19 +2642,19 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
         light_dist = MAX_DIST;
         light_pdf = 1.0f;
     } else if (l.type == LIGHT_TYPE_RECT) {
-        const auto light_pos = simd_fvec4{ltr.xform[12], ltr.xform[13], ltr.xform[14], 0.0f};
-        const simd_fvec4 light_u = l.rect.width * TransformDirection(simd_fvec4{1.0f, 0.0f, 0.0f, 0.0f}, ltr.xform);
-        const simd_fvec4 light_v = l.rect.height * TransformDirection(simd_fvec4{0.0f, 0.0f, 1.0f, 0.0f}, ltr.xform);
+        const auto light_pos = simd_fvec4{l.rect.pos[0], l.rect.pos[1], l.rect.pos[2], 0.0f};
+        const simd_fvec4 light_u = simd_fvec4{l.rect.u[0], l.rect.u[1], l.rect.u[2], 0.0f};
+        const simd_fvec4 light_v = simd_fvec4{l.rect.v[0], l.rect.v[1], l.rect.v[2], 0.0f};
 
-        const float r1 = std::modf(halton[RAND_DIM_LIGHT_U] + sample_off[0], &_unused) - 0.5f;
-        const float r2 = std::modf(halton[RAND_DIM_LIGHT_V] + sample_off[1], &_unused) - 0.5f;
+        const float r1 = fract(halton[RAND_DIM_LIGHT_U] + sample_off[0]) - 0.5f;
+        const float r2 = fract(halton[RAND_DIM_LIGHT_V] + sample_off[1]) - 0.5f;
         const simd_fvec4 lp = light_pos + light_u * r1 + light_v * r2;
 
         const simd_fvec4 to_light = lp - P;
         light_dist = length(to_light);
         L = (to_light / light_dist);
 
-        light_area = l.rect.width * l.rect.height;
+        light_area = l.rect.area;
         simd_fvec4 light_forward = normalize(cross(light_u, light_v));
 
         const float cos_theta = dot(-L, light_forward);
@@ -2940,12 +2679,12 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
             lcol[2] *= sc.env->env_col[2];
         }
     } else if (l.type == LIGHT_TYPE_DISK) {
-        const auto light_pos = simd_fvec4{ltr.xform[12], ltr.xform[13], ltr.xform[14], 0.0f};
-        const simd_fvec4 light_u = l.disk.size_x * TransformDirection(simd_fvec4{1.0f, 0.0f, 0.0f, 0.0f}, ltr.xform);
-        const simd_fvec4 light_v = l.disk.size_y * TransformDirection(simd_fvec4{0.0f, 0.0f, 1.0f, 0.0f}, ltr.xform);
+        const auto light_pos = simd_fvec4{l.disk.pos[0], l.disk.pos[1], l.disk.pos[2], 0.0f};
+        const simd_fvec4 light_u = simd_fvec4{l.disk.u[0], l.disk.u[1], l.disk.u[2], 0.0f};
+        const simd_fvec4 light_v = simd_fvec4{l.disk.v[0], l.disk.v[1], l.disk.v[2], 0.0f};
 
-        const float r1 = std::modf(halton[RAND_DIM_LIGHT_U] + sample_off[0], &_unused);
-        const float r2 = std::modf(halton[RAND_DIM_LIGHT_V] + sample_off[1], &_unused);
+        const float r1 = fract(halton[RAND_DIM_LIGHT_U] + sample_off[0]);
+        const float r2 = fract(halton[RAND_DIM_LIGHT_V] + sample_off[1]);
 
         simd_fvec2 offset = 2.0f * simd_fvec2{r1, r2} - simd_fvec2{1.0f, 1.0f};
         if (offset[0] != 0.0f && offset[1] != 0.0f) {
@@ -2968,7 +2707,7 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
         light_dist = length(to_light);
         L = (to_light / light_dist);
 
-        light_area = 0.25f * PI * l.disk.size_x * l.disk.size_y;
+        light_area = l.disk.area;
         simd_fvec4 light_forward = normalize(cross(light_u, light_v));
 
         const float cos_theta = dot(-L, light_forward);
@@ -2993,7 +2732,8 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
             lcol[2] *= sc.env->env_col[2];
         }
     } else if (l.type == LIGHT_TYPE_TRI) {
-        const uint32_t ltri_index = l.tri.index;
+        const transform_t &ltr = sc.transforms[l.tri.xform_index];
+        const uint32_t ltri_index = l.tri.tri_index;
 
         const vertex_t &v1 = sc.vertices[sc.vtx_indices[ltri_index * 3 + 0]];
         const vertex_t &v2 = sc.vertices[sc.vtx_indices[ltri_index * 3 + 1]];
@@ -3004,8 +2744,8 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
                          p3 = simd_fvec4(v3.p[0], v3.p[1], v3.p[2], 0.0f);
         const simd_fvec2 uv1 = simd_fvec2(v1.t[0]), uv2 = simd_fvec2(v2.t[0]), uv3 = simd_fvec2(v3.t[0]);
 
-        const float r1 = std::sqrt(std::modf(halton[RAND_DIM_LIGHT_U] + sample_off[0], &_unused));
-        const float r2 = std::modf(halton[RAND_DIM_LIGHT_V] + sample_off[1], &_unused);
+        const float r1 = std::sqrt(fract(halton[RAND_DIM_LIGHT_U] + sample_off[0]));
+        const float r2 = fract(halton[RAND_DIM_LIGHT_V] + sample_off[1]);
 
         const simd_fvec2 luvs = uv1 * (1.0f - r1) + r1 * (uv2 * (1.0f - r2) + uv3 * r2);
         const simd_fvec4 lp = TransformPoint(p1 * (1.0f - r1) + r1 * (p2 * (1.0f - r2) + p3 * r2), ltr.xform);
@@ -3048,7 +2788,7 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
     if (light_pdf > 0.0f) {
         const float visibility =
             ComputeVisibility(offset_ray(P, _is_backfacing ? -plane_N : plane_N), L, light_dist - 10.0f * HIT_BIAS,
-                              halton[RAND_DIM_BSDF_PICK], hash(pi.rand_index), sc, node_index, tex_atlases);
+                              halton[RAND_DIM_BSDF_PICK], hash(rand_index), sc, node_index, tex_atlases);
         if (visibility > 0.0f) {
             struct {
                 const Ray::material_t *mat;
@@ -3291,71 +3031,47 @@ Ray::Ref::simd_fvec4 Ray::Ref::EvaluateDirectLights(const simd_fvec4 &I, const s
     return col;
 }
 
-Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_t &inter, const ray_packet_t &ray,
-                                          const float *halton, const scene_data_t &sc, const uint32_t node_index,
-                                          const TextureAtlasBase *tex_atlases[], ray_packet_t *out_secondary_rays,
-                                          int *out_secondary_rays_count) {
-    // Intersect area lights
-    float min_t = inter.t;
-    simd_fvec4 out_col;
-    for (uint32_t li = 0; li < sc.visible_lights_count && ray.ray_depth; ++li) {
-        const light2_t &l = sc.lights2[sc.visible_lights[li]];
+bool Ray::Ref::IntersectAreaLights(const ray_packet_t &ray, const light_t lights[], Span<const uint32_t> visible_lights,
+                                   const transform_t transforms[], hit_data_t &inout_inter) {
+    bool res = false;
 
-        simd_fvec4 lcol = simd_fvec4{l.col[0], l.col[1], l.col[2], 0.0f};
-
+    // TODO: BVH for light geometry
+    for (uint32_t li = 0; li < uint32_t(visible_lights.size()); ++li) {
+        const uint32_t light_index = visible_lights[li];
+        const light_t &l = lights[light_index];
         if (l.type == LIGHT_TYPE_SPHERE) {
             const auto light_pos = simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f};
-            const float light_area = 4.0f * PI * l.sph.radius * l.sph.radius;
-
             const simd_fvec4 op = light_pos - simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f};
             const float b = dot(op, simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f});
             float det = b * b - dot(op, op) + l.sph.radius * l.sph.radius;
             if (det >= 0.0f) {
                 det = std::sqrt(det);
                 const float t1 = b - det, t2 = b + det;
-                if (t1 > 0.001f && t1 < min_t) {
-                    const auto hit_p = simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f} +
-                                       t1 * simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f};
-                    const float cos_theta =
-                        dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f},
-                            normalize(simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f} - hit_p));
-
-                    const float light_pdf = (t1 * t1) / (0.5f * light_area * cos_theta);
-                    const float bsdf_pdf = ray.pdf;
-
-                    const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
-                    out_col = mis_weight * lcol;
-                    min_t = t1;
-                } else if (t2 > 0.001f && t2 < min_t) {
-                    const auto hit_p = simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f} +
-                                       t2 * simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f};
-                    const float cos_theta =
-                        dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f},
-                            normalize(simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f} - hit_p));
-
-                    const float light_pdf = (t2 * t2) / (0.5f * light_area * cos_theta);
-                    const float bsdf_pdf = ray.pdf;
-
-                    const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
-                    out_col = mis_weight * lcol;
-                    min_t = t2;
+                if (t1 > HIT_EPS && t1 < inout_inter.t) {
+                    inout_inter.mask = -1;
+                    inout_inter.obj_index = -int(light_index) - 1;
+                    inout_inter.t = t1;
+                    res = true;
+                } else if (t2 > HIT_EPS && t2 < inout_inter.t) {
+                    inout_inter.mask = -1;
+                    inout_inter.obj_index = -int(light_index) - 1;
+                    inout_inter.t = t2;
+                    res = true;
                 }
             }
         } else if (l.type == LIGHT_TYPE_RECT) {
-            const transform_t &ltr = sc.transforms[l.tr_index];
-            const auto light_pos = simd_fvec4{ltr.xform[12], ltr.xform[13], ltr.xform[14], 0.0f};
-            simd_fvec4 light_u = l.rect.width * TransformDirection(simd_fvec4{1.0f, 0.0f, 0.0f, 0.0f}, ltr.xform);
-            simd_fvec4 light_v = l.rect.height * TransformDirection(simd_fvec4{0.0f, 0.0f, 1.0f, 0.0f}, ltr.xform);
+            const auto light_pos = simd_fvec4{l.rect.pos[0], l.rect.pos[1], l.rect.pos[2], 0.0f};
+            simd_fvec4 light_u = simd_fvec4{l.rect.u[0], l.rect.u[1], l.rect.u[2], 0.0f};
+            simd_fvec4 light_v = simd_fvec4{l.rect.v[0], l.rect.v[1], l.rect.v[2], 0.0f};
 
             const simd_fvec4 light_forward = normalize(cross(light_u, light_v));
-            const float light_area = l.rect.width * l.rect.height;
 
             const float plane_dist = dot(light_forward, light_pos);
             const float cos_theta = dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f}, light_forward);
             const float t =
                 (plane_dist - dot(light_forward, simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f})) / cos_theta;
 
-            if (cos_theta < 0.0f && t > HIT_EPS && t < min_t) {
+            if (cos_theta < 0.0f && t > HIT_EPS && t < inout_inter.t) {
                 light_u /= dot(light_u, light_u);
                 light_v /= dot(light_v, light_v);
 
@@ -3363,33 +3079,29 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
                     simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f} + simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f} * t;
                 const simd_fvec4 vi = p - light_pos;
                 const float a1 = dot(light_u, vi);
-                if (a1 >= -0.5 && a1 <= 0.5) {
+                if (a1 >= -0.5f && a1 <= 0.5f) {
                     const float a2 = dot(light_v, vi);
-                    if (a2 >= -0.5 && a2 <= 0.5) {
-                        const float light_pdf = (t * t) / (light_area * cos_theta);
-                        const float bsdf_pdf = ray.pdf;
-
-                        const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
-                        out_col = mis_weight * lcol;
-                        min_t = t;
+                    if (a2 >= -0.5f && a2 <= 0.5f) {
+                        inout_inter.mask = -1;
+                        inout_inter.obj_index = -int(light_index) - 1;
+                        inout_inter.t = t;
+                        res = true;
                     }
                 }
             }
         } else if (l.type == LIGHT_TYPE_DISK) {
-            const transform_t &ltr = sc.transforms[l.tr_index];
-            const simd_fvec4 light_pos = simd_fvec4{ltr.xform[12], ltr.xform[13], ltr.xform[14], 0.0f};
-            simd_fvec4 light_u = l.rect.width * TransformDirection(simd_fvec4{1.0f, 0.0f, 0.0f, 0.0f}, ltr.xform);
-            simd_fvec4 light_v = l.rect.height * TransformDirection(simd_fvec4{0.0f, 0.0f, 1.0f, 0.0f}, ltr.xform);
+            const auto light_pos = simd_fvec4{l.disk.pos[0], l.disk.pos[1], l.disk.pos[2], 0.0f};
+            simd_fvec4 light_u = simd_fvec4{l.disk.u[0], l.disk.u[1], l.disk.u[2], 0.0f};
+            simd_fvec4 light_v = simd_fvec4{l.disk.v[0], l.disk.v[1], l.disk.v[2], 0.0f};
 
             const simd_fvec4 light_forward = normalize(cross(light_u, light_v));
-            const float light_area = l.rect.width * l.rect.height;
 
             const float plane_dist = dot(light_forward, light_pos);
             const float cos_theta = dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f}, light_forward);
             const float t =
                 (plane_dist - dot(light_forward, simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f})) / cos_theta;
 
-            if (cos_theta < 0.0f && t > HIT_EPS && t < min_t) {
+            if (cos_theta < 0.0f && t > HIT_EPS && t < inout_inter.t) {
                 light_u /= dot(light_u, light_u);
                 light_v /= dot(light_v, light_v);
 
@@ -3400,22 +3112,23 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
                 const float a2 = dot(light_v, vi);
 
                 if (std::sqrt(a1 * a1 + a2 * a2) <= 0.5f) {
-                    const float light_pdf = (t * t) / (light_area * cos_theta);
-                    const float bsdf_pdf = ray.pdf;
-
-                    const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
-                    out_col = mis_weight * lcol;
-                    min_t = t;
+                    inout_inter.mask = -1;
+                    inout_inter.obj_index = -int(light_index) - 1;
+                    inout_inter.t = t;
+                    res = true;
                 }
             }
         }
     }
 
-    if (min_t < inter.t) {
-        return Ray::pixel_color_t{ray.c[0] * out_col[0], ray.c[1] * out_col[1], ray.c[2] * out_col[2], 1.0f};
-    }
+    return res;
+}
 
-    if (!inter.mask_values[0]) {
+Ray::pixel_color_t Ray::Ref::ShadeSurface(const int px_index, const pass_info_t &pi, const hit_data_t &inter,
+                                          const ray_packet_t &ray, const float *halton, const scene_data_t &sc,
+                                          const uint32_t node_index, const TextureAtlasBase *tex_atlases[],
+                                          ray_packet_t *out_secondary_rays, int *out_secondary_rays_count) {
+    if (!inter.mask) {
         simd_fvec4 env_col = {1.0f};
         if (pi.should_add_environment()) {
             if (sc.env->env_map != 0xffffffff) {
@@ -3436,15 +3149,73 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
     const auto I = simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f};
     const auto P = simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f} + inter.t * I;
 
-    const bool is_backfacing = (inter.prim_indices[0] < 0);
-    const uint32_t prim_index = is_backfacing ? -inter.prim_indices[0] : inter.prim_indices[0];
+    if (inter.obj_index < 0) { // Area light intersection
+        const light_t &l = sc.lights[-inter.obj_index - 1];
 
-    const tri_accel2_t &tri = sc.tris2[prim_index];
+        simd_fvec4 lcol = simd_fvec4{l.col[0], l.col[1], l.col[2], 0.0f};
+
+        if (l.type == LIGHT_TYPE_SPHERE) {
+            const auto light_pos = simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f};
+            const float light_area = l.sph.area;
+
+            const simd_fvec4 op = light_pos - simd_fvec4{ray.o[0], ray.o[1], ray.o[2], 0.0f};
+            const float b = dot(op, simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f});
+            const float det = std::sqrt(b * b - dot(op, op) + l.sph.radius * l.sph.radius);
+
+            const float cos_theta = dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f},
+                                        normalize(simd_fvec4{l.sph.pos[0], l.sph.pos[1], l.sph.pos[2], 0.0f} - P));
+
+            const float light_pdf = (inter.t * inter.t) / (0.5f * light_area * cos_theta);
+            const float bsdf_pdf = ray.pdf;
+
+            const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
+            lcol *= mis_weight;
+        } else if (l.type == LIGHT_TYPE_RECT) {
+            const auto light_pos = simd_fvec4{l.rect.pos[0], l.rect.pos[1], l.rect.pos[2], 0.0f};
+            simd_fvec4 light_u = simd_fvec4{l.rect.u[0], l.rect.u[1], l.rect.u[2], 0.0f};
+            simd_fvec4 light_v = simd_fvec4{l.rect.v[0], l.rect.v[1], l.rect.v[2], 0.0f};
+
+            const simd_fvec4 light_forward = normalize(cross(light_u, light_v));
+            const float light_area = l.rect.area;
+
+            const float plane_dist = dot(light_forward, light_pos);
+            const float cos_theta = dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f}, light_forward);
+
+            const float light_pdf = (inter.t * inter.t) / (light_area * cos_theta);
+            const float bsdf_pdf = ray.pdf;
+
+            const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
+            lcol *= mis_weight;
+        } else if (l.type == LIGHT_TYPE_DISK) {
+            const auto light_pos = simd_fvec4{l.disk.pos[0], l.disk.pos[1], l.disk.pos[2], 0.0f};
+            simd_fvec4 light_u = simd_fvec4{l.disk.u[0], l.disk.u[1], l.disk.u[2], 0.0f};
+            simd_fvec4 light_v = simd_fvec4{l.disk.v[0], l.disk.v[1], l.disk.v[2], 0.0f};
+
+            const simd_fvec4 light_forward = normalize(cross(light_u, light_v));
+            const float light_area = l.disk.area;
+
+            const float plane_dist = dot(light_forward, light_pos);
+            const float cos_theta = dot(simd_fvec4{ray.d[0], ray.d[1], ray.d[2], 0.0f}, light_forward);
+
+            const float light_pdf = (inter.t * inter.t) / (light_area * cos_theta);
+            const float bsdf_pdf = ray.pdf;
+
+            const float mis_weight = power_heuristic(bsdf_pdf, light_pdf);
+            lcol *= mis_weight;
+        }
+
+        return Ray::pixel_color_t{ray.c[0] * lcol[0], ray.c[1] * lcol[1], ray.c[2] * lcol[2], 1.0f};
+    }
+
+    const bool is_backfacing = (inter.prim_index < 0);
+    const uint32_t prim_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
+
+    const tri_accel_t &tri = sc.tris[prim_index];
     const uint32_t tri_index = sc.tri_indices[prim_index];
 
     const material_t *mat = &sc.materials[sc.tri_materials[tri_index].front_mi & MATERIAL_INDEX_BITS];
 
-    const transform_t *tr = &sc.transforms[sc.mesh_instances[inter.obj_indices[0]].tr_index];
+    const transform_t *tr = &sc.transforms[sc.mesh_instances[inter.obj_index].tr_index];
 
     const vertex_t &v1 = sc.vertices[sc.vtx_indices[tri_index * 3 + 0]];
     const vertex_t &v2 = sc.vertices[sc.vtx_indices[tri_index * 3 + 1]];
@@ -3457,7 +3228,6 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
     simd_fvec2 uvs = simd_fvec2(v1.t[0]) * w + simd_fvec2(v2.t[0]) * inter.u + simd_fvec2(v3.t[0]) * inter.v;
 
     auto plane_N = simd_fvec4{tri.n_plane[0], tri.n_plane[1], tri.n_plane[2], 0.0f};
-    plane_N = TransformNormal(plane_N, tr->inv_xform);
 
     simd_fvec4 B = simd_fvec4{v1.b[0], v1.b[1], v1.b[2], 0.0f} * w +
                    simd_fvec4{v2.b[0], v2.b[1], v2.b[2], 0.0f} * inter.u +
@@ -3476,17 +3246,18 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
         }
     }
 
+    plane_N = TransformNormal(plane_N, tr->inv_xform);
+    N = TransformNormal(N, tr->inv_xform);
+    B = TransformNormal(B, tr->inv_xform);
+    T = TransformNormal(T, tr->inv_xform);
+
     const auto do_dx = simd_fvec4{ray.do_dx[0], ray.do_dx[1], ray.do_dx[2], 0.0f};
     const auto do_dy = simd_fvec4{ray.do_dy[0], ray.do_dy[1], ray.do_dy[2], 0.0f};
     const auto dd_dx = simd_fvec4{ray.dd_dx[0], ray.dd_dx[1], ray.dd_dx[2], 0.0f};
     const auto dd_dy = simd_fvec4{ray.dd_dy[0], ray.dd_dy[1], ray.dd_dy[2], 0.0f};
 
     derivatives_t surf_der;
-    ComputeDerivatives(I, inter.t, do_dx, do_dy, dd_dx, dd_dy, v1, v2, v3, *tr, plane_N, surf_der);
-
-    N = TransformNormal(N, tr->inv_xform);
-    B = TransformNormal(B, tr->inv_xform);
-    T = TransformNormal(T, tr->inv_xform);
+    ComputeDerivatives(I, inter.t, do_dx, do_dy, dd_dx, dd_dy, v1, v2, v3, plane_N, *tr, surf_der);
 
     // apply normal map
     if (mat->textures[NORMALS_TEXTURE] != 0xffffffff) {
@@ -3520,7 +3291,7 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
 #endif
 
     // used to randomize halton sequence among pixels
-    const float sample_off[2] = {construct_float(hash(pi.rand_index)), construct_float(hash(hash(pi.rand_index)))};
+    const float sample_off[2] = {construct_float(hash(px_index)), construct_float(hash(hash(px_index)))};
 
     simd_fvec4 col = {0.0f};
 
@@ -3531,15 +3302,13 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
     const int total_depth = diff_depth + spec_depth + refr_depth + transp_depth;
 
 #if USE_NEE == 1
-    if (pi.should_add_direct_light() && sc.lights2_count && mat->type != EmissiveNode) {
+    if (pi.should_add_direct_light() && !sc.li_indices.empty() && mat->type != EmissiveNode) {
         col += EvaluateDirectLights(I, P, N, T, B, plane_N, uvs, is_backfacing, mat, surf_der, pi, sc, tex_atlases,
-                                    node_index, halton, sample_off);
+                                    node_index, px_index, halton, sample_off);
     }
 #endif
 
-    float _unused;
-    float mix_rand = std::modf(halton[RAND_DIM_BSDF_PICK] + sample_off[0], &_unused);
-
+    float mix_rand = fract(halton[RAND_DIM_BSDF_PICK] + sample_off[0]);
     float mix_weight = 1.0f;
 
     // resolve mix material
@@ -3602,8 +3371,8 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
         roughness *= roughness_color[0];
     }
 
-    const float rand_u = std::modf(halton[RAND_DIM_BSDF_U] + sample_off[0], &_unused);
-    const float rand_v = std::modf(halton[RAND_DIM_BSDF_V] + sample_off[1], &_unused);
+    const float rand_u = fract(halton[RAND_DIM_BSDF_U] + sample_off[0]);
+    const float rand_v = fract(halton[RAND_DIM_BSDF_V] + sample_off[1]);
 
     ray_packet_t new_ray;
     new_ray.xy = ray.xy;
@@ -3957,7 +3726,7 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
     const bool cant_terminate = total_depth < pi.settings.termination_start_depth;
 
     const float lum = std::max(new_ray.c[0], std::max(new_ray.c[1], new_ray.c[2]));
-    const float p = std::modf(halton[RAND_DIM_TERMINATE] + sample_off[0], &_unused);
+    const float p = fract(halton[RAND_DIM_TERMINATE] + sample_off[0]);
     const float q = cant_terminate ? 0.0f : std::max(0.05f, 1.0f - lum);
     if (p >= q && lum > 0.0f && new_ray.pdf > 0.0f) {
         new_ray.c[0] /= (1.0f - q);
@@ -3972,3 +3741,4 @@ Ray::pixel_color_t Ray::Ref::ShadeSurface(const pass_info_t &pi, const hit_data_
 
 #undef USE_NEE
 #undef USE_VNDF_GGX_SAMPLING
+#undef VECTORIZE_BBOX_INTERSECTION
