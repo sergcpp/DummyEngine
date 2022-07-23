@@ -5,7 +5,7 @@
 void test_mat() {
     using namespace Ren;
 
-    {
+    { // test matrix type
         auto v1 = Mat2f{Vec2f{1.0f, 2.0f}, Vec2f{3.0f, 4.0f}}, v2 = Mat2f{Vec2f{3.0f, 4.0f}, Vec2f{5.0f, 6.0f}};
 
         require(v1[0][0] == 1.0f);

@@ -4,130 +4,9 @@
 #include "../GL.h"
 #include "../Material.h"
 
-#if defined(_WIN32)
-#include <Windows.h>
-
-#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
-#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
-#define WGL_CONTEXT_FLAGS_ARB 0x2094
-#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB 0x00000002
-
-#else
-#include <SDL2/SDL.h>
-#endif
-
-class ProgramTest : public Ren::Context {
-#if defined(_WIN32)
-    HINSTANCE hInstance;
-    HWND hWnd;
-    HDC hDC;
-    HGLRC hRC;
-#else
-    SDL_Window *window_;
-    void *gl_ctx_main_;
-#endif
-    Ren::LogNull log_;
-
-  public:
-    ProgramTest() {
-#if defined(_WIN32)
-        hInstance = GetModuleHandle(NULL);
-        WNDCLASS wc;
-        wc.style = CS_OWNDC;
-        wc.lpfnWndProc = ::DefWindowProc;
-        wc.cbClsExtra = 0;
-        wc.cbWndExtra = 0;
-        wc.hInstance = hInstance;
-        wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = NULL;
-        wc.lpszMenuName = NULL;
-        wc.lpszClassName = "ProgramTest";
-
-        if (!RegisterClass(&wc)) {
-            throw std::runtime_error("Cannot register window class!");
-        }
-
-        hWnd = CreateWindow("ProgramTest", "!!", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100,
-                            100, NULL, NULL, hInstance, NULL);
-
-        if (hWnd == NULL) {
-            throw std::runtime_error("Cannot create window!");
-        }
-
-        hDC = GetDC(hWnd);
-
-        PIXELFORMATDESCRIPTOR pfd;
-        memset(&pfd, 0, sizeof(pfd));
-        pfd.nSize = sizeof(pfd);
-        pfd.nVersion = 1;
-        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-        pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = 32;
-
-        int pf = ChoosePixelFormat(hDC, &pfd);
-        if (pf == 0) {
-            throw std::runtime_error("Cannot find pixel format!");
-        }
-
-        if (SetPixelFormat(hDC, pf, &pfd) == FALSE) {
-            throw std::runtime_error("Cannot set pixel format!");
-        }
-
-        DescribePixelFormat(hDC, pf, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-        HGLRC temp_context = wglCreateContext(hDC);
-        wglMakeCurrent(hDC, temp_context);
-
-        typedef HGLRC(APIENTRY * PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext,
-                                                                    const int *attribList);
-        static PFNWGLCREATECONTEXTATTRIBSARBPROC pfnCreateContextAttribsARB =
-            reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(wglGetProcAddress("wglCreateContextAttribsARB"));
-
-        int attriblist[] = {WGL_CONTEXT_MAJOR_VERSION_ARB,
-                            4,
-                            WGL_CONTEXT_MINOR_VERSION_ARB,
-                            3,
-                            WGL_CONTEXT_FLAGS_ARB,
-                            WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-                            0,
-                            0};
-
-        hRC = pfnCreateContextAttribsARB(hDC, 0, attriblist);
-        wglMakeCurrent(hDC, hRC);
-
-        wglDeleteContext(temp_context);
-#else
-        SDL_Init(SDL_INIT_VIDEO);
-
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-        gl_ctx_main_ = SDL_GL_CreateContext(window_);
-#endif
-        Context::Init(256, 256, &log_, nullptr);
-    }
-
-    ~ProgramTest() {
-#if defined(_WIN32)
-        wglMakeCurrent(NULL, NULL);
-        ReleaseDC(hWnd, hDC);
-        wglDeleteContext(hRC);
-        DestroyWindow(hWnd);
-        UnregisterClass("ProgramTest", hInstance);
-#else
-        SDL_GL_DeleteContext(gl_ctx_main_);
-        SDL_DestroyWindow(window_);
-#ifndef EMSCRIPTEN
-        SDL_Quit();
-#endif
-#endif
-    }
-};
-
 void test_program() {
-    {
-        // Load glsl program
-        ProgramTest test;
+    { // Load glsl program
+        TestContext test;
 
         const char vs_src[] =
             R"(
@@ -198,7 +77,7 @@ void main(void) {
     }
 
     { // Load compute
-        ProgramTest test;
+        TestContext test;
 
         const char cs_source[] =
             R"(
@@ -291,7 +170,7 @@ void main() {
     }
 
     { // load spirv
-        ProgramTest test;
+        TestContext test;
 
         if (test.capabilities.spirv) {
             /* Contents of file frag.spv */

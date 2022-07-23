@@ -201,6 +201,7 @@ void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DPara
         _p.w = _p.h = 1;
         _p.mip_count = 1;
         _p.format = eTexFormat::RawRGBA8888;
+        _p.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
 
         InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, _p, log);
         // mark it as not ready
@@ -244,6 +245,8 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
+        _p.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+
         InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
         // mark it as not ready
         ready_ = false;

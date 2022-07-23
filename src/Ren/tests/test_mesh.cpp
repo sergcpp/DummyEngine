@@ -6,110 +6,6 @@
 #include "../Mesh.h"
 #include "../Utils.h"
 
-#ifdef USE_GL_RENDER
-
-#if defined(_WIN32)
-#include <Windows.h>
-#else
-#include <SDL2/SDL.h>
-#endif
-
-class MeshTest : public Ren::Context {
-#if defined(_WIN32)
-    HINSTANCE hInstance;
-    HWND hWnd;
-    HDC hDC;
-    HGLRC hRC;
-#else
-    SDL_Window *window_;
-    void *gl_ctx_main_;
-#endif
-    Ren::LogNull log_;
-
-  public:
-    MeshTest() {
-#if defined(_WIN32)
-        hInstance = GetModuleHandle(NULL);
-        WNDCLASS wc;
-        wc.style = CS_OWNDC;
-        wc.lpfnWndProc = ::DefWindowProc;
-        wc.cbClsExtra = 0;
-        wc.cbWndExtra = 0;
-        wc.hInstance = hInstance;
-        wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = NULL;
-        wc.lpszMenuName = NULL;
-        wc.lpszClassName = "MeshTest";
-
-        if (!RegisterClass(&wc)) {
-            throw std::runtime_error("Cannot register window class!");
-        }
-
-        hWnd = CreateWindow("MeshTest", "!!", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, 100,
-                            NULL, NULL, hInstance, NULL);
-
-        if (hWnd == NULL) {
-            throw std::runtime_error("Cannot create window!");
-        }
-
-        hDC = GetDC(hWnd);
-
-        PIXELFORMATDESCRIPTOR pfd;
-        memset(&pfd, 0, sizeof(pfd));
-        pfd.nSize = sizeof(pfd);
-        pfd.nVersion = 1;
-        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-        pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = 32;
-
-        int pf = ChoosePixelFormat(hDC, &pfd);
-        if (pf == 0) {
-            throw std::runtime_error("Cannot find pixel format!");
-        }
-
-        if (SetPixelFormat(hDC, pf, &pfd) == FALSE) {
-            throw std::runtime_error("Cannot set pixel format!");
-        }
-
-        DescribePixelFormat(hDC, pf, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-        hRC = wglCreateContext(hDC);
-        wglMakeCurrent(hDC, hRC);
-#else
-        SDL_Init(SDL_INIT_VIDEO);
-
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-        gl_ctx_main_ = SDL_GL_CreateContext(window_);
-#endif
-        Context::Init(256, 256, &log_, nullptr);
-    }
-
-    ~MeshTest() {
-#if defined(_WIN32)
-        wglMakeCurrent(NULL, NULL);
-        ReleaseDC(hWnd, hDC);
-        wglDeleteContext(hRC);
-        DestroyWindow(hWnd);
-        UnregisterClass("MeshTest", hInstance);
-#else
-        SDL_GL_DeleteContext(gl_ctx_main_);
-        SDL_DestroyWindow(window_);
-#ifndef EMSCRIPTEN
-        SDL_Quit();
-#endif
-#endif
-    }
-};
-#else
-#include "../SW/SW.h"
-class MeshTest : public Ren::Context {
-  public:
-    MeshTest() { Ren::Context::Init(256, 256); }
-};
-#endif
-
 namespace {
 unsigned char __ivy_mesh[] = {
     0x53, 0x54, 0x41, 0x54, 0x49, 0x43, 0x5f, 0x4d, 0x45, 0x53, 0x48, 0x00, 0x05, 0x00, 0x00, 0x00, 0x38, 0x00, 0x00,
@@ -190,7 +86,7 @@ void test_mesh() {
         membuf sbuf(__ivy_mesh, sizeof(__ivy_mesh));
         std::istream in(&sbuf);
 
-        MeshTest test;
+        TestContext test;
 
         auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
                                            const char *arg2, const char *arg3, const char *arg4,
@@ -249,7 +145,7 @@ void test_mesh() {
         membuf sbuf(__skeletal_mesh, sizeof(__skeletal_mesh));
         std::istream in(&sbuf);
 
-        MeshTest test;
+        TestContext test;
 
         auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
                                            const char *arg2, const char *arg3, const char *arg4,

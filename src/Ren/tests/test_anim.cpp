@@ -1,11 +1,7 @@
 #include "test_common.h"
 
-#include <string>
-
 #include "membuf.h"
-
 #include "../Anim.h"
-#include "../Context.h"
 
 namespace {
 unsigned char __anim[] = {
@@ -39,192 +35,83 @@ unsigned char __anim[] = {
 unsigned int __anim_len = 508;
 } // namespace
 
-#ifdef USE_GL_RENDER
-#if defined(_WIN32)
-#include <Windows.h>
-#else
-#include <SDL2/SDL.h>
-#endif
-
-class AnimTest : public Ren::Context {
-#if defined(_WIN32)
-    HINSTANCE hInstance;
-    HWND hWnd;
-    HDC hDC;
-    HGLRC hRC;
-#else
-    SDL_Window *window_;
-    void *gl_ctx_main_;
-#endif
-    Ren::LogNull log_;
-
-  public:
-    AnimTest() {
-#if defined(_WIN32)
-        hInstance = GetModuleHandle(NULL);
-        WNDCLASS wc;
-        wc.style = CS_OWNDC;
-        wc.lpfnWndProc = ::DefWindowProc;
-        wc.cbClsExtra = 0;
-        wc.cbWndExtra = 0;
-        wc.hInstance = hInstance;
-        wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = NULL;
-        wc.lpszMenuName = NULL;
-        wc.lpszClassName = "AnimTest";
-
-        if (!RegisterClass(&wc)) {
-            throw std::runtime_error("Cannot register window class!");
-        }
-
-        hWnd = CreateWindow("AnimTest", "!!", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100, 100,
-                            NULL, NULL, hInstance, NULL);
-
-        if (hWnd == NULL) {
-            throw std::runtime_error("Cannot create window!");
-        }
-
-        hDC = GetDC(hWnd);
-
-        PIXELFORMATDESCRIPTOR pfd;
-        memset(&pfd, 0, sizeof(pfd));
-        pfd.nSize = sizeof(pfd);
-        pfd.nVersion = 1;
-        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-        pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = 32;
-
-        int pf = ChoosePixelFormat(hDC, &pfd);
-        if (pf == 0) {
-            throw std::runtime_error("Cannot find pixel format!");
-        }
-
-        if (SetPixelFormat(hDC, pf, &pfd) == FALSE) {
-            throw std::runtime_error("Cannot set pixel format!");
-        }
-
-        DescribePixelFormat(hDC, pf, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-        hRC = wglCreateContext(hDC);
-        wglMakeCurrent(hDC, hRC);
-#else
-        SDL_Init(SDL_INIT_VIDEO);
-
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-        gl_ctx_main_ = SDL_GL_CreateContext(window_);
-#endif
-        Context::Init(256, 256, &log_, nullptr);
-    }
-
-    ~AnimTest() {
-#if defined(_WIN32)
-        wglMakeCurrent(NULL, NULL);
-        ReleaseDC(hWnd, hDC);
-        wglDeleteContext(hRC);
-        DestroyWindow(hWnd);
-        UnregisterClass("AnimTest", hInstance);
-#else
-        SDL_GL_DeleteContext(gl_ctx_main_);
-        SDL_DestroyWindow(window_);
-#ifndef EMSCRIPTEN
-        SDL_Quit();
-#endif
-#endif
-    }
-};
-#elif defined(USE_VK_RENDER)
-#elif defined(USE_SW_RENDER)
-#include "../SW/SW.h"
-class AnimTest : public Ren::Context {
-  public:
-    AnimTest() { Ren::Context::Init(256, 256); }
-};
-#endif
-
 void test_anim() {
-    {
-        // Load anim
-        AnimTest t;
-
+    { // Load anim
         membuf sbuf(__anim, sizeof(__anim));
         std::istream in(&sbuf);
 
-        Ren::Context ctx;
-        Ren::LogNull log;
-        ctx.Init(1, 1, &log, nullptr);
-        Ren::AnimSeqRef anim_ref = ctx.LoadAnimSequence("anim", in);
+        Ren::AnimSequence anim;
+        anim.Init(in);
 
-        require(anim_ref->act_name() == "ArmatureAction");
-        require(anim_ref->fps() == 24);
-        require(anim_ref->len() == 3);
-        require(anim_ref->frame_size() == 11);
-        require(anim_ref->frame_dur() == 1.0f / 24);
-        require(anim_ref->anim_dur() == 3.0f / 24);
-        require(anim_ref->num_bones() == 2);
+        require(anim.act_name() == "ArmatureAction");
+        require(anim.fps() == 24);
+        require(anim.len() == 3);
+        require(anim.frame_size() == 11);
+        require(anim.frame_dur() == 1.0f / 24);
+        require(anim.anim_dur() == 3.0f / 24);
+        require(anim.num_bones() == 2);
 
-        require(std::string(anim_ref->bone(0)->name) == "Bone01");
-        require(std::string(anim_ref->bone(0)->parent_name) == "None");
-        require(anim_ref->bone(0)->id == 0);
-        require(anim_ref->bone(0)->offset == 0);
-        require((anim_ref->bone(0)->flags & uint32_t(Ren::eAnimBoneFlags::AnimHasTranslate)) == 1);
+        require(strcmp(anim.bone(0)->name,"Bone01") == 0);
+        require(strcmp(anim.bone(0)->parent_name, "None") == 0);
+        require(anim.bone(0)->id == 0);
+        require(anim.bone(0)->offset == 0);
+        require((anim.bone(0)->flags & uint32_t(Ren::eAnimBoneFlags::AnimHasTranslate)) == 1);
 
-        require(std::string(anim_ref->bone(1)->name) == "Bone02");
-        require(std::string(anim_ref->bone(1)->parent_name) == "Bone01");
-        require(anim_ref->bone(1)->id == 1);
-        require(anim_ref->bone(1)->offset == 7); // 4 for rotation, 3 for translation from previous bone
-        require(anim_ref->bone(1)->flags != uint32_t(Ren::eAnimBoneFlags::AnimHasTranslate));
+        require(strcmp(anim.bone(1)->name, "Bone02") == 0);
+        require(strcmp(anim.bone(1)->parent_name, "Bone01") == 0);
+        require(anim.bone(1)->id == 1);
+        require(anim.bone(1)->offset == 7); // 4 for rotation, 3 for translation from previous bone
+        require(anim.bone(1)->flags != uint32_t(Ren::eAnimBoneFlags::AnimHasTranslate));
 
         // translation of Bone01 frame 0
-        require(anim_ref->frames()[0] == 0);
-        require(anim_ref->frames()[1] == 0);
-        require(anim_ref->frames()[2] == 0);
+        require(anim.frames()[0] == 0);
+        require(anim.frames()[1] == 0);
+        require(anim.frames()[2] == 0);
 
         // rotation of Bone01 frame 0
-        require(anim_ref->frames()[3] == 0);
-        require(anim_ref->frames()[4] == 0);
-        require(anim_ref->frames()[5] == Approx(0.7071067690849304).epsilon(0.0001));
-        require(anim_ref->frames()[6] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[3] == 0);
+        require(anim.frames()[4] == 0);
+        require(anim.frames()[5] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[6] == Approx(0.7071067690849304).epsilon(0.0001));
 
         // rotation of Bone02 frame 0
-        require(anim_ref->frames()[7] == 0);
-        require(anim_ref->frames()[8] == 0);
-        require(anim_ref->frames()[9] == Approx(0.7071067690849304).epsilon(0.0001));
-        require(anim_ref->frames()[10] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[7] == 0);
+        require(anim.frames()[8] == 0);
+        require(anim.frames()[9] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[10] == Approx(0.7071067690849304).epsilon(0.0001));
 
         // translation of Bone01 frame 1
-        require(anim_ref->frames()[11] == 0);
-        require(anim_ref->frames()[12] == 5);
-        require(anim_ref->frames()[13] == 0);
+        require(anim.frames()[11] == 0);
+        require(anim.frames()[12] == 5);
+        require(anim.frames()[13] == 0);
 
         // rotation of Bone01 frame 1
-        require(anim_ref->frames()[14] == 0);
-        require(anim_ref->frames()[15] == 0);
-        require(anim_ref->frames()[16] == Approx(0.7071067690849304).epsilon(0.0001));
-        require(anim_ref->frames()[17] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[14] == 0);
+        require(anim.frames()[15] == 0);
+        require(anim.frames()[16] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[17] == Approx(0.7071067690849304).epsilon(0.0001));
 
         // rotation of Bone02 frame 1
-        require(anim_ref->frames()[18] == 0);
-        require(anim_ref->frames()[19] == 0);
-        require(anim_ref->frames()[20] == Approx(0.7071067690849304).epsilon(0.0001));
-        require(anim_ref->frames()[21] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[18] == 0);
+        require(anim.frames()[19] == 0);
+        require(anim.frames()[20] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[21] == Approx(0.7071067690849304).epsilon(0.0001));
 
         // translation of Bone01 frame 2
-        require(anim_ref->frames()[22] == 0);
-        require(anim_ref->frames()[23] == 0);
-        require(anim_ref->frames()[24] == 0);
+        require(anim.frames()[22] == 0);
+        require(anim.frames()[23] == 0);
+        require(anim.frames()[24] == 0);
 
         // rotation of Bone01 frame 2
-        require(anim_ref->frames()[25] == 0);
-        require(anim_ref->frames()[26] == 0);
-        require(anim_ref->frames()[27] == Approx(0.7071067690849304).epsilon(0.0001));
-        require(anim_ref->frames()[28] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[25] == 0);
+        require(anim.frames()[26] == 0);
+        require(anim.frames()[27] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[28] == Approx(0.7071067690849304).epsilon(0.0001));
 
         // rotation of Bone02 frame 2
-        require(anim_ref->frames()[29] == 0);
-        require(anim_ref->frames()[30] == 0);
-        require(anim_ref->frames()[31] == Approx(-0.7071067690849304).epsilon(0.0001));
-        require(anim_ref->frames()[32] == Approx(0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[29] == 0);
+        require(anim.frames()[30] == 0);
+        require(anim.frames()[31] == Approx(-0.7071067690849304).epsilon(0.0001));
+        require(anim.frames()[32] == Approx(0.7071067690849304).epsilon(0.0001));
     }
 }

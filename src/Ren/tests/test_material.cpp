@@ -5,148 +5,25 @@
 #include "../RenderPass.h"
 #include "../VertexInput.h"
 
-#ifdef USE_GL_RENDER
-
-#if defined(_WIN32)
-#include <Windows.h>
-#else
-#include <SDL2/SDL.h>
-#endif
-
-class MaterialTest : public Ren::Context {
-#if defined(_WIN32)
-    HINSTANCE hInstance;
-    HWND hWnd;
-    HDC hDC;
-    HGLRC hRC;
-#else
-    SDL_Window *window_;
-    void *gl_ctx_main_;
-#endif
-    Ren::LogNull log_;
-
-  public:
-    Ren::PipelineStorage pipelines;
-    Ren::VertexInput vtx_input;
-    Ren::RenderPass render_pass;
-
-    MaterialTest() {
-#if defined(_WIN32)
-        hInstance = GetModuleHandle(NULL);
-        WNDCLASS wc;
-        wc.style = CS_OWNDC;
-        wc.lpfnWndProc = ::DefWindowProc;
-        wc.cbClsExtra = 0;
-        wc.cbWndExtra = 0;
-        wc.hInstance = hInstance;
-        wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
-        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-        wc.hbrBackground = NULL;
-        wc.lpszMenuName = NULL;
-        wc.lpszClassName = "MaterialTest";
-
-        if (!RegisterClass(&wc)) {
-            throw std::runtime_error("Cannot register window class!");
-        }
-
-        hWnd = CreateWindow("MaterialTest", "!!", WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0, 0, 100,
-                            100, NULL, NULL, hInstance, NULL);
-
-        if (hWnd == NULL) {
-            throw std::runtime_error("Cannot create window!");
-        }
-
-        hDC = GetDC(hWnd);
-
-        PIXELFORMATDESCRIPTOR pfd;
-        memset(&pfd, 0, sizeof(pfd));
-        pfd.nSize = sizeof(pfd);
-        pfd.nVersion = 1;
-        pfd.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL;
-        pfd.iPixelType = PFD_TYPE_RGBA;
-        pfd.cColorBits = 32;
-
-        int pf = ChoosePixelFormat(hDC, &pfd);
-        if (pf == 0) {
-            throw std::runtime_error("Cannot find pixel format!");
-        }
-
-        if (SetPixelFormat(hDC, pf, &pfd) == FALSE) {
-            throw std::runtime_error("Cannot set pixel format!");
-        }
-
-        DescribePixelFormat(hDC, pf, sizeof(PIXELFORMATDESCRIPTOR), &pfd);
-
-        hRC = wglCreateContext(hDC);
-        wglMakeCurrent(hDC, hRC);
-#else
-        SDL_Init(SDL_INIT_VIDEO);
-
-        window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 256, 256,
-                                   SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
-        gl_ctx_main_ = SDL_GL_CreateContext(window_);
-#endif
-        Context::Init(256, 256, &log_, nullptr);
-    }
-
-    ~MaterialTest() {
-#if defined(_WIN32)
-        wglMakeCurrent(NULL, NULL);
-        ReleaseDC(hWnd, hDC);
-        wglDeleteContext(hRC);
-        DestroyWindow(hWnd);
-        UnregisterClass("MaterialTest", hInstance);
-#else
-        SDL_GL_DeleteContext(gl_ctx_main_);
-        SDL_DestroyWindow(window_);
-#ifndef EMSCRIPTEN
-        SDL_Quit();
-#endif
-#endif
-    }
-};
-
-#else
-#include "../SW/SW.h"
-class MaterialTest : public Ren::Context {
-  public:
-    MaterialTest() { Ren::Context::Init(256, 256); }
-};
-#endif
-
 static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1, const char *arg2) { return {}; }
 
 static Ren::Tex2DRef OnTextureNeeded(const char *name) { return {}; }
 
 void test_material() {
     { // Load material
-        MaterialTest test;
+        TestContext test;
 
-        auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
-                                           const char *arg2, const char *arg3, const char *arg4,
-                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
-            Ren::eProgLoadStatus status;
-#if defined(USE_GL_RENDER)
-            Ren::RastState rast_state;
-
-            Ren::ProgramRef prog = test.LoadProgram(prog_name, {}, {}, {}, {}, &status);
-            const uint32_t new_index = test.pipelines.emplace();
-            const bool res = test.pipelines[new_index].Init(test.api_ctx(), rast_state, std::move(prog),
-                                                            &test.vtx_input, &test.render_pass, 0, test.log());
-            require(res);
-
-            out_pipelines.emplace_back(&test.pipelines, new_index);
-#elif defined(USE_SW_RENDER)
-            Ren::Attribute _attrs[] = {{}};
-            Ren::Uniform _unifs[] = {{}};
-            return test.LoadProgramSW(name, nullptr, nullptr, 0, _attrs, _unifs, &status);
-#endif
+        auto on_pipelines_needed = [&](const char *prog_name, const uint32_t flags, const char *arg1,
+                                       const char *arg2, const char *arg3, const char *arg4,
+                                       Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
+            out_pipelines.emplace_back(nullptr, 0);
         };
 
         auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
-            return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), nullptr, &status);
+            return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), test.default_mem_allocs(),
+                                      &status);
         };
 
         auto on_sampler_needed = [&test](Ren::SamplingParams params) {
@@ -177,11 +54,6 @@ void test_material() {
         require(m_ref->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
         require(m_ref->ready());
         require(m_ref->name() == "mat1");
-
-        Ren::ProgramRef p = m_ref->pipelines[0]->prog();
-
-        require(p->name() == "constant");
-        require(!p->ready());
 
         Ren::Tex2DRef t0 = m_ref->textures[0];
         Ren::Tex2DRef t1 = m_ref->textures[1];
