@@ -42,22 +42,18 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
     sc_data.nodes = s->nodes_.empty() ? nullptr : &s->nodes_[0];
     sc_data.mnodes = s->mnodes_.empty() ? nullptr : &s->mnodes_[0];
     sc_data.tris = s->tris_.empty() ? nullptr : &s->tris_[0];
-    sc_data.tris2 = s->tris2_.empty() ? nullptr : &s->tris2_[0];
     sc_data.tri_indices = s->tri_indices_.empty() ? nullptr : &s->tri_indices_[0];
     sc_data.tri_materials = s->tri_materials_.empty() ? nullptr : &s->tri_materials_[0];
     sc_data.materials = s->materials_.empty() ? nullptr : &s->materials_[0];
     sc_data.textures = s->textures_.empty() ? nullptr : &s->textures_[0];
     sc_data.lights = s->lights_.empty() ? nullptr : &s->lights_[0];
-    sc_data.li_indices = s->li_indices_.empty() ? nullptr : &s->li_indices_[0];
-    sc_data.lights2 = s->lights2_.empty() ? nullptr : &s->lights2_[0];
-    sc_data.lights2_count = uint32_t(s->lights2_.size());
-    sc_data.visible_lights = s->visible_lights_.empty() ? nullptr : &s->visible_lights_[0];
-    sc_data.visible_lights_count = uint32_t(s->visible_lights_.size());
+    sc_data.li_indices = {s->li_indices_.data(), s->li_indices_.size()};
+    sc_data.visible_lights = {s->visible_lights_.data(), s->visible_lights_.size()};
 
     const uint32_t macro_tree_root = s->macro_nodes_root_;
-    const uint32_t light_tree_root = s->light_nodes_root_;
 
-    const TextureAtlasBase *tex_atlases[] = {&s->tex_atlas_rgba_, &s->tex_atlas_rgb_, &s->tex_atlas_rg_, &s->tex_atlas_r_};
+    const TextureAtlasBase *tex_atlases[] = {&s->tex_atlas_rgba_, &s->tex_atlas_rgb_, &s->tex_atlas_rg_,
+                                             &s->tex_atlas_r_};
 
     float root_min[3], cell_size[3];
     if (macro_tree_root != 0xffffffff) {
@@ -142,20 +138,19 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         for (size_t i = 0; i < p.primary_rays.size(); i++) {
             const ray_packet_t &r = p.primary_rays[i];
             hit_data_t &inter = p.intersections[i];
-
             inter = {};
-            inter.xy = r.xy;
 
             if (macro_tree_root != 0xffffffff) {
                 if (sc_data.mnodes) {
                     Traverse_MacroTree_WithStack_ClosestHit(r, sc_data.mnodes, macro_tree_root, sc_data.mesh_instances,
                                                             sc_data.mi_indices, sc_data.meshes, sc_data.transforms,
-                                                            sc_data.tris2, sc_data.tri_indices, inter);
+                                                            sc_data.tris, sc_data.tri_indices, inter);
                 } else {
                     Traverse_MacroTree_WithStack_ClosestHit(r, sc_data.nodes, macro_tree_root, sc_data.mesh_instances,
                                                             sc_data.mi_indices, sc_data.meshes, sc_data.transforms,
-                                                            sc_data.tris2, sc_data.tri_indices, inter);
+                                                            sc_data.tris, sc_data.tri_indices, inter);
                 }
+                // IntersectAreaLights(r, sc_data.lights, sc_data.visible_lights, sc_data.transforms, inter);
             }
         }
     } else {
@@ -176,20 +171,14 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         const ray_packet_t &r = p.primary_rays[i];
         const hit_data_t &inter = p.intersections[i];
 
-        const int x = (inter.xy >> 16) & 0x0000ffff;
-        const int y = inter.xy & 0x0000ffff;
+        const int x = (r.xy >> 16) & 0x0000ffff;
+        const int y = r.xy & 0x0000ffff;
 
-        pass_info.index = y * w + x;
-        pass_info.rand_index = pass_info.index;
-
-        if (cam.pass_settings.flags & UseCoherentSampling) {
-            const int blck_x = (x % 8), blck_y = (y % 8);
-            pass_info.rand_index = ray_packet_pixel_layout[blck_y * 8 + blck_x];
-        }
+        const int px_index = y * w + x;
 
         const pixel_color_t col =
-            ShadeSurface(pass_info, inter, r, &region.halton_seq[hi + RAND_DIM_BASE_COUNT], sc_data, macro_tree_root,
-                         tex_atlases, &p.secondary_rays[0], &secondary_rays_count);
+            ShadeSurface(px_index, pass_info, inter, r, &region.halton_seq[hi + RAND_DIM_BASE_COUNT], sc_data,
+                         macro_tree_root, tex_atlases, &p.secondary_rays[0], &secondary_rays_count);
         temp_buf_.SetPixel(x, y, col);
     }
 
@@ -251,19 +240,18 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         for (int i = 0; i < secondary_rays_count; i++) {
             const ray_packet_t &r = p.secondary_rays[i];
             hit_data_t &inter = p.intersections[i];
-
             inter = {};
-            inter.xy = r.xy;
 
             if (sc_data.mnodes) {
                 Traverse_MacroTree_WithStack_ClosestHit(r, sc_data.mnodes, macro_tree_root, sc_data.mesh_instances,
                                                         sc_data.mi_indices, sc_data.meshes, sc_data.transforms,
-                                                        sc_data.tris2, sc_data.tri_indices, inter);
+                                                        sc_data.tris, sc_data.tri_indices, inter);
             } else {
                 Traverse_MacroTree_WithStack_ClosestHit(r, sc_data.nodes, macro_tree_root, sc_data.mesh_instances,
                                                         sc_data.mi_indices, sc_data.meshes, sc_data.transforms,
-                                                        sc_data.tris2, sc_data.tri_indices, inter);
+                                                        sc_data.tris, sc_data.tri_indices, inter);
             }
+            IntersectAreaLights(r, sc_data.lights, sc_data.visible_lights, sc_data.transforms, inter);
         }
 
         auto time_secondary_shade_start = std::chrono::high_resolution_clock::now();
@@ -278,20 +266,15 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
             const ray_packet_t &r = p.primary_rays[i];
             const hit_data_t &inter = p.intersections[i];
 
-            const int x = (inter.xy >> 16) & 0x0000ffff;
-            const int y = inter.xy & 0x0000ffff;
+            const int x = (r.xy >> 16) & 0x0000ffff;
+            const int y = r.xy & 0x0000ffff;
 
-            pass_info.index = y * w + x;
-            pass_info.rand_index = pass_info.index;
+            const int px_index = y * w + x;
 
-            if (cam.pass_settings.flags & UseCoherentSampling) {
-                const int blck_x = (x % 8), blck_y = (y % 8);
-                pass_info.rand_index = ray_packet_pixel_layout[blck_y * 8 + blck_x];
-            }
-
-            pixel_color_t col = ShadeSurface(
-                pass_info, inter, r, &region.halton_seq[hi + RAND_DIM_BASE_COUNT + bounce * RAND_DIM_BOUNCE_COUNT],
-                sc_data, macro_tree_root, tex_atlases, &p.secondary_rays[0], &secondary_rays_count);
+            pixel_color_t col =
+                ShadeSurface(px_index, pass_info, inter, r,
+                             &region.halton_seq[hi + RAND_DIM_BASE_COUNT + bounce * RAND_DIM_BOUNCE_COUNT], sc_data,
+                             macro_tree_root, tex_atlases, &p.secondary_rays[0], &secondary_rays_count);
             col.a = 0.0f;
 
             temp_buf_.AddPixel(x, y, col);
