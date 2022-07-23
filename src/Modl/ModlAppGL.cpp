@@ -346,11 +346,11 @@ void ModlApp::ClearColorAndDepth(const float r, const float g, const float b, co
 }
 
 void ModlApp::CheckInitVAOs() {
-    Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
-                   vtx_buf2 = ctx_.default_vertex_buf2();
-    Ren::BufferRef skin_vtx_buf = ctx_.default_skin_vertex_buf();
-    Ren::BufferRef delta_buf = ctx_.default_delta_buf();
-    Ren::BufferRef ndx_buf = ctx_.default_indices_buf();
+    Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(),
+                   vtx_buf2 = ctx_->default_vertex_buf2();
+    Ren::BufferRef skin_vtx_buf = ctx_->default_skin_vertex_buf();
+    Ren::BufferRef delta_buf = ctx_->default_delta_buf();
+    Ren::BufferRef ndx_buf = ctx_->default_indices_buf();
 
     const auto gl_vertex_buf1 = GLuint(vtx_buf1->id()),
                gl_vertex_buf2 = GLuint(vtx_buf2->id()),
@@ -612,26 +612,26 @@ void main(void) {
 
     Ren::eShaderLoadStatus sh_status;
     Ren::ShaderRef diag_vs_ref =
-        ctx_.LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vert, &sh_status);
+        ctx_->LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vert, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-    Ren::ShaderRef diag_colored_vs_ref = ctx_.LoadShaderGLSL(
+    Ren::ShaderRef diag_colored_vs_ref = ctx_->LoadShaderGLSL(
         "__diag_colored_vs", diag_colored_vs, Ren::eShaderType::Vert, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-    Ren::ShaderRef diag_skinned_vs_ref = ctx_.LoadShaderGLSL(
+    Ren::ShaderRef diag_skinned_vs_ref = ctx_->LoadShaderGLSL(
         "__diag_skinned_vs", diag_skinned_vs, Ren::eShaderType::Vert, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
     Ren::ShaderRef diag_fs_ref =
-        ctx_.LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Frag, &sh_status);
+        ctx_->LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Frag, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
     Ren::eProgLoadStatus status;
-    diag_prog_ = ctx_.LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, &status);
+    diag_prog_ = ctx_->LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_colored_prog_ = ctx_.LoadProgram("__diag_colored", diag_colored_vs_ref,
-                                          diag_fs_ref, {}, {}, &status);
+    diag_colored_prog_ = ctx_->LoadProgram("__diag_colored", diag_colored_vs_ref,
+                                           diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_skinned_prog_ = ctx_.LoadProgram("__diag_skinned", diag_skinned_vs_ref,
-                                          diag_fs_ref, {}, {}, &status);
+    diag_skinned_prog_ = ctx_->LoadProgram("__diag_skinned", diag_skinned_vs_ref,
+                                           diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     static const char skinning_cs[] = R"(
@@ -762,10 +762,10 @@ void main(void) {
         )";
 
     Ren::ShaderRef skinning_cs_ref =
-        ctx_.LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Comp, &sh_status);
+        ctx_->LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Comp, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
-    skinning_prog_ = ctx_.LoadProgram("__skin", skinning_cs_ref, &status);
+    skinning_prog_ = ctx_->LoadProgram("__skin", skinning_cs_ref, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     ////////////////////////////////////////////////////////////////////////////////////////

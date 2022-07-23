@@ -80,7 +80,7 @@ class ModlApp {
     float anim_time_ = 0.0f;
     Ren::Mat4f matr_palette_[256];
     Ren::Camera cam_;
-    Ren::Context ctx_;
+    std::unique_ptr<Ren::Context> ctx_;
 
     Ren::ProgramRef diag_prog_, diag_colored_prog_, diag_skinned_prog_, skinning_prog_;
     Ren::Tex2DRef checker_tex_;
