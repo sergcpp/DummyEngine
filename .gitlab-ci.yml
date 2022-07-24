@@ -79,9 +79,9 @@ stages:
     - cd build_gl_dev
     - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target all --parallel 8
-    - cmake --build build_gl_dbg --target all --parallel 8
-    - cmake --build build_gl_dev --target all --parallel 8
+    - cmake --build build_gl --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_gl_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_gl_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
     - echo "Compile complete."
     - mkdir linux-x86_64-gl
     - cp build_gl/src/Eng/_tests/test_Eng linux-x86_64-gl

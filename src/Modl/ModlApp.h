@@ -12,7 +12,14 @@
 #include <Ren/RenderPass.h>
 #include <Ren/VertexInput.h>
 
-struct SDL_Window;
+#ifndef _WINDEF_
+struct HWND__; // Forward or never
+typedef HWND__ *HWND;
+struct HDC__;
+typedef HDC__ *HDC;
+struct HGLRC__;
+typedef HGLRC__ *HGLRC;
+#endif
 
 class LogStdout : public Ren::ILog {
   public:
@@ -47,12 +54,11 @@ class ModlApp {
 
     int Init(int w, int h);
     void Frame();
-    void PollEvents();
     void Destroy();
 
     bool terminated() const { return quit_; }
 
-  private:
+  //private:
     enum class eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
     eCompileResult CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize,
                                 bool generate_occlusion);
@@ -63,10 +69,13 @@ class ModlApp {
                                               const std::vector<std::vector<uint32_t>> &indices) const;
 
     bool quit_;
-    SDL_Window *window_ = nullptr;
+#if defined(_WIN32)
+    HWND window_handle_ = {};
+    HDC device_context_ = {};
+    HGLRC gl_ctx_ = {};
+#endif
     LogStdout log_;
 #if defined(USE_GL_RENDER)
-    void *gl_ctx_main_ = nullptr;
     uint32_t simple_vao_ = 0, skinned_vao_ = 0;
     uint32_t last_vertex_buf1_ = 0, last_vertex_buf2_ = 0, last_skin_vertex_buffer_ = 0, last_delta_buffer_ = 0,
              last_index_buffer_ = 0;
