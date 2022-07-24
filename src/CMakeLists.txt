@@ -5,40 +5,24 @@ set(CMAKE_CXX_STANDARD 11)
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "" FORCE)
 
-set(SDL_STATIC ON)
-
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
         if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-small-functions ")
-
-            if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/include)
-                set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/x86_64-w64-mingw32/lib")
-            else(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/include)
-                set(SDL2_LIBRARIES "${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/i686-w64-mingw32/lib")
-            endif()
         elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1")
         
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x64)
                 set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64)
             else(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(SDL2_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/lib/x86)
                 set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
             endif()
-            set(SDL2_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/libs/SDL2/include)
         endif()
     else(WIN32)
-        include(FindPkgConfig)
-        pkg_search_module (SDL2 REQUIRED sdl2)
-
         # allow to inline some functions in debug mode
         #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions-called-once -finline-functions")
         #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-limit=10")
@@ -55,9 +39,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/linux/x64)
         endif(APPLE)
     endif(WIN32)
-    
-    include_directories(${SDL2_INCLUDE_DIRS})
-    link_directories(${SDL2_LIBRARIES})
+
     link_directories(${ITT_LIBRARIES})
 
     if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")

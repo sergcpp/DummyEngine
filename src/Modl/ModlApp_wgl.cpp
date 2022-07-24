@@ -13,7 +13,9 @@
 #include <memory>
 #include <set>
 
-#include <SDL2/SDL.h>
+#include <Windows.h>
+#undef max
+#undef min
 
 #if defined(USE_GL_RENDER)
 #include <Ren/GL.h>
@@ -27,10 +29,203 @@
 #include <Sys/AssetFileIO.h>
 #include <Sys/DynLib.h>
 #include <Sys/Log.h>
+#include <Sys/Time_.h>
+#include <Eng/Input/Keycode.h>
 
 #include "../Eng/Utils/BVHSplit.cpp"
 
 #pragma warning(disable : 4996)
+
+typedef BOOL(WINAPI *PFNWGLCHOOSEPIXELFORMATARBPROC)(HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList,
+                                                     UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
+typedef HGLRC(WINAPI *PFNWGLCREATECONTEXTATTRIBSARBPROC)(HDC hDC, HGLRC hShareContext, const int *attribList);
+typedef BOOL(WINAPI *PFNWGLSWAPINTERVALEXTPROC)(int interval);
+
+#define WGL_DRAW_TO_WINDOW_ARB 0x2001
+#define WGL_ACCELERATION_ARB 0x2003
+#define WGL_SUPPORT_OPENGL_ARB 0x2010
+#define WGL_DOUBLE_BUFFER_ARB 0x2011
+#define WGL_PIXEL_TYPE_ARB 0x2013
+#define WGL_COLOR_BITS_ARB 0x2014
+#define WGL_ALPHA_BITS_ARB 0x201B
+#define WGL_DEPTH_BITS_ARB 0x2022
+#define WGL_STENCIL_BITS_ARB 0x2023
+#define WGL_FULL_ACCELERATION_ARB 0x2027
+#define WGL_TYPE_RGBA_ARB 0x202B
+
+#define WGL_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB 0x2092
+
+#define WGL_CONTEXT_PROFILE_MASK_ARB 0x9126
+#define WGL_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
+
+ModlApp *g_app = nullptr;
+
+#if 0
+void ModlApp::PollEvents() {
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        switch (e.type) {
+        case SDL_KEYDOWN: {
+            if (e.key.keysym.sym == SDLK_ESCAPE) {
+                quit_ = true;
+                return;
+            } else if (e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9) {
+                view_mode_ = eViewMode(e.key.keysym.sym - SDLK_0);
+            } else if (e.key.keysym.sym == SDLK_r) {
+                angle_x_ = angle_y_ = 0.0f;
+                offset_x_ = offset_y_ = 0.0f;
+            }
+        } break;
+        case SDL_MOUSEBUTTONDOWN: {
+            if (e.button.button == SDL_BUTTON_LEFT) {
+                grabbed_pointer_ = 0;
+            } else if (e.button.button == SDL_BUTTON_RIGHT) {
+                grabbed_pointer_ = 1;
+            }
+        } break;
+        case SDL_MOUSEBUTTONUP:
+            grabbed_pointer_ = -1;
+            break;
+        case SDL_MOUSEMOTION:
+            if (grabbed_pointer_ == 0) {
+                angle_y_ += 0.01f * e.motion.xrel;
+                angle_x_ += -0.01f * e.motion.yrel;
+            } else if (grabbed_pointer_ == 1) {
+                offset_x_ -= 0.01f * e.motion.xrel;
+                offset_y_ -= 0.01f * e.motion.yrel;
+            }
+            break;
+        case SDL_MOUSEWHEEL: {
+            if (e.wheel.y > 0) {
+                view_dist_ -= 0.05f * view_dist_;
+            } else if (e.wheel.y < 0) {
+                view_dist_ += 0.05f * view_dist_;
+            }
+        } break;
+        case SDL_QUIT: {
+            quit_ = true;
+            return;
+        }
+        default:
+            return;
+        }
+    }
+}
+#endif
+
+uint32_t ScancodeFromLparam(LPARAM lparam) { return ((lparam >> 16) & 0x7f) | ((lparam & (1 << 24)) != 0 ? 0x80 : 0); }
+
+static const unsigned char ScancodeToHID_table[256] = {
+    0,  41,  30,  31,  32,  33, 34, 35, 36, 37, 38, 39,  45,  46, 42, 43, 20,  26, 8,  21, 23, 28, 24, 12, 18, 19,
+    47, 48,  158, 224, 4,   22, 7,  9,  10, 11, 13, 14,  15,  51, 52, 53, 225, 49, 29, 27, 6,  25, 5,  17, 16, 54,
+    55, 56,  229, 0,   226, 44, 57, 58, 59, 60, 61, 62,  63,  64, 65, 66, 67,  72, 71, 0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  68, 69, 0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  228, 0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  70,  230, 0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   74, 82, 75, 0,  80, 0,  79, 0,  77,
+    81, 78,  73,  76,  0,   0,  0,  0,  0,  0,  0,  227, 231, 0,  0,  0,  0,   0,  0,  0,  0,  0,  0,  0,  0,  0,
+    0,  0,   0,   0,   0,   0,  0,  0,  0,  0,  0,  0,   0,   0,  0,  0,  0,   0,  0,  0,  0,  0};
+
+uint32_t ScancodeToHID(uint32_t scancode) {
+    if (scancode >= 256) {
+        return 0;
+    }
+    return uint32_t(ScancodeToHID_table[scancode]);
+}
+
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    static float last_p1_pos[2] = {0.0f, 0.0f}, last_p2_pos[2] = {0.0f, 0.0f};
+
+    switch (uMsg) {
+    case WM_CLOSE: {
+        PostQuitMessage(0);
+        break;
+    }
+    case WM_LBUTTONDOWN: {
+        g_app->grabbed_pointer_ = 0;
+        break;
+    }
+    case WM_RBUTTONDOWN: {
+        g_app->grabbed_pointer_ = 1;
+        break;
+    }
+    case WM_LBUTTONUP: {
+        if (g_app->grabbed_pointer_ == 0) {
+            g_app->grabbed_pointer_ = -1;
+        }
+        break;
+    }
+    case WM_RBUTTONUP: {
+        if (g_app->grabbed_pointer_ == 1) {
+            g_app->grabbed_pointer_ = -1;
+        }
+        break;
+    }
+    case WM_MOUSEMOVE: {
+        const float px = (float)LOWORD(lParam), py = (float)HIWORD(lParam);
+        const float dx = px - last_p1_pos[0], dy = py - last_p1_pos[1];
+
+        if (g_app->grabbed_pointer_ == 0) {
+            g_app->angle_y_ += 0.01f * dx;
+            g_app->angle_x_ += -0.01f * dy;
+        } else if (g_app->grabbed_pointer_ == 1) {
+            g_app->offset_x_ -= 0.01f * dx;
+            g_app->offset_y_ -= 0.01f * dy;
+        }
+
+        last_p1_pos[0] = px;
+        last_p1_pos[1] = py;
+        break;
+    }
+    case WM_KEYDOWN: {
+        if (wParam == VK_ESCAPE) {
+            PostQuitMessage(0);
+        } else {
+            const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
+            if (key_code == Key0) {
+                g_app->view_mode_ = ModlApp::eViewMode(0);
+            } else  if (key_code >= Key1 && key_code <= Key9) {
+                g_app->view_mode_ = ModlApp::eViewMode(key_code - Key1 + 1);
+            } else if (key_code == KeyR) {
+                g_app->angle_x_ = g_app->angle_y_ = 0.0f;
+                g_app->offset_x_ = g_app->offset_y_ = 0.0f;
+            }
+        }
+        break;
+    }
+    case WM_KEYUP: {
+        //const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
+
+        //g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        break;
+    }
+    case WM_MOUSEWHEEL: {
+        WORD _delta = HIWORD(wParam);
+        const auto delta = reinterpret_cast<const short &>(_delta);
+        const float wheel_motion = float(delta / WHEEL_DELTA);
+
+        if (wheel_motion > 0) {
+            g_app->view_dist_ -= 0.05f * g_app->view_dist_;
+        } else if (wheel_motion < 0) {
+            g_app->view_dist_ += 0.05f * g_app->view_dist_;
+        }
+
+        break;
+    }
+    case WM_SIZE: {
+        const int w = LOWORD(lParam), h = HIWORD(lParam);
+        //g_app->Resize(w, h);
+        //g_app->AddEvent(RawInputEv::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
+    }
+    default: {
+        break;
+    }
+    }
+
+    return DefWindowProc(hwnd, uMsg, wParam, lParam);
+}
 
 extern "C" {
 // Enable High Performance Graphics while using Integrated Graphics
@@ -88,7 +283,7 @@ const auto target = Ren::Vec3f{0.0f, 0.0f, 0.0f};
 const auto up = Ren::Vec3f{0.0f, 1.0f, 0.0f};
 } // namespace
 
-ModlApp::ModlApp() : quit_(false), cam_(center, target, up) {}
+ModlApp::ModlApp() : quit_(false), cam_(center, target, up) { g_app = this; }
 
 int ModlApp::Run(const std::vector<std::string> &args) {
     using namespace std;
@@ -180,7 +375,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     }
 
     if (!view_file_name.empty()) { // load mesh file
-        SDL_ShowWindow(window_);
+        ShowWindow(window_handle_, SW_SHOWNORMAL);
 
         ifstream mesh_file(view_file_name, ios::binary);
         if (mesh_file) {
@@ -209,18 +404,21 @@ int ModlApp::Run(const std::vector<std::string> &args) {
     }
 
     while (!terminated()) {
-        PollEvents();
+        MSG msg;
+        while (PeekMessage(&msg, nullptr, NULL, NULL, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) {
+                quit_ = true;
+            } else {
+                DispatchMessage(&msg);
+            }
+        }
+
         Frame();
 
 #if defined(USE_GL_RENDER)
-        SDL_GL_SwapWindow(window_);
+        SwapBuffers(device_context_);
 #elif defined(USE_SW_RENDER)
-        const void *pixels = swGetPixelDataRef(swGetCurFramebuffer());
 
-        SDL_UpdateTexture(texture_, NULL, pixels, w * sizeof(Uint32));
-        SDL_RenderClear(renderer_);
-        SDL_RenderCopy(renderer_, texture_, NULL, NULL);
-        SDL_RenderPresent(renderer_);
 #endif
     }
 
@@ -230,27 +428,148 @@ int ModlApp::Run(const std::vector<std::string> &args) {
 }
 
 int ModlApp::Init(const int w, const int h) {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        std::cerr << "Failed to initialize SDL" << std::endl;
+    const BOOL dpi_result = SetProcessDPIAware();
+    (void)dpi_result;
+
+    WNDCLASSEX window_class = {};
+    window_class.cbSize = sizeof(WNDCLASSEX);
+    window_class.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
+    window_class.lpfnWndProc = WindowProc;
+    window_class.hInstance = GetModuleHandle(nullptr);
+    window_class.lpszClassName = "MainWindowClass";
+    window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
+    RegisterClassEx(&window_class);
+
+    RECT rect;
+    rect.left = rect.top = 0;
+    rect.right = w;
+    rect.bottom = h;
+    BOOL ret = ::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW | WS_VISIBLE, false);
+    if (!ret) {
         return -1;
     }
 
-#if defined(USE_GL_RENDER)
-    // This needs to be done before window creation
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    HWND fake_window = ::CreateWindowEx(NULL, "MainWindowClass", "View", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                                        CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
+                                        GetModuleHandle(nullptr), nullptr);
 
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-#endif
+    HDC fake_dc = GetDC(fake_window);
 
-    window_ = SDL_CreateWindow("View", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, w, h, SDL_WINDOW_OPENGL);
+    PIXELFORMATDESCRIPTOR pixel_format = {};
+    pixel_format.nSize = sizeof(pixel_format);
+    pixel_format.nVersion = 1;
+    pixel_format.dwFlags = PFD_SUPPORT_OPENGL;
+    pixel_format.iPixelType = PFD_TYPE_RGBA;
+    pixel_format.cColorBits = 24;
+    pixel_format.cAlphaBits = 8;
+    pixel_format.cDepthBits = 0;
 
-#if defined(USE_GL_RENDER)
-    gl_ctx_main_ = SDL_GL_CreateContext(window_);
-    SDL_GL_SetSwapInterval(1);
-#endif
+    int pix_format_id = ChoosePixelFormat(fake_dc, &pixel_format);
+    if (pix_format_id == 0) {
+        std::cerr << "ChoosePixelFormat() failed\n";
+        return -1;
+    }
+
+    if (!SetPixelFormat(fake_dc, pix_format_id, &pixel_format)) {
+        std::cerr << "SetPixelFormat() failed\n";
+        return -1;
+    }
+
+    HGLRC fake_rc = wglCreateContext(fake_dc);
+
+    if (!fake_rc) {
+        std::cerr << "wglCreateContext() failed\n";
+        return -1;
+    }
+
+    if (!wglMakeCurrent(fake_dc, fake_rc)) {
+        std::cerr << "wglMakeCurrent() failed\n";
+        return -1;
+    }
+
+    PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = nullptr;
+    wglChoosePixelFormatARB =
+        reinterpret_cast<PFNWGLCHOOSEPIXELFORMATARBPROC>(wglGetProcAddress("wglChoosePixelFormatARB"));
+    if (wglChoosePixelFormatARB == nullptr) {
+        std::cerr << "wglGetProcAddress() failed\n";
+        return -1;
+    }
+
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = nullptr;
+    wglCreateContextAttribsARB =
+        reinterpret_cast<PFNWGLCREATECONTEXTATTRIBSARBPROC>(wglGetProcAddress("wglCreateContextAttribsARB"));
+    if (wglCreateContextAttribsARB == nullptr) {
+        std::cerr << "wglGetProcAddress() failed\n";
+        return -1;
+    }
+
+    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
+    wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(wglGetProcAddress("wglSwapIntervalEXT"));
+
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", WS_OVERLAPPEDWINDOW,
+                                      CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
+                                      nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
+
+    device_context_ = GetDC(window_handle_);
+
+    static const int pixel_attribs[] = {WGL_DRAW_TO_WINDOW_ARB,
+                                        GL_TRUE,
+                                        WGL_SUPPORT_OPENGL_ARB,
+                                        GL_TRUE,
+                                        WGL_DOUBLE_BUFFER_ARB,
+                                        GL_TRUE,
+                                        WGL_PIXEL_TYPE_ARB,
+                                        WGL_TYPE_RGBA_ARB,
+                                        WGL_ACCELERATION_ARB,
+                                        WGL_FULL_ACCELERATION_ARB,
+                                        WGL_COLOR_BITS_ARB,
+                                        24,
+                                        WGL_DEPTH_BITS_ARB,
+                                        24,
+                                        0};
+
+    UINT format_count;
+    BOOL status = wglChoosePixelFormatARB(device_context_, pixel_attribs, nullptr, 1, &pix_format_id, &format_count);
+
+    if (!status || format_count == 0) {
+        std::cerr << "wglChoosePixelFormatARB() failed\n";
+        return -1;
+    }
+
+    PIXELFORMATDESCRIPTOR PFD;
+    const int res = DescribePixelFormat(device_context_, pix_format_id, sizeof(PFD), &PFD);
+    if (!res) {
+        std::cerr << "DescribePixelFormat() failed\n";
+        return -1;
+    }
+    ret = SetPixelFormat(device_context_, pix_format_id, &PFD);
+    if (!ret) {
+        std::cerr << "SetPixelFormat() failed\n";
+        return -1;
+    }
+
+    static const int context_attribs[] = {
+        WGL_CONTEXT_MAJOR_VERSION_ARB,    4, WGL_CONTEXT_MINOR_VERSION_ARB, 3, WGL_CONTEXT_PROFILE_MASK_ARB,
+        WGL_CONTEXT_CORE_PROFILE_BIT_ARB, 0};
+
+    gl_ctx_ = wglCreateContextAttribsARB(device_context_, 0, context_attribs);
+    if (!gl_ctx_) {
+        std::cerr << "wglCreateContextAttribsARB() failed (gl_ctx_)\n";
+        return -1;
+    }
+
+    wglMakeCurrent(nullptr, nullptr);
+    wglDeleteContext(fake_rc);
+    ReleaseDC(fake_window, fake_dc);
+    DestroyWindow(fake_window);
+    if (!wglMakeCurrent(device_context_, gl_ctx_)) {
+        std::cerr << "wglMakeCurrent() failed\n";
+        return -1;
+    }
+
+    if (wglSwapIntervalEXT) {
+        wglSwapIntervalEXT(0);
+    }
 
     ctx_.reset(new Ren::Context);
     ctx_->Init(w, h, &log_, nullptr);
@@ -300,9 +619,9 @@ int ModlApp::Init(const int w, const int h) {
 }
 
 void ModlApp::Frame() {
-    static unsigned t1 = SDL_GetTicks();
-    const unsigned t2 = SDL_GetTicks();
-    const unsigned dt_ms = t2 - t1;
+    static uint64_t t1 = Sys::GetTimeMs();
+    const uint64_t t2 = Sys::GetTimeMs();
+    const uint64_t dt_ms = t2 - t1;
     t1 = t2;
 
     ClearColorAndDepth(0.1f, 0.75f, 0.75f, 1);
@@ -322,57 +641,6 @@ void ModlApp::Frame() {
     }
 
     ctx_->ProcessTasks();
-}
-
-void ModlApp::PollEvents() {
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-        switch (e.type) {
-        case SDL_KEYDOWN: {
-            if (e.key.keysym.sym == SDLK_ESCAPE) {
-                quit_ = true;
-                return;
-            } else if (e.key.keysym.sym >= SDLK_0 && e.key.keysym.sym <= SDLK_9) {
-                view_mode_ = eViewMode(e.key.keysym.sym - SDLK_0);
-            } else if (e.key.keysym.sym == SDLK_r) {
-                angle_x_ = angle_y_ = 0.0f;
-                offset_x_ = offset_y_ = 0.0f;
-            }
-        } break;
-        case SDL_MOUSEBUTTONDOWN: {
-            if (e.button.button == SDL_BUTTON_LEFT) {
-                grabbed_pointer_ = 0;
-            } else if (e.button.button == SDL_BUTTON_RIGHT) {
-                grabbed_pointer_ = 1;
-            }
-        } break;
-        case SDL_MOUSEBUTTONUP:
-            grabbed_pointer_ = -1;
-            break;
-        case SDL_MOUSEMOTION:
-            if (grabbed_pointer_ == 0) {
-                angle_y_ += 0.01f * e.motion.xrel;
-                angle_x_ += -0.01f * e.motion.yrel;
-            } else if (grabbed_pointer_ == 1) {
-                offset_x_ -= 0.01f * e.motion.xrel;
-                offset_y_ -= 0.01f * e.motion.yrel;
-            }
-            break;
-        case SDL_MOUSEWHEEL: {
-            if (e.wheel.y > 0) {
-                view_dist_ -= 0.05f * view_dist_;
-            } else if (e.wheel.y < 0) {
-                view_dist_ += 0.05f * view_dist_;
-            }
-        } break;
-        case SDL_QUIT: {
-            quit_ = true;
-            return;
-        }
-        default:
-            return;
-        }
-    }
 }
 
 void ModlApp::PrintUsage() {
@@ -396,11 +664,18 @@ void ModlApp::Destroy() {
 
     Sys::StopWorker();
 
-#if defined(USE_GL_RENDER)
-    SDL_GL_DeleteContext(gl_ctx_main_);
-#endif
-    SDL_DestroyWindow(window_);
-    SDL_Quit();
+    wglMakeCurrent(nullptr, nullptr);
+    if (wglDeleteContext(gl_ctx_) != TRUE) {
+        std::cerr << "wglDeleteContext failed\n";
+    }
+    gl_ctx_ = nullptr;
+
+    ReleaseDC(window_handle_, device_context_);
+    device_context_ = nullptr;
+    DestroyWindow(window_handle_);
+    window_handle_ = nullptr;
+
+    UnregisterClass("MainWindowClass", GetModuleHandle(nullptr));
 }
 
 ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, const std::string &out_file_name,
