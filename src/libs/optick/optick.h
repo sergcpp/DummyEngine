@@ -413,7 +413,7 @@ namespace Optick
 		};
 
 		static uint32_t GetMask(Type t) { return (uint32_t)(t >> 32); }
-		static uint32_t GetColor(Type t) { return (uint32_t)(t); }
+		static uint32_t GetColor(Type t) { return (uint32_t)(t & 0xffffffff); }
 	};
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
