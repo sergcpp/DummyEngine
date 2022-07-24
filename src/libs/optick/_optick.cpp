@@ -9,6 +9,10 @@
 #define USE_OPTICK 0
 #endif
 
+#if defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+#define OPTICK_ARM 1
+#endif
+
 #define VK_NO_PROTOTYPES
 
 #include "optick_capi.cpp"
