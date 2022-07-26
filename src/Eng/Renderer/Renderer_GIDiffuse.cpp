@@ -152,7 +152,7 @@ void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::Wea
         { // blue noise texture
             Ren::Tex2DParams params;
             params.w = params.h = 128;
-            params.format = Ren::eTexFormat::RawRG88;
+            params.format = Ren::eTexFormat::RawRGBA8888;
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =

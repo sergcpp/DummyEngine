@@ -46,7 +46,7 @@ layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambl
 layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
 
 layout(binding = GI_IMG_SLOT, rgba16f) uniform writeonly image2D g_gi_img;
-layout(binding = NOISE_IMG_SLOT, rg8) uniform writeonly image2D g_noise_img;
+layout(binding = NOISE_IMG_SLOT, rgba8) uniform writeonly image2D g_noise_img;
 
 bool IsDiffuseSurface(ivec2 px_coords) {
     // TODO: check metalness
@@ -204,17 +204,18 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
     return (float(value) + 0.5) / 256.0;
 }
 
-vec2 SampleRandomVector2D(uvec2 pixel) {
-    vec2 u = vec2(fract(SampleRandomNumber(pixel, 0, 2u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                  fract(SampleRandomNumber(pixel, 0, 3u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
-    return u;
+vec4 SampleRandomVector2D(uvec2 pixel) {
+    return vec4(fract(SampleRandomNumber(pixel, 0, 2u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 3u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 4u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 5u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
     if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {
-        imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), vec4(SampleRandomVector2D(gl_GlobalInvocationID.xy), 0, 0));
+        imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), SampleRandomVector2D(gl_GlobalInvocationID.xy));
     }
     uvec2 group_id = gl_WorkGroupID.xy;
     uint group_index = gl_LocalInvocationIndex;
