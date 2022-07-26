@@ -111,9 +111,6 @@ void main() {
     vec3 hit_point;
     bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, hit_point);
 
-    // TODO: turn on screen-space tracing!!!
-    hit_found = false;
-
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {
         vec2 uv = hit_point.xy;
