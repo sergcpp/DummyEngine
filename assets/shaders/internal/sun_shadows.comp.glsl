@@ -8,9 +8,11 @@
 #include "_fs_common.glsl"
 #include "sun_shadows_interface.glsl"
 
-LAYOUT_PARAMS uniform UniformParams {
-    Params g_params;
-};
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
+*/
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)
@@ -19,6 +21,10 @@ layout (std140)
 #endif
 uniform SharedDataBlock {
     SharedData g_shrd_data;
+};
+
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;

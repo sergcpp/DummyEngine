@@ -9,8 +9,8 @@
 #endif
 
 namespace Ren {
-void APIENTRY DebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length,
-                            const GLchar *message, const void *userParam) {
+void APIENTRY DebugCallback(const GLenum source, const GLenum type, const GLuint id, const GLenum severity,
+                            const GLsizei length, const GLchar *message, const void *userParam) {
     auto *self = reinterpret_cast<const Context *>(userParam);
     if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
         if (id != 131154 /* pixel-path performance warning */) {
@@ -32,7 +32,7 @@ Ren::Context::~Context() {
     ReleaseAll();
 }
 
-bool Ren::Context::Init(int w, int h, ILog *log, const char *) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, const char *) {
     InitGLExtentions();
     RegisterAsMainThread();
 
@@ -154,7 +154,7 @@ bool Ren::Context::Init(int w, int h, ILog *log, const char *) {
     return true;
 }
 
-void Ren::Context::Resize(int w, int h) {
+void Ren::Context::Resize(const int w, const int h) {
     w_ = w;
     h_ = h;
     glViewport(0, 0, w_, h_);
