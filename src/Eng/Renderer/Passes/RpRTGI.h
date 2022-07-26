@@ -28,6 +28,8 @@ struct RpRTGIData {
     RpResRef indir_args;
     RpResRef tlas_buf; // fake read for now
 
+    bool two_bounce = false;
+
     RpResRef out_gi_tex;
 };
 
@@ -36,7 +38,7 @@ class RpRTGI : public RpExecutor {
 
     // lazily initialized data
     Ren::Pipeline pi_rt_gi_;
-    Ren::Pipeline pi_rt_gi_inline_;
+    Ren::Pipeline pi_rt_gi_inline_, pi_rt_gi_2bounce_inline_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
