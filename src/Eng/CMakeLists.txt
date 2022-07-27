@@ -118,9 +118,7 @@ set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
                     Renderer/Graph/SubPass.cpp
                     Renderer/Graph/Resource.h)
 
-set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
-                    Renderer/Passes/RpBilateralBlur.cpp
-                    Renderer/Passes/RpBuildAccStructures.h
+set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpBuildAccStructures.cpp
                     Renderer/Passes/RpCombine.h
                     Renderer/Passes/RpCombine.cpp
@@ -156,8 +154,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpSkinning.cpp
                     Renderer/Passes/RpSkydome.h
                     Renderer/Passes/RpSkydome.cpp
-                    Renderer/Passes/RpSSAO.h
-                    Renderer/Passes/RpSSAO.cpp
                     Renderer/Passes/RpSSRBlur.h
                     Renderer/Passes/RpSSRBlur.cpp
                     Renderer/Passes/RpSSRCompose.h

@@ -5,7 +5,9 @@
 
 #include "../Utils/ShaderLoader.h"
 
+#include "../assets/shaders/internal/blit_bilateral_interface.glsl"
 #include "../assets/shaders/internal/blit_gauss_interface.glsl"
+#include "../assets/shaders/internal/blit_ssao_interface.glsl"
 #include "../assets/shaders/internal/blit_static_vel_interface.glsl"
 #include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
 
@@ -98,9 +100,17 @@ void Renderer::InitPipelines() {
     blit_static_vel_prog_ = sh_.LoadProgram(ctx_, "blit_static_vel_prog", "internal/blit_static_vel.vert.glsl",
                                             "internal/blit_static_vel.frag.glsl");
     assert(blit_static_vel_prog_->ready());
+
     blit_gauss2_prog_ =
         sh_.LoadProgram(ctx_, "blit_gauss2", "internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
     assert(blit_gauss2_prog_->ready());
+
+    blit_ao_prog_ = sh_.LoadProgram(ctx_, "blit_ao", "internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
+    assert(blit_ao_prog_->ready());
+
+    blit_bilateral_prog_ = sh_.LoadProgram(ctx_, "blit_bilateral2", "internal/blit_bilateral.vert.glsl",
+                                           "internal/blit_bilateral.frag.glsl");
+    assert(blit_bilateral_prog_->ready());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -821,8 +831,17 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
     RpResRef ssao_raw;
     { // Main SSAO pass
         auto &ssao = rp_builder_.AddPass("SSAO");
-        const RpResRef rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Ren::eStageBits::FragmentShader);
-        const RpResRef depth_tex = ssao.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+
+        struct PassData {
+            RpResRef rand_tex;
+            RpResRef depth_tex;
+
+            RpResRef output_tex;
+        };
+
+        auto *data = ssao.AllocPassData<PassData>();
+        data->rand_tex = ssao.AddTextureInput(rand2d_dirs_4x4_, Ren::eStageBits::FragmentShader);
+        data->depth_tex = ssao.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -832,18 +851,53 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            ssao_raw = ssao.AddColorOutput(SSAO_RAW, params);
+            ssao_raw = data->output_tex = ssao.AddColorOutput(SSAO_RAW, params);
         }
 
-        rp_ssao_.Setup(rp_builder_, &view_state_, rand_tex, depth_tex, ssao_raw);
-        ssao.set_executor(&rp_ssao_);
+        ssao.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &rand_tex = builder.GetReadTexture(data->rand_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 2;
+            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+            { // prepare ao buffer
+                const Ren::Binding bindings[] = {
+                    {Ren::eBindTarget::Tex2D, SSAO::DEPTH_TEX_SLOT, *down_depth_2x_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSAO::RAND_TEX_SLOT, *rand_tex.ref}};
+
+                SSAO::Params uniform_params;
+                uniform_params.transform =
+                    Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0] / 2, view_state_.act_res[1] / 2};
+                uniform_params.resolution = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ao_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(SSAO::Params), 0);
+            }
+        });
     }
 
     RpResRef ssao_blurred1;
     { // Horizontal SSAO blur
         auto &ssao_blur_h = rp_builder_.AddPass("SSAO BLUR H");
-        const RpResRef depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        const RpResRef ssao_tex = ssao_blur_h.AddTextureInput(ssao_raw, Ren::eStageBits::FragmentShader);
+
+        struct PassData {
+            RpResRef depth_tex;
+            RpResRef input_tex;
+
+            RpResRef output_tex;
+        };
+
+        auto *data = ssao_blur_h.AllocPassData<PassData>();
+        data->depth_tex = ssao_blur_h.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        data->input_tex = ssao_blur_h.AddTextureInput(ssao_raw, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -853,18 +907,52 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            ssao_blurred1 = ssao_blur_h.AddColorOutput("SSAO BLUR TEMP1", params);
+            ssao_blurred1 = data->output_tex = ssao_blur_h.AddColorOutput("SSAO BLUR TEMP1", params);
         }
 
-        rp_ssao_blur_h_.Setup(view_state_.act_res / 2, false /* vertical */, depth_tex, ssao_tex, ssao_blurred1);
-        ssao_blur_h.set_executor(&rp_ssao_blur_h_);
+        ssao_blur_h.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 2;
+            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+            { // blur ao buffer
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Bilateral::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                                 {Ren::eBindTarget::Tex2D, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+
+                Bilateral::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.resolution = Ren::Vec2f{float(rast_state.viewport[2]), float(rast_state.viewport[3])};
+                uniform_params.vertical = 0.0f;
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(Bilateral::Params), 0);
+            }
+        });
     }
 
     RpResRef ssao_blurred2;
     { // Vertical SSAO blur
         auto &ssao_blur_v = rp_builder_.AddPass("SSAO BLUR V");
-        const RpResRef depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        const RpResRef ssao_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Ren::eStageBits::FragmentShader);
+
+        struct PassData {
+            RpResRef depth_tex;
+            RpResRef input_tex;
+
+            RpResRef output_tex;
+        };
+
+        auto *data = ssao_blur_v.AllocPassData<PassData>();
+        data->depth_tex = ssao_blur_v.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        data->input_tex = ssao_blur_v.AddTextureInput(ssao_blurred1, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -874,11 +962,36 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            ssao_blurred2 = ssao_blur_v.AddColorOutput("SSAO BLUR TEMP2", params);
+            ssao_blurred2 = data->output_tex = ssao_blur_v.AddColorOutput("SSAO BLUR TEMP2", params);
         }
 
-        rp_ssao_blur_v_.Setup(view_state_.act_res / 2, true /* vertical */, depth_tex, ssao_tex, ssao_blurred2);
-        ssao_blur_v.set_executor(&rp_ssao_blur_v_);
+        ssao_blur_v.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 2;
+            rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+            { // blur ao buffer
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Bilateral::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                                 {Ren::eBindTarget::Tex2D, Bilateral::INPUT_TEX_SLOT, *input_tex.ref}};
+
+                Bilateral::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.resolution = Ren::Vec2f{float(rast_state.viewport[2]), float(rast_state.viewport[3])};
+                uniform_params.vertical = 1.0f;
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_bilateral_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(Bilateral::Params), 0);
+            }
+        });
     }
 
     { // Upscale SSAO pass

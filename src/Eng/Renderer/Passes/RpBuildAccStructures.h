@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
 class RpBuildAccStructuresExecutor : public RpExecutor {
