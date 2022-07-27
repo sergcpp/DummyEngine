@@ -6,6 +6,7 @@
 #include "../Utils/ShaderLoader.h"
 
 #include "../assets/shaders/internal/blit_bilateral_interface.glsl"
+#include "../assets/shaders/internal/blit_down_interface.glsl"
 #include "../assets/shaders/internal/blit_gauss_interface.glsl"
 #include "../assets/shaders/internal/blit_ssao_interface.glsl"
 #include "../assets/shaders/internal/blit_static_vel_interface.glsl"
@@ -128,6 +129,10 @@ void Renderer::InitPipelines() {
     blit_upscale_prog_ =
         sh_.LoadProgram(ctx_, "blit_upscale", "internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
     assert(blit_upscale_prog_->ready());
+
+    blit_down2_prog_ =
+        sh_.LoadProgram(ctx_, "blit_down2", "internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
+    assert(blit_down2_prog_->ready());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1295,4 +1300,40 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
             }
         });
     }
+}
+
+void Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex) {
+    auto &down_color = rp_builder_.AddPass("DOWNSAMPLE COLOR");
+
+    struct PassData {
+        RpResRef input_tex;
+        RpResRef output_tex;
+    };
+
+    auto *data = down_color.AllocPassData<PassData>();
+    data->input_tex = down_color.AddTextureInput(input_tex, Ren::eStageBits::FragmentShader);
+    output_tex = data->output_tex = down_color.AddColorOutput(output_tex);
+
+    down_color.set_execute_cb([this, data](RpBuilder &builder) {
+        RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+        RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+        Ren::RastState rast_state;
+
+        rast_state.viewport[2] = view_state_.act_res[0] / 4;
+        rast_state.viewport[3] = view_state_.act_res[1] / 4;
+
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, DownColor::SRC_TEX_SLOT, *input_tex.ref}};
+
+        DownColor::Params uniform_params;
+        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]) / float(view_state_.scr_res[0]),
+                                              float(view_state_.act_res[1]) / float(view_state_.scr_res[1])};
+        uniform_params.resolution =
+            Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]), 0.0f, 0.0f};
+
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down2_prog_, render_targets, {}, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(DownColor::Params), 0);
+    });
 }
