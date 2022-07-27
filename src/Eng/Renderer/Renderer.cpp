@@ -486,7 +486,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     bindless_tex.textures_buf = persistent_data.textures_buf;
 #endif
 
-    const bool deferred_shading = (list.render_flags & EnableDeferred) != 0 && (list.render_flags & DebugWireframe) == 0;
+    const bool deferred_shading =
+        (list.render_flags & EnableDeferred) != 0 && (list.render_flags & DebugWireframe) == 0;
     const bool env_map_changed = (env_map_ != list.env.env_map);
     const bool lm_tex_changed =
         lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
@@ -815,20 +816,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         }
 
         const uint64_t fill_velocity_mask = (EnableTaa | EnableSSR_HQ | DebugWireframe);
-        const uint64_t fill_velocity = (EnableTaa | EnableSSR_HQ);
-        if ((list.render_flags & fill_velocity_mask) == fill_velocity) { // Temporal reprojection is used for reflections and TAA
-            assert(!view_state_.is_multisampled);
-            auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
-
-            const RpResRef shared_data_buf = static_vel.AddUniformBufferInput(
-                common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            const RpResRef depth_tex =
-                static_vel.AddCustomTextureInput(frame_textures.depth, Ren::eResState::StencilTestDepthFetch,
-                                                 Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
-            frame_textures.velocity = static_vel.AddColorOutput(frame_textures.velocity);
-
-            rp_fill_static_vel_.Setup(&view_state_, shared_data_buf, depth_tex, frame_textures.velocity);
-            static_vel.set_executor(&rp_fill_static_vel_);
+        const uint64_t fill_velocity =
+            (EnableTaa | EnableSSR_HQ); // Temporal reprojection is used for reflections and TAA
+        if ((list.render_flags & fill_velocity_mask) == fill_velocity) {
+            AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
 
         if (deferred_shading) {
@@ -1129,7 +1120,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             const char *output_tex = nullptr;
             const char *blur_tex = nullptr;
 
-            if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0 && !(list.render_flags & DebugWireframe)) || apply_dof) {
+            if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0 && !(list.render_flags & DebugWireframe)) ||
+                apply_dof) {
                 if (apply_dof) {
                     if ((list.render_flags & EnableTaa) != 0) {
                         color_tex = MAIN_COLOR_TEX;

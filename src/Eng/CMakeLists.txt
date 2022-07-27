@@ -136,8 +136,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpDownColor.cpp
                     Renderer/Passes/RpDownDepth.h
                     Renderer/Passes/RpDownDepth.cpp
-                    Renderer/Passes/RpFillStaticVel.h
-                    Renderer/Passes/RpFillStaticVel.cpp
                     Renderer/Passes/RpGBufferFill.h
                     Renderer/Passes/RpGBufferFill.cpp
                     Renderer/Passes/RpGBufferShade.h
