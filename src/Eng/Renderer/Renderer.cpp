@@ -486,7 +486,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     bindless_tex.textures_buf = persistent_data.textures_buf;
 #endif
 
-    const bool deferred_shading = (list.render_flags & EnableDeferred) != 0;
+    const bool deferred_shading = (list.render_flags & EnableDeferred) != 0 && (list.render_flags & DebugWireframe) == 0;
     const bool env_map_changed = (env_map_ != list.env.env_map);
     const bool lm_tex_changed =
         lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
@@ -806,13 +806,17 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Ambient occlusion
         //
-        const uint32_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
-        const uint32_t use_ssao = (EnableZFill | EnableSSAO);
+        const uint64_t use_ssao_mask = (EnableZFill | EnableSSAO | DebugWireframe);
+        const uint64_t use_ssao = (EnableZFill | EnableSSAO);
         if ((list.render_flags & use_ssao_mask) == use_ssao) {
             AddSSAOPasses(depth_down_2x, frame_textures.depth, frame_textures.ssao);
+        } else {
+            frame_textures.ssao = rp_builder_.MakeTextureResource(dummy_white_);
         }
 
-        if (list.render_flags & (EnableTaa | EnableSSR_HQ)) { // Temporal reprojection is used for reflections and TAA
+        const uint64_t fill_velocity_mask = (EnableTaa | EnableSSR_HQ | DebugWireframe);
+        const uint64_t fill_velocity = (EnableTaa | EnableSSR_HQ);
+        if ((list.render_flags & fill_velocity_mask) == fill_velocity) { // Temporal reprojection is used for reflections and TAA
             assert(!view_state_.is_multisampled);
             auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
 
@@ -862,14 +866,16 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Reflections pass
         //
-
-        const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
-        if (cur_hq_ssr_enabled) {
-            AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugReflDenoise) != 0,
-                                list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                                depth_hierarchy_tex, frame_textures);
-        } else {
-            AddLQSpecularPasses(list.probe_storage, common_buffers, depth_down_2x, frame_textures);
+        if ((list.render_flags & DebugWireframe) == 0) {
+            const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
+            if (cur_hq_ssr_enabled) {
+                AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_,
+                                    (list.render_flags & DebugReflDenoise) != 0, list.probe_storage, common_buffers,
+                                    persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
+                                    frame_textures);
+            } else {
+                AddLQSpecularPasses(list.probe_storage, common_buffers, depth_down_2x, frame_textures);
+            }
         }
 
         //
@@ -937,7 +943,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Temporal resolve
         //
-        if (list.render_flags & EnableTaa) {
+        const uint64_t use_taa_mask = (EnableTaa | DebugWireframe);
+        const uint64_t use_taa = EnableTaa;
+        if ((list.render_flags & use_taa_mask) == use_taa) {
             assert(!view_state_.is_multisampled);
             { // TAA
                 auto &taa = rp_builder_.AddPass("TAA");
@@ -1121,7 +1129,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             const char *output_tex = nullptr;
             const char *blur_tex = nullptr;
 
-            if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0) || apply_dof) {
+            if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0 && !(list.render_flags & DebugWireframe)) || apply_dof) {
                 if (apply_dof) {
                     if ((list.render_flags & EnableTaa) != 0) {
                         color_tex = MAIN_COLOR_TEX;
@@ -1167,7 +1175,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
                 rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
-                rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                if (blur_tex) {
+                    rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
+                } else {
+                    rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+                }
                 rp_combine_data_.exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
                 if (output_tex) {
                     Ren::Tex2DParams params;

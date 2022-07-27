@@ -619,7 +619,6 @@ void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const P
     const RpResRef cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
 
     const RpResRef dummy_black = opaque.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-    const RpResRef dummy_white = opaque.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
 
     const RpResRef instances_buf =
         opaque.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
@@ -655,7 +654,7 @@ void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const P
 
     rp_opaque_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                      persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
-                     dummy_white, instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
+                     instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
                      lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
                      frame_textures.normal, frame_textures.specular, frame_textures.depth);
     opaque.set_executor(&rp_opaque_);
@@ -682,7 +681,6 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
     const RpResRef cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
 
     const RpResRef dummy_black = transparent.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-    const RpResRef dummy_white = transparent.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
 
     const RpResRef instances_buf =
         transparent.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
@@ -719,7 +717,7 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
 
     rp_transparent_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                           persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
-                          dummy_white, instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
+                          instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
                           lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
                           frame_textures.normal, frame_textures.specular, frame_textures.depth);
     transparent.set_executor(&rp_transparent_);

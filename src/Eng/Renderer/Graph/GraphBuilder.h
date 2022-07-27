@@ -170,6 +170,8 @@ class RpBuilder {
     RpResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           RpSubpass &pass, int slot_index = -1);
 
+    RpResRef MakeTextureResource(const Ren::WeakTex2DRef &ref);
+
     RpAllocBuf &GetReadBuffer(RpResRef handle);
     RpAllocTex &GetReadTexture(RpResRef handle);
 

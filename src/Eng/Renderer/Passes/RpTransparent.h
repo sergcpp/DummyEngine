@@ -46,7 +46,6 @@ class RpTransparent : public RpExecutor {
     RpResRef noise_tex_;
     RpResRef cone_rt_lut_;
     RpResRef dummy_black_;
-    RpResRef dummy_white_;
 
     RpResRef shad_tex_;
     RpResRef ssao_tex_;
@@ -79,7 +78,7 @@ class RpTransparent : public RpExecutor {
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
                const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const RpResRef brdf_lut,
                const RpResRef noise_tex, const RpResRef cone_rt_lut, const RpResRef dummy_black,
-               const RpResRef dummy_white, const RpResRef instances_buf, const RpResRef instance_indices_buf,
+               const RpResRef instances_buf, const RpResRef instance_indices_buf,
                const RpResRef shared_data_buf, const RpResRef cells_buf, const RpResRef items_buf,
                const RpResRef lights_buf, const RpResRef decals_buf, const RpResRef shad_tex, const RpResRef ssao_tex,
                const RpResRef lm_tex[4], const RpResRef color_tex, const RpResRef normal_tex, const RpResRef spec_tex,
@@ -114,7 +113,6 @@ class RpTransparent : public RpExecutor {
         cone_rt_lut_ = cone_rt_lut;
 
         dummy_black_ = dummy_black;
-        dummy_white_ = dummy_white;
 
         color_tex_ = color_tex;
         normal_tex_ = normal_tex;

@@ -495,6 +495,33 @@ RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSt
     return ret;
 }
 
+RpResRef RpBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) {
+    RpResource ret;
+    ret.type = eRpResType::Texture;
+
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name().c_str());
+    if (!ptex_index) {
+        RpAllocTex new_tex;
+        new_tex.read_count = 0;
+        new_tex.write_count = 0;
+        new_tex.used_in_stages = Ren::eStageBits::None;
+        new_tex.name = ref->name().c_str();
+        new_tex.desc = ref->params;
+
+        ret.index = textures_.emplace(new_tex);
+        name_to_texture_[new_tex.name] = ret.index;
+    } else {
+        ret.index = *ptex_index;
+    }
+
+    RpAllocTex &tex = textures_[ret.index];
+    tex.desc = ref->params;
+    tex.ref = ref;
+    ret._generation = tex._generation;
+
+    return ret;
+}
+
 RpAllocBuf &RpBuilder::GetReadBuffer(const RpResRef handle) {
     assert(handle.type == eRpResType::Buffer);
     RpAllocBuf &buf = buffers_.at(handle.index);

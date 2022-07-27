@@ -77,7 +77,6 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     RpAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
-    RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
 
     if (!(*p_list_)->probe_storage || (*p_list_)->alpha_blend_start_index == -1) {
         return;
@@ -91,11 +90,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    if (((*p_list_)->render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
-    } else {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white.ref->id());
-    }
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut.ref->id());
 

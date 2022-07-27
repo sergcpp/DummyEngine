@@ -385,6 +385,7 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
     features.shaderClipDistance = VK_TRUE;
     features.samplerAnisotropy = VK_TRUE;
     features.imageCubeArray = VK_TRUE;
+    features.fillModeNonSolid = VK_TRUE;
     device_info.pEnabledFeatures = &features;
     void **pp_next = const_cast<void **>(&device_info.pNext);
 
