@@ -161,9 +161,7 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpTransparent.h
                     Renderer/Passes/RpTransparent.cpp
                     Renderer/Passes/RpUpdateAccBuffers.h
-                    Renderer/Passes/RpUpdateAccBuffers.cpp
-                    Renderer/Passes/RpUpscale.h
-                    Renderer/Passes/RpUpscale.cpp)
+                    Renderer/Passes/RpUpdateAccBuffers.cpp)
 
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
