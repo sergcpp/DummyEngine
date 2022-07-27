@@ -109,8 +109,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<co
             col_att.storeOp = Ren::vk_store_ops[int(rt.store)];
         }
 
-        VkRenderingAttachmentInfoKHR depth_attachment = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR},
-                                     stencil_attachment = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+        VkRenderingAttachmentInfoKHR depth_attachment = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
         if (depth_rt) {
             depth_attachment.imageView = depth_rt.ref->handle().views[0];
             depth_attachment.imageLayout = VKImageLayoutForState(depth_rt.ref->resource_state);
@@ -127,7 +126,7 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<co
         render_info.colorAttachmentCount = uint32_t(color_attachments.size());
         render_info.pColorAttachments = color_attachments.data();
         render_info.pDepthAttachment = depth_rt ? &depth_attachment : nullptr;
-        render_info.pStencilAttachment = applied_rast_state.stencil.enabled ? &depth_attachment : nullptr;
+        render_info.pStencilAttachment = new_rast_state.stencil.enabled ? &depth_attachment : nullptr;
 
         vkCmdBeginRenderingKHR(cmd_buf, &render_info);
 
