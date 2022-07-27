@@ -10,7 +10,6 @@ extern "C" {
 
 #include "../Scene/SceneData.h"
 #include "FrameBuf.h"
-#include "Passes/RpBilateralBlur.h"
 #include "Passes/RpBuildAccStructures.h"
 #include "Passes/RpCombine.h"
 #include "Passes/RpDOF.h"
@@ -30,7 +29,6 @@ extern "C" {
 #include "Passes/RpRTReflections.h"
 #include "Passes/RpRTShadows.h"
 #include "Passes/RpReadBrightness.h"
-#include "Passes/RpSSAO.h"
 #include "Passes/RpSSRBlur.h"
 #include "Passes/RpSSRCompose.h"
 #include "Passes/RpSSRCompose2.h"
@@ -187,8 +185,6 @@ class Renderer {
     RpDownColor rp_down_color_ = {prim_draw_};
     RpDownDepth rp_down_depth_ = {prim_draw_};
     RpDepthHierarchy rp_depth_hierarchy_;
-    RpSSAO rp_ssao_ = {prim_draw_};
-    RpBilateralBlur rp_ssao_blur_h_ = {prim_draw_}, rp_ssao_blur_v_ = {prim_draw_};
     RpUpscale rp_ssao_upscale_ = {prim_draw_};
     RpGBufferFill rp_gbuffer_fill_;
     RpOpaque rp_opaque_;
@@ -238,7 +234,7 @@ class Renderer {
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
 
-    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_;
+    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,

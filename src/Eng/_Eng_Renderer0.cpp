@@ -15,7 +15,6 @@
 
 #include "Renderer/Graph/GraphBuilder.cpp"
 #include "Renderer/Graph/SubPass.cpp"
-#include "Renderer/Passes/RpBilateralBlur.cpp"
 #include "Renderer/Passes/RpBuildAccStructures.cpp"
 #include "Renderer/Passes/RpCombine.cpp"
 #include "Renderer/Passes/RpDebugRT.cpp"
@@ -41,7 +40,6 @@
 #include "Renderer/Passes/RpSkinning.cpp"
 #include "Renderer/Passes/RpSkydome.cpp"
 #include "Renderer/Passes/RpTAA.cpp"
-#include "Renderer/Passes/RpSSAO.cpp"
 #include "Renderer/Passes/RpTransparent.cpp"
 #include "Renderer/Passes/RpUpdateAccBuffers.cpp"
 #include "Renderer/Passes/RpUpscale.cpp"
