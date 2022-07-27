@@ -117,6 +117,13 @@ void Renderer::InitPipelines() {
                                      "internal/blit_taa.frag.glsl@USE_CLIPPING;USE_TONEMAP");
     assert(blit_taa_prog_->ready());
 
+    blit_ssr_prog_ = sh_.LoadProgram(ctx_, "blit_ssr", "internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
+    assert(blit_ssr_prog_->ready());
+
+    blit_ssr_dilate_prog_ = sh_.LoadProgram(ctx_, "blit_ssr_dilate", "internal/blit_ssr_dilate.vert.glsl",
+                                            "internal/blit_ssr_dilate.frag.glsl");
+    assert(blit_ssr_dilate_prog_->ready());
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     { // Quad classification for GI
@@ -1166,8 +1173,8 @@ void Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &
     }
 }
 
-void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                          const float max_exposure, RpResRef &resolved_color) {
+void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, const float max_exposure,
+                          RpResRef &resolved_color) {
     assert(!view_state_.is_multisampled);
     { // TAA
         auto &taa = rp_builder_.AddPass("TAA");

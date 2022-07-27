@@ -29,11 +29,8 @@ extern "C" {
 #include "Passes/RpRTReflections.h"
 #include "Passes/RpRTShadows.h"
 #include "Passes/RpReadBrightness.h"
-#include "Passes/RpSSRBlur.h"
 #include "Passes/RpSSRCompose.h"
 #include "Passes/RpSSRCompose2.h"
-#include "Passes/RpSSRDilate.h"
-#include "Passes/RpSSRTrace.h"
 #include "Passes/RpSSRVSDepth.h"
 #include "Passes/RpSampleBrightness.h"
 #include "Passes/RpShadowMaps.h"
@@ -188,8 +185,6 @@ class Renderer {
     RpGBufferFill rp_gbuffer_fill_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
-    RpSSRTrace rp_ssr_trace_ = {prim_draw_};
-    RpSSRDilate rp_ssr_dilate_ = {prim_draw_};
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTGI rp_rt_gi_;
@@ -232,7 +227,8 @@ class Renderer {
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
 
-    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_;
+    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
+        blit_ssr_prog_, blit_ssr_dilate_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
@@ -271,7 +267,8 @@ class Renderer {
                                    const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
     void AddSSAOPasses(RpResRef depth_down_2x, RpResRef depth_tex, RpResRef &out_ssao);
-    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &inout_velocity_tex);
+    void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
+                                   RpResRef &inout_velocity_tex);
     void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, float max_exposure,
                     RpResRef &resolved_color);

@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include "../assets/shaders/internal/blit_ssr_dilate_interface.glsl"
+#include "../assets/shaders/internal/blit_ssr_interface.glsl"
 #include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
 #include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
 #include "../assets/shaders/internal/ssr_reproject_interface.glsl"
@@ -712,7 +714,14 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
     { // Trace
         auto &ssr_trace = rp_builder_.AddPass("SSR TRACE");
 
-        auto *data = ssr_trace.AllocPassData<RpSSRTraceData>();
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef normal_tex;
+            RpResRef depth_down_2x_tex;
+            RpResRef output_tex;
+        };
+
+        auto *data = ssr_trace.AllocPassData<PassData>();
         data->shared_data = ssr_trace.AddUniformBufferInput(
             common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
         data->normal_tex = ssr_trace.AddTextureInput(frame_textures.normal, Ren::eStageBits::FragmentShader);
@@ -729,14 +738,49 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
             ssr_temp1 = data->output_tex = ssr_trace.AddColorOutput("SSR Temp 1", params);
         }
 
-        rp_ssr_trace_.Setup(rp_builder_, &view_state_, data);
-        ssr_trace.set_executor(&rp_ssr_trace_);
+        ssr_trace.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+            RpAllocTex &depth_down_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = false;
+            rast_state.depth.write_enabled = false;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.scr_res[0] / 2;
+            rast_state.viewport[3] = view_state_.scr_res[1] / 2;
+
+            { // screen space tracing
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                const Ren::Binding bindings[] = {
+                    {Ren::eBindTarget::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
+                    {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock),
+                     *unif_sh_data_buf.ref}};
+
+                SSRTrace::Params uniform_params;
+                uniform_params.transform =
+                    Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0] / 2), float(view_state_.act_res[1] / 2)};
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(SSRTrace::Params), 0);
+            }
+        });
     }
     RpResRef ssr_temp2;
     { // Dilate
         auto &ssr_dilate = rp_builder_.AddPass("SSR DILATE");
 
-        auto *data = ssr_dilate.AllocPassData<RpSSRDilateData>();
+        struct PassData {
+            RpResRef ssr_tex;
+            RpResRef output_tex;
+        };
+
+        auto *data = ssr_dilate.AllocPassData<PassData>();
         data->ssr_tex = ssr_dilate.AddTextureInput(ssr_temp1, Ren::eStageBits::FragmentShader);
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
@@ -750,8 +794,33 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
             ssr_temp2 = data->output_tex = ssr_dilate.AddColorOutput("SSR Temp 2", params);
         }
 
-        rp_ssr_dilate_.Setup(rp_builder_, &view_state_, data);
-        ssr_dilate.set_executor(&rp_ssr_dilate_);
+        ssr_dilate.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &ssr_tex = builder.GetReadTexture(data->ssr_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = false;
+            rast_state.depth.write_enabled = false;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.scr_res[0] / 2;
+            rast_state.viewport[3] = view_state_.scr_res[1] / 2;
+
+            { // dilate ssr buffer
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
+
+                const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
+
+                SSRDilate::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_dilate_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(SSRDilate::Params), 0);
+            }
+        });
     }
     { // Compose
         auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE");
