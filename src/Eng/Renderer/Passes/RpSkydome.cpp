@@ -27,9 +27,9 @@ void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_bu
                                                      {} /* normals texture */,
                                                      {spec_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_load_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store,
-                                                 Ren::eLoadOp::Load, Ren::eStoreOp::DontCare};
+                                                 Ren::eLoadOp::Load, Ren::eStoreOp::Store};
     const Ren::RenderTarget depth_clear_target = {depth_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store,
-                                                  Ren::eLoadOp::Clear, Ren::eStoreOp::DontCare};
+                                                  Ren::eLoadOp::Clear, Ren::eStoreOp::Store};
 
     if (!initialized) {
         Ren::ProgramRef skydome_prog =
