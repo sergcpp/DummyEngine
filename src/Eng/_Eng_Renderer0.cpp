@@ -24,7 +24,6 @@
 #include "Renderer/Passes/RpDepthHierarchy.cpp"
 #include "Renderer/Passes/RpDownColor.cpp"
 #include "Renderer/Passes/RpDownDepth.cpp"
-#include "Renderer/Passes/RpFillStaticVel.cpp"
 #include "Renderer/Passes/RpGBufferFill.cpp"
 #include "Renderer/Passes/RpGBufferShade.cpp"
 #include "Renderer/Passes/RpOpaque.cpp"

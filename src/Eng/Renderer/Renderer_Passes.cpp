@@ -6,6 +6,7 @@
 #include "../Utils/ShaderLoader.h"
 
 #include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
+#include "../assets/shaders/internal/blit_static_vel_interface.glsl"
 
 void Renderer::InitPipelines() {
     { // Init skinning pipeline
@@ -90,6 +91,11 @@ void Renderer::InitPipelines() {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    blit_static_vel_prog_ = sh_.LoadProgram(ctx_, "blit_static_vel_prog", "internal/blit_static_vel.vert.glsl",
+                                            "internal/blit_static_vel.frag.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -654,9 +660,9 @@ void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const P
 
     rp_opaque_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                      persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
-                     instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
-                     lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
-                     frame_textures.normal, frame_textures.specular, frame_textures.depth);
+                     instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf,
+                     decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color, frame_textures.normal,
+                     frame_textures.specular, frame_textures.depth);
     opaque.set_executor(&rp_opaque_);
 }
 
@@ -717,9 +723,9 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
 
     rp_transparent_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf,
                           persistent_data.pipelines.data(), &bindless, brdf_lut, noise_tex, cone_rt_lut, dummy_black,
-                          instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf,
-                          lights_buf, decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color,
-                          frame_textures.normal, frame_textures.specular, frame_textures.depth);
+                          instances_buf, instances_indices_buf, shader_data_buf, cells_buf, items_buf, lights_buf,
+                          decals_buf, shadowmap_tex, ssao_tex, lmap_tex, frame_textures.color, frame_textures.normal,
+                          frame_textures.specular, frame_textures.depth);
     transparent.set_executor(&rp_transparent_);
 }
 
@@ -890,4 +896,54 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
         rp_ssao_upscale_.Setup(cur_res, view_state_.clip_info, depth_down_2x_res, depth_tex, ssao_tex, out_ssao);
         ssao_upscale.set_executor(&rp_ssao_upscale_);
     }
+}
+
+void Renderer::AddFillStaticVelocityPass(const CommonBuffers& common_buffers, RpResRef depth_tex, RpResRef& inout_velocity_tex) {
+    assert(!view_state_.is_multisampled);
+    auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
+
+    struct PassData {
+        RpResRef shared_data;
+        RpResRef depth_tex;
+        RpResRef velocity_tex;
+    };
+
+    auto *data = static_vel.AllocPassData<PassData>();
+
+    data->shared_data = static_vel.AddUniformBufferInput(
+        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+    data->depth_tex =
+        static_vel.AddCustomTextureInput(depth_tex, Ren::eResState::StencilTestDepthFetch,
+                                         Ren::eStageBits::DepthAttachment | Ren::eStageBits::FragmentShader);
+    inout_velocity_tex = data->velocity_tex = static_vel.AddColorOutput(inout_velocity_tex);
+
+    static_vel.set_execute_cb([this, data](RpBuilder &builder) {
+        RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+
+        RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+        RpAllocTex &velocity_tex = builder.GetWriteTexture(data->velocity_tex);
+
+        Ren::RastState rast_state;
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+        rast_state.stencil.enabled = true;
+        rast_state.stencil.write_mask = 0x00;
+        rast_state.stencil.compare_op = unsigned(Ren::eCompareOp::Equal);
+
+        rast_state.viewport[2] = view_state_.act_res[0];
+        rast_state.viewport[3] = view_state_.act_res[1];
+
+        const Ren::Binding bindings[] = {
+            {Ren::eBindTarget::Tex2D, BlitStaticVel::DEPTH_TEX_SLOT, *depth_tex.ref},
+            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
+
+        const Ren::RenderTarget render_targets[] = {{velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+        const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::None, Ren::eStoreOp::None,
+                                                Ren::eLoadOp::Load, Ren::eStoreOp::None};
+
+        BlitStaticVel::Params uniform_params;
+        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_static_vel_prog_, render_targets, depth_target, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(BlitStaticVel::Params), 0);
+    });
 }
