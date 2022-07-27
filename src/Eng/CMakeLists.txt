@@ -128,8 +128,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpDepthFill.cpp
                     Renderer/Passes/RpDepthHierarchy.h
                     Renderer/Passes/RpDepthHierarchy.cpp
-                    Renderer/Passes/RpDownColor.h
-                    Renderer/Passes/RpDownColor.cpp
                     Renderer/Passes/RpDownDepth.h
                     Renderer/Passes/RpDownDepth.cpp
                     Renderer/Passes/RpGBufferFill.h

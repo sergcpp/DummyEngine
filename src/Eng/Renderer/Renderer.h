@@ -19,7 +19,6 @@ extern "C" {
 #include "Passes/RpDebugTextures.h"
 #include "Passes/RpDepthFill.h"
 #include "Passes/RpDepthHierarchy.h"
-#include "Passes/RpDownColor.h"
 #include "Passes/RpDownDepth.h"
 #include "Passes/RpFXAA.h"
 #include "Passes/RpGBufferFill.h"
@@ -176,7 +175,6 @@ class Renderer {
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydome rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
-    RpDownColor rp_down_color_ = {prim_draw_};
     RpDownDepth rp_down_depth_ = {prim_draw_};
     RpDepthHierarchy rp_depth_hierarchy_;
     RpGBufferFill rp_gbuffer_fill_;
@@ -225,7 +223,7 @@ class Renderer {
         pi_shadow_filter_[3], pi_shadow_debug_;
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
-        blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_;
+        blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
@@ -269,6 +267,7 @@ class Renderer {
     void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, float max_exposure,
                     RpResRef &resolved_color);
+    void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
 
     void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                              const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,

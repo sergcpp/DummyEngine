@@ -947,14 +947,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap | EnableDOF)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            auto &down_color = rp_builder_.AddPass("DOWNSAMPLE COLOR");
-
-            auto *data = down_color.AllocPassData<RpDownColorData>();
-            data->input_tex = down_color.AddTextureInput(resolved_color, Ren::eStageBits::FragmentShader);
-            data->output_tex = down_color.AddColorOutput(down_tex_4x_);
-
-            rp_down_color_.Setup(&view_state_, data);
-            down_color.set_executor(&rp_down_color_);
+            RpResRef downsampled_res = rp_builder_.MakeTextureResource(down_tex_4x_);
+            AddDownsampleColorPass(resolved_color, downsampled_res);
         }
 
 #if defined(USE_GL_RENDER) && 0 // gl-only for now

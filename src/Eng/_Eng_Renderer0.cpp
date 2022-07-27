@@ -20,7 +20,6 @@
 #include "Renderer/Passes/RpDebugRT.cpp"
 #include "Renderer/Passes/RpDepthFill.cpp"
 #include "Renderer/Passes/RpDepthHierarchy.cpp"
-#include "Renderer/Passes/RpDownColor.cpp"
 #include "Renderer/Passes/RpDownDepth.cpp"
 #include "Renderer/Passes/RpGBufferFill.cpp"
 #include "Renderer/Passes/RpGBufferShade.cpp"
