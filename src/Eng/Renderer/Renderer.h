@@ -11,7 +11,6 @@ extern "C" {
 #include "../Scene/SceneData.h"
 #include "FrameBuf.h"
 #include "Passes/RpBilateralBlur.h"
-#include "Passes/RpBlur.h"
 #include "Passes/RpBuildAccStructures.h"
 #include "Passes/RpCombine.h"
 #include "Passes/RpDOF.h"
@@ -202,7 +201,6 @@ class Renderer {
     RpRTReflections rp_rt_reflections_;
     RpRTShadows rp_rt_shadows_;
     RpTAA rp_taa_ = {prim_draw_};
-    RpBlur rp_blur_h_ = {prim_draw_}, rp_blur_v_ = {prim_draw_};
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
     RpReadBrightness rp_read_brightness_;
     RpCombineData rp_combine_data_;
@@ -240,7 +238,7 @@ class Renderer {
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
 
-    Ren::ProgramRef blit_static_vel_prog_;
+    Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
@@ -280,6 +278,7 @@ class Renderer {
 
     void AddSSAOPasses(RpResRef depth_down_2x, RpResRef depth_tex, RpResRef &out_ssao);
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &inout_velocity_tex);
+    void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);
 
     void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                              const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,

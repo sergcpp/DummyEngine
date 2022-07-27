@@ -120,8 +120,6 @@ set(GRAPH_SOURCES   Renderer/Graph/GraphBuilder.h
 
 set(PASS_SOURCES    Renderer/Passes/RpBilateralBlur.h
                     Renderer/Passes/RpBilateralBlur.cpp
-                    Renderer/Passes/RpBlur.h
-                    Renderer/Passes/RpBlur.cpp
                     Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpBuildAccStructures.cpp
                     Renderer/Passes/RpCombine.h
