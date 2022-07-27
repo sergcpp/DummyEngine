@@ -37,7 +37,6 @@ extern "C" {
 #include "Passes/RpSkydome.h"
 #include "Passes/RpTransparent.h"
 #include "Passes/RpUpdateAccBuffers.h"
-#include "Passes/RpUpscale.h"
 #include "PrimDraw.h"
 
 #include "Renderer_DrawList.h"
@@ -180,7 +179,6 @@ class Renderer {
     RpDownColor rp_down_color_ = {prim_draw_};
     RpDownDepth rp_down_depth_ = {prim_draw_};
     RpDepthHierarchy rp_depth_hierarchy_;
-    RpUpscale rp_ssao_upscale_ = {prim_draw_};
     RpGBufferFill rp_gbuffer_fill_;
     RpOpaque rp_opaque_;
     RpTransparent rp_transparent_ = {prim_draw_};
@@ -227,7 +225,7 @@ class Renderer {
         pi_shadow_filter_[3], pi_shadow_debug_;
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
-        blit_ssr_prog_, blit_ssr_dilate_prog_;
+        blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,

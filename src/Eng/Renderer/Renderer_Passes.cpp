@@ -10,6 +10,7 @@
 #include "../assets/shaders/internal/blit_ssao_interface.glsl"
 #include "../assets/shaders/internal/blit_static_vel_interface.glsl"
 #include "../assets/shaders/internal/blit_taa_interface.glsl"
+#include "../assets/shaders/internal/blit_upscale_interface.glsl"
 #include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
 
 void Renderer::InitPipelines() {
@@ -123,6 +124,10 @@ void Renderer::InitPipelines() {
     blit_ssr_dilate_prog_ = sh_.LoadProgram(ctx_, "blit_ssr_dilate", "internal/blit_ssr_dilate.vert.glsl",
                                             "internal/blit_ssr_dilate.frag.glsl");
     assert(blit_ssr_dilate_prog_->ready());
+
+    blit_upscale_prog_ =
+        sh_.LoadProgram(ctx_, "blit_upscale", "internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
+    assert(blit_upscale_prog_->ready());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1008,9 +1013,19 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
 
     { // Upscale SSAO pass
         auto &ssao_upscale = rp_builder_.AddPass("UPSCALE");
-        const RpResRef depth_down_2x_res = ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        const RpResRef depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
-        const RpResRef ssao_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
+
+        struct PassData {
+            RpResRef depth_down_2x_tex;
+            RpResRef depth_tex;
+            RpResRef input_tex;
+
+            RpResRef output_tex;
+        };
+
+        auto *data = ssao_upscale.AllocPassData<PassData>();
+        data->depth_down_2x_tex = ssao_upscale.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        data->depth_tex = ssao_upscale.AddTextureInput(_depth_tex, Ren::eStageBits::FragmentShader);
+        data->input_tex = ssao_upscale.AddTextureInput(ssao_blurred2, Ren::eStageBits::FragmentShader);
 
         { // Allocate output texture
             Ren::Tex2DParams params;
@@ -1020,11 +1035,35 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            out_ssao = ssao_upscale.AddColorOutput(SSAO_RES, params);
+            out_ssao = data->output_tex = ssao_upscale.AddColorOutput(SSAO_RES, params);
         }
 
-        rp_ssao_upscale_.Setup(cur_res, view_state_.clip_info, depth_down_2x_res, depth_tex, ssao_tex, out_ssao);
-        ssao_upscale.set_executor(&rp_ssao_upscale_);
+        ssao_upscale.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &down_depth_2x_tex = builder.GetReadTexture(data->depth_down_2x_tex);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &input_tex = builder.GetReadTexture(data->input_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+            rast_state.viewport[2] = view_state_.act_res[0];
+            rast_state.viewport[3] = view_state_.act_res[1];
+            { // upsample ao
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+                const Ren::Binding bindings[] = {
+                    {Ren::eBindTarget::Tex2D, Upscale::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2D, Upscale::DEPTH_LOW_TEX_SLOT, *down_depth_2x_tex.ref},
+                    {Ren::eBindTarget::Tex2D, Upscale::INPUT_TEX_SLOT, *input_tex.ref}};
+                Upscale::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+                uniform_params.resolution = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
+                                                       float(view_state_.scr_res[0]), float(view_state_.scr_res[1])};
+                uniform_params.clip_info = view_state_.clip_info;
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_upscale_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(Upscale::Params), 0);
+            }
+        });
     }
 }
 
