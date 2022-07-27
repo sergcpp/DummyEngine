@@ -179,6 +179,11 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     if ((list.render_flags & EnableLightmap) == 0) {
         pipeline_index = 1;
     }
+    if ((list.render_flags & DebugWireframe) != 0) {
+        pipeline_index = 2;
+    }
+
+    const bool deferred_shading = (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
 
     litem_to_lsource_.count = 0;
     ditem_to_decal_.count = 0;
@@ -472,7 +477,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
 
-                                if ((list.render_flags & EnableDeferred) == 0 ||
+                                if (!deferred_shading ||
                                     (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
                                     (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
                                     CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];

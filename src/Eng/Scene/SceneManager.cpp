@@ -1454,6 +1454,58 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
                       float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
 }
 
+void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
+                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
+    for (int i = 0; i < 3; ++i) {
+        Ren::RastState rast_state;
+        if (i == 0) {
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+        } else if (i == 1) {
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+        }
+        if (i == 2) {
+            rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
+            rast_state.depth.test_enabled = false;
+        } else {
+            rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
+            rast_state.depth.test_enabled = true;
+        }
+
+        if (mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) {
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.blend.enabled = true;
+            rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
+            rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+        } else {
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
+        }
+
+        // find of create pipeline
+        uint32_t new_index = 0xffffffff;
+        for (auto it = std::begin(scene_data_.persistent_data.pipelines);
+             it != std::end(scene_data_.persistent_data.pipelines); ++it) {
+            if (it->prog() == prog && it->rast_state() == rast_state) {
+                new_index = it.index();
+                break;
+            }
+        }
+
+        if (new_index == 0xffffffff) {
+            new_index = scene_data_.persistent_data.pipelines.emplace();
+            Ren::Pipeline &new_pipeline = scene_data_.persistent_data.pipelines.at(new_index);
+
+            const bool res = new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0,
+                                               ren_ctx_.log());
+            if (!res) {
+                ren_ctx_.log()->Error("Failed to initialize pipeline!");
+            }
+        }
+
+        out_pipelines.emplace_back(&scene_data_.persistent_data.pipelines, new_index);
+    }
+}
+
 void SceneManager::Serve(const int texture_budget) {
     using namespace SceneManagerConstants;
 

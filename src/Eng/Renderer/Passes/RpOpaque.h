@@ -44,7 +44,6 @@ class RpOpaque : public RpExecutor {
     RpResRef noise_tex_;
     RpResRef cone_rt_lut_;
     RpResRef dummy_black_;
-    RpResRef dummy_white_;
 
     RpResRef color_tex_;
     RpResRef normal_tex_;
@@ -65,11 +64,10 @@ class RpOpaque : public RpExecutor {
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
                const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const RpResRef brdf_lut,
                const RpResRef noise_tex, const RpResRef cone_rt_lut, const RpResRef dummy_black,
-               const RpResRef dummy_white, const RpResRef instances_buf, const RpResRef instance_indices_buf,
-               const RpResRef shared_data_buf, const RpResRef cells_buf, const RpResRef items_buf,
-               const RpResRef lights_buf, const RpResRef decals_buf, const RpResRef shadowmap_tex,
-               const RpResRef ssao_tex, const RpResRef lm_tex[], const RpResRef out_color, const RpResRef out_normals,
-               const RpResRef out_spec, const RpResRef out_depth) {
+               const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
+               const RpResRef cells_buf, const RpResRef items_buf, const RpResRef lights_buf, const RpResRef decals_buf,
+               const RpResRef shadowmap_tex, const RpResRef ssao_tex, const RpResRef lm_tex[], const RpResRef out_color,
+               const RpResRef out_normals, const RpResRef out_spec, const RpResRef out_depth) {
         view_state_ = view_state;
         pipelines_ = pipelines;
         bindless_tex_ = bindless_tex;
@@ -100,7 +98,6 @@ class RpOpaque : public RpExecutor {
         cone_rt_lut_ = cone_rt_lut;
 
         dummy_black_ = dummy_black;
-        dummy_white_ = dummy_white;
 
         textures_buf_ = textures_buf;
 

@@ -183,7 +183,6 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     RpAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
 
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
-    RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
 
     RpAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
@@ -207,11 +206,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    if (((*p_list_)->render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
-    } else {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white.ref->id());
-    }
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut.ref->id());
 

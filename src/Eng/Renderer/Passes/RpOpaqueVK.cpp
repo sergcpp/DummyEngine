@@ -124,14 +124,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     RpAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
 
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
-    RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
-
-    RpAllocTex *ssao_tex;
-    if (ssao_tex_) {
-        ssao_tex = &builder.GetReadTexture(ssao_tex_);
-    } else {
-        ssao_tex = &dummy_white;
-    }
+    RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
     RpAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
@@ -163,7 +156,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
         const VkDescriptorImageInfo decal_info = (*p_list_)->decals_atlas
                                                      ? (*p_list_)->decals_atlas->vk_desc_image_info()
                                                      : dummy_black.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo ssao_info = ssao_tex->ref->vk_desc_image_info();
+        const VkDescriptorImageInfo ssao_info = ssao_tex.ref->vk_desc_image_info();
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
         const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,

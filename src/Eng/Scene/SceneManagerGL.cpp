@@ -124,36 +124,3 @@ void SceneManager::UpdateMaterialsBuffer() {
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 }
-
-void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
-                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
-    Ren::RastState rast_state;
-    rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-    rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
-
-    rast_state.depth.test_enabled = true;
-    rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
-
-    // find of create pipeline
-    uint32_t new_index = 0xffffffff;
-    for (auto it = std::begin(scene_data_.persistent_data.pipelines);
-         it != std::end(scene_data_.persistent_data.pipelines); ++it) {
-        if (it->prog() == prog && it->rast_state() == rast_state) {
-            new_index = it.index();
-            break;
-        }
-    }
-
-    if (new_index == 0xffffffff) {
-        new_index = scene_data_.persistent_data.pipelines.emplace();
-        Ren::Pipeline &new_pipeline = scene_data_.persistent_data.pipelines.at(new_index);
-
-        const bool res =
-            new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0, ren_ctx_.log());
-        if (!res) {
-            ren_ctx_.log()->Error("Failed to initialize pipeline!");
-        }
-    }
-
-    out_pipelines.emplace_back(&scene_data_.persistent_data.pipelines, new_index);
-}

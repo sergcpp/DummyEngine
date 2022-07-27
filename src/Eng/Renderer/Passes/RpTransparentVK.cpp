@@ -40,7 +40,6 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     RpAllocTex &cone_rt_lut = builder.GetReadTexture(cone_rt_lut_);
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
-    RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
 
     RpAllocTex *lm_tex[4];
     for (int i = 0; i < 4; ++i) {
@@ -77,12 +76,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
         }
 
         const VkDescriptorImageInfo decal_info = dummy_black.ref->vk_desc_image_info();
-        VkDescriptorImageInfo ssao_info;
-        if (((*p_list_)->render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-            ssao_info = ssao_tex.ref->vk_desc_image_info();
-        } else {
-            ssao_info = dummy_white.ref->vk_desc_image_info();
-        }
+        const VkDescriptorImageInfo ssao_info = ssao_tex.ref->vk_desc_image_info();
 
         const VkDescriptorImageInfo noise_info = noise_tex.ref->vk_desc_image_info();
         const VkDescriptorImageInfo env_info = {(*p_list_)->probe_storage->handle().sampler,
