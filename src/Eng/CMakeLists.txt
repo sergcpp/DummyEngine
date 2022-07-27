@@ -154,16 +154,10 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpSkinning.cpp
                     Renderer/Passes/RpSkydome.h
                     Renderer/Passes/RpSkydome.cpp
-                    Renderer/Passes/RpSSRBlur.h
-                    Renderer/Passes/RpSSRBlur.cpp
                     Renderer/Passes/RpSSRCompose.h
                     Renderer/Passes/RpSSRCompose.cpp
                     Renderer/Passes/RpSSRCompose2.h
                     Renderer/Passes/RpSSRCompose2.cpp
-                    Renderer/Passes/RpSSRDilate.h
-                    Renderer/Passes/RpSSRDilate.cpp
-                    Renderer/Passes/RpSSRTrace.h
-                    Renderer/Passes/RpSSRTrace.cpp
                     Renderer/Passes/RpSSRVSDepth.h
                     Renderer/Passes/RpSSRVSDepth.cpp
                     Renderer/Passes/RpTransparent.h
