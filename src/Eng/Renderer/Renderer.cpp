@@ -937,34 +937,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         const uint64_t use_taa_mask = (EnableTaa | DebugWireframe);
         const uint64_t use_taa = EnableTaa;
         if ((list.render_flags & use_taa_mask) == use_taa) {
-            assert(!view_state_.is_multisampled);
-            { // TAA
-                auto &taa = rp_builder_.AddPass("TAA");
-
-                auto *data = taa.AllocPassData<RpTAAData>();
-                data->shared_data = taa.AddUniformBufferInput(
-                    common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-                data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
-                data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
-                data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
-
-                { // Texture that holds resolved color
-                    Ren::Tex2DParams params;
-                    params.w = view_state_.scr_res[0];
-                    params.h = view_state_.scr_res[1];
-                    params.format = Ren::eTexFormat::RawRG11F_B10F;
-                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    resolved_color = data->output_tex = taa.AddColorOutput(RESOLVED_COLOR_TEX, params);
-                    data->output_history_tex = taa.AddColorOutput("Color History", params);
-                }
-                data->history_tex =
-                    taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
-
-                rp_taa_.Setup(rp_builder_, &view_state_, reduced_average_, list.draw_cam.max_exposure, data);
-                taa.set_executor(&rp_taa_);
-            }
+            AddTaaPass(common_buffers, frame_textures, list.draw_cam.max_exposure, resolved_color);
         } else {
             resolved_color = frame_textures.color;
         }

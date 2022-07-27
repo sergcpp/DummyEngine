@@ -39,7 +39,6 @@
 #include "Renderer/Passes/RpShadowMaps.cpp"
 #include "Renderer/Passes/RpSkinning.cpp"
 #include "Renderer/Passes/RpSkydome.cpp"
-#include "Renderer/Passes/RpTAA.cpp"
 #include "Renderer/Passes/RpTransparent.cpp"
 #include "Renderer/Passes/RpUpdateAccBuffers.cpp"
 #include "Renderer/Passes/RpUpscale.cpp"

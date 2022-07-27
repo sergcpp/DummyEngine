@@ -166,8 +166,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpSSRTrace.cpp
                     Renderer/Passes/RpSSRVSDepth.h
                     Renderer/Passes/RpSSRVSDepth.cpp
-                    Renderer/Passes/RpTAA.h
-                    Renderer/Passes/RpTAA.cpp
                     Renderer/Passes/RpTransparent.h
                     Renderer/Passes/RpTransparent.cpp
                     Renderer/Passes/RpUpdateAccBuffers.h

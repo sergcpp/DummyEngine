@@ -9,6 +9,7 @@
 #include "../assets/shaders/internal/blit_gauss_interface.glsl"
 #include "../assets/shaders/internal/blit_ssao_interface.glsl"
 #include "../assets/shaders/internal/blit_static_vel_interface.glsl"
+#include "../assets/shaders/internal/blit_taa_interface.glsl"
 #include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
 
 void Renderer::InitPipelines() {
@@ -111,6 +112,10 @@ void Renderer::InitPipelines() {
     blit_bilateral_prog_ = sh_.LoadProgram(ctx_, "blit_bilateral2", "internal/blit_bilateral.vert.glsl",
                                            "internal/blit_bilateral.frag.glsl");
     assert(blit_bilateral_prog_->ready());
+
+    blit_taa_prog_ = sh_.LoadProgram(ctx_, "blit_taa_prog", "internal/blit_taa.vert.glsl",
+                                     "internal/blit_taa.frag.glsl@USE_CLIPPING;USE_TONEMAP");
+    assert(blit_taa_prog_->ready());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1157,6 +1162,91 @@ void Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &
 
             prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_gauss2_prog_, render_targets, {}, rast_state,
                                 builder.rast_state(), bindings, &uniform_params, sizeof(Gauss::Params), 0);
+        });
+    }
+}
+
+void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+                          const float max_exposure, RpResRef &resolved_color) {
+    assert(!view_state_.is_multisampled);
+    { // TAA
+        auto &taa = rp_builder_.AddPass("TAA");
+
+        struct PassData {
+            RpResRef shared_data;
+
+            RpResRef clean_tex;
+            RpResRef depth_tex;
+            RpResRef velocity_tex;
+            RpResRef history_tex;
+
+            RpResRef output_tex;
+            RpResRef output_history_tex;
+        };
+
+        auto *data = taa.AllocPassData<PassData>();
+        data->shared_data = taa.AddUniformBufferInput(common_buffers.shared_data_res,
+                                                      Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+        data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
+        data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
+        data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
+
+        { // Texture that holds resolved color
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            resolved_color = data->output_tex = taa.AddColorOutput(RESOLVED_COLOR_TEX, params);
+            data->output_history_tex = taa.AddColorOutput("Color History", params);
+        }
+        data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
+
+        // rp_taa_.Setup(rp_builder_, &view_state_, reduced_average_, list.draw_cam.max_exposure, data);
+        // taa.set_executor(&rp_taa_);
+
+        taa.set_execute_cb([this, data, max_exposure](RpBuilder &builder) {
+            RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+
+            RpAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
+            RpAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+            RpAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0];
+            rast_state.viewport[3] = view_state_.act_res[1];
+
+            { // Blit taa
+                const Ren::RenderTarget render_targets[] = {
+                    {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
+                    {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+                // exposure from previous frame
+                float exposure =
+                    reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
+                exposure = std::min(exposure, max_exposure);
+
+                const Ren::Binding bindings[] = {
+                    {Ren::eBindTarget::Tex2D, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
+                    {Ren::eBindTarget::Tex2D, TempAA::HIST_TEX_SLOT, *history_tex.ref},
+                    {Ren::eBindTarget::Tex2D, TempAA::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2D, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
+
+                TempAA::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
+                uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+                uniform_params.exposure = exposure;
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(TempAA::Params), 0);
+            }
         });
     }
 }
