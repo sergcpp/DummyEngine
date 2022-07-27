@@ -6,6 +6,7 @@
 #include "../Utils/ShaderLoader.h"
 
 #include "../assets/shaders/internal/blit_bilateral_interface.glsl"
+#include "../assets/shaders/internal/blit_down_depth_interface.glsl"
 #include "../assets/shaders/internal/blit_down_interface.glsl"
 #include "../assets/shaders/internal/blit_gauss_interface.glsl"
 #include "../assets/shaders/internal/blit_ssao_interface.glsl"
@@ -133,6 +134,10 @@ void Renderer::InitPipelines() {
     blit_down2_prog_ =
         sh_.LoadProgram(ctx_, "blit_down2", "internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
     assert(blit_down2_prog_->ready());
+
+    blit_down_depth_prog_ = sh_.LoadProgram(ctx_, "blit_down_depth", "internal/blit_down_depth.vert.glsl",
+                                            "internal/blit_down_depth.frag.glsl");
+    assert(blit_down_depth_prog_->ready());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1335,5 +1340,55 @@ void Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex) 
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down2_prog_, render_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(DownColor::Params), 0);
+    });
+}
+
+void Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
+                                      RpResRef &out_depth_down_2x) {
+    auto &downsample_depth = rp_builder_.AddPass("DOWN DEPTH");
+
+    struct PassData {
+        RpResRef shared_data;
+        RpResRef in_depth_tex;
+
+        RpResRef out_depth_tex;
+    };
+
+    auto *data = downsample_depth.AllocPassData<PassData>();
+    data->shared_data = downsample_depth.AddUniformBufferInput(
+        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+    data->in_depth_tex = downsample_depth.AddTextureInput(depth_tex, Ren::eStageBits::FragmentShader);
+
+    { // Texture that holds 2x downsampled linear depth
+        Ren::Tex2DParams params;
+        params.w = view_state_.scr_res[0] / 2;
+        params.h = view_state_.scr_res[1] / 2;
+        params.format = Ren::eTexFormat::RawR32F;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        out_depth_down_2x = data->out_depth_tex = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
+    }
+
+    downsample_depth.set_execute_cb([this, data](RpBuilder &builder) {
+        RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+        RpAllocTex &depth_tex = builder.GetReadTexture(data->in_depth_tex);
+        RpAllocTex &output_tex = builder.GetWriteTexture(data->out_depth_tex);
+
+        Ren::RastState rast_state;
+
+        rast_state.viewport[2] = view_state_.act_res[0] / 2;
+        rast_state.viewport[3] = view_state_.act_res[1] / 2;
+
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, DownDepth::DEPTH_TEX_SLOT, *depth_tex.ref}};
+
+        DownDepth::Params uniform_params;
+        uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_.act_res[0]), float(view_state_.act_res[1])};
+        uniform_params.clip_info = view_state_.clip_info;
+        uniform_params.linearize = 1.0f;
+
+        const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, render_targets, {}, rast_state,
+                            builder.rast_state(), bindings, &uniform_params, sizeof(DownDepth::Params), 0);
     });
 }

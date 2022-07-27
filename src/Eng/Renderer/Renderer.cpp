@@ -757,27 +757,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         if ((list.render_flags & EnableZFill) && (list.render_flags & (EnableSSAO | EnableSSR)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            { // TODO: get rid of this (or use on low spec only)
-                auto &downsample_depth = rp_builder_.AddPass("DOWN DEPTH");
-
-                const RpResRef shared_data_res = downsample_depth.AddUniformBufferInput(
-                    common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-                const RpResRef in_depth_tex_res =
-                    downsample_depth.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
-
-                { // Texture that holds 2x downsampled linear depth
-                    Ren::Tex2DParams params;
-                    params.w = view_state_.scr_res[0] / 2;
-                    params.h = view_state_.scr_res[1] / 2;
-                    params.format = Ren::eTexFormat::RawR32F;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    depth_down_2x = downsample_depth.AddColorOutput(DEPTH_DOWN_2X_TEX, params);
-                }
-
-                rp_down_depth_.Setup(&view_state_, shared_data_res, in_depth_tex_res, depth_down_2x);
-                downsample_depth.set_executor(&rp_down_depth_);
-            }
+            // TODO: get rid of this (or use on low spec only)
+            AddDownsampleDepthPass(common_buffers, frame_textures.depth, depth_down_2x);
 
             auto &depth_hierarchy = rp_builder_.AddPass("DEPTH HIERARCHY");
             const RpResRef depth_tex =
