@@ -5,8 +5,9 @@
 
 #include "../Utils/ShaderLoader.h"
 
-#include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
+#include "../assets/shaders/internal/blit_gauss_interface.glsl"
 #include "../assets/shaders/internal/blit_static_vel_interface.glsl"
+#include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
 
 void Renderer::InitPipelines() {
     { // Init skinning pipeline
@@ -96,6 +97,10 @@ void Renderer::InitPipelines() {
 
     blit_static_vel_prog_ = sh_.LoadProgram(ctx_, "blit_static_vel_prog", "internal/blit_static_vel.vert.glsl",
                                             "internal/blit_static_vel.frag.glsl");
+    assert(blit_static_vel_prog_->ready());
+    blit_gauss2_prog_ =
+        sh_.LoadProgram(ctx_, "blit_gauss2", "internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
+    assert(blit_gauss2_prog_->ready());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -898,7 +903,8 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
     }
 }
 
-void Renderer::AddFillStaticVelocityPass(const CommonBuffers& common_buffers, RpResRef depth_tex, RpResRef& inout_velocity_tex) {
+void Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
+                                         RpResRef &inout_velocity_tex) {
     assert(!view_state_.is_multisampled);
     auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
 
@@ -946,4 +952,98 @@ void Renderer::AddFillStaticVelocityPass(const CommonBuffers& common_buffers, Rp
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_static_vel_prog_, render_targets, depth_target, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(BlitStaticVel::Params), 0);
     });
+}
+
+void Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex) {
+    RpResRef blur_temp;
+    { // Blur frame horizontally
+        auto &blur_h = rp_builder_.AddPass("BLUR H");
+
+        struct PassData {
+            RpResRef input_tex;
+            RpResRef output_tex;
+        };
+
+        auto *data = blur_h.AllocPassData<PassData>();
+        data->input_tex = blur_h.AddTextureInput(input_tex, Ren::eStageBits::FragmentShader);
+
+        { //
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0] / 4;
+            params.h = view_state_.scr_res[1] / 4;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            blur_temp = data->output_tex = blur_h.AddColorOutput("Blur temp", params);
+        }
+
+        blur_h.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 4;
+            rast_state.viewport[3] = view_state_.act_res[1] / 4;
+
+            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Gauss::SRC_TEX_SLOT, *intput_tex.ref}};
+
+            Gauss::Params uniform_params;
+            uniform_params.transform =
+                Ren::Vec4f{0.0f, 0.0f, float(rast_state.viewport[2]), float(rast_state.viewport[3])};
+            uniform_params.vertical[0] = 0.0f;
+
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_gauss2_prog_, render_targets, {}, rast_state,
+                                builder.rast_state(), bindings, &uniform_params, sizeof(Gauss::Params), 0);
+        });
+    }
+    { // Blur frame vertically
+        auto &blur_v = rp_builder_.AddPass("BLUR V");
+
+        struct PassData {
+            RpResRef input_tex;
+            RpResRef output_tex;
+        };
+
+        auto *data = blur_v.AllocPassData<PassData>();
+        data->input_tex = blur_v.AddTextureInput(blur_temp, Ren::eStageBits::FragmentShader);
+
+        { //
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0] / 4;
+            params.h = view_state_.scr_res[1] / 4;
+            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            output_tex = data->output_tex = blur_v.AddColorOutput(BLUR_RES_TEX, params);
+        }
+
+        blur_v.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &intput_tex = builder.GetReadTexture(data->input_tex);
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.viewport[2] = view_state_.act_res[0] / 4;
+            rast_state.viewport[3] = view_state_.act_res[1] / 4;
+
+            const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+
+            const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Gauss::SRC_TEX_SLOT, *intput_tex.ref}};
+
+            Gauss::Params uniform_params;
+            uniform_params.transform =
+                Ren::Vec4f{0.0f, 0.0f, float(rast_state.viewport[2]), float(rast_state.viewport[3])};
+            uniform_params.vertical[0] = 1.0f;
+
+            prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_gauss2_prog_, render_targets, {}, rast_state,
+                                builder.rast_state(), bindings, &uniform_params, sizeof(Gauss::Params), 0);
+        });
+    }
 }

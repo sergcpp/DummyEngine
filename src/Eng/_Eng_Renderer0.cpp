@@ -16,7 +16,6 @@
 #include "Renderer/Graph/GraphBuilder.cpp"
 #include "Renderer/Graph/SubPass.cpp"
 #include "Renderer/Passes/RpBilateralBlur.cpp"
-#include "Renderer/Passes/RpBlur.cpp"
 #include "Renderer/Passes/RpBuildAccStructures.cpp"
 #include "Renderer/Passes/RpCombine.cpp"
 #include "Renderer/Passes/RpDebugRT.cpp"

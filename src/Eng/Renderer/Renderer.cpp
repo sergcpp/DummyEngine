@@ -1017,49 +1017,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Blur
         //
+        RpResRef blur_tex;
         if ((list.render_flags & (EnableSSR | EnableBloom | EnableTonemap)) &&
             ((list.render_flags & DebugWireframe) == 0)) {
-            RpResRef blur_temp;
-            { // Blur frame horizontally
-                auto &blur_h = rp_builder_.AddPass("BLUR H");
-
-                auto *data = blur_h.AllocPassData<RpBlurData>();
-                data->input_tex = blur_h.AddTextureInput(down_tex_4x_, Ren::eStageBits::FragmentShader);
-
-                { //
-                    Ren::Tex2DParams params;
-                    params.w = view_state_.scr_res[0] / 4;
-                    params.h = view_state_.scr_res[1] / 4;
-                    params.format = Ren::eTexFormat::RawRG11F_B10F;
-                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    blur_temp = data->output_tex = blur_h.AddColorOutput("Blur temp", params);
-                }
-
-                rp_blur_h_.Setup(&view_state_, false /* vertical */, data);
-                blur_h.set_executor(&rp_blur_h_);
-            }
-            { // Blur frame vertically
-                auto &blur_v = rp_builder_.AddPass("BLUR V");
-
-                auto *data = blur_v.AllocPassData<RpBlurData>();
-                data->input_tex = blur_v.AddTextureInput(blur_temp, Ren::eStageBits::FragmentShader);
-
-                { //
-                    Ren::Tex2DParams params;
-                    params.w = view_state_.scr_res[0] / 4;
-                    params.h = view_state_.scr_res[1] / 4;
-                    params.format = Ren::eTexFormat::RawRG11F_B10F;
-                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    data->output_tex = blur_v.AddColorOutput(BLUR_RES_TEX, params);
-                }
-
-                rp_blur_v_.Setup(&view_state_, true /* vertical */, data);
-                blur_v.set_executor(&rp_blur_v_);
-            }
+            AddFrameBlurPasses(down_tex_4x_, blur_tex);
         }
 
         //
@@ -1118,7 +1079,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         {
             const char *color_tex = nullptr;
             const char *output_tex = nullptr;
-            const char *blur_tex = nullptr;
 
             if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0 && !(list.render_flags & DebugWireframe)) ||
                 apply_dof) {
@@ -1133,10 +1093,6 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 }
             } else {
                 color_tex = MAIN_COLOR_TEX;
-            }
-
-            if ((list.render_flags & EnableBloom) && !(list.render_flags & DebugWireframe)) {
-                blur_tex = BLUR_RES_TEX;
             }
 
             if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {
