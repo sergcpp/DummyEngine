@@ -158,8 +158,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpSSRCompose.cpp
                     Renderer/Passes/RpSSRCompose2.h
                     Renderer/Passes/RpSSRCompose2.cpp
-                    Renderer/Passes/RpSSRVSDepth.h
-                    Renderer/Passes/RpSSRVSDepth.cpp
                     Renderer/Passes/RpTransparent.h
                     Renderer/Passes/RpTransparent.cpp
                     Renderer/Passes/RpUpdateAccBuffers.h

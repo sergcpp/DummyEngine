@@ -31,7 +31,6 @@ extern "C" {
 #include "Passes/RpReadBrightness.h"
 #include "Passes/RpSSRCompose.h"
 #include "Passes/RpSSRCompose2.h"
-#include "Passes/RpSSRVSDepth.h"
 #include "Passes/RpSampleBrightness.h"
 #include "Passes/RpShadowMaps.h"
 #include "Passes/RpSkinning.h"

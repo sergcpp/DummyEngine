@@ -27,7 +27,6 @@
 #include "Renderer/Passes/RpOpaque.cpp"
 #include "Renderer/Passes/RpSSRCompose.cpp"
 #include "Renderer/Passes/RpSSRCompose2.cpp"
-#include "Renderer/Passes/RpSSRVSDepth.cpp"
 #include "Renderer/Passes/RpSampleBrightness.cpp"
 #include "Renderer/Passes/RpReadBrightness.cpp"
 #include "Renderer/Passes/RpRTGI.cpp"
