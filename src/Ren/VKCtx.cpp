@@ -222,7 +222,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 }
 
                 if (swapchain_supported && acc_struct_supported && raytracing_supported &&
-                    dynamic_rendering_supported) {
+                    ray_query_supported && dynamic_rendering_supported) {
                     // all needed extensions were found
                     break;
                 }
