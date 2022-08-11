@@ -107,8 +107,7 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
 #ifndef NDEBUG
     const VkValidationFeatureEnableEXT enabled_validation_features[] = {
-        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT,
-        VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+        VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT, VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
         VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
         // VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
         //  VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
@@ -376,6 +375,8 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
 
     if (enable_dynamic_rendering) {
         device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME); // required for dynamic rendering
+        device_extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);   // required for depth stencil resolve
     }
 
     device_info.enabledExtensionCount = uint32_t(device_extensions.size());
