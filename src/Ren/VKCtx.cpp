@@ -218,13 +218,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 } else if (strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME) == 0) {
                     ray_query_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0) {
-                    dynamic_rendering_supported = true;
-                }
-
-                if (swapchain_supported && acc_struct_supported && raytracing_supported &&
-                    ray_query_supported && dynamic_rendering_supported) {
-                    // all needed extensions were found
-                    break;
+                    //dynamic_rendering_supported = true;
                 }
             }
 
