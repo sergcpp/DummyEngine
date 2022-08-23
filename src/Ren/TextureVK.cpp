@@ -201,7 +201,7 @@ void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DPara
         _p.w = _p.h = 1;
         _p.mip_count = 1;
         _p.format = eTexFormat::RawRGBA8888;
-        _p.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        _p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
 
         InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, _p, log);
         // mark it as not ready
@@ -245,7 +245,7 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
         Tex2DParams _p = p;
         _p.w = _p.h = 1;
         _p.format = eTexFormat::RawRGBA8888;
-        _p.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        _p.usage = eTexUsage::Sampled | eTexUsage::Transfer;
 
         InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
         // mark it as not ready
@@ -309,15 +309,15 @@ void Ren::Texture2D::Free() {
     }
 }
 
-bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const Ren::eTexFormat format,
-                             const Ren::eTexBlock block, const bool is_srgb, void *_cmd_buf,
+bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
+                             const eTexBlock block, const bool is_srgb, void *_cmd_buf,
                              MemoryAllocators *mem_allocs, ILog *log) {
     VkImage new_image = VK_NULL_HANDLE;
     VkImageView new_image_view = VK_NULL_HANDLE;
     MemAllocation new_alloc = {};
     eResState new_resource_state = eResState::Undefined;
 
-    mip_count = std::min(mip_count, CalcMipCount(w, h, 1, Ren::eTexFilter::Trilinear));
+    mip_count = std::min(mip_count, CalcMipCount(w, h, 1, eTexFilter::Trilinear));
 
     { // create new image
         VkImageCreateInfo img_info = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
@@ -938,9 +938,9 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size, Buffer &s
     _p.w = width;
     _p.h = height;
     if (channels == 3) {
-        _p.format = Ren::eTexFormat::RawRGB888;
+        _p.format = eTexFormat::RawRGB888;
     } else if (channels == 4) {
-        _p.format = Ren::eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RawRGBA8888;
     } else {
         assert(false);
     }
@@ -1319,7 +1319,7 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], Buffer &sbuf, voi
     Tex2DParams _p = p;
     _p.w = w;
     _p.h = h;
-    _p.format = Ren::eTexFormat::RawRGB16F;
+    _p.format = eTexFormat::RawRGB16F;
 
     InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
 }
@@ -1352,9 +1352,9 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], Buf
     _p.w = width;
     _p.h = height;
     if (channels == 3) {
-        _p.format = Ren::eTexFormat::RawRGB888;
+        _p.format = eTexFormat::RawRGB888;
     } else if (channels == 4) {
-        _p.format = Ren::eTexFormat::RawRGBA8888;
+        _p.format = eTexFormat::RawRGBA8888;
     } else {
         assert(false);
     }
@@ -1855,7 +1855,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 }
 
 void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                 const int sizey, const Ren::eTexFormat format, const void *data, const int data_len) {
+                                 const int sizey, const eTexFormat format, const void *data, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
@@ -1883,7 +1883,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 }
 
 void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                 const int sizey, const Ren::eTexFormat format, const Buffer &sbuf, void *_cmd_buf,
+                                 const int sizey, const eTexFormat format, const Buffer &sbuf, void *_cmd_buf,
                                  const int data_off, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
@@ -2081,8 +2081,8 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
                            const uint32_t dst_y, const uint32_t width, const uint32_t height) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
-    assert(src_tex.resource_state == Ren::eResState::CopySrc);
-    assert(dst_tex.resource_state == Ren::eResState::CopyDst);
+    assert(src_tex.resource_state == eResState::CopySrc);
+    assert(dst_tex.resource_state == eResState::CopyDst);
 
     VkImageCopy reg;
     if (IsDepthFormat(src_tex.params.format)) {
@@ -2111,7 +2111,7 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
 
 void Ren::ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-    assert(tex.resource_state == Ren::eResState::CopyDst);
+    assert(tex.resource_state == eResState::CopyDst);
 
     VkClearColorValue clear_val = {};
     memcpy(clear_val.float32, rgba, 4 * sizeof(float));
