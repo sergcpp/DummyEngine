@@ -2021,7 +2021,7 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopySrc);
         new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
-        new_barrier.newLayout = VKImageLayoutForState(eResState::CopyDst);
+        new_barrier.newLayout = VKImageLayoutForState(eResState::CopySrc);
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.image = handle_.img;
