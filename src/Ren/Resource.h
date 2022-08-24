@@ -7,6 +7,7 @@
 #if defined(USE_VK_RENDER)
 #include "VK.h"
 #endif
+#include "Span.h"
 
 namespace Ren {
 enum class eStageBits : uint16_t {
@@ -93,5 +94,5 @@ struct TransitionInfo {
 };
 
 void TransitionResourceStates(void *_cmd_buf, eStageBits src_stages_mask, eStageBits dst_stages_mask,
-                              const TransitionInfo *transitions, int transitions_count);
+                              Span<const TransitionInfo> transitions);
 } // namespace Ren

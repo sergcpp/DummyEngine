@@ -3,10 +3,10 @@
 #include "GL.h"
 
 void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_mask, const eStageBits dst_stages_mask,
-                                   const TransitionInfo *transitions, const int transitions_count) {
+                                   Span<const TransitionInfo> transitions) {
     GLbitfield mem_barrier_bits = 0;
 
-    for (int i = 0; i < transitions_count; i++) {
+    for (int i = 0; i < int(transitions.size()); i++) {
         if (transitions[i].p_tex) {
             eResState old_state = transitions[i].old_state;
             if (old_state == Ren::eResState::Undefined) {

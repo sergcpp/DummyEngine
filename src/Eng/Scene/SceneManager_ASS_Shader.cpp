@@ -4,6 +4,9 @@
 
 #include "../Renderer/Renderer_GL_Defines.inl"
 
+#define _AS_STR(x) #x
+#define AS_STR(x) _AS_STR(x)
+
 void SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &line) {
     static bool constants_initialized = false;
     static Ren::HashMap32<std::string, std::string> shader_constants;
@@ -394,3 +397,6 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
     return true;
 }
+
+#undef AS_STR
+#undef _AS_STR

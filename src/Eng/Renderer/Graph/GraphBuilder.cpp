@@ -1316,8 +1316,7 @@ void RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
     }
 
-    Ren::TransitionResourceStates(cmd_buf, src_stages, dst_stages, res_transitions.cdata(),
-                                  int(res_transitions.size()));
+    Ren::TransitionResourceStates(cmd_buf, src_stages, dst_stages, res_transitions);
 }
 
 void RpBuilder::CheckResourceStates(RpSubpass &pass) {

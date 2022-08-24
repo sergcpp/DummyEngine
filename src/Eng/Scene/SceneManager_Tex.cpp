@@ -678,8 +678,7 @@ void SceneManager::ForceTextureReload() {
     }
 
     if (!img_transitions.empty()) {
-        Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
-                                      img_transitions.data(), int(img_transitions.size()));
+        Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages, img_transitions);
     }
 
     std::fill(std::begin(scene_data_.texture_mem_buckets), std::end(scene_data_.texture_mem_buckets), 0);
