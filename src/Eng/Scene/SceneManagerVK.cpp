@@ -236,8 +236,7 @@ void SceneManager::UpdateMaterialsBuffer() {
     }
 
     if (!img_transitions.empty()) {
-        Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
-                                      img_transitions.cdata(), int(img_transitions.size()));
+        Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages, img_transitions);
     }
 
     if (!img_infos.empty()) {
@@ -651,8 +650,8 @@ void SceneManager::InitHWAccStructures() {
     scene_data_.persistent_data.rt_instance_buf =
         ren_ctx_.LoadBuffer("RT Instance Buf", Ren::eBufType::Storage,
                             uint32_t(REN_MAX_RT_OBJ_INSTANCES * sizeof(VkAccelerationStructureInstanceKHR)));
-    //Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
-    //                               uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
+    // Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
+    //                                uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
 
     /*{
         uint8_t *instance_stage = instance_stage_buf.Map(Ren::BufMapWrite);
@@ -706,8 +705,8 @@ void SceneManager::InitHWAccStructures() {
 
     scene_data_.persistent_data.rt_tlas_buf =
         ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
-    scene_data_.persistent_data.rt_sh_tlas_buf =
-        ren_ctx_.LoadBuffer("TLAS Shadow Buf", Ren::eBufType::AccStructure, uint32_t(size_info.accelerationStructureSize));
+    scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer("TLAS Shadow Buf", Ren::eBufType::AccStructure,
+                                                                     uint32_t(size_info.accelerationStructureSize));
 
     Ren::BufferRef tlas_scratch_buf =
         ren_ctx_.LoadBuffer("TLAS Scratch Buf", Ren::eBufType::Storage, uint32_t(size_info.buildScratchSize));
@@ -827,7 +826,7 @@ void SceneManager::InitHWAccStructures() {
         VkAccelerationStructureBuildRangeInfoKHR range_info = {};
         range_info.primitiveOffset = 0;
         range_info.primitiveCount = 0;
-        //instance_count;
+        // instance_count;
         range_info.firstVertex = 0;
         range_info.transformOffset = 0;
 
