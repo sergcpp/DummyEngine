@@ -40,7 +40,8 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
 }
 
 VkMemoryPropertyFlags GetVkMemoryPropertyFlags(const eBufType type) {
-    return (type == eBufType::Stage) ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    return (type == eBufType::Stage) ? (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+                                     : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
 uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, uint32_t mem_type_bits,
@@ -342,6 +343,17 @@ uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const u
     const VkResult res = vkMapMemory(api_ctx_->device, mem_, VkDeviceSize(offset), VkDeviceSize(size), 0, &mapped);
     assert(res == VK_SUCCESS && "Failed to map memory!");
 
+    if (dir & BufMapRead) {
+        VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
+        range.memory = mem_;
+        range.offset = VkDeviceSize(offset);
+        range.size = VkDeviceSize(size);
+        range.pNext = nullptr;
+
+        const VkResult res = vkInvalidateMappedMemoryRanges(api_ctx_->device, 1, &range);
+        assert(res == VK_SUCCESS && "Failed to invalidate memory range!");
+    }
+
     mapped_ptr_ = reinterpret_cast<uint8_t *>(mapped);
     mapped_offset_ = offset;
     return reinterpret_cast<uint8_t *>(mapped);
@@ -360,11 +372,8 @@ void Ren::Buffer::FlushMappedRange(uint32_t offset, const uint32_t size) {
     range.size = VkDeviceSize(size);
     range.pNext = nullptr;
 
-    VkResult res = vkFlushMappedMemoryRanges(api_ctx_->device, 1, &range);
+    const VkResult res = vkFlushMappedMemoryRanges(api_ctx_->device, 1, &range);
     assert(res == VK_SUCCESS && "Failed to flush memory range!");
-
-    res = vkInvalidateMappedMemoryRanges(api_ctx_->device, 1, &range);
-    assert(res == VK_SUCCESS && "Failed to invalidate memory range!");
 
 #ifndef NDEBUG
     // flushed_ranges_.emplace_back(std::make_pair(offset, size),
