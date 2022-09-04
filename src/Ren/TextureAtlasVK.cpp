@@ -232,27 +232,6 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
 
     vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_[layer], VKImageLayoutForState(eResState::CopyDst), 1,
                            &region);
-
-#if 0
-    if (IsCompressedFormat(format)) {
-        const GLenum tex_format =
-#if !defined(__ANDROID__)
-            (flags & TexSRGB) ? GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT
-                              : GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
-#else
-            (flags & TexSRGB) ? GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR
-                              : GL_COMPRESSED_RGBA_ASTC_4x4_KHR;
-#endif
-        ren_glCompressedTextureSubImage2D_Comp(GL_TEXTURE_2D, (GLuint)tex_ids_[layer],
-                                               level, pos[0], pos[1], res[0], res[1],
-                                               tex_format, data_len, data);
-    } else {
-        ren_glTextureSubImage2D_Comp(
-            GL_TEXTURE_2D, (GLuint)tex_ids_[layer], level, pos[0], pos[1], res[0], res[1],
-            GLFormatFromTexFormat(format), GLTypeFromTexFormat(format), data);
-    }
-    CheckError("init sub image", log);
-#endif
 }
 
 bool Ren::TextureAtlas::Free(const int pos[2]) {
