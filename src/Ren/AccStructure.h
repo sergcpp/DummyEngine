@@ -36,4 +36,9 @@ class AccStructureVK : public IAccStructure {
     eResState resource_state = eResState::Undefined;
 };
 #endif
+
+class AccStructureSW : public IAccStructure {
+  public:
+
+};
 }
