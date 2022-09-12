@@ -189,6 +189,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags,
                                  Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     void InitHWAccStructures();
+    void InitSWAccStructures();
 
     void RebuildSceneBVH();
     void RemoveNode(uint32_t node_index);
