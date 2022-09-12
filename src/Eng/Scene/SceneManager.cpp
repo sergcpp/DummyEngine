@@ -287,8 +287,7 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
                                                 Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
                                                 Ren::eStoreOp::Store};
 
-        const bool res =
-            rp_main_draw_.Setup(ren_ctx.api_ctx(), color_rts, depth_rt, ren_ctx.log());
+        const bool res = rp_main_draw_.Setup(ren_ctx.api_ctx(), color_rts, depth_rt, ren_ctx.log());
         if (!res) {
             ren_ctx.log()->Error("Failed to initialize render pass!");
         }
@@ -534,11 +533,9 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
     RebuildMaterialTextureGraph();
 
     if (ren_ctx_.capabilities.raytracing) {
-#if !defined(USE_GL_RENDER)
         InitHWAccStructures();
-#endif
     } else {
-        // InitSWAccStructures();
+        InitSWAccStructures();
     }
 
     __itt_task_end(__g_itt_domain);
