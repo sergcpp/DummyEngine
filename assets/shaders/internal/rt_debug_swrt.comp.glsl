@@ -1,39 +1,66 @@
 #version 310 es
 
+#include "_swrt_common.glsl"
+
 #include "rt_debug_interface.glsl"
+
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
+};
+
+#if defined(VULKAN) || defined(GL_SPIRV)
+layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+#else
+layout (std140)
+#endif
+uniform SharedDataBlock {
+    SharedData g_shrd_data;
+};
 
 layout(std430, binding = NODES_BUF_SLOT) readonly buffer Nodes {
     bvh_node_t g_nodes[];
 };
 
+layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
+    vec4 g_vtx_data0[];
+};
+
+layout(std430, binding = VTX_BUF2_SLOT) readonly buffer VtxData1 {
+    uvec4 g_vtx_data1[];
+};
+
+layout(std430, binding = NDX_BUF_SLOT) readonly buffer VtxNdxData {
+    uint g_vtx_indices[];
+};
+
+layout(std430, binding = PRIM_NDX_BUF_SLOT) readonly buffer PrimNdxData {
+    uint g_prim_indices[];
+};
+
 layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_image;
-
-#define near_child(rd, n)   \
-    (rd)[floatBitsToUint(n.bbox_max.w) >> 30] < 0 ? (floatBitsToUint(n.bbox_max.w) & RIGHT_CHILD_BITS) : floatBitsToUint(n.bbox_min.w)
-
-#define far_child(rd, n)    \
-    (rd)[floatBitsToUint(n.bbox_max.w) >> 30] < 0 ? floatBitsToUint(n.bbox_min.w) : (floatBitsToUint(n.bbox_max.w) & RIGHT_CHILD_BITS)
 
 shared uint g_stack[LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y][MAX_STACK_SIZE];
 
-bool _bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_max) {
-    float low = fma(inv_d.x, bbox_min.x, neg_inv_d_o.x);
-    float high = fma(inv_d.x, bbox_max.x, neg_inv_d_o.x);
-    float tmin = min(low, high);
-    float tmax = max(low, high);
+const int FirstVertex = 2097216;
+//const int IndicesOffset = 384;
 
-    low = fma(inv_d.y, bbox_min.y, neg_inv_d_o.y);
-    high = fma(inv_d.y, bbox_max.y, neg_inv_d_o.y);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
+void IntersectTris_ClosestHit(vec3 ro, vec3 rd, int tri_start, int tri_end, int obj_index,
+                              inout hit_data_t out_inter) {
+    for (int i = tri_start; i < tri_end; ++i) {
+        uint j = g_prim_indices[i];
 
-    low = fma(inv_d.z, bbox_min.z, neg_inv_d_o.z);
-    high = fma(inv_d.z, bbox_max.z, neg_inv_d_o.z);
-    tmin = max(tmin, min(low, high));
-    tmax = min(tmax, max(low, high));
-    tmax *= 1.00000024;
-
-    return tmin <= tmax && tmin <= t && tmax > 0.0;
+        float t, u, v;
+        if (IntersectTri(ro, rd, g_vtx_data0[FirstVertex + g_vtx_indices[3 * j + 0]].xyz,
+                                 g_vtx_data0[FirstVertex + g_vtx_indices[3 * j + 1]].xyz,
+                                 g_vtx_data0[FirstVertex + g_vtx_indices[3 * j + 2]].xyz, t, u, v) && t > 0.0 && t < out_inter.t) {
+            out_inter.mask = -1;
+            out_inter.prim_index = int(j);
+            out_inter.obj_index = obj_index;
+            out_inter.t = t;
+            out_inter.u = u;
+            out_inter.v = v;
+        }
+    }
 }
 
 void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index,
@@ -59,7 +86,7 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
             int tri_start = int(floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
             int tri_end = tri_start + floatBitsToInt(n.bbox_max.w);
 
-            //IntersectTris_ClosestHit(ro, rd, tri_start, tri_end, obj_index, inter);
+            IntersectTris_ClosestHit(ro, rd, tri_start, tri_end, obj_index, inter);
         }
     }
 }
@@ -108,6 +135,56 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
-void main() {
+int hash(const int x) {
+    uint ret = uint(x);
+    ret = ((ret >> 16) ^ ret) * 0x45d9f3b;
+    ret = ((ret >> 16) ^ ret) * 0x45d9f3b;
+    ret = (ret >> 16) ^ ret;
+    return int(ret);
+}
 
+float construct_float(uint m) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    const float  f = uintBitsToFloat(m);   // Range [1:2]
+    return f - 1.0;                        // Range [0:1]
+}
+
+void main() {
+    if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
+        return;
+    }
+
+    const vec2 px_center = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);
+    const vec2 in_uv = px_center / vec2(g_params.img_size);
+    vec2 d = in_uv * 2.0 - 1.0;
+    d.y = -d.y;
+
+    vec4 origin = g_shrd_data.inv_view_matrix * vec4(0, 0, 0, 1);
+    origin /= origin.w;
+    vec4 target = g_shrd_data.inv_proj_matrix * vec4(d.xy, 1, 1);
+    target /= target.w;
+    vec4 direction = g_shrd_data.inv_view_matrix * vec4(normalize(target.xyz), 0);
+
+    vec3 inv_d = safe_invert(direction.xyz);
+
+    hit_data_t inter;
+    inter.mask = 0;
+    inter.obj_index = inter.prim_index = 0;
+    inter.t = MAX_DIST;
+    inter.u = inter.v = 0.0;
+
+    Traverse_MicroTree_WithStack(origin.xyz, direction.xyz, inv_d, 0, 0, 0, inter);
+
+    vec3 col = vec3(0.0, 0.5, 0.5);
+    if (inter.mask != 0) {
+        col.r = construct_float(hash(inter.prim_index));
+        col.g = construct_float(hash(hash(inter.prim_index)));
+        col.b = construct_float(hash(hash(hash(inter.prim_index))));
+    }
+    imageStore(g_out_image, ivec2(gl_GlobalInvocationID.xy), vec4(col, 1.0));
 }

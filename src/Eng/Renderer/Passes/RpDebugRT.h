@@ -20,6 +20,10 @@ struct RpDebugRTData {
     RpResRef lm_tex[5];
     RpResRef dummy_black;
 
+    // SWRT
+    RpResRef nodes_buf;
+    RpResRef prim_ndx_buf;
+
     RpResRef output_tex;
 };
 

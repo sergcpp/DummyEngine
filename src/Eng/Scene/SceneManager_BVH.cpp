@@ -9,6 +9,7 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
+#include "../Renderer/Renderer_Structs.h"
 #include "../Utils/BVHSplit.h"
 
 namespace SceneManagerInternal {
@@ -541,7 +542,7 @@ void SceneManager::InitSWAccStructures() {
     std::vector<prim_t> temp_primitives;
 
     std::vector<gpu_bvh_node_t> nodes;
-    std::vector<uint32_t> node_indices;
+    std::vector<uint32_t> prim_indices;
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
     while (acc_index != 0xffffffff) {
@@ -555,15 +556,21 @@ void SceneManager::InitSWAccStructures() {
         const Ren::BufferRange &attribs = acc->mesh->attribs_buf1();
         const Ren::BufferRange &indices = acc->mesh->indices_buf();
 
+        const uint32_t first_vertex = attribs.offset / 16;
+        const uint32_t prim_offset = indices.offset / (3 * sizeof(uint32_t));
+
         const float *positions = reinterpret_cast<const float *>(acc->mesh->attribs());
         const uint32_t *tri_indices = reinterpret_cast<const uint32_t *>(acc->mesh->indices());
         const uint32_t tri_indices_count = indices.size / sizeof(uint32_t);
 
+        assert(acc->mesh->type() == Ren::eMeshType::Simple);
+        const int stride = 13;
+
         for (uint32_t i = 0; i < tri_indices_count; i += 3) {
             const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
 
-            const Ren::Vec3f p0 = Ren::MakeVec3(&positions[i0 * 4]), p1 = Ren::MakeVec3(&positions[i1 * 4]),
-                             p2 = Ren::MakeVec3(&positions[i2 * 4]);
+            const Ren::Vec3f p0 = Ren::MakeVec3(&positions[i0 * stride]), p1 = Ren::MakeVec3(&positions[i1 * stride]),
+                             p2 = Ren::MakeVec3(&positions[i2 * stride]);
 
             const Ren::Vec3f bbox_min = Min(p0, Min(p1, p2)), bbox_max = Max(p0, Max(p1, p2));
 
@@ -571,7 +578,11 @@ void SceneManager::InitSWAccStructures() {
         }
 
         split_settings_t s;
-        const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, node_indices);
+        const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
+
+        for (uint32_t &prim_index : prim_indices) {
+            prim_index += prim_offset;
+        }
 
         // VkAccelerationStructureGeometryTrianglesDataKHR tri_data = {
         //     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
@@ -647,6 +658,7 @@ void SceneManager::InitSWAccStructures() {
     }
 
     const uint32_t total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
+    const uint32_t total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
 
     Ren::Buffer rt_blas_stage_buf("SWRT BLAS Stage Buf", api_ctx, Ren::eBufType::Stage, total_nodes_size);
     {
@@ -655,15 +667,31 @@ void SceneManager::InitSWAccStructures() {
         rt_blas_stage_buf.Unmap();
     }
 
+    Ren::Buffer rt_prim_indices_stage_buf("SWRT Prim Indices Stage Buf", api_ctx, Ren::eBufType::Stage,
+                                          total_prim_indices_size);
+    {
+        uint8_t *rt_prim_indices_stage = rt_prim_indices_stage_buf.Map(Ren::BufMapWrite);
+        memcpy(rt_prim_indices_stage, prim_indices.data(), total_prim_indices_size);
+        rt_prim_indices_stage_buf.Unmap();
+    }
+
     scene_data_.persistent_data.rt_blas_buf =
         ren_ctx_.LoadBuffer("SWRT BLAS Buf", Ren::eBufType::Storage, total_nodes_size);
+    scene_data_.persistent_data.rt_prim_indices_buf =
+        ren_ctx_.LoadBuffer("SWRT Prim Indices Buf", Ren::eBufType::Storage, total_prim_indices_size);
 
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
 
     Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.rt_blas_buf, 0, total_nodes_size,
                             cmd_buf);
+    Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.rt_prim_indices_buf, 0,
+                            total_prim_indices_size, cmd_buf);
 
     Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+
+    // dummy for now
+    scene_data_.persistent_data.rt_geo_data_buf =
+        ren_ctx_.LoadBuffer("RT Geo Data Buf", Ren::eBufType::Storage, uint32_t(1 * sizeof(RTGeoInstance)));
 
 #if 0
     if (!all_blases.empty()) {
