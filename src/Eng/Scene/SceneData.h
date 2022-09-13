@@ -74,14 +74,53 @@ struct SceneObject {
 //static_assert(sizeof(SceneObject) == 156 + 4, "!");
 
 struct bvh_node_t { // NOLINT
-    uint32_t prim_index, prim_count,
-             left_child, right_child;
     Ren::Vec3f bbox_min;
-    uint32_t parent;
+    union {
+        struct {
+            uint32_t leaf_node : 1;
+            uint32_t prim_index : 31;
+        };
+        struct {
+            uint32_t leaf_node : 1;
+            uint32_t left_child : 31;
+        };
+    };
     Ren::Vec3f bbox_max;
-    uint32_t space_axis; // axis with maximal child's centroids distance
+    union {
+        struct {
+            uint32_t space_axis : 2;
+            uint32_t prim_count : 30;
+        };
+        struct {
+            uint32_t space_axis : 2;
+            uint32_t right_child : 30;
+        };
+    };
+    uint32_t parent;
 };
-static_assert(sizeof(bvh_node_t) == 48, "!");
+static_assert(sizeof(bvh_node_t) == 36, "!");
+
+const uint32_t LEAF_NODE_BIT = (1u << 31);
+const uint32_t PRIM_INDEX_BITS = ~LEAF_NODE_BIT;
+const uint32_t LEFT_CHILD_BITS = ~LEAF_NODE_BIT;
+
+const uint32_t SEP_AXIS_BITS = (0b11u << 30);
+const uint32_t PRIM_COUNT_BITS = ~SEP_AXIS_BITS;
+const uint32_t RIGHT_CHILD_BITS = ~SEP_AXIS_BITS;
+
+struct gpu_bvh_node_t { // NOLINT
+    Ren::Vec3f bbox_min;
+    union {
+        uint32_t prim_index; // First bit is used to identify leaf node
+        uint32_t left_child;
+    };
+    Ren::Vec3f bbox_max;
+    union {
+        uint32_t prim_count; // First two bits are used for separation axis (0, 1 or 2 - x, y or z)
+        uint32_t right_child;
+    };
+};
+static_assert(sizeof(gpu_bvh_node_t) == 32, "!");
 
 const int MAX_STACK_SIZE = 64;
 

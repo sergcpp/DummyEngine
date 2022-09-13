@@ -10,7 +10,7 @@
 
 #include "../assets/shaders/internal/rt_debug_interface.glsl"
 
-void RpDebugRT::Execute(RpBuilder &builder) {
+void RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data_buf);
@@ -38,7 +38,7 @@ void RpDebugRT::Execute(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    VkDescriptorSetLayout descr_set_layout = pi_debug_rt_.prog()->descr_set_layouts()[0];
+    VkDescriptorSetLayout descr_set_layout = pi_debug_hwrt_.prog()->descr_set_layouts()[0];
     Ren::DescrSizes descr_sizes;
     descr_sizes.img_sampler_count = 5;
     descr_sizes.store_img_count = 1;
@@ -180,30 +180,37 @@ void RpDebugRT::Execute(RpBuilder &builder) {
         vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0, nullptr);
     }
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_rt_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_rt_.layout(), 0, 2, descr_sets, 0,
-                            nullptr);
+    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.handle());
+    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.layout(), 0, 2, descr_sets,
+                            0, nullptr);
 
     RTDebug::Params uniform_params;
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    vkCmdPushConstants(cmd_buf, pi_debug_rt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(uniform_params),
+    vkCmdPushConstants(cmd_buf, pi_debug_hwrt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(uniform_params),
                        &uniform_params);
 
-    vkCmdTraceRaysKHR(cmd_buf, pi_debug_rt_.rgen_table(), pi_debug_rt_.miss_table(), pi_debug_rt_.hit_table(),
-                      pi_debug_rt_.call_table(), uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]),
+    vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_.rgen_table(), pi_debug_hwrt_.miss_table(), pi_debug_hwrt_.hit_table(),
+                      pi_debug_hwrt_.call_table(), uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]),
                       1);
 }
 
 void RpDebugRT::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef debug_rt_prog =
+        Ren::ProgramRef debug_hwrt_prog =
             sh.LoadProgram(ctx, "rt_debug", "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
                            "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", nullptr);
-        assert(debug_rt_prog->ready());
+        assert(debug_hwrt_prog->ready());
 
-        if (!pi_debug_rt_.Init(ctx.api_ctx(), debug_rt_prog, ctx.log())) {
+        if (!pi_debug_hwrt_.Init(ctx.api_ctx(), debug_hwrt_prog, ctx.log())) {
+            ctx.log()->Error("RpDebugRT: Failed to initialize pipeline!");
+        }
+
+        Ren::ProgramRef debug_swrt_prog = sh.LoadProgram(ctx, "rt_debug_swrt", "internal/rt_debug_swrt.comp.glsl");
+        assert(debug_swrt_prog->ready());
+
+        if (!pi_debug_swrt_.Init(ctx.api_ctx(), debug_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpDebugRT: Failed to initialize pipeline!");
         }
 

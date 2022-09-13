@@ -9,6 +9,7 @@
 #include <Ray/RendererBase.h>
 #include <Ren/Camera.h>
 #include <Ren/RingBuffer.h>
+#include <Ren/Span.h>
 #include <Sys/AsyncFileReader.h>
 
 #include "SceneData.h"
@@ -29,6 +30,9 @@ class Context;
 }
 
 class ShaderLoader;
+
+struct prim_t;
+struct split_settings_t;
 
 #include <Sys/Json.h>
 
@@ -259,6 +263,9 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::RingBuffer<Ren::Tex2DRef> lod_transit_textures_;
 
     void TextureLoaderProc();
+
+    static uint32_t PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+                                        std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
 
     std::vector<char> temp_buf;
 

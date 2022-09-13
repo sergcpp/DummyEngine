@@ -40,5 +40,6 @@ class AccStructureVK : public IAccStructure {
 class AccStructureSW : public IAccStructure {
   public:
 
+      uint32_t node_index = 0, node_count = 0;
 };
 }
