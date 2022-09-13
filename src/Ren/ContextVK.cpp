@@ -193,9 +193,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     log_->Info("===========================================");
 
     capabilities.raytracing = false;
-    //api_ctx_->raytracing_supported;
+    // api_ctx_->raytracing_supported;
     capabilities.ray_query = false;
-    //api_ctx_->ray_query_supported;
+    // api_ctx_->ray_query_supported;
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 
@@ -234,10 +234,18 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     }
 
     for (int i = 0; i < MaxFramesInFlight; ++i) {
-        default_descr_alloc_[i].reset(
-            new DescrMultiPoolAlloc(api_ctx_.get(), 4 /* pool_step */, 32 /* max_img_sampler_count */,
-                                    6 /* max_store_img_count */, 8 /* max_ubuf_count */, 16 /* max_sbuf_count */,
-                                    16 /* max_tbuf_count */, 1 /* max_acc_count */, 16 /* initial_sets_count */));
+        const int PoolStep = 4;
+        const int MaxImgSamplerCount = 32;
+        const int MaxStoreImgCount = 6;
+        const int MaxUbufCount = 8;
+        const int MaxSbufCount = 16;
+        const int MaxTbufCount = 16;
+        const int MaxAccCount = 1;
+        const int InitialSetsCount = 16;
+
+        default_descr_alloc_[i].reset(new DescrMultiPoolAlloc(api_ctx_.get(), PoolStep, MaxImgSamplerCount,
+                                                              MaxStoreImgCount, MaxUbufCount, MaxSbufCount,
+                                                              MaxTbufCount, MaxAccCount, InitialSetsCount));
     }
 
     VkPhysicalDeviceProperties device_properties = {};

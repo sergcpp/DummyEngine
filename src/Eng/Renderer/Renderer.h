@@ -100,7 +100,7 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa | EnableTimers | EnableDOF /*|
-         EnableRTShadows | EnableDeferred*/);
+         EnableRTShadows | EnableDeferred*/ | DebugRT);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
