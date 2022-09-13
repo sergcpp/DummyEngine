@@ -51,7 +51,9 @@ void sort_children(const bvh_node_t *nodes, bvh_node_t &node) {
     node.space_axis = space_axis;
 
     if (c_left[space_axis] > c_right[space_axis]) {
-        std::swap(node.left_child, node.right_child);
+        const uint32_t temp = node.left_child;
+        node.left_child = node.right_child;
+        node.right_child = temp;
     }
 }
 
@@ -120,7 +122,7 @@ void SceneManager::RebuildSceneBVH() {
                                                       prim_lists.back().max, root_min, root_max, s);
         prim_lists.pop_back();
 
-        const uint32_t leaf_index = (uint32_t)scene_data_.nodes.size();
+        const uint32_t leaf_index = uint32_t(scene_data_.nodes.size());
         uint32_t parent_index = 0xffffffff;
 
         if (leaf_index) {
@@ -146,9 +148,16 @@ void SceneManager::RebuildSceneBVH() {
 
             assert(split_data.left_indices.size() == 1 && "Wrong split!");
 
-            scene_data_.nodes.push_back({split_data.left_indices[0], (uint32_t)split_data.left_indices.size(), 0, 0,
-                                         Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]}, parent_index,
-                                         Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]}, 0});
+            scene_data_.nodes.emplace_back();
+            bvh_node_t &n = scene_data_.nodes.back();
+
+            n.bbox_min = Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]};
+            n.leaf_node = 1;
+            n.prim_index = split_data.left_indices[0];
+            n.bbox_max = Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]};
+            n.space_axis = 0;
+            n.prim_count = uint32_t(split_data.left_indices.size());
+            n.parent = parent_index;
         } else {
             auto index = (uint32_t)nodes_count;
 
@@ -163,16 +172,16 @@ void SceneManager::RebuildSceneBVH() {
             const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                              bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
-            scene_data_.nodes.push_back({
-                0,
-                0,
-                index + 1,
-                index + 2,
-                Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]},
-                parent_index,
-                Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]},
-                space_axis,
-            });
+            scene_data_.nodes.emplace_back();
+            bvh_node_t &n = scene_data_.nodes.back();
+
+            n.bbox_min = Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]};
+            n.leaf_node = 0;
+            n.left_child = index + 1;
+            n.bbox_max = Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]};
+            n.space_axis = space_axis;
+            n.right_child = index + 2;
+            n.parent = parent_index;
 
             prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0],
                                      split_data.left_bounds[1]);
@@ -333,8 +342,10 @@ void SceneManager::UpdateObjects() {
 
             const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
             new_node.bbox_min = tr.bbox_min_ws - BoundsMargin * d;
-            new_node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
+            new_node.leaf_node = 1;
             new_node.prim_index = obj_index;
+            new_node.bbox_max = tr.bbox_max_ws + BoundsMargin * d;
+            new_node.space_axis = 0;
             new_node.prim_count = 1;
 
             Sys::MonoAlloc<insert_candidate_t> m_alloc(temp_buf.data(), temp_buf.size());
@@ -384,6 +395,7 @@ void SceneManager::UpdateObjects() {
             const uint32_t old_parent = nodes[best_candidate].parent;
             const uint32_t new_parent = free_nodes[free_nodes_pos++];
 
+            nodes[new_parent].leaf_node = 0;
             nodes[new_parent].prim_count = 0;
             nodes[new_parent].parent = old_parent;
 
@@ -435,11 +447,15 @@ void SceneManager::UpdateObjects() {
                         if (best_rot == 0) {
                             left_child_of(right_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.left_child, right_child_of(par_node).left_child);
+                            const uint32_t temp = par_node.left_child;
+                            par_node.left_child = right_child_of(par_node).left_child;
+                            right_child_of(par_node).left_child = temp;
                         } else {
                             right_child_of(right_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.left_child, right_child_of(par_node).right_child);
+                            const uint32_t temp = par_node.left_child;
+                            par_node.left_child = right_child_of(par_node).right_child;
+                            right_child_of(par_node).right_child = temp;
                         }
 
                         update_bbox(nodes, nodes[par_node.right_child]);
@@ -465,11 +481,15 @@ void SceneManager::UpdateObjects() {
                         if (best_rot == 0) {
                             left_child_of(left_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.right_child, left_child_of(par_node).left_child);
+                            const uint32_t temp = par_node.right_child;
+                            par_node.right_child = left_child_of(par_node).left_child;
+                            left_child_of(par_node).left_child = temp;
                         } else {
                             right_child_of(left_child_of(par_node)).parent = parent;
 
-                            std::swap(par_node.right_child, left_child_of(par_node).right_child);
+                            const uint32_t temp = par_node.right_child;
+                            par_node.right_child = left_child_of(par_node).right_child;
+                            left_child_of(par_node).right_child = temp;
                         }
 
                         update_bbox(nodes, nodes[par_node.left_child]);
@@ -520,6 +540,9 @@ void SceneManager::InitSWAccStructures() {
 
     std::vector<prim_t> temp_primitives;
 
+    std::vector<gpu_bvh_node_t> nodes;
+    std::vector<uint32_t> node_indices;
+
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
     while (acc_index != 0xffffffff) {
         auto *acc = (AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
@@ -534,8 +557,9 @@ void SceneManager::InitSWAccStructures() {
 
         const float *positions = reinterpret_cast<const float *>(acc->mesh->attribs());
         const uint32_t *tri_indices = reinterpret_cast<const uint32_t *>(acc->mesh->indices());
+        const uint32_t tri_indices_count = indices.size / sizeof(uint32_t);
 
-        for (int i = 0; i < indices.size / sizeof(uint32_t); i += 3) {
+        for (uint32_t i = 0; i < tri_indices_count; i += 3) {
             const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
 
             const Ren::Vec3f p0 = Ren::MakeVec3(&positions[i0 * 4]), p1 = Ren::MakeVec3(&positions[i1 * 4]),
@@ -546,7 +570,8 @@ void SceneManager::InitSWAccStructures() {
             temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
         }
 
-        volatile int ii = 0;
+        split_settings_t s;
+        const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, node_indices);
 
         // VkAccelerationStructureGeometryTrianglesDataKHR tri_data = {
         //     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
@@ -614,11 +639,31 @@ void SceneManager::InitSWAccStructures() {
         needed_total_acc_struct_size +=
             uint32_t(align_up(new_blas.size_info.accelerationStructureSize, AccStructAlignment));
 
-        new_blas.acc = acc;
-        acc->mesh->blas.reset(new Ren::AccStructureVK);*/
+        new_blas.acc = acc;*/
+        acc->mesh->blas.reset(new Ren::AccStructureSW);
 
         acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
+        break;
     }
+
+    const uint32_t total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
+
+    Ren::Buffer rt_blas_stage_buf("SWRT BLAS Stage Buf", api_ctx, Ren::eBufType::Stage, total_nodes_size);
+    {
+        uint8_t *rt_blas_stage = rt_blas_stage_buf.Map(Ren::BufMapWrite);
+        memcpy(rt_blas_stage, nodes.data(), total_nodes_size);
+        rt_blas_stage_buf.Unmap();
+    }
+
+    scene_data_.persistent_data.rt_blas_buf =
+        ren_ctx_.LoadBuffer("SWRT BLAS Buf", Ren::eBufType::Storage, total_nodes_size);
+
+    VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+
+    Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.rt_blas_buf, 0, total_nodes_size,
+                            cmd_buf);
+
+    Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
 
 #if 0
     if (!all_blases.empty()) {
@@ -1064,4 +1109,83 @@ void SceneManager::InitSWAccStructures() {
 #endif
 
 #endif
+}
+
+uint32_t SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+                                           std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices) {
+    struct prims_coll_t {
+        std::vector<uint32_t> indices;
+        Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
+                   max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
+        prims_coll_t() {}
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
+            : indices(std::move(_indices)), min(_min), max(_max) {}
+    };
+
+    std::deque<prims_coll_t> prim_lists;
+    prim_lists.emplace_back();
+
+    size_t num_nodes = out_nodes.size();
+    const auto root_node_index = uint32_t(num_nodes);
+
+    for (uint32_t j = 0; j < uint32_t(prims.size()); j++) {
+        prim_lists.back().indices.push_back(j);
+        prim_lists.back().min = Min(prim_lists.back().min, prims[j].bbox_min);
+        prim_lists.back().max = Max(prim_lists.back().max, prims[j].bbox_max);
+    }
+
+    Ren::Vec3f root_min = prim_lists.back().min, root_max = prim_lists.back().max;
+
+    while (!prim_lists.empty()) {
+        split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices, prim_lists.back().min,
+                                                      prim_lists.back().max, root_min, root_max, s);
+        prim_lists.pop_back();
+
+        if (split_data.right_indices.empty()) {
+            Ren::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
+
+            out_nodes.emplace_back();
+            gpu_bvh_node_t &n = out_nodes.back();
+
+            n.prim_index = LEAF_NODE_BIT + uint32_t(out_indices.size());
+            n.prim_count = uint32_t(split_data.left_indices.size());
+            memcpy(&n.bbox_min[0], &bbox_min[0], 3 * sizeof(float));
+            memcpy(&n.bbox_max[0], &bbox_max[0], 3 * sizeof(float));
+            out_indices.insert(out_indices.end(), split_data.left_indices.begin(), split_data.left_indices.end());
+        } else {
+            const auto index = uint32_t(num_nodes);
+
+            uint32_t space_axis = 0;
+            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
+                             c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
+
+            const Ren::Vec3f dist = Abs(c_left - c_right);
+
+            if (dist[0] > dist[1] && dist[0] > dist[2]) {
+                space_axis = 0;
+            } else if (dist[1] > dist[0] && dist[1] > dist[2]) {
+                space_axis = 1;
+            } else {
+                space_axis = 2;
+            }
+
+            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+                             bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
+
+            out_nodes.emplace_back();
+            gpu_bvh_node_t &n = out_nodes.back();
+            n.left_child = index + 1;
+            n.right_child = (space_axis << 30) + index + 2;
+            memcpy(&n.bbox_min[0], &bbox_min[0], 3 * sizeof(float));
+            memcpy(&n.bbox_max[0], &bbox_max[0], 3 * sizeof(float));
+            prim_lists.emplace_front(std::move(split_data.left_indices), split_data.left_bounds[0],
+                                     split_data.left_bounds[1]);
+            prim_lists.emplace_front(std::move(split_data.right_indices), split_data.right_bounds[0],
+                                     split_data.right_bounds[1]);
+
+            num_nodes += 2;
+        }
+    }
+
+    return uint32_t(out_nodes.size() - root_node_index);
 }

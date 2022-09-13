@@ -27,7 +27,7 @@ class RpDebugRT : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::Pipeline pi_debug_rt_;
+    Ren::Pipeline pi_debug_hwrt_, pi_debug_swrt_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -38,6 +38,9 @@ class RpDebugRT : public RpExecutor {
     const RpDebugRTData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+
+    void Execute_HWRT(RpBuilder &builder);
+    void Execute_SWRT(RpBuilder &builder);
 
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, const Ren::IAccStructure *tlas_to_debug,

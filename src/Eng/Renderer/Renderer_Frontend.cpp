@@ -259,7 +259,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 }
             }
 
-            if (!n->prim_count) {
+            if (!n->leaf_node) {
                 stack[stack_size++] = skip_frustum_check | n->left_child;
                 stack[stack_size++] = skip_frustum_check | n->right_child;
             } else {
@@ -366,7 +366,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 continue;
             }
 
-            if (!n->prim_count) {
+            if (!n->leaf_node) {
                 stack[stack_size++] = skip_frustum_check | n->left_child;
                 stack[stack_size++] = skip_frustum_check | n->right_child;
             } else {
@@ -477,8 +477,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
 
-                                if (!deferred_shading ||
-                                    (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
+                                if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
                                     (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
                                     CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
 
@@ -976,7 +975,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     }
                 }
 
-                if (!n->prim_count) {
+                if (!n->leaf_node) {
                     stack[stack_size++] = skip_check | n->left_child;
                     stack[stack_size++] = skip_check | n->right_child;
                 } else {
@@ -1213,7 +1212,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     skip_check = skip_check_bit;
                 }
 
-                if (!n->prim_count) {
+                if (!n->leaf_node) {
                     stack[stack_size++] = skip_check | n->left_child;
                     stack[stack_size++] = skip_check | n->right_child;
                 } else {
