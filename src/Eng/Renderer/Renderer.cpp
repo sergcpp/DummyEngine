@@ -869,36 +869,36 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         if ((list.render_flags & (DebugRT | DebugRTShadow)) && list.env.env_map) {
             auto &debug_rt = rp_builder_.AddPass("DEBUG RT");
 
-            auto *data = debug_rt.AllocPassData<RpDebugRTData>();
-            data->shared_data =
-                debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::RayTracingShader);
-            data->geo_data_buf =
-                debug_rt.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, Ren::eStageBits::RayTracingShader);
-            data->materials_buf =
-                debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::RayTracingShader);
-            data->vtx_buf1 =
-                debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), Ren::eStageBits::RayTracingShader);
-            data->vtx_buf2 =
-                debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), Ren::eStageBits::RayTracingShader);
-            data->ndx_buf =
-                debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), Ren::eStageBits::RayTracingShader);
+            const Ren::eStageBits stages =
+                ctx_.capabilities.raytracing ? Ren::eStageBits::RayTracingShader : Ren::eStageBits::ComputeShader;
 
-            data->env_tex = debug_rt.AddTextureInput(list.env.env_map, Ren::eStageBits::RayTracingShader);
+            auto *data = debug_rt.AllocPassData<RpDebugRTData>();
+            data->shared_data = debug_rt.AddUniformBufferInput(common_buffers.shared_data_res, stages);
+            data->geo_data_buf = debug_rt.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stages);
+            data->materials_buf = debug_rt.AddStorageReadonlyInput(persistent_data.materials_buf, stages);
+            data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stages);
+            data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stages);
+            data->ndx_buf = debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), stages);
+
+            if (!ctx_.capabilities.raytracing) {
+                data->nodes_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stages);
+                data->prim_ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_prim_indices_buf, stages);
+            }
+
+            data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stages);
 
             if (list.env.lm_direct) {
-                data->lm_tex[0] = debug_rt.AddTextureInput(list.env.lm_direct, Ren::eStageBits::RayTracingShader);
+                data->lm_tex[0] = debug_rt.AddTextureInput(list.env.lm_direct, stages);
             }
             for (int i = 0; i < 4; ++i) {
                 if (list.env.lm_indir_sh[i]) {
-                    data->lm_tex[i + 1] =
-                        debug_rt.AddTextureInput(list.env.lm_indir_sh[i], Ren::eStageBits::RayTracingShader);
+                    data->lm_tex[i + 1] = debug_rt.AddTextureInput(list.env.lm_indir_sh[i], stages);
                 }
             }
 
-            data->dummy_black = debug_rt.AddTextureInput(dummy_black_, Ren::eStageBits::RayTracingShader);
+            data->dummy_black = debug_rt.AddTextureInput(dummy_black_, stages);
 
-            frame_textures.color = data->output_tex =
-                debug_rt.AddStorageImageOutput(frame_textures.color, Ren::eStageBits::RayTracingShader);
+            frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stages);
 
             const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlas[0];
             if (list.render_flags & DebugRTShadow) {
