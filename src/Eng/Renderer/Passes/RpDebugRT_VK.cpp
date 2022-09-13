@@ -185,6 +185,8 @@ void RpDebugRT::Execute_HWRT(RpBuilder &builder) {
                             0, nullptr);
 
     RTDebug::Params uniform_params;
+    uniform_params.img_size[0] = view_state_->scr_res[0];
+    uniform_params.img_size[1] = view_state_->scr_res[1];
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
@@ -198,13 +200,15 @@ void RpDebugRT::Execute_HWRT(RpBuilder &builder) {
 
 void RpDebugRT::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef debug_hwrt_prog =
-            sh.LoadProgram(ctx, "rt_debug", "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
-                           "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", nullptr);
-        assert(debug_hwrt_prog->ready());
+        if (ctx.capabilities.raytracing) {
+            Ren::ProgramRef debug_hwrt_prog =
+                sh.LoadProgram(ctx, "rt_debug", "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
+                               "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", nullptr);
+            assert(debug_hwrt_prog->ready());
 
-        if (!pi_debug_hwrt_.Init(ctx.api_ctx(), debug_hwrt_prog, ctx.log())) {
-            ctx.log()->Error("RpDebugRT: Failed to initialize pipeline!");
+            if (!pi_debug_hwrt_.Init(ctx.api_ctx(), debug_hwrt_prog, ctx.log())) {
+                ctx.log()->Error("RpDebugRT: Failed to initialize pipeline!");
+            }
         }
 
         Ren::ProgramRef debug_swrt_prog = sh.LoadProgram(ctx, "rt_debug_swrt", "internal/rt_debug_swrt.comp.glsl");
