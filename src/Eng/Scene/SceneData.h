@@ -138,8 +138,9 @@ struct gpu_mesh_instance_t {
     uint32_t tr_index;
     Ren::Vec3f bbox_max;
     uint32_t mesh_index;
+    Ren::Mat4f inv_transform; // temporary!!!
 };
-static_assert(sizeof(gpu_mesh_instance_t) == 32, "!");
+static_assert(sizeof(gpu_mesh_instance_t) == 32 + 64, "!");
 
 const int MAX_STACK_SIZE = 64;
 
@@ -218,7 +219,10 @@ struct PersistentGpuData {
     Ren::PipelineStorage                    pipelines;
 
     Ren::BufferRef                          rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf, rt_blas_buf;
-    Ren::BufferRef                          rt_prim_indices_buf; // used for SWRT only
+
+    Ren::BufferRef                          rt_prim_indices_buf;    // SWRT
+    uint32_t                                rt_root_node = 0;       // SWRT
+    Ren::BufferRef                          rt_meshes_buf;          // SWRT
     uint32_t                                rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure>     rt_tlas, rt_sh_tlas;
 

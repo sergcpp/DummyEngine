@@ -542,6 +542,8 @@ void SceneManager::InitSWAccStructures() {
     std::vector<prim_t> temp_primitives;
 
     std::vector<gpu_bvh_node_t> nodes;
+    std::vector<gpu_mesh_t> meshes;
+    std::vector<gpu_mesh_instance_t> mesh_instances;
     std::vector<uint32_t> prim_indices;
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
@@ -566,6 +568,7 @@ void SceneManager::InitSWAccStructures() {
         assert(acc->mesh->type() == Ren::eMeshType::Simple);
         const int stride = 13;
 
+        temp_primitives.clear();
         for (uint32_t i = 0; i < tri_indices_count; i += 3) {
             const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
 
@@ -577,21 +580,32 @@ void SceneManager::InitSWAccStructures() {
             temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
         }
 
-        split_settings_t s;
-        const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
+        const uint32_t mesh_index = uint32_t(meshes.size());
 
-        for (uint32_t &prim_index : prim_indices) {
-            prim_index += prim_offset;
+        meshes.emplace_back();
+        auto &new_mesh = meshes.back();
+        new_mesh.node_index = uint32_t(nodes.size());
+        new_mesh.tris_index = uint32_t(prim_indices.size());
+
+        split_settings_t s;
+        new_mesh.node_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
+
+        new_mesh.tris_count = uint32_t(prim_indices.size()) - new_mesh.tris_index;
+        new_mesh.vert_index = first_vertex;
+        new_mesh.vert_count = attribs.size / 16;
+
+        for (int i = new_mesh.tris_index; i < int(prim_indices.size()); ++i) {
+            prim_indices[i] += prim_offset;
         }
 
-        // VkAccelerationStructureGeometryTrianglesDataKHR tri_data = {
-        //     VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR};
-        // tri_data.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
-        // tri_data.vertexData.deviceAddress = attribs.buf->vk_device_address();
-        // tri_data.vertexStride = 16;
-        // tri_data.indexType = VK_INDEX_TYPE_UINT32;
-        // tri_data.indexData.deviceAddress = indices.buf->vk_device_address();
-        // tri_data.maxVertex = attribs.size / 16;
+        /*for (int i = new_mesh.node_index; i < int(nodes.size()); ++i) {
+            if (nodes[i].prim_index & LEAF_NODE_BIT) {
+                nodes[i].prim_index += new_mesh.tris_index;
+            } else {
+                nodes[i].left_child += new_mesh.node_index;
+                nodes[i].right_child += new_mesh.node_index;
+            }
+        }*/
 
         //
         // Gather geometries
@@ -627,38 +641,111 @@ void SceneManager::InitSWAccStructures() {
             // new_blas.prim_counts.push_back(grp.num_indices / 3);
         }
 
-        //
-        // Query needed memory
-        //
-        /* new_blas.build_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR};
-        new_blas.build_info.type = VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR;
-        new_blas.build_info.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR;
-        new_blas.build_info.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR |
-                                    VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
-        new_blas.build_info.geometryCount = uint32_t(new_blas.geometries.size());
-        new_blas.build_info.pGeometries = new_blas.geometries.cdata();
-
-        new_blas.size_info = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
-        vkGetAccelerationStructureBuildSizesKHR(api_ctx->device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
-                                                &new_blas.build_info, new_blas.prim_counts.cdata(),
-                                                &new_blas.size_info);
-
-        // make sure we will not use this potentially stale pointer
-        new_blas.build_info.pGeometries = nullptr;
-
-        needed_build_scratch_size = std::max(needed_build_scratch_size, uint32_t(new_blas.size_info.buildScratchSize));
-        needed_total_acc_struct_size +=
-            uint32_t(align_up(new_blas.size_info.accelerationStructureSize, AccStructAlignment));
-
-        new_blas.acc = acc;*/
-        acc->mesh->blas.reset(new Ren::AccStructureSW);
+        acc->mesh->blas.reset(new Ren::AccStructureSW(mesh_index));
 
         acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
-        break;
+    }
+
+    //
+    // Build TLAS
+    //
+
+    // retrieve pointers to components for fast access
+    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *probes = (LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
+    const CompStorage *probe_store = scene_data_.comp_store[CompProbe];
+
+    std::vector<RTGeoInstance> geo_instances;
+    // std::vector<VkAccelerationStructureInstanceKHR> tlas_instances;
+
+    for (const auto &obj : scene_data_.objects) {
+        if ((obj.comp_mask & (CompTransformBit | CompAccStructureBit)) != (CompTransformBit | CompAccStructureBit)) {
+            continue;
+        }
+
+        const Transform &tr = transforms[obj.components[CompTransform]];
+        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+        const Lightmap *lm = nullptr;
+        if (obj.comp_mask & CompLightmapBit) {
+            lm = &lightmaps[obj.components[CompLightmap]];
+        }
+        uint32_t closest_probe = 0xffffffff;
+        if (obj.comp_mask & CompProbeBit) {
+            closest_probe = probes[obj.components[CompProbe]].layer_index;
+        }
+
+        auto &swrt_blas = static_cast<Ren::AccStructureSW &>(*acc.mesh->blas);
+        swrt_blas.geo_index = uint32_t(geo_instances.size());
+        swrt_blas.geo_count = 0;
+
+        mesh_instances.emplace_back();
+        auto &new_instance = mesh_instances.back();
+
+        new_instance.bbox_min = tr.bbox_min;
+        new_instance.bbox_max = tr.bbox_max;
+        new_instance.mesh_index = swrt_blas.mesh_index;
+        new_instance.inv_transform = tr.object_from_world;
+
+        // to_khr_xform(tr.world_from_object, new_instance.transform.matrix);
+        // new_instance.instanceCustomIndex = vk_blas.geo_index;
+        // new_instance.mask = 0xff;
+        // new_instance.instanceShaderBindingTableRecordOffset = 0;
+        // new_instance.flags = 0;
+        // new_instance.accelerationStructureReference = static_cast<uint64_t>(vk_blas.vk_device_address());
+
+        /*const uint32_t indices_start = acc.mesh->indices_buf().offset;
+        for (const Ren::TriGroup &grp : acc.mesh->groups()) {
+            const Ren::Material *mat = grp.mat.get();
+            const uint32_t mat_flags = mat->flags();
+            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) != 0) {
+                // Include only opaque surfaces
+                continue;
+            }
+
+            ++vk_blas.geo_count;
+
+            geo_instances.emplace_back();
+            auto &geo = geo_instances.back();
+            geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
+            geo.vertices_start = acc.mesh->attribs_buf1().offset / 16;
+            geo.material_index = grp.mat.index();
+            geo.flags = 0;
+            if (lm) {
+                geo.flags |= RTGeoLightmappedBit;
+                memcpy(&geo.lmap_transform[0], ValuePtr(lm->xform), 4 * sizeof(float));
+            } else {
+                if (closest_probe == 0xffffffff) {
+                    // find closest probe
+                    float min_dist2 = std::numeric_limits<float>::max();
+                    for (const auto &probe : scene_data_.objects) {
+                        if ((probe.comp_mask & (CompTransformBit | CompProbeBit)) !=
+                            (CompTransformBit | CompProbeBit)) {
+                            continue;
+                        }
+
+                        const Transform &probe_tr = transforms[probe.components[CompTransform]];
+                        const LightProbe &probe_pr = probes[probe.components[CompProbe]];
+
+                        const float dist2 =
+                            Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),
+                                      0.5f * (probe_tr.bbox_min_ws + probe_tr.bbox_max_ws) + probe_pr.offset);
+                        if (dist2 < min_dist2) {
+                            closest_probe = probe_pr.layer_index;
+                            min_dist2 = dist2;
+                        }
+                    }
+                }
+                geo.flags |= (closest_probe & 0xff);
+            }
+        }*/
     }
 
     const uint32_t total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
     const uint32_t total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
+    const uint32_t total_meshes_size = uint32_t(meshes.size() * sizeof(gpu_mesh_t));
+    const uint32_t total_mesh_instances_size = uint32_t(mesh_instances.size() * sizeof(gpu_mesh_instance_t));
 
     Ren::Buffer rt_blas_stage_buf("SWRT BLAS Stage Buf", api_ctx, Ren::eBufType::Stage, total_nodes_size);
     {
@@ -675,10 +762,29 @@ void SceneManager::InitSWAccStructures() {
         rt_prim_indices_stage_buf.Unmap();
     }
 
+    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Stage Buf", api_ctx, Ren::eBufType::Stage, total_meshes_size);
+    {
+        uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map(Ren::BufMapWrite);
+        memcpy(rt_meshes_stage, meshes.data(), total_meshes_size);
+        rt_meshes_stage_buf.Unmap();
+    }
+
+    Ren::Buffer rt_mesh_instances_stage_buf("SWRT Mesh Instances Stage Buf", api_ctx, Ren::eBufType::Stage,
+                                            total_mesh_instances_size);
+    {
+        uint8_t *rt_mesh_instances_stage = rt_mesh_instances_stage_buf.Map(Ren::BufMapWrite);
+        memcpy(rt_mesh_instances_stage, mesh_instances.data(), total_mesh_instances_size);
+        rt_mesh_instances_stage_buf.Unmap();
+    }
+
     scene_data_.persistent_data.rt_blas_buf =
         ren_ctx_.LoadBuffer("SWRT BLAS Buf", Ren::eBufType::Storage, total_nodes_size);
     scene_data_.persistent_data.rt_prim_indices_buf =
         ren_ctx_.LoadBuffer("SWRT Prim Indices Buf", Ren::eBufType::Storage, total_prim_indices_size);
+    scene_data_.persistent_data.rt_meshes_buf =
+        ren_ctx_.LoadBuffer("SWRT Meshes Buf", Ren::eBufType::Storage, total_meshes_size);
+    scene_data_.persistent_data.rt_instance_buf =
+        ren_ctx_.LoadBuffer("SWRT Mesh Instances Buf", Ren::eBufType::Storage, total_mesh_instances_size);
 
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
 
@@ -686,6 +792,10 @@ void SceneManager::InitSWAccStructures() {
                             cmd_buf);
     Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.rt_prim_indices_buf, 0,
                             total_prim_indices_size, cmd_buf);
+    Ren::CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.rt_meshes_buf, 0, total_meshes_size,
+                            cmd_buf);
+    Ren::CopyBufferToBuffer(rt_mesh_instances_stage_buf, 0, *scene_data_.persistent_data.rt_instance_buf, 0,
+                            total_mesh_instances_size, cmd_buf);
 
     Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
 

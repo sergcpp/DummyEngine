@@ -105,6 +105,7 @@ struct mesh_t {
 struct mesh_instance_t {
     vec4 bbox_min; // w is tr_index
     vec4 bbox_max; // w is mesh_index
+    mat4 inv_transform;
 };
 
 struct hit_data_t {
