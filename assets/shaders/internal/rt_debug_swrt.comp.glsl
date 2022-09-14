@@ -37,22 +37,27 @@ layout(std430, binding = PRIM_NDX_BUF_SLOT) readonly buffer PrimNdxData {
     uint g_prim_indices[];
 };
 
+layout(std430, binding = MESHES_BUF_SLOT) readonly buffer MeshesData {
+    mesh_t g_meshes[];
+};
+
+layout(std430, binding = MESH_INSTANCES_BUF_SLOT) readonly buffer MeshInstancesData {
+    mesh_instance_t g_mesh_instances[];
+};
+
 layout(binding = OUT_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_image;
 
 shared uint g_stack[LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y][MAX_STACK_SIZE];
 
-const int FirstVertex = 2097216;
-//const int IndicesOffset = 384;
-
-void IntersectTris_ClosestHit(vec3 ro, vec3 rd, int tri_start, int tri_end, int obj_index,
-                              inout hit_data_t out_inter) {
+void IntersectTris_ClosestHit(vec3 ro, vec3 rd, int tri_start, int tri_end, uint first_vertex,
+                              int obj_index, inout hit_data_t out_inter) {
     for (int i = tri_start; i < tri_end; ++i) {
         uint j = g_prim_indices[i];
 
         float t, u, v;
-        if (IntersectTri(ro, rd, g_vtx_data0[FirstVertex + g_vtx_indices[3 * j + 0]].xyz,
-                                 g_vtx_data0[FirstVertex + g_vtx_indices[3 * j + 1]].xyz,
-                                 g_vtx_data0[FirstVertex + g_vtx_indices[3 * j + 2]].xyz, t, u, v) && t > 0.0 && t < out_inter.t) {
+        if (IntersectTri(ro, rd, g_vtx_data0[first_vertex + g_vtx_indices[3 * j + 0]].xyz,
+                                 g_vtx_data0[first_vertex + g_vtx_indices[3 * j + 1]].xyz,
+                                 g_vtx_data0[first_vertex + g_vtx_indices[3 * j + 2]].xyz, t, u, v) && t > 0.0 && t < out_inter.t) {
             out_inter.mask = -1;
             out_inter.prim_index = int(j);
             out_inter.obj_index = obj_index;
@@ -64,7 +69,7 @@ void IntersectTris_ClosestHit(vec3 ro, vec3 rd, int tri_start, int tri_end, int 
 }
 
 void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index,
-                                  uint stack_size, inout hit_data_t inter) {
+                                  uint first_vertex, uint stack_size, inout hit_data_t inter) {
     vec3 neg_inv_do = -inv_d * ro;
 
     uint initial_stack_size = stack_size;
@@ -83,10 +88,10 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
             g_stack[gl_LocalInvocationIndex][stack_size++] = far_child(rd, n);
             g_stack[gl_LocalInvocationIndex][stack_size++] = near_child(rd, n);
         } else {
-            int tri_start = int(floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
-            int tri_end = tri_start + floatBitsToInt(n.bbox_max.w);
+            int tri_beg = int(floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
+            int tri_end = tri_beg + floatBitsToInt(n.bbox_max.w);
 
-            IntersectTris_ClosestHit(ro, rd, tri_start, tri_end, obj_index, inter);
+            IntersectTris_ClosestHit(ro, rd, tri_beg, tri_end, first_vertex, obj_index, inter);
         }
     }
 }
@@ -178,9 +183,21 @@ void main() {
     inter.t = MAX_DIST;
     inter.u = inter.v = 0.0;
 
-    Traverse_MicroTree_WithStack(origin.xyz, direction.xyz, inv_d, 0, 0, 0, inter);
+    for (int i = 0; i < 3; ++i) {
+        mesh_instance_t mi = g_mesh_instances[i];
+        mesh_t m = g_meshes[floatBitsToUint(mi.bbox_max.w)];
 
-    vec3 col = vec3(0.0, 0.5, 0.5);
+        vec3 ro = (mi.inv_transform * vec4(origin.xyz, 1.0)).xyz;
+        vec3 rd = (mi.inv_transform * vec4(direction.xyz, 0.0)).xyz;
+        vec3 inv_d = safe_invert(rd);
+
+        Traverse_MicroTree_WithStack(ro, rd, inv_d, 0, m.node_index, m.vert_index, 0, inter);
+    }
+
+    //mesh_t m = g_meshes[1];
+    //Traverse_MicroTree_WithStack(origin.xyz, direction.xyz, inv_d, 0, m.node_index, m.vert_index, 0, inter);
+
+    vec3 col = vec3(0.0, 0.05, 0.05);
     if (inter.mask != 0) {
         col.r = construct_float(hash(inter.prim_index));
         col.g = construct_float(hash(hash(inter.prim_index)));
