@@ -16,6 +16,7 @@
 #include "shaders/types.glsl"
 
 #define DEBUG_HWRT 0
+#define RUN_IN_LOCKSTEP 0
 
 static_assert(sizeof(Types::tri_accel_t) == sizeof(Ray::tri_accel_t), "!");
 static_assert(sizeof(Types::bvh_node_t) == sizeof(Ray::bvh_node_t), "!");
@@ -208,6 +209,8 @@ Ray::Vk::Renderer::Renderer(const settings_t &s, ILog *log) : loaded_halton_(-1)
     // throw std::runtime_error("Not implemented yet!");
 }
 
+Ray::Vk::Renderer::~Renderer() { pixel_stage_buf_.Unmap(); }
+
 void Ray::Vk::Renderer::Resize(const int w, const int h) {
     if (w_ == w && h_ == h) {
         return;
@@ -226,8 +229,7 @@ void Ray::Vk::Renderer::Resize(const int w, const int h) {
     final_buf_ = Texture2D{"Final Image", ctx_.get(), params, ctx_->default_memory_allocs(), ctx_->log()};
 
     pixel_stage_buf_ = Buffer{"Px Stage Buf", ctx_.get(), eBufType::Stage, uint32_t(4 * w * h * sizeof(float))};
-
-    frame_pixels_.resize(num_pixels);
+    frame_pixels_ = (const pixel_color_t *)pixel_stage_buf_.Map(BufMapRead, true /* persistent */);
 
     prim_rays_buf_ =
         Buffer{"Primary Rays", ctx_.get(), eBufType::Storage, uint32_t(sizeof(Types::ray_data_t) * num_pixels)};
@@ -320,7 +322,21 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
                             int(s->visible_lights_.size()),
                             s->rt_tlas_};
 
-    //
+#if RUN_IN_LOCKSTEP
+    VkCommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->device(), ctx_->temp_command_pool());
+#else
+    vkWaitForFences(ctx_->device(), 1, &ctx_->in_flight_fence(ctx_->backend_frame), VK_TRUE, UINT64_MAX);
+    vkResetFences(ctx_->device(), 1, &ctx_->in_flight_fence(ctx_->backend_frame));
+
+    VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(ctx_->draw_cmd_buf(ctx_->backend_frame), &begin_info);
+
+    VkCommandBuffer cmd_buf = ctx_->draw_cmd_buf(ctx_->backend_frame);
+#endif
+
+    //////////////////////////////////////////////////////////////////////////////////
 
     pass_info_t pass_info;
 
@@ -330,8 +346,6 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
     pass_info.settings.max_total_depth = std::min(pass_info.settings.max_total_depth, uint8_t(MAX_BOUNCES));
 
     const uint32_t hi = (region.iteration & (HALTON_SEQ_LEN - 1)) * HALTON_COUNT;
-
-    VkCommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->device(), ctx_->temp_command_pool());
 
     { // transition resources
         SmallVector<TransitionInfo, 16> res_transitions;
@@ -472,27 +486,32 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
         kernel_MixIncremental(cmd_buf, clean_buf_, temp_buf_, mix_factor, final_buf_);
         std::swap(final_buf_, clean_buf_);
 
-        const int _clamp = (cam.pass_settings.flags & Clamp) ? 1 : 0, _srgb = (cam.dtype == SRGB) ? 1 : 0;
-        kernel_Postprocess(cmd_buf, clean_buf_, (1.0f / cam.gamma), _clamp, _srgb, final_buf_);
+        postprocess_params_.clamp = (cam.pass_settings.flags & Clamp) ? 1 : 0;
+        postprocess_params_.srgb = (cam.dtype == SRGB) ? 1 : 0;
+        postprocess_params_.gamma = (1.0f / cam.gamma);
     }
 
-    { // download result
-        DebugMarker _(cmd_buf, "Download Result");
-
-        const TransitionInfo res_transitions[] = {{&final_buf_, eResState::CopySrc},
-                                                  {&pixel_stage_buf_, eResState::CopyDst}};
-        TransitionResourceStates(cmd_buf, AllStages, AllStages, res_transitions);
-
-        final_buf_.CopyTextureData(pixel_stage_buf_, cmd_buf, 0);
-    }
-
+#if RUN_IN_LOCKSTEP
     EndSingleTimeCommands(ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
+#else
+    vkEndCommandBuffer(cmd_buf);
 
-    { // copy result
-        const uint8_t *pixels = pixel_stage_buf_.Map(BufMapRead);
-        memcpy(frame_pixels_.data(), pixels, frame_pixels_.size() * sizeof(pixel_color_t));
-        pixel_stage_buf_.Unmap();
+    //////////////////////////////////////////////////////////////////////////////////////////////////
+
+    VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+
+    submit_info.commandBufferCount = 1;
+    submit_info.pCommandBuffers = &ctx_->draw_cmd_buf(ctx_->backend_frame);
+
+    const VkResult res =
+        vkQueueSubmit(ctx_->graphics_queue(), 1, &submit_info, ctx_->in_flight_fence(ctx_->backend_frame));
+    if (res != VK_SUCCESS) {
+        ctx_->log()->Error("Failed to submit into a queue!");
     }
+#endif
+
+    ctx_->backend_frame = (ctx_->backend_frame + 1) % MaxFramesInFlight;
+    frame_dirty_ = true;
 }
 
 void Ray::Vk::Renderer::UpdateHaltonSequence(const int iteration, std::unique_ptr<float[]> &seq) {
@@ -504,8 +523,36 @@ void Ray::Vk::Renderer::UpdateHaltonSequence(const int iteration, std::unique_pt
         uint32_t prime_sum = 0;
         for (int j = 0; j < HALTON_COUNT; ++j) {
             seq[i * HALTON_COUNT + j] =
-                Ray::ScrambledRadicalInverse(g_primes[j], &permutations_[prime_sum], uint64_t(iteration + i));
+                ScrambledRadicalInverse(g_primes[j], &permutations_[prime_sum], uint64_t(iteration + i));
             prime_sum += g_primes[j];
         }
     }
+}
+
+const Ray::pixel_color_t *Ray::Vk::Renderer::get_pixels_ref() const {
+    if (frame_dirty_) {
+        VkCommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->device(), ctx_->temp_command_pool());
+
+        { // postprocess
+            DebugMarker _(cmd_buf, "Postprocess frame");
+
+            kernel_Postprocess(cmd_buf, clean_buf_, postprocess_params_.gamma, postprocess_params_.clamp,
+                               postprocess_params_.srgb, final_buf_);
+        }
+
+        { // download result
+            DebugMarker _(cmd_buf, "Download Result");
+
+            const TransitionInfo res_transitions[] = {{&final_buf_, eResState::CopySrc},
+                                                      {&pixel_stage_buf_, eResState::CopyDst}};
+            TransitionResourceStates(cmd_buf, AllStages, AllStages, res_transitions);
+
+            final_buf_.CopyTextureData(pixel_stage_buf_, cmd_buf, 0);
+        }
+
+        EndSingleTimeCommands(ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
+        frame_dirty_ = false;
+    }
+
+    return frame_pixels_;
 }
