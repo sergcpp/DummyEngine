@@ -881,8 +881,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             data->ndx_buf = debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), stages);
 
             if (!ctx_.capabilities.raytracing) {
+                data->root_node = persistent_data.rt_root_node;
                 data->nodes_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stages);
                 data->prim_ndx_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_prim_indices_buf, stages);
+                data->meshes_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_meshes_buf, stages);
+                data->mesh_instances_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_instance_buf, stages);
             }
 
             data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stages);

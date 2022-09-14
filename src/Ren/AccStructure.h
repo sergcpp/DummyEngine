@@ -18,6 +18,7 @@ class AccStructureVK : public IAccStructure {
     VkAccelerationStructureKHR handle_ = VK_NULL_HANDLE;
 
     void Destroy();
+
   public:
     AccStructureVK() = default;
     ~AccStructureVK() override { Destroy(); }
@@ -28,7 +29,9 @@ class AccStructureVK : public IAccStructure {
     AccStructureVK &operator=(const AccStructureVK &rhs) = delete;
     AccStructureVK &operator=(AccStructureVK &&rhs) = delete;
 
-    const VkAccelerationStructureKHR &vk_handle() const { return handle_; } // needs to reference as we take it's address later
+    const VkAccelerationStructureKHR &vk_handle() const {
+        return handle_;
+    } // needs to reference as we take it's address later
     VkDeviceAddress vk_device_address() const;
 
     bool Init(ApiContext *api_ctx, VkAccelerationStructureKHR handle);
@@ -39,7 +42,8 @@ class AccStructureVK : public IAccStructure {
 
 class AccStructureSW : public IAccStructure {
   public:
+    AccStructureSW(uint32_t _mesh_index) : mesh_index(_mesh_index) {}
 
-      uint32_t node_index = 0, node_count = 0;
+    uint32_t mesh_index = 0;
 };
-}
+} // namespace Ren
