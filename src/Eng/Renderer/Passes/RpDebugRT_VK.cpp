@@ -11,8 +11,6 @@
 #include "../assets/shaders/internal/rt_debug_interface.glsl"
 
 void RpDebugRT::Execute_HWRT(RpBuilder &builder) {
-    LazyInit(builder.ctx(), builder.sh());
-
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data_buf);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials_buf);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -196,28 +194,4 @@ void RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_.rgen_table(), pi_debug_hwrt_.miss_table(), pi_debug_hwrt_.hit_table(),
                       pi_debug_hwrt_.call_table(), uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]),
                       1);
-}
-
-void RpDebugRT::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
-    if (!initialized) {
-        if (ctx.capabilities.raytracing) {
-            Ren::ProgramRef debug_hwrt_prog =
-                sh.LoadProgram(ctx, "rt_debug", "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
-                               "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", nullptr);
-            assert(debug_hwrt_prog->ready());
-
-            if (!pi_debug_hwrt_.Init(ctx.api_ctx(), debug_hwrt_prog, ctx.log())) {
-                ctx.log()->Error("RpDebugRT: Failed to initialize pipeline!");
-            }
-        }
-
-        Ren::ProgramRef debug_swrt_prog = sh.LoadProgram(ctx, "rt_debug_swrt", "internal/rt_debug_swrt.comp.glsl");
-        assert(debug_swrt_prog->ready());
-
-        if (!pi_debug_swrt_.Init(ctx.api_ctx(), debug_swrt_prog, ctx.log())) {
-            ctx.log()->Error("RpDebugRT: Failed to initialize pipeline!");
-        }
-
-        initialized = true;
-    }
 }

@@ -43,7 +43,7 @@ Ren::Context::~Context() {
         vkDeviceWaitIdle(api_ctx_->device);
 
         for (int i = 0; i < MaxFramesInFlight; ++i) {
-            api_ctx_->backend_frame = i;
+            api_ctx_->backend_frame = i; // default_descr_alloc_'s destructors rely on this
 
             default_descr_alloc_[i].reset();
             DestroyDeferredResources(api_ctx_.get(), i);

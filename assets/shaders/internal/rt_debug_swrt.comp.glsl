@@ -4,6 +4,13 @@
 
 #include "rt_debug_interface.glsl"
 
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
+PERM @TWO_BOUNCES
+*/
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -17,8 +24,12 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(std430, binding = NODES_BUF_SLOT) readonly buffer Nodes {
-    bvh_node_t g_nodes[];
+layout(std430, binding = BLAS_BUF_SLOT) readonly buffer Blas {
+    bvh_node_t g_blas_nodes[];
+};
+
+layout(std430, binding = TLAS_BUF_SLOT) readonly buffer Tlas {
+    bvh_node_t g_tlas_nodes[];
 };
 
 layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
@@ -78,7 +89,7 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
     while (stack_size != initial_stack_size) {
         uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
 
-        bvh_node_t n = g_nodes[cur];
+        bvh_node_t n = g_blas_nodes[cur];
 
         if (!_bbox_test_fma(inv_d, neg_inv_do, inter.t, n.bbox_min.xyz, n.bbox_max.xyz)) {
             continue;
@@ -96,7 +107,7 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
     }
 }
 
-/*void Traverse_MacroTree_WithStack(vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint node_index,
+void Traverse_MacroTree_WithStack(vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint node_index,
                                   inout hit_data_t inter) {
     vec3 orig_neg_inv_do = -orig_inv_rd * orig_ro;
 
@@ -106,7 +117,7 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
     while (stack_size != 0) {
         uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
 
-        bvh_node_t n = g_nodes[cur];
+        bvh_node_t n = g_tlas_nodes[cur];
 
         if (!_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, n.bbox_min.xyz, n.bbox_max.xyz)) {
             continue;
@@ -119,26 +130,25 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
             uint prim_index = (floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
             uint prim_count = floatBitsToUint(n.bbox_max.w);
             for (uint i = prim_index; i < prim_index + prim_count; ++i) {
-                mesh_instance_t mi = g_mesh_instances[g_mi_indices[i]];
+                mesh_instance_t mi = g_mesh_instances[i];
                 mesh_t m = g_meshes[floatBitsToUint(mi.bbox_max.w)];
-                transform_t tr = g_transforms[floatBitsToUint(mi.bbox_min.w)];
 
                 if (!_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, mi.bbox_min.xyz, mi.bbox_max.xyz)) {
                     continue;
                 }
 
-                vec3 ro = (tr.inv_xform * vec4(orig_ro, 1.0)).xyz;
-                vec3 rd = (tr.inv_xform * vec4(orig_rd, 0.0)).xyz;
+                mat4x3 inv_transform = transpose(mi.inv_transform);
+
+                vec3 ro = (inv_transform * vec4(orig_ro, 1.0)).xyz;
+                vec3 rd = (inv_transform * vec4(orig_rd, 0.0)).xyz;
                 vec3 inv_d = safe_invert(rd);
 
-                Traverse_MicroTree_WithStack(ro, rd, inv_d, int(g_mi_indices[i]), m.node_index,
+                Traverse_MicroTree_WithStack(ro, rd, inv_d, int(i), m.node_index, m.vert_index,
                                              stack_size, inter);
             }
         }
     }
-}*/
-
-layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+}
 
 int hash(const int x) {
     uint ret = uint(x);
@@ -159,6 +169,8 @@ float construct_float(uint m) {
     return f - 1.0;                        // Range [0:1]
 }
 
+layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
         return;
@@ -167,7 +179,9 @@ void main() {
     const vec2 px_center = vec2(gl_GlobalInvocationID.xy) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(g_params.img_size);
     vec2 d = in_uv * 2.0 - 1.0;
+#if defined(VULKAN)
     d.y = -d.y;
+#endif
 
     vec4 origin = g_shrd_data.inv_view_matrix * vec4(0, 0, 0, 1);
     origin /= origin.w;
@@ -183,19 +197,22 @@ void main() {
     inter.t = MAX_DIST;
     inter.u = inter.v = 0.0;
 
+#if 0
     for (int i = 0; i < 3; ++i) {
         mesh_instance_t mi = g_mesh_instances[i];
         mesh_t m = g_meshes[floatBitsToUint(mi.bbox_max.w)];
 
-        vec3 ro = (mi.inv_transform * vec4(origin.xyz, 1.0)).xyz;
-        vec3 rd = (mi.inv_transform * vec4(direction.xyz, 0.0)).xyz;
+        mat4x3 inv_transform = transpose(mi.inv_transform);
+
+        vec3 ro = (inv_transform * vec4(origin.xyz, 1.0)).xyz;
+        vec3 rd = (inv_transform * vec4(direction.xyz, 0.0)).xyz;
         vec3 inv_d = safe_invert(rd);
 
         Traverse_MicroTree_WithStack(ro, rd, inv_d, 0, m.node_index, m.vert_index, 0, inter);
     }
-
-    //mesh_t m = g_meshes[1];
-    //Traverse_MicroTree_WithStack(origin.xyz, direction.xyz, inv_d, 0, m.node_index, m.vert_index, 0, inter);
+#else
+    Traverse_MacroTree_WithStack(origin.xyz, direction.xyz, inv_d, 0 /* root_node */, inter);
+#endif
 
     vec3 col = vec3(0.0, 0.05, 0.05);
     if (inter.mask != 0) {

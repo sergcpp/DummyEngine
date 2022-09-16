@@ -3,6 +3,9 @@
 #include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
+struct prim_t;
+struct split_settings_t;
+
 class RpBuildAccStructuresExecutor : public RpExecutor {
     const DrawList *&p_list_;
     int rt_index_;
@@ -11,6 +14,12 @@ class RpBuildAccStructuresExecutor : public RpExecutor {
     RpResRef rt_obj_instances_buf_;
     RpResRef rt_tlas_buf_;
     RpResRef rt_tlas_build_scratch_buf_;
+
+    void Execute_HWRT(RpBuilder &builder);
+    void Execute_SWRT(RpBuilder &builder);
+
+    uint32_t PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+                                 std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
 
   public:
     RpBuildAccStructuresExecutor(const DrawList *&p_list, int rt_index, const RpResRef rt_obj_instances_buf,

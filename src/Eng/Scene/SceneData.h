@@ -100,48 +100,6 @@ struct bvh_node_t { // NOLINT
 };
 static_assert(sizeof(bvh_node_t) == 36, "!");
 
-//
-// SWRT stuff
-//
-
-const uint32_t LEAF_NODE_BIT = (1u << 31);
-const uint32_t PRIM_INDEX_BITS = ~LEAF_NODE_BIT;
-const uint32_t LEFT_CHILD_BITS = ~LEAF_NODE_BIT;
-
-const uint32_t SEP_AXIS_BITS = (0b11u << 30);
-const uint32_t PRIM_COUNT_BITS = ~SEP_AXIS_BITS;
-const uint32_t RIGHT_CHILD_BITS = ~SEP_AXIS_BITS;
-
-struct gpu_bvh_node_t { // NOLINT
-    Ren::Vec3f bbox_min;
-    union {
-        uint32_t prim_index; // First bit is used to identify leaf node
-        uint32_t left_child;
-    };
-    Ren::Vec3f bbox_max;
-    union {
-        uint32_t prim_count; // First two bits are used for separation axis (0, 1 or 2 - x, y or z)
-        uint32_t right_child;
-    };
-};
-static_assert(sizeof(gpu_bvh_node_t) == 32, "!");
-
-struct gpu_mesh_t {
-    uint32_t node_index, node_count;
-    uint32_t tris_index, tris_count;
-    uint32_t vert_index, vert_count;
-};
-static_assert(sizeof(gpu_mesh_t) == 24, "!");
-
-struct gpu_mesh_instance_t {
-    Ren::Vec3f bbox_min;
-    uint32_t tr_index;
-    Ren::Vec3f bbox_max;
-    uint32_t mesh_index;
-    Ren::Mat4f inv_transform; // temporary!!!
-};
-static_assert(sizeof(gpu_mesh_instance_t) == 32 + 64, "!");
-
 const int MAX_STACK_SIZE = 64;
 
 struct Environment {
@@ -220,9 +178,11 @@ struct PersistentGpuData {
 
     Ren::BufferRef                          rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf, rt_blas_buf;
 
-    Ren::BufferRef                          rt_prim_indices_buf;    // SWRT
-    uint32_t                                rt_root_node = 0;       // SWRT
-    Ren::BufferRef                          rt_meshes_buf;          // SWRT
+    struct {
+        Ren::BufferRef                      rt_prim_indices_buf;
+        uint32_t                            rt_root_node = 0;
+        Ren::BufferRef                      rt_meshes_buf;
+    } swrt;
     uint32_t                                rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure>     rt_tlas, rt_sh_tlas;
 
