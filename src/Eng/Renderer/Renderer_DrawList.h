@@ -81,7 +81,7 @@ struct EnvironmentWeak {
 };
 //static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");
 
-// TODO: use persistant mapping of stage buffers
+// TODO: use persistent mapping of stage buffers
 struct DrawList {
     uint64_t                    render_flags = 0;
     uint32_t                    frame_index = 0;
@@ -121,6 +121,9 @@ struct DrawList {
     DynArray<RTGeoInstance>     rt_geo_instances;
     DynArray<RTObjInstance>     rt_obj_instances[2];
     mutable Ren::BufferRef      rt_obj_instances_stage_buf[2];
+    struct {
+        mutable Ren::BufferRef  rt_tlas_nodes_stage_buf;
+    } swrt;
 
     mutable Ren::BufferRef      shared_data_stage_buf;
 
@@ -142,7 +145,7 @@ struct DrawList {
 
     void Init(Ren::BufferRef shared_data_stage_buf, Ren::BufferRef instances_stage_buf,
               Ren::BufferRef instance_indices_stage_buf, Ren::BufferRef skin_transforms_stage_buf, Ren::BufferRef shape_keys_stage_buf,
-              Ren::BufferRef cells_stage_buf, Ren::BufferRef items_stage_buf, Ren::BufferRef lights_stage_buf,
-              Ren::BufferRef decals_stage_buf, Ren::BufferRef rt_obj_instances_stage_buf, Ren::BufferRef rt_sh_obj_instances_stage_buf);
+              Ren::BufferRef cells_stage_buf, Ren::BufferRef items_stage_buf, Ren::BufferRef lights_stage_buf, Ren::BufferRef decals_stage_buf,
+              Ren::BufferRef rt_obj_instances_stage_buf, Ren::BufferRef rt_tlas_nodes_stage_buf, Ren::BufferRef rt_sh_obj_instances_stage_buf);
     void Clear();
 };

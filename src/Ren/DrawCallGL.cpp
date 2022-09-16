@@ -51,7 +51,7 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
     }
 
     Buffer temp_unif_buffer, temp_stage_buffer;
-    if (uniform_data) {
+    if (uniform_data && uniform_data_len) {
         temp_unif_buffer = Buffer("Temp uniform buf", nullptr, eBufType::Uniform, uniform_data_len, 16);
         temp_stage_buffer = Buffer("Temp stage buf", nullptr, eBufType::Stage, uniform_data_len, 16);
         {

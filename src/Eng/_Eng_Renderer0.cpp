@@ -48,9 +48,7 @@
 #include "Renderer/FrameBufGL.cpp"
 #include "Renderer/PrimDrawGL.cpp"
 #include "Renderer/RendererGL.cpp"
-#include "Renderer/Passes/RpBuildAccStructuresGL.cpp"
 #include "Renderer/Passes/RpDebugTexturesGL.cpp"
-#include "Renderer/Passes/RpDebugRT_GL.cpp"
 #include "Renderer/Passes/RpDepthFillGL.cpp"
 #include "Renderer/Passes/RpDepthHierarchyGL.cpp"
 #include "Renderer/Passes/RpGBufferFillGL.cpp"
@@ -62,7 +60,6 @@
 #include "Renderer/Passes/RpSkinningGL.cpp"
 #include "Renderer/Passes/RpSkydomeGL.cpp"
 #include "Renderer/Passes/RpTransparentGL.cpp"
-#include "Renderer/Passes/RpUpdateAccBuffersGL.cpp"
 
 #include "Renderer/Graph/GraphBuilderGL.cpp"
 #elif defined(USE_VK_RENDER)

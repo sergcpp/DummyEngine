@@ -88,8 +88,9 @@ void SceneManager::RebuildSceneBVH() {
     scene_data_.nodes.clear();
     scene_data_.root_node = 0xffffffff;
 
-    if (primitives.empty())
+    if (primitives.empty()) {
         return;
+    }
 
     struct prims_coll_t {
         std::vector<uint32_t> indices;
@@ -522,8 +523,6 @@ void SceneManager::UpdateObjects() {
 void SceneManager::InitSWAccStructures() {
     using namespace SceneManagerInternal;
 
-    const VkDeviceSize AccStructAlignment = 256;
-
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
     struct Blas {
@@ -597,15 +596,6 @@ void SceneManager::InitSWAccStructures() {
         for (int i = new_mesh.tris_index; i < int(prim_indices.size()); ++i) {
             prim_indices[i] += prim_offset;
         }
-
-        /*for (int i = new_mesh.node_index; i < int(nodes.size()); ++i) {
-            if (nodes[i].prim_index & LEAF_NODE_BIT) {
-                nodes[i].prim_index += new_mesh.tris_index;
-            } else {
-                nodes[i].left_child += new_mesh.node_index;
-                nodes[i].right_child += new_mesh.node_index;
-            }
-        }*/
 
         //
         // Gather geometries
@@ -686,7 +676,11 @@ void SceneManager::InitSWAccStructures() {
         new_instance.bbox_min = tr.bbox_min;
         new_instance.bbox_max = tr.bbox_max;
         new_instance.mesh_index = swrt_blas.mesh_index;
-        new_instance.inv_transform = tr.object_from_world;
+        for (int i = 0; i < 3; ++i) {
+            for (int j = 0; j < 4; ++j) {
+                new_instance.inv_transform[i][j] = tr.object_from_world[j][i];
+            }
+        }
 
         // to_khr_xform(tr.world_from_object, new_instance.transform.matrix);
         // new_instance.instanceCustomIndex = vk_blas.geo_index;
@@ -695,7 +689,7 @@ void SceneManager::InitSWAccStructures() {
         // new_instance.flags = 0;
         // new_instance.accelerationStructureReference = static_cast<uint64_t>(vk_blas.vk_device_address());
 
-        /*const uint32_t indices_start = acc.mesh->indices_buf().offset;
+        const uint32_t indices_start = acc.mesh->indices_buf().offset;
         for (const Ren::TriGroup &grp : acc.mesh->groups()) {
             const Ren::Material *mat = grp.mat.get();
             const uint32_t mat_flags = mat->flags();
@@ -704,7 +698,7 @@ void SceneManager::InitSWAccStructures() {
                 continue;
             }
 
-            ++vk_blas.geo_count;
+            ++swrt_blas.geo_count;
 
             geo_instances.emplace_back();
             auto &geo = geo_instances.back();
@@ -739,7 +733,7 @@ void SceneManager::InitSWAccStructures() {
                 }
                 geo.flags |= (closest_probe & 0xff);
             }
-        }*/
+        }
     }
 
     const uint32_t total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
@@ -779,29 +773,39 @@ void SceneManager::InitSWAccStructures() {
 
     scene_data_.persistent_data.rt_blas_buf =
         ren_ctx_.LoadBuffer("SWRT BLAS Buf", Ren::eBufType::Storage, total_nodes_size);
-    scene_data_.persistent_data.rt_prim_indices_buf =
+    scene_data_.persistent_data.swrt.rt_prim_indices_buf =
         ren_ctx_.LoadBuffer("SWRT Prim Indices Buf", Ren::eBufType::Storage, total_prim_indices_size);
-    scene_data_.persistent_data.rt_meshes_buf =
+    scene_data_.persistent_data.swrt.rt_meshes_buf =
         ren_ctx_.LoadBuffer("SWRT Meshes Buf", Ren::eBufType::Storage, total_meshes_size);
     scene_data_.persistent_data.rt_instance_buf =
         ren_ctx_.LoadBuffer("SWRT Mesh Instances Buf", Ren::eBufType::Storage, total_mesh_instances_size);
 
+#if defined(USE_VK_RENDER)
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+#else
+    void *cmd_buf = nullptr;
+#endif
 
     Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.rt_blas_buf, 0, total_nodes_size,
                             cmd_buf);
-    Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.rt_prim_indices_buf, 0,
+    Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_prim_indices_buf, 0,
                             total_prim_indices_size, cmd_buf);
-    Ren::CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.rt_meshes_buf, 0, total_meshes_size,
-                            cmd_buf);
+    Ren::CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_meshes_buf, 0,
+                            total_meshes_size, cmd_buf);
     Ren::CopyBufferToBuffer(rt_mesh_instances_stage_buf, 0, *scene_data_.persistent_data.rt_instance_buf, 0,
                             total_mesh_instances_size, cmd_buf);
 
+#if defined(USE_VK_RENDER)
     Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+#endif
 
     // dummy for now
     scene_data_.persistent_data.rt_geo_data_buf =
         ren_ctx_.LoadBuffer("RT Geo Data Buf", Ren::eBufType::Storage, uint32_t(1 * sizeof(RTGeoInstance)));
+
+    const uint32_t max_nodes_count = REN_MAX_RT_TLAS_NODES;
+    scene_data_.persistent_data.rt_tlas_buf =
+        ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
 
 #if 0
     if (!all_blases.empty()) {

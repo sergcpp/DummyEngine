@@ -42,7 +42,8 @@ class AccStructureVK : public IAccStructure {
 
 class AccStructureSW : public IAccStructure {
   public:
-    AccStructureSW(uint32_t _mesh_index) : mesh_index(_mesh_index) {}
+    AccStructureSW(uint32_t _mesh_index)
+        : mesh_index(_mesh_index) {}
 
     uint32_t mesh_index = 0;
 };

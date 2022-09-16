@@ -20,12 +20,14 @@ struct RpDebugRTData {
     RpResRef lm_tex[5];
     RpResRef dummy_black;
 
-    // SWRT
-    uint32_t root_node;
-    RpResRef nodes_buf;
-    RpResRef prim_ndx_buf;
-    RpResRef meshes_buf;
-    RpResRef mesh_instances_buf;
+    struct {
+        uint32_t root_node;
+        RpResRef rt_blas_buf;
+        RpResRef prim_ndx_buf;
+        RpResRef meshes_buf;
+        RpResRef mesh_instances_buf;
+        RpResRef rt_tlas_buf;
+    } swrt;
 
     RpResRef output_tex;
 };

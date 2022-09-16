@@ -181,9 +181,7 @@ if(${RENDERER} STREQUAL "GL")
                         Scene/SceneManagerGL.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
-                        Renderer/Passes/RpBuildAccStructuresGL.cpp
                         Renderer/Passes/RpDebugTexturesGL.cpp
-                        Renderer/Passes/RpDebugRT_GL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp
                         Renderer/Passes/RpDepthHierarchyGL.cpp
                         Renderer/Passes/RpGBufferFillGL.cpp
@@ -194,8 +192,7 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpShadowMapsGL.cpp
                         Renderer/Passes/RpSkinningGL.cpp
                         Renderer/Passes/RpSkydomeGL.cpp
-                        Renderer/Passes/RpTransparentGL.cpp
-                        Renderer/Passes/RpUpdateAccBuffersGL.cpp)
+                        Renderer/Passes/RpTransparentGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufVK.cpp

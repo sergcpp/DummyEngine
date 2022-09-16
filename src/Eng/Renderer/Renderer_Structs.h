@@ -310,12 +310,14 @@ static_assert(sizeof(RTGeoInstance) == 32, "!");
 
 struct RTObjInstance {
     float xform[3][4];
+    float bbox_min_ws[3];
     uint32_t custom_index : 24;
     uint32_t mask : 8;
+    float bbox_max_ws[3];
     uint32_t _pad;
     const Ren::IAccStructure *blas_ref;
 };
-static_assert(sizeof(RTObjInstance) == 64, "!");
+static_assert(sizeof(RTObjInstance) == 64 + 24, "!");
 
 #if defined(USE_VK_RENDER)
 #include <Ren/Buffer.h>
@@ -336,9 +338,53 @@ struct BindlessTextureData {
 
 struct AccelerationStructureData {
     Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf;
-    uint32_t rt_tlas_build_scratch_size = 0;
+    struct {
+        uint32_t rt_tlas_build_scratch_size = 0;
+    } hwrt;
     Ren::IAccStructure *rt_tlas[2] = {};
 };
+
+//
+// SWRT stuff
+//
+
+const uint32_t LEAF_NODE_BIT = (1u << 31);
+const uint32_t PRIM_INDEX_BITS = ~LEAF_NODE_BIT;
+const uint32_t LEFT_CHILD_BITS = ~LEAF_NODE_BIT;
+
+const uint32_t SEP_AXIS_BITS = (0b11u << 30);
+const uint32_t PRIM_COUNT_BITS = ~SEP_AXIS_BITS;
+const uint32_t RIGHT_CHILD_BITS = ~SEP_AXIS_BITS;
+
+struct gpu_bvh_node_t { // NOLINT
+    Ren::Vec3f bbox_min;
+    union {
+        uint32_t prim_index; // First bit is used to identify leaf node
+        uint32_t left_child;
+    };
+    Ren::Vec3f bbox_max;
+    union {
+        uint32_t prim_count; // First two bits are used for separation axis (0, 1 or 2 - x, y or z)
+        uint32_t right_child;
+    };
+};
+static_assert(sizeof(gpu_bvh_node_t) == 32, "!");
+
+struct gpu_mesh_t {
+    uint32_t node_index, node_count;
+    uint32_t tris_index, tris_count;
+    uint32_t vert_index, vert_count;
+};
+static_assert(sizeof(gpu_mesh_t) == 24, "!");
+
+struct gpu_mesh_instance_t {
+    Ren::Vec3f bbox_min;
+    uint32_t tr_index;
+    Ren::Vec3f bbox_max;
+    uint32_t mesh_index;
+    Ren::Mat3x4f inv_transform;
+};
+static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48, "!");
 
 // Constant that controls buffers orphaning
 const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
@@ -350,7 +396,9 @@ const size_t LightsBufChunkSize = sizeof(LightItem) * REN_MAX_LIGHTS_TOTAL;
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
-const size_t RTObjInstancesBufChunkSize = sizeof(VkAccelerationStructureInstanceKHR) * REN_MAX_RT_OBJ_INSTANCES;
+const size_t HWRTObjInstancesBufChunkSize = sizeof(VkAccelerationStructureInstanceKHR) * REN_MAX_RT_OBJ_INSTANCES;
+const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * REN_MAX_RT_OBJ_INSTANCES;
+const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * REN_MAX_RT_OBJ_INSTANCES;
 const size_t SharedDataBlockSize = 8 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");

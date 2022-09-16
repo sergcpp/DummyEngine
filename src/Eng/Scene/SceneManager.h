@@ -14,6 +14,9 @@
 
 #include "SceneData.h"
 
+// TODO: get rid of this dependency!
+#include "../Renderer/Renderer_Structs.h"
+
 namespace Sys {
 template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
 }

@@ -188,17 +188,7 @@ class Renderer {
     RpCombineData rp_combine_data_;
     RpCombine rp_combine_ = {prim_draw_};
 
-#if defined(USE_VK_RENDER)
     RpDebugRT rp_debug_rt_;
-#elif defined(USE_GL_RENDER)
-    // RpDOF rp_dof_ = {prim_draw_};
-    // RpFXAA rp_fxaa_ = {prim_draw_};
-
-    // debugging passes
-    // RpDebugEllipsoids rp_debug_ellipsoids_ = {prim_draw_};
-    // RpDebugProbes rp_debug_probes_ = {prim_draw_};
-    // RpDebugTextures rp_debug_textures_ = {prim_draw_};
-#endif
 
     ViewState view_state_;
     PrimDraw prim_draw_;
