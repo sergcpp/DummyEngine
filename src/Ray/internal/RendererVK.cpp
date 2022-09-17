@@ -205,8 +205,6 @@ Ray::Vk::Renderer::Renderer(const settings_t &s, ILog *log) : loaded_halton_(-1)
 
     auto rand_func = std::bind(UniformIntDistribution<uint32_t>(), std::mt19937(0));
     permutations_ = Ray::ComputeRadicalInversePermutations(g_primes, PrimesCount, rand_func);
-
-    // throw std::runtime_error("Not implemented yet!");
 }
 
 Ray::Vk::Renderer::~Renderer() { pixel_stage_buf_.Unmap(); }
@@ -264,13 +262,6 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
         return;
     }
 
-    ctx_->DestroyDeferredResources(ctx_->backend_frame);
-
-    const bool reset_result = ctx_->default_descr_alloc()->Reset();
-    assert(reset_result);
-
-    //
-
     const uint32_t macro_tree_root = s->macro_nodes_start_;
 
     region.iteration++;
@@ -322,17 +313,23 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
                             int(s->visible_lights_.size()),
                             s->rt_tlas_};
 
+#if !RUN_IN_LOCKSTEP
+    vkWaitForFences(ctx_->device(), 1, &ctx_->in_flight_fence(ctx_->backend_frame), VK_TRUE, UINT64_MAX);
+    vkResetFences(ctx_->device(), 1, &ctx_->in_flight_fence(ctx_->backend_frame));
+#endif
+
+    ctx_->DestroyDeferredResources(ctx_->backend_frame);
+
+    const bool reset_result = ctx_->default_descr_alloc()->Reset();
+    assert(reset_result);
+
 #if RUN_IN_LOCKSTEP
     VkCommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->device(), ctx_->temp_command_pool());
 #else
-    vkWaitForFences(ctx_->device(), 1, &ctx_->in_flight_fence(ctx_->backend_frame), VK_TRUE, UINT64_MAX);
-    vkResetFences(ctx_->device(), 1, &ctx_->in_flight_fence(ctx_->backend_frame));
-
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(ctx_->draw_cmd_buf(ctx_->backend_frame), &begin_info);
-
     VkCommandBuffer cmd_buf = ctx_->draw_cmd_buf(ctx_->backend_frame);
 #endif
 
@@ -356,47 +353,47 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
             }
         }
 
-        if (sc_data.mi_indices && sc_data.mi_indices.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.mi_indices, eResState::UnorderedAccess);
+        if (sc_data.mi_indices && sc_data.mi_indices.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.mi_indices, eResState::ShaderResource);
         }
-        if (sc_data.meshes && sc_data.meshes.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.meshes, eResState::UnorderedAccess);
+        if (sc_data.meshes && sc_data.meshes.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.meshes, eResState::ShaderResource);
         }
-        if (sc_data.transforms && sc_data.transforms.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.transforms, eResState::UnorderedAccess);
+        if (sc_data.transforms && sc_data.transforms.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.transforms, eResState::ShaderResource);
         }
-        if (sc_data.vtx_indices && sc_data.vtx_indices.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.vtx_indices, eResState::UnorderedAccess);
+        if (sc_data.vtx_indices && sc_data.vtx_indices.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.vtx_indices, eResState::ShaderResource);
         }
-        if (sc_data.vertices && sc_data.vertices.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.vertices, eResState::UnorderedAccess);
+        if (sc_data.vertices && sc_data.vertices.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.vertices, eResState::ShaderResource);
         }
-        if (sc_data.nodes && sc_data.nodes.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.nodes, eResState::UnorderedAccess);
+        if (sc_data.nodes && sc_data.nodes.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.nodes, eResState::ShaderResource);
         }
-        if (sc_data.tris && sc_data.tris.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.tris, eResState::UnorderedAccess);
+        if (sc_data.tris && sc_data.tris.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.tris, eResState::ShaderResource);
         }
-        if (sc_data.tri_indices && sc_data.tri_indices.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.tri_indices, eResState::UnorderedAccess);
+        if (sc_data.tri_indices && sc_data.tri_indices.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.tri_indices, eResState::ShaderResource);
         }
-        if (sc_data.tri_materials && sc_data.tri_materials.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.tri_materials, eResState::UnorderedAccess);
+        if (sc_data.tri_materials && sc_data.tri_materials.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.tri_materials, eResState::ShaderResource);
         }
-        if (sc_data.materials && sc_data.materials.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.materials, eResState::UnorderedAccess);
+        if (sc_data.materials && sc_data.materials.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.materials, eResState::ShaderResource);
         }
-        if (sc_data.textures && sc_data.textures.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.textures, eResState::UnorderedAccess);
+        if (sc_data.textures && sc_data.textures.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.textures, eResState::ShaderResource);
         }
-        if (sc_data.lights && sc_data.lights.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.lights, eResState::UnorderedAccess);
+        if (sc_data.lights && sc_data.lights.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.lights, eResState::ShaderResource);
         }
-        if (sc_data.li_indices && sc_data.li_indices.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.li_indices, eResState::UnorderedAccess);
+        if (sc_data.li_indices && sc_data.li_indices.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.li_indices, eResState::ShaderResource);
         }
-        if (sc_data.visible_lights && sc_data.visible_lights.resource_state != eResState::UnorderedAccess) {
-            res_transitions.emplace_back(&sc_data.visible_lights, eResState::UnorderedAccess);
+        if (sc_data.visible_lights && sc_data.visible_lights.resource_state != eResState::ShaderResource) {
+            res_transitions.emplace_back(&sc_data.visible_lights, eResState::ShaderResource);
         }
 
         TransitionResourceStates(cmd_buf, AllStages, AllStages, res_transitions);
@@ -496,21 +493,36 @@ void Ray::Vk::Renderer::RenderScene(const SceneBase *_s, RegionContext &region) 
 #else
     vkEndCommandBuffer(cmd_buf);
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////
+    const int prev_frame = (ctx_->backend_frame + MaxFramesInFlight - 1) % MaxFramesInFlight;
 
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 
+    const VkSemaphore wait_semaphores[] = {ctx_->render_finished_semaphore(prev_frame)};
+    const VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT};
+
+    if (ctx_->render_finished_semaphore_is_set[prev_frame]) {
+        submit_info.waitSemaphoreCount = 1;
+        submit_info.pWaitSemaphores = wait_semaphores;
+        submit_info.pWaitDstStageMask = wait_stages;
+    }
+
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &ctx_->draw_cmd_buf(ctx_->backend_frame);
+
+    submit_info.signalSemaphoreCount = 1;
+    submit_info.pSignalSemaphores = &ctx_->render_finished_semaphore(ctx_->backend_frame);
 
     const VkResult res =
         vkQueueSubmit(ctx_->graphics_queue(), 1, &submit_info, ctx_->in_flight_fence(ctx_->backend_frame));
     if (res != VK_SUCCESS) {
         ctx_->log()->Error("Failed to submit into a queue!");
     }
-#endif
+
+    ctx_->render_finished_semaphore_is_set[ctx_->backend_frame] = true;
+    ctx_->render_finished_semaphore_is_set[prev_frame] = false;
 
     ctx_->backend_frame = (ctx_->backend_frame + 1) % MaxFramesInFlight;
+#endif
     frame_dirty_ = true;
 }
 
@@ -550,7 +562,49 @@ const Ray::pixel_color_t *Ray::Vk::Renderer::get_pixels_ref() const {
             final_buf_.CopyTextureData(pixel_stage_buf_, cmd_buf, 0);
         }
 
+        VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+        mem_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        mem_barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+
+        vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &mem_barrier, 0,
+                             nullptr, 0, nullptr);
+
+#if RUN_IN_LOCKSTEP
         EndSingleTimeCommands(ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
+#else
+        vkEndCommandBuffer(cmd_buf);
+
+        // Wait for all in-flight frames to not leave semaphores in unwaited state
+        SmallVector<VkSemaphore, MaxFramesInFlight> wait_semaphores;
+        SmallVector<VkPipelineStageFlags, MaxFramesInFlight> wait_stages;
+        for (int i = 0; i < MaxFramesInFlight; ++i) {
+            const bool is_set = ctx_->render_finished_semaphore_is_set[i];
+            if (is_set) {
+                wait_semaphores.push_back(ctx_->render_finished_semaphore(i));
+                wait_stages.push_back(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);
+            }
+        }
+
+        VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
+
+        submit_info.waitSemaphoreCount = uint32_t(wait_semaphores.size());
+        submit_info.pWaitSemaphores = wait_semaphores.data();
+        submit_info.pWaitDstStageMask = wait_stages.data();
+
+        submit_info.commandBufferCount = 1;
+        submit_info.pCommandBuffers = &cmd_buf;
+
+        vkQueueSubmit(ctx_->graphics_queue(), 1, &submit_info, VK_NULL_HANDLE);
+        vkQueueWaitIdle(ctx_->graphics_queue());
+
+        vkFreeCommandBuffers(ctx_->device(), ctx_->temp_command_pool(), 1, &cmd_buf);
+#endif
+        // Can be reset after vkQueueWaitIdle
+        for (bool &is_set : ctx_->render_finished_semaphore_is_set) {
+            is_set = false;
+        }
+
+        pixel_stage_buf_.FlushMappedRange(0, pixel_stage_buf_.size());
         frame_dirty_ = false;
     }
 
