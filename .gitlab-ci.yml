@@ -11,7 +11,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
     - cmake --build build_gl --target ALL_BUILD --config Release --parallel 8
     - cmake --build build_gl --target ALL_BUILD --config Debug --parallel 8
@@ -40,7 +40,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_OPENCL=ON -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Release --parallel 8
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Debug --parallel 8
@@ -69,15 +69,15 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
     - mkdir build_gl_dbg
     - cd build_gl_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
     - mkdir build_gl_dev
     - cd build_gl_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
     - cmake --build build_gl --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
     - cmake --build build_gl_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
@@ -106,15 +106,15 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - mkdir build_vk_dbg
     - cd build_vk_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - mkdir build_vk_dev
     - cd build_vk_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
     - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
@@ -143,15 +143,15 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - mkdir build_vk_dbg
     - cd build_vk_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - mkdir build_vk_dev
     - cd build_vk_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DENABLE_OPENCL=OFF -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
     - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_DummyLib --parallel 8
