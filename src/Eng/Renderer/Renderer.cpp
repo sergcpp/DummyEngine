@@ -902,8 +902,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stages);
                 data->swrt.meshes_buf = debug_rt.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stages);
                 data->swrt.mesh_instances_buf = debug_rt.AddStorageReadonlyInput(rt_obj_instances_res, stages);
-                    //debug_rt.AddStorageReadonlyInput(persistent_data.rt_instance_buf, stages);
                 data->swrt.rt_tlas_buf = debug_rt.AddStorageReadonlyInput(persistent_data.rt_tlas_buf, stages);
+
+#if defined(USE_GL_RENDER)
+                data->swrt.textures_buf = debug_rt.AddStorageReadonlyInput(bindless_tex.textures_buf, stages);
+#endif
             }
 
             data->env_tex = debug_rt.AddTextureInput(list.env.env_map, stages);

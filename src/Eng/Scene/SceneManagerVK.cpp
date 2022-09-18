@@ -75,14 +75,14 @@ void SceneManager::UpdateMaterialsBuffer() {
         pers_data.textures_descr_pool->Init(descr_sizes,
                                             Ren::MaxFramesInFlight * needed_descriptors_count /* sets_count */);
 
-        if (ren_ctx_.capabilities.raytracing) {
+        /*if (ren_ctx_.capabilities.raytracing)*/ {
             assert(needed_descriptors_count == 1); // we have to be able to bind all textures at once
             if (!pers_data.rt_textures_descr_pool) {
                 pers_data.rt_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
             }
             pers_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
 
-            if (ren_ctx_.capabilities.ray_query) {
+            /*if (ren_ctx_.capabilities.ray_query)*/ {
                 if (!pers_data.rt_inline_textures_descr_pool) {
                     pers_data.rt_inline_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
                 }
@@ -114,7 +114,7 @@ void SceneManager::UpdateMaterialsBuffer() {
             assert(res == VK_SUCCESS);
         }
 
-        if (ren_ctx_.capabilities.raytracing) {
+        /*if (ren_ctx_.capabilities.raytracing)*/ {
             if (!pers_data.rt_textures_descr_layout) {
                 VkDescriptorSetLayoutBinding textures_binding = {};
                 textures_binding.binding = REN_BINDLESS_TEX_SLOT;
@@ -138,7 +138,7 @@ void SceneManager::UpdateMaterialsBuffer() {
                                                                  &pers_data.rt_textures_descr_layout);
                 assert(res == VK_SUCCESS);
             }
-            if (ren_ctx_.capabilities.ray_query) {
+            /*if (ren_ctx_.capabilities.ray_query)*/ {
                 VkDescriptorSetLayoutBinding textures_binding = {};
                 textures_binding.binding = REN_BINDLESS_TEX_SLOT;
                 textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -169,10 +169,10 @@ void SceneManager::UpdateMaterialsBuffer() {
                     pers_data.textures_descr_pool->Alloc(pers_data.textures_descr_layout));
                 assert(pers_data.textures_descr_sets[j].back());
             }
-            if (ren_ctx_.capabilities.raytracing) {
+            /*if (ren_ctx_.capabilities.raytracing)*/ {
                 pers_data.rt_textures_descr_sets[j] =
                     pers_data.rt_textures_descr_pool->Alloc(pers_data.rt_textures_descr_layout);
-                if (ren_ctx_.capabilities.ray_query) {
+                /*if (ren_ctx_.capabilities.ray_query)*/ {
                     pers_data.rt_inline_textures_descr_sets[j] =
                         pers_data.rt_inline_textures_descr_pool->Alloc(pers_data.rt_inline_textures_descr_layout);
                 }
@@ -261,10 +261,10 @@ void SceneManager::UpdateMaterialsBuffer() {
             // TODO: group this calls!!!
             vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
 
-            if (ren_ctx_.capabilities.raytracing) {
+            /*if (ren_ctx_.capabilities.raytracing)*/ {
                 descr_write.dstSet = scene_data_.persistent_data.rt_textures_descr_sets[ren_ctx_.backend_frame()];
                 vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
-                if (ren_ctx_.capabilities.ray_query) {
+                /*if (ren_ctx_.capabilities.ray_query)*/ {
                     descr_write.dstSet =
                         scene_data_.persistent_data.rt_inline_textures_descr_sets[ren_ctx_.backend_frame()];
                     vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);

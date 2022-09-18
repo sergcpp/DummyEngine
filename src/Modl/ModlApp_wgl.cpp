@@ -1688,17 +1688,13 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
 
-    const Ren::Vec3f root_min = prim_lists.back().min;
-    const Ren::Vec3f root_max = prim_lists.back().max;
-
     split_settings_t s;
     s.oversplit_threshold = 0.95f;
     s.node_traversal_cost = 0.025f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices.data(),
-                                                      (uint32_t)prim_lists.back().indices.size(), prim_lists.back().min,
-                                                      prim_lists.back().max, root_min, root_max, s);
+        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices, prim_lists.back().min,
+                                                      prim_lists.back().max, s);
         prim_lists.pop_back();
 
         const auto leaf_index = (uint32_t)nodes.size();

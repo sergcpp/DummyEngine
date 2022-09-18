@@ -22,5 +22,4 @@ struct split_settings_t {
 };
 
 split_data_t SplitPrimitives_SAH(const prim_t *primitives, Ren::Span<const uint32_t> prim_indices,
-                                 const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max, const Ren::Vec3f &root_min,
-                                 const Ren::Vec3f &root_max, const split_settings_t &s);
+                                 const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max, const split_settings_t &s);

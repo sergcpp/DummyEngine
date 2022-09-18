@@ -81,7 +81,7 @@ struct bvh_node_t { // NOLINT
             uint32_t prim_index : 31;
         };
         struct {
-            uint32_t leaf_node : 1;
+            uint32_t _leaf_node : 1;
             uint32_t left_child : 31;
         };
     };
@@ -92,7 +92,7 @@ struct bvh_node_t { // NOLINT
             uint32_t prim_count : 30;
         };
         struct {
-            uint32_t space_axis : 2;
+            uint32_t _space_axis : 2;
             uint32_t right_child : 30;
         };
     };

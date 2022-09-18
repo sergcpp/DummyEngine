@@ -99,11 +99,11 @@ struct bvh_node_t {
 struct mesh_t {
     uint node_index, node_count;
     uint tris_index, tris_count;
-    uint vert_index, vert_count;
+    uint vert_index, geo_count;
 };
 
 struct mesh_instance_t {
-    vec4 bbox_min; // w is tr_index
+    vec4 bbox_min; // w is geo_index
     vec4 bbox_max; // w is mesh_index
     mat3x4 inv_transform;
 };
@@ -111,6 +111,8 @@ struct mesh_instance_t {
 struct hit_data_t {
     int mask;
     int obj_index;
+    int geo_index;
+    int geo_count;
     int prim_index;
     float t, u, v;
 };

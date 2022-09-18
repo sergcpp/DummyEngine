@@ -181,6 +181,7 @@ if(${RENDERER} STREQUAL "GL")
                         Scene/SceneManagerGL.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
+                        Renderer/Passes/RpDebugRT_GL.cpp
                         Renderer/Passes/RpDebugTexturesGL.cpp
                         Renderer/Passes/RpDepthFillGL.cpp
                         Renderer/Passes/RpDepthHierarchyGL.cpp
