@@ -179,7 +179,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
             } else {
                 InlineShaderConstants(ctx, line);
 
-                if (line.back() == '\r') {
+                if (!line.empty() && line.back() == '\r') {
                     line.pop_back();
                 }
                 dst_stream << line << "\r\n";

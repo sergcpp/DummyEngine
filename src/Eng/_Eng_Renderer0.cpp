@@ -48,6 +48,7 @@
 #include "Renderer/FrameBufGL.cpp"
 #include "Renderer/PrimDrawGL.cpp"
 #include "Renderer/RendererGL.cpp"
+#include "Renderer/Passes/RpDebugRT_GL.cpp"
 #include "Renderer/Passes/RpDebugTexturesGL.cpp"
 #include "Renderer/Passes/RpDepthFillGL.cpp"
 #include "Renderer/Passes/RpDepthHierarchyGL.cpp"

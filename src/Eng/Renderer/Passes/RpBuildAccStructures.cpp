@@ -53,13 +53,15 @@ void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
             memcpy(&new_mi.bbox_min[0], inst.bbox_min_ws, 3 * sizeof(float));
             memcpy(&new_mi.bbox_max[0], inst.bbox_max_ws, 3 * sizeof(float));
 
+            new_mi.geo_index = inst.geo_index;
+
             const auto *acc = reinterpret_cast<const Ren::AccStructureSW *>(inst.blas_ref);
             new_mi.mesh_index = acc->mesh_index;
 
             Ren::Mat4f transform;
             memcpy(&transform[0][0], inst.xform, 12 * sizeof(float));
 
-            // TODO: !!!!!!1
+            // TODO: !!!!!!
             transform = Ren::Inverse(transform);
 
             memcpy(&new_mi.inv_transform[0][0], ValuePtr(transform), 12 * sizeof(float));
@@ -127,11 +129,9 @@ uint32_t RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const prim_
         prim_lists.back().max = Max(prim_lists.back().max, prims[j].bbox_max);
     }
 
-    Ren::Vec3f root_min = prim_lists.back().min, root_max = prim_lists.back().max;
-
     while (!prim_lists.empty()) {
         split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, root_min, root_max, s);
+                                                      prim_lists.back().max, s);
         prim_lists.pop_back();
 
         if (split_data.right_indices.empty()) {

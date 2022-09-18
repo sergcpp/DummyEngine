@@ -80,7 +80,7 @@ int Ren::Context::NumMaterialsNotReady() {
 }
 
 void Ren::Context::ReleaseMaterials() {
-    if (!materials_.size()) {
+    if (materials_.empty()) {
         return;
     }
     log_->Error("---------REMAINING MATERIALS--------");
@@ -489,8 +489,8 @@ void Ren::Context::ReleaseDefaultBuffers() {
     default_skin_vertex_buf_ = {};
     default_delta_buf_ = {};
     default_indices_buf_ = {};
-    for (int i = 0; i < StageBufferCount; ++i) {
-        default_stage_bufs_.bufs[i] = {};
+    for (auto &buf : default_stage_bufs_.bufs) {
+        buf = {};
     }
 }
 

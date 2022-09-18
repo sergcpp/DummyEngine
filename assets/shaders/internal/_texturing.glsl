@@ -1,3 +1,6 @@
+#ifndef _TEXTURING_GLSL
+#define _TEXTURING_GLSL
+
 #if !defined(VULKAN) && !defined(GL_SPIRV)
 #extension GL_ARB_bindless_texture : enable
 #endif
@@ -26,3 +29,5 @@
         #define SAMPLER2D
     #endif // GL_ARB_bindless_texture
 #endif // VULKAN
+
+#endif // _TEXTURING_GLSL

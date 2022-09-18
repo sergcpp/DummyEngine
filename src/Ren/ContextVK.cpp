@@ -192,10 +192,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     log_->Info("===========================================");
 
-    capabilities.raytracing = false;
-    // api_ctx_->raytracing_supported;
-    capabilities.ray_query = false;
-    // api_ctx_->ray_query_supported;
+    capabilities.raytracing = api_ctx_->raytracing_supported;
+    capabilities.ray_query = api_ctx_->ray_query_supported;
+    capabilities.swrt = true;
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 

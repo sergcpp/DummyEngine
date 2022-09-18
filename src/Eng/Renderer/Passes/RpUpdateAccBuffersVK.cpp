@@ -17,7 +17,7 @@ void RpUpdateAccBuffersExecutor::Execute_HWRT(RpBuilder &builder) {
             for (uint32_t i = 0; i < rt_obj_instances.count; ++i) {
                 auto &new_instance = out_instances[i];
                 memcpy(new_instance.transform.matrix, rt_obj_instances.data[i].xform, 12 * sizeof(float));
-                new_instance.instanceCustomIndex = rt_obj_instances.data[i].custom_index;
+                new_instance.instanceCustomIndex = rt_obj_instances.data[i].geo_index;
                 new_instance.mask = rt_obj_instances.data[i].mask;
                 new_instance.flags = 0;
                 new_instance.accelerationStructureReference =

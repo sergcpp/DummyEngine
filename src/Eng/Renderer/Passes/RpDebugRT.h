@@ -27,6 +27,7 @@ struct RpDebugRTData {
         RpResRef meshes_buf;
         RpResRef mesh_instances_buf;
         RpResRef rt_tlas_buf;
+        RpResRef textures_buf;
     } swrt;
 
     RpResRef output_tex;

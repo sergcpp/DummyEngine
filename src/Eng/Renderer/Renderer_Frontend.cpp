@@ -443,7 +443,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
                             memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
                             memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-                            new_instance.custom_index = acc->geo_index;
+                            new_instance.geo_index = acc->geo_index;
+                            new_instance.geo_count = acc->geo_count;
                             new_instance.mask = 0xff;
                             memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
                             new_instance.blas_ref = acc;
@@ -1041,7 +1042,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
                                 memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
                                 memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-                                new_instance.custom_index = acc->geo_index;
+                                new_instance.geo_index = acc->geo_index;
+                                new_instance.geo_count = acc->geo_count;
                                 new_instance.mask = 0xff;
                                 memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
                                 new_instance.blas_ref = acc;
