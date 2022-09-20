@@ -10,13 +10,11 @@
 
 #include "../assets/shaders/internal/rt_reflections_interface.glsl"
 
-void RpRTReflections::ExecuteRTPipeline(RpBuilder& builder) {
-    // TODO: software fallback for raytracing
-}
+void RpRTReflections::ExecuteHWRTPipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTReflections::ExecuteRTInline(RpBuilder& builder) {
-    // TODO: software fallback for raytracing
-}
+void RpRTReflections::ExecuteHWRTInline(RpBuilder& builder) { assert(false && "Not implemented!"); }
+
+void RpRTReflections::ExecuteSWRT(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
 void RpRTReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
     if (!initialized) {

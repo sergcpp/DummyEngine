@@ -9,9 +9,15 @@
 #include "../Renderer_Structs.h"
 
 void RpRTReflections::Execute(RpBuilder &builder) {
-    if (builder.ctx().capabilities.ray_query) {
-        ExecuteRTInline(builder);
+    LazyInit(builder.ctx(), builder.sh());
+
+    if (builder.ctx().capabilities.raytracing) {
+        if (builder.ctx().capabilities.ray_query) {
+            ExecuteHWRTInline(builder);
+        } else {
+            ExecuteHWRTPipeline(builder);
+        }
     } else {
-        ExecuteRTPipeline(builder);
+        ExecuteSWRT(builder);
     }
 }

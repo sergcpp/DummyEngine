@@ -25,7 +25,16 @@ struct RpRTReflectionsData {
     RpResRef ray_counter;
     RpResRef ray_list;
     RpResRef indir_args;
-    RpResRef tlas_buf; // fake read for now
+    RpResRef tlas_buf;
+
+    struct {
+        uint32_t root_node;
+        RpResRef rt_blas_buf;
+        RpResRef prim_ndx_buf;
+        RpResRef meshes_buf;
+        RpResRef mesh_instances_buf;
+        RpResRef textures_buf;
+    } swrt;
 
     RpResRef out_refl_tex;
     RpResRef out_raylen_tex;
@@ -37,6 +46,7 @@ class RpRTReflections : public RpExecutor {
     // lazily initialized data
     Ren::Pipeline pi_rt_reflections_;
     Ren::Pipeline pi_rt_reflections_inline_;
+    Ren::Pipeline pi_rt_reflections_swrt_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -47,8 +57,10 @@ class RpRTReflections : public RpExecutor {
 
     void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
 
-    void ExecuteRTPipeline(RpBuilder &builder);
-    void ExecuteRTInline(RpBuilder &builder);
+    void ExecuteHWRTPipeline(RpBuilder &builder);
+    void ExecuteHWRTInline(RpBuilder &builder);
+
+    void ExecuteSWRT(RpBuilder &builder);
 
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, const AccelerationStructureData *acc_struct_data,

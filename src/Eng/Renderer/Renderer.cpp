@@ -553,52 +553,50 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         RpResRef rt_obj_instances_res;
 
-        if (true /* any RT feature enabled */) {
-            if (ctx_.capabilities.raytracing) {
-                auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
+        if (ctx_.capabilities.raytracing) {
+            auto &update_rt_bufs = rp_builder_.AddPass("UPDATE ACC BUFS");
 
-                { // create obj instances buffer
-                    RpBufDesc desc;
-                    desc.type = Ren::eBufType::Storage;
-                    desc.size = HWRTObjInstancesBufChunkSize;
+            { // create obj instances buffer
+                RpBufDesc desc;
+                desc.type = Ren::eBufType::Storage;
+                desc.size = HWRTObjInstancesBufChunkSize;
 
-                    rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
-                }
-
-                update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, 0, rt_obj_instances_res);
-
-                auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
-
-                rt_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res);
-                RpResRef rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
-
-                RpResRef rt_tlas_build_scratch_res;
-
-                { // create scratch buffer
-                    RpBufDesc desc;
-                    desc.type = Ren::eBufType::Storage;
-                    desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
-                    rt_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("TLAS Scratch Buf", desc);
-                }
-
-                build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
-                    p_list_, 0, rt_obj_instances_res, &acc_struct_data, rt_tlas_res, rt_tlas_build_scratch_res);
-            } else {
-                auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
-
-                { // create obj instances buffer
-                    RpBufDesc desc;
-                    desc.type = Ren::eBufType::Storage;
-                    desc.size = SWRTObjInstancesBufChunkSize;
-
-                    rt_obj_instances_res = build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
-                }
-
-                RpResRef rt_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf);
-
-                build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
-                    p_list_, 0, rt_obj_instances_res, &acc_struct_data, rt_tlas_res, RpResRef{});
+                rt_obj_instances_res = update_rt_bufs.AddTransferOutput("RT Obj Instances", desc);
             }
+
+            update_rt_bufs.make_executor<RpUpdateAccBuffersExecutor>(p_list_, 0, rt_obj_instances_res);
+
+            auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
+
+            rt_obj_instances_res = build_acc_structs.AddASBuildReadonlyInput(rt_obj_instances_res);
+            RpResRef rt_tlas_res = build_acc_structs.AddASBuildOutput(acc_struct_data.rt_tlas_buf);
+
+            RpResRef rt_tlas_build_scratch_res;
+
+            { // create scratch buffer
+                RpBufDesc desc;
+                desc.type = Ren::eBufType::Storage;
+                desc.size = acc_struct_data.hwrt.rt_tlas_build_scratch_size;
+                rt_tlas_build_scratch_res = build_acc_structs.AddASBuildOutput("TLAS Scratch Buf", desc);
+            }
+
+            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
+                p_list_, 0, rt_obj_instances_res, &acc_struct_data, rt_tlas_res, rt_tlas_build_scratch_res);
+        } else if (ctx_.capabilities.swrt) {
+            auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
+
+            { // create obj instances buffer
+                RpBufDesc desc;
+                desc.type = Ren::eBufType::Storage;
+                desc.size = SWRTObjInstancesBufChunkSize;
+
+                rt_obj_instances_res = build_acc_structs.AddTransferOutput("RT Obj Instances", desc);
+            }
+
+            RpResRef rt_tlas_res = build_acc_structs.AddTransferOutput(acc_struct_data.rt_tlas_buf);
+
+            build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(p_list_, 0, rt_obj_instances_res,
+                                                                          &acc_struct_data, rt_tlas_res, RpResRef{});
         }
 
         if (deferred_shading && ctx_.capabilities.raytracing) {
@@ -860,7 +858,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_,
                                     (list.render_flags & DebugReflDenoise) != 0, list.probe_storage, common_buffers,
                                     persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
-                                    frame_textures);
+                                    rt_obj_instances_res, frame_textures);
             } else {
                 AddLQSpecularPasses(list.probe_storage, common_buffers, depth_down_2x, frame_textures);
             }
@@ -881,7 +879,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //     rp_tail = rp_tail->p_next;
         // }
 
-        if ((list.render_flags & (DebugRT | DebugRTShadow)) && list.env.env_map) {
+        if ((list.render_flags & (DebugRT | DebugRTShadow)) && list.env.env_map &&
+            (ctx_.capabilities.raytracing || ctx_.capabilities.swrt)) {
             auto &debug_rt = rp_builder_.AddPass("DEBUG RT");
 
             const Ren::eStageBits stages =

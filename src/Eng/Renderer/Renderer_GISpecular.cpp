@@ -16,7 +16,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                                    const PersistentGpuData &persistent_data,
                                    const AccelerationStructureData &acc_struct_data,
                                    const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                                   FrameTextures &frame_textures) {
+                                   RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     // Reflection settings
     static const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
     static const float MirrorThreshold = 0.0001f;
@@ -298,7 +298,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         });
     }
 
-    if (ctx_.capabilities.raytracing && env_map) {
+    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && env_map) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -357,6 +357,19 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             data->ray_list = rt_refl.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
+
+            if (!ctx_.capabilities.raytracing) {
+                data->swrt.root_node = persistent_data.swrt.rt_root_node;
+                data->swrt.rt_blas_buf = rt_refl.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stage);
+                data->swrt.prim_ndx_buf =
+                    rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
+                data->swrt.meshes_buf = rt_refl.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
+                data->swrt.mesh_instances_buf = rt_refl.AddStorageReadonlyInput(rt_obj_instances_res, stage);
+
+#if defined(USE_GL_RENDER)
+                data->swrt.textures_buf = rt_refl.AddStorageReadonlyInput(bindless.textures_buf, stage);
+#endif
+            }
 
             if (lm_direct) {
                 data->lm_tex[0] = rt_refl.AddTextureInput(lm_direct, stage);
