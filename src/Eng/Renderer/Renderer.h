@@ -263,7 +263,7 @@ class Renderer {
                              const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                              const BindlessTextureData &bindless, RpResRef depth_hierarchy,
-                             FrameTextures &frame_textures);
+                             RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              RpResRef depth_down_2x, FrameTextures &frame_textures);
 
