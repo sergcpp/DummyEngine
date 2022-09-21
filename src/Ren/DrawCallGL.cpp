@@ -32,7 +32,7 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
                           DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
             if (b.offset) {
                 assert(b.size != 0);
@@ -76,7 +76,7 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
                                   ILog *log) {
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
-            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
             if (b.offset) {
                 assert(b.size != 0);

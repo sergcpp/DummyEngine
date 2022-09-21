@@ -11,6 +11,12 @@
 #include "ssr_common.glsl"
 #include "rt_reflections_interface.glsl"
 
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
+*/
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -126,8 +132,15 @@ void Traverse_MicroTree_WithStack(vec3 ro, vec3 rd, vec3 inv_d, int obj_index, u
         }
 
         if ((floatBitsToUint(n.bbox_min.w) & LEAF_NODE_BIT) == 0) {
-            g_stack[gl_LocalInvocationIndex][stack_size++] = far_child(rd, n);
-            g_stack[gl_LocalInvocationIndex][stack_size++] = near_child(rd, n);
+            uint left_child = floatBitsToUint(n.bbox_min.w);
+            uint right_child = (floatBitsToUint(n.bbox_max.w) & RIGHT_CHILD_BITS);
+            if (rd[floatBitsToUint(n.bbox_max.w) >> 30] < 0) {
+                g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
+                g_stack[gl_LocalInvocationIndex][stack_size++] = right_child;
+            } else {
+                g_stack[gl_LocalInvocationIndex][stack_size++] = right_child;
+                g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
+            }
         } else {
             int tri_beg = int(floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
             int tri_end = tri_beg + floatBitsToInt(n.bbox_max.w);
@@ -154,8 +167,15 @@ void Traverse_MacroTree_WithStack(vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, 
         }
 
         if ((floatBitsToUint(n.bbox_min.w) & LEAF_NODE_BIT) == 0) {
-            g_stack[gl_LocalInvocationIndex][stack_size++] = far_child(orig_rd, n);
-            g_stack[gl_LocalInvocationIndex][stack_size++] = near_child(orig_rd, n);
+            uint left_child = floatBitsToUint(n.bbox_min.w);
+            uint right_child = (floatBitsToUint(n.bbox_max.w) & RIGHT_CHILD_BITS);
+            if (orig_rd[floatBitsToUint(n.bbox_max.w) >> 30] < 0) {
+                g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
+                g_stack[gl_LocalInvocationIndex][stack_size++] = right_child;
+            } else {
+                g_stack[gl_LocalInvocationIndex][stack_size++] = right_child;
+                g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
+            }
         } else {
             uint prim_index = (floatBitsToUint(n.bbox_min.w) & PRIM_INDEX_BITS);
             uint prim_count = floatBitsToUint(n.bbox_max.w);
@@ -248,6 +268,7 @@ void main() {
     hit_data_t inter;
     inter.mask = 0;
     inter.obj_index = inter.prim_index = 0;
+    inter.geo_index = inter.geo_count = 0;
     inter.t = 1000.0;
     inter.u = inter.v = 0.0;
 
@@ -288,7 +309,7 @@ void main() {
 
         float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
-        vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
+        vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
         float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
         vec3 tri_normal = cross(p1 - p0, p2 - p0);
@@ -302,7 +323,7 @@ void main() {
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
 
-        col = SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
+        col = SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
 #else
         // TODO: Fallback to shared texture atlas
 #endif
@@ -330,7 +351,7 @@ void main() {
                                               g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
                                               g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
         }
-        
+
         ray_len = inter.t;
     }
 

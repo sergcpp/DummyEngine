@@ -22,6 +22,7 @@ void RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &prim_ndx_buf = builder.GetReadBuffer(pass_data_->swrt.prim_ndx_buf);
     RpAllocBuf &meshes_buf = builder.GetReadBuffer(pass_data_->swrt.meshes_buf);
     RpAllocBuf &mesh_instances_buf = builder.GetReadBuffer(pass_data_->swrt.mesh_instances_buf);
+    RpAllocBuf &textures_buf = builder.GetReadBuffer(pass_data_->swrt.textures_buf);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
@@ -40,6 +41,7 @@ void RpDebugRT::Execute_SWRT(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::SBuf, REN_BINDLESS_TEX_SLOT, *textures_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.ref},
@@ -50,6 +52,11 @@ void RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::Tex2D, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Image, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
 
@@ -63,11 +70,6 @@ void RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->act_res[1]));
     uniform_params.root_node = pass_data_->swrt.root_node;
-
-    RpAllocBuf &textures_buf = builder.GetReadBuffer(pass_data_->swrt.textures_buf);
-    if (ctx.capabilities.bindless_texture) {
-        //glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
-    }
 
     Ren::DispatchCompute(pi_debug_swrt_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                          ctx.default_descr_alloc(), ctx.log());
