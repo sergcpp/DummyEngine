@@ -261,8 +261,6 @@ void NAME(_swComputeDepthPlane)(const __mXXX vX[3], const __mXXX vY[3],
 
 SWint NAME(_swProcessTriangleBatch)(SWcull_ctx *ctx, __mXXX vX[3], __mXXX vY[3],
                                     __mXXX vZ[3], SWuint tri_mask, SWint is_occluder) {
-    const SWint tile_count = ctx->tile_w * ctx->tile_h;
-
     // find triangle bounds
     __mXXXi bb_px_min_x =
         _mmXXX_cvttps_epi32(_mmXXX_min_ps(vX[0], _mmXXX_min_ps(vX[1], vX[2])));
@@ -831,8 +829,8 @@ SWint NAME(_swCullCtxTestRect)(const SWcull_ctx *ctx, const SWfloat p_min[2],
         _mm128_and_si128(_mm128_add_epi32(px_bboxi, SIMD_TILE_PAD), SIMD_TILE_PAD_MASK);
     SWint tile_min_x = tile_bboxi.i32[0] >> SW_CULL_TILE_WIDTH_SHIFT;
     SWint tile_max_x = tile_bboxi.i32[1] >> SW_CULL_TILE_WIDTH_SHIFT;
-    SWint tile_min_y = tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT;
-    SWint tile_max_y = tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    //SWint tile_min_y = tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT;
+    //SWint tile_max_y = tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT;
     SWint tile_row_ndx = (tile_bboxi.i32[2] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
     SWint tile_row_end = (tile_bboxi.i32[3] >> SW_CULL_TILE_HEIGHT_SHIFT) * ctx->tile_w;
 

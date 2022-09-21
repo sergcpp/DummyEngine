@@ -71,6 +71,8 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
             if (res) {
                 return 1;
             }
+#else
+            (void)res;
 #endif
 
             tile_row_ndx += ctx->tile_w;
@@ -117,6 +119,8 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
             if (res) {
                 return 1;
             }
+#else
+            (void)res;
 #endif
 
             tile_row_ndx += ctx->tile_w;
@@ -157,6 +161,8 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
                 if (res) {
                     return 1;
                 }
+#else
+                (void)res;
 #endif
 
                 tile_row_ndx += ctx->tile_w;
@@ -206,6 +212,8 @@ SWint TRI_FUNC_NAME(SWcull_ctx *ctx, SWint tile_row_ndx, SWint tile_mid_row_ndx,
                 if (res) {
                     return 1;
                 }
+#else
+                (void)res;
 #endif
 
                 tile_row_ndx += ctx->tile_w;

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1)
 project(SW)
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -O3 -ftree-vectorize -msse4.1 -fvariable-expansion-in-unroller -ftree-vectorizer-verbose=0 -ftree-loop-if-convert-stores -std=c99 -Wall -Wno-switch -Wno-attributes -ffast-math")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DNDEBUG -O3 -ftree-vectorize -msse4.1 -fvariable-expansion-in-unroller -ftree-vectorizer-verbose=0 -ftree-loop-if-convert-stores -std=c99 -Wall -Wno-switch -Wno-attributes -Wno-unused-function -Wno-unknown-pragmas -ffast-math")
 endif()
 
 set(SOURCE_FILES    SW.h
