@@ -122,6 +122,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *) {
     const bool bindless_texture_arb = IsExtensionSupported("GL_ARB_bindless_texture");
     const bool bindless_texture_nv = IsExtensionSupported("GL_NV_bindless_texture");
     capabilities.bindless_texture = bindless_texture_arb || bindless_texture_nv;
+    capabilities.swrt = capabilities.bindless_texture;
 
     { // minimal texture buffer offset alignment
         GLint tex_buf_offset_alignment;
