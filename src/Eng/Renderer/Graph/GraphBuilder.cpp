@@ -795,7 +795,7 @@ void RpBuilder::BuildRenderPasses() {
         }
 
         for (int i = beg; i < end; ++i) {
-            reordered_subpasses_[i]->actual_pass_index_ = int(render_passes_.size());
+            reordered_subpasses_[i]->actual_pass_index_ = int16_t(render_passes_.size());
         }
 
         render_passes_.emplace_back();
@@ -939,7 +939,8 @@ void RpBuilder::BuildAliases() {
         }
     }
 
-    for (auto &chain : alias_chains_) {
+    for (int j = 0; j < int(alias_chains_.size()); ++j) {
+        auto &chain = alias_chains_[j];
         if (chain.empty()) {
             continue;
         }
@@ -958,7 +959,9 @@ void RpBuilder::BuildAliases() {
             first_tex.desc.usage |= next_tex.desc.usage;
         }
 
-        alias_chains_[chain[0]] = std::move(chain);
+        if (chain[0] != j) {
+            alias_chains_[chain[0]] = std::move(chain);
+        }
     }
 }
 
