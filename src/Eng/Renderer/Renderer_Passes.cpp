@@ -301,12 +301,6 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         desc.size = ShapeKeysBufChunkSize;
         common_buffers.shape_keys_res = update_bufs.AddTransferOutput(SHAPE_KEYS_BUF, desc);
     }
-    { // create instances buffer
-        RpBufDesc desc;
-        desc.type = Ren::eBufType::Texture;
-        desc.size = InstanceDataBufChunkSize;
-        common_buffers.instances_res = update_bufs.AddTransferOutput(INSTANCES_BUF, desc);
-    }
     { // create instance indices buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
@@ -330,7 +324,7 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         Ren::Context &ctx = builder.ctx();
         RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
         RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
-        RpAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
+        // RpAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
         RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices_res);
         RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(common_buffers.shared_data_res);
         RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
@@ -343,16 +337,6 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         Ren::UpdateBuffer(*shape_keys_buf.ref, 0, p_list_->shape_keys_data.count * sizeof(ShapeKeyData),
                           p_list_->shape_keys_data.data, *p_list_->shape_keys_stage_buf,
                           ctx.backend_frame() * ShapeKeysBufChunkSize, ShapeKeysBufChunkSize, ctx.current_cmd_buf());
-
-        if (!instances_buf.tbos[0]) {
-            instances_buf.tbos[0] = ctx.CreateTexture1D("Instances TBO", instances_buf.ref, Ren::eTexFormat::RawRGBA32F,
-                                                        0, InstanceDataBufChunkSize);
-        }
-
-        Ren::UpdateBuffer(*instances_buf.ref, 0, p_list_->instances.count * sizeof(InstanceData),
-                          p_list_->instances.data, *p_list_->instances_stage_buf,
-                          ctx.backend_frame() * InstanceDataBufChunkSize, InstanceDataBufChunkSize,
-                          ctx.current_cmd_buf());
 
         if (!instance_indices_buf.tbos[0]) {
             instance_indices_buf.tbos[0] =
@@ -620,8 +604,8 @@ void Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const Per
         gbuf_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
     const RpResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
 
-    const RpResRef instances_buf =
-        gbuf_fill.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+    const RpResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
+        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
     const RpResRef instances_indices_buf =
         gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
@@ -668,8 +652,8 @@ void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const P
 
     const RpResRef dummy_black = opaque.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
 
-    const RpResRef instances_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+    const RpResRef instances_buf = opaque.AddStorageReadonlyInput(
+        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
     const RpResRef instances_indices_buf =
         opaque.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
@@ -730,8 +714,8 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
 
     const RpResRef dummy_black = transparent.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
 
-    const RpResRef instances_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+    const RpResRef instances_buf = transparent.AddStorageReadonlyInput(
+        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
     const RpResRef instances_indices_buf =
         transparent.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 

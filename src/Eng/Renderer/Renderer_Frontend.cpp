@@ -68,19 +68,11 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 
 static const bool EnableSunCulling = true;
 
-int16_t f32_to_s16(float value) { return int16_t(value * 32767); }
-
-uint16_t f32_to_u16(float value) { return uint16_t(value * 65535); }
-
-uint8_t f32_to_u8(float value) { return uint8_t(value * 255); }
-
 void __push_ellipsoids(const Drawable &dr, const Ren::Mat4f &world_from_object, DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const AnimState &as, const Ren::Mesh *mesh,
                               DrawList &list);
 uint32_t __record_texture(DynArray<TexEntry> &storage, const Ren::Tex2DRef &tex, int prio, uint16_t distance);
 void __record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat, bool is_animated, uint16_t distance);
-void __init_wind_params(const VegState &vs, const EnvironmentWeak &env, const Ren::Mat4f &object_from_world,
-                        InstanceData &instance);
 
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
 __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("ProcessOccluders");
@@ -142,7 +134,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     list.probes.count = 0;
     list.ellipsoids.count = 0;
 
-    list.instances.count = 0;
     list.instance_indices.count = 0;
     list.shadow_batches.count = 0;
     list.basic_batches.count = 0;
@@ -210,7 +201,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const auto *decals = (Decal *)scene.comp_store[CompDecal]->SequentialData();
     const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->SequentialData();
     const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
-    const auto *vegs = (VegState *)scene.comp_store[CompVegState]->SequentialData();
     const auto *acc_structs = (AccStructure *)scene.comp_store[CompAccStructure]->SequentialData();
 
     const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16;
@@ -417,19 +407,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                     if (cam_visibility != eVisResult::Invisible) {
-                        proc_objects_.data[n->prim_index].instance_index = int32_t(list.instances.count);
-
-                        InstanceData &curr_instance = list.instances.data[list.instances.count++];
-                        memcpy(&curr_instance.model_matrix[0][0], ValuePtr(world_from_object_trans),
-                               12 * sizeof(float));
-
-                        if (obj.comp_mask & CompLightmapBit) {
-                            const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
-                            memcpy(&curr_instance.lmap_transform[0], ValuePtr(lm.xform), 4 * sizeof(float));
-                        } else if (obj.comp_mask & CompVegStateBit) {
-                            const VegState &vs = vegs[obj.components[CompVegState]];
-                            __init_wind_params(vs, list.env, tr.object_from_world, curr_instance);
-                        }
+                        proc_objects_.data[n->prim_index].instance_index = n->prim_index;
                     }
 
                     const Mat4f view_from_object = view_from_world * tr.world_from_object,
@@ -499,7 +477,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
                                     fwd_batch.base_vertex = base_vertex;
                                     fwd_batch.indices_count = grp.num_indices;
-                                    fwd_batch.instance_index = int32_t(list.instances.count - 1);
+                                    fwd_batch.instance_index = n->prim_index;
                                     fwd_batch.material_index = int32_t(grp.mat.index());
                                     fwd_batch.instance_count = 1;
                                 }
@@ -524,7 +502,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                     base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
                                     base_batch.base_vertex = base_vertex;
                                     base_batch.indices_count = grp.num_indices;
-                                    base_batch.instance_index = int32_t(list.instances.count - 1);
+                                    base_batch.instance_index = n->prim_index;
                                     base_batch.material_index = int32_t(grp.mat.index());
                                     base_batch.instance_count = 1;
                                 }
@@ -532,15 +510,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 __record_textures(list.desired_textures, mat, (obj.comp_mask & CompAnimStateBit),
                                                   cam_dist_u16);
                             }
-                        }
-
-                        if (obj.last_change_mask & CompTransformBit) {
-                            const Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
-
-                            // moving objects require 2 transform matrices (for velocity calculation)
-                            InstanceData &prev_instance = list.instances.data[list.instances.count++];
-                            memcpy(&prev_instance.model_matrix[0][0], ValuePtr(prev_world_from_object_trans),
-                                   12 * sizeof(float));
                         }
                     }
 
@@ -1006,17 +975,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         const Mesh *mesh = dr.mesh.get();
 
                         if (proc_objects_.data[n->prim_index].instance_index == -1) {
-                            proc_objects_.data[n->prim_index].instance_index = list.instances.count;
-
-                            const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
-
-                            InstanceData &instance = list.instances.data[list.instances.count++];
-                            memcpy(&instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
-
-                            if (obj.comp_mask & CompVegStateBit) {
-                                const VegState &vs = vegs[obj.components[CompVegState]];
-                                __init_wind_params(vs, list.env, Inverse(tr.world_from_object), instance);
-                            }
+                            proc_objects_.data[n->prim_index].instance_index = n->prim_index;
                         }
 
                         if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
@@ -1243,15 +1202,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                         if (proc_objects_.data[n->prim_index].instance_index == -1) {
-                            proc_objects_.data[n->prim_index].instance_index = int32_t(list.instances.count);
-
-                            InstanceData &instance = list.instances.data[list.instances.count++];
-                            memcpy(&instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
-
-                            if (obj.comp_mask & CompVegStateBit) {
-                                const VegState &vs = vegs[obj.components[CompVegState]];
-                                __init_wind_params(vs, list.env, tr.object_from_world, instance);
-                            }
+                            proc_objects_.data[n->prim_index].instance_index = n->prim_index;
                         }
 
                         if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
@@ -2147,22 +2098,6 @@ void RendererInternal::__record_textures(DynArray<TexEntry> &storage, const Ren:
         prio = _MIN(prio, 15);
         __record_texture(storage, mat->textures[i], prio, distance);
     }
-}
-
-void RendererInternal::__init_wind_params(const VegState &vs, const EnvironmentWeak &env,
-                                          const Ren::Mat4f &object_from_world, InstanceData &instance) {
-    instance.movement_scale = f32_to_u8(vs.movement_scale);
-    instance.tree_mode = f32_to_u8(vs.tree_mode);
-    instance.bend_scale = f32_to_u8(vs.bend_scale);
-    instance.stretch = f32_to_u8(vs.stretch);
-
-    const auto wind_vec_ws = Ren::Vec4f{env.wind_vec[0], env.wind_vec[1], env.wind_vec[2], 0.0f};
-    const Ren::Vec4f wind_vec_ls = object_from_world * wind_vec_ws;
-
-    instance.wind_dir_ls[0] = Ren::f32_to_f16(wind_vec_ls[0]);
-    instance.wind_dir_ls[1] = Ren::f32_to_f16(wind_vec_ls[1]);
-    instance.wind_dir_ls[2] = Ren::f32_to_f16(wind_vec_ls[2]);
-    instance.wind_turb = Ren::f32_to_f16(env.wind_turbulence);
 }
 
 #undef BBOX_POINTS

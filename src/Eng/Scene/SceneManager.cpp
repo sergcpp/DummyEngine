@@ -110,6 +110,26 @@ long ClearBit(long mask, long index) {
 #endif
 }
 
+int16_t f32_to_s16(const float value) { return int16_t(value * 32767); }
+uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
+uint8_t f32_to_u8(const float value) { return uint8_t(value * 255); }
+
+void __init_wind_params(const VegState &vs, const Environment &env, const Ren::Mat4f &object_from_world,
+                        InstanceData &instance) {
+    instance.movement_scale = f32_to_u8(vs.movement_scale);
+    instance.tree_mode = f32_to_u8(vs.tree_mode);
+    instance.bend_scale = f32_to_u8(vs.bend_scale);
+    instance.stretch = f32_to_u8(vs.stretch);
+
+    const auto wind_vec_ws = Ren::Vec4f{env.wind_vec[0], env.wind_vec[1], env.wind_vec[2], 0.0f};
+    const Ren::Vec4f wind_vec_ls = object_from_world * wind_vec_ws;
+
+    instance.wind_dir_ls[0] = Ren::f32_to_f16(wind_vec_ls[0]);
+    instance.wind_dir_ls[1] = Ren::f32_to_f16(wind_vec_ls[1]);
+    instance.wind_dir_ls[2] = Ren::f32_to_f16(wind_vec_ls[2]);
+    instance.wind_turb = Ren::f32_to_f16(env.wind_turbulence);
+}
+
 #include "__cam_rig.inl"
 } // namespace SceneManagerInternal
 
@@ -532,10 +552,14 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
     RebuildSceneBVH();
     RebuildMaterialTextureGraph();
 
+    for (uint32_t i = 0; i < scene_data_.objects.size(); ++i) {
+        instance_data_to_update_.push_back(i);
+    }
+
     if (ren_ctx_.capabilities.raytracing) {
-        InitHWAccStructures();
+        InitHWRTAccStructures();
     } else {
-        InitSWAccStructures();
+        InitSWRTAccStructures();
     }
 
     __itt_task_end(__g_itt_domain);
@@ -1514,6 +1538,79 @@ void SceneManager::Serve(const int texture_budget) {
     ProcessPendingTextures(texture_budget);
 
     UpdateMaterialsBuffer();
+    UpdateInstanceBuffer();
 
     __itt_task_end(__g_itt_domain);
+}
+
+void SceneManager::UpdateInstanceBuffer() {
+    if (instance_data_to_update_.empty()) {
+        return;
+    }
+
+    std::sort(std::begin(instance_data_to_update_), std::end(instance_data_to_update_));
+    instance_data_to_update_.erase(
+        std::unique(std::begin(instance_data_to_update_), std::end(instance_data_to_update_)),
+        instance_data_to_update_.end());
+
+    if (instance_data_to_update_.size() > 1) {
+        uint32_t range_start = instance_data_to_update_[0];
+        for (int i = 1; i < int(instance_data_to_update_.size()); ++i) {
+            if (instance_data_to_update_[i] != instance_data_to_update_[i - 1] + 1 ||
+                i == int(instance_data_to_update_.size() - 1)) {
+                UpdateInstanceBufferRange(range_start, instance_data_to_update_[i - 1]);
+                range_start = instance_data_to_update_[i];
+            }
+        }
+    } else {
+        UpdateInstanceBufferRange(instance_data_to_update_[0], instance_data_to_update_[0]);
+    }
+}
+
+void SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end) {
+    using namespace SceneManagerInternal;
+
+    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *vegs = (VegState *)scene_data_.comp_store[CompVegState]->SequentialData();
+
+    if (!scene_data_.persistent_data.instance_buf) {
+        scene_data_.persistent_data.instance_buf =
+            ren_ctx_.LoadBuffer("Instance Buf", Ren::eBufType::Texture, sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL);
+        scene_data_.persistent_data.instance_buf_tbo =
+            ren_ctx_.CreateTexture1D("Instances TBO", scene_data_.persistent_data.instance_buf,
+                                     Ren::eTexFormat::RawRGBA32F, 0, sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL);
+    }
+
+    const uint32_t total_data_to_update = sizeof(InstanceData) * (obj_end - obj_beg + 1);
+    Ren::BufferRef temp_stage_buf =
+        ren_ctx_.LoadBuffer("Instance Update Stage Buf", Ren::eBufType::Stage, total_data_to_update);
+    auto *instance_stage = (InstanceData *)temp_stage_buf->Map(Ren::BufMapWrite);
+
+    for (uint32_t i = obj_beg; i <= obj_end; ++i) {
+        SceneObject &obj = scene_data_.objects[i];
+        assert(obj.comp_mask & CompTransformBit);
+
+        const Transform &tr = transforms[obj.components[CompTransform]];
+        const Ren::Mat4f world_from_object_trans = Transpose(tr.world_from_object);
+        const Ren::Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
+
+        InstanceData &instance = instance_stage[i - obj_beg];
+        memcpy(&instance.model_matrix[0][0], ValuePtr(world_from_object_trans), 12 * sizeof(float));
+        memcpy(&instance.prev_model_matrix[0][0], ValuePtr(prev_world_from_object_trans), 12 * sizeof(float));
+
+        if (obj.comp_mask & CompLightmapBit) {
+            const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
+            memcpy(&instance.lmap_transform[0], ValuePtr(lm.xform), 4 * sizeof(float));
+        } else if (obj.comp_mask & CompVegStateBit) {
+            const VegState &vs = vegs[obj.components[CompVegState]];
+            __init_wind_params(vs, scene_data_.env, tr.object_from_world, instance);
+        }
+    }
+
+    temp_stage_buf->FlushMappedRange(0, total_data_to_update);
+    temp_stage_buf->Unmap();
+
+    scene_data_.persistent_data.instance_buf->UpdateSubRegion(obj_beg * sizeof(InstanceData), total_data_to_update,
+                                                              *temp_stage_buf, 0, ren_ctx_.current_cmd_buf());
 }

@@ -28,6 +28,7 @@ void PersistentGpuData::Clear() {
     textures_descr_pool.reset();
     rt_textures_descr_pool.reset();
     rt_inline_textures_descr_pool.reset();
+    instance_buf = {};
 #elif defined(USE_GL_RENDER)
     textures_buf = {};
 #endif

@@ -214,7 +214,7 @@ class Renderer {
         blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_, blit_down_depth_prog_;
 
     struct CommonBuffers {
-        RpResRef skin_transforms_res, shape_keys_res, instances_res, instance_indices_res, cells_res, lights_res,
+        RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, lights_res,
             decals_res, items_res, shared_data_res, atomic_cnt_res;
     };
 

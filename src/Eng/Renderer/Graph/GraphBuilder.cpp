@@ -91,6 +91,48 @@ RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSta
     return ret;
 }
 
+RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo,
+                               const Ren::eResState desired_state, const Ren::eStageBits stages, RpSubpass &pass) {
+    RpResource ret;
+    ret.type = eRpResType::Buffer;
+
+    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name().c_str());
+    if (!pbuf_index) {
+        RpAllocBuf new_buf;
+        new_buf.read_count = 0;
+        new_buf.write_count = 0;
+        new_buf.used_in_stages = Ren::eStageBits::None;
+        new_buf.name = ref->name().c_str();
+        new_buf.desc = RpBufDesc{ref->type(), ref->size()};
+
+        ret.index = buffers_.emplace(new_buf);
+        name_to_buffer_[new_buf.name] = ret.index;
+    } else {
+        ret.index = *pbuf_index;
+    }
+
+    RpAllocBuf &buf = buffers_[ret.index];
+    assert(buf.desc.size <= ref->size() && buf.desc.type == ref->type());
+    buf.ref = ref;
+    buf.tbos[0] = tbo;
+    ret._generation = buf._generation;
+    ret.desired_state = desired_state;
+    ret.stages = stages;
+
+    buf.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
+    ++buf.read_count;
+    ++pass.ref_count_;
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.input_.size(); i++) {
+        assert(pass.input_[i].type != eRpResType::Buffer || pass.input_[i].index != ret.index);
+    }
+#endif
+    pass.input_.push_back(ret);
+
+    return ret;
+}
+
 RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
                                 RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);

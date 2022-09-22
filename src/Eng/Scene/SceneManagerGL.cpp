@@ -125,6 +125,6 @@ void SceneManager::UpdateMaterialsBuffer() {
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 }
 
-void SceneManager::InitHWAccStructures() {
+void SceneManager::InitHWRTAccStructures() {
     // stub
 }
