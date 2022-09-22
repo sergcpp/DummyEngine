@@ -66,6 +66,8 @@ class RpSubpass {
 
     RpResRef AddStorageReadonlyInput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);
+    RpResRef AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, const Ren::WeakTex1DRef &tbo,
+                                     Ren::eStageBits stages);
     RpResRef AddStorageOutput(const char *name, const RpBufDesc &desc, Ren::eStageBits stages);
     RpResRef AddStorageOutput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddStorageOutput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);

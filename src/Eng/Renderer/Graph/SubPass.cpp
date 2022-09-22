@@ -42,6 +42,11 @@ RpResRef RpSubpass::AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, const
     return builder_.ReadBuffer(buf, Ren::eResState::ShaderResource, stages, *this);
 }
 
+RpResRef RpSubpass::AddStorageReadonlyInput(const Ren::WeakBufferRef& buf, const Ren::WeakTex1DRef& tbo,
+                                            const Ren::eStageBits stages) {
+    return builder_.ReadBuffer(buf, tbo, Ren::eResState::ShaderResource, stages, *this);
+}
+
 RpResRef RpSubpass::AddStorageOutput(const char *name, const RpBufDesc &desc, const Ren::eStageBits stages) {
     return builder_.WriteBuffer(name, desc, Ren::eResState::UnorderedAccess, stages, *this);
 }

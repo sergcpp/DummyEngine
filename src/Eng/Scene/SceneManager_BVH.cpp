@@ -261,6 +261,8 @@ void SceneManager::UpdateObjects() {
 
     scene_data_.update_counter++;
 
+    instance_data_to_update_.clear();
+
     bvh_node_t *nodes = scene_data_.nodes.data();
 
     for (const uint32_t obj_index : last_changed_objects_) {
@@ -320,6 +322,8 @@ void SceneManager::UpdateObjects() {
                     tr.node_index = 0xffffffff;
                 }
             }
+
+            instance_data_to_update_.push_back(obj_index);
         }
     }
 
@@ -329,9 +333,7 @@ void SceneManager::UpdateObjects() {
     // temporary buffer used to optimize memory allocation
     temp_buf.resize(scene_data_.nodes.size() * 24);
 
-    // for (const uint32_t obj_index : changed_objects_) {
-    for (int k = 0; k < int(changed_objects_.size()); k++) {
-        const uint32_t obj_index = changed_objects_[k];
+    for (const uint32_t obj_index : changed_objects_) {
         SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
@@ -518,7 +520,7 @@ void SceneManager::UpdateObjects() {
     __itt_task_end(__g_itt_domain);
 }
 
-void SceneManager::InitSWAccStructures() {
+void SceneManager::InitSWRTAccStructures() {
     using namespace SceneManagerInternal;
 
     std::vector<gpu_bvh_node_t> nodes;

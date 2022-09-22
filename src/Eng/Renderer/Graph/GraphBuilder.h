@@ -95,7 +95,8 @@ class RpBuilder {
 
     bool DependsOn_r(int16_t dst_pass, int16_t src_pass);
     int16_t FindPreviousWrittenInPass(RpResRef handle);
-    void TraversePassDependencies_r(const RpSubpass *pass, int recursion_depth, std::vector<RpSubpass *> &out_pass_stack);
+    void TraversePassDependencies_r(const RpSubpass *pass, int recursion_depth,
+                                    std::vector<RpSubpass *> &out_pass_stack);
 
     void PrepareAllocResources();
     void BuildRenderPasses();
@@ -147,6 +148,8 @@ class RpBuilder {
     RpResRef ReadBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                         RpSubpass &pass);
+    RpResRef ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo, Ren::eResState desired_state,
+                        Ren::eStageBits stages, RpSubpass &pass);
 
     RpResRef ReadTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);

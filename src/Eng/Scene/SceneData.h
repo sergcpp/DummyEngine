@@ -162,6 +162,8 @@ public:
 #endif
 
 struct PersistentGpuData {
+    Ren::BufferRef                          instance_buf;
+    Ren::Tex1DRef                           instance_buf_tbo;
     Ren::BufferRef                          materials_buf;
 #if defined(USE_VK_RENDER)
     std::unique_ptr<Ren::DescrPool>         textures_descr_pool;
@@ -200,7 +202,7 @@ struct SceneData {
     Ren::Texture2DStorage                   textures;
     Ren::MaterialStorage                    materials;
     std::vector<uint32_t>                   material_changes;
-    PersistentGpuData                       persistent_data = {};
+    PersistentGpuData                       persistent_data;
     std::pair<uint32_t, uint32_t>           mat_update_ranges[4];
     Ren::MeshStorage                        meshes;
 

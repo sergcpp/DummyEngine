@@ -63,7 +63,7 @@ void main() {
     mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
 
 #ifdef MOVING_PERM
-    mat4 model_matrix_prev = FetchModelMatrix(g_instances_buf, instance.x + 1);
+    mat4 model_matrix_prev = FetchPrevModelMatrix(g_instances_buf, instance.x);
 #endif
 
 #ifdef TRANSPARENT_PERM

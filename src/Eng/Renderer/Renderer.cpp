@@ -643,8 +643,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             RpResRef shared_data_res = shadow_maps.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            RpResRef instances_res =
-                shadow_maps.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+            RpResRef instances_res = shadow_maps.AddStorageReadonlyInput(
+                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
             RpResRef instance_indices_res =
                 shadow_maps.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 
@@ -729,8 +729,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             RpResRef shared_data_res = depth_fill.AddUniformBufferInput(
                 common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-            RpResRef instances_res =
-                depth_fill.AddStorageReadonlyInput(common_buffers.instances_res, Ren::eStageBits::VertexShader);
+            RpResRef instances_res = depth_fill.AddStorageReadonlyInput(
+                persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
             RpResRef instance_indices_res =
                 depth_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
 

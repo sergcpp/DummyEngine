@@ -88,8 +88,6 @@ struct DrawList {
     Ren::Camera                 draw_cam;
     EnvironmentWeak             env;
     FrontendInfo                frontend_info;
-    DynArray<InstanceData>      instances;
-    mutable Ren::BufferRef      instances_stage_buf;
     DynArray<Ren::Vec2i>        instance_indices;
     mutable Ren::BufferRef      instance_indices_stage_buf;
     DynArray<BasicDrawBatch>    shadow_batches;

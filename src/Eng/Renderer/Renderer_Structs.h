@@ -72,9 +72,11 @@ struct InstanceData {
         };
     };
     float normal_matrix[3][4];
-    float _vec[4];
+    float _pad0[4];
+    float prev_model_matrix[3][4];
+    float _pad1[4];
 };
-static_assert(sizeof(InstanceData) == 128, "!");
+static_assert(sizeof(InstanceData) == 192, "!");
 
 struct BasicDrawBatch {                       // NOLINT
     static const uint32_t TypeSimple = 0b00u;  // simple

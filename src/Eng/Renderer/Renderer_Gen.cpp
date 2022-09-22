@@ -91,7 +91,7 @@ Ren::Vec2f IntegrateBRDF(const float NdotV, const float roughness) {
     return Ren::Vec2f{A, B} / float(SampleCount);
 }
 
-int16_t f32_to_s16(float value);
+int16_t f32_to_s16(float value) { return int16_t(value * 32767); }
 
 } // namespace RendererInternal
 

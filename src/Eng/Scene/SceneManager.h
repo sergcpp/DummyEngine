@@ -193,10 +193,12 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Ren::VertexInput draw_pass_vi_;
     Ren::RenderPass rp_main_draw_;
     void UpdateMaterialsBuffer();
+    void UpdateInstanceBuffer();
+    void UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end);
     void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags,
                                  Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    void InitHWAccStructures();
-    void InitSWAccStructures();
+    void InitHWRTAccStructures();
+    void InitSWRTAccStructures();
 
     void RebuildSceneBVH();
     void RemoveNode(uint32_t node_index);
@@ -220,6 +222,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;
+    std::vector<uint32_t> instance_data_to_update_;
 
     Sys::MultiPoolAllocator<char> mp_alloc_;
     std::unique_ptr<CompStorage> default_comp_storage_[MAX_COMPONENT_TYPES];
