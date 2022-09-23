@@ -1193,6 +1193,10 @@ void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp
         }
     }
 
+    // TODO: use better surface area estimation
+    const Ren::Vec3f e = acc->mesh->bbox_max() - acc->mesh->bbox_min();
+    acc->surf_area = 2.0f * (e[0] + e[1] + e[2]);
+
     obj_bbox[0] = Min(obj_bbox[0], acc->mesh->bbox_min());
     obj_bbox[1] = Max(obj_bbox[1], acc->mesh->bbox_max());
 }
@@ -1608,7 +1612,7 @@ void SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end)
         }
     }
 
-    temp_stage_buf->FlushMappedRange(0, total_data_to_update);
+    temp_stage_buf->FlushMappedRange(0, temp_stage_buf->size());
     temp_stage_buf->Unmap();
 
     scene_data_.persistent_data.instance_buf->UpdateSubRegion(obj_beg * sizeof(InstanceData), total_data_to_update,

@@ -344,7 +344,9 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::share
         temp_sort_spans_64_[i].realloc(REN_MAX_MAIN_BATCHES);
     }
 
-    proc_objects_.realloc(REN_MAX_OBJ_COUNT);
+    proc_objects_.reset(new ProcessedObjData[REN_MAX_OBJ_COUNT]);
+    temp_visible_objects_.realloc(REN_MAX_OBJ_COUNT);
+    temp_rt_visible_objects_.realloc(REN_MAX_OBJ_COUNT);
 
 #if defined(USE_GL_RENDER)
     Ren::g_param_buf_binding = REN_UB_UNIF_PARAM_LOC;
@@ -1062,7 +1064,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 apply_dof) {
                 if (apply_dof) {
                     if ((list.render_flags & EnableTaa) != 0) {
-                        //color_tex = frame_textures.color;
+                        color_tex = frame_textures.color;
                     } else {
                         //color_tex = DOF_COLOR_TEX;
                     }
@@ -1070,7 +1072,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     color_tex = resolved_color;
                 }
             } else {
-                //color_tex = MAIN_COLOR_TEX;
+                color_tex = frame_textures.color;
             }
 
             if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {

@@ -240,6 +240,61 @@ void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {
     }
 #endif
 
+#if 0
+    JsArrayP &js_objects = js_scene.at("objects").as_arr();
+
+    JsArrayP js_new_objects(scene_manager_->mp_alloc());
+
+    const int CountPerDim = 4;
+    for (int z = -CountPerDim; z <= CountPerDim; ++z) {
+        for (int y = -CountPerDim; y <= 0; ++y) {
+            for (int x = -CountPerDim; x <= CountPerDim; ++x) {
+                if (x == 0 && y == 0 && z == 0) {
+                    continue;
+                }
+
+                for (size_t j = 0; j < js_objects.elements.size(); ++j) {
+                    JsObjectP &js_obj_orig = js_objects[j].as_obj();
+                    if (js_obj_orig.Has("probe")) {
+                        continue;
+                    }
+
+                    JsObjectP js_obj_copy = js_obj_orig;
+
+                    { // set new position
+                        JsObjectP &js_tr = js_obj_copy.at("transform").as_obj();
+                        JsArrayP &js_pos = js_tr.at("pos").as_arr();
+
+                        JsNumber &js_posx = js_pos.elements.at(0).as_num();
+                        JsNumber &js_posy = js_pos.elements.at(1).as_num();
+                        JsNumber &js_posz = js_pos.elements.at(2).as_num();
+
+                        js_posx.val += double(x * 15);
+                        js_posy.val += double(y * 5);
+                        js_posz.val += double(z * 15);
+                    }
+
+                    if (js_obj_copy.Has("lightmap")) {
+                        const size_t ndx = js_obj_copy.IndexOf("lightmap");
+                        js_obj_copy.elements.erase(js_obj_copy.elements.begin() + ndx);
+                    }
+
+                    if (js_obj_orig.Has("lightmap")) {
+                        const size_t ndx = js_obj_orig.IndexOf("lightmap");
+                        js_obj_orig.elements.erase(js_obj_orig.elements.begin() + ndx);
+                    }
+
+                    js_new_objects.Push(std::move(js_obj_copy));
+                }
+            }
+        }
+    }
+
+    for (auto &js_obj : js_new_objects.elements) {
+        js_objects.Push(std::move(js_obj));
+    }
+#endif
+
     std::fill_n(wolf_indices_, 32, 0xffffffff);
     std::fill_n(scooter_indices_, 16, 0xffffffff);
     std::fill_n(sophia_indices_, 2, 0xffffffff);
