@@ -402,7 +402,7 @@ const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
 const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * REN_MAX_RT_OBJ_INSTANCES;
 const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * REN_MAX_RT_OBJ_INSTANCES;
-const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * REN_MAX_RT_OBJ_INSTANCES;
+const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * REN_MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 8 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");

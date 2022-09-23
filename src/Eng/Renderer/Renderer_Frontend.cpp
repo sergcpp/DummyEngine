@@ -416,7 +416,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (ext_frustum_visibility != eVisResult::Invisible && (obj.comp_mask & CompAccStructureBit)) {
                         const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
 
-                        if (acc) {
+                        if (acc && list.rt_obj_instances[0].count < REN_MAX_RT_OBJ_INSTANCES) {
                             RTObjInstance &new_instance =
                                 list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
                             memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
@@ -994,7 +994,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                             const Ren::IAccStructure *acc =
                                 acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
-                            if (acc) {
+                            if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
                                 const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                                 RTObjInstance &new_instance =
