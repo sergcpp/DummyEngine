@@ -96,10 +96,10 @@ void main() {
 
         vec3 normal = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
 
-        g_pld.col *= EvalSHIrradiance_NonLinear(normal,
-                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
-                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
-                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
+        //g_pld.col *= EvalSHIrradiance_NonLinear(normal,
+        //                                      g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
+        //                                      g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
+        //                                      g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
     }
 }
 

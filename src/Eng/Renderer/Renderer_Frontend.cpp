@@ -68,6 +68,9 @@ static const uint8_t SunShadowUpdatePattern[4] = {
 
 static const bool EnableSunCulling = true;
 
+static const uint32_t SkipFrustumCheckBit = (1u << 31u);
+static const uint32_t IndexBits = ~SkipFrustumCheckBit;
+
 void __push_ellipsoids(const Drawable &dr, const Ren::Mat4f &world_from_object, DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const AnimState &as, const Ren::Mesh *mesh,
                               DrawList &list);
@@ -159,6 +162,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const bool lighting_enabled = (list.render_flags & EnableLights) != 0;
     const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
     const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
+    const bool rt_shadows_enabled = (list.render_flags & EnableRTShadows) != 0;
 
     if (!lighting_enabled) {
         list.env.sun_col = {};
@@ -180,7 +184,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
-    memset(proc_objects_.data, 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+    memset(proc_objects_.get(), 0xff, sizeof(ProcessedObjData) * scene.objects.size());
 
     const float ExtendedFrustumOffset = 100.0f;
     const float ExtendedFrustumFrontOffset = 200.0f;
@@ -213,9 +217,6 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const Mat4f view_from_identity = view_from_world * Mat4f{1.0f},
                 clip_from_identity = clip_from_view * view_from_identity;
-
-    const uint32_t SkipFrustumCheckBit = (1u << 31u);
-    const uint32_t IndexBits = ~SkipFrustumCheckBit;
 
     uint32_t stack[MAX_STACK_SIZE];
     uint32_t stack_size = 0;
@@ -306,332 +307,243 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     const uint64_t main_gather_start = Sys::GetTimeUs();
 
     if (scene.root_node != 0xffffffff) {
-        // Gather meshes and lights, skip occluded and frustum culled
-        stack_size = 0;
-        stack[stack_size++] = scene.root_node;
+        Ren::Frustum z_frustums[REN_GRID_RES_Z];
+        list.draw_cam.ExtractSubFrustums(1, 1, REN_GRID_RES_Z, z_frustums);
+        std::atomic_int objects_count = {};
 
-        while (stack_size) {
-            const uint32_t cur = stack[--stack_size] & IndexBits;
-            uint32_t skip_frustum_check = stack[stack_size] & SkipFrustumCheckBit;
-            const bvh_node_t *n = &scene.nodes[cur];
+        std::future<void> futures[2 * REN_GRID_RES_Z];
 
-            const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
-            eVisResult cam_visibility = eVisResult::PartiallyVisible;
-            if (!skip_frustum_check) {
-                cam_visibility = list.draw_cam.CheckFrustumVisibility(bbox_points);
-                if (cam_visibility == eVisResult::FullyVisible) {
-                    skip_frustum_check = SkipFrustumCheckBit;
+        const uint64_t CompMask = (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
+        for (int i = 0; i < REN_GRID_RES_Z; ++i) {
+            futures[i] = threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
+                                           list.draw_cam, clip_from_identity, CompMask, &cull_ctx_, 0b00000001,
+                                           proc_objects_.get(), temp_visible_objects_.data, std::ref(objects_count));
+        }
+
+        Ren::Frustum rt_z_frustums[REN_GRID_RES_Z];
+
+        const float z_beg = -ext_frustum.planes[int(Ren::eCamPlane::Near)].d;
+        const float z_end = ext_frustum.planes[int(Ren::eCamPlane::Far)].d;
+
+        for (int i = 0; i < REN_GRID_RES_Z; ++i) {
+            rt_z_frustums[i] = ext_frustum;
+
+            const float k_near = float(i) / REN_GRID_RES_Z;
+            const float k_far = float(i + 1) / REN_GRID_RES_Z;
+
+            rt_z_frustums[i].planes[int(Ren::eCamPlane::Near)].d = -(z_beg + k_near * (z_end - z_beg));
+            rt_z_frustums[i].planes[int(Ren::eCamPlane::Far)].d = z_beg + k_far * (z_end - z_beg);
+        }
+
+        std::atomic_int rt_objects_count = {};
+
+        const uint64_t RTCompMask = CompAccStructureBit;
+        for (int i = 0; i < REN_GRID_RES_Z; ++i) {
+            futures[REN_GRID_RES_Z + i] =
+                threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(rt_z_frustums[i]), std::ref(scene),
+                                  list.draw_cam, Ren::Mat4f{}, RTCompMask, nullptr, 0b00000010, proc_objects_.get(),
+                                  temp_rt_visible_objects_.data, std::ref(rt_objects_count));
+        }
+
+        /////
+
+        for (int i = 0; i < REN_GRID_RES_Z; ++i) {
+            futures[i].wait();
+        }
+
+        for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data, objects_count.load()}) {
+            const SceneObject &obj = scene.objects[i.index];
+
+            const Transform &tr = transforms[obj.components[CompTransform]];
+
+            if ((obj.comp_mask & CompDrawableBit)) {
+                const Drawable &dr = drawables[obj.components[CompDrawable]];
+                if (!(dr.vis_mask & render_mask)) {
+                    continue;
                 }
-            }
+                const Mesh *mesh = dr.mesh.get();
 
-            const Vec3f &cam_pos = list.draw_cam.world_position();
-            const float cam_dist2 = Distance2(cam_pos, 0.5f * (n->bbox_min + n->bbox_max));
+                const float cam_dist = Distance(cam.world_position(), 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws));
+                const auto cam_dist_u8 = (uint8_t)_MIN(255 * cam_dist / 500.0f, 255);
+                const uint16_t cam_dist_u16 = uint16_t(0xffffu * (cam_dist / 500.0f));
 
-            if (culling_enabled && cam_visibility != eVisResult::Invisible) {
-                // do not question visibility of the node in which we are inside
-                if (cam_pos[0] < n->bbox_min[0] - 0.5f || cam_pos[1] < n->bbox_min[1] - 0.5f ||
-                    cam_pos[2] < n->bbox_min[2] - 0.5f || cam_pos[0] > n->bbox_max[0] + 0.5f ||
-                    cam_pos[1] > n->bbox_max[1] + 0.5f || cam_pos[2] > n->bbox_max[2] + 0.5f) {
-                    SWcull_surf surf;
+                uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
-                    surf.type = SW_OCCLUDEE;
-                    surf.prim_type = SW_TRIANGLES;
-                    surf.index_type = SW_UNSIGNED_INT;
-                    surf.attribs = &bbox_points[0][0];
-                    surf.indices = &bbox_indices[0];
-                    surf.stride = 3 * sizeof(float);
-                    surf.count = 36;
-                    surf.xform = ValuePtr(clip_from_identity);
-
-                    swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
-
-                    if (surf.visible == 0) {
-                        cam_visibility = eVisResult::Invisible;
-                    }
+                if (obj.comp_mask & CompAnimStateBit) {
+                    const AnimState &as = anims[obj.components[CompAnimState]];
+                    base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                 }
-            }
+                proc_objects_[i.index].base_vertex = base_vertex;
 
-            eVisResult ext_frustum_visibility = ext_frustum.CheckVisibility(bbox_points);
-            if (cam_visibility == eVisResult::Invisible && ext_frustum_visibility == eVisResult::Invisible) {
-                continue;
-            }
+                __push_ellipsoids(dr, tr.world_from_object, list);
 
-            if (!n->leaf_node) {
-                stack[stack_size++] = skip_frustum_check | n->left_child;
-                stack[stack_size++] = skip_frustum_check | n->right_child;
-            } else {
-                const SceneObject &obj = scene.objects[n->prim_index];
+                const uint32_t indices_start = mesh->indices_buf().offset;
+                for (const auto &grp : mesh->groups()) {
+                    const Material *mat = grp.mat.get();
+                    const uint32_t mat_flags = mat->flags();
 
-                if ((obj.comp_mask & CompTransformBit) &&
-                    (obj.comp_mask & (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit))) { // NOLINT
-                    const uint16_t cam_dist_u16 = uint16_t(0xffffu * (std::sqrt(cam_dist2) / 500.0f));
+                    __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
 
-                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
+                        (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
+                        CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
 
-                    const float bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
-
-                    if (!skip_frustum_check) {
-                        // Node has slightly enlarged bounds, so we need to check object's bounding box here
-                        cam_visibility = list.draw_cam.CheckFrustumVisibility(bbox_points);
-                        ext_frustum_visibility = ext_frustum.CheckVisibility(bbox_points);
-                        if (cam_visibility == eVisResult::Invisible &&
-                            ext_frustum_visibility == eVisResult::Invisible) {
-                            continue;
+                        fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
+                        fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
+                        fwd_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                        fwd_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
+                        fwd_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                        if (!ctx_.capabilities.bindless_texture) {
+                            fwd_batch.mat_id = uint32_t(grp.mat.index());
+                        } else {
+                            fwd_batch.mat_id = 0;
                         }
+                        fwd_batch.cam_dist = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(cam_dist_u8) : 0;
+                        fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                        fwd_batch.base_vertex = base_vertex;
+                        fwd_batch.indices_count = grp.num_indices;
+                        fwd_batch.instance_index = i.index;
+                        fwd_batch.material_index = int32_t(grp.mat.index());
+                        fwd_batch.instance_count = 1;
                     }
 
-                    if (culling_enabled && cam_visibility != eVisResult::Invisible) {
-                        // do not question visibility of the object in which we are inside
-                        if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f || cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
-                            cam_pos[2] < tr.bbox_min_ws[2] - 0.5f || cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
-                            cam_pos[1] > tr.bbox_max_ws[1] + 0.5f || cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
-                            SWcull_surf surf;
+                    if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
+                        ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
+                         (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
+                        BasicDrawBatch &base_batch = list.basic_batches.data[list.basic_batches.count++];
 
-                            surf.type = SW_OCCLUDEE;
-                            surf.prim_type = SW_TRIANGLES;
-                            surf.index_type = SW_UNSIGNED_INT;
-                            surf.attribs = &bbox_points[0][0];
-                            surf.indices = &bbox_indices[0];
-                            surf.stride = 3 * sizeof(float);
-                            surf.count = 36;
-                            surf.xform = ValuePtr(clip_from_identity);
-
-                            swCullCtxSubmitCullSurfs(&cull_ctx_, &surf, 1);
-
-                            if (surf.visible == 0) {
-                                cam_visibility = eVisResult::Invisible;
-                            }
-                        }
-                    }
-
-                    const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
-
-                    if (cam_visibility != eVisResult::Invisible) {
-                        proc_objects_.data[n->prim_index].instance_index = n->prim_index;
-                    }
-
-                    const Mat4f view_from_object = view_from_world * tr.world_from_object,
-                                clip_from_object = clip_from_view * view_from_object;
-
-                    if (ext_frustum_visibility != eVisResult::Invisible && (obj.comp_mask & CompAccStructureBit)) {
-                        const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
-
-                        if (acc && list.rt_obj_instances[0].count < REN_MAX_RT_OBJ_INSTANCES) {
-                            RTObjInstance &new_instance =
-                                list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
-                            memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
-                            memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-                            new_instance.geo_index = acc->geo_index;
-                            new_instance.geo_count = acc->geo_count;
-                            new_instance.mask = 0xff;
-                            memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
-                            new_instance.blas_ref = acc;
-                        }
-                    }
-
-                    if (cam_visibility != eVisResult::Invisible && (obj.comp_mask & CompDrawableBit)) {
-                        const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if (!(dr.vis_mask & render_mask)) {
-                            continue;
-                        }
-                        const Mesh *mesh = dr.mesh.get();
-
-                        const auto dist =
-                            (uint8_t)_MIN(255 * Distance(tr.bbox_min_ws, cam.world_position()) / 500.0f, 255);
-
-                        uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
+                        base_batch.type_bits = BasicDrawBatch::TypeSimple;
 
                         if (obj.comp_mask & CompAnimStateBit) {
-                            const AnimState &as = anims[obj.components[CompAnimState]];
-                            base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
-                        }
-                        proc_objects_.data[n->prim_index].base_vertex = base_vertex;
-
-                        __push_ellipsoids(dr, tr.world_from_object, list);
-
-                        const uint32_t indices_start = mesh->indices_buf().offset;
-                        for (const auto &grp : mesh->groups()) {
-                            const Material *mat = grp.mat.get();
-                            const uint32_t mat_flags = mat->flags();
-
-                            if (cam_visibility != eVisResult::Invisible) {
-                                __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
-                                                  cam_dist_u16);
-
-                                if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
-                                    (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
-                                    CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
-
-                                    fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
-                                    fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
-                                    fwd_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                    fwd_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
-                                    fwd_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                    if (!ctx_.capabilities.bindless_texture) {
-                                        fwd_batch.mat_id = uint32_t(grp.mat.index());
-                                    } else {
-                                        fwd_batch.mat_id = 0;
-                                    }
-                                    fwd_batch.cam_dist =
-                                        (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(dist) : 0;
-                                    fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                                    fwd_batch.base_vertex = base_vertex;
-                                    fwd_batch.indices_count = grp.num_indices;
-                                    fwd_batch.instance_index = n->prim_index;
-                                    fwd_batch.material_index = int32_t(grp.mat.index());
-                                    fwd_batch.instance_count = 1;
-                                }
-
-                                if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
-                                    ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
-                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
-                                    BasicDrawBatch &base_batch = list.basic_batches.data[list.basic_batches.count++];
-
-                                    base_batch.type_bits = BasicDrawBatch::TypeSimple;
-
-                                    if (obj.comp_mask & CompAnimStateBit) {
-                                        base_batch.type_bits = BasicDrawBatch::TypeSkinned;
-                                    } else if (obj.comp_mask & CompVegStateBit) {
-                                        base_batch.type_bits = BasicDrawBatch::TypeVege;
-                                    }
-
-                                    base_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                    base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                                    base_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                    base_batch.custom_shaded = (mat_flags & uint32_t(eMatFlags::CustomShaded)) ? 1 : 0;
-                                    base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                                    base_batch.base_vertex = base_vertex;
-                                    base_batch.indices_count = grp.num_indices;
-                                    base_batch.instance_index = n->prim_index;
-                                    base_batch.material_index = int32_t(grp.mat.index());
-                                    base_batch.instance_count = 1;
-                                }
-                            } else {
-                                __record_textures(list.desired_textures, mat, (obj.comp_mask & CompAnimStateBit),
-                                                  cam_dist_u16);
-                            }
-                        }
-                    }
-
-                    if (lighting_enabled && (obj.comp_mask & CompLightSourceBit)) {
-                        const LightSource &light = lights_src[obj.components[CompLightSource]];
-
-                        auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
-                        pos = tr.world_from_object * pos;
-                        pos /= pos[3];
-
-                        auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
-                        dir = tr.world_from_object * dir;
-
-                        eVisResult res = eVisResult::FullyVisible;
-
-                        for (int k = 0; k < 6 && !skip_frustum_check; k++) {
-                            const auto &plane = list.draw_cam.frustum_plane(k);
-
-                            const float dist =
-                                plane.n[0] * pos[0] + plane.n[1] * pos[1] + plane.n[2] * pos[2] + plane.d;
-
-                            if (dist < -light.influence) {
-                                res = eVisResult::Invisible;
-                                break;
-                            } else if (std::abs(dist) < light.influence) {
-                                res = eVisResult::PartiallyVisible;
-                            }
+                            base_batch.type_bits = BasicDrawBatch::TypeSkinned;
+                        } else if (obj.comp_mask & CompVegStateBit) {
+                            base_batch.type_bits = BasicDrawBatch::TypeVege;
                         }
 
-                        if (res != eVisResult::Invisible) {
-                            litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
-                            LightItem &ls = list.lights.data[list.lights.count++];
-
-                            memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
-                            ls.radius = light.radius;
-                            memcpy(&ls.col[0], &light.col[0], 3 * sizeof(float));
-                            ls.shadowreg_index = -1;
-                            memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
-                            ls.spot = light.spot;
-                        }
-                    }
-
-                    if (decals_enabled && (obj.comp_mask & CompDecalBit)) {
-                        const Decal &decal = decals[obj.components[CompDecal]];
-
-                        const Mat4f &view_from_object = decal.view, &clip_from_view = decal.proj;
-
-                        const Mat4f view_from_world = view_from_object * tr.object_from_world,
-                                    clip_from_world = clip_from_view * view_from_world;
-
-                        const Mat4f world_from_clip = Inverse(clip_from_world);
-
-                        Vec4f bbox_points[] = {REN_UNINITIALIZE_X8(Vec4f)};
-
-                        Vec3f bbox_min = Vec3f{std::numeric_limits<float>::max()},
-                              bbox_max = Vec3f{std::numeric_limits<float>::lowest()};
-
-                        for (int k = 0; k < 8; k++) {
-                            bbox_points[k] = world_from_clip * ClipFrustumPoints[k];
-                            bbox_points[k] /= bbox_points[k][3];
-
-                            bbox_min = Min(bbox_min, Vec3f{bbox_points[k]});
-                            bbox_max = Max(bbox_max, Vec3f{bbox_points[k]});
-                        }
-
-                        eVisResult res = eVisResult::FullyVisible;
-
-                        for (int p = int(eCamPlane::Left); p <= int(eCamPlane::Far) && !skip_frustum_check; p++) {
-                            const auto &plane = list.draw_cam.frustum_plane(p);
-
-                            int in_count = 8;
-
-                            for (int k = 0; k < 8; k++) {
-                                const float dist = plane.n[0] * bbox_points[k][0] + plane.n[1] * bbox_points[k][1] +
-                                                   plane.n[2] * bbox_points[k][2] + plane.d;
-                                if (dist < 0.0f) {
-                                    in_count--;
-                                }
-                            }
-
-                            if (in_count == 0) {
-                                res = eVisResult::Invisible;
-                                break;
-                            } else if (in_count != 8) {
-                                res = eVisResult::PartiallyVisible;
-                            }
-                        }
-
-                        if (res != eVisResult::Invisible) {
-                            ditem_to_decal_.data[ditem_to_decal_.count++] = &decal;
-                            decals_boxes_.data[decals_boxes_.count++] = {bbox_min, bbox_max};
-
-                            const Mat4f clip_from_world_transposed = Transpose(clip_from_world);
-
-                            DecalItem &de = list.decals.data[list.decals.count++];
-                            memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
-                            memcpy(&de.mask[0], &decal.mask[0], 4 * sizeof(float));
-                            memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
-                            memcpy(&de.norm[0], &decal.norm[0], 4 * sizeof(float));
-                            memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
-                        }
-                    }
-
-                    if (obj.comp_mask & CompProbeBit) {
-                        const LightProbe &probe = probes[obj.components[CompProbe]];
-
-                        auto pos = Vec4f{probe.offset[0], probe.offset[1], probe.offset[2], 1.0f};
-                        pos = tr.world_from_object * pos;
-                        pos /= pos[3];
-
-                        ProbeItem &pr = list.probes.data[list.probes.count++];
-                        pr.layer = float(probe.layer_index);
-                        pr.radius = probe.radius;
-                        memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
-                        for (int k = 0; k < 4; k++) {
-                            pr.sh_coeffs[0][k] = probe.sh_coeffs[k][0];
-                            pr.sh_coeffs[1][k] = probe.sh_coeffs[k][1];
-                            pr.sh_coeffs[2][k] = probe.sh_coeffs[k][2];
-                        }
+                        base_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                        base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
+                        base_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                        base_batch.custom_shaded = (mat_flags & uint32_t(eMatFlags::CustomShaded)) ? 1 : 0;
+                        base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                        base_batch.base_vertex = base_vertex;
+                        base_batch.indices_count = grp.num_indices;
+                        base_batch.instance_index = i.index;
+                        base_batch.material_index = int32_t(grp.mat.index());
+                        base_batch.instance_count = 1;
                     }
                 }
             }
+
+            if (lighting_enabled && (obj.comp_mask & CompLightSourceBit) &&
+                litem_to_lsource_.count < REN_MAX_LIGHTS_TOTAL) {
+                const LightSource &light = lights_src[obj.components[CompLightSource]];
+
+                auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
+                pos = tr.world_from_object * pos;
+                pos /= pos[3];
+
+                auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
+                dir = tr.world_from_object * dir;
+
+                litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
+                LightItem &ls = list.lights.data[list.lights.count++];
+
+                memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
+                ls.radius = light.radius;
+                memcpy(&ls.col[0], &light.col[0], 3 * sizeof(float));
+                ls.shadowreg_index = -1;
+                memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
+                ls.spot = light.spot;
+            }
+
+            if (decals_enabled && (obj.comp_mask & CompDecalBit) && ditem_to_decal_.count < REN_MAX_DECALS_TOTAL) {
+                const Decal &decal = decals[obj.components[CompDecal]];
+
+                const Mat4f &view_from_object = decal.view, &clip_from_view = decal.proj;
+
+                const Mat4f view_from_world = view_from_object * tr.object_from_world,
+                            clip_from_world = clip_from_view * view_from_world;
+
+                const Mat4f world_from_clip = Inverse(clip_from_world);
+
+                Vec3f bbox_min = Vec3f{std::numeric_limits<float>::max()},
+                      bbox_max = Vec3f{std::numeric_limits<float>::lowest()};
+
+                for (int k = 0; k < 8; k++) {
+                    Vec4f p = world_from_clip * ClipFrustumPoints[k];
+                    p /= p[3];
+
+                    bbox_min = Min(bbox_min, Vec3f{p});
+                    bbox_max = Max(bbox_max, Vec3f{p});
+                }
+
+                ditem_to_decal_.data[ditem_to_decal_.count++] = &decal;
+                decals_boxes_.data[decals_boxes_.count++] = {bbox_min, bbox_max};
+
+                const Mat4f clip_from_world_transposed = Transpose(clip_from_world);
+
+                DecalItem &de = list.decals.data[list.decals.count++];
+                memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
+                memcpy(&de.mask[0], &decal.mask[0], 4 * sizeof(float));
+                memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
+                memcpy(&de.norm[0], &decal.norm[0], 4 * sizeof(float));
+                memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
+            }
+
+            if ((obj.comp_mask & CompProbeBit) && list.probes.count < REN_MAX_PROBES_TOTAL) {
+                const LightProbe &probe = probes[obj.components[CompProbe]];
+
+                auto pos = Vec4f{probe.offset[0], probe.offset[1], probe.offset[2], 1.0f};
+                pos = tr.world_from_object * pos;
+                pos /= pos[3];
+
+                ProbeItem &pr = list.probes.data[list.probes.count++];
+                pr.layer = float(probe.layer_index);
+                pr.radius = probe.radius;
+                memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
+                for (int k = 0; k < 4; k++) {
+                    pr.sh_coeffs[0][k] = probe.sh_coeffs[k][0];
+                    pr.sh_coeffs[1][k] = probe.sh_coeffs[k][1];
+                    pr.sh_coeffs[2][k] = probe.sh_coeffs[k][2];
+                }
+            }
+        }
+
+        for (int i = REN_GRID_RES_Z; i < 2 * REN_GRID_RES_Z; ++i) {
+            futures[i].wait();
+        }
+
+        if (rt_objects_count > REN_MAX_RT_OBJ_INSTANCES) {
+            OPTICK_EVENT("SORT RT INSTANCES");
+
+            const Vec3f &cam_pos = list.draw_cam.world_position();
+            std::partial_sort(temp_rt_visible_objects_.data, temp_rt_visible_objects_.data + REN_MAX_RT_OBJ_INSTANCES,
+                              temp_rt_visible_objects_.data + rt_objects_count.load(),
+                              [&](const VisObj lhs, const VisObj rhs) {
+                                  const SceneObject &lhs_obj = scene.objects[lhs.index];
+                                  const SceneObject &rhs_obj = scene.objects[rhs.index];
+
+                                  return acc_structs[lhs_obj.components[CompAccStructure]].surf_area / lhs.dist2 >
+                                         acc_structs[rhs_obj.components[CompAccStructure]].surf_area / rhs.dist2;
+                              });
+        }
+
+        temp_rt_visible_objects_.count = _MIN(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES);
+
+        for (const VisObj i : Ren::Span<VisObj>{temp_rt_visible_objects_.data, temp_rt_visible_objects_.count}) {
+            const SceneObject &obj = scene.objects[i.index];
+
+            const Transform &tr = transforms[obj.components[CompTransform]];
+            const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+
+            RTObjInstance &new_instance = list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
+            memcpy(new_instance.xform, ValuePtr(Transpose(tr.world_from_object)), 12 * sizeof(float));
+            memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
+            new_instance.geo_index = acc->geo_index;
+            new_instance.geo_count = acc->geo_count;
+            new_instance.mask = 0xff;
+            memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
+            new_instance.blas_ref = acc;
         }
     }
 
@@ -904,8 +816,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             sun_shadow_cache_[casc].valid &= (cached_dist < 1.0f && cached_dir_dist < 0.1f);
 
             const uint8_t pattern_bit = (1u << uint8_t(frame_index_ % 8));
-            bool should_update = true;
-            //(pattern_bit & SunShadowUpdatePattern[casc]) != 0;
+            bool should_update = rt_shadows_enabled || (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
 
             if (EnableSunCulling && casc > 0 && should_update) {
                 // Check if cascade is visible to main camera
@@ -930,116 +841,118 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 sun_shadow_cache_[casc].clip_from_world = sh_clip_from_world;
             }
 
-            stack_size = 0;
-            stack[stack_size++] = scene.root_node;
+            const int ZSliceCount = (casc + 1) * 6;
+            Ren::Frustum z_frustums[24];
 
-            while (stack_size) {
-                const uint32_t cur = stack[--stack_size] & IndexBits;
-                uint32_t skip_check = stack[stack_size] & SkipFrustumCheckBit;
-                const bvh_node_t *n = &scene.nodes[cur];
+            const float z_beg = -sh_clip_frustum.planes[6].d;
+            const float z_end = sh_clip_frustum.planes[7].d;
 
-                if (!skip_check) {
-                    eVisResult res = sh_clip_frustum.CheckVisibility(n->bbox_min, n->bbox_max);
-                    if (res == eVisResult::Invisible) {
-                        continue;
-                    } else if (res == eVisResult::FullyVisible) {
-                        skip_check = SkipFrustumCheckBit;
+            for (int i = 0; i < ZSliceCount; ++i) {
+                z_frustums[i] = sh_clip_frustum;
+
+                const float k_near = float(i) / ZSliceCount;
+                const float k_far = float(i + 1) / ZSliceCount;
+
+                z_frustums[i].planes[6].d = -(z_beg + k_near * (z_end - z_beg));
+                z_frustums[i].planes[7].d = z_beg + k_far * (z_end - z_beg);
+            }
+
+            std::atomic_int objects_count = {};
+
+            std::future<void> futures[24];
+
+            uint64_t CompMask = CompDrawableBit;
+            if (rt_shadows_enabled) {
+                CompMask |= CompAccStructureBit;
+            }
+
+            for (int i = 0; i < ZSliceCount; ++i) {
+                futures[i] =
+                    threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene), shadow_cam,
+                                      Ren::Mat4f{}, CompMask, nullptr, (0b00000100 << casc), proc_objects_.get(),
+                                      temp_visible_objects_.data, std::ref(objects_count));
+            }
+
+            for (int i = 0; i < ZSliceCount; ++i) {
+                futures[i].wait();
+            }
+
+            /////
+
+            for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data, objects_count.load()}) {
+                const SceneObject &obj = scene.objects[i.index];
+
+                const Transform &tr = transforms[obj.components[CompTransform]];
+                const Drawable &dr = drawables[obj.components[CompDrawable]];
+                if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
+                    continue;
+                }
+
+                if ((tr.bbox_max_ws[0] - tr.bbox_min_ws[0]) < object_dim_thres &&
+                    (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
+                    (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) {
+                    continue;
+                }
+
+                const Mesh *mesh = dr.mesh.get();
+
+                if (proc_objects_[i.index].base_vertex == 0xffffffff) {
+                    proc_objects_[i.index].base_vertex = mesh->attribs_buf1().offset / 16;
+
+                    if (obj.comp_mask & CompAnimStateBit) {
+                        const AnimState &as = anims[obj.components[CompAnimState]];
+                        proc_objects_[i.index].base_vertex =
+                            __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                     }
                 }
 
-                if (!n->leaf_node) {
-                    stack[stack_size++] = skip_check | n->left_child;
-                    stack[stack_size++] = skip_check | n->right_child;
-                } else {
-                    const SceneObject &obj = scene.objects[n->prim_index];
+                if (proc_objects_[i.index].rt_sh_index == -1 && (obj.comp_mask & CompAccStructureBit)) {
+                    proc_objects_[i.index].rt_sh_index = list.rt_obj_instances[1].count;
 
-                    const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
-                    if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                        const Transform &tr = transforms[obj.components[CompTransform]];
-                        const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
-                            continue;
+                    const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+                    if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
+                        const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
+
+                        RTObjInstance &new_instance = list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
+                        memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                        memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
+                        new_instance.geo_index = acc->geo_index;
+                        new_instance.geo_count = acc->geo_count;
+                        new_instance.mask = 0xff;
+                        memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
+                        new_instance.blas_ref = acc;
+                    }
+                }
+
+                for (const auto &grp : mesh->groups()) {
+                    const Material *mat = grp.mat.get();
+                    const uint32_t mat_flags = mat->flags();
+
+                    if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
+                        if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures[0]) {
+                            // assume only the first texture gives transparency
+                            __record_texture(list.visible_textures, mat->textures[0], 0, 0xffffu);
                         }
 
-                        if (!skip_check &&
-                            sh_clip_frustum.CheckVisibility(tr.bbox_min_ws, tr.bbox_max_ws) == eVisResult::Invisible) {
-                            continue;
+                        BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+
+                        batch.type_bits = BasicDrawBatch::TypeSimple;
+
+                        // we do not care if it is skinned
+                        if (obj.comp_mask & CompVegStateBit) {
+                            batch.type_bits = BasicDrawBatch::TypeVege;
                         }
 
-                        if ((tr.bbox_max_ws[0] - tr.bbox_min_ws[0]) < object_dim_thres &&
-                            (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
-                            (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) {
-                            continue;
-                        }
-
-                        const Mesh *mesh = dr.mesh.get();
-
-                        if (proc_objects_.data[n->prim_index].instance_index == -1) {
-                            proc_objects_.data[n->prim_index].instance_index = n->prim_index;
-                        }
-
-                        if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_.data[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
-
-                            if (obj.comp_mask & CompAnimStateBit) {
-                                const AnimState &as = anims[obj.components[CompAnimState]];
-                                proc_objects_.data[n->prim_index].base_vertex =
-                                    __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
-                            }
-                        }
-
-                        if (proc_objects_.data[n->prim_index].rt_sh_index == -1 &&
-                            (obj.comp_mask & CompAccStructureBit)) {
-                            proc_objects_.data[n->prim_index].rt_sh_index = list.rt_obj_instances[1].count;
-
-                            const Ren::IAccStructure *acc =
-                                acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
-                            if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
-                                const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
-
-                                RTObjInstance &new_instance =
-                                    list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
-                                memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
-                                memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-                                new_instance.geo_index = acc->geo_index;
-                                new_instance.geo_count = acc->geo_count;
-                                new_instance.mask = 0xff;
-                                memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
-                                new_instance.blas_ref = acc;
-                            }
-                        }
-
-                        for (const auto &grp : mesh->groups()) {
-                            const Material *mat = grp.mat.get();
-                            const uint32_t mat_flags = mat->flags();
-
-                            if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                                if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures[0]) {
-                                    // assume only the first texture gives transparency
-                                    __record_texture(list.visible_textures, mat->textures[0], 0, 0xffffu);
-                                }
-
-                                BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
-
-                                batch.type_bits = BasicDrawBatch::TypeSimple;
-
-                                // we do not care if it is skinned
-                                if (obj.comp_mask & CompVegStateBit) {
-                                    batch.type_bits = BasicDrawBatch::TypeVege;
-                                }
-
-                                batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                batch.moving_bit = 0;
-                                batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
-                                batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
-                                batch.indices_count = grp.num_indices;
-                                batch.instance_index = proc_objects_.data[n->prim_index].instance_index;
-                                batch.material_index =
-                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
-                                batch.instance_count = 1;
-                            }
-                        }
+                        batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                        batch.moving_bit = 0;
+                        batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                        batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
+                        batch.base_vertex = proc_objects_[i.index].base_vertex;
+                        batch.indices_count = grp.num_indices;
+                        batch.instance_index = i.index;
+                        batch.material_index =
+                            (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
+                        batch.instance_count = 1;
                     }
                 }
             }
@@ -1201,16 +1114,12 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                         Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
-                        if (proc_objects_.data[n->prim_index].instance_index == -1) {
-                            proc_objects_.data[n->prim_index].instance_index = n->prim_index;
-                        }
-
-                        if (proc_objects_.data[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_.data[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
+                        if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
+                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const AnimState &as = anims[obj.components[CompAnimState]];
-                                proc_objects_.data[n->prim_index].base_vertex =
+                                proc_objects_[n->prim_index].base_vertex =
                                     __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                             }
                         }
@@ -1238,9 +1147,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 batch.moving_bit = 0;
                                 batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
                                 batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
-                                batch.base_vertex = proc_objects_.data[n->prim_index].base_vertex;
+                                batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
-                                batch.instance_index = proc_objects_.data[n->prim_index].instance_index;
+                                batch.instance_index = n->prim_index;
                                 batch.material_index =
                                     (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? uint32_t(grp.mat.index()) : 0;
                                 batch.instance_count = 1;
@@ -1585,6 +1494,126 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     OPTICK_POP();
     __itt_task_end(__g_itt_domain);
+}
+
+void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
+                                          const Ren::Camera &draw_cam, const Ren::Mat4f &clip_from_identity,
+                                          const uint64_t comp_mask, SWcull_ctx *cull_ctx, const uint8_t visit_mask,
+                                          ProcessedObjData proc_objects[], VisObj out_visible_objects[],
+                                          std::atomic_int &inout_count) {
+    using namespace RendererInternal;
+    using namespace Ren;
+
+    OPTICK_EVENT();
+
+    // retrieve pointers to components for fast access
+    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
+
+    const Vec3f &cam_pos = draw_cam.world_position();
+
+    uint32_t stack[MAX_STACK_SIZE];
+    uint32_t stack_size = 0;
+
+    // Gather meshes and lights, skip occluded and frustum culled
+    stack_size = 0;
+    stack[stack_size++] = scene.root_node;
+
+    while (stack_size) {
+        const uint32_t cur = stack[--stack_size] & IndexBits;
+        uint32_t skip_frustum_check = stack[stack_size] & SkipFrustumCheckBit;
+        const bvh_node_t *n = &scene.nodes[cur];
+
+        const float bbox_points[8][3] = {BBOX_POINTS(n->bbox_min, n->bbox_max)};
+        eVisResult cam_visibility = eVisResult::PartiallyVisible;
+        if (!skip_frustum_check) {
+            cam_visibility = frustum.CheckVisibility(bbox_points);
+            if (cam_visibility == eVisResult::FullyVisible) {
+                skip_frustum_check = SkipFrustumCheckBit;
+            }
+        }
+
+        if (cull_ctx && cam_visibility != eVisResult::Invisible) {
+            // do not question visibility of the node in which we are inside
+            if (cam_pos[0] < n->bbox_min[0] - 0.5f || cam_pos[1] < n->bbox_min[1] - 0.5f ||
+                cam_pos[2] < n->bbox_min[2] - 0.5f || cam_pos[0] > n->bbox_max[0] + 0.5f ||
+                cam_pos[1] > n->bbox_max[1] + 0.5f || cam_pos[2] > n->bbox_max[2] + 0.5f) {
+                SWcull_surf surf;
+
+                surf.type = SW_OCCLUDEE;
+                surf.prim_type = SW_TRIANGLES;
+                surf.index_type = SW_UNSIGNED_INT;
+                surf.attribs = &bbox_points[0][0];
+                surf.indices = &bbox_indices[0];
+                surf.stride = 3 * sizeof(float);
+                surf.count = 36;
+                surf.xform = ValuePtr(clip_from_identity);
+
+                swCullCtxSubmitCullSurfs(cull_ctx, &surf, 1);
+
+                if (surf.visible == 0) {
+                    cam_visibility = eVisResult::Invisible;
+                }
+            }
+        }
+
+        if (cam_visibility == eVisResult::Invisible) {
+            continue;
+        }
+
+        if (!n->leaf_node) {
+            stack[stack_size++] = skip_frustum_check | n->left_child;
+            stack[stack_size++] = skip_frustum_check | n->right_child;
+        } else {
+            const SceneObject &obj = scene.objects[n->prim_index];
+
+            if (obj.comp_mask & comp_mask) {
+                const Transform &tr = transforms[obj.components[CompTransform]];
+
+                const float bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
+
+                if (!skip_frustum_check) {
+                    // Node has slightly enlarged bounds, so we need to check object's bounding box here
+                    cam_visibility = frustum.CheckVisibility(bbox_points);
+                    if (cam_visibility == eVisResult::Invisible) {
+                        continue;
+                    }
+                }
+
+                if (cull_ctx && cam_visibility != eVisResult::Invisible) {
+                    // do not question visibility of the object in which we are inside
+                    if (cam_pos[0] < tr.bbox_min_ws[0] - 0.5f || cam_pos[1] < tr.bbox_min_ws[1] - 0.5f ||
+                        cam_pos[2] < tr.bbox_min_ws[2] - 0.5f || cam_pos[0] > tr.bbox_max_ws[0] + 0.5f ||
+                        cam_pos[1] > tr.bbox_max_ws[1] + 0.5f || cam_pos[2] > tr.bbox_max_ws[2] + 0.5f) {
+                        SWcull_surf surf;
+
+                        surf.type = SW_OCCLUDEE;
+                        surf.prim_type = SW_TRIANGLES;
+                        surf.index_type = SW_UNSIGNED_INT;
+                        surf.attribs = &bbox_points[0][0];
+                        surf.indices = &bbox_indices[0];
+                        surf.stride = 3 * sizeof(float);
+                        surf.count = 36;
+                        surf.xform = ValuePtr(clip_from_identity);
+
+                        swCullCtxSubmitCullSurfs(cull_ctx, &surf, 1);
+
+                        if (surf.visible == 0) {
+                            cam_visibility = eVisResult::Invisible;
+                        }
+                    }
+                }
+
+                if (cam_visibility != eVisResult::Invisible) {
+                    const uint8_t mask = proc_objects[n->prim_index].visited_mask.fetch_and(~visit_mask);
+                    if (mask & visit_mask) {
+                        const uint32_t index = inout_count.fetch_add(1);
+                        out_visible_objects[index] = {n->prim_index,
+                                                      Distance2(cam_pos, 0.5f * (tr.bbox_max_ws + tr.bbox_min_ws))};
+                    }
+                }
+            }
+        }
+    }
 }
 
 void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,

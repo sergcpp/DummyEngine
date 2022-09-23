@@ -111,11 +111,16 @@ class Renderer {
     DynArray<const Decal *> ditem_to_decal_;
 
     struct ProcessedObjData {
-        int32_t instance_index;
         uint32_t base_vertex;
         int32_t rt_sh_index;
+        std::atomic_uint8_t visited_mask;
     };
-    DynArray<ProcessedObjData> proc_objects_;
+    std::unique_ptr<ProcessedObjData[]> proc_objects_;
+    struct VisObj {
+        uint32_t index;
+        float dist2;
+    };
+    DynArray<VisObj> temp_visible_objects_, temp_rt_visible_objects_;
     DynArray<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
@@ -216,8 +221,8 @@ class Renderer {
         blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_, blit_down_depth_prog_;
 
     struct CommonBuffers {
-        RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, lights_res,
-            decals_res, items_res, shared_data_res, atomic_cnt_res;
+        RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, lights_res, decals_res,
+            items_res, shared_data_res, atomic_cnt_res;
     };
 
     struct FrameTextures {
@@ -293,6 +298,11 @@ class Renderer {
     static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs
+    static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
+                                           const Ren::Camera &draw_cam, const Ren::Mat4f &clip_from_identity,
+                                           uint64_t comp_mask, SWcull_ctx *cull_ctx, uint8_t visit_mask,
+                                           ProcessedObjData proc_objects[], VisObj out_visible_objects[],
+                                           std::atomic_int &inout_count);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
                                           const LightSource *const *litem_to_lsource, DrawList &list,
                                           std::atomic_int &items_count);

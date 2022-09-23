@@ -6,6 +6,7 @@
 
 struct AccStructure {
     Ren::MeshRef mesh;
+    float surf_area = 0.0f;
 
     static void Read(const JsObjectP &js_in, AccStructure &acc);
     static void Write(const AccStructure &acc, JsObjectP &js_out);
