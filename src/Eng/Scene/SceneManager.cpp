@@ -1551,17 +1551,17 @@ void SceneManager::UpdateInstanceBuffer() {
     std::sort(std::begin(instance_data_to_update_), std::end(instance_data_to_update_));
     instance_data_to_update_.erase(
         std::unique(std::begin(instance_data_to_update_), std::end(instance_data_to_update_)),
-        instance_data_to_update_.end());
+        std::end(instance_data_to_update_));
 
     if (instance_data_to_update_.size() > 1) {
         uint32_t range_start = instance_data_to_update_[0];
         for (int i = 1; i < int(instance_data_to_update_.size()); ++i) {
-            if (instance_data_to_update_[i] != instance_data_to_update_[i - 1] + 1 ||
-                i == int(instance_data_to_update_.size() - 1)) {
+            if (instance_data_to_update_[i] != instance_data_to_update_[i - 1] + 1) {
                 UpdateInstanceBufferRange(range_start, instance_data_to_update_[i - 1]);
                 range_start = instance_data_to_update_[i];
             }
         }
+        UpdateInstanceBufferRange(range_start, instance_data_to_update_[instance_data_to_update_.size() - 1]);
     } else {
         UpdateInstanceBufferRange(instance_data_to_update_[0], instance_data_to_update_[0]);
     }

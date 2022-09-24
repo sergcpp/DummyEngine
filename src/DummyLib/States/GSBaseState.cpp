@@ -561,6 +561,16 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_showMotion", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint64_t flags = shrd_this->renderer_->render_flags();
+            flags ^= DebugMotionVectors;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_freezeFrontend", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -740,8 +750,6 @@ void GSBaseState::Draw() {
         cmdline_input_.clear();
     }
 
-    scene_manager_->Serve();
-
     {
         int back_list;
 
@@ -751,6 +759,7 @@ void GSBaseState::Draw() {
                 thr_done_.wait(lock);
             }
 
+            scene_manager_->Serve();
             renderer_->InitBackendInfo();
 
             if (use_lm_) {
@@ -830,6 +839,7 @@ void GSBaseState::Draw() {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
+            scene_manager_->Serve();
             renderer_->InitBackendInfo();
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);

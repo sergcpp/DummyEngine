@@ -237,7 +237,8 @@ enum eRenderFlags : uint64_t {
     DebugReflDenoise = (1ull << 45u),
     DebugGIDenoise = (1ull << 46u),
     DebugShadowDenoise = (1ull << 47u),
-    DebugFreezeFrontend = (1ull << 48u)
+    DebugFreezeFrontend = (1ull << 48u),
+    DebugMotionVectors = (1ull << 49u)
 };
 
 struct FrontendInfo {

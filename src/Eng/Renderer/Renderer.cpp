@@ -1041,28 +1041,36 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             }
         }
 
+        //
+        // Debugging
+        //
+        if (list.render_flags & DebugMotionVectors) {
+            AddDebugVelocityPass(frame_textures.velocity, resolved_color);
+            blur_tex = {};
+        }
+
         bool apply_dof = false;
 
         //
         // Combine with blurred and tonemap
         //
         {
-            const char *color_tex = nullptr;
+            RpResRef color_tex;
             const char *output_tex = nullptr;
 
             if (cur_msaa_enabled || ((list.render_flags & EnableTaa) != 0 && !(list.render_flags & DebugWireframe)) ||
                 apply_dof) {
                 if (apply_dof) {
                     if ((list.render_flags & EnableTaa) != 0) {
-                        color_tex = MAIN_COLOR_TEX;
+                        //color_tex = frame_textures.color;
                     } else {
-                        color_tex = DOF_COLOR_TEX;
+                        //color_tex = DOF_COLOR_TEX;
                     }
                 } else {
-                    color_tex = RESOLVED_COLOR_TEX;
+                    color_tex = resolved_color;
                 }
             } else {
-                color_tex = MAIN_COLOR_TEX;
+                //color_tex = MAIN_COLOR_TEX;
             }
 
             if ((list.render_flags & EnableFxaa) && !(list.render_flags & DebugWireframe)) {

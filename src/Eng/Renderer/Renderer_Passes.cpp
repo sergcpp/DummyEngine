@@ -15,6 +15,8 @@
 #include "../assets/shaders/internal/blit_upscale_interface.glsl"
 #include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
 
+#include "../assets/shaders/internal/debug_velocity_interface.glsl"
+
 void Renderer::InitPipelines() {
     { // Init skinning pipeline
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "skinning_prog", "internal/skinning.comp.glsl");
@@ -281,6 +283,17 @@ void Renderer::InitPipelines() {
         assert(prog->ready());
 
         if (!pi_shadow_debug_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    { // Velocity debugging
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "debug_velocity", "internal/debug_velocity.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_debug_velocity_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -1374,5 +1387,46 @@ void Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpRes
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, render_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(DownDepth::Params), 0);
+    });
+}
+
+void Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &output_tex) {
+    auto &debug_motion = rp_builder_.AddPass("DEBUG MOTION");
+
+    struct PassData {
+        RpResRef in_velocity_tex;
+        RpResRef out_color_tex;
+    };
+
+    auto *data = debug_motion.AllocPassData<PassData>();
+    data->in_velocity_tex = debug_motion.AddTextureInput(velocity, Ren::eStageBits::ComputeShader);
+
+    { // Output texture
+        Ren::Tex2DParams params;
+        params.w = view_state_.scr_res[0];
+        params.h = view_state_.scr_res[1];
+        params.format = Ren::eTexFormat::RawRGBA8888;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        output_tex = data->out_color_tex = debug_motion.AddStorageImageOutput("Velocity Debug", params, Ren::eStageBits::ComputeShader);
+    }
+
+    debug_motion.set_execute_cb([this, data](RpBuilder &builder) {
+        RpAllocTex &velocity_tex = builder.GetReadTexture(data->in_velocity_tex);
+        RpAllocTex &output_tex = builder.GetWriteTexture(data->out_color_tex);
+
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                                         {Ren::eBindTarget::Image, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+
+        const Ren::Vec3u grp_count = Ren::Vec3u{
+            (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
+            (view_state_.act_res[1] + DebugVelocity::LOCAL_GROUP_SIZE_Y - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_Y, 1u};
+
+        DebugVelocity::Params uniform_params;
+        uniform_params.img_size[0] = view_state_.act_res[0];
+        uniform_params.img_size[1] = view_state_.act_res[1];
+
+        Ren::DispatchCompute(pi_debug_velocity_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                             ctx_.default_descr_alloc(), ctx_.log());
     });
 }
