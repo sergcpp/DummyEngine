@@ -91,7 +91,7 @@ DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() = default;
 
-int DummyApp::Init(int w, int h, const char *) {
+int DummyApp::Init(const int w, const int h, const int validation_level, const char *) {
 #if !defined(__ANDROID__)
     dpy_ = XOpenDisplay(nullptr);
     if (!dpy_) {
@@ -202,7 +202,7 @@ int DummyApp::Init(int w, int h, const char *) {
 #if !defined(__ANDROID__)
         aux_gfx_thread = std::make_shared<AuxGfxThread>(dpy_, gl_ctx_aux_);
 #endif
-        viewer_.reset(new Viewer(w, h, nullptr, nullptr, std::move(aux_gfx_thread)));
+        viewer_.reset(new Viewer(w, h, nullptr, validation_level, nullptr, std::move(aux_gfx_thread)));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
         input_manager_ = input_manager;
@@ -250,7 +250,12 @@ void DummyApp::AddEvent(RawInputEv type, const uint32_t key_code, const float x,
 #if !defined(__ANDROID__)
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1024, h = 576;
+    int validation_level = 0;
     fullscreen_ = false;
+
+#ifndef NDEBUG
+    validation_level = 1;
+#endif
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
@@ -267,10 +272,12 @@ int DummyApp::Run(int argc, char *argv[]) {
             h = std::atoi(argv[++i]);
         } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
             fullscreen_ = true;
+        } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
+            validation_level = std::atoi(argv[++i]);
         }
     }
 
-    if (Init(w, h, nullptr) < 0) {
+    if (Init(w, h, validation_level, nullptr) < 0) {
         return -1;
     }
 

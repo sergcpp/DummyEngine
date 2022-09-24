@@ -572,7 +572,7 @@ int ModlApp::Init(const int w, const int h) {
     }
 
     ctx_.reset(new Ren::Context);
-    ctx_->Init(w, h, &log_, nullptr);
+    ctx_->Init(w, h, &log_, 2 /* validation_level */, nullptr);
     InitInternal();
 
     Sys::InitWorker();

@@ -78,9 +78,9 @@ Ren::Context::~Context() {
 
         vkDestroyDevice(api_ctx_->device, nullptr);
         vkDestroySurfaceKHR(api_ctx_->instance, api_ctx_->surface, nullptr);
-#ifndef NDEBUG
-        vkDestroyDebugReportCallbackEXT(api_ctx_->instance, api_ctx_->debug_callback, nullptr);
-#endif
+        if (api_ctx_->debug_callback) {
+            vkDestroyDebugReportCallbackEXT(api_ctx_->instance, api_ctx_->debug_callback, nullptr);
+        }
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
         XCloseDisplay(g_dpy); // has to be done before instance destruction
@@ -94,7 +94,7 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
     return default_descr_alloc_[api_ctx_->backend_frame].get();
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferred_device) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *preferred_device) {
     if (!LoadVulkan(log)) {
         return false;
     }
@@ -105,20 +105,14 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
 
     api_ctx_.reset(new ApiContext);
 
-#ifndef NDEBUG
     const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
-    const int enabled_layers_count = COUNT_OF(enabled_layers);
-#else
-    const char **enabled_layers = nullptr;
-    const int enabled_layers_count = 0;
-#endif
+    const int enabled_layers_count = validation_level ? COUNT_OF(enabled_layers) : 0;
 
-    if (!InitVkInstance(api_ctx_->instance, enabled_layers, enabled_layers_count, log)) {
+    if (!InitVkInstance(api_ctx_->instance, enabled_layers, enabled_layers_count, validation_level, log)) {
         return false;
     }
 
-#ifndef NDEBUG
-    { // Sebug debug report callback
+    if (validation_level) { // Sebug debug report callback
         VkDebugReportCallbackCreateInfoEXT callback_create_info = {VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT};
         callback_create_info.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT |
                                      VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
@@ -132,7 +126,6 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
             return false;
         }
     }
-#endif
 
     // Create platform-specific surface
     if (!InitVkSurface(api_ctx_->surface, api_ctx_->instance, log)) {
@@ -261,7 +254,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *preferr
     return true;
 }
 
-void Ren::Context::Resize(int w, int h) {
+void Ren::Context::Resize(const int w, const int h) {
     w_ = w;
     h_ = h;
 

@@ -32,7 +32,7 @@ Ren::Context::~Context() {
     ReleaseAll();
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, const char *) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *) {
     InitGLExtentions();
     RegisterAsMainThread();
 
@@ -93,15 +93,12 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const char *) {
 
     log_->Info("===========================================");
 
-#if !defined(NDEBUG) && !defined(__APPLE__)
-    if (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
-        IsExtensionSupported("AMD_debug_output")) {
-
+    if (validation_level && (IsExtensionSupported("GL_KHR_debug") || IsExtensionSupported("ARB_debug_output") ||
+                             IsExtensionSupported("AMD_debug_output"))) {
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
         glDebugMessageCallback(DebugCallback, this);
     }
-#endif
 
 #if !defined(__ANDROID__)
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);

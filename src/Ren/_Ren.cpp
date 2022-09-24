@@ -1,4 +1,8 @@
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4996)
+#endif
+
 #if defined(USE_VK_RENDER)
 #include "VKExt.cpp"
 #include "VKCtx.cpp"

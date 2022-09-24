@@ -38,9 +38,9 @@ extern bool ignore_optick_errors;
 #include "States/GSCreate.h"
 #include "Utils/Dictionary.h"
 
-Viewer::Viewer(const int w, const int h, const char *local_dir, const char *device_name,
+Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const char *device_name,
                std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread)
-    : GameBase(w, h, device_name) {
+    : GameBase(w, h, validation_level, device_name) {
     auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
     auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
     JsObject main_config;

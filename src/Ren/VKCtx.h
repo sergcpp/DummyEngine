@@ -13,9 +13,7 @@ using Tex2DRef = StrongRef<Texture2D>;
 
 struct ApiContext {
     VkInstance instance = {};
-#ifndef NDEBUG
     VkDebugReportCallbackEXT debug_callback = {};
-#endif
     VkSurfaceKHR surface = {};
     VkPhysicalDevice physical_device = {};
     VkPhysicalDeviceLimits phys_device_limits = {};
@@ -79,7 +77,8 @@ inline VkDeviceSize AlignTo(VkDeviceSize size, VkDeviceSize alignment) {
 
 class ILog;
 
-bool InitVkInstance(VkInstance &instance, const char *enabled_layers[], int enabled_layers_count, ILog *log);
+bool InitVkInstance(VkInstance &instance, const char *enabled_layers[], int enabled_layers_count,
+                    int validation_level, ILog *log);
 bool InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log);
 bool ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &device_properties,
                             VkPhysicalDeviceMemoryProperties &mem_properties, uint32_t &present_family_index,

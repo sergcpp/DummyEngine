@@ -19,7 +19,7 @@
 #include "Random.h"
 #include "Utils/ShaderLoader.h"
 
-GameBase::GameBase(const int w, const int h, const char *device_name)
+GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)
     : width(w), height(h) {
     terminated = false;
 
@@ -34,7 +34,7 @@ GameBase::GameBase(const int w, const int h, const char *device_name)
     AddComponent(LOG_KEY, log);
 
     auto ren_ctx = std::make_shared<Ren::Context>();
-    if (!ren_ctx->Init(w, h, log.get(), device_name)) {
+    if (!ren_ctx->Init(w, h, log.get(), validation_level, device_name)) {
         throw std::runtime_error("Initialization failed!");
     }
     AddComponent(REN_CONTEXT_KEY, ren_ctx);
@@ -59,8 +59,7 @@ GameBase::GameBase(const int w, const int h, const char *device_name)
     auto shader_loader = std::make_shared<ShaderLoader>();
     AddComponent(SHADER_LOADER_KEY, shader_loader);
 
-    auto flow_control =
-        std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
+    auto flow_control = std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
     AddComponent(FLOW_CONTROL_KEY, flow_control);
 
     auto random_engine = std::make_shared<Random>(std::random_device{}());
