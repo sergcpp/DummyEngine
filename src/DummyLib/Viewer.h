@@ -34,7 +34,7 @@ class ThreadWorker;
 
 class Viewer : public GameBase {
   public:
-    Viewer(int w, int h, const char *local_dir, const char *device_name,
+    Viewer(int w, int h, const char *local_dir, int validation_level, const char *device_name,
            std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread);
 
     void Frame() override;

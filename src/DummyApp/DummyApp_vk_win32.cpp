@@ -146,7 +146,7 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int DummyApp::Init(const int w, const int h, const char *device_name) {
+int DummyApp::Init(const int w, const int h, const int validation_level, const char *device_name) {
     const BOOL dpi_result = SetProcessDPIAware();
     (void)dpi_result;
 
@@ -181,7 +181,7 @@ int DummyApp::Init(const int w, const int h, const char *device_name) {
         Viewer::PrepareAssets("pc");
 
         auto aux_gfx_thread = std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
-        viewer_.reset(new Viewer(w, h, nullptr, device_name, std::move(aux_gfx_thread)));
+        viewer_.reset(new Viewer(w, h, nullptr, validation_level, device_name, std::move(aux_gfx_thread)));
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
         input_manager_ = input_manager;
@@ -240,7 +240,12 @@ void DummyApp::AddEvent(const RawInputEv type, const uint32_t key_code, const fl
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1280, h = 720;
     fullscreen_ = false;
+    int validation_level = 0;
     const char *device_name = nullptr;
+
+#ifndef NDEBUG
+    validation_level = 1;
+#endif
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
@@ -257,10 +262,12 @@ int DummyApp::Run(int argc, char *argv[]) {
             fullscreen_ = true;
         } else if (strcmp(arg, "--device") == 0 || strcmp(arg, "-d") == 0) {
             device_name = argv[++i];
+        } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
+            validation_level = std::atoi(argv[++i]);
         }
     }
 
-    if (Init(w, h, device_name) < 0) {
+    if (Init(w, h, validation_level, device_name) < 0) {
         return -1;
     }
 

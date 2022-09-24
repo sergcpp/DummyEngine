@@ -67,7 +67,7 @@ public:
     DummyApp();
     ~DummyApp();
 
-    int Init(int w, int h, const char *device_name);
+    int Init(int w, int h, int validation_level, const char *device_name);
     void Destroy();
 
     void Frame();

@@ -22,7 +22,7 @@ class GameBase {
     void InitOptickGPUProfiler();
 
   public:
-    GameBase(int w, int h, const char *device_name);
+    GameBase(int w, int h, int validation_level, const char *device_name);
     virtual ~GameBase();
 
     virtual void Resize(int w, int h);

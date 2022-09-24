@@ -103,7 +103,7 @@ class Context : public TaskExecutor {
 
     Context(const Context &rhs) = delete;
 
-    bool Init(int w, int h, ILog *log, const char *preferred_device);
+    bool Init(int w, int h, ILog *log, int validation_level, const char *preferred_device);
 
     int w() const { return w_; }
     int h() const { return h_; }

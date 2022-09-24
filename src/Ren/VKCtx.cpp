@@ -13,7 +13,7 @@ void *g_metal_layer = nullptr;
 } // namespace Ren
 
 bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], const int enabled_layers_count,
-                         ILog *log) {
+                         const int validation_level, ILog *log) {
     { // Find validation layer
         uint32_t layers_count = 0;
         vkEnumerateInstanceLayerProperties(&layers_count, nullptr);
@@ -25,40 +25,30 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
         SmallVector<VkLayerProperties, 16> layers_available(layers_count);
         vkEnumerateInstanceLayerProperties(&layers_count, &layers_available[0]);
-
-#ifndef NDEBUG
-        bool found_validation = false;
-        for (uint32_t i = 0; i < layers_count; i++) {
-            if (strcmp(layers_available[i].layerName, "VK_LAYER_KHRONOS_validation") == 0) {
-                found_validation = true;
-            }
-        }
-
-        if (!found_validation) {
-            log->Error("Could not find validation layer");
-            return false;
-        }
-#endif
     }
 
-    const char *desired_extensions[] = {
-        VK_KHR_SURFACE_EXTENSION_NAME,
+    SmallVector<const char *, 16> desired_extensions;
+
+    desired_extensions.push_back(VK_KHR_SURFACE_EXTENSION_NAME);
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+    desired_extensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
-        VK_KHR_XLIB_SURFACE_EXTENSION_NAME,
+    desired_extensions.push_back(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
 #elif defined(VK_USE_PLATFORM_MACOS_MVK)
-        VK_MVK_MACOS_SURFACE_EXTENSION_NAME,
+    desired_extensions.push_back(VK_MVK_MACOS_SURFACE_EXTENSION_NAME);
 #endif
-        VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-        VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
-#ifndef NDEBUG
-        VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME
-#endif
-    };
-    const uint32_t number_required_extensions = 2;
-    const uint32_t number_optional_extensions = COUNT_OF(desired_extensions) - number_required_extensions;
+
+    const int number_required_extensions = int(desired_extensions.size());
+
+    desired_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
+    desired_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    desired_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+
+    if (validation_level) {
+        desired_extensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+    }
+
+    const int number_optional_extensions = int(desired_extensions.size()) - number_required_extensions;
 
     { // Find required extensions
         uint32_t ext_count = 0;
@@ -69,7 +59,7 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
         uint32_t found_required_extensions = 0;
         for (uint32_t i = 0; i < ext_count; i++) {
-            for (uint32_t j = 0; j < number_required_extensions; j++) {
+            for (int j = 0; j < number_required_extensions; j++) {
                 if (strcmp(extensions_available[i].extensionName, desired_extensions[j]) == 0) {
                     found_required_extensions++;
                 }
@@ -83,7 +73,7 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
             }
             log->Error("\tFound:");
             for (uint32_t i = 0; i < ext_count; i++) {
-                for (uint32_t j = 0; j < number_required_extensions; j++) {
+                for (int j = 0; j < number_required_extensions; j++) {
                     if (strcmp(extensions_available[i].extensionName, desired_extensions[j]) == 0) {
                         log->Error("\t\t%s", desired_extensions[i]);
                     }
@@ -103,10 +93,9 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
     instance_info.enabledLayerCount = enabled_layers_count;
     instance_info.ppEnabledLayerNames = enabled_layers;
     instance_info.enabledExtensionCount = number_required_extensions + number_optional_extensions;
-    instance_info.ppEnabledExtensionNames = desired_extensions;
+    instance_info.ppEnabledExtensionNames = desired_extensions.data();
 
-#ifndef NDEBUG
-    const VkValidationFeatureEnableEXT enabled_validation_features[] = {
+    static const VkValidationFeatureEnableEXT enabled_validation_features[] = {
         VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT, VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
         VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
         // VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT,
@@ -117,8 +106,9 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
     validation_features.enabledValidationFeatureCount = COUNT_OF(enabled_validation_features);
     validation_features.pEnabledValidationFeatures = enabled_validation_features;
 
-    instance_info.pNext = &validation_features;
-#endif
+    if (validation_level > 1) {
+        instance_info.pNext = &validation_features;
+    }
 
     const VkResult res = vkCreateInstance(&instance_info, nullptr, &instance);
     if (res != VK_SUCCESS) {
@@ -218,7 +208,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 } else if (strcmp(ext.extensionName, VK_KHR_RAY_QUERY_EXTENSION_NAME) == 0) {
                     ray_query_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0) {
-                    //dynamic_rendering_supported = true;
+                    // dynamic_rendering_supported = true;
                 }
             }
 
