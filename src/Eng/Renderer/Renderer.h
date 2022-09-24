@@ -209,6 +209,8 @@ class Renderer {
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
+    // Debug
+    Ren::Pipeline pi_debug_velocity_;
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
         blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_, blit_down_depth_prog_;
@@ -280,6 +282,8 @@ class Renderer {
     void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                                FrameTextures &frame_textures);
+
+    void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
 
