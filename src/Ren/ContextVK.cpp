@@ -187,7 +187,6 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     capabilities.raytracing = api_ctx_->raytracing_supported;
     capabilities.ray_query = api_ctx_->ray_query_supported;
-    capabilities.swrt = true;
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 
@@ -250,6 +249,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
                      10,
                  16384u);
     capabilities.max_combined_image_samplers = api_ctx_->max_combined_image_samplers;
+
+    // SWRT is temporarily works with bindless textures only
+    capabilities.swrt = (api_ctx_->max_combined_image_samplers >= 16384u);
 
     return true;
 }

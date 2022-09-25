@@ -167,12 +167,16 @@ void Ren::Program::InitBindings(ILog *log) {
 
         const Shader &sh = (*sh_ref);
         for (const Descr &b : sh.blck_bindings) {
-            uniform_blocks_.resize(b.loc + 1);
+            if (uniform_blocks_.size() < b.loc + 1) {
+                uniform_blocks_.resize(b.loc + 1);
+            }
             Attribute &u = uniform_blocks_[b.loc];
-            u.loc = glGetUniformBlockIndex(GLuint(id_), b.name.c_str());
-            if (u.loc != -1) {
-                u.name = b.name;
-                glUniformBlockBinding(GLuint(id_), u.loc, b.loc);
+            if (!b.name.empty()) {
+                u.loc = glGetUniformBlockIndex(GLuint(id_), b.name.c_str());
+                if (u.loc != -1) {
+                    u.name = b.name;
+                    glUniformBlockBinding(GLuint(id_), u.loc, b.loc);
+                }
             }
         }
     }
