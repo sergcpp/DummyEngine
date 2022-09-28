@@ -11,6 +11,7 @@
 #include <thread>
 #include <vector>
 
+#include <optick/optick.h>
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
@@ -48,13 +49,12 @@ inline ThreadPool::ThreadPool(size_t threads_count, const char *threads_name)
     : stop_(false) {
     for (size_t i = 0; i < threads_count; ++i)
         workers_.emplace_back([this, i, threads_name] {
+            char name_buf[64] = "Worker thread";
             if (threads_name) {
-                char name_buf[64];
                 sprintf(name_buf, "%s_%i", threads_name, int(i));
-                __itt_thread_set_name(name_buf);
-            } else {
-                __itt_thread_set_name("Worker thread");
             }
+            __itt_thread_set_name(name_buf);
+            OPTICK_THREAD(name_buf);
 
             for (;;) {
                 std::function<void()> task;
