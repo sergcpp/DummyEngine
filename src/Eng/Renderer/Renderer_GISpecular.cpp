@@ -298,7 +298,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         });
     }
 
-    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && env_map) {
+    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch

@@ -584,7 +584,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
             build_acc_structs.make_executor<RpBuildAccStructuresExecutor>(
                 p_list_, 0, rt_obj_instances_res, &acc_struct_data, rt_tlas_res, rt_tlas_build_scratch_res);
-        } else if (ctx_.capabilities.swrt) {
+        } else if (ctx_.capabilities.swrt && acc_struct_data.rt_tlas_buf) {
             auto &build_acc_structs = rp_builder_.AddPass("BUILD ACC STRCTS");
 
             { // create obj instances buffer
