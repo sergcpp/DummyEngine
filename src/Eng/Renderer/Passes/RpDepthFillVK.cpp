@@ -463,7 +463,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         { // one-sided
             Ren::DebugMarker _mm(cmd_buf, "ONE-SIDED");
             vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0, 1,
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_onesided->layout(), 0, 2,
                                     vege_descr_sets, 0, nullptr);
             i = _draw_range(cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i, BDB::BitsVege,
                             &draws_count);
@@ -474,7 +474,7 @@ void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
         { // two-sided
             Ren::DebugMarker _mm(cmd_buf, "TWO-SIDED");
             vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0, 1,
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_twosided->layout(), 0, 2,
                                     vege_descr_sets, 0, nullptr);
             i = _draw_range(cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                             BDB::BitsVege | BDB::BitTwoSided, &draws_count);

@@ -295,8 +295,8 @@ struct SharedDataBlock {
 static_assert(sizeof(SharedDataBlock) == 7856, "!");
 
 struct MaterialData {
-    uint32_t texture_indices[5];
-    uint32_t _pad[3];
+    uint32_t texture_indices[REN_MAX_TEX_PER_MATERIAL];
+    uint32_t _pad[2];
     Ren::Vec4f params;
 };
 static_assert(sizeof(MaterialData) == 48, "!");

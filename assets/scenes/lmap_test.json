@@ -1,37 +1,37 @@
 {
-	"name" : "lmap_test", 
+	"name" : "lmap_test",
 	"environment" : {
 		"sun_dir" : [
-			0.0, 
-			-1.0, 
+			0.0,
+			-1.0,
 			0.0
-		], 
+		],
 		"sun_col" : [
-			100.0, 
-			100.0, 
+			100.0,
+			100.0,
 			100.0
-		], 
-		"sun_softness" : 0.1, 
-		"env_map" : "env/black", 
+		],
+		"sun_softness" : 0.1,
+		"env_map" : "env/black",
 		"env_map_pt" : "env/black_NX.hdr"
-	}, 
+	},
 	"objects" : [
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
+			},
 			"drawable" : {
 				"mesh_file" : "lmap_test/room.mesh"
-			}, 
+			},
 			"lightmap" : {
 				"res" : 512
 			},
@@ -39,16 +39,16 @@
 				"mesh_file" : "lmap_test/room.mesh"
 			}
 		}
-	], 
+	],
 	"camera" : {
 		"view_origin" : [
 			2.368603, 1.084515, -0.009191
-		], 
+		],
 		"view_dir" : [
 			-0.908588, -0.417667, 0.001835
-		], 
-		"fwd_speed" : 0.1, 
-		"fov" : 60, 
+		],
+		"fwd_speed" : 0.1,
+		"fov" : 60,
 		"max_exposure" : 1000
 	}
 }

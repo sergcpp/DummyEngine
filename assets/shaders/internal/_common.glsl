@@ -145,8 +145,8 @@ struct SharedData {
 };
 
 struct MaterialData {
-    uint texture_indices[5];
-    uint _pad[3];
+    uint texture_indices[REN_MAX_TEX_PER_MATERIAL];
+    uint _pad[2];
     vec4 params;
 };
 

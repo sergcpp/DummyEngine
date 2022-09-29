@@ -42,7 +42,7 @@ class GSDrawTest final : public GSBaseState {
     uint64_t click_time_ = 0;
 
     uint64_t wind_update_time_ = 0;
-    Ren::Vec3f wind_vector_goal_ = Ren::Vec3f{16.0f, 0.0f, 0.0f};
+    Ren::Vec3f wind_vector_goal_ = Ren::Vec3f{128.0f, 0.0f, 0.0f};
 
     // test test
     uint32_t wolf_indices_[32] = {0xffffffff};

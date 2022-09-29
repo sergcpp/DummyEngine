@@ -53,7 +53,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -70,7 +70,7 @@
                 "diff" : "manhole01_diff.png",
                 "norm" : "manhole01_norm.png",
                 "spec" : "manhole01_spec.png"
-            },
+            }
         },
         {
             "transform" : {
@@ -86,7 +86,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -111,7 +111,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -136,7 +136,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -161,7 +161,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -186,7 +186,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -211,7 +211,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -236,7 +236,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -261,7 +261,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -286,7 +286,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -311,7 +311,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -336,7 +336,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -361,7 +361,7 @@
                 "direction" : [ 0.0, -1.0, 0.0 ],
                 "angle" : 60.0,
                 "cast_shadow" : true
-            },
+            }
         },
         {
             "transform" : {
@@ -372,8 +372,8 @@
             },
             "decals" : [ "d0", "d1" ]
         },
-        
-        
+
+
         {
             "transform" : {
                 "pos" : [ 12.4276, 0.0, 1.15319 ]
@@ -388,7 +388,7 @@
             },
             "drawable" : {
                 "mesh" : "house_04"
-            },
+            }
         },
         {
             "transform" : {

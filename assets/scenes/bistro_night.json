@@ -745,7 +745,7 @@
                 "cache_shadow" : true
             }
         },
-        
+
         {
             "transform" : {
                 "pos" : [ 0.0, 0.0, 0.0 ],
@@ -3476,8 +3476,8 @@
             },
             "anim_state" : {}
         },
-        
-        
+
+
         {
             "transform" : {
                 "pos" : [ 15.0868, 2.0, -36.1392 ]

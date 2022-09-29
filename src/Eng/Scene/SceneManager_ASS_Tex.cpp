@@ -52,12 +52,14 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
 
     int width, height, channels;
     unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    if (image_data) {
+        GetTexturesAverageColor(image_data, width, height, channels, out_color);
+        free(image_data);
+        return true;
+    }
 
-    GetTexturesAverageColor(image_data, width, height, channels, out_color);
-
-    free(image_data);
-
-    return true;
+    out_color[0] = out_color[1] = out_color[2] = out_color[3] = 0;
+    return false;
 }
 
 std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width, int height, int channels,

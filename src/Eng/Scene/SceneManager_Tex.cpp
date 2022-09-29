@@ -40,7 +40,20 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
         params.block = Ren::eTexBlock::_4x4;
         break;
     default:
-        log->Error("Unknown DDS pixel format %i", px_format);
+        params.block = Ren::eTexBlock::_None;
+        if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {
+            // Uncompressed
+            if (hdr.sPixelFormat.dwRGBBitCount == 32) {
+                params.format = Ren::eTexFormat::RawRGBA8888;
+            } else if (hdr.sPixelFormat.dwRGBBitCount == 24) {
+                params.format = Ren::eTexFormat::RawRGB888;
+            } else {
+                params.format = Ren::eTexFormat::Undefined;
+            }
+        } else {
+            // Possibly need to read DX10 header
+            params.format = Ren::eTexFormat::Undefined;
+        }
         return;
     }
 }
@@ -157,6 +170,8 @@ void SceneManager::TextureLoaderProc() {
                                                             &header, data_size);
                 read_success &= (data_size == sizeof(Ren::DDSHeader));
 
+                req->read_offset = sizeof(Ren::DDSHeader);
+
                 if (read_success) {
                     Ren::Tex2DParams temp_params;
                     ParseDDSHeader(header, temp_params, ren_ctx_.log());
@@ -165,9 +180,20 @@ void SceneManager::TextureLoaderProc() {
                     req->orig_w = temp_params.w;
                     req->orig_h = temp_params.h;
                     req->orig_mip_count = int(header.dwMipMapCount);
+
+                    if (header.sPixelFormat.dwFourCC == ((unsigned('D') << 0u) | (unsigned('X') << 8u) |
+                                                         (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
+                        Ren::DDS_HEADER_DXT10 dx10_header;
+                        tex_reader_.ReadFileBlocking(path_buf, sizeof(Ren::DDSHeader), sizeof(Ren::DDS_HEADER_DXT10),
+                                                     &dx10_header, data_size);
+
+                        req->orig_format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
+
+                        read_offset += sizeof(Ren::DDS_HEADER_DXT10);
+                    }
                 }
             }
-            read_offset += sizeof(Ren::DDSHeader);
+            read_offset += req->read_offset;
         } else if (req->ref->name().EndsWith(".ktx") || req->ref->name().EndsWith(".KTX")) {
             assert(false && "Not implemented!");
             read_offset += sizeof(Ren::KTXHeader);

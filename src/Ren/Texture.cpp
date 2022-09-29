@@ -125,6 +125,15 @@ int Ren::GetBlockCount(const int w, const int h, const eTexBlock block) {
     return ((w + g_block_res[i][0] - 1) / g_block_res[i][0]) * ((h + g_block_res[i][1] - 1) / g_block_res[i][1]);
 }
 
+int Ren::GetMipDataLenBytes(const int w, const int h, const eTexFormat format, const eTexBlock block) {
+    if (block != eTexBlock::_None) {
+        return GetBlockCount(w, h, block) * GetBlockLenBytes(format, block);
+    } else {
+        assert(g_per_pixel_data_len[int(format)] != -1);
+        return w * h * g_per_pixel_data_len[int(format)];
+    }
+}
+
 uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
     uint32_t total_len = 0;
     for (int i = 0; i < params.mip_count; i++) {

@@ -1,36 +1,36 @@
 {
-	"name" : "pbr_test", 
+	"name" : "pbr_test",
 	"environment" : {
 		"sun_dir" : [
-			0.57735, 
-			-0.57735, 
+			0.57735,
+			-0.57735,
 			-0.57735
-		], 
+		],
 		"sun_col" : [
-			0, 
-			0, 
+			0,
+			0,
 			0
-		], 
-		"sun_softness" : 0.1, 
-		"env_map" : "env/studio_small_03", 
+		],
+		"sun_softness" : 0.1,
+		"env_map" : "env/studio_small_03",
 		"env_map_pt" : "env/studio_small_03_2k.hdr"
-	}, 
+	},
 	"objects" : [
 		{
 			"transform" : {
 				"pos" : [
-					-10, 
-					0, 
+					-10,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_hi.mesh",
 				"mesh_file" : "sphere_hi.mesh"
 			},
 			"occluder" : {
@@ -43,23 +43,23 @@
 					"pbr_test/bamboo-wood-semigloss.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met0_rough0", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met0_rough0",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met0_rough0.txt"
 				]
@@ -74,23 +74,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					2.5, 
-					0, 
+					2.5,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met0_rough20", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met0_rough20",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met0_rough20.txt"
 				]
@@ -105,23 +105,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					5, 
-					0, 
+					5,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met0_rough40", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met0_rough40",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met0_rough40.txt"
 				]
@@ -136,23 +136,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					7.5, 
-					0, 
+					7.5,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met0_rough60", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met0_rough60",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met0_rough60.txt"
 				]
@@ -167,23 +167,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					10, 
-					0, 
+					10,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met0_rough80", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met0_rough80",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met0_rough80.txt"
 				]
@@ -198,23 +198,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					12.5, 
-					0, 
+					12.5,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met0_rough100", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met0_rough100",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met0_rough80.txt"
 				]
@@ -229,23 +229,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					2.5, 
+					0,
+					2.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met20_rough0", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met20_rough0",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met20_rough0.txt"
 				]
@@ -260,23 +260,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					2.5, 
-					2.5, 
+					2.5,
+					2.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met20_rough20", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met20_rough20",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met20_rough20.txt"
 				]
@@ -291,23 +291,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					5, 
-					2.5, 
+					5,
+					2.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met20_rough40", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met20_rough40",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met20_rough40.txt"
 				]
@@ -322,23 +322,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					7.5, 
-					2.5, 
+					7.5,
+					2.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met20_rough60", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met20_rough60",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met20_rough60.txt"
 				]
@@ -353,23 +353,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					10, 
-					2.5, 
+					10,
+					2.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met20_rough80", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met20_rough80",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met20_rough80.txt"
 				]
@@ -384,23 +384,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					12.5, 
-					2.5, 
+					12.5,
+					2.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met20_rough100", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met20_rough100",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met20_rough100.txt"
 				]
@@ -415,23 +415,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					5, 
+					0,
+					5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met40_rough0", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met40_rough0",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met40_rough0.txt"
 				]
@@ -446,23 +446,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					2.5, 
-					5, 
+					2.5,
+					5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met40_rough20", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met40_rough20",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met40_rough20.txt"
 				]
@@ -477,23 +477,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					5, 
-					5, 
+					5,
+					5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met40_rough40", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met40_rough40",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met40_rough40.txt"
 				]
@@ -508,23 +508,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					7.5, 
-					5, 
+					7.5,
+					5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met40_rough60", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met40_rough60",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met40_rough60.txt"
 				]
@@ -539,23 +539,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					10, 
-					5, 
+					10,
+					5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met40_rough80", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met40_rough80",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met40_rough80.txt"
 				]
@@ -570,23 +570,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					12.5, 
-					5, 
+					12.5,
+					5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met40_rough100", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met40_rough100",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met40_rough100.txt"
 				]
@@ -601,23 +601,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					7.5, 
+					0,
+					7.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met60_rough0", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met60_rough0",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met60_rough0.txt"
 				]
@@ -632,23 +632,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					2.5, 
-					7.5, 
+					2.5,
+					7.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met60_rough20", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met60_rough20",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met60_rough20.txt"
 				]
@@ -663,23 +663,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					5, 
-					7.5, 
+					5,
+					7.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met60_rough40", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met60_rough40",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met60_rough40.txt"
 				]
@@ -694,23 +694,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					7.5, 
-					7.5, 
+					7.5,
+					7.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met60_rough60", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met60_rough60",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met60_rough60.txt"
 				]
@@ -725,23 +725,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					10, 
-					7.5, 
+					10,
+					7.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met60_rough80", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met60_rough80",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met60_rough80.txt"
 				]
@@ -756,23 +756,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					12.5, 
-					7.5, 
+					12.5,
+					7.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met60_rough100", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met60_rough100",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met60_rough100.txt"
 				]
@@ -787,23 +787,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					10, 
+					0,
+					10,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met80_rough0", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met80_rough0",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met80_rough0.txt"
 				]
@@ -818,23 +818,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					2.5, 
-					10, 
+					2.5,
+					10,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met80_rough20", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met80_rough20",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met80_rough20.txt"
 				]
@@ -849,23 +849,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					5, 
-					10, 
+					5,
+					10,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met80_rough40", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met80_rough40",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met80_rough40.txt"
 				]
@@ -880,23 +880,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					7.5, 
-					10, 
+					7.5,
+					10,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met80_rough60", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met80_rough60",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met80_rough60.txt"
 				]
@@ -911,23 +911,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					10, 
-					10, 
+					10,
+					10,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met80_rough80", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met80_rough80",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met80_rough80.txt"
 				]
@@ -942,23 +942,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					12.5, 
-					10, 
+					12.5,
+					10,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met80_rough100", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met80_rough100",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met80_rough100.txt"
 				]
@@ -973,23 +973,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					12.5, 
+					0,
+					12.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met100_rough0", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met100_rough0",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met100_rough0.txt"
 				]
@@ -1004,23 +1004,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					2.5, 
-					12.5, 
+					2.5,
+					12.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met100_rough20", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met100_rough20",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met100_rough20.txt"
 				]
@@ -1035,23 +1035,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					5, 
-					12.5, 
+					5,
+					12.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met100_rough40", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met100_rough40",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met100_rough40.txt"
 				]
@@ -1066,23 +1066,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					7.5, 
-					12.5, 
+					7.5,
+					12.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met100_rough60", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met100_rough60",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met100_rough60.txt"
 				]
@@ -1097,23 +1097,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					10, 
-					12.5, 
+					10,
+					12.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met100_rough80", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met100_rough80",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met100_rough80.txt"
 				]
@@ -1128,23 +1128,23 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					12.5, 
-					12.5, 
+					12.5,
+					12.5,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_name" : "sphere_met100_rough100", 
-				"mesh_file" : "sphere_hi.mesh", 
+				"mesh_name" : "sphere_met100_rough100",
+				"mesh_file" : "sphere_hi.mesh",
 				"material_override" : [
 					"pbr_test/met100_rough100.txt"
 				]
@@ -1159,63 +1159,63 @@
 					"pbr_test/met0_rough0.txt"
 				]
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					-0, 
-					0, 
+					-0,
+					0,
 					-0
 				]
-			}, 
+			},
 			"probe" : {
 				"offset" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
-				"radius" : 32, 
+				],
+				"radius" : 32,
 				"sh_coeffs" : [
 					[
-						0.0974231, 
-						0.104782, 
+						0.0974231,
+						0.104782,
 						0.110474
-					], 
+					],
 					[
-						-0.0177719, 
-						-0.0237262, 
+						-0.0177719,
+						-0.0237262,
 						-0.0283294
-					], 
+					],
 					[
-						0.067255, 
-						0.0674465, 
+						0.067255,
+						0.0674465,
 						0.0668536
-					], 
+					],
 					[
-						-0.0370779, 
-						-0.0383832, 
+						-0.0370779,
+						-0.0383832,
 						-0.0386709
 					]
 				]
 			}
 		}
-	], 
+	],
 	"camera" : {
 		"view_origin" : [
-			6.25, 
-			6.25, 
+			6.25,
+			6.25,
 			13
-		], 
+		],
 		"view_dir" : [
-			0, 
-			0, 
+			0,
+			0,
 			-1
-		], 
+		],
 		"fwd_speed" : 0.1
 	}
 }

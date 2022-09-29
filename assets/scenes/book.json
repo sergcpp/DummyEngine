@@ -1,33 +1,33 @@
 {
-	"name" : "book", 
+	"name" : "book",
 	"environment" : {
 		"sun_dir" : [
-			0.707, 
-			-0.707, 
+			0.707,
+			-0.707,
 			0.0
-		], 
+		],
 		"sun_col" : [
-			5.0, 
-			5.0, 
+			5.0,
+			5.0,
 			3.0
-		], 
-		"sun_softness" : 0.1, 
+		],
+		"sun_softness" : 0.1,
 		"env_map" : "env/noon_grass",
 		"env_map_pt" : "env/studio_small_03_2k.hdr"
-	}, 
+	},
 	"camera" : {
 		"view_origin" : [
 			0,
 			0.85,
 			0
-		], 
+		],
 		"view_dir" : [
-			0, 
-			-1, 
+			0,
+			-1,
 			0
-		], 
-		"fwd_speed" : 0.025, 
-		"fov" : 50, 
+		],
+		"fwd_speed" : 0.025,
+		"fov" : 50,
 		"max_exposure" : 1000
 	},
 	"objects" : [
@@ -35,16 +35,16 @@
             "name" : "book",
 			"transform" : {
 				"pos" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
+			},
 			"drawable" : {
 				"mesh_file" : "book_skel.mesh",
                 "anims" : [
@@ -54,7 +54,7 @@
                     "book_turning_fwd.anim",
                     "book_turning_bck.anim"
                 ]
-			}, 
+			},
 			"anim_state" : {
 			}
 		},
@@ -62,16 +62,16 @@
             "name" : "book_background",
 			"transform" : {
 				"pos" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
+			},
 			"drawable" : {
 				"mesh_file" : "book_background.mesh"
 			}
@@ -79,40 +79,40 @@
         {
 			"transform" : {
 				"pos" : [
-					-0.364472, 
-					0, 
+					-0.364472,
+					0,
 					0.805827
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
+			},
 			"drawable" : {
 				"mesh_file" : "mug.mesh"
 			}
-		}, 
+		},
 		{
 			"transform" : {
 				"pos" : [
-					0, 
-					1, 
+					0,
+					1,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
+			},
 			"probe" : {
 				"offset" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
-				"radius" : 12, 
+				],
+				"radius" : 12,
 				"sh_coeffs" : [
 					[
                         0.313901,

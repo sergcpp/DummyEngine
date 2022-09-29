@@ -4,3 +4,6 @@ sw_program: main
 texture: vegetation/leaf_tree_trunk_diff.png
 texture: vegetation/leaf_tree_trunk_norm.png
 texture: default_specular.png
+texture: default_mask.png
+texture: vegetation/leaf_tree_pp_pos.dds nofilter
+texture: vegetation/leaf_tree_pp_dir.dds nofilter
