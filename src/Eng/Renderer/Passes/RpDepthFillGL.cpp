@@ -10,8 +10,8 @@ namespace RpSharedInternal {
 void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
     assert(mat.textures.size() >= 1 && mat.samplers.size() >= 1);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT, mat.textures[0]->id());
-    glBindSampler(REN_MAT_TEX3_SLOT, mat.samplers[0]->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT, mat.textures[3]->id());
+    glBindSampler(REN_MAT_TEX3_SLOT, mat.samplers[3]->id());
 }
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const BasicDrawBatch> zfill_batches,
                      uint32_t i, uint32_t mask, int *draws_count) {

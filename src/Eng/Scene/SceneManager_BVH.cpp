@@ -709,6 +709,15 @@ void SceneManager::InitSWRTAccStructures() {
     const uint32_t total_mesh_instances_size = uint32_t(mesh_instances.size() * sizeof(gpu_mesh_instance_t));
     const uint32_t total_geo_instances_size = uint32_t(geo_instances.size() * sizeof(RTGeoInstance));
 
+    if (!total_nodes_size) {
+        scene_data_.persistent_data.rt_blas_buf = {};
+        scene_data_.persistent_data.swrt.rt_prim_indices_buf = {};
+        scene_data_.persistent_data.swrt.rt_meshes_buf = {};
+        scene_data_.persistent_data.rt_instance_buf = {};
+        scene_data_.persistent_data.rt_geo_data_buf = {};
+        return;
+    }
+
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
     Ren::Buffer rt_blas_stage_buf("SWRT BLAS Stage Buf", api_ctx, Ren::eBufType::Stage, total_nodes_size);
