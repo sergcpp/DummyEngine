@@ -1245,8 +1245,9 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                 unique_ptr<char[]> mat_data(new char[(size_t)file_size]);
                 mat_file.read(mat_data.get(), file_size);
 
+                Ren::eMatLoadStatus status;
                 Ren::MaterialRef mat_ref = ctx_->LoadMaterial(
-                    materials[i].c_str(), mat_data.get(), nullptr,
+                    materials[i].c_str(), mat_data.get(), &status,
                     std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
                     std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();

@@ -924,7 +924,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         //
         // Reflections pass
         //
-        if ((list.render_flags & DebugWireframe) == 0) {
+        if ((list.render_flags & EnableSSR) != 0 && (list.render_flags & DebugWireframe) == 0) {
             const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
                 AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_,

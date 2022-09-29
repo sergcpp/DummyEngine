@@ -1198,7 +1198,11 @@ Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[
     p.flags = flags | Ren::eTexFlagBits::UsageScene;
     memcpy(p.fallback_color, color, 4);
 
-    p.sampling.filter = Ren::eTexFilter::Trilinear;
+    if (bool(p.flags & Ren::eTexFlagBits::NoFilter)) {
+        p.sampling.filter = Ren::eTexFilter::NoFilter;
+    } else {
+        p.sampling.filter = Ren::eTexFilter::Trilinear;
+    }
     if (bool(p.flags & Ren::eTexFlagBits::NoRepeat)) {
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
     } else {

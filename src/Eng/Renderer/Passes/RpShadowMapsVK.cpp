@@ -222,7 +222,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
 
         { // draw opaque vegetation
             vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 0, 1,
+            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 0, 2,
                                     vege_descr_sets, 0, nullptr);
 
             vi_depth_pass_vege_solid_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);

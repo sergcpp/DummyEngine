@@ -241,6 +241,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
         Ren::eTexFormat orig_format = Ren::eTexFormat::Undefined;
         Ren::eTexBlock orig_block;
+        uint16_t read_offset = 0;
         uint16_t orig_w, orig_h;
         uint8_t orig_mip_count;
         uint8_t mip_offset_to_init, mip_count_to_init;

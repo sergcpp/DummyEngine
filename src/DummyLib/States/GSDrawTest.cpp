@@ -28,10 +28,10 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           //"test_skin.json";
                           "living_room_gumroad.json";
-//"bistro.json";
-//"pbr_test.json";
-//"zenith.json";
-//"test_vegetation.json";
+                          //"bistro.json";
+                          //"pbr_test.json";
+                          //"zenith.json";
+                          //"test_vegetation.json";
 //"test_vegetation_night.json";
 //"test_decals.json";
 //"courtroom.json";
@@ -568,7 +568,7 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
     }
 
     scene.env.wind_vec = 0.99f * scene.env.wind_vec + 0.01f * wind_vector_goal_;
-    scene.env.wind_turbulence = (1.0f / 32.0f) * Length(scene.env.wind_vec);
+    scene.env.wind_turbulence = 2.0f * Length(scene.env.wind_vec);
 }
 
 bool GSDrawTest::HandleInput(const InputManager::Event &evt) {
@@ -962,12 +962,12 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
         }
     }*/
 
-    const auto wind_scroll_dir = Ren::Vec2f{scene.env.wind_vec[0], scene.env.wind_vec[2]};
+    const auto wind_scroll_dir = 128.0f * Normalize(Ren::Vec2f{scene.env.wind_vec[0], scene.env.wind_vec[2]});
     scene.env.prev_wind_scroll_lf = scene.env.curr_wind_scroll_lf;
     scene.env.prev_wind_scroll_hf = scene.env.curr_wind_scroll_hf;
 
     scene.env.curr_wind_scroll_lf =
-        Fract(scene.env.curr_wind_scroll_lf - (1.0f / 256.0f) * delta_time_s * wind_scroll_dir);
+        Fract(scene.env.curr_wind_scroll_lf - (1.0f / 1536.0f) * delta_time_s * wind_scroll_dir);
     scene.env.curr_wind_scroll_hf =
         Fract(scene.env.curr_wind_scroll_hf - (1.0f / 32.0f) * delta_time_s * wind_scroll_dir);
 }

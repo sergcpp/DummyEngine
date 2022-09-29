@@ -1,42 +1,42 @@
 {
-	"name" : "vegetation_test2", 
+	"name" : "vegetation_test2",
 	"environment" : {
 		"sun_dir" : [
-			0.57735, 
-			-0.57735, 
+			0.57735,
+			-0.57735,
 			-0.57735
 		],
         "sun_col1" : [
-			0, 
-			0, 
+			0,
+			0,
 			0
 		],
-		"sun_col1" : [
-			5, 
-			5, 
+		"sun_col2" : [
+			5,
+			5,
 			4.5
-		], 
-		"sun_softness" : 0.1, 
-		"env_map" : "env/satara_night_no_lamps", 
+		],
+		"sun_softness" : 0.1,
+		"env_map" : "env/satara_night_no_lamps",
 		"env_map_pt" : "env/noon_grass_2k.hdr"
-	}, 
+	},
 	"objects" : [
 		{
 			"name" : "leaf_tree",
 			"transform" : {
 				"pos" : [
 					0,
-					0, 
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
+			},
 			"drawable" : {
-				"mesh_file" : "vegetation/leaf_tree.mesh", 
+				"mesh_file" : "vegetation/leaf_tree.mesh",
 				"visible_to_probes" : false
 			},
 			"veg_state" : {
@@ -44,73 +44,54 @@
 			}
 		},
 		{
-			"name" : "palm_tree",
 			"transform" : {
 				"pos" : [
-					500,
-					0, 
+					0,
+					0,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
-			}, 
-			"drawable" : {
-				"mesh_file" : "vegetation/palm_tree.mesh",
-				"visible_to_probes" : false
-			}
-		},
-		{
-			"transform" : {
-				"pos" : [
-					0, 
-					0, 
-					0
-				], 
-				"rot" : [
-					0, 
-					0, 
-					0
-				]
-			}, 
+			},
 			"drawable" : {
 				"mesh_file" : "ground_plane_200x200.mesh",
 				"material_override1" : [ "checker_glossy.txt" ],
 				"material_override2" : [ "_wind_debug.txt" ]
 			}
-		}, 
+		},
         {
 			"transform" : {
 				"pos" : [
 					0,
-					16, 
+					16,
 					10
-				], 
+				],
 				"rot" : [
-					45, 
-					0, 
+					45,
+					0,
 					0
 				]
 			},
 			"light" : {
 				"color" : [
-					0.0, 
-					0.0, 
+					0.0,
+					0.0,
 					100.0
-				], 
+				],
 				"offset" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
-				"radius" : 0.5, 
+				],
+				"radius" : 0.5,
 				"direction" : [
-					0, 
-					-1, 
+					0,
+					-1,
 					0
-				], 
+				],
 				"angle" : 25,
                 "cast_shadow" : true
 			}
@@ -119,32 +100,32 @@
 			"transform" : {
 				"pos" : [
 					10,
-					16, 
+					16,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					-45
 				]
 			},
 			"light" : {
 				"color" : [
-					100.0, 
-					0.0, 
+					100.0,
+					0.0,
 					0.0
-				], 
+				],
 				"offset" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
-				"radius" : 0.5, 
+				],
+				"radius" : 0.5,
 				"direction" : [
-					0, 
-					-1, 
+					0,
+					-1,
 					0
-				], 
+				],
 				"angle" : 25,
                 "cast_shadow" : true
 			}
@@ -153,32 +134,32 @@
 			"transform" : {
 				"pos" : [
 					-10,
-					16, 
+					16,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					45
 				]
 			},
 			"light" : {
 				"color" : [
-					0.0, 
-					100.0, 
+					0.0,
+					100.0,
 					0.0
-				], 
+				],
 				"offset" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
-				"radius" : 0.5, 
+				],
+				"radius" : 0.5,
 				"direction" : [
-					0, 
-					-1, 
+					0,
+					-1,
 					0
-				], 
+				],
 				"angle" : 25,
                 "cast_shadow" : true
 			}
@@ -187,46 +168,46 @@
 			"transform" : {
 				"pos" : [
 					48,
-					16, 
+					16,
 					0
-				], 
+				],
 				"rot" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
 				]
 			},
 			"light" : {
 				"color" : [
-					100.0, 
-					100.0, 
+					100.0,
+					100.0,
 					100.0
-				], 
+				],
 				"offset" : [
-					0, 
-					0, 
+					0,
+					0,
 					0
-				], 
-				"radius" : 0.5, 
+				],
+				"radius" : 0.5,
 				"direction" : [
-					0, 
-					-1, 
+					0,
+					-1,
 					0
-				], 
+				],
 				"angle" : 45,
                 "cast_shadow" : true
 			}
 		}
-	], 
+	],
 	"camera" : {
 		"view_origin" : [
 			2.294942, 7.756365, 13.617617
-		], 
+		],
 		"view_dir" : [
 			0.012581, -0.138751, -0.977384
-		], 
-		"fwd_speed" : 0.75, 
-		"fov" : 45, 
+		],
+		"fwd_speed" : 0.75,
+		"fov" : 45,
 		"max_exposure" : 1000
 	}
 }

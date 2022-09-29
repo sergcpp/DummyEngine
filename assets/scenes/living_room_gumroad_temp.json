@@ -259,7 +259,7 @@
                 "visible_to_shadow" : false
             }
         },
-        
+
         {
             "transform" : {
                 "pos" : [ 0.0, 1.0, -5.9 ]
@@ -271,8 +271,8 @@
                 "angle" : 85.0
             }
         },
-        
-        
+
+
         {
             "transform" : {
                 "pos" : [ 5.0, 1.0, 0.0 ]

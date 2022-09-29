@@ -19,24 +19,25 @@
 #define REN_MAT_TEX2_SLOT   2
 #define REN_MAT_TEX3_SLOT   3
 #define REN_MAT_TEX4_SLOT   4
-#define REN_SHAD_TEX_SLOT   5
-#define REN_LMAP_SH_SLOT    6
-#define REN_DECAL_TEX_SLOT  10
-#define REN_SSAO_TEX_SLOT   11
-#define REN_BRDF_TEX_SLOT   12
-#define REN_LIGHT_BUF_SLOT  13
-#define REN_DECAL_BUF_SLOT  14
-#define REN_CELLS_BUF_SLOT  15
-#define REN_ITEMS_BUF_SLOT  16
-#define REN_INST_BUF_SLOT   17
-#define REN_INST_INDICES_BUF_SLOT 18
-#define REN_ENV_TEX_SLOT    19
-#define REN_NOISE_TEX_SLOT 20
-#define REN_CONE_RT_LUT_SLOT 21
+#define REN_MAT_TEX5_SLOT   5
+#define REN_SHAD_TEX_SLOT   6
+#define REN_LMAP_SH_SLOT    7
+#define REN_DECAL_TEX_SLOT  11
+#define REN_SSAO_TEX_SLOT   12
+#define REN_BRDF_TEX_SLOT   13
+#define REN_LIGHT_BUF_SLOT  14
+#define REN_DECAL_BUF_SLOT  15
+#define REN_CELLS_BUF_SLOT  16
+#define REN_ITEMS_BUF_SLOT  17
+#define REN_INST_BUF_SLOT   18
+#define REN_INST_INDICES_BUF_SLOT 19
+#define REN_ENV_TEX_SLOT    20
+#define REN_NOISE_TEX_SLOT 21
+#define REN_CONE_RT_LUT_SLOT 22
 
 #define REN_SET_SCENETEXTURES 1
 
-#define REN_MATERIALS_SLOT 24
+#define REN_MATERIALS_SLOT 25
 #define REN_BINDLESS_TEX_SLOT 0 // shares slot with material slot 0
 
 #define REN_BASE0_TEX_SLOT 0
@@ -54,8 +55,8 @@
 
 #define REN_U_BASE_INSTANCE_LOC 2
 
-#define REN_UB_SHARED_DATA_LOC  22
-#define REN_UB_UNIF_PARAM_LOC    23
+#define REN_UB_SHARED_DATA_LOC  23
+#define REN_UB_UNIF_PARAM_LOC    24
 
 // Shader output location
 #define REN_OUT_COLOR_INDEX 0
@@ -84,7 +85,7 @@
 #define REN_MAX_OBJ_COUNT			4194304
 #define REN_MAX_TEX_COUNT           262144
 
-#define REN_MAX_TEX_PER_MATERIAL    5
+#define REN_MAX_TEX_PER_MATERIAL    6
 #define REN_MAX_MATERIALS           262144
 
 #define REN_MAX_INSTANCES_TOTAL     262144
