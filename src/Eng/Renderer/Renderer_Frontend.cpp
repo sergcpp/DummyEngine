@@ -315,9 +315,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
         const uint64_t CompMask = (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
         for (int i = 0; i < REN_GRID_RES_Z; ++i) {
-            futures[i] = threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
-                                           list.draw_cam, clip_from_identity, CompMask, &cull_ctx_, 0b00000001,
-                                           proc_objects_.get(), temp_visible_objects_.data, std::ref(objects_count));
+            futures[i] =
+                threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
+                                  list.draw_cam.world_position(), clip_from_identity, CompMask, &cull_ctx_, 0b00000001,
+                                  proc_objects_.get(), temp_visible_objects_.data, std::ref(objects_count));
         }
 
         Ren::Frustum rt_z_frustums[REN_GRID_RES_Z];
@@ -341,8 +342,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         for (int i = 0; i < REN_GRID_RES_Z; ++i) {
             futures[REN_GRID_RES_Z + i] =
                 threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(rt_z_frustums[i]), std::ref(scene),
-                                  list.draw_cam, Ren::Mat4f{}, RTCompMask, nullptr, 0b00000010, proc_objects_.get(),
-                                  temp_rt_visible_objects_.data, std::ref(rt_objects_count));
+                                  list.draw_cam.world_position(), Ren::Mat4f{}, RTCompMask, nullptr, 0b00000010,
+                                  proc_objects_.get(), temp_rt_visible_objects_.data, std::ref(rt_objects_count));
         }
 
         /////
@@ -867,10 +868,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             for (int i = 0; i < ZSliceCount; ++i) {
-                futures[i] =
-                    threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene), shadow_cam,
-                                      Ren::Mat4f{}, CompMask, nullptr, (0b00000100 << casc), proc_objects_.get(),
-                                      temp_visible_objects_.data, std::ref(objects_count));
+                futures[i] = threads_->Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
+                                               shadow_cam.world_position(), Ren::Mat4f{}, CompMask, nullptr,
+                                               (0b00000100 << casc), proc_objects_.get(), temp_visible_objects_.data,
+                                               std::ref(objects_count));
             }
 
             for (int i = 0; i < ZSliceCount; ++i) {
@@ -1497,7 +1498,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 }
 
 void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
-                                          const Ren::Camera &draw_cam, const Ren::Mat4f &clip_from_identity,
+                                          const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
                                           const uint64_t comp_mask, SWcull_ctx *cull_ctx, const uint8_t visit_mask,
                                           ProcessedObjData proc_objects[], VisObj out_visible_objects[],
                                           std::atomic_int &inout_count) {
@@ -1508,8 +1509,6 @@ void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const Sce
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
-
-    const Vec3f &cam_pos = draw_cam.world_position();
 
     uint32_t stack[MAX_STACK_SIZE];
     uint32_t stack_size = 0;
