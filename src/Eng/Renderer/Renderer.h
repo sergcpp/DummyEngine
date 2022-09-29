@@ -299,7 +299,7 @@ class Renderer {
 
     // Parallel Jobs
     static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
-                                           const Ren::Camera &draw_cam, const Ren::Mat4f &clip_from_identity,
+                                           const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
                                            uint64_t comp_mask, SWcull_ctx *cull_ctx, uint8_t visit_mask,
                                            ProcessedObjData proc_objects[], VisObj out_visible_objects[],
                                            std::atomic_int &inout_count);
