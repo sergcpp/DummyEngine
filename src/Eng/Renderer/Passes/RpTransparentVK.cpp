@@ -8,24 +8,6 @@
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-namespace RpSharedInternal {
-/*void _bind_texture0_and_sampler0(Ren::Context &ctx, const Ren::Material &mat,
-                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
-void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
-                                 Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
-uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
-                               const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t i, uint64_t mask,
-                               uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                               BackendInfo &backend_info);
-
-uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], const DynArrayConstRef<MainDrawBatch> &main_batches,
-                                   const DynArrayConstRef<uint32_t> &main_batch_indices, uint32_t ndx, uint64_t mask,
-                                   uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                                   BackendInfo &backend_info);*/
-} // namespace RpSharedInternal
-
 void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
                                            RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
                                            RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
@@ -304,7 +286,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
             }
 
             if (cur_mat_id != batch.mat_id) {
-                const uint32_t pipe_id = (*(*p_list_)->materials)[batch.mat_id].pipelines[1].index();
+                const uint32_t pipe_id =
+                    (*(*p_list_)->materials)[batch.mat_id].pipelines[int(eFwdPipeline::BackfaceDraw)].index();
 
                 if (cur_pipe_id != pipe_id) {
                     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());
@@ -343,7 +326,8 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
             }
 
             if (cur_mat_id != batch.mat_id) {
-                const uint32_t pipe_id = (*(*p_list_)->materials)[batch.mat_id].pipelines[0].index();
+                const uint32_t pipe_id =
+                    (*(*p_list_)->materials)[batch.mat_id].pipelines[int(eFwdPipeline::FrontfaceDraw)].index();
 
                 if (cur_pipe_id != pipe_id) {
                     vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());

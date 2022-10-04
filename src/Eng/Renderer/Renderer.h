@@ -61,6 +61,9 @@ class Renderer {
 
     void InitBackendInfo();
 
+    void InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags, Ren::PipelineStorage &storage,
+                                 Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const;
+
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
     void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
                          const FrameBuf *target = nullptr);
@@ -93,6 +96,10 @@ class Renderer {
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     bool taa_enabled_ = false, dof_enabled_ = false;
+
+    Ren::VertexInput draw_pass_vi_;
+    Ren::RenderPass rp_main_draw_;
+    Ren::RastState rast_states_[int(eFwdPipeline::_Count)];
 
     Ren::TextureSplitter shadow_splitter_;
 

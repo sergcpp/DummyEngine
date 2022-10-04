@@ -128,6 +128,12 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
+    void SetPipelineInitializer(
+        std::function<void(const Ren::ProgramRef &prog, const uint32_t mat_flags, Ren::PipelineStorage &storage,
+                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)> &&f) {
+        init_pipelines_ = std::move(f);
+    }
+
     void InitScene_PT(bool _override = false);
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
     const float *Draw_PT(int *w, int *h);
@@ -189,14 +195,13 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
 
     void RebuildMaterialTextureGraph();
 
-    // TODO: move these to renderer
-    Ren::VertexInput draw_pass_vi_;
-    Ren::RenderPass rp_main_draw_;
+    std::function<void(const Ren::ProgramRef &prog, uint32_t mat_flags, Ren::PipelineStorage &storage,
+                       Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)>
+        init_pipelines_;
+
     void UpdateMaterialsBuffer();
     void UpdateInstanceBuffer();
     void UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end);
-    void InitPipelinesForProgram(const Ren::ProgramRef &prog, uint32_t mat_flags,
-                                 Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     void InitHWRTAccStructures();
     void InitSWRTAccStructures();
 
