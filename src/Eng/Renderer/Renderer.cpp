@@ -292,6 +292,76 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::share
         ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
 
+    const auto vtx_buf1 = ctx_.default_vertex_buf1();
+    const auto vtx_buf2 = ctx_.default_vertex_buf2();
+    const auto ndx_buf = ctx_.default_indices_buf();
+
+    const int buf1_stride = 16;
+
+    { // VertexInput for main drawing (uses all attributes)
+        const Ren::VtxAttribDesc attribs[] = {
+            // Attributes from buffer 1
+            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+            // Attributes from buffer 2
+            {vtx_buf2, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
+            {vtx_buf2, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
+            {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
+
+        draw_pass_vi_.Setup(attribs, ndx_buf);
+    }
+
+    { // RenderPass for main drawing (compatible one)
+        Ren::RenderTargetInfo color_rts[] = {
+            {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+#if REN_USE_OCT_PACKED_NORMALS == 1
+            {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+#else
+            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
+#endif
+            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
+             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
+        };
+
+        color_rts[2].flags = Ren::eTexFlagBits::SRGB;
+
+        const auto depth_format = ctx_.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
+                                                                            : Ren::eTexFormat::Depth32Stencil8;
+
+        const Ren::RenderTargetInfo depth_rt = {depth_format, 1 /* samples */,
+                                                Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
+                                                Ren::eStoreOp::Store};
+
+        const bool res = rp_main_draw_.Setup(ctx_.api_ctx(), color_rts, depth_rt, ctx_.log());
+        if (!res) {
+            ctx_.log()->Error("Failed to initialize render pass!");
+        }
+    }
+
+    { // Rasterization states for main drawing
+        Ren::RastState rast_state;
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+        rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
+        rast_state.depth.test_enabled = true;
+        rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
+
+        rast_states_[int(eFwdPipeline::FrontfaceDraw)] = rast_state;
+
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+        rast_states_[int(eFwdPipeline::BackfaceDraw)] = rast_state;
+    }
+    { // Rasterization state for shadow drawing
+        Ren::RastState rast_state;
+        rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
+        rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
+        rast_state.depth.test_enabled = false;
+
+        rast_states_[int(eFwdPipeline::Wireframe)] = rast_state;
+    }
+
     // Compile built-in shaders etc.
     InitPipelines();
     InitRendererInternal();
@@ -1066,7 +1136,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     if ((list.render_flags & EnableTaa) != 0) {
                         color_tex = frame_textures.color;
                     } else {
-                        //color_tex = DOF_COLOR_TEX;
+                        // color_tex = DOF_COLOR_TEX;
                     }
                 } else {
                     color_tex = resolved_color;
@@ -1224,6 +1294,48 @@ void Renderer::InitBackendInfo() {
     backend_info_.gpu_total_duration = 0;
     if (backend_gpu_start_ != -1 && backend_gpu_end_ != -1) {
         backend_info_.gpu_total_duration = ctx_.GetTimestampIntervalDuration(backend_gpu_start_, backend_gpu_end_);
+    }
+}
+
+void Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
+                                       Ren::PipelineStorage &storage,
+                                       Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const {
+    for (int i = 0; i < int(eFwdPipeline::_Count); ++i) {
+        Ren::RastState rast_state = rast_states_[i];
+
+        if (uint32_t(Ren::eMatFlags::TwoSided)) {
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
+        }
+
+        if (mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend) && i != int(eFwdPipeline::Wireframe)) {
+            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
+
+            rast_state.blend.enabled = true;
+            rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
+            rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
+        }
+
+        // find of create pipeline (linear search is good enough)
+        uint32_t new_index = 0xffffffff;
+        for (auto it = std::begin(storage); it != std::end(storage); ++it) {
+            if (it->prog() == prog && it->rast_state() == rast_state) {
+                new_index = it.index();
+                break;
+            }
+        }
+
+        if (new_index == 0xffffffff) {
+            new_index = storage.emplace();
+            Ren::Pipeline &new_pipeline = storage.at(new_index);
+
+            const bool res =
+                new_pipeline.Init(ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0, ctx_.log());
+            if (!res) {
+                ctx_.log()->Error("Failed to initialize pipeline!");
+            }
+        }
+
+        out_pipelines.emplace_back(&storage, new_index);
     }
 }
 

@@ -103,6 +103,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     AddComponent(AUX_GFX_THREAD, std::move(aux_gfx_thread));
 
     {
+        using namespace std::placeholders;
+
         auto sh_loader = GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
         auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
         auto random = GetComponent<Random>(RANDOM_KEY);
@@ -117,6 +119,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
         auto scene_manager = std::make_shared<SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads);
+        scene_manager->SetPipelineInitializer(std::bind(&Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
+
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 

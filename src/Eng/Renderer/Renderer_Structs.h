@@ -114,6 +114,8 @@ struct BasicDrawBatch {                       // NOLINT
 };
 static_assert(offsetof(BasicDrawBatch, indices_count) == 4, "!");
 
+enum class eFwdPipeline { FrontfaceDraw, BackfaceDraw, Wireframe, _Count };
+
 // Draw batch that allows to specify program for forward rendering
 struct CustomDrawBatch { // NOLINT
     // TODO: change order of alpha-test and two-sided

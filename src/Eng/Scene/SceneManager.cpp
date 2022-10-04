@@ -263,55 +263,6 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
     }
 
     StartTextureLoader();
-
-    const auto vtx_buf1 = ren_ctx.default_vertex_buf1();
-    const auto vtx_buf2 = ren_ctx.default_vertex_buf2();
-    const auto ndx_buf = ren_ctx.default_indices_buf();
-
-    const int buf1_stride = 16;
-
-    { // VertexInput for main drawing (uses all attributes)
-        const Ren::VtxAttribDesc attribs[] = {
-            // Attributes from buffer 1
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-            // Attributes from buffer 2
-            {vtx_buf2, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
-            {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
-
-        draw_pass_vi_.Setup(attribs, ndx_buf);
-    }
-
-    {
-        Ren::RenderTargetInfo color_rts[] = {
-            {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-#if REN_USE_OCT_PACKED_NORMALS == 1
-            {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-#else
-            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-#endif
-            {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
-             Ren::eLoadOp::Load, Ren::eStoreOp::Store}
-        };
-
-        color_rts[2].flags = Ren::eTexFlagBits::SRGB;
-
-        const auto depth_format = ren_ctx.capabilities.depth24_stencil8_format ? Ren::eTexFormat::Depth24Stencil8
-                                                                               : Ren::eTexFormat::Depth32Stencil8;
-
-        const Ren::RenderTargetInfo depth_rt = {depth_format, 1 /* samples */,
-                                                Ren::eImageLayout::DepthStencilAttachmentOptimal, Ren::eLoadOp::Load,
-                                                Ren::eStoreOp::Store};
-
-        const bool res = rp_main_draw_.Setup(ren_ctx.api_ctx(), color_rts, depth_rt, ren_ctx.log());
-        if (!res) {
-            ren_ctx.log()->Error("Failed to initialize render pass!");
-        }
-    }
 }
 
 SceneManager::~SceneManager() {
@@ -319,7 +270,7 @@ SceneManager::~SceneManager() {
     ClearScene();
 }
 
-void SceneManager::RegisterComponent(uint32_t index, CompStorage *storage,
+void SceneManager::RegisterComponent(const uint32_t index, CompStorage *storage,
                                      const std::function<PostLoadFunc> &post_init) {
     scene_data_.comp_store[index] = storage;
     component_post_load_[index] = post_init;
@@ -1237,7 +1188,7 @@ void SceneManager::OnLoadPipelines(const char *name, uint32_t flags, const char 
     using namespace SceneManagerConstants;
 
     const Ren::ProgramRef ret = sh_.LoadProgram(ren_ctx_, name, v_shader, f_shader, tc_shader, te_shader);
-    InitPipelinesForProgram(ret, flags, out_pipelines);
+    init_pipelines_(ret, flags, scene_data_.persistent_data.pipelines, out_pipelines);
 }
 
 Ren::Tex2DRef SceneManager::OnLoadTexture(const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
@@ -1477,58 +1428,6 @@ Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
 
     return Ren::Vec4f{float(pos[0]) / DECALS_ATLAS_RESX, float(pos[1]) / DECALS_ATLAS_RESY,
                       float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
-}
-
-void SceneManager::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
-                                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
-    for (int i = 0; i < 3; ++i) {
-        Ren::RastState rast_state;
-        if (i == 0) {
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
-        } else if (i == 1) {
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
-        }
-        if (i == 2) {
-            rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
-            rast_state.depth.test_enabled = false;
-        } else {
-            rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
-            rast_state.depth.test_enabled = true;
-        }
-
-        if (mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) {
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Less);
-
-            rast_state.blend.enabled = true;
-            rast_state.blend.src = unsigned(Ren::eBlendFactor::SrcAlpha);
-            rast_state.blend.dst = unsigned(Ren::eBlendFactor::OneMinusSrcAlpha);
-        } else {
-            rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
-        }
-
-        // find of create pipeline
-        uint32_t new_index = 0xffffffff;
-        for (auto it = std::begin(scene_data_.persistent_data.pipelines);
-             it != std::end(scene_data_.persistent_data.pipelines); ++it) {
-            if (it->prog() == prog && it->rast_state() == rast_state) {
-                new_index = it.index();
-                break;
-            }
-        }
-
-        if (new_index == 0xffffffff) {
-            new_index = scene_data_.persistent_data.pipelines.emplace();
-            Ren::Pipeline &new_pipeline = scene_data_.persistent_data.pipelines.at(new_index);
-
-            const bool res = new_pipeline.Init(ren_ctx_.api_ctx(), rast_state, prog, &draw_pass_vi_, &rp_main_draw_, 0,
-                                               ren_ctx_.log());
-            if (!res) {
-                ren_ctx_.log()->Error("Failed to initialize pipeline!");
-            }
-        }
-
-        out_pipelines.emplace_back(&scene_data_.persistent_data.pipelines, new_index);
-    }
 }
 
 void SceneManager::Serve(const int texture_budget) {

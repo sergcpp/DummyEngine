@@ -170,12 +170,13 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     const uint32_t render_mask = list.draw_cam.render_mask();
 
-    int pipeline_index = 0;
-    if ((list.render_flags & EnableLightmap) == 0) {
-        pipeline_index = 1;
-    }
+    int pipeline_index = int(eFwdPipeline::FrontfaceDraw);
     if ((list.render_flags & DebugWireframe) != 0) {
-        pipeline_index = 2;
+        pipeline_index = int(eFwdPipeline::Wireframe);
+    }
+
+    if ((list.render_flags & EnableLightmap) == 0) {
+        pipeline_index += int(eFwdPipeline::_Count);
     }
 
     const bool deferred_shading = (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
