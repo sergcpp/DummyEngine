@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <Ren/Context.h>
+
 #include "../assets/shaders/internal/blit_ssr_dilate_interface.glsl"
 #include "../assets/shaders/internal/blit_ssr_interface.glsl"
 #include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
@@ -383,10 +385,12 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
             data->dummy_black = rt_refl.AddTextureInput(dummy_black_, stage);
 
+            data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
+
             refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
             raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
 
-            rp_rt_reflections_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
+            rp_rt_reflections_.Setup(rp_builder_, &view_state_, &bindless, data);
             rt_refl.set_executor(&rp_rt_reflections_);
         }
     }

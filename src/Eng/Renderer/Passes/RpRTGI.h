@@ -3,7 +3,7 @@
 #include <Ren/Texture.h>
 #include <Ren/VertexInput.h>
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
 class PrimDraw;
@@ -19,7 +19,7 @@ struct RpRTGIData {
     RpResRef shared_data;
     RpResRef depth_tex;
     RpResRef normal_tex;
-    //RpResRef flat_normal_tex;
+    // RpResRef flat_normal_tex;
     RpResRef env_tex;
     RpResRef lm_tex[5];
     RpResRef dummy_black;
@@ -27,6 +27,8 @@ struct RpRTGIData {
     RpResRef ray_list;
     RpResRef indir_args;
     RpResRef tlas_buf; // fake read for now
+
+    Ren::IAccStructure *tlas = nullptr;
 
     bool two_bounce = false;
 
@@ -42,7 +44,6 @@ class RpRTGI : public RpExecutor {
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    const AccelerationStructureData *acc_struct_data_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
     const RpRTGIData *pass_data_;
@@ -53,10 +54,9 @@ class RpRTGI : public RpExecutor {
     void ExecuteRTInline(RpBuilder &builder);
 
   public:
-    void Setup(RpBuilder &builder, const ViewState *view_state, const AccelerationStructureData *acc_struct_data,
-               const BindlessTextureData *bindless_tex, const RpRTGIData *pass_data) {
+    void Setup(RpBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,
+               const RpRTGIData *pass_data) {
         view_state_ = view_state;
-        acc_struct_data_ = acc_struct_data;
         bindless_tex_ = bindless_tex;
         pass_data_ = pass_data;
     }

@@ -1,12 +1,11 @@
 #include "RpUpdateAccBuffers.h"
 
+#include <Ren/Context.h>
+
 void RpUpdateAccBuffersExecutor::Execute(RpBuilder &builder) {
-#if !defined(USE_GL_RENDER)
-    if (builder.ctx().capabilities.raytracing) {
+    if (builder.ctx().capabilities.raytracing || builder.ctx().capabilities.ray_query) {
         Execute_HWRT(builder);
-    } else
-#endif
-    {
+    } else {
         Execute_SWRT(builder);
     }
 }

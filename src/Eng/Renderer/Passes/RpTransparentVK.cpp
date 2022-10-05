@@ -13,8 +13,6 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
                                            RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
                                            RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
                                            RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
-    using namespace RpSharedInternal;
-
     auto &ctx = builder.ctx();
     auto *api_ctx = ctx.api_ctx();
 

@@ -290,7 +290,7 @@ class Renderer {
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               FrameTextures &frame_textures, bool debug_denoise);
+                               RpResRef rt_obj_instances_res, FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                                FrameTextures &frame_textures);

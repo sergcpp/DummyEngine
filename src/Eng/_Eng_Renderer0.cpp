@@ -61,6 +61,7 @@
 #include "Renderer/Passes/RpSkinningGL.cpp"
 #include "Renderer/Passes/RpSkydomeGL.cpp"
 #include "Renderer/Passes/RpTransparentGL.cpp"
+#include "Renderer/Passes/RpUpdateAccBuffersGL.cpp"
 
 #include "Renderer/Graph/GraphBuilderGL.cpp"
 #elif defined(USE_VK_RENDER)

@@ -1,9 +1,13 @@
 #include "RpBuildAccStructures.h"
 
+#include <deque>
+
+#include <Ren/Context.h>
+
 #include "../../Utils/BVHSplit.h"
 
 void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
-    if (builder.ctx().capabilities.raytracing) {
+    if (builder.ctx().capabilities.raytracing || builder.ctx().capabilities.ray_query) {
 #if !defined(USE_GL_RENDER)
         Execute_HWRT(builder);
 #endif
@@ -15,7 +19,6 @@ void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
 void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetWriteBuffer(rt_obj_instances_buf_);
     RpAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
-    // RpAllocBuf &rt_tlas_build_scratch_buf = builder.GetWriteBuffer(rt_tlas_build_scratch_buf_);
 
     Ren::Context &ctx = builder.ctx();
 
@@ -24,8 +27,7 @@ void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
-
-    auto &rt_tlas_stage_buf = p_list_->swrt.rt_tlas_nodes_stage_buf;
+    auto &rt_tlas_stage_buf = p_list_->swrt.rt_tlas_nodes_stage_buf[rt_index_];
 
     if (rt_obj_instances.count) {
         std::vector<prim_t> temp_primitives;

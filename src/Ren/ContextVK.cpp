@@ -175,7 +175,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
                VK_API_VERSION_MINOR(api_ctx_->device_properties.apiVersion));
 
     auto it =
-        std::find_if(std::begin(KnownVendors), std::end(KnownVendors), [this](std::pair<uint32_t, const char *> v) {
+        std::find_if(std::begin(KnownVendors), std::end(KnownVendors), [this](const std::pair<uint32_t, const char *> v) {
             return api_ctx_->device_properties.vendorID == v.first;
         });
     if (it != std::end(KnownVendors)) {

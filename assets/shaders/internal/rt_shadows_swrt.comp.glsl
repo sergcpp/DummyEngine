@@ -1,6 +1,5 @@
-#version 460
+#version 310 es
 #extension GL_KHR_shader_subgroup_arithmetic : require
-#extension GL_EXT_ray_query : require
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;
@@ -8,9 +7,16 @@
 #endif
 
 #include "_rt_common.glsl"
+#include "_swrt_common.glsl"
 #include "_texturing.glsl"
 #include "rt_shadows_interface.glsl"
 #include "rt_shadow_common.glsl.inl"
+
+/*
+UNIFORM_BLOCKS
+    SharedDataBlock : $ubSharedDataLoc
+    UniformParams : $ubUnifParamLoc
+*/
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -29,7 +35,8 @@ layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
 
-layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
+layout(binding = BLAS_BUF_SLOT) uniform samplerBuffer g_blas_nodes;
+layout(binding = TLAS_BUF_SLOT) uniform samplerBuffer g_tlas_nodes;
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     RTGeoInstance g_geometries[];
@@ -39,13 +46,12 @@ layout(std430, binding = MATERIAL_BUF_SLOT) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-layout(std430, binding = VTX_BUF1_SLOT) readonly buffer VtxData0 {
-    uvec4 g_vtx_data0[];
-};
+layout(binding = VTX_BUF1_SLOT) uniform samplerBuffer g_vtx_data0;
+layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 
-layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
-    uint g_indices[];
-};
+layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
+layout(binding = MESHES_BUF_SLOT) uniform usamplerBuffer g_meshes;
+layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
 
 layout(std430, binding = TILE_LIST_SLOT) readonly buffer TileList {
     uvec4 g_tile_list[];
@@ -101,48 +107,20 @@ void main() {
         // TODO: use flat normal here
         ray_origin_ws.xyz += 0.001 * normal_ws; //offset_ray(ray_origin_ws.xyz, 2 * normal_ws);
 
-        const uint ray_flags = gl_RayFlagsCullFrontFacingTrianglesEXT;
-
         float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
-        rayQueryEXT rq;
-        rayQueryInitializeEXT(rq,               // rayQuery
-                              g_tlas,           // topLevel
-                              ray_flags,        // rayFlags
-                              0xff,             // cullMask
-                              ray_origin_ws.xyz,// origin
-                              min_t,            // tMin
-                              shadow_ray_ws,    // direction
-                              max_t             // tMax
-                              );
-        while(rayQueryProceedEXT(rq)) {
-            if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
-                // perform alpha test
-                int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
-                int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, false);
-                int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
-                vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, false);
+        vec3 inv_d = safe_invert(shadow_ray_ws.xyz);
 
-                RTGeoInstance geo = g_geometries[custom_index + geo_index];
-                MaterialData mat = g_materials[geo.material_index];
+        hit_data_t inter;
+        inter.mask = 0;
+        inter.obj_index = inter.prim_index = 0;
+        inter.geo_index = inter.geo_count = 0;
+        inter.t = 1000.0;
+        inter.u = inter.v = 0.0;
 
-                uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
-                uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
-                uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
-
-                vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-                vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-                vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
-
-                vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                float alpha = textureLod(SAMPLER2D(mat.texture_indices[3]), uv, 0.0).r;
-                if (alpha >= 0.5) {
-                    rayQueryConfirmIntersectionEXT(rq);
-                }
-            }
-        }
-
-        if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+        Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
+                                     ray_origin_ws.xyz, shadow_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
+        if (inter.mask != 0) {
             is_in_shadow = true;
         }
     }

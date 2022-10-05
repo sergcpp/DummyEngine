@@ -10,11 +10,11 @@
 
 #include "../assets/shaders/internal/rt_reflections_interface.glsl"
 
-void RpRTReflections::ExecuteHWRTPipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTReflections::ExecuteHWRTInline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTReflections::ExecuteSWRT(RpBuilder &builder) {
+void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);

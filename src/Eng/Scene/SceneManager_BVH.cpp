@@ -2,6 +2,7 @@
 
 #include <deque>
 
+#include <Ren/Context.h>
 #include <Sys/BinaryTree.h>
 #include <Sys/MonoAlloc.h>
 
@@ -771,6 +772,8 @@ void SceneManager::InitSWRTAccStructures() {
     const uint32_t max_nodes_count = REN_MAX_RT_TLAS_NODES;
     scene_data_.persistent_data.rt_tlas_buf =
         ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
+    scene_data_.persistent_data.rt_sh_tlas_buf =
+        ren_ctx_.LoadBuffer("TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
 
 #if defined(USE_VK_RENDER)
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);

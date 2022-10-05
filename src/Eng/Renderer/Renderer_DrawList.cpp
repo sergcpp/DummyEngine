@@ -4,8 +4,8 @@ void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _insta
                     Ren::BufferRef _instance_indices_stage_buf, Ren::BufferRef _skin_transforms_stage_buf,
                     Ren::BufferRef _shape_keys_stage_buf, Ren::BufferRef _cells_stage_buf,
                     Ren::BufferRef _items_stage_buf, Ren::BufferRef _lights_stage_buf, Ren::BufferRef _decals_stage_buf,
-                    Ren::BufferRef _rt_obj_instances_stage_buf, Ren::BufferRef _rt_tlas_nodes_stage_buf,
-                    Ren::BufferRef _rt_sh_obj_instances_stage_buf) {
+                    Ren::BufferRef _rt_obj_instances_stage_buf, Ren::BufferRef _rt_sh_obj_instances_stage_buf,
+                    Ren::BufferRef _rt_tlas_nodes_stage_buf, Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
     instance_indices.realloc(REN_MAX_INSTANCES_TOTAL);
     instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
     shadow_batches.realloc(REN_MAX_SHADOW_BATCHES);
@@ -41,7 +41,8 @@ void DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _insta
     }
     rt_obj_instances_stage_buf[0] = std::move(_rt_obj_instances_stage_buf);
     rt_obj_instances_stage_buf[1] = std::move(_rt_sh_obj_instances_stage_buf);
-    swrt.rt_tlas_nodes_stage_buf = std::move(_rt_tlas_nodes_stage_buf);
+    swrt.rt_tlas_nodes_stage_buf[0] = std::move(_rt_tlas_nodes_stage_buf);
+    swrt.rt_tlas_nodes_stage_buf[1] = std::move(_rt_sh_tlas_nodes_stage_buf);
 
     shared_data_stage_buf = std::move(_shared_data_stage_buf);
 
