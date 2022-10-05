@@ -259,6 +259,8 @@ void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr
             cur_bind_target = &unif_bindings;
         } else if (item == "UNIFORM_BLOCKS") {
             cur_bind_target = &blck_bindings;
+        } else if (item == "PERM") {
+            cur_bind_target = nullptr;
         } else if (cur_bind_target) {
             p = q + 1;
             q = strpbrk(p, delims);
