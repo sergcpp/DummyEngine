@@ -760,7 +760,7 @@ void SceneManager::InitSWRTAccStructures() {
     scene_data_.persistent_data.rt_blas_buf =
         ren_ctx_.LoadBuffer("SWRT BLAS Buf", Ren::eBufType::Storage, total_nodes_size);
     scene_data_.persistent_data.swrt.rt_prim_indices_buf =
-        ren_ctx_.LoadBuffer("SWRT Prim Indices Buf", Ren::eBufType::Storage, total_prim_indices_size);
+        ren_ctx_.LoadBuffer("SWRT Prim Indices Buf", Ren::eBufType::Texture, total_prim_indices_size);
     scene_data_.persistent_data.swrt.rt_meshes_buf =
         ren_ctx_.LoadBuffer("SWRT Meshes Buf", Ren::eBufType::Storage, total_meshes_size);
     scene_data_.persistent_data.rt_instance_buf =
