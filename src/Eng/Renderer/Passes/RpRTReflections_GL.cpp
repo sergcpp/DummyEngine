@@ -50,6 +50,47 @@ void RpRTReflections::ExecuteSWRT(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
+    if (!vtx_buf1.tbos[0] || vtx_buf1.tbos[0]->params().size != vtx_buf1.ref->size()) {
+        vtx_buf1.tbos[0] =
+            ctx.CreateTexture1D("Vertex Buf 1 TBO", vtx_buf1.ref, Ren::eTexFormat::RawRGBA32F, 0, vtx_buf1.ref->size());
+    }
+
+    if (!vtx_buf2.tbos[0] || vtx_buf2.tbos[0]->params().size != vtx_buf2.ref->size()) {
+        vtx_buf2.tbos[0] = ctx.CreateTexture1D("Vertex Buf 2 TBO", vtx_buf2.ref, Ren::eTexFormat::RawRGBA32UI, 0,
+                                               vtx_buf2.ref->size());
+    }
+
+    if (!ndx_buf.tbos[0] || ndx_buf.tbos[0]->params().size != ndx_buf.ref->size()) {
+        ndx_buf.tbos[0] =
+            ctx.CreateTexture1D("Index Buf TBO", ndx_buf.ref, Ren::eTexFormat::RawR32UI, 0, ndx_buf.ref->size());
+    }
+
+    if (!prim_ndx_buf.tbos[0] || prim_ndx_buf.tbos[0]->params().size != prim_ndx_buf.ref->size()) {
+        prim_ndx_buf.tbos[0] = ctx.CreateTexture1D("Prim Ndx TBO", prim_ndx_buf.ref, Ren::eTexFormat::RawR32UI, 0,
+                                                   prim_ndx_buf.ref->size());
+    }
+
+    if (!rt_blas_buf.tbos[0] || rt_blas_buf.tbos[0]->params().size != rt_blas_buf.ref->size()) {
+        rt_blas_buf.tbos[0] = ctx.CreateTexture1D("RT BLAS TBO", rt_blas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+                                                  rt_blas_buf.ref->size());
+    }
+
+    if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
+        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+                                                  rt_tlas_buf.ref->size());
+    }
+
+    if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
+        mesh_instances_buf.tbos[0] =
+            ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+                                mesh_instances_buf.ref->size());
+    }
+
+    if (!meshes_buf.tbos[0] || meshes_buf.tbos[0]->params().size != meshes_buf.ref->size()) {
+        meshes_buf.tbos[0] =
+            ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
+    }
+
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::SBuf, REN_BINDLESS_TEX_SLOT, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
@@ -59,16 +100,16 @@ void RpRTReflections::ExecuteSWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTReflections::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::BLAS_BUF_SLOT, *rt_blas_buf.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::TLAS_BUF_SLOT, *rt_tlas_buf.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::MESHES_BUF_SLOT, *meshes_buf.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.ref},
+        {Ren::eBindTarget::TBuf, RTReflections::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::SBuf, RTReflections::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::MATERIAL_BUF_SLOT, *materials_buf.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::VTX_BUF1_SLOT, *vtx_buf1.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.ref},
-        {Ren::eBindTarget::SBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.ref},
+        {Ren::eBindTarget::TBuf, RTReflections::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
