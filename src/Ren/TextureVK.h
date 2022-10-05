@@ -164,13 +164,6 @@ void CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, uint32_t src_level, ui
 
 void ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf);
 
-struct Texture1DParams {
-    uint16_t offset = 0, size = 0;
-    eTexFormat format = eTexFormat::Undefined;
-    uint8_t _padding;
-};
-static_assert(sizeof(Texture1DParams) == 6, "!");
-
 class Texture1D : public RefCounter {
     BufferRef buf_;
     Texture1DParams params_;

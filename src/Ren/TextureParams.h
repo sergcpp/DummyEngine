@@ -137,6 +137,13 @@ inline bool operator==(const Tex2DParams &lhs, const Tex2DParams &rhs) {
 }
 inline bool operator!=(const Tex2DParams &lhs, const Tex2DParams &rhs) { return !operator==(lhs, rhs); }
 
+struct Texture1DParams {
+    uint32_t offset = 0, size = 0;
+    uint8_t _padding[3];
+    eTexFormat format = eTexFormat::Undefined;
+};
+static_assert(sizeof(Texture1DParams) == 12, "!");
+
 enum class eTexLoadStatus { Found, Reinitialized, CreatedDefault, CreatedFromData };
 
 } // namespace Ren
