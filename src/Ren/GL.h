@@ -373,6 +373,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_RG16_SNORM_EXT       0x8F99
 
 #define GL_RGBA32F              0x8814
+#define GL_RGBA32UI             0x8D70
 #define GL_RGB32F               0x8815
 
 #define GL_RGB16F               0x881B

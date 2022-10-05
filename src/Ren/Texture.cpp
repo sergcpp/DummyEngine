@@ -52,6 +52,7 @@ const int g_per_pixel_data_len[] = {
     2,  // RawRG88
     12, // RawRGB32F
     16, // RawRGBA32F
+    16, // RawRGBA32UI
     4,  // RawRGBE8888
     6,  // RawRGB16F
     8,  // RawRGBA16F

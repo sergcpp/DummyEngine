@@ -32,6 +32,7 @@ const uint32_t g_gl_formats[] = {
     GL_RG,                       // RawRG88
     GL_RGB,                      // RawRGB32F
     GL_RGBA,                     // RawRGBA32F
+    GL_RGBA,                     // RawRGBA32UI
     0xffffffff,                  // RawRGBE8888
     GL_RGB,                      // RawRGB16F
     GL_RGBA,                     // RawRGBA16F
@@ -69,6 +70,7 @@ const uint32_t g_gl_internal_formats[] = {
     GL_RG8,               // RawRG88
     GL_RGB32F,            // RawRGB32F
     GL_RGBA32F,           // RawRGBA32F
+    GL_RGBA32UI,          // RawRGBA32UI
     0xffffffff,           // RawRGBE8888
     GL_RGB16F,            // RawRGB16F
     GL_RGBA16F,           // RawRGBA16F
@@ -106,6 +108,7 @@ const uint32_t g_gl_types[] = {
     GL_UNSIGNED_BYTE,  // RawRG88
     GL_FLOAT,          // RawRGB32F
     GL_FLOAT,          // RawRGBA32F
+    GL_UNSIGNED_INT,   // RawRGBA32UI
     0xffffffff,        // RawRGBE8888
     GL_HALF_FLOAT,     // RawRGB16F
     GL_HALF_FLOAT,     // RawRGBA16F
