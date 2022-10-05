@@ -11,13 +11,11 @@
 void RpRTReflections::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
-    if (builder.ctx().capabilities.raytracing) {
-        if (builder.ctx().capabilities.ray_query) {
-            ExecuteHWRTInline(builder);
-        } else {
-            ExecuteHWRTPipeline(builder);
-        }
+    if (builder.ctx().capabilities.ray_query) {
+        Execute_HWRT_Inline(builder);
+    } else if (builder.ctx().capabilities.raytracing) {
+        Execute_HWRT_Pipeline(builder);
     } else {
-        ExecuteSWRT(builder);
+        Execute_SWRT(builder);
     }
 }

@@ -87,18 +87,23 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
         ren_ctx_->LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
         ren_ctx_->LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, DecalsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_obj_instances_stage_buf, rt_tlas_nodes_stage_buf;
+    Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
+        rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx_->capabilities.raytracing) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
                                                           HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
-    } else {
+        rt_sh_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
+                                                             HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    } else if (ren_ctx_->capabilities.swrt) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
                                                           SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_sh_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
+                                                             SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT TLAS Nodes (Stage)", Ren::eBufType::Stage,
                                                        SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_sh_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT Shadow TLAS Nodes (Stage)", Ren::eBufType::Stage,
+                                                          SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
-    Ren::BufferRef rt_sh_obj_instances_stage_buf = ren_ctx_->LoadBuffer(
-        "RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage, HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
 
     Ren::BufferRef shared_data_stage_buf =
         ren_ctx_->LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage, SharedDataBlockSize * Ren::MaxFramesInFlight);
@@ -110,7 +115,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
         main_view_lists_[i].Init(shared_data_stage_buf, instances_stage_buf, instance_indices_stage_buf,
                                  skin_transforms_stage_buf, shape_keys_stage_buf, cells_stage_buf, items_stage_buf,
                                  lights_stage_buf, decals_stage_buf, rt_obj_instances_stage_buf,
-                                 rt_tlas_nodes_stage_buf, rt_sh_obj_instances_stage_buf);
+                                 rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf);
     }
 }
 

@@ -250,7 +250,7 @@ struct FrontendInfo {
 };
 
 struct PassTiming {
-    std::string name;
+    char name[64];
     uint64_t duration;
 };
 
@@ -313,6 +313,10 @@ struct RTGeoInstance {
 };
 static_assert(sizeof(RTGeoInstance) == 32, "!");
 
+namespace Ren {
+class IAccStructure;
+}
+
 struct RTObjInstance {
     float xform[3][4];
     float bbox_min_ws[3];
@@ -341,12 +345,15 @@ struct BindlessTextureData {
 #endif
 };
 
+enum class eTLASIndex { Main, Shadow, _Count };
+
 struct AccelerationStructureData {
     Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf;
     struct {
         uint32_t rt_tlas_build_scratch_size = 0;
     } hwrt;
-    Ren::IAccStructure *rt_tlas[2] = {};
+
+    Ren::IAccStructure *rt_tlases[int(eTLASIndex::_Count)] = {};
 };
 
 //

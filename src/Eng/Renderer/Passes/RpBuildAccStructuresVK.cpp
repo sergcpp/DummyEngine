@@ -1,5 +1,7 @@
 #include "RpBuildAccStructures.h"
 
+#include <Ren/Context.h>
+
 void RpBuildAccStructuresExecutor::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetReadBuffer(rt_obj_instances_buf_);
     RpAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
@@ -8,7 +10,7 @@ void RpBuildAccStructuresExecutor::Execute_HWRT(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *vk_tlas = reinterpret_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas[rt_index_]);
+    auto *vk_tlas = reinterpret_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlases[rt_index_]);
 
     VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};

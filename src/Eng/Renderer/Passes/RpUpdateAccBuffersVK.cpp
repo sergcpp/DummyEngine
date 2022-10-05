@@ -1,5 +1,7 @@
 #include "RpUpdateAccBuffers.h"
 
+#include <Ren/Context.h>
+
 void RpUpdateAccBuffersExecutor::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetWriteBuffer(rt_obj_instances_buf_);
 

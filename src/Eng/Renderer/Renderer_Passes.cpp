@@ -2,8 +2,10 @@
 
 #include <Eng/Random.h>
 #include <Ren/Context.h>
+#include <Sys/Time_.h>
 
 #include "../Utils/ShaderLoader.h"
+#include "Renderer_Names.h"
 
 #include "../assets/shaders/internal/blit_bilateral_interface.glsl"
 #include "../assets/shaders/internal/blit_down_depth_interface.glsl"
@@ -1408,7 +1410,8 @@ void Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &output_te
         params.format = Ren::eTexFormat::RawRGBA8888;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-        output_tex = data->out_color_tex = debug_motion.AddStorageImageOutput("Velocity Debug", params, Ren::eStageBits::ComputeShader);
+        output_tex = data->out_color_tex =
+            debug_motion.AddStorageImageOutput("Velocity Debug", params, Ren::eStageBits::ComputeShader);
     }
 
     debug_motion.set_execute_cb([this, data](RpBuilder &builder) {

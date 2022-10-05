@@ -24,9 +24,9 @@ const float WindMotionDampBase = 3;
 const float WindMotionDampLevelMul = 0.8;
 
 vec2 get_uv_by_index(uint index) {
-    vec2 invRes = 1.0/vec2(PP_RES_X, PP_RES_Y);
     vec2 idx2D = vec2(index % PP_RES_X, index / PP_RES_X);
 
+    const vec2 invRes = 1.0 / vec2(PP_RES_X, PP_RES_Y);
     return (idx2D + 0.5) * invRes;
 }
 

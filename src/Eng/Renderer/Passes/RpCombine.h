@@ -3,7 +3,7 @@
 #include <Ren/RenderPass.h>
 #include <Ren/Texture.h>
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/SubPass.h"
 
 class PrimDraw;
 struct ViewState;

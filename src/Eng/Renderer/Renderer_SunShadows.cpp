@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <Ren/Context.h>
+
 #include "../assets/shaders/internal/rt_shadow_classify_interface.glsl"
 #include "../assets/shaders/internal/rt_shadow_classify_tiles_interface.glsl"
 #include "../assets/shaders/internal/rt_shadow_debug_interface.glsl"
@@ -10,8 +12,8 @@
 
 void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, FrameTextures &frame_textures,
-                                     const bool debug_denoise) {
+                                     const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
+                                     FrameTextures &frame_textures, const bool debug_denoise) {
     RpResRef indir_args;
 
     { // Prepare atomic counter
@@ -165,23 +167,33 @@ void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const 
         data->geo_data = rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
         data->materials = rt_shadows.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
         data->vtx_buf1 = rt_shadows.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
-        data->vtx_buf2 = rt_shadows.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
         data->ndx_buf = rt_shadows.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
         data->shared_data = rt_shadows.AddUniformBufferInput(common_buffers.shared_data_res, stage);
         data->noise_tex = rt_shadows.AddTextureInput(noise_tex, stage);
         data->depth_tex = rt_shadows.AddTextureInput(frame_textures.depth, stage);
         data->normal_tex = rt_shadows.AddTextureInput(frame_textures.normal, stage);
-        // data->env_tex = rt_shadows.AddTextureInput(env_map, stage);
-        // data->ray_counter = rt_shadows.AddStorageReadonlyInput(ray_counter, stage);
-        // data->ray_list = rt_shadows.AddStorageReadonlyInput(ray_rt_list, stage);
-        // data->indir_args = rt_shadows.AddIndirectBufferInput(indir_rt_disp_buf);
         data->tlas_buf = rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_sh_tlas_buf, stage);
         data->tile_list_buf = rt_shadows.AddStorageReadonlyInput(tile_list, stage);
         data->indir_args = rt_shadows.AddIndirectBufferInput(indir_args);
 
+        data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Shadow)];
+
         ray_hits_tex = data->out_shadow_tex = rt_shadows.AddStorageImageOutput(ray_hits_tex, stage);
 
-        rp_rt_shadows_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
+        if (!ctx_.capabilities.raytracing) {
+            data->swrt.root_node = persistent_data.swrt.rt_root_node;
+            data->swrt.blas_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stage);
+            data->swrt.prim_ndx_buf =
+                rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
+            data->swrt.meshes_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
+            data->swrt.mesh_instances_buf = rt_shadows.AddStorageReadonlyInput(rt_obj_instances_res, stage);
+
+#if defined(USE_GL_RENDER)
+            data->swrt.textures_buf = rt_shadows.AddStorageReadonlyInput(bindless.textures_buf, stage);
+#endif
+        }
+
+        rp_rt_shadows_.Setup(rp_builder_, &view_state_, &bindless, data);
         rt_shadows.set_executor(&rp_rt_shadows_);
     }
 

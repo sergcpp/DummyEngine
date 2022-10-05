@@ -9,9 +9,13 @@
 #include "../Renderer_Structs.h"
 
 void RpRTShadows::Execute(RpBuilder &builder) {
+    LazyInit(builder.ctx(), builder.sh());
+
     if (builder.ctx().capabilities.ray_query) {
-        ExecuteRTInline(builder);
+        Execute_HWRT_Inline(builder);
+    } else if (builder.ctx().capabilities.raytracing) {
+        Execute_HWRT_Pipeline(builder);
     } else {
-        ExecuteRTPipeline(builder);
+        Execute_SWRT(builder);
     }
 }

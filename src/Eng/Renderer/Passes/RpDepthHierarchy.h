@@ -2,7 +2,7 @@
 
 #include <Ren/Pipeline.h>
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/SubPass.h"
 
 struct ViewState;
 

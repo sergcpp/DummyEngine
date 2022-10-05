@@ -1,5 +1,9 @@
 #include "Renderer.h"
 
+#include <Ren/Context.h>
+
+#include "Renderer_Names.h"
+
 #include "../assets/shaders/internal/gi_blur_interface.glsl"
 #include "../assets/shaders/internal/gi_classify_tiles_interface.glsl"
 #include "../assets/shaders/internal/gi_prefilter_interface.glsl"
@@ -396,9 +400,11 @@ void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::Wea
 
             data->dummy_black = rt_gi.AddTextureInput(dummy_black_, stage);
 
+            data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
+
             gi_tex = data->out_gi_tex = rt_gi.AddStorageImageOutput(gi_tex, stage);
 
-            rp_rt_gi_.Setup(rp_builder_, &view_state_, &acc_struct_data, &bindless, data);
+            rp_rt_gi_.Setup(rp_builder_, &view_state_, &bindless, data);
             rt_gi.set_executor(&rp_rt_gi_);
         }
     }

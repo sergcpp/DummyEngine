@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/SubPass.h"
 
 class PrimDraw;
 struct ViewState;

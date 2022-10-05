@@ -264,7 +264,6 @@ void SceneManager::UpdateMaterialsBuffer() {
             if (ren_ctx_.capabilities.raytracing) {
                 descr_write.dstSet = scene_data_.persistent_data.rt_textures_descr_sets[ren_ctx_.backend_frame()];
                 vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
-                
             }
             if (ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) {
                 descr_write.dstSet =

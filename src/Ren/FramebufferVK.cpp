@@ -52,7 +52,7 @@ bool Ren::Framebuffer::Changed(const RenderPass &render_pass, const WeakTex2DRef
     return true;
 }
 
-bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
+bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, const int _w, const int _h,
                              const WeakTex2DRef _depth_attachment, const WeakTex2DRef _stencil_attachment,
                              Span<const WeakTex2DRef> _color_attachments, const bool is_multisampled, ILog *log) {
     if (!Changed(render_pass, _depth_attachment, _stencil_attachment, _color_attachments)) {
@@ -113,7 +113,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     return res == VK_SUCCESS;
 }
 
-bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, int _w, int _h,
+bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass, const int _w, const int _h,
                              const RenderTarget &_depth_target, const RenderTarget &_stencil_target,
                              Span<const RenderTarget> _color_targets, ILog *log) {
     Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;

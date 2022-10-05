@@ -3,7 +3,7 @@
 #include <Ren/Texture.h>
 #include <Ren/VertexInput.h>
 
-#include "../Graph/GraphBuilder.h"
+#include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
 class PrimDraw;

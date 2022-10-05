@@ -10,7 +10,7 @@
 
 #include "../assets/shaders/internal/rt_reflections_interface.glsl"
 
-void RpRTReflections::ExecuteHWRTPipeline(RpBuilder &builder) {
+void RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -41,7 +41,7 @@ void RpRTReflections::ExecuteHWRTPipeline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas[0]);
+    auto *acc_struct = static_cast<Ren::AccStructureVK *>(pass_data_->tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -89,7 +89,7 @@ void RpRTReflections::ExecuteHWRTPipeline(RpBuilder &builder) {
                               indir_args_buf.ref->vk_device_address());
 }
 
-void RpRTReflections::ExecuteHWRTInline(RpBuilder &builder) {
+void RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -120,7 +120,7 @@ void RpRTReflections::ExecuteHWRTInline(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
 
-    auto *acc_struct = static_cast<Ren::AccStructureVK *>(acc_struct_data_->rt_tlas[0]);
+    auto *acc_struct = static_cast<Ren::AccStructureVK *>(pass_data_->tlas);
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
@@ -167,7 +167,7 @@ void RpRTReflections::ExecuteHWRTInline(RpBuilder &builder) {
                           VkDeviceSize(sizeof(VkTraceRaysIndirectCommandKHR)));
 }
 
-void RpRTReflections::ExecuteSWRT(RpBuilder &builder) {
+void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
