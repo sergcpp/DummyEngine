@@ -628,10 +628,19 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int
                     int c[4][4];
 
                     // fetch inner quad
+                    // TODO: optimize this!
                     c[1][1] = tex[((j + 0) * _prev_w + i + 0) * channels + k];
-                    c[1][2] = tex[((j + 0) * _prev_w + i + 1) * channels + k];
-                    c[2][1] = tex[((j + 1) * _prev_w + i + 0) * channels + k];
-                    c[2][2] = tex[((j + 1) * _prev_w + i + 1) * channels + k];
+                    if (i + 1 < _prev_w) {
+                        c[1][2] = tex[((j + 0) * _prev_w + i + 1) * channels + k];
+                    } else {
+                        c[1][2] = c[1][1];
+                    }
+                    if (j + 1 < _prev_h) {
+                        c[2][1] = tex[((j + 1) * _prev_w + i + 0) * channels + k];
+                        c[2][2] = tex[((j + 1) * _prev_w + i + 1) * channels + k];
+                    } else {
+                        c[2][1] = c[2][2] = c[1][1];
+                    }
 
                     if (op[k] == eMipOp::Avg) {
                         mipmaps[mip_count][count * channels + k] = uint8_t((c[1][1] + c[1][2] + c[2][1] + c[2][2]) / 4);
