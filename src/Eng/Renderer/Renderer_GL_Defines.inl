@@ -117,7 +117,7 @@
 
 #define REN_MAX_RT_GEO_INSTANCES	16384
 #define REN_MAX_RT_OBJ_INSTANCES	4096
-#define REN_MAX_RT_TLAS_NODES		8191 // (4096 + 2048 + 1024 + ...)
+#define REN_MAX_RT_TLAS_NODES		8192 // (4096 + 2048 + 1024 + ...)
 
 #define REN_OIT_DISABLED            0
 #define REN_OIT_MOMENT_BASED        1
