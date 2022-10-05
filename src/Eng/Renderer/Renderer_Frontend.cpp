@@ -931,9 +931,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const uint32_t mat_flags = mat->flags();
 
                     if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                        if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures[0]) {
-                            // assume only the first texture gives transparency
-                            __record_texture(list.visible_textures, mat->textures[0], 0, 0xffffu);
+                        if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
+                            mat->textures[3]) {
+                            // assume only the third texture gives transparency
+                            __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
                         }
 
                         BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
@@ -1131,9 +1132,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             const uint32_t mat_flags = mat->flags();
 
                             if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                                if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures[0]) {
-                                    // assume only the first texture gives transparency
-                                    __record_texture(list.visible_textures, mat->textures[0], 0, 0xffffu);
+                                if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
+                                    mat->textures[3]) {
+                                    // assume only the third texture gives transparency
+                                    __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
                                 }
 
                                 BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
@@ -2103,7 +2105,6 @@ uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage, const R
 
     TexEntry *entry =
         std::lower_bound(beg, end, index, [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
-
     if (entry == end || entry->index != index) {
         ++storage.count;
         std::copy_backward(entry, end, end + 1);
