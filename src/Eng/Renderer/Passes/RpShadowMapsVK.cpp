@@ -224,6 +224,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
             vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.handle());
             vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 0, 2,
                                     vege_descr_sets, 0, nullptr);
+            uint32_t bound_descr_id = 0;
 
             vi_depth_pass_vege_solid_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
@@ -250,6 +251,13 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                     const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
                     if (!batch.instance_count || batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
                         continue;
+                    }
+
+                    const uint32_t descr_id = batch.material_index / materials_per_descriptor;
+                    if (descr_id != bound_descr_id) {
+                        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 1, 1,
+                                                &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
+                        bound_descr_id = descr_id;
                     }
 
                     vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
@@ -291,8 +299,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
                     const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
-                    if (!batch.instance_count || !batch.alpha_test_bit ||
-                        batch.type_bits == BasicDrawBatch::TypeVege) {
+                    if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits == BasicDrawBatch::TypeVege) {
                         continue;
                     }
 
@@ -342,8 +349,7 @@ void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex)
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
                     const auto &batch = (*p_list_)->shadow_batches.data[(*p_list_)->shadow_batch_indices.data[j]];
-                    if (!batch.instance_count || !batch.alpha_test_bit ||
-                        batch.type_bits != BasicDrawBatch::TypeVege) {
+                    if (!batch.instance_count || !batch.alpha_test_bit || batch.type_bits != BasicDrawBatch::TypeVege) {
                         continue;
                     }
 

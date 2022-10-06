@@ -953,8 +953,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                         batch.base_vertex = proc_objects_[i.index].base_vertex;
                         batch.indices_count = grp.num_indices;
                         batch.instance_index = i.index;
-                        batch.material_index =
-                            (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? int32_t(grp.mat.index()) : 0;
+                        batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
+                                                (batch.type_bits == BasicDrawBatch::TypeVege))
+                                                   ? int32_t(grp.mat.index())
+                                                   : 0;
                         batch.instance_count = 1;
                     }
                 }
@@ -1154,8 +1156,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                                 batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
                                 batch.instance_index = n->prim_index;
-                                batch.material_index =
-                                    (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? uint32_t(grp.mat.index()) : 0;
+                                batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
+                                                        (batch.type_bits == BasicDrawBatch::TypeVege))
+                                                           ? uint32_t(grp.mat.index())
+                                                           : 0;
                                 batch.instance_count = 1;
                             }
                         }

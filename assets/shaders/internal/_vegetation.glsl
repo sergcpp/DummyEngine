@@ -36,16 +36,14 @@ int get_index_by_uv(vec2 uv) {
     return idx2D[0] + idx2D[1] * PP_RES_X;
 }
 
-int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, mat4 xform, out vec3 pivot_pos) {
+int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, out vec3 pivot_pos) {
     vec4 result = textureLod(pp_pos_tex, coords, 0.0);
 
-    pivot_pos = 0.01 * result.xyz;
+    pivot_pos = result.xyz;
 
     //
     pivot_pos = vec3(pivot_pos.x, pivot_pos.z, pivot_pos.y);
     //
-
-    pivot_pos = (xform * vec4(pivot_pos, 1.0)).xyz;
 
     // Unpack int from float
     int idx = int(result.w);
@@ -53,7 +51,7 @@ int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, mat4 xform
     return idx;
 }
 
-vec4 get_parent_pivot_direction_and_extent(sampler2D pp_dir_tex, vec2 coords, mat4 xform) {
+vec4 get_parent_pivot_direction_and_extent(sampler2D pp_dir_tex, vec2 coords) {
     vec4 result = textureLod(pp_dir_tex, coords, 0.0);
     result.xyz = result.xyz * 2.0 - 1.0;
 
@@ -61,8 +59,8 @@ vec4 get_parent_pivot_direction_and_extent(sampler2D pp_dir_tex, vec2 coords, ma
     result.xyz = vec3(result.x, result.z, result.y);
     //
 
-    result.xyz = normalize((xform * vec4(result.xyz, 0.0)).xyz);
-    result.w *= 0.01 * PP_EXTENT;
+    result.xyz = normalize(result.xyz);
+    result.w *= PP_EXTENT;
 
     return result;
 }
@@ -76,7 +74,7 @@ struct HierarchyData {
     vec4 branch_dir_extent[MAX_ALLOWED_HIERARCHY];
 };
 
-HierarchyData FetchHierarchyData(sampler2D pp_pos_tex, sampler2D pp_dir_tex, vec2 start_coords, mat4 xform) {
+HierarchyData FetchHierarchyData(sampler2D pp_pos_tex, sampler2D pp_dir_tex, vec2 start_coords) {
     HierarchyData data;
     data.max_hierarchy_level = 0;
 
@@ -84,8 +82,8 @@ HierarchyData FetchHierarchyData(sampler2D pp_pos_tex, sampler2D pp_dir_tex, vec
     // Iterate starting from SELF, as in HierarchyData
     for(int level = 0; level < MAX_ALLOWED_HIERARCHY; ++level) {
         int cur_idx = get_index_by_uv(current_uv);
-        int parent_idx = get_parent_index_and_pivot_pos(pp_pos_tex, current_uv, xform, data.branch_pivot_pos[level].xyz);
-        data.branch_dir_extent[level] = get_parent_pivot_direction_and_extent(pp_dir_tex, current_uv, xform);
+        int parent_idx = get_parent_index_and_pivot_pos(pp_pos_tex, current_uv, data.branch_pivot_pos[level].xyz);
+        data.branch_dir_extent[level] = get_parent_pivot_direction_and_extent(pp_dir_tex, current_uv);
 
         // False will happen at trunk level
         if (cur_idx != parent_idx) {
@@ -120,11 +118,6 @@ vec4 make_quat(vec3 axis, float angle) {
 vec3 quat_rotate(vec4 q, vec3 v) {
     vec3 t = 2 * cross(q.xyz, v);
     return v + q.w * t + cross(q.xyz, t);
-}
-
-vec3 SampleAmbientWind(sampler2D noise_tex, vec3 branch_tip_pos, vec2 scroll, float mult) {
-    vec3 noise_dir = textureLod(noise_tex, branch_tip_pos.xz + vec2(branch_tip_pos.y, 0.0) + 2.0 * scroll, 0.0).rgb;
-    return 100.0 * mult * (0.15 * vec3(1.0, 0.0, 0.0) + 0.25 * noise_dir);
 }
 
 vec3 TransformVegetation(vec3 old_pos, inout vec3 inout_normal, inout vec3 inout_tangent, sampler2D noise_tex,

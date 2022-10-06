@@ -50,7 +50,7 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
             }
         }
 
-        { // VAO for solid shadow pass of vegetation (uses position and color attributes)
+        { // VAO for solid shadow pass of vegetation (uses position and secondary uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf2.ref->handle(), REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
@@ -68,8 +68,8 @@ void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx
             }
         }
 
-        { // VAO for transparent shadow pass of vegetation (uses position, color and
-          // uv attributes)
+        { // VAO for transparent shadow pass of vegetation (uses position, primary and
+          // secondary uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
                 {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
                 {vtx_buf1.ref->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
