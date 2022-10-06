@@ -65,6 +65,7 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
 
     id_ = exchange(rhs.id_, 0);
     type_ = rhs.type_;
+    source_ = rhs.source_;
     name_ = std::move(rhs.name_);
 
     attr_bindings = std::move(rhs.attr_bindings);
@@ -104,6 +105,8 @@ void Ren::Shader::InitFromGLSL(const char *shader_src, const eShaderType type, e
 #endif
     }
 
+    source_ = eShaderSource::GLSL;
+
     ParseGLSLBindings(shader_src, attr_bindings, unif_bindings, blck_bindings, log);
 
     (*status) = eShaderLoadStatus::CreatedFromData;
@@ -125,6 +128,7 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_data, const int data_size,
     }
 
     type_ = type;
+    source_ = eShaderSource::SPIRV;
 
 #ifdef ENABLE_OBJ_LABELS
     glObjectLabel(GL_SHADER, id_, -1, name_.c_str());

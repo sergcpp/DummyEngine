@@ -13,6 +13,7 @@ class ILog;
 class Shader : public RefCounter {
     uint32_t id_ = 0;
     eShaderType type_ = eShaderType::_Count;
+    eShaderSource source_ = eShaderSource::_Count;
     String name_;
 
     void InitFromGLSL(const char *shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
@@ -39,6 +40,7 @@ class Shader : public RefCounter {
     bool ready() const { return id_ != 0; }
     uint32_t id() const { return id_; }
     eShaderType type() const { return type_; }
+    eShaderSource source() const { return source_; }
     const String &name() const { return name_; }
 
     void Init(const char *shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);

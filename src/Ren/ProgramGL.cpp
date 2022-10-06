@@ -170,11 +170,12 @@ void Ren::Program::InitBindings(ILog *log) {
             if (uniform_blocks_.size() < b.loc + 1) {
                 uniform_blocks_.resize(b.loc + 1);
             }
-            Attribute &u = uniform_blocks_[b.loc];
-            if (!b.name.empty()) {
+            Descr &u = uniform_blocks_[b.loc];
+            u.name = b.name;
+
+            if (!b.name.empty() && sh.source() == eShaderSource::GLSL) {
                 u.loc = glGetUniformBlockIndex(GLuint(id_), b.name.c_str());
                 if (u.loc != -1) {
-                    u.name = b.name;
                     glUniformBlockBinding(GLuint(id_), u.loc, b.loc);
                 }
             }
