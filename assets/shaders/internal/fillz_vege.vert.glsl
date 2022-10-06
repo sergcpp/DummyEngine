@@ -82,7 +82,7 @@ void main() {
     TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // BINDLESS_TEXTURES
-    HierarchyData hdata_curr = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs, model_matrix_curr);
+    HierarchyData hdata_curr = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 
     vec3 obj_pos_ws = model_matrix_curr[3].xyz;
     vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
@@ -109,7 +109,7 @@ void main() {
 #ifdef OUTPUT_VELOCITY
     vec4 wind_scroll_prev = g_shrd_data.wind_scroll_prev + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);
 #ifdef MOVING_PERM
-    HierarchyData hdata_prev = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs, model_matrix_prev);
+    HierarchyData hdata_prev = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 #else // MOVING_PERM
     HierarchyData hdata_prev = hdata_curr;
 #endif // MOVING_PERM

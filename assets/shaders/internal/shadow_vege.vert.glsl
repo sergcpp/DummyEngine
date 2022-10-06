@@ -70,12 +70,12 @@ void main() {
     vec4 veg_params = texelFetch(g_instances_buf, instance.x * INSTANCE_BUF_STRIDE + 3);
     vec2 pp_vtx_uvs = unpackHalf2x16(g_in_vtx_uvs1_packed);
 
-    #if defined(BINDLESS_TEXTURES)
+#if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
     TEX_HANDLE g_pp_pos_tex = GET_HANDLE(mat.texture_indices[4]);
     TEX_HANDLE g_pp_dir_tex = GET_HANDLE(mat.texture_indices[5]);
 #endif // BINDLESS_TEXTURES
-    HierarchyData hdata = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs, MMatrix);
+    HierarchyData hdata = FetchHierarchyData(SAMPLER2D(g_pp_pos_tex), SAMPLER2D(g_pp_dir_tex), pp_vtx_uvs);
 
     vec3 obj_pos_ws = MMatrix[3].xyz;
     vec4 wind_scroll = g_shrd_data.wind_scroll + vec4(VEGE_NOISE_SCALE_LF * obj_pos_ws.xz, VEGE_NOISE_SCALE_HF * obj_pos_ws.xz);

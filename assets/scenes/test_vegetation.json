@@ -31,7 +31,29 @@
 				]
 			},
 			"drawable" : {
-				"mesh_file" : "vegetation/leaf_tree_pp.mesh",
+				"mesh_file" : "vegetation/leaf_tree.mesh",
+				"visible_to_probes" : false
+			},
+			"veg_state" : {
+
+			}
+		},
+		{
+			"name" : "fagus",
+			"transform" : {
+				"pos" : [
+					10,
+					0,
+					0
+				],
+				"rot" : [
+					0,
+					0,
+					0
+				]
+			},
+			"drawable" : {
+				"mesh_file" : "vegetation/fagus.mesh",
 				"visible_to_probes" : false
 			},
 			"veg_state" : {
