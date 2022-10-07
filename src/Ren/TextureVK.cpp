@@ -802,17 +802,17 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
     switch (px_format) {
     case 1:
-        format = eTexFormat::Compressed_DXT1;
+        format = eTexFormat::DXT1;
         block = eTexBlock::_4x4;
         block_size_bytes = 8;
         break;
     case 3:
-        format = eTexFormat::Compressed_DXT3;
+        format = eTexFormat::DXT3;
         block = eTexBlock::_4x4;
         block_size_bytes = 16;
         break;
     case 5:
-        format = eTexFormat::Compressed_DXT5;
+        format = eTexFormat::DXT5;
         block = eTexBlock::_4x4;
         block_size_bytes = 16;
         break;
@@ -1385,17 +1385,17 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         const int px_format = int(header->sPixelFormat.dwFourCC >> 24u) - '0';
         switch (px_format) {
         case 1:
-            format = eTexFormat::Compressed_DXT1;
+            format = eTexFormat::DXT1;
             block = eTexBlock::_4x4;
             block_size_bytes = 8;
             break;
         case 3:
-            format = eTexFormat::Compressed_DXT3;
+            format = eTexFormat::DXT3;
             block = eTexBlock::_4x4;
             block_size_bytes = 16;
             break;
         case 5:
-            format = eTexFormat::Compressed_DXT5;
+            format = eTexFormat::DXT5;
             block = eTexBlock::_4x4;
             block_size_bytes = 16;
             break;

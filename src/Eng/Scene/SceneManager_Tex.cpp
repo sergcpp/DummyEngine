@@ -28,15 +28,15 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
     const int px_format = int(hdr.sPixelFormat.dwFourCC >> 24u) - '0';
     switch (px_format) {
     case 1:
-        params.format = Ren::eTexFormat::Compressed_DXT1;
+        params.format = Ren::eTexFormat::DXT1;
         params.block = Ren::eTexBlock::_4x4;
         break;
     case 3:
-        params.format = Ren::eTexFormat::Compressed_DXT3;
+        params.format = Ren::eTexFormat::DXT3;
         params.block = Ren::eTexBlock::_4x4;
         break;
     case 5:
-        params.format = Ren::eTexFormat::Compressed_DXT5;
+        params.format = Ren::eTexFormat::DXT5;
         params.block = Ren::eTexBlock::_4x4;
         break;
     default:

@@ -79,10 +79,10 @@ static_assert(sizeof(g_per_pixel_data_len) / sizeof(g_per_pixel_data_len[0]) == 
 
 bool Ren::IsCompressedFormat(const eTexFormat format) {
     switch (format) {
-    case eTexFormat::Compressed_DXT1:
-    case eTexFormat::Compressed_DXT3:
-    case eTexFormat::Compressed_DXT5:
-    case eTexFormat::Compressed_ASTC:
+    case eTexFormat::DXT1:
+    case eTexFormat::DXT3:
+    case eTexFormat::DXT5:
+    case eTexFormat::ASTC:
         return true;
     default:
         return false;
@@ -105,14 +105,14 @@ int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter fi
 
 int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {
     switch (format) {
-    case eTexFormat::Compressed_DXT1:
+    case eTexFormat::DXT1:
         assert(block == eTexBlock::_4x4);
         return 8;
-    case eTexFormat::Compressed_DXT3:
-    case eTexFormat::Compressed_DXT5:
+    case eTexFormat::DXT3:
+    case eTexFormat::DXT5:
         assert(block == eTexBlock::_4x4);
         return 16;
-    case eTexFormat::Compressed_ASTC:
+    case eTexFormat::ASTC:
         assert(false);
     default:
         return -1;
@@ -206,87 +206,87 @@ Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_forma
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::Compressed_DXT1;
+        return eTexFormat::DXT1;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::Compressed_DXT3;
+        return eTexFormat::DXT3;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::Compressed_DXT5;
+        return eTexFormat::DXT5;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_5x4_KHR:
         (*block) = eTexBlock::_5x4;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_5x5_KHR:
         (*block) = eTexBlock::_5x5;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_6x5_KHR:
         (*block) = eTexBlock::_6x5;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_6x6_KHR:
         (*block) = eTexBlock::_6x6;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_8x5_KHR:
         (*block) = eTexBlock::_8x5;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_8x6_KHR:
         (*block) = eTexBlock::_8x6;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_8x8_KHR:
         (*block) = eTexBlock::_8x8;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_10x5_KHR:
         (*block) = eTexBlock::_10x5;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_10x6_KHR:
         (*block) = eTexBlock::_10x6;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_10x8_KHR:
         (*block) = eTexBlock::_10x8;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_10x10_KHR:
         (*block) = eTexBlock::_10x10;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_12x10_KHR:
         (*block) = eTexBlock::_12x10;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_12x12_KHR:
         (*block) = eTexBlock::_12x12;
-        return eTexFormat::Compressed_ASTC;
+        return eTexFormat::ASTC;
     default:
         assert(false && "Unsupported format!");
     }
