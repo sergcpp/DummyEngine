@@ -34,10 +34,10 @@ enum class eTexFormat : uint8_t {
 #ifndef __ANDROID__
     Depth32,
 #endif
-    Compressed_DXT1,
-    Compressed_DXT3,
-    Compressed_DXT5,
-    Compressed_ASTC,
+    DXT1,
+    DXT3,
+    DXT5,
+    ASTC,
     None,
     _Count
 };
@@ -57,9 +57,9 @@ inline bool IsDepthStencilFormat(const eTexFormat format) {
 }
 
 #if defined(__ANDROID__)
-const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::Compressed_ASTC;
+const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::ASTC;
 #else
-const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::Compressed_DXT5;
+const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::DXT5;
 #endif
 
 enum class eTexBlock : uint8_t {
