@@ -58,6 +58,9 @@ LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
     LAYOUT(location = 5) out flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 6) out flat TEX_HANDLE g_spec_tex;
 #endif // BINDLESS_TEXTURES
+LAYOUT(location = 7) out flat vec4 g_base_color;
+LAYOUT(location = 8) out flat vec4 g_mat_params0;
+LAYOUT(location = 9) out flat vec4 g_mat_params1;
 
 invariant gl_Position;
 
@@ -68,9 +71,7 @@ void main(void) {
     vec3 vtx_pos_ls = g_in_vtx_pos;
     vec3 vtx_nor_ls = g_in_vtx_normal.xyz, vtx_tan_ls = vec3(g_in_vtx_normal.w, g_in_vtx_tangent);
 
-#if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
-#endif // BINDLESS_TEXTURES
 
 #ifdef VEGETATION
     // load vegetation properties
@@ -105,6 +106,10 @@ void main(void) {
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
     g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
+
+    g_base_color = mat.params[0];
+    g_mat_params0 = mat.params[1];
+    g_mat_params1 = mat.params[2];
 
     gl_Position = g_shrd_data.view_proj_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 #if defined(VULKAN)

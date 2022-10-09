@@ -6,7 +6,26 @@
 
 #include "../SceneData.h"
 
+namespace LightSourceInternal {
+const char *g_type_names[] = {"point", "sphere", "rectangle", "disk", "line"};
+static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
+}
+
 void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
+    using namespace LightSourceInternal;
+
+    ls.type = eLightType::Point;
+
+    if (js_in.Has("type")) {
+        const JsStringP &js_type = js_in.at("type").as_str();
+        for (int i = 0; i < int(eLightType::_Count); ++i) {
+            if (js_type.val == g_type_names[i]) {
+                ls.type = eLightType(i);
+                break;
+            }
+        }
+    }
+
     const JsArrayP &js_color = js_in.at("color").as_arr();
 
     ls.col[0] = float(js_color[0].as_num().val);
@@ -30,7 +49,40 @@ void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.radius = 1.0f;
     }
 
-    ls.influence = ls.radius * (std::sqrt(ls.brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
+    if (js_in.Has("width")) {
+        const JsNumber &js_width = js_in.at("width").as_num();
+        ls.width = float(js_width.val);
+    } else {
+        ls.width = 1.0f;
+    }
+
+    if (js_in.Has("height")) {
+        const JsNumber &js_height = js_in.at("height").as_num();
+        ls.height = float(js_height.val);
+    } else {
+        ls.height = 1.0f;
+    }
+
+    if (ls.type == eLightType::Sphere) {
+        ls.area = 4.0f * Ren::Pi<float>() * ls.radius * ls.radius;
+    } else if (ls.type == eLightType::Rect) {
+        ls.area = ls.width * ls.height;
+    } else if (ls.type == eLightType::Disk) {
+        ls.area = 0.25f * Ren::Pi<float>() * ls.width * ls.height;
+    } else if (ls.type == eLightType::Line) {
+        ls.area = 1.0f;
+    }
+
+    if (js_in.Has("cull_radius")) {
+        const JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
+        ls.cull_radius = float(js_cull_radius.val);
+    } else {
+        ls.cull_radius = ls.radius * (std::sqrt(ls.brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
+        if (ls.type != eLightType::Point) {
+            // TODO: properly determine influence of area lights
+            ls.cull_radius *= 10.0f;
+        }
+    }
 
     if (js_in.Has("direction")) {
         const JsArrayP &js_dir = js_in.at("direction").as_arr();
@@ -48,7 +100,7 @@ void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         const float angle_rad = ls.angle_deg * Ren::Pi<float>() / 180.0f;
 
         ls.spot = std::cos(angle_rad);
-        ls.cap_radius = ls.influence * std::tan(angle_rad);
+        ls.cap_radius = ls.cull_radius * std::tan(angle_rad);
     } else {
         ls.dir[1] = -1.0f;
         ls.spot = -1.2f;
@@ -71,7 +123,17 @@ void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 }
 
 void LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
+    using namespace LightSourceInternal;
+
     const auto &alloc = js_out.elements.get_allocator();
+
+    { // Write type
+        JsStringP js_type(alloc);
+
+        js_type.val = g_type_names[int(ls.type)];
+
+        js_out.Push("type", std::move(js_type));
+    }
 
     { // Write color
         JsArrayP js_color(alloc);

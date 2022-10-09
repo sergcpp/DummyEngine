@@ -44,10 +44,13 @@ LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
     LAYOUT(location = 5) in flat TEX_HANDLE g_norm_tex;
     LAYOUT(location = 6) in flat TEX_HANDLE g_spec_tex;
 #endif // BINDLESS_TEXTURES
+LAYOUT(location = 7) in flat vec4 g_base_color;
+LAYOUT(location = 8) in flat vec4 g_mat_params0;
+LAYOUT(location = 9) in flat vec4 g_mat_params1;
 
 layout(location = REN_OUT_ALBEDO_INDEX) out vec4 g_out_albedo;
 layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
-layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
+layout(location = REN_OUT_SPEC_INDEX) out uint g_out_specular;
 
 void main(void) {
     highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
@@ -124,9 +127,12 @@ void main(void) {
 
     vec3 normal = norm_color * 2.0 - 1.0;
     normal = normalize(mat3(cross(g_vtx_tangent, g_vtx_normal), g_vtx_tangent, g_vtx_normal) * normal);
+    if (!gl_FrontFacing) {
+        normal = -normal;
+    }
 
-    // TODO: get rid of explicit srgb conversion
-    g_out_albedo = vec4(SRGBToLinear(diff_color), 1.0);
-    g_out_normal = PackNormalAndRoughness(normal, spec_color.w);
-    g_out_specular = spec_color;
+    // TODO: try to get rid of explicit srgb conversion
+    g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, 1.0);
+    g_out_normal = PackNormalAndRoughness(normal, spec_color.w * g_base_color.w);
+    g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1);
 }

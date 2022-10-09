@@ -447,15 +447,23 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
                 dir = tr.world_from_object * dir;
 
+                const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
+                const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
+
                 litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
                 LightItem &ls = list.lights.data[list.lights.count++];
 
-                memcpy(&ls.pos[0], &pos[0], 3 * sizeof(float));
+                ls.col[0] = light.col[0] / light.area;
+                ls.col[1] = light.col[1] / light.area;
+                ls.col[2] = light.col[2] / light.area;
+                ls.type = int(light.type);
+                memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                 ls.radius = light.radius;
-                memcpy(&ls.col[0], &light.col[0], 3 * sizeof(float));
-                ls.shadowreg_index = -1;
-                memcpy(&ls.dir[0], &dir[0], 3 * sizeof(float));
+                memcpy(ls.dir, &dir[0], 3 * sizeof(float));
                 ls.spot = light.spot;
+                memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
+                ls.shadowreg_index = -1;
+                memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
             }
 
             if (decals_enabled && (obj.comp_mask & CompDecalBit) && ditem_to_decal_.count < REN_MAX_DECALS_TOTAL) {
@@ -1045,7 +1053,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             Camera shadow_cam;
             shadow_cam.SetupView(light_center, light_center + light_dir, light_up);
-            shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->influence);
+            shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->cull_radius);
             shadow_cam.UpdatePlanes();
 
             // TODO: Check visibility of shadow frustum
@@ -1647,7 +1655,7 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
     for (int j = 0; j < int(list.lights.count); j++) {
         const LightItem &l = list.lights.data[j];
         const float radius = litem_to_lsource[j]->radius;
-        const float influence = litem_to_lsource[j]->influence;
+        const float cull_radius = litem_to_lsource[j]->cull_radius;
         const float cap_radius = litem_to_lsource[j]->cap_radius;
 
         eVisResult visible_to_slice = eVisResult::FullyVisible;
@@ -1658,15 +1666,15 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
             const float p_d = first_sf->planes[k].d;
 
             float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
-            if (dist < -influence) {
+            if (dist < -cull_radius) {
                 visible_to_slice = eVisResult::Invisible;
             } else if (l.spot > epsilon) {
                 const float dn[3] = _CROSS(l.dir, p_n);
                 const float m[3] = _CROSS(l.dir, dn);
 
-                const float Q[3] = {l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
-                                    l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
-                                    l.pos[2] - influence * l.dir[2] - cap_radius * m[2]};
+                const float Q[3] = {l.pos[0] - cull_radius * l.dir[0] - cap_radius * m[0],
+                                    l.pos[1] - cull_radius * l.dir[1] - cap_radius * m[1],
+                                    l.pos[2] - cull_radius * l.dir[2] - cap_radius * m[2]};
 
                 if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
                     visible_to_slice = eVisResult::Invisible;
@@ -1690,15 +1698,15 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
                 const float p_d = first_line_sf->planes[k].d;
 
                 float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
-                if (dist < -influence) {
+                if (dist < -cull_radius) {
                     visible_to_line = eVisResult::Invisible;
                 } else if (l.spot > epsilon) {
                     const float dn[3] = _CROSS(l.dir, p_n);
                     const float m[3] = _CROSS(l.dir, dn);
 
-                    const float Q[3] = {l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
-                                        l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
-                                        l.pos[2] - influence * l.dir[2] - cap_radius * m[2]};
+                    const float Q[3] = {l.pos[0] - cull_radius * l.dir[0] - cap_radius * m[0],
+                                        l.pos[1] - cull_radius * l.dir[1] - cap_radius * m[1],
+                                        l.pos[2] - cull_radius * l.dir[2] - cap_radius * m[2]};
 
                     const float val = p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d;
 
@@ -1724,15 +1732,15 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
                     const float p_d = sf->planes[k].d;
 
                     const float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
-                    if (dist < -influence) {
+                    if (dist < -cull_radius) {
                         res = eVisResult::Invisible;
                     } else if (l.spot > epsilon) {
                         const float dn[3] = _CROSS(l.dir, p_n);
                         const float m[3] = _CROSS(l.dir, dn);
 
-                        const float Q[3] = {l.pos[0] - influence * l.dir[0] - cap_radius * m[0],
-                                            l.pos[1] - influence * l.dir[1] - cap_radius * m[1],
-                                            l.pos[2] - influence * l.dir[2] - cap_radius * m[2]};
+                        const float Q[3] = {l.pos[0] - cull_radius * l.dir[0] - cap_radius * m[0],
+                                            l.pos[1] - cull_radius * l.dir[1] - cap_radius * m[1],
+                                            l.pos[2] - cull_radius * l.dir[2] - cap_radius * m[2]};
 
                         if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
                             res = eVisResult::Invisible;

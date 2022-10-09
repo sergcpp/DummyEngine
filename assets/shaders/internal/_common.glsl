@@ -89,6 +89,25 @@ vec4 UnpackNormalAndRoughness(vec4 p) {
     return r;
 }
 
+uint PackMaterialParams(vec4 params0, vec4 params1) {
+    uvec4 uparams0 = uvec4(round(params0 * 15.0));
+    uvec4 uparams1 = uvec4(round(params1 * 15.0));
+
+    uparams0 <<= uvec4(0, 4, 8, 12);
+    uparams1 <<= uvec4(16, 20, 24, 28);
+
+    return uparams0.x | uparams0.y | uparams0.z | uparams0.w |
+           uparams1.x | uparams1.y | uparams1.z | uparams1.w;
+}
+
+void UnpackMaterialParams(uint _packed, out vec4 params0, out vec4 params1) {
+    uvec4 uparams0 = uvec4(_packed >> 0u, _packed >> 4u, _packed >> 8u, _packed >> 12u) & uvec4(0xF);
+    uvec4 uparams1 = uvec4(_packed >> 16u, _packed >> 20u, _packed >> 24u, _packed >> 28u) & uvec4(0xF);
+
+    params0 = vec4(uparams0) / 15.0;
+    params1 = vec4(uparams1) / 15.0;
+}
+
 vec3 YCoCg_to_RGB(vec4 col) {
     float scale = (col.b * (255.0 / 8.0)) + 1.0;
     float Y = col.a;
@@ -101,6 +120,10 @@ vec3 YCoCg_to_RGB(vec4 col) {
     col_rgb.b = Y - Co - Cg;
 
     return col_rgb;
+}
+
+float lum(vec3 color) {
+    return dot(vec3(0.212671, 0.715160, 0.715160), color);
 }
 
 // Ray Tracing Gems II, Listing 49-1
@@ -122,6 +145,22 @@ struct ShadowMapRegion {
     vec4 transform;
     mat4 clip_from_world;
 };
+
+struct LightItem {
+    vec4 pos_and_radius;
+    vec4 col_and_shadowreg_index;
+    vec4 dir_and_spot;
+    vec4 u_and_unused;
+    vec4 v_and_unused;
+};
+
+#define LIGHTS_BUF_STRIDE 5
+
+const int LIGHT_TYPE_POINT = 0;
+const int LIGHT_TYPE_SPHERE = 1;
+const int LIGHT_TYPE_RECT = 2;
+const int LIGHT_TYPE_DISK = 3;
+const int LIGHT_TYPE_LINE = 4;
 
 struct ProbeItem {
     vec4 pos_and_radius;
@@ -149,7 +188,7 @@ struct SharedData {
 struct MaterialData {
     uint texture_indices[REN_MAX_TEX_PER_MATERIAL];
     uint _pad[2];
-    vec4 params;
+    vec4 params[3];
 };
 
 vec3 RGBMDecode(vec4 rgbm) {

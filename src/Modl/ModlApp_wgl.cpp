@@ -352,10 +352,10 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         view_file_name = out_file_name;
     }
 
-#ifdef _WIN32
-    int res = system("DummyApp.exe --prepare_assets pc --norun");
+#ifdef WIN32
+    int res = system("DummyAppGL-dev.exe --prepare_assets pc --norun");
 #else
-    int res = system("./DummyApp --prepare_assets pc --norun");
+    int res = system("./DummyAppGL-dev --prepare_assets pc --norun");
 #endif
     if (res == -1) {
         std::cerr << "Failed to update assets" << std::endl;

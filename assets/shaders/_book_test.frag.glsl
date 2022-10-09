@@ -88,9 +88,9 @@ void main(void) {
         highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
 
-        vec4 pos_and_radius = texelFetch(g_lights_buf, li * 3 + 0);
-        highp vec4 col_and_index = texelFetch(g_lights_buf, li * 3 + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buf, li * 3 + 2);
+        vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
+        highp vec4 col_and_index = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
+        vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
 
         vec3 L = pos_and_radius.xyz - g_vtx_pos;
         float dist = length(L);

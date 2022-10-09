@@ -4,16 +4,30 @@
 
 #include "Common.h"
 
+enum class eLightType {
+    Point,
+    Sphere,
+    Rect,
+    Disk,
+    Line,
+    _Count
+};
+
 struct LightSource {
+    eLightType  type;
+
     Ren::Vec3f  offset;
     float       radius;
     Ren::Vec3f  col;
     float       brightness;
     Ren::Vec3f  dir;
     float       spot, cap_radius;
-    float       influence;
+    float       cull_radius;
     bool        cast_shadow, cache_shadow;
     float       shadow_bias[2];
+
+    float       width, height;
+    float       area;
 
     Ren::Vec3f  bbox_min;
     float       angle_deg;

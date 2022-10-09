@@ -225,8 +225,13 @@ void SceneManager::UpdateMaterialsBuffer() {
             for (; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
                 img_infos.push_back(error_tex_->vk_desc_image_info());
             }
-            if (!mat->params.empty()) {
-                material_data[rel_i].params = mat->params[0];
+
+            int k = 0;
+            for (; k < mat->params.size(); ++k) {
+                material_data[rel_i].params[k] = mat->params[k];
+            }
+            for (; k < 2; ++k) {
+                material_data[rel_i].params[k] = Ren::Vec4f{0.0f};
             }
         } else {
             for (int j = 0; j < REN_MAX_TEX_PER_MATERIAL; ++j) {

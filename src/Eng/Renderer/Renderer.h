@@ -88,7 +88,18 @@ class Renderer {
     SWcull_ctx cull_ctx_ = {};
     Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
-    Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, cone_rt_lut_, noise_tex_;
+
+    enum eLTCLut {
+        Diffuse,
+        Sheen,
+        Specular,
+        Clearcoat,
+        _Count,
+    };
+
+    Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_lut_[eLTCLut::_Count][2],
+        cone_rt_lut_,
+        noise_tex_;
     Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
 
@@ -106,9 +117,10 @@ class Renderer {
 
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa | EnableTimers | EnableDOF /*|
-         EnableRTShadows | EnableDeferred*/);
+        (EnableZFill | EnableCulling /*| EnableSSR | EnableSSR_HQ*/ | EnableSSAO | EnableLightmap | EnableLights |
+         EnableDecals | EnableShadows /*| EnableTonemap | EnableBloom*/ | EnableTaa | EnableTaaStatic | EnableTimers | EnableDOF /*|
+EnableRTShadows*/       
+         | EnableDeferred);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);

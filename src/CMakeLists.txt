@@ -107,6 +107,7 @@ add_subdirectory(Snd)
 add_subdirectory(Sys)
 
 add_subdirectory(libs/astc)
+add_subdirectory(libs/ltc_fit)
 add_subdirectory(libs/optick)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -142,6 +143,7 @@ set_target_properties(test_DummyLib
                       test_Sys PROPERTIES FOLDER Tests)
 
 set_target_properties(astc
+                      ltc_fit
                       stb
                       SPIRV-Reflect
                       optick PROPERTIES FOLDER _)

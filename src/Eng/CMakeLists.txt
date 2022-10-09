@@ -110,6 +110,10 @@ set(RENDERER_SOURCES    Renderer/FrameBuf.h
                         Renderer/Renderer_SunShadows.cpp
                         Renderer/__brdf_lut.inl
                         Renderer/__cone_rt_lut.inl
+                        Renderer/__ltc_clearcoat.inl
+                        Renderer/__ltc_diffuse.inl
+                        Renderer/__ltc_sheen.inl
+                        Renderer/__ltc_specular.inl
                         Renderer/__noise.inl
                         Renderer/__skydome_mesh.inl
                         Renderer/__sphere_mesh.inl)

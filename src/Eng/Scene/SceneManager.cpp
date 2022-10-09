@@ -30,7 +30,7 @@ extern __itt_domain *__g_itt_domain;
 #include "../Utils/ShaderLoader.h"
 
 namespace SceneManagerConstants {
-const float NEAR_CLIP = 0.1f;
+const float NEAR_CLIP = 0.05f;
 const float FAR_CLIP = 10000.0f;
 
 #if defined(__ANDROID__)
@@ -973,21 +973,21 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
     Ren::Vec3f bbox_min, bbox_max;
 
     const auto _dir = Ren::Vec3f{dir[0], dir[1], dir[2]};
-    const Ren::Vec3f p1 = _dir * ls->influence;
+    const Ren::Vec3f p1 = _dir * ls->cull_radius;
 
     bbox_min = Min(bbox_min, p1);
     bbox_max = Max(bbox_max, p1);
 
-    const Ren::Vec3f p2 = _dir * ls->spot * ls->influence;
+    const Ren::Vec3f p2 = _dir * ls->spot * ls->cull_radius;
 
-    const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->influence;
+    const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->cull_radius;
 
     bbox_min = Min(bbox_min, p2 - Ren::Vec3f{d, 0.0f, d});
     bbox_max = Max(bbox_max, p2 + Ren::Vec3f{d, 0.0f, d});
 
     if (ls->spot < 0.0f) {
-        bbox_min = Min(bbox_min, p1 - Ren::Vec3f{ls->influence, 0.0f, ls->influence});
-        bbox_max = Max(bbox_max, p1 + Ren::Vec3f{ls->influence, 0.0f, ls->influence});
+        bbox_min = Min(bbox_min, p1 - Ren::Vec3f{ls->cull_radius, 0.0f, ls->cull_radius});
+        bbox_max = Max(bbox_max, p1 + Ren::Vec3f{ls->cull_radius, 0.0f, ls->cull_radius});
     }
 
     auto up = Ren::Vec3f{1.0f, 0.0f, 0.0f};

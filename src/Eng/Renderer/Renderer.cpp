@@ -62,6 +62,10 @@ extern const int TaaSampleCountStatic = 64;
 
 #include "__brdf_lut.inl"
 #include "__cone_rt_lut.inl"
+#include "__ltc_clearcoat.inl"
+#include "__ltc_diffuse.inl"
+#include "__ltc_sheen.inl"
+#include "__ltc_specular.inl"
 #include "__noise.inl"
 
 extern const int g_sobol_256spp_256d[];
@@ -190,15 +194,95 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::share
         // c_header);
 
         Ren::Tex2DParams p;
-        p.w = p.h = RendererInternal::__brdf_lut_res;
+        p.w = p.h = __brdf_lut_res;
         p.format = Ren::eTexFormat::RawRG16;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &RendererInternal::__brdf_lut[0], sizeof(__brdf_lut), p,
-                                       ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &__brdf_lut[0], sizeof(__brdf_lut), p, ctx_.default_stage_bufs(),
+                                       ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+    }
+
+    {
+        Ren::Tex2DParams p;
+        p.w = p.h = __ltc_diff_size;
+        p.format = Ren::eTexFormat::RawRGBA32F;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        ltc_lut_[eLTCLut::Diffuse][0] =
+            ctx_.LoadTexture2D("ltc_diff_mat", &__ltc_diff_tex1[0], sizeof(__ltc_diff_tex1), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+
+        ltc_lut_[eLTCLut::Diffuse][1] =
+            ctx_.LoadTexture2D("ltc_diff_amp", &__ltc_diff_tex2[0], sizeof(__ltc_diff_tex2), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+    }
+
+    {
+        Ren::Tex2DParams p;
+        p.w = p.h = __ltc_sheen_size;
+        p.format = Ren::eTexFormat::RawRGBA32F;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        ltc_lut_[eLTCLut::Sheen][0] =
+            ctx_.LoadTexture2D("ltc_sheen_mat", &__ltc_sheen_tex1[0], sizeof(__ltc_sheen_tex1), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+
+        ltc_lut_[eLTCLut::Sheen][1] =
+            ctx_.LoadTexture2D("ltc_sheen_amp", &__ltc_sheen_tex2[0], sizeof(__ltc_sheen_tex2), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+    }
+
+    {
+        Ren::Tex2DParams p;
+        p.w = p.h = __ltc_specular_size;
+        p.format = Ren::eTexFormat::RawRGBA32F;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        ltc_lut_[eLTCLut::Specular][0] =
+            ctx_.LoadTexture2D("ltc_spec_mat", &__ltc_specular_tex1[0], sizeof(__ltc_specular_tex1), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+
+        ltc_lut_[eLTCLut::Specular][1] =
+            ctx_.LoadTexture2D("ltc_spec_amp", &__ltc_specular_tex2[0], sizeof(__ltc_specular_tex2), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+    }
+
+    {
+        Ren::Tex2DParams p;
+        p.w = p.h = __ltc_clearcoat_size;
+        p.format = Ren::eTexFormat::RawRGBA32F;
+        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        ltc_lut_[eLTCLut::Clearcoat][0] =
+            ctx_.LoadTexture2D("ltc_coat_mat", &__ltc_clearcoat_tex1[0], sizeof(__ltc_clearcoat_tex1), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+
+        ltc_lut_[eLTCLut::Clearcoat][1] =
+            ctx_.LoadTexture2D("ltc_coat_amp", &__ltc_clearcoat_tex2[0], sizeof(__ltc_clearcoat_tex2), p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -785,17 +869,28 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
 #else
         frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
+        //frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
 #endif
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 
-        // 4-component specular (alpha is roughness)
-        frame_textures.specular_params.w = view_state_.scr_res[0];
-        frame_textures.specular_params.h = view_state_.scr_res[1];
-        frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
-        frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
-        frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
+        if (deferred_shading) {
+            // packed material params
+            frame_textures.specular_params.w = view_state_.scr_res[0];
+            frame_textures.specular_params.h = view_state_.scr_res[1];
+            frame_textures.specular_params.format = Ren::eTexFormat::RawR32UI;
+            frame_textures.specular_params.flags = {};
+            frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
+        } else {
+            // 4-component specular (alpha is roughness)
+            frame_textures.specular_params.w = view_state_.scr_res[0];
+            frame_textures.specular_params.h = view_state_.scr_res[1];
+            frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
+            frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
+            frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
+        }
 
         // 4-component world-space normal (alpha or z is roughness)
         frame_textures.normal_params.w = view_state_.scr_res[0];
@@ -944,7 +1039,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // Skydome drawing
-            AddSkydomePass(common_buffers, false /* clear */, frame_textures);
+            // AddSkydomePass(common_buffers, false /* clear */, frame_textures);
         } else {
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
@@ -1135,8 +1230,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
                 { // 1px exposure texture (fake for now)
                     Ren::Tex2DParams params;
-                    params.w = 1;
-                    params.h = 1;
+                    params.w = params.h = 1;
                     params.format = Ren::eTexFormat::RawR32F;
                     params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
@@ -1217,7 +1311,13 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 } else {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
                 }
-                rp_combine_data_.exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
+                if (exposure_tex) {
+                    rp_combine_data_.exposure_tex =
+                        combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
+                } else {
+                    rp_combine_data_.exposure_tex =
+                        combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+                }
                 if (output_tex) {
                     Ren::Tex2DParams params;
                     params.w = view_state_.scr_res[0];

@@ -74,7 +74,7 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
-/* mediump */ float Luminance(/* mediump */ vec3 color) { return max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
+/* mediump */ float Luminance(/* mediump */ vec3 color) { return max(lum(color), 0.001); }
 
 /* mediump */ float ComputeTemporalVariance(/* mediump */ vec3 history_radiance, /* mediump */ vec3 radiance) {
     /* mediump */ float history_luminance = Luminance(history_radiance);

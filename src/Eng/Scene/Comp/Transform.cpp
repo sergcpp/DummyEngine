@@ -45,12 +45,12 @@ void Transform::Read(const JsObjectP &js_in, Transform &tr) {
         // convert to radians
         tr.euler_angles_rad *= Ren::Pi<float>() / 180.0f;
 
-        const Ren::Mat4f rot_z = Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[2], Ren::Vec3f{0.0f, 0.0f, 1.0f}),
-                         rot_x = Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[0], Ren::Vec3f{1.0f, 0.0f, 0.0f}),
-                         rot_y = Rotate(Ren::Mat4f{1.0f}, tr.euler_angles_rad[1], Ren::Vec3f{0.0f, 1.0f, 0.0f});
+        static const Ren::Vec3f axes[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{0.0f, 1.0f, 0.0f},
+                                          Ren::Vec3f{0.0f, 0.0f, 1.0f}};
 
-        const Ren::Mat4f rot_all = rot_y * rot_x * rot_z;
-        tr.world_from_object = tr.world_from_object * rot_all;
+        for (const int i : {2, 0, 1}) {
+            tr.world_from_object = Ren::Rotate(tr.world_from_object, tr.euler_angles_rad[i], axes[i]);
+        }
     }
 
     if (js_in.Has("scale")) {

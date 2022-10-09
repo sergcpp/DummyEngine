@@ -9,12 +9,15 @@
 #include "Renderer_GL_Defines.inl"
 
 struct LightItem {
-    float pos[3], radius;
     float col[3];
-    int shadowreg_index;
+    int type;
+    float pos[3], radius;
     float dir[3], spot;
+    float u[3];
+    int shadowreg_index;
+    float v[3], _unused1;
 };
-static_assert(sizeof(LightItem) == 48, "!");
+static_assert(sizeof(LightItem) == 80, "!");
 
 struct DecalItem {
     float mat[3][4];
@@ -299,9 +302,9 @@ static_assert(sizeof(SharedDataBlock) == 7856, "!");
 struct MaterialData {
     uint32_t texture_indices[REN_MAX_TEX_PER_MATERIAL];
     uint32_t _pad[2];
-    Ren::Vec4f params;
+    Ren::Vec4f params[3];
 };
-static_assert(sizeof(MaterialData) == 48, "!");
+static_assert(sizeof(MaterialData) == 80, "!");
 
 const uint32_t RTGeoProbeBits = 0xff;
 const uint32_t RTGeoLightmappedBit = (1u << 8u);

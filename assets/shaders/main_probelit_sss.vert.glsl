@@ -88,7 +88,7 @@ void main(void) {
     }
 
     MaterialData mat = g_materials[instance.y];
-    material_params = mat.params;
+    material_params = mat.params[0];
 #if defined(BINDLESS_TEXTURES)
     g_diff_tex = GET_HANDLE(mat.texture_indices[0]);
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);

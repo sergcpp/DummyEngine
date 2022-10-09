@@ -152,8 +152,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     return descr_set;
 }
 
-void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
-                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+void Ren::DispatchCompute(const Pipeline &comp_pipeline, const Vec3u grp_count, Span<const Binding> bindings,
+                          const void *uniform_data, const int uniform_data_len, DescrMultiPoolAlloc *descr_alloc,
+                          ILog *log) {
     ApiContext *api_ctx = descr_alloc->api_ctx();
 
     VkDescriptorSet descr_set =
