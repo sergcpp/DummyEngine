@@ -39,7 +39,7 @@ int get_index_by_uv(vec2 uv) {
 int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, out vec3 pivot_pos) {
     vec4 result = textureLod(pp_pos_tex, coords, 0.0);
 
-    pivot_pos = result.xzy;
+    pivot_pos = result.xyz;
 
     // Unpack int from float
     int idx = int(result.w);
@@ -49,7 +49,7 @@ int get_parent_index_and_pivot_pos(sampler2D pp_pos_tex, vec2 coords, out vec3 p
 
 vec4 get_parent_pivot_direction_and_extent(sampler2D pp_dir_tex, vec2 coords) {
     vec4 result = textureLod(pp_dir_tex, coords, 0.0);
-    result.xyz = result.xzy * 2.0 - 1.0;
+    result.xyz = result.xyz * 2.0 - 1.0;
 
     result.xyz = normalize(result.xyz);
     result.w *= PP_EXTENT;
