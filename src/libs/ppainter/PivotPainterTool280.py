@@ -389,8 +389,8 @@ def level(pp, obj, counter, size, pixels, hdr):																# Level, number o
 def pivotarray(pp, obj, counter, size, pixels, hdr): 														# Pivot point, in practice the origin position.
 	wl=obj.matrix_world.to_translation()		# Gives world location
 	r=wl[0]
-	g=-wl[1]
-	b=wl[2]
+	g=wl[2]
+	b=-wl[1]
 	rgbvalues = [ r, g, b, ]
 	return rgbvalues
 
@@ -440,8 +440,8 @@ def xaxisArray(pp, obj, counter, size, pixels, hdr):														# X Axis, the 
 		wr=obj.matrix_world.to_euler('XYZ')
 		vec.rotate(wr)
 	r = ( vec[0] +1 ) /2
-	g = ( (-vec[1]) +1 ) /2
-	b = ( vec[2] +1 ) /2
+	g = ( vec[2] +1 ) /2
+	b = ( (-vec[1]) +1 ) /2
 	rgbvalues = [r, g, b]
 	return rgbvalues
 
@@ -450,8 +450,8 @@ def yaxisArray(pp, obj, counter, size, pixels, hdr):														# Y Axis, the 
 	wr=obj.matrix_world.to_euler('XYZ')
 	vec.rotate(wr)
 	r = ( vec[0] +1 ) /2
-	g = ( (-vec[1]) +1 ) /2
-	b = ( vec[2] +1 ) /2
+	g = ( vec[2] +1 ) /2
+	b = ( (-vec[1]) +1 ) /2
 	rgbvalues = [r, g, b]
 	return rgbvalues
 
@@ -460,8 +460,8 @@ def zaxisArray(pp, obj, counter, size, pixels, hdr):														# Z Axis, the 
 	wr=obj.matrix_world.to_euler('XYZ')
 	vec.rotate(wr)
 	r = ( vec[0] +1 ) /2
-	g = ( (-vec[1]) +1 ) /2
-	b = ( vec[2] +1 ) /2
+	g = ( vec[2] +1 ) /2
+	b = ( (-vec[1]) +1 ) /2
 	rgbvalues = [r, g, b]
 	return rgbvalues
 
