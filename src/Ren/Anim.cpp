@@ -132,7 +132,7 @@ void Ren::AnimSequence::Update(float time) {
         time += anim_dur_;
     }
 
-    const float frame = time * (float)fps_;
+    const float frame = time * float(fps_);
     const float frame_fl = std::floor(frame);
     const int fr_0 = int(frame) % len_;
     const int fr_1 = int(std::ceil(frame)) % len_;

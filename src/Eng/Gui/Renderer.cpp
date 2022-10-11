@@ -286,7 +286,7 @@ void Gui::Renderer::PushImageQuad(const eDrawMode draw_mode, const int tex_layer
 
 void Gui::Renderer::PushLine(eDrawMode draw_mode, int tex_layer, const uint8_t color[4], const Vec4f &p0,
                              const Vec4f &p1, const Vec2f &d0, const Vec2f &d1, const Vec4f &thickness) {
-    const Vec2f uvs_scale = 1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
+    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
 
     const uint16_t u16_tex_layer = f32_to_u16((1.0f / 16.0f) * float(tex_layer));
 

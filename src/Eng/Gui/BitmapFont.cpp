@@ -158,7 +158,7 @@ float Gui::BitmapFont::GetWidth(const char *text, int text_len, const BaseElemen
         cur_x += glyph.adv[0];
     }
 
-    const float mul = scale_ * parent->size()[0] / (float)parent->size_px()[0];
+    const float mul = scale_ * parent->size()[0] / float(parent->size_px()[0]);
     return float(cur_x) * mul;
 }
 
@@ -193,7 +193,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
 
     int cur_x = 0;
 
-    const Vec2f uvs_scale = 1.0f / Vec2f{(float)Ren::TextureAtlasWidth, (float)Ren::TextureAtlasHeight};
+    const Vec2f uvs_scale = 1.0f / Vec2f{float(Ren::TextureAtlasWidth), float(Ren::TextureAtlasHeight)};
 
     const Vec2f *clip = r->GetClipArea();
 

@@ -67,8 +67,8 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
             for (int action = 0; action < actions_count; action++) {
                 const SeqAction *seq_action = sequence_->GetAction(track, action);
 
-                const float x_beg = GetPointFromTime((float)seq_action->time_beg);
-                const float x_end = GetPointFromTime((float)seq_action->time_end);
+                const float x_beg = GetPointFromTime(float(seq_action->time_beg));
+                const float x_end = GetPointFromTime(float(seq_action->time_end));
 
                 // text clip area in relative coordinates
                 Ren::Vec2f text_clip[2] = {
@@ -88,8 +88,8 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                     const Ren::TextureRegionRef &t = seq_action->sound_wave_tex;
 
                     const Ren::Tex2DParams &p = t->params();
-                    const Ren::Vec2f uvs_px[] = {Ren::Vec2f{(float)(t->pos(0)), (float)(t->pos(1))},
-                                                 Ren::Vec2f{(float)(t->pos(0) + p.w), (float)(t->pos(1) + p.h)}};
+                    const Ren::Vec2f uvs_px[] = {Ren::Vec2f{float(t->pos(0)), float(t->pos(1))},
+                                                 Ren::Vec2f{float(t->pos(0) + p.w), float(t->pos(1) + p.h)}};
                     const int tex_layer = t->pos(2);
 
                     const float x_beg_sound = GetPointFromTime(float(seq_action->time_beg + seq_action->sound_offset));
@@ -143,7 +143,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
     }
 
     if (sequence_) {
-        const auto end_time = (float)sequence_->duration();
+        const auto end_time = float(sequence_->duration());
         if (end_time >= time_range_[0] && end_time <= time_range_[1]) {
             const float xpos = GetPointFromTime(end_time) - 10.0f / dims_px_[1][0];
 
@@ -170,8 +170,8 @@ void SeqCanvasUI::Press(const Ren::Vec2f &p, const bool push) {
         const SeqAction *sel_action = GetActionAtPoint(p, selected_index_, selected_drag_flags_);
         if (sel_action) {
             selected_pos_ = p;
-            selected_time_beg_ = (float)sel_action->time_beg;
-            selected_time_end_ = (float)sel_action->time_end;
+            selected_time_beg_ = float(sel_action->time_beg);
+            selected_time_end_ = float(sel_action->time_end);
         }
     } else {
         selected_index_ = Ren::Vec2i{-1, -1};
@@ -239,8 +239,8 @@ SeqAction *SeqCanvasUI::GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_in
             for (int action = 0; action < actions_count; action++) {
                 SeqAction *seq_action = sequence_->GetAction(track, action);
 
-                const float x_beg = GetPointFromTime((float)seq_action->time_beg);
-                const float x_end = GetPointFromTime((float)seq_action->time_end);
+                const float x_beg = GetPointFromTime(float(seq_action->time_beg));
+                const float x_end = GetPointFromTime(float(seq_action->time_end));
 
                 if (p[0] > x_beg && p[0] < x_end && p[1] > y_coord + border_height &&
                     p[1] < y_coord + track_height - 2.0f * border_height) {

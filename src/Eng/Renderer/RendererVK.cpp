@@ -553,12 +553,12 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStor
 
         const float uvs[] = {0.0f,
                              0.0f,
-                             (float)src_buf.w,
+                             float(src_buf.w),
                              0.0f,
-                             (float)src_buf.w,
-                             (float)src_buf.h,
+                             float(src_buf.w),
+                             float(src_buf.h),
                              0.0f,
-                             (float)src_buf.h};
+                             float(src_buf.h)};
 
         glBufferSubData(GL_ARRAY_BUFFER,
                         GLintptr(temp_buf1_vtx_offset_ + 8 * sizeof(float)), sizeof(uvs),

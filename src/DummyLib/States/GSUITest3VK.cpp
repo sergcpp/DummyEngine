@@ -58,7 +58,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 
     r->SwapBuffers();
 
-    book_main_font_->set_scale(/*std::max((float)ctx_->w() / 4096.0f, 1.0f)*/ 1.0f);
+    book_main_font_->set_scale(/*std::max(float(ctx_->w()) / 4096.0f, 1.0f)*/ 1.0f);
     assert(book_main_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_emph_font_->draw_mode() == Gui::eDrawMode::DistanceField &&
            book_caption_font_->draw_mode() == Gui::eDrawMode::DistanceField);
