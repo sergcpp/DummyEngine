@@ -138,7 +138,7 @@ static int sutherland_hodgman(const Gui::Vec4f *input, int in_count, Gui::Vec4f 
 } // namespace GuiInternal
 
 Gui::Vec2f Gui::MapPointToScreen(const Vec2i &p, const Vec2i &res) {
-    return (2.0f * Vec2f((float)p[0], (float)res[1] - p[1])) / Vec2f{res} + Vec2f(-1, -1);
+    return (2.0f * Vec2f(float(p[0]), float(res[1] - p[1]))) / Vec2f{res} + Vec2f(-1, -1);
 }
 
 bool Gui::ClipQuadToArea(Vec4f pos[2], const Vec2f clip[2]) {

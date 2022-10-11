@@ -252,7 +252,7 @@ void Ren::Camera::ExtractSubFrustums(const int resx, const int resy, const int r
     const Mat4f world_from_clip = Inverse(proj_matrix_ * view_matrix_);
 
     { // Construct cells for the first depth slice
-        const float znear = near_, zfar = near_ * std::pow(far_ / near_, 1.0f / (float)resz);
+        const float znear = near_, zfar = near_ * std::pow(far_ / near_, 1.0f / float(resz));
 
         for (int y = 0; y < resy; y++) {
             const float ybot = -1.0f + float(y) * grid_size_cs[1], ytop = -1.0f + float(y + 1) * grid_size_cs[1];

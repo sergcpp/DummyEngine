@@ -356,5 +356,5 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
 }
 
 float Net::PCPSession::RT(float rt) {
-    return (1 + RAND()) * std::min<float>(2 * rt, (float)MRT);
+    return (1 + RAND()) * std::min<float>(2 * rt, float(MRT));
 }

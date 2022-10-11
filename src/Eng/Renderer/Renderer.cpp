@@ -350,10 +350,11 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::share
 
         rast_states_[int(eFwdPipeline::FrontfaceDraw)] = rast_state;
 
+        // Rasterization state for shadow drawing
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
         rast_states_[int(eFwdPipeline::BackfaceDraw)] = rast_state;
     }
-    { // Rasterization state for shadow drawing
+    { // Rasterization state for wireframe
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);

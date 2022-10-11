@@ -203,16 +203,16 @@ void Ren::Material::InitFromTXT(const char *mat_src, eMatLoadStatus *status,
             Vec4f &par = params.emplace_back();
             p = q + 1;
             q = std::strpbrk(p, delims);
-            par[0] = (float)strtod(p, nullptr);
+            par[0] = strtof(p, nullptr);
             p = q + 1;
             q = std::strpbrk(p, delims);
-            par[1] = (float)strtod(p, nullptr);
+            par[1] = strtof(p, nullptr);
             p = q + 1;
             q = std::strpbrk(p, delims);
-            par[2] = (float)strtod(p, nullptr);
+            par[2] = strtof(p, nullptr);
             p = q + 1;
             q = std::strpbrk(p, delims);
-            par[3] = (float)strtod(p, nullptr);
+            par[3] = strtof(p, nullptr);
         }
 
         if (!q) {

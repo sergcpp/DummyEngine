@@ -176,7 +176,7 @@ void GSUITest3::OnPostloadScene(JsObjectP &js_scene) {
 
         /*if (js_cam.Has("fwd_speed")) {
             const JsNumber &js_fwd_speed = (const JsNumber &)js_cam.at("fwd_speed");
-            max_fwd_speed_ = (float)js_fwd_speed.val;
+            max_fwd_speed_ = float(js_fwd_speed.val);
         }*/
 
         if (js_cam.Has("fov")) {

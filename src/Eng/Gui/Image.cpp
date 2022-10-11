@@ -32,8 +32,8 @@ Gui::Image::Image(Ren::Context &ctx, const char *tex_name, const Vec2f &pos, con
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
         const Ren::Tex2DParams &p = tex_->params();
-        uvs_px_[0] = Vec2f{(float)(tex_->pos(0)), (float)(tex_->pos(1))};
-        uvs_px_[1] = Vec2f{(float)(tex_->pos(0) + p.w), (float)(tex_->pos(1) + p.h)};
+        uvs_px_[0] = Vec2f{float(tex_->pos(0)), float(tex_->pos(1))};
+        uvs_px_[1] = Vec2f{float(tex_->pos(0) + p.w), float(tex_->pos(1) + p.h)};
     }
 }
 
