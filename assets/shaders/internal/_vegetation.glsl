@@ -4,7 +4,7 @@
 #define PP_RES_X 32
 #define PP_RES_Y 64
 
-#define PP_EXTENT 2048
+#define PP_EXTENT 20.48
 
 #define MAX_ALLOWED_HIERARCHY 4
 
