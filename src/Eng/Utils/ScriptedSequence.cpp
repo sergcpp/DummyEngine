@@ -624,7 +624,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
         cam.max_exposure = 32.0f;
 
-        scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(), cam.max_exposure);
+        scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(), true, cam.max_exposure);
 
         Snd::Source &amb_sound = scene_manager_.ambient_sound();
         if (action.sound_ref) {

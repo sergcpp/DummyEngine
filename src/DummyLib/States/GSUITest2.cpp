@@ -129,7 +129,7 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
     }
 
     scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
-                              max_exposure);
+                              true, max_exposure);
 }
 
 void GSUITest2::UpdateAnim(const uint64_t dt_us) {

@@ -288,7 +288,7 @@ void GSUITest4::UpdateAnim(const uint64_t dt_us) {
 
     if (use_free_cam_) {
         scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-                                  Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, cam_ctrl_->max_exposure);
+                                  Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, true, cam_ctrl_->max_exposure);
     }
 }
 

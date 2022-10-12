@@ -1189,8 +1189,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             const bool tonemap = (list.render_flags & EnableTonemap);
             const float reduced_average = rp_read_brightness_.reduced_average();
 
-            float exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
-            exposure = std::min(exposure, list.draw_cam.max_exposure);
+            float exposure = list.draw_cam.max_exposure;
+            if (list.draw_cam.autoexposure) {
+                exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
+                exposure = std::min(exposure, list.draw_cam.max_exposure);
+            }
 
             // TODO: Remove this condition
             if (list.env.env_map) {
@@ -1267,8 +1270,12 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
 
         const float reduced_average = rp_read_brightness_.reduced_average();
-        float exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
-        exposure = std::min(exposure, list.draw_cam.max_exposure);
+
+        float exposure = list.draw_cam.max_exposure;
+        if (list.draw_cam.autoexposure) {
+            exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
+            exposure = std::min(exposure, list.draw_cam.max_exposure);
+        }
 
         rp_combine_data_.exposure = exposure;
         rp_combine_data_.fade = list.draw_cam.fade;

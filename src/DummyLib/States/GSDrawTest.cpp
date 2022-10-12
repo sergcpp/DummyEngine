@@ -337,6 +337,11 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
             view_fov_ = float(js_fov.val);
         }
 
+        if (js_cam.Has("autoexposure")) {
+            const JsLiteral &js_autoexposure = js_cam.at("autoexposure").as_lit();
+            autoexposure_ = js_autoexposure.val == JsLiteralType::True;
+        }
+
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure_ = float(js_max_exposure.val);
@@ -723,7 +728,7 @@ void GSDrawTest::UpdateAnim(uint64_t dt_us) {
 
     // Update camera
     scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
-                              max_exposure_);
+                              autoexposure_, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
     //           view_dir_[2]);
