@@ -477,6 +477,7 @@ def xextent(pp, obj, counter, size, pixels, hdr):															# X Extent, the 
 	else:
 		a = obj.dimensions[0]/8 			# "Dimensions" property, change with the scale -> There is no need to apply scale, nor does it effect it.
 		print(obj.dimensions[0])
+	a *= 100
 	if hdr == False :
 		a = np.clip(a,1,256)
 		a = a /256
