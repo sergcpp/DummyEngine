@@ -122,7 +122,7 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
     }
 
     scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
-                              max_exposure);
+                              true, max_exposure);
 
     {
         char sophia_name[] = "sophia_00";

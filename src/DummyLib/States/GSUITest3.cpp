@@ -299,7 +299,7 @@ void GSUITest3::Draw() {
 
     const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0.0f, view_offset_, 0.0f};
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, max_exposure_);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, true, max_exposure_);
 
     GSBaseState::Draw();
 }

@@ -38,6 +38,7 @@ class GSDrawTest final : public GSBaseState {
 
     float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
     float max_exposure_ = 1000.0f;
+    bool autoexposure_ = true;
 
     uint64_t click_time_ = 0;
 

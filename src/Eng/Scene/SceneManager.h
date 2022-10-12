@@ -123,7 +123,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     void LoadProbeCache();
 
     void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov,
-                   float max_exposure);
+                   bool autoexposure, float max_exposure);
 
     using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init);
