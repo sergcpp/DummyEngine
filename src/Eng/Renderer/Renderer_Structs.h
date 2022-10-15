@@ -276,17 +276,17 @@ struct ViewState {
     float vertical_fov;
     int frame_index;
     Ren::Vec3f prev_cam_pos;
-    Ren::Mat4f prev_clip_from_world, down_buf_view_from_world, prev_clip_from_view;
+    Ren::Mat4f prev_clip_from_world_no_translation, down_buf_view_from_world, prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[3];
     bool is_multisampled = false;
 };
 
 struct SharedDataBlock {
-    Ren::Mat4f view_matrix, proj_matrix, view_proj_matrix, view_proj_prev_matrix;
-    Ren::Mat4f inv_view_matrix, inv_proj_matrix, inv_view_proj_matrix, delta_matrix;
+    Ren::Mat4f view_matrix, proj_matrix, view_proj_no_translation, prev_view_proj_no_translation;
+    Ren::Mat4f inv_view_matrix, inv_proj_matrix, inv_view_proj_no_translation, delta_matrix;
     ShadowMapRegion shadowmap_regions[REN_MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, uTaaInfo, uFrustumInfo;
-    Ren::Vec4f clip_info, cam_pos_and_gamma, cam_delta;
+    Ren::Vec4f clip_info, cam_pos_and_gamma, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     ProbeItem probes[REN_MAX_PROBES_TOTAL] = {};

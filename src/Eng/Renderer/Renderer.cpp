@@ -1289,7 +1289,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     { // store matrix to use it in next frame
         view_state_.down_buf_view_from_world = list.draw_cam.view_matrix();
         view_state_.prev_cam_pos = list.draw_cam.world_position();
-        view_state_.prev_clip_from_world = list.draw_cam.proj_matrix() * list.draw_cam.view_matrix();
+
+        Ren::Mat4f view_matrix_no_translation = list.draw_cam.view_matrix();
+        view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
+
+        view_state_.prev_clip_from_world_no_translation = list.draw_cam.proj_matrix() * view_matrix_no_translation;
         view_state_.prev_clip_from_view = list.draw_cam.proj_matrix_offset();
     }
 

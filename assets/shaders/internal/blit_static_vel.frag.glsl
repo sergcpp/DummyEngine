@@ -45,7 +45,9 @@ void main() {
     vec4 point_ws = g_shrd_data.inv_view_proj_matrix * point_cs;
     point_ws /= point_ws.w;
 
-    vec4 point_prev_cs = g_shrd_data.view_proj_prev_matrix * point_ws;
+    point_ws.xyz += (g_shrd_data.cam_pos_and_gamma.xyz - g_shrd_data.prev_cam_pos.xyz);
+
+    vec4 point_prev_cs = g_shrd_data.prev_view_proj_no_translation * point_ws;
     point_prev_cs /= point_prev_cs.w;
 
     vec2 unjitter = g_shrd_data.taa_info.xy;
@@ -54,7 +56,8 @@ void main() {
 #endif
     g_out_velocity = 0.5 * (point_cs.xy + unjitter - point_prev_cs.xy);
 #if defined(VULKAN)
-    g_out_velocity.y = - g_out_velocity.y;
+    g_out_velocity.y = -g_out_velocity.y;
 #endif
 }
+
 

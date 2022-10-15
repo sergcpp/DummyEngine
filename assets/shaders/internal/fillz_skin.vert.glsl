@@ -79,7 +79,7 @@ void main() {
 #endif
 
     vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos_curr, 1.0)).xyz;
-    gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws_curr, 1.0);
+    gl_Position = g_shrd_data.view_proj_no_translation * vec4(vtx_pos_ws_curr- g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
@@ -91,7 +91,7 @@ void main() {
 #else
     vec3 vtx_pos_ws_prev = (model_matrix_curr * vec4(g_in_vtx_pos_prev, 1.0)).xyz;
 #endif
-    g_vtx_pos_cs_prev = (g_shrd_data.view_proj_prev_matrix * vec4(vtx_pos_ws_prev, 1.0)).xyw;
+    g_vtx_pos_cs_prev = (g_shrd_data.prev_view_proj_no_translation * vec4(vtx_pos_ws_prev - g_shrd_data.prev_cam_pos.xyz, 1.0)).xyw;
 #if defined(VULKAN)
     g_vtx_pos_cs_prev.y = -g_vtx_pos_cs_prev.y;
 #endif
