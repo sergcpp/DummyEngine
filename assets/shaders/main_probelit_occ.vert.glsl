@@ -95,7 +95,7 @@ void main(void) {
     g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
 #endif // BINDLESS_TEXTURES
 
-    gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws, 1.0);
+    gl_Position = g_shrd_data.view_proj_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

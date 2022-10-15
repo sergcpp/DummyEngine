@@ -91,5 +91,5 @@ void main(void) {
                   oPatch.aVertexPos_B012 * 3.0 * u * v_pow2 +
                   oPatch.aVertexPos_B111 * 6.0 * w * u * v;
 
-    gl_Position = g_shrd_data.view_proj_matrix * vec4(g_vtx_pos, 1.0);
+    gl_Position = g_shrd_data.view_proj_no_translation * vec4(g_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 }

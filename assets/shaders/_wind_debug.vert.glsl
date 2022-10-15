@@ -79,5 +79,5 @@ void main(void) {
         g_vtx_sh_uvs[i].xy += offsets[i];
     }
 
-    gl_Position = g_shrd_data.view_proj_matrix * vec4(vtx_pos_ws, 1.0);
+    gl_Position = g_shrd_data.view_proj_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 }

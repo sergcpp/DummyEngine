@@ -65,5 +65,5 @@ void main(void) {
     g_tex_height = 0.5 * texture(SAMPLER2D(g_bump_tex), g_vtx_uvs).r * k;
     g_vtx_pos += 1.0 * 0.05 * normalize(g_vtx_normal) * g_tex_height * k;
 
-    gl_Position = g_shrd_data.view_proj_matrix * vec4(g_vtx_pos, 1.0);
+    gl_Position = g_shrd_data.view_proj_no_translation * vec4(g_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 }

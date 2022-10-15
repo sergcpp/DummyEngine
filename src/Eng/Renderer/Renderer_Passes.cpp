@@ -418,11 +418,14 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             shrd_data.proj_matrix[2][0] += p_list_->draw_cam.px_offset()[0];
             shrd_data.proj_matrix[2][1] += p_list_->draw_cam.px_offset()[1];
 
-            shrd_data.view_proj_matrix = shrd_data.proj_matrix * shrd_data.view_matrix;
-            shrd_data.view_proj_prev_matrix = view_state_.prev_clip_from_world;
+            Ren::Mat4f view_matrix_no_translation = shrd_data.view_matrix;
+            view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
+
+            shrd_data.view_proj_no_translation = shrd_data.proj_matrix * view_matrix_no_translation;
+            shrd_data.prev_view_proj_no_translation = view_state_.prev_clip_from_world_no_translation;
             shrd_data.inv_view_matrix = Inverse(shrd_data.view_matrix);
             shrd_data.inv_proj_matrix = Inverse(shrd_data.proj_matrix);
-            shrd_data.inv_view_proj_matrix = Inverse(shrd_data.view_proj_matrix);
+            shrd_data.inv_view_proj_no_translation = Inverse(shrd_data.view_proj_no_translation);
             // delta matrix between current and previous frame
             shrd_data.delta_matrix =
                 view_state_.prev_clip_from_view * (view_state_.down_buf_view_from_world * shrd_data.inv_view_matrix);
@@ -476,8 +479,8 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             }
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
-            const Ren::Vec3f cam_delta = cam_pos - view_state_.prev_cam_pos;
-            shrd_data.cam_delta = Ren::Vec4f{cam_delta[0], cam_delta[1], cam_delta[2], 0.0f};
+            shrd_data.prev_cam_pos =
+                Ren::Vec4f{view_state_.prev_cam_pos[0], view_state_.prev_cam_pos[1], view_state_.prev_cam_pos[2], 0.0f};
             shrd_data.cam_pos_and_gamma = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 2.2f};
             shrd_data.wind_scroll =
                 Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],

@@ -32,7 +32,7 @@ LAYOUT(location = 0) out vec3 g_vtx_pos;
 void main() {
     vec3 vertex_position_ws = (g_mmatrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     g_vtx_pos = vertex_position_ws;
-    gl_Position = g_shrd_data.view_proj_matrix * vec4(vertex_position_ws, 1.0);
+    gl_Position = g_shrd_data.view_proj_no_translation * vec4(vertex_position_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
