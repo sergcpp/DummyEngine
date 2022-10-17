@@ -309,7 +309,7 @@ void test_alloc() {
             }
             if (!new_alloc) {
                 const int index_to_free = rand() % allocated.size();
-                auto it_to_free = std::begin(allocated) + index_to_free;
+                auto it_to_free = begin(allocated) + index_to_free;
                 for (int i = 0; i < it_to_free->second; i += 256) {
                     require(memcmp(&it_to_free->first[i], cmp_buf, std::min(it_to_free->second - i, 256)) == 0);
                 }
