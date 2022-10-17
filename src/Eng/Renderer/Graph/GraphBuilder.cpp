@@ -20,9 +20,9 @@ RpSubpass &RpBuilder::AddPass(const char *name) {
 }
 
 RpSubpass *RpBuilder::FindPass(const char *name) {
-    auto it = std::find_if(std::begin(subpasses_), std::end(subpasses_),
+    auto it = std::find_if(begin(subpasses_), end(subpasses_),
                            [name](const RpSubpass *pass) { return strcmp(pass->name(), name) == 0; });
-    if (it != std::end(subpasses_)) {
+    if (it != end(subpasses_)) {
         return (*it);
     }
     return nullptr;
@@ -987,7 +987,7 @@ void RpBuilder::BuildAliases() {
             continue;
         }
 
-        std::sort(std::begin(chain), std::end(chain), [&](const int lhs, const int rhs) {
+        std::sort(begin(chain), end(chain), [&](const int lhs, const int rhs) {
             return ranges[lhs].last_used_pass() < ranges[rhs].first_used_pass();
         });
 
@@ -1019,23 +1019,22 @@ void RpBuilder::BuildResourceLinkedLists() {
         for (size_t i = 0; i < cur_pass->input_.size(); i++) {
             RpResource *r = &cur_pass->input_[i];
 
-            auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r, resource_compare);
-            if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
+            auto it = std::lower_bound(begin(all_resources), end(all_resources), r, resource_compare);
+            if (it != end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
                 (*it)->next_use = r;
                 (*it) = r;
             } else {
                 if (r->type == eRpResType::Texture && textures_[r->index].alias_of != -1) {
                     const auto &chain = alias_chains_[textures_[r->index].alias_of];
-                    auto curr_it = std::find(std::begin(chain), std::end(chain), r->index);
-                    assert(curr_it != std::end(chain) && curr_it != std::begin(chain));
+                    auto curr_it = std::find(begin(chain), end(chain), r->index);
+                    assert(curr_it != end(chain) && curr_it != begin(chain));
 
                     RpResource to_find;
                     to_find.type = eRpResType::Texture;
                     to_find.index = *--curr_it;
 
-                    auto it2 = std::lower_bound(std::begin(all_resources), std::end(all_resources), &to_find,
-                                                resource_compare);
-                    if (it2 != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(to_find, **it2)) {
+                    auto it2 = std::lower_bound(begin(all_resources), end(all_resources), &to_find, resource_compare);
+                    if (it2 != end(all_resources) && !RpResource::LessThanTypeAndIndex(to_find, **it2)) {
                         (*it2)->next_use = r;
                     }
                 }
@@ -1047,23 +1046,22 @@ void RpBuilder::BuildResourceLinkedLists() {
         for (size_t i = 0; i < cur_pass->output_.size(); i++) {
             RpResource *r = &cur_pass->output_[i];
 
-            auto it = std::lower_bound(std::begin(all_resources), std::end(all_resources), r, resource_compare);
-            if (it != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
+            auto it = std::lower_bound(begin(all_resources), end(all_resources), r, resource_compare);
+            if (it != end(all_resources) && !RpResource::LessThanTypeAndIndex(*r, **it)) {
                 (*it)->next_use = r;
                 (*it) = r;
             } else {
                 if (r->type == eRpResType::Texture && textures_[r->index].alias_of != -1) {
                     const auto &chain = alias_chains_[textures_[r->index].alias_of];
-                    auto curr_it = std::find(std::begin(chain), std::end(chain), r->index);
-                    assert(curr_it != std::end(chain) && curr_it != std::begin(chain));
+                    auto curr_it = std::find(begin(chain), end(chain), r->index);
+                    assert(curr_it != end(chain) && curr_it != begin(chain));
 
                     RpResource to_find;
                     to_find.type = eRpResType::Texture;
                     to_find.index = *--curr_it;
 
-                    auto it2 = std::lower_bound(std::begin(all_resources), std::end(all_resources), &to_find,
-                                                resource_compare);
-                    if (it2 != std::end(all_resources) && !RpResource::LessThanTypeAndIndex(to_find, **it2)) {
+                    auto it2 = std::lower_bound(begin(all_resources), end(all_resources), &to_find, resource_compare);
+                    if (it2 != end(all_resources) && !RpResource::LessThanTypeAndIndex(to_find, **it2)) {
                         (*it2)->next_use = r;
                     }
                 }
@@ -1133,7 +1131,7 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
             TraversePassDependencies_r(pass, 0, reordered_subpasses_);
         }
 
-        std::reverse(std::begin(reordered_subpasses_), std::end(reordered_subpasses_));
+        std::reverse(begin(reordered_subpasses_), end(reordered_subpasses_));
 
         int out_index = 0;
         for (int in_index = 0; in_index < int(reordered_subpasses_.size()); ++in_index) {
@@ -1206,11 +1204,11 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
                 reordered_subpasses_.erase(reordered_subpasses_.begin() + best_candidate);
             }
 
-            reordered_subpasses_ = std::move(scheduled_passes);
+            reordered_subpasses_ = move(scheduled_passes);
         }
     } else {
         // Use all passes as is
-        reordered_subpasses_.assign(std::begin(subpasses_), std::end(subpasses_));
+        reordered_subpasses_.assign(begin(subpasses_), end(subpasses_));
     }
 
     BuildTransientResources();

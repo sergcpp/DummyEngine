@@ -165,9 +165,9 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
         avail_splits_.push_back(i);
     }
 
-    std::shuffle(std::begin(avail_splits_), std::end(avail_splits_), rand_gen);
+    std::shuffle(begin(avail_splits_), end(avail_splits_), rand_gen);
 
-    for (int i = 0; i < (int)text_splits_.size(); i++) {
+    for (int i = 0; i < int(text_splits_.size()); i++) {
         SplitData &sd = text_splits_[avail_splits_[i]];
         sd.slot_index = i;
     }

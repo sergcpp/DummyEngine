@@ -1267,7 +1267,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
         total_indices.insert(total_indices.end(), reordered_indices[i].begin(), reordered_indices[i].end());
     }
 
-    total_chunks.insert(std::end(total_chunks), std::begin(alpha_chunks), std::end(alpha_chunks));
+    total_chunks.insert(end(total_chunks), begin(alpha_chunks), end(alpha_chunks));
 
     for (int mat_ndx : alpha_mats) {
         materials.push_back(materials[mat_ndx]);

@@ -707,7 +707,7 @@ void SceneManager::ForceTextureReload() {
         Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages, img_transitions);
     }
 
-    std::fill(std::begin(scene_data_.texture_mem_buckets), std::end(scene_data_.texture_mem_buckets), 0);
+    fill(begin(scene_data_.texture_mem_buckets), end(scene_data_.texture_mem_buckets), 0);
     scene_data_.tex_mem_bucket_index = 0;
     scene_data_.estimated_texture_mem = 0;
 
