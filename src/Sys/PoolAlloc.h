@@ -32,19 +32,18 @@ class PoolAllocator {
 
   public:
     PoolAllocator(size_t block_size, uint8_t block_count)
-        : block_size_(block_size), block_count_(block_count), last_alloc_chunk_(nullptr),
-          last_free_chunk_(nullptr) {}
+        : block_size_(block_size), block_count_(block_count), last_alloc_chunk_(nullptr), last_free_chunk_(nullptr) {}
 
     void *Alloc() {
         if (!last_alloc_chunk_ || last_alloc_chunk_->unused_block_count == 0) {
-            auto it = std::begin(chunks_);
-            for (; it != std::end(chunks_); ++it) {
+            auto it = begin(chunks_);
+            for (; it != end(chunks_); ++it) {
                 if (it->unused_block_count) {
                     last_alloc_chunk_ = &*it;
                     break;
                 }
             }
-            if (it == std::end(chunks_)) {
+            if (it == end(chunks_)) {
                 chunks_.emplace_back(block_size_, block_count_);
                 last_alloc_chunk_ = &chunks_.back();
                 last_free_chunk_ = &chunks_.back();
@@ -57,7 +56,7 @@ class PoolAllocator {
     void Free(void *p) {
         if (!last_free_chunk_ || (p < last_free_chunk_->p_data) ||
             (p >= last_free_chunk_->p_data + block_size_ * block_count_)) {
-            for (auto it = std::begin(chunks_); it != std::end(chunks_); ++it) {
+            for (auto it = begin(chunks_); it != end(chunks_); ++it) {
                 if (p >= it->p_data && p < (it->p_data + block_size_ * block_count_)) {
                     last_free_chunk_ = &*it;
                     break;
@@ -80,9 +79,7 @@ inline PoolAllocator::MemChunk::MemChunk(size_t _block_size, uint8_t _block_coun
     }
 }
 
-inline PoolAllocator::MemChunk::~MemChunk() {
-    delete[] p_data;
-}
+inline PoolAllocator::MemChunk::~MemChunk() { delete[] p_data; }
 
 inline PoolAllocator::MemChunk::MemChunk(MemChunk &&rhs) noexcept {
     p_data = rhs.p_data;
@@ -130,10 +127,8 @@ struct SharedState {
     std::vector<PoolAllocator> allocators;
 };
 
-template <typename T, typename FallBackAllocator = std::allocator<T>>
-class MultiPoolAllocator {
-    template <typename U, typename FallBackAllocator2>
-    friend class MultiPoolAllocator;
+template <typename T, typename FallBackAllocator = std::allocator<T>> class MultiPoolAllocator {
+    template <typename U, typename FallBackAllocator2> friend class MultiPoolAllocator;
 
     size_t mem_step_;
     size_t max_object_size_;
@@ -152,8 +147,7 @@ class MultiPoolAllocator {
     }
 
     MultiPoolAllocator(const MultiPoolAllocator &other)
-        : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_),
-          shared_state_(other.shared_state_),
+        : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_), shared_state_(other.shared_state_),
           fallback_allocator_(other.fallback_allocator_) {
         shared_state_->users_count++;
     }
@@ -162,8 +156,7 @@ class MultiPoolAllocator {
 
     template <typename U>
     /*explicit*/ MultiPoolAllocator(const MultiPoolAllocator<U> &other)
-        : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_),
-          shared_state_(other.shared_state_),
+        : mem_step_(other.mem_step_), max_object_size_(other.max_object_size_), shared_state_(other.shared_state_),
           fallback_allocator_(other.fallback_allocator_) {
         shared_state_->users_count++;
     }

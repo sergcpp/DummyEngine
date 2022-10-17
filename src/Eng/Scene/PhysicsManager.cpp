@@ -73,7 +73,7 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
             temp_sorted_bodies_[i * 2ull + 1].ismin = false;
         }
 
-        std::sort(std::begin(temp_sorted_bodies_), std::end(temp_sorted_bodies_));
+        sort(begin(temp_sorted_bodies_), end(temp_sorted_bodies_));
     }
 
     { // Build potential collision pairs
@@ -104,7 +104,7 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
         }
     }
 
-    std::sort(std::begin(contacts_), std::end(contacts_));
+    sort(begin(contacts_), end(contacts_));
 
     real accum_time = real(0);
     for (Phy::contact_t &contact : contacts_) {

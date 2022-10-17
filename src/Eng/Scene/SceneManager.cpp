@@ -1456,10 +1456,9 @@ void SceneManager::UpdateInstanceBuffer() {
         return;
     }
 
-    std::sort(std::begin(instance_data_to_update_), std::end(instance_data_to_update_));
-    instance_data_to_update_.erase(
-        std::unique(std::begin(instance_data_to_update_), std::end(instance_data_to_update_)),
-        std::end(instance_data_to_update_));
+    sort(begin(instance_data_to_update_), end(instance_data_to_update_));
+    instance_data_to_update_.erase(unique(begin(instance_data_to_update_), end(instance_data_to_update_)),
+                                   end(instance_data_to_update_));
 
     if (instance_data_to_update_.size() > 1) {
         uint32_t range_start = instance_data_to_update_[0];

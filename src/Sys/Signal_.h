@@ -80,7 +80,7 @@ class SignalN<R(Args... args), N> {
     }
 
     void clear() {
-        std::fill(std::begin(delegates_), std::begin(delegates_) + count_, {});
+        fill(std::begin(delegates_), std::begin(delegates_) + count_, {});
         count_ = 0;
     }
 
