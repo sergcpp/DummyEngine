@@ -81,8 +81,9 @@ void main() {
     pos_cs.xyz = 2.0 * pos_cs.xyz - 1.0;
 #endif // VULKAN
 
-    vec4 pos_ws = g_shrd_data.inv_view_proj_matrix * pos_cs;
+    vec4 pos_ws = g_shrd_data.inv_view_proj_no_translation * pos_cs;
     pos_ws /= pos_ws.w;
+    pos_ws.xyz += g_shrd_data.cam_pos_and_gamma.xyz;
 
     vec3 albedo = texelFetch(g_albedo_tex, icoord, 0).rgb;
     vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0));
