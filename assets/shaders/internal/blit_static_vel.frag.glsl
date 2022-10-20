@@ -42,7 +42,7 @@ void main() {
     point_cs.xyz = 2.0 * point_cs.xyz - vec3(1.0);
 #endif // VULKAN
 
-    vec4 point_ws = g_shrd_data.inv_view_proj_matrix * point_cs;
+    vec4 point_ws = g_shrd_data.inv_view_proj_no_translation * point_cs;
     point_ws /= point_ws.w;
 
     point_ws.xyz += (g_shrd_data.cam_pos_and_gamma.xyz - g_shrd_data.prev_cam_pos.xyz);
