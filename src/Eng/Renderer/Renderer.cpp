@@ -1200,7 +1200,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
                 rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
-                if (blur_tex) {
+                if (list.render_flags & EnableBloom) {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
                 } else {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
