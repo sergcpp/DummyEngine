@@ -190,6 +190,22 @@ void SceneManager::TextureLoaderProc() {
                         req->orig_format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
 
                         read_offset += sizeof(Ren::DDS_HEADER_DXT10);
+                    } else if (temp_params.format == Ren::eTexFormat::Undefined) {
+                        // Try to use least significant bits of FourCC as format
+                        const uint8_t val = (header.sPixelFormat.dwFourCC & 0xff);
+                        if (val == 0x6f) {
+                            req->orig_format = Ren::eTexFormat::RawR16F;
+                        } else if (val == 0x70) {
+                            req->orig_format = Ren::eTexFormat::RawRG16F;
+                        } else if (val == 0x71) {
+                            req->orig_format = Ren::eTexFormat::RawRGBA16F;
+                        } else if (val == 0x72) {
+                            req->orig_format = Ren::eTexFormat::RawR32F;
+                        } else if (val == 0x73) {
+                            req->orig_format = Ren::eTexFormat::RawRG32F;
+                        } else if (val == 0x74) {
+                            req->orig_format = Ren::eTexFormat::RawRGBA32F;
+                        }
                     }
                 }
             }
