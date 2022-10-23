@@ -5,6 +5,6 @@ flag: two_sided
 flag: depth_write
 flag: alpha_blend
 texture: curtain_diff.png
-texture: default_normalmap.png
+texture: default_normalmap.dds
 texture: default_specular.png
 texture: curtain_mask.png
