@@ -40,7 +40,6 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
 
