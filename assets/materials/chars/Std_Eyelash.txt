@@ -3,6 +3,6 @@ gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag
 sw_program: main
 flag: alpha_blend
 texture: chars/Std_Eyelash_diff.png
-texture: default_normalmap.png
+texture: default_normalmap.dds
 texture: default_specular.png
 texture: chars/Std_Eyelash_mask.png

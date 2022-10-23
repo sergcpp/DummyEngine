@@ -5,6 +5,6 @@ flag: two_sided
 flag: alpha_blend
 flag: alpha_test
 texture: chars/High_polytail_diff.png
-texture: default_normalmap.png
+texture: default_normalmap.dds
 texture: chars/High_polytail_spec.png
 texture: chars/High_polytail_mask.png
