@@ -257,7 +257,7 @@ class Renderer {
     void AddSkydomePass(const CommonBuffers &common_buffers, bool clear, FrameTextures &frame_textures);
     void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                             const BindlessTextureData &bindless, FrameTextures &frame_textures);
-    void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
+    void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool enable_gi);
     void AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,

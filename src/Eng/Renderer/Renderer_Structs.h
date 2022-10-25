@@ -222,6 +222,7 @@ enum eRenderFlags : uint64_t {
     EnableTimers = (1ull << 17u),
     EnableDeferred = (1ull << 18u),
     EnableRTShadows = (1ull << 19u),
+    EnableGI = (1ull << 20u),
     DebugWireframe = (1ull << 31u),
     DebugCulling = (1ull << 32u),
     DebugShadow = (1ull << 33u),

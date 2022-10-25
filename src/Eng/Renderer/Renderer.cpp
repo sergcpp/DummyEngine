@@ -927,7 +927,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                              depth_hierarchy_tex, frame_textures);
 
             // GBuffer shading pass
-            AddDeferredShadingPass(common_buffers, frame_textures);
+            AddDeferredShadingPass(common_buffers, frame_textures, (list.render_flags & EnableGI));
 
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
