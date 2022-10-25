@@ -339,7 +339,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     std::unique_ptr<uint8_t[]> dxt_data[16];
     int dxt_size[16] = {}, dxt_size_total = 0;
 
-    const bool use_YCoCg = strstr(out_file, "_diff."); // Store diffuse as YCoCg
+    const bool use_YCoCg = strstr(out_file, "_diff.") || strstr(out_file, "_basecolor."); // Store diffuse as YCoCg
     const bool use_DXT5 = (channels == 4) || use_YCoCg;
 
     for (int i = 0; i < mip_count; i++) {
