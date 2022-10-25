@@ -115,11 +115,11 @@ void main() {
         //col = pow(col / white, inv_gamma);
 
         col /= white;
+    }
 
 #if defined(VULKAN)
-        col = to_srgb(col);
+    col = to_srgb(col);
 #endif
-    }
 
     col = mix(col, vec3(0.0), g_params.fade);
     g_out_color = vec4(col, 1.0);
