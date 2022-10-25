@@ -773,7 +773,8 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
     transparent.set_executor(&rp_transparent_);
 }
 
-void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+                                      bool enable_gi) {
     auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");
 
     struct PassData {
@@ -795,7 +796,11 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
 
     data->shadowmap_tex = gbuf_shade.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::ComputeShader);
     data->ssao_tex = gbuf_shade.AddTextureInput(frame_textures.ssao, Ren::eStageBits::ComputeShader);
-    data->gi_tex = gbuf_shade.AddTextureInput(frame_textures.gi, Ren::eStageBits::ComputeShader);
+    if (enable_gi) {
+        data->gi_tex = gbuf_shade.AddTextureInput(frame_textures.gi, Ren::eStageBits::ComputeShader);
+    } else {
+        data->gi_tex = gbuf_shade.AddTextureInput(dummy_black_, Ren::eStageBits::ComputeShader);
+    }
     data->sun_shadow_tex = gbuf_shade.AddTextureInput(frame_textures.sun_shadow, Ren::eStageBits::ComputeShader);
 
     data->depth_tex = gbuf_shade.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
