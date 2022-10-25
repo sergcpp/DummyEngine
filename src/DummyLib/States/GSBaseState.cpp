@@ -576,6 +576,14 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_showUI", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            shrd_this->ui_enabled_ = !shrd_this->ui_enabled_;
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_freezeFrontend", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -1102,5 +1110,7 @@ void GSBaseState::UpdateFrame(int list_index) {
                                                 list.desired_textures.data, list.desired_textures.count);
     }
 
-    DrawUI(ui_renderer_.get(), ui_root_.get());
+    if (ui_enabled_) {
+        DrawUI(ui_renderer_.get(), ui_root_.get());
+    }
 }
