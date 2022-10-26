@@ -236,6 +236,16 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_taaStatic", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            uint64_t flags = shrd_this->renderer_->render_flags();
+            flags ^= EnableTaaStatic;
+            shrd_this->renderer_->set_render_flags(flags);
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_pt", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
@@ -839,6 +849,11 @@ void GSBaseState::Draw() {
                         probe_sh_update_iteration_ = 0;
                         probe_to_update_sh_ = nullptr;
                     }
+                }
+
+                if (invalidate_view_) {
+                    renderer_->reset_accumulation();
+                    invalidate_view_ = false;
                 }
 
                 // Render probe cubemap

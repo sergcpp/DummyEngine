@@ -12,6 +12,7 @@ struct Params {
     float gamma;
     float exposure;
     float fade;
+    float mix_factor; // for static accumulation
 };
 
 DEF_CONST_INT(CURR_TEX_SLOT, 0)

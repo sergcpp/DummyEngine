@@ -20,6 +20,7 @@ PERM @USE_CLIPPING;USE_TONEMAP
 PERM @USE_CLIPPING;USE_TONEMAP;USE_YCoCg
 PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD
 PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD;USE_TONEMAP;USE_YCoCg
+PERM @USE_STATIC_ACCUMULATION
 */
 
 layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D g_color_curr;
@@ -117,6 +118,13 @@ void main() {
 
     vec3 col_curr = FetchColor(g_color_curr, uvs_px);
 
+#if defined(USE_STATIC_ACCUMULATION)
+    vec3 col_hist = FetchColor(g_color_hist, uvs_px);
+    vec3 col = mix(col_hist, col_curr, g_params.mix_factor);
+
+    g_out_color = TonemapInvert(col);
+    g_out_history = g_out_color;
+#else // USE_STATIC_ACCUMULATION
     float min_depth = texelFetch(g_depth, uvs_px, 0).r;
 
     const ivec2 offsets[8] = ivec2[8](
@@ -215,4 +223,5 @@ void main() {
 #endif
     g_out_color = TonemapInvert(col);
     g_out_history = g_out_color;
+#endif // USE_STATIC_ACCUMULATION
 }

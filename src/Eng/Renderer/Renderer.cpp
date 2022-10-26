@@ -453,6 +453,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
     const bool cur_msaa_enabled = (list.render_flags & EnableMsaa) != 0;
     const bool cur_taa_enabled = (list.render_flags & EnableTaa) != 0;
+    const bool cur_taa_static_enabled = (list.render_flags & EnableTaaStatic) != 0;
     const bool cur_hq_ssr_enabled = (list.render_flags & EnableSSR_HQ) != 0;
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
 
@@ -521,6 +522,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         taa_enabled_ = cur_taa_enabled;
         dof_enabled_ = cur_dof_enabled;
         log->Info("Successfully initialized framebuffers %ix%i", view_state_.scr_res[0], view_state_.scr_res[1]);
+    }
+
+    if (cur_taa_static_enabled != taa_static_enabled_) {
+        accumulated_frames_ = 0;
+        taa_static_enabled_ = cur_taa_static_enabled;
     }
 
     if (!target) {
@@ -903,7 +909,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         const uint64_t fill_velocity_mask = (EnableTaa | EnableSSR_HQ | DebugWireframe);
         const uint64_t fill_velocity =
-            (EnableTaa | EnableSSR_HQ); // Temporal reprojection is used for reflections and TAA
+            (EnableTaa | EnableSSR_HQ | EnableGI); // Temporal reprojection is used for gi, reflections and TAA
         if ((list.render_flags & fill_velocity_mask) == fill_velocity) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
@@ -1036,7 +1042,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         const uint64_t use_taa_mask = (EnableTaa | DebugWireframe);
         const uint64_t use_taa = EnableTaa;
         if ((list.render_flags & use_taa_mask) == use_taa) {
-            AddTaaPass(common_buffers, frame_textures, list.draw_cam.max_exposure, resolved_color);
+            AddTaaPass(common_buffers, frame_textures, list.draw_cam.max_exposure,
+                       (list.render_flags & EnableTaaStatic), resolved_color);
         } else {
             resolved_color = frame_textures.color;
         }
