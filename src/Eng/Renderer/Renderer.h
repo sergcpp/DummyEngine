@@ -54,8 +54,9 @@ class Renderer {
     ~Renderer();
 
     uint64_t render_flags() const { return render_flags_; }
-
     void set_render_flags(const uint64_t f) { render_flags_ = f; }
+
+    void reset_accumulation() { accumulated_frames_ = 0; }
 
     const BackendInfo &backend_info() const { return backend_info_; }
 
@@ -95,7 +96,7 @@ class Renderer {
     Ren::Tex2DRef shadow_map_tex_;
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
-    bool taa_enabled_ = false, dof_enabled_ = false;
+    bool taa_enabled_ = false, taa_static_enabled_ = false, dof_enabled_ = false;
 
     Ren::VertexInput draw_pass_vi_;
     Ren::RenderPass rp_main_draw_;
@@ -204,7 +205,7 @@ class Renderer {
 
     ViewState view_state_;
     PrimDraw prim_draw_;
-    uint32_t frame_index_ = 0;
+    uint32_t frame_index_ = 0, accumulated_frames_ = 0;
 
     Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
     // HQ SSR
@@ -225,7 +226,8 @@ class Renderer {
     Ren::Pipeline pi_debug_velocity_;
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
-        blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_, blit_down_depth_prog_;
+        blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_,
+        blit_down_depth_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, lights_res, decals_res,
@@ -268,7 +270,7 @@ class Renderer {
                                    RpResRef &inout_velocity_tex);
     void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, float max_exposure,
-                    RpResRef &resolved_color);
+                    bool static_accumulation, RpResRef &resolved_color);
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 

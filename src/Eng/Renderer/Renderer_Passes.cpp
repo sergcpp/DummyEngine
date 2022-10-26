@@ -124,6 +124,10 @@ void Renderer::InitPipelines() {
                                      "internal/blit_taa.frag.glsl@USE_CLIPPING;USE_TONEMAP");
     assert(blit_taa_prog_->ready());
 
+    blit_taa_static_prog_ = sh_.LoadProgram(ctx_, "blit_taa_static_prog", "internal/blit_taa.vert.glsl",
+                                            "internal/blit_taa.frag.glsl@USE_STATIC_ACCUMULATION");
+    assert(blit_taa_static_prog_->ready());
+
     blit_ssr_prog_ = sh_.LoadProgram(ctx_, "blit_ssr", "internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
     assert(blit_ssr_prog_->ready());
 
@@ -1230,7 +1234,7 @@ void Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &
 }
 
 void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, const float max_exposure,
-                          RpResRef &resolved_color) {
+                          const bool static_accumulation, RpResRef &resolved_color) {
     assert(!view_state_.is_multisampled);
     { // TAA
         auto &taa = rp_builder_.AddPass("TAA");
@@ -1267,10 +1271,7 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
         }
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
 
-        // rp_taa_.Setup(rp_builder_, &view_state_, reduced_average_, list.draw_cam.max_exposure, data);
-        // taa.set_executor(&rp_taa_);
-
-        taa.set_execute_cb([this, data, max_exposure](RpBuilder &builder) {
+        taa.set_execute_cb([this, data, max_exposure, static_accumulation](RpBuilder &builder) {
             RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
 
             RpAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
@@ -1306,9 +1307,16 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
                 uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
                 uniform_params.exposure = exposure;
+                if (static_accumulation) {
+                    uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
+                } else {
+                    uniform_params.mix_factor = 0.0f;
+                }
+                ++accumulated_frames_;
 
-                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_taa_prog_, render_targets, {}, rast_state,
-                                    builder.rast_state(), bindings, &uniform_params, sizeof(TempAA::Params), 0);
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, static_accumulation ? blit_taa_static_prog_ : blit_taa_prog_,
+                                    render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params,
+                                    sizeof(TempAA::Params), 0);
             }
         });
     }
