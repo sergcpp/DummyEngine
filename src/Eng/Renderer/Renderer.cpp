@@ -57,7 +57,8 @@ const Ren::Vec2f HaltonSeq23[64] = {Ren::Vec2f{0.0000000000f, 0.0000000000f}, Re
                                     Ren::Vec2f{0.2343750000f, 0.2469136120f}, Ren::Vec2f{0.7343750000f, 0.5802469850f},
                                     Ren::Vec2f{0.4843750000f, 0.9135804180f}, Ren::Vec2f{0.9843750000f, 0.0617284030f}};
 
-const int TaaSampleCount = 8;
+const int TaaSampleCountNormal = 8;
+const int TaaSampleCountStatic = 64;
 
 #include "__brdf_lut.inl"
 #include "__cone_rt_lut.inl"
@@ -548,7 +549,10 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     view_state_.frame_index = list.frame_index;
 
     if ((list.render_flags & EnableTaa) != 0) {
-        Ren::Vec2f jitter = HaltonSeq23[list.frame_index % TaaSampleCount];
+        const int samples_to_use = (list.render_flags & EnableTaaStatic) ? TaaSampleCountStatic : TaaSampleCountNormal;
+        const int halton_sample =
+            ((list.render_flags & EnableTaaStatic) ? accumulated_frames_ : list.frame_index) % samples_to_use;
+        Ren::Vec2f jitter = HaltonSeq23[halton_sample];
         jitter = (jitter * 2.0f - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};
 
         list.draw_cam.SetPxOffset(jitter);
@@ -588,6 +592,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         rp_builder_.Reset();
         backbuffer_sources_.clear();
+
+        accumulated_frames_ = 0;
 
         auto &common_buffers = *rp_builder_.AllocPassData<CommonBuffers>();
         AddBuffersUpdatePass(common_buffers);

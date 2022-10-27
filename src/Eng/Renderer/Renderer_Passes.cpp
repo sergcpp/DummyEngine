@@ -19,6 +19,10 @@
 
 #include "../assets/shaders/internal/debug_velocity_interface.glsl"
 
+namespace RendererInternal {
+extern const int TaaSampleCountStatic;
+}
+
 void Renderer::InitPipelines() {
     { // Init skinning pipeline
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "skinning_prog", "internal/skinning.comp.glsl");
@@ -1307,7 +1311,7 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
                 uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
                 uniform_params.exposure = exposure;
-                if (static_accumulation) {
+                if (static_accumulation && accumulated_frames_ < RendererInternal::TaaSampleCountStatic) {
                     uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
                 } else {
                     uniform_params.mix_factor = 0.0f;
