@@ -913,10 +913,9 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
             frame_textures.ssao = rp_builder_.MakeTextureResource(dummy_white_);
         }
 
-        const uint64_t fill_velocity_mask = (EnableTaa | EnableSSR_HQ | DebugWireframe);
         const uint64_t fill_velocity =
             (EnableTaa | EnableSSR_HQ | EnableGI); // Temporal reprojection is used for gi, reflections and TAA
-        if ((list.render_flags & fill_velocity_mask) == fill_velocity) {
+        if ((list.render_flags & fill_velocity) != 0 && (list.render_flags & DebugWireframe) == 0) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
 
