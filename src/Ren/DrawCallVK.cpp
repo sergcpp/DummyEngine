@@ -12,6 +12,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     DescrSizes descr_sizes;
 
     SmallVector<VkWriteDescriptorSet, 48> descr_writes;
+    uint64_t used_bindings = 0;
 
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
@@ -32,6 +33,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             new_write.descriptorCount = 1;
             new_write.pImageInfo = &info;
+
+            assert((used_bindings & (1ull << (b.loc + b.offset))) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << (b.loc + b.offset));
         } else if (b.trg == eBindTarget::UBuf) {
             auto &ubuf = ubuf_infos[descr_sizes.ubuf_count++];
             ubuf.buffer = b.handle.buf->vk_handle();
@@ -45,6 +49,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             new_write.descriptorCount = 1;
             new_write.pBufferInfo = &ubuf;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
         } else if (b.trg == eBindTarget::TBuf) {
             ++descr_sizes.tbuf_count;
 
@@ -55,6 +62,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             new_write.descriptorCount = 1;
             new_write.pTexelBufferView = &b.handle.tex_buf->view();
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
         } else if (b.trg == eBindTarget::SBuf) {
             auto &sbuf = sbuf_infos[descr_sizes.sbuf_count++];
             sbuf.buffer = b.handle.buf->vk_handle();
@@ -68,6 +78,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             new_write.descriptorCount = 1;
             new_write.pBufferInfo = &sbuf;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
         } else if (b.trg == eBindTarget::TexCubeArray) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             info.sampler = b.handle.cube_arr->handle().sampler;
@@ -81,6 +94,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             new_write.descriptorCount = 1;
             new_write.pImageInfo = &info;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
         } else if (b.trg == eBindTarget::Image) {
             auto &info = img_storage_infos[descr_sizes.store_img_count++];
             info.sampler = b.handle.tex->handle().sampler;
@@ -99,6 +115,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
             new_write.descriptorCount = 1;
             new_write.pImageInfo = &info;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
         } else if (b.trg == eBindTarget::AccStruct) {
             auto &info = desc_tlas_infos[descr_sizes.acc_count++];
             info = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR};
@@ -112,6 +131,9 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             new_write.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
             new_write.descriptorCount = 1;
             new_write.pNext = &info;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
         }
     }
 
