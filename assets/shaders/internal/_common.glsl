@@ -32,10 +32,12 @@
 // [Cigolle 2014, "A Survey of Efficient Representations for Independent Unit Vectors"]
 vec2 PackUnitVector(vec3 v) {
     vec3 t = v / (abs(v.x) + abs(v.y) + abs(v.z));
-    vec3 a = t.z >= 0.0 ? t : (vec3(1.0) - abs(t.yxz)) * sign(t);
-    a = saturate(a * 0.5 + vec3(0.5));
+    vec2 _sign = vec2(t.x >= 0.0 ? 1.0 : -1.0,
+                      t.y >= 0.0 ? 1.0 : -1.0);
+    vec2 a = t.z >= 0.0 ? t.xy : (vec2(1.0) - abs(t.yx)) * _sign;
+    a = saturate(a * 0.5 + vec2(0.5));
 
-    return vec2(a.x, a.y);
+    return a.xy;
 }
 
 vec3 UnpackUnitVector(vec2 p) {
