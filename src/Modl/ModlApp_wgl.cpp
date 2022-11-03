@@ -353,7 +353,7 @@ int ModlApp::Run(const std::vector<std::string> &args) {
         view_file_name = out_file_name;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     int res = system("DummyApp.exe --prepare_assets pc --norun");
 #else
     int res = system("./DummyApp --prepare_assets pc --norun");

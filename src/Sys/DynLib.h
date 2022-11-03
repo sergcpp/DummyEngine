@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #ifndef _WINDEF_
 struct HINSTANCE__; // Forward or never
 typedef HINSTANCE__* HINSTANCE;
@@ -9,7 +9,7 @@ typedef HINSTANCE__* HINSTANCE;
 
 namespace Sys {
 class DynLib {
-#if defined(WIN32)
+#if defined(_WIN32)
     HINSTANCE handle_;
 #elif defined(__unix__) || defined(__APPLE__)
     void *handle_;

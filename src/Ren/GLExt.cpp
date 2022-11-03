@@ -6,7 +6,7 @@
 
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #else
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <Windows.h>
 #elif defined(__linux__)
 #include <GL/glx.h>
@@ -62,7 +62,7 @@ bool Ren::InitGLExtentions() {
     ren_glBindTextureUnit_Comp = ren_glBindTextureUnit_Comp_emu;
 #else
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #define GetProcAddress(name) wglGetProcAddress(#name);
 
     if (wglGetCurrentContext() == NULL) {

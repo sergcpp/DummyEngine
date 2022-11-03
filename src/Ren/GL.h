@@ -201,7 +201,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #else
 //#include <GL/glew.h>
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <cstddef>
 
 #define DECLSPEC_IMPORT __declspec(dllimport)
@@ -501,7 +501,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_PROGRAM                      0x82E2
 
 #ifndef APIENTRY
-#if defined(WIN32)
+#if defined(_WIN32)
 #define WINAPI      __stdcall
 #define APIENTRY    WINAPI
 #endif
@@ -511,7 +511,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 //#define APIENTRYP APIENTRY *
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include <GL/GL.h>
 #else
 #if defined(__APPLE__)

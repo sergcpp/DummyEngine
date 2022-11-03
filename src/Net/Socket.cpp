@@ -466,7 +466,7 @@ void Net::TCPSocket::WaitClientComplete(int t_ms) {
 
 bool Net::SetBlocking(int sock, bool is_blocking) {
     bool ret = true;
-#ifdef WIN32
+#ifdef _WIN32
     /// @note windows sockets are created in blocking mode by default
     // currently on windows, there is no easy way to obtain the socket's current blocking mode since WSAIsBlocking was deprecated
     u_long non_blocking = is_blocking ? 0 : 1;

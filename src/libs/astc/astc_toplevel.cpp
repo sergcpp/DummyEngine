@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <math.h>
 
-#ifndef WIN32
+#ifndef _WIN32
 	#include <sys/time.h>
 	#include <pthread.h>
 	#include <unistd.h>
