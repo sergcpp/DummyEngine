@@ -21,6 +21,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
                 set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
             endif()
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs")
         endif()
     else(WIN32)
         # allow to inline some functions in debug mode
