@@ -7,7 +7,7 @@
 #include "Pack.cpp"
 #include "Time.cpp"
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #include "AsyncFileReader_win32.cpp"
 #elif defined(__linux__)
 #include "AsyncFileReader_aio.cpp"
@@ -15,7 +15,7 @@
 #include "AsyncFileReader_posix_aio.cpp"
 #endif
 
-#if defined(WIN32) || defined(__linux__) || defined(__EMSCRIPTEN__)
+#if defined(_WIN32) || defined(__linux__) || defined(__EMSCRIPTEN__)
 #include "PlatformSDL.cpp"
 #endif
 
