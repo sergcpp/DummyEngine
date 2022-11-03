@@ -214,32 +214,25 @@ windows-x86_64-gl-build-job:
   extends:
     - .windows-x86_64-gl-build-job
   tags:
-    - windows,x86_64
+    - builder,windows,x86_64
     
 windows-x86_64-vk-build-job:
   extends:
     - .windows-x86_64-vk-build-job
   tags:
-    - windows,x86_64
+    - builder,windows,x86_64
     
 linux-x86_64-gl-build-job:
   extends:
     - .linux-x86_64-gl-build-job
   tags:
-    - linux,x86_64
+    - builder,linux,x86_64
     
 linux-x86_64-vk-build-job:
   extends:
     - .linux-x86_64-vk-build-job
   tags:
-    - linux,x86_64
-    
-#macos-build-and-test-job:
-#  extends:
-#    - .test-job-vk
-#    - .macos-build-job
-#  tags:
-#    - macos
+    - builder,linux,x86_64
 
 windows-x86_64-test-job-common:
   variables:
