@@ -222,8 +222,6 @@ class TestContext : public Ren::Context {
             throw std::runtime_error("ctx is null!");
         }
 
-        printf("Extensions: %s \n\n\n", glXQueryExtensionsString(dpy_, DefaultScreen(dpy_)));
-
         auto glXSwapIntervalEXT =
             (GLXSWAPINTERVALEXTPROC)glXGetProcAddress((const GLubyte *)"glXSwapIntervalEXT");
         if (glXSwapIntervalEXT) {
