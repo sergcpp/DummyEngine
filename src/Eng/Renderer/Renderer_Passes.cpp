@@ -612,38 +612,34 @@ void Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bool cl
 
 void Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                   const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+
     auto &gbuf_fill = rp_builder_.AddPass("GBUFFER FILL");
     const RpResRef vtx_buf1 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf1());
     const RpResRef vtx_buf2 = gbuf_fill.AddVertexBufferInput(ctx_.default_vertex_buf2());
     const RpResRef ndx_buf = gbuf_fill.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResRef materials_buf =
-        gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+    const RpResRef materials_buf = gbuf_fill.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf =
-        gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
+    const RpResRef textures_buf = gbuf_fill.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const RpResRef textures_buf = {};
 #endif
 
-    const RpResRef noise_tex =
-        gbuf_fill.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    const RpResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+    const RpResRef noise_tex = gbuf_fill.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const RpResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
     const RpResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
-        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
     const RpResRef instances_indices_buf =
-        gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+        gbuf_fill.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shared_data_buf = gbuf_fill.AddUniformBufferInput(
-        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+    const RpResRef shared_data_buf =
+        gbuf_fill.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-    const RpResRef cells_buf =
-        gbuf_fill.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-    const RpResRef items_buf =
-        gbuf_fill.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
-    const RpResRef decals_buf =
-        gbuf_fill.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::FragmentShader);
+    const RpResRef cells_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+    const RpResRef items_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+    const RpResRef decals_buf = gbuf_fill.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
     frame_textures.albedo = gbuf_fill.AddColorOutput(MAIN_ALBEDO_TEX, frame_textures.albedo_params);
     frame_textures.normal = gbuf_fill.AddColorOutput(MAIN_NORMAL_TEX, frame_textures.normal_params);
@@ -659,49 +655,45 @@ void Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const Per
 
 void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                     const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+
     auto &opaque = rp_builder_.AddPass("OPAQUE");
     const RpResRef vtx_buf1 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf1());
     const RpResRef vtx_buf2 = opaque.AddVertexBufferInput(ctx_.default_vertex_buf2());
     const RpResRef ndx_buf = opaque.AddIndexBufferInput(ctx_.default_indices_buf());
 
-    const RpResRef materials_buf =
-        opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+    const RpResRef materials_buf = opaque.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
+    const RpResRef textures_buf = opaque.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const RpResRef textures_buf = {};
 #endif
-    const RpResRef brdf_lut = opaque.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
-    const RpResRef noise_tex =
-        opaque.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    const RpResRef cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
+    const RpResRef brdf_lut = opaque.AddTextureInput(brdf_lut_, Stg::FragmentShader);
+    const RpResRef noise_tex = opaque.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const RpResRef cone_rt_lut = opaque.AddTextureInput(cone_rt_lut_, Stg::FragmentShader);
 
-    const RpResRef dummy_black = opaque.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_black = opaque.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
-    const RpResRef instances_buf = opaque.AddStorageReadonlyInput(
-        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+    const RpResRef instances_buf = opaque.AddStorageReadonlyInput(persistent_data.instance_buf,
+                                                                  persistent_data.instance_buf_tbo, Stg::VertexShader);
     const RpResRef instances_indices_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+        opaque.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shader_data_buf = opaque.AddUniformBufferInput(
-        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+    const RpResRef shader_data_buf =
+        opaque.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-    const RpResRef cells_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-    const RpResRef items_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
-    const RpResRef lights_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.lights_res, Ren::eStageBits::FragmentShader);
-    const RpResRef decals_buf =
-        opaque.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::FragmentShader);
+    const RpResRef cells_buf = opaque.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+    const RpResRef items_buf = opaque.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+    const RpResRef lights_buf = opaque.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
+    const RpResRef decals_buf = opaque.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
-    const RpResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::FragmentShader);
-    const RpResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Ren::eStageBits::FragmentShader);
+    const RpResRef shadowmap_tex = opaque.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+    const RpResRef ssao_tex = opaque.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
 
     RpResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (p_list_->env.lm_indir_sh[i]) {
-            lmap_tex[i] = opaque.AddTextureInput(p_list_->env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
+            lmap_tex[i] = opaque.AddTextureInput(p_list_->env.lm_indir_sh[i], Stg::FragmentShader);
         }
     }
 
@@ -720,51 +712,46 @@ void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const P
 
 void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                          const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+
     auto &transparent = rp_builder_.AddPass("TRANSPARENT");
     const RpResRef vtx_buf1 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf1());
     const RpResRef vtx_buf2 = transparent.AddVertexBufferInput(ctx_.default_vertex_buf2());
     const RpResRef ndx_buf = transparent.AddIndexBufferInput(ctx_.default_indices_buf());
 
     const RpResRef materials_buf =
-        transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Ren::eStageBits::VertexShader);
+        transparent.AddStorageReadonlyInput(persistent_data.materials_buf, Stg::VertexShader);
 #if defined(USE_GL_RENDER)
-    const RpResRef textures_buf =
-        transparent.AddStorageReadonlyInput(bindless.textures_buf, Ren::eStageBits::VertexShader);
+    const RpResRef textures_buf = transparent.AddStorageReadonlyInput(bindless.textures_buf, Stg::VertexShader);
 #else
     const RpResRef textures_buf = {};
 #endif
-    const RpResRef brdf_lut = transparent.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
-    const RpResRef noise_tex =
-        transparent.AddTextureInput(noise_tex_, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-    const RpResRef cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Ren::eStageBits::FragmentShader);
+    const RpResRef brdf_lut = transparent.AddTextureInput(brdf_lut_, Stg::FragmentShader);
+    const RpResRef noise_tex = transparent.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const RpResRef cone_rt_lut = transparent.AddTextureInput(cone_rt_lut_, Stg::FragmentShader);
 
-    const RpResRef dummy_black = transparent.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+    const RpResRef dummy_black = transparent.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
     const RpResRef instances_buf = transparent.AddStorageReadonlyInput(
-        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Ren::eStageBits::VertexShader);
+        persistent_data.instance_buf, persistent_data.instance_buf_tbo, Stg::VertexShader);
     const RpResRef instances_indices_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.instance_indices_res, Ren::eStageBits::VertexShader);
+        transparent.AddStorageReadonlyInput(common_buffers.instance_indices_res, Stg::VertexShader);
 
-    const RpResRef shader_data_buf = transparent.AddUniformBufferInput(
-        common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+    const RpResRef shader_data_buf =
+        transparent.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
 
-    const RpResRef cells_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-    const RpResRef items_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
-    const RpResRef lights_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.lights_res, Ren::eStageBits::FragmentShader);
-    const RpResRef decals_buf =
-        transparent.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::FragmentShader);
+    const RpResRef cells_buf = transparent.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+    const RpResRef items_buf = transparent.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
+    const RpResRef lights_buf = transparent.AddStorageReadonlyInput(common_buffers.lights_res, Stg::FragmentShader);
+    const RpResRef decals_buf = transparent.AddStorageReadonlyInput(common_buffers.decals_res, Stg::FragmentShader);
 
-    const RpResRef shadowmap_tex =
-        transparent.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::FragmentShader);
-    const RpResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Ren::eStageBits::FragmentShader);
+    const RpResRef shadowmap_tex = transparent.AddTextureInput(frame_textures.shadowmap, Stg::FragmentShader);
+    const RpResRef ssao_tex = transparent.AddTextureInput(frame_textures.ssao, Stg::FragmentShader);
 
     RpResRef lmap_tex[4];
     for (int i = 0; i < 4; ++i) {
         if (p_list_->env.lm_indir_sh[i]) {
-            lmap_tex[i] = transparent.AddTextureInput(p_list_->env.lm_indir_sh[i], Ren::eStageBits::FragmentShader);
+            lmap_tex[i] = transparent.AddTextureInput(p_list_->env.lm_indir_sh[i], Stg::FragmentShader);
         }
     }
 
@@ -783,6 +770,8 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
 
 void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                       bool enable_gi) {
+    using Stg = Ren::eStageBits;
+
     auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");
 
     struct PassData {
@@ -794,30 +783,29 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     };
 
     auto *data = gbuf_shade.AllocPassData<PassData>();
-    data->shared_data =
-        gbuf_shade.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
+    data->shared_data = gbuf_shade.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
 
-    data->cells_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::ComputeShader);
-    data->items_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::ComputeShader);
-    data->lights_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.lights_res, Ren::eStageBits::ComputeShader);
-    data->decals_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.decals_res, Ren::eStageBits::ComputeShader);
+    data->cells_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.cells_res, Stg::ComputeShader);
+    data->items_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.items_res, Stg::ComputeShader);
+    data->lights_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.lights_res, Stg::ComputeShader);
+    data->decals_buf = gbuf_shade.AddStorageReadonlyInput(common_buffers.decals_res, Stg::ComputeShader);
 
-    data->shadowmap_tex = gbuf_shade.AddTextureInput(frame_textures.shadowmap, Ren::eStageBits::ComputeShader);
-    data->ssao_tex = gbuf_shade.AddTextureInput(frame_textures.ssao, Ren::eStageBits::ComputeShader);
+    data->shadowmap_tex = gbuf_shade.AddTextureInput(frame_textures.shadowmap, Stg::ComputeShader);
+    data->ssao_tex = gbuf_shade.AddTextureInput(frame_textures.ssao, Stg::ComputeShader);
     if (enable_gi) {
-        data->gi_tex = gbuf_shade.AddTextureInput(frame_textures.gi, Ren::eStageBits::ComputeShader);
+        data->gi_tex = gbuf_shade.AddTextureInput(frame_textures.gi, Stg::ComputeShader);
     } else {
-        data->gi_tex = gbuf_shade.AddTextureInput(dummy_black_, Ren::eStageBits::ComputeShader);
+        data->gi_tex = gbuf_shade.AddTextureInput(dummy_black_, Stg::ComputeShader);
     }
-    data->sun_shadow_tex = gbuf_shade.AddTextureInput(frame_textures.sun_shadow, Ren::eStageBits::ComputeShader);
+    data->sun_shadow_tex = gbuf_shade.AddTextureInput(frame_textures.sun_shadow, Stg::ComputeShader);
 
-    data->depth_tex = gbuf_shade.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-    data->albedo_tex = gbuf_shade.AddTextureInput(frame_textures.albedo, Ren::eStageBits::ComputeShader);
-    data->normal_tex = gbuf_shade.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-    data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Ren::eStageBits::ComputeShader);
+    data->depth_tex = gbuf_shade.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+    data->albedo_tex = gbuf_shade.AddTextureInput(frame_textures.albedo, Stg::ComputeShader);
+    data->normal_tex = gbuf_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+    data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
-        gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Ren::eStageBits::ComputeShader);
+        gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
 
     gbuf_shade.set_execute_cb([this, data](RpBuilder &builder) {
         RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
