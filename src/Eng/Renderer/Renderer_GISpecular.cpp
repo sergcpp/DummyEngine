@@ -19,6 +19,9 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                                    const AccelerationStructureData &acc_struct_data,
                                    const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                                    RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
     // Reflection settings
     static const float GlossyThreshold = 1.05f; // slightly above 1 to make sure comparison is always true (for now)
     static const float MirrorThreshold = 0.0001f;
@@ -85,30 +88,27 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = ssr_classify.AllocPassData<PassData>();
-        data->depth = ssr_classify.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-        data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->variance_history = ssr_classify.AddHistoryTextureInput("Variance", Ren::eStageBits::ComputeShader);
-        data->sobol = ssr_classify.AddStorageReadonlyInput(sobol_seq_buf_, Ren::eStageBits::ComputeShader);
-        data->scrambling_tile =
-            ssr_classify.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
-        data->ranking_tile =
-            ssr_classify.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Ren::eStageBits::ComputeShader);
-        ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+        data->depth = ssr_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->normal = ssr_classify.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->variance_history = ssr_classify.AddHistoryTextureInput("Variance", Stg::ComputeShader);
+        data->sobol = ssr_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
+        data->scrambling_tile = ssr_classify.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Stg::ComputeShader);
+        data->ranking_tile = ssr_classify.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Stg::ComputeShader);
+        ray_counter = data->ray_counter = ssr_classify.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // packed ray list
             RpBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
-            ray_list = data->ray_list = ssr_classify.AddStorageOutput("Ray List", desc, Ren::eStageBits::ComputeShader);
+            ray_list = data->ray_list = ssr_classify.AddStorageOutput("Ray List", desc, Stg::ComputeShader);
         }
         { // tile list
             RpBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = ((view_state_.scr_res[0] + 7) / 8) * ((view_state_.scr_res[1] + 7) / 8) * sizeof(uint32_t);
 
-            tile_list = data->tile_list =
-                ssr_classify.AddStorageOutput("Tile List", desc, Ren::eStageBits::ComputeShader);
+            tile_list = data->tile_list = ssr_classify.AddStorageOutput("Tile List", desc, Stg::ComputeShader);
         }
         { // reflections texture
             Ren::Tex2DParams params;
@@ -118,7 +118,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             refl_tex = data->out_refl_tex =
-                ssr_classify.AddStorageImageOutput("SSR Temp 2", params, Ren::eStageBits::ComputeShader);
+                ssr_classify.AddStorageImageOutput("SSR Temp 2", params, Stg::ComputeShader);
         }
         { // blue noise texture
             Ren::Tex2DParams params;
@@ -127,7 +127,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =
-                ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Ren::eStageBits::ComputeShader);
+                ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Stg::ComputeShader);
         }
 
         ssr_classify.set_execute_cb([this, data](RpBuilder &builder) {
@@ -161,17 +161,17 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             }
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2D, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                {Ren::eBindTarget::SBuf, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
-                {Ren::eBindTarget::SBuf, SSRClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
-                {Ren::eBindTarget::TBuf, SSRClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
-                {Ren::eBindTarget::TBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
-                {Ren::eBindTarget::TBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
-                {Ren::eBindTarget::Image, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
-                {Ren::eBindTarget::Image, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
+                {Trg::Tex2D, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2D, SSRClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2D, SSRClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::SBuf, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                {Trg::SBuf, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
+                {Trg::SBuf, SSRClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
+                {Trg::TBuf, SSRClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
+                {Trg::TBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
+                {Trg::TBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
+                {Trg::Image, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
+                {Trg::Image, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + SSRClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
@@ -202,7 +202,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = write_indir.AllocPassData<PassData>();
-        ray_counter = data->ray_counter = write_indir.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+        ray_counter = data->ray_counter = write_indir.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
         { // Indirect arguments
             RpBufDesc desc = {};
@@ -210,16 +210,15 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             desc.size = 2 * sizeof(Ren::DispatchIndirectCommand);
 
             indir_disp_buf = data->indir_disp_buf =
-                write_indir.AddStorageOutput("Intersect Args", desc, Ren::eStageBits::ComputeShader);
+                write_indir.AddStorageOutput("Intersect Args", desc, Stg::ComputeShader);
         }
 
         write_indir.set_execute_cb([this, data](RpBuilder &builder) {
             RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
             RpAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
-            const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::SBuf, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                {Ren::eBindTarget::SBuf, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
+            const Ren::Binding bindings[] = {{Trg::SBuf, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                                             {Trg::SBuf, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
             Ren::DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -241,27 +240,24 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = ssr_trace_hq.AllocPassData<PassData>();
-        data->noise_tex = ssr_trace_hq.AddTextureInput(noise_tex, Ren::eStageBits::ComputeShader);
-        data->shared_data =
-            ssr_trace_hq.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
-        data->color_tex = ssr_trace_hq.AddTextureInput(frame_textures.color, Ren::eStageBits::ComputeShader);
-        data->normal_tex = ssr_trace_hq.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->depth_hierarchy = ssr_trace_hq.AddTextureInput(depth_hierarchy, Ren::eStageBits::ComputeShader);
+        data->noise_tex = ssr_trace_hq.AddTextureInput(noise_tex, Stg::ComputeShader);
+        data->shared_data = ssr_trace_hq.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->color_tex = ssr_trace_hq.AddTextureInput(frame_textures.color, Stg::ComputeShader);
+        data->normal_tex = ssr_trace_hq.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->depth_hierarchy = ssr_trace_hq.AddTextureInput(depth_hierarchy, Stg::ComputeShader);
 
-        data->in_ray_list = ssr_trace_hq.AddStorageReadonlyInput(ray_list, Ren::eStageBits::ComputeShader);
+        data->in_ray_list = ssr_trace_hq.AddStorageReadonlyInput(ray_list, Stg::ComputeShader);
         data->indir_args = ssr_trace_hq.AddIndirectBufferInput(indir_disp_buf);
-        ray_counter = data->inout_ray_counter =
-            ssr_trace_hq.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
-        refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Ren::eStageBits::ComputeShader);
-        raylen_tex = data->raylen_tex = ssr_trace_hq.AddStorageImageOutput(raylen_tex, Ren::eStageBits::ComputeShader);
+        ray_counter = data->inout_ray_counter = ssr_trace_hq.AddStorageOutput(ray_counter, Stg::ComputeShader);
+        refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
+        raylen_tex = data->raylen_tex = ssr_trace_hq.AddStorageImageOutput(raylen_tex, Stg::ComputeShader);
 
         { // packed ray list
             RpBufDesc desc;
             desc.type = Ren::eBufType::Storage;
             desc.size = view_state_.scr_res[0] * view_state_.scr_res[1] * sizeof(uint32_t);
 
-            ray_rt_list = data->out_ray_list =
-                ssr_trace_hq.AddStorageOutput("Ray RT List", desc, Ren::eStageBits::ComputeShader);
+            ray_rt_list = data->out_ray_list = ssr_trace_hq.AddStorageOutput("Ray RT List", desc, Stg::ComputeShader);
         }
 
         ssr_trace_hq.set_execute_cb([this, data](RpBuilder &builder) {
@@ -279,16 +275,16 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2D, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
-                {Ren::eBindTarget::SBuf, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Ren::eBindTarget::Image, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Ren::eBindTarget::Image, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
-                {Ren::eBindTarget::SBuf, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
-                {Ren::eBindTarget::SBuf, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
+                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Trg::Tex2D, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+                {Trg::Tex2D, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
+                {Trg::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
+                {Trg::Tex2D, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
+                {Trg::SBuf, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
+                {Trg::Image, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::Image, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
+                {Trg::SBuf, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
+                {Trg::SBuf, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
             SSRTraceHQ::Params uniform_params;
             uniform_params.resolution =
@@ -312,8 +308,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             };
 
             auto *data = rt_disp_args.AllocPassData<PassData>();
-            ray_counter = data->ray_counter =
-                rt_disp_args.AddStorageOutput(ray_counter, Ren::eStageBits::ComputeShader);
+            ray_counter = data->ray_counter = rt_disp_args.AddStorageOutput(ray_counter, Stg::ComputeShader);
 
             { // Indirect arguments
                 RpBufDesc desc = {};
@@ -321,7 +316,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                 desc.size = sizeof(Ren::TraceRaysIndirectCommand) + sizeof(Ren::DispatchIndirectCommand);
 
                 indir_rt_disp_buf = data->indir_disp_buf =
-                    rt_disp_args.AddStorageOutput("RT Dispatch Args", desc, Ren::eStageBits::ComputeShader);
+                    rt_disp_args.AddStorageOutput("RT Dispatch Args", desc, Stg::ComputeShader);
             }
 
             rt_disp_args.set_execute_cb([this, data](RpBuilder &builder) {
@@ -329,8 +324,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
                 RpAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
 
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::SBuf, SSRWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                    {Ren::eBindTarget::SBuf, SSRWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
+                    {Trg::SBuf, SSRWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                    {Trg::SBuf, SSRWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
 
                 Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                      builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -342,8 +337,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
             auto *data = rt_refl.AllocPassData<RpRTReflectionsData>();
 
-            const Ren::eStageBits stage =
-                ctx_.capabilities.ray_query ? Ren::eStageBits::ComputeShader : Ren::eStageBits::RayTracingShader;
+            const auto stage = ctx_.capabilities.ray_query ? Stg::ComputeShader : Stg::RayTracingShader;
 
             data->geo_data = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
             data->materials = rt_refl.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -414,21 +408,18 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = ssr_reproject.AllocPassData<PassData>();
-        data->shared_data =
-            ssr_reproject.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
-        data->depth_tex = ssr_reproject.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-        data->norm_tex = ssr_reproject.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->velocity_tex = ssr_reproject.AddTextureInput(frame_textures.velocity, Ren::eStageBits::ComputeShader);
-        data->depth_hist_tex =
-            ssr_reproject.AddHistoryTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-        data->norm_hist_tex =
-            ssr_reproject.AddHistoryTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular", Ren::eStageBits::ComputeShader);
-        data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput("Variance", Ren::eStageBits::ComputeShader);
-        data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Ren::eStageBits::ComputeShader);
-        data->raylen_tex = ssr_reproject.AddTextureInput(raylen_tex, Ren::eStageBits::ComputeShader);
+        data->shared_data = ssr_reproject.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->depth_tex = ssr_reproject.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->norm_tex = ssr_reproject.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->velocity_tex = ssr_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
+        data->depth_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->norm_hist_tex = ssr_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular", Stg::ComputeShader);
+        data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput("Variance", Stg::ComputeShader);
+        data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Stg::ComputeShader);
+        data->raylen_tex = ssr_reproject.AddTextureInput(raylen_tex, Stg::ComputeShader);
 
-        data->tile_list = ssr_reproject.AddStorageReadonlyInput(tile_list, Ren::eStageBits::ComputeShader);
+        data->tile_list = ssr_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_reproject.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
 
@@ -441,7 +432,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             reproj_refl_tex = data->out_reprojected_tex =
-                ssr_reproject.AddStorageImageOutput("SSR Reprojected", params, Ren::eStageBits::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("SSR Reprojected", params, Stg::ComputeShader);
         }
         { // 8x8 average reflections texture
             Ren::Tex2DParams params;
@@ -452,7 +443,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             avg_refl_tex = data->out_avg_refl_tex =
-                ssr_reproject.AddStorageImageOutput("Average Refl", params, Ren::eStageBits::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("Average Refl", params, Stg::ComputeShader);
         }
         { // Variance
             Ren::Tex2DParams params;
@@ -463,7 +454,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             variance_temp_tex = data->out_variance_tex =
-                ssr_reproject.AddStorageImageOutput("Variance Temp", params, Ren::eStageBits::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("Variance Temp", params, Stg::ComputeShader);
         }
         { // Sample count
             Ren::Tex2DParams params;
@@ -474,11 +465,11 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             sample_count_tex = data->out_sample_count_tex =
-                ssr_reproject.AddStorageImageOutput("Sample Count", params, Ren::eStageBits::ComputeShader);
+                ssr_reproject.AddStorageImageOutput("Sample Count", params, Stg::ComputeShader);
         }
 
         data->sample_count_hist_tex =
-            ssr_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Ren::eStageBits::ComputeShader);
+            ssr_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
 
         ssr_reproject.set_execute_cb([this, data](RpBuilder &builder) {
             RpAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
@@ -500,22 +491,22 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *shared_data_buf.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::NORM_TEX_SLOT, *norm_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::DEPTH_HIST_TEX_SLOT, *depth_hist_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRReproject::RAYLEN_TEX_SLOT, *raylen_tex.ref},
-                {Ren::eBindTarget::SBuf, SSRReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Ren::eBindTarget::Image, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                {Ren::eBindTarget::Image, SSRReproject::OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
-                {Ren::eBindTarget::Image, SSRReproject::OUT_VERIANCE_IMG_SLOT, *out_variance_tex.ref},
-                {Ren::eBindTarget::Image, SSRReproject::OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *shared_data_buf.ref},
+                {Trg::Tex2D, SSRReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2D, SSRReproject::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2D, SSRReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                {Trg::Tex2D, SSRReproject::DEPTH_HIST_TEX_SLOT, *depth_hist_tex.ref},
+                {Trg::Tex2D, SSRReproject::NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
+                {Trg::Tex2D, SSRReproject::REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
+                {Trg::Tex2D, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
+                {Trg::Tex2D, SSRReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
+                {Trg::Tex2D, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
+                {Trg::Tex2D, SSRReproject::RAYLEN_TEX_SLOT, *raylen_tex.ref},
+                {Trg::SBuf, SSRReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
+                {Trg::Image, SSRReproject::OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
+                {Trg::Image, SSRReproject::OUT_VERIANCE_IMG_SLOT, *out_variance_tex.ref},
+                {Trg::Image, SSRReproject::OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
             SSRReproject::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
@@ -542,13 +533,13 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = ssr_prefilter.AllocPassData<PassData>();
-        data->depth_tex = ssr_prefilter.AddTextureInput(frame_textures.depth, Ren::eStageBits::ComputeShader);
-        data->norm_tex = ssr_prefilter.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->avg_refl_tex = ssr_prefilter.AddTextureInput(avg_refl_tex, Ren::eStageBits::ComputeShader);
-        data->refl_tex = ssr_prefilter.AddTextureInput(refl_tex, Ren::eStageBits::ComputeShader);
-        data->variance_tex = ssr_prefilter.AddTextureInput(variance_temp_tex, Ren::eStageBits::ComputeShader);
-        data->sample_count_tex = ssr_prefilter.AddTextureInput(sample_count_tex, Ren::eStageBits::ComputeShader);
-        data->tile_list = ssr_prefilter.AddStorageReadonlyInput(tile_list, Ren::eStageBits::ComputeShader);
+        data->depth_tex = ssr_prefilter.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->norm_tex = ssr_prefilter.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->avg_refl_tex = ssr_prefilter.AddTextureInput(avg_refl_tex, Stg::ComputeShader);
+        data->refl_tex = ssr_prefilter.AddTextureInput(refl_tex, Stg::ComputeShader);
+        data->variance_tex = ssr_prefilter.AddTextureInput(variance_temp_tex, Stg::ComputeShader);
+        data->sample_count_tex = ssr_prefilter.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+        data->tile_list = ssr_prefilter.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_prefilter.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
 
@@ -561,7 +552,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             prefiltered_refl = data->out_refl_tex =
-                ssr_prefilter.AddStorageImageOutput("SSR Denoised 1", params, Ren::eStageBits::ComputeShader);
+                ssr_prefilter.AddStorageImageOutput("SSR Denoised 1", params, Stg::ComputeShader);
         }
         { // Variance
             Ren::Tex2DParams params;
@@ -572,7 +563,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             variance_temp2_tex = data->out_variance_tex =
-                ssr_prefilter.AddStorageImageOutput("Variance Temp 2", params, Ren::eStageBits::ComputeShader);
+                ssr_prefilter.AddStorageImageOutput("Variance Temp 2", params, Stg::ComputeShader);
         }
 
         ssr_prefilter.set_execute_cb([this, data](RpBuilder &builder) {
@@ -588,17 +579,16 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->out_refl_tex);
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
-            const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2D, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Ren::eBindTarget::SBuf, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+            const Ren::Binding bindings[] = {{Trg::Tex2D, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                             {Trg::Tex2D, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
+                                             {Trg::Tex2D, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                                             {Trg::Tex2D, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
+                                             {Trg::Tex2D, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                                             {Trg::Tex2D, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                                             {Trg::SBuf, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
 
-                {Ren::eBindTarget::Image, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Ren::eBindTarget::Image, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                                             {Trg::Image, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                                             {Trg::Image, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
             const auto grp_count = Ren::Vec3u{
                 (view_state_.act_res[0] + SSRPrefilter::LOCAL_GROUP_SIZE_X - 1u) / SSRPrefilter::LOCAL_GROUP_SIZE_X,
@@ -630,15 +620,14 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
         };
 
         auto *data = ssr_temporal.AllocPassData<PassData>();
-        data->shared_data =
-            ssr_temporal.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::ComputeShader);
-        data->norm_tex = ssr_temporal.AddTextureInput(frame_textures.normal, Ren::eStageBits::ComputeShader);
-        data->avg_refl_tex = ssr_temporal.AddTextureInput(avg_refl_tex, Ren::eStageBits::ComputeShader);
-        data->refl_tex = ssr_temporal.AddTextureInput(prefiltered_refl, Ren::eStageBits::ComputeShader);
-        data->reproj_refl_tex = ssr_temporal.AddTextureInput(reproj_refl_tex, Ren::eStageBits::ComputeShader);
-        data->variance_tex = ssr_temporal.AddTextureInput(variance_temp2_tex, Ren::eStageBits::ComputeShader);
-        data->sample_count_tex = ssr_temporal.AddTextureInput(sample_count_tex, Ren::eStageBits::ComputeShader);
-        data->tile_list = ssr_temporal.AddStorageReadonlyInput(tile_list, Ren::eStageBits::ComputeShader);
+        data->shared_data = ssr_temporal.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->norm_tex = ssr_temporal.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->avg_refl_tex = ssr_temporal.AddTextureInput(avg_refl_tex, Stg::ComputeShader);
+        data->refl_tex = ssr_temporal.AddTextureInput(prefiltered_refl, Stg::ComputeShader);
+        data->reproj_refl_tex = ssr_temporal.AddTextureInput(reproj_refl_tex, Stg::ComputeShader);
+        data->variance_tex = ssr_temporal.AddTextureInput(variance_temp2_tex, Stg::ComputeShader);
+        data->sample_count_tex = ssr_temporal.AddTextureInput(sample_count_tex, Stg::ComputeShader);
+        data->tile_list = ssr_temporal.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
         data->indir_args = ssr_temporal.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
 
@@ -651,7 +640,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             gi_specular_tex = data->out_refl_tex =
-                ssr_temporal.AddStorageImageOutput("GI Specular", params, Ren::eStageBits::ComputeShader);
+                ssr_temporal.AddStorageImageOutput("GI Specular", params, Stg::ComputeShader);
         }
         { // Variance texture
             Ren::Tex2DParams params;
@@ -661,8 +650,7 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            data->out_variance_tex =
-                ssr_temporal.AddStorageImageOutput("Variance", params, Ren::eStageBits::ComputeShader);
+            data->out_variance_tex = ssr_temporal.AddStorageImageOutput("Variance", params, Stg::ComputeShader);
         }
 
         ssr_temporal.set_execute_cb([this, data](RpBuilder &builder) {
@@ -680,16 +668,16 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
-                {Ren::eBindTarget::Tex2D, SSRResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRResolveTemporal::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRResolveTemporal::REFL_TEX_SLOT, *refl_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRResolveTemporal::REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Ren::eBindTarget::Tex2D, SSRResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Ren::eBindTarget::SBuf, SSRResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Ren::eBindTarget::Image, SSRResolveTemporal::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Ren::eBindTarget::Image, SSRResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Trg::Tex2D, SSRResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2D, SSRResolveTemporal::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                {Trg::Tex2D, SSRResolveTemporal::REFL_TEX_SLOT, *refl_tex.ref},
+                {Trg::Tex2D, SSRResolveTemporal::REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
+                {Trg::Tex2D, SSRResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2D, SSRResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::SBuf, SSRResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image, SSRResolveTemporal::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::Image, SSRResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
             SSRResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
@@ -706,18 +694,18 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
         auto *data = ssr_compose.AllocPassData<RpSSRCompose2Data>();
 
-        data->shared_data = ssr_compose.AddUniformBufferInput(
-            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
-        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Ren::eStageBits::FragmentShader);
-        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Ren::eStageBits::FragmentShader);
+        data->shared_data =
+            ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
+        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
+        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Stg::FragmentShader);
 
         if (debug_denoise) {
-            data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Ren::eStageBits::FragmentShader);
+            data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
         } else {
-            data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Ren::eStageBits::FragmentShader);
+            data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
         }
-        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
+        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Stg::FragmentShader);
         frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
         rp_ssr_compose2_.Setup(&view_state_, probe_storage, data);
@@ -727,6 +715,9 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
 
 void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                                    const RpResRef depth_down_2x, FrameTextures &frame_textures) {
+    using Stg = Ren::eStageBits;
+    using Trg = Ren::eBindTarget;
+
     RpResRef ssr_temp1;
     { // Trace
         auto &ssr_trace = rp_builder_.AddPass("SSR TRACE");
@@ -739,10 +730,10 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
         };
 
         auto *data = ssr_trace.AllocPassData<PassData>();
-        data->shared_data = ssr_trace.AddUniformBufferInput(
-            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-        data->normal_tex = ssr_trace.AddTextureInput(frame_textures.normal, Ren::eStageBits::FragmentShader);
-        data->depth_down_2x_tex = ssr_trace.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
+        data->shared_data =
+            ssr_trace.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        data->normal_tex = ssr_trace.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
+        data->depth_down_2x_tex = ssr_trace.AddTextureInput(depth_down_2x, Stg::FragmentShader);
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
             Ren::Tex2DParams params;
@@ -774,10 +765,9 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
-                    {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock),
-                     *unif_sh_data_buf.ref}};
+                    {Trg::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
+                    {Trg::Tex2D, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
+                    {Trg::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 
                 SSRTrace::Params uniform_params;
                 uniform_params.transform =
@@ -798,7 +788,7 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
         };
 
         auto *data = ssr_dilate.AllocPassData<PassData>();
-        data->ssr_tex = ssr_dilate.AddTextureInput(ssr_temp1, Ren::eStageBits::FragmentShader);
+        data->ssr_tex = ssr_dilate.AddTextureInput(ssr_temp1, Stg::FragmentShader);
 
         { // Auxilary texture for reflections (rg - uvs, b - influence)
             Ren::Tex2DParams params;
@@ -829,7 +819,7 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
 
                 Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
 
-                const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
 
                 SSRDilate::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};
@@ -843,20 +833,18 @@ void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const
         auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE");
 
         auto *data = ssr_compose.AllocPassData<RpSSRComposeData>();
-        data->shared_data = ssr_compose.AddUniformBufferInput(
-            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-        data->cells_buf =
-            ssr_compose.AddStorageReadonlyInput(common_buffers.cells_res, Ren::eStageBits::FragmentShader);
-        data->items_buf =
-            ssr_compose.AddStorageReadonlyInput(common_buffers.items_res, Ren::eStageBits::FragmentShader);
+        data->shared_data =
+            ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        data->cells_buf = ssr_compose.AddStorageReadonlyInput(common_buffers.cells_res, Stg::FragmentShader);
+        data->items_buf = ssr_compose.AddStorageReadonlyInput(common_buffers.items_res, Stg::FragmentShader);
 
-        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
-        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Ren::eStageBits::FragmentShader);
-        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Ren::eStageBits::FragmentShader);
-        data->depth_down_2x_tex = ssr_compose.AddTextureInput(depth_down_2x, Ren::eStageBits::FragmentShader);
-        data->down_buf_4x_tex = ssr_compose.AddTextureInput(down_tex_4x_, Ren::eStageBits::FragmentShader);
-        data->ssr_tex = ssr_compose.AddTextureInput(ssr_temp2, Ren::eStageBits::FragmentShader);
-        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Ren::eStageBits::FragmentShader);
+        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
+        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
+        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Stg::FragmentShader);
+        data->depth_down_2x_tex = ssr_compose.AddTextureInput(depth_down_2x, Stg::FragmentShader);
+        data->down_buf_4x_tex = ssr_compose.AddTextureInput(down_tex_4x_, Stg::FragmentShader);
+        data->ssr_tex = ssr_compose.AddTextureInput(ssr_temp2, Stg::FragmentShader);
+        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Stg::FragmentShader);
 
         frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
