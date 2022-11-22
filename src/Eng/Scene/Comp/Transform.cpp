@@ -74,9 +74,9 @@ void Transform::Write(const Transform &tr, JsObjectP &js_out) {
     { // write position
         JsArrayP js_pos(alloc);
 
-        js_pos.Push(JsNumber(tr.world_from_object[3][0]));
-        js_pos.Push(JsNumber(tr.world_from_object[3][1]));
-        js_pos.Push(JsNumber(tr.world_from_object[3][2]));
+        js_pos.Push(JsNumber{tr.world_from_object[3][0]});
+        js_pos.Push(JsNumber{tr.world_from_object[3][1]});
+        js_pos.Push(JsNumber{tr.world_from_object[3][2]});
 
         js_out.Push("pos", std::move(js_pos));
     }
@@ -86,9 +86,9 @@ void Transform::Write(const Transform &tr, JsObjectP &js_out) {
 
         const Ren::Vec3f euler_angles_deg = tr.euler_angles_rad * 180.0f / Ren::Pi<float>();
 
-        js_rot.Push(JsNumber(euler_angles_deg[0]));
-        js_rot.Push(JsNumber(euler_angles_deg[1]));
-        js_rot.Push(JsNumber(euler_angles_deg[2]));
+        js_rot.Push(JsNumber{euler_angles_deg[0]});
+        js_rot.Push(JsNumber{euler_angles_deg[1]});
+        js_rot.Push(JsNumber{euler_angles_deg[2]});
 
         js_out.Push("rot", std::move(js_rot));
     }

@@ -103,19 +103,19 @@ void Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
 
             { // write offset
                 JsArrayP js_ellipsoid_offset(alloc);
-                js_ellipsoid_offset.Push(JsNumber{(double)dr.ellipsoids[i].offset[0]});
-                js_ellipsoid_offset.Push(JsNumber{(double)dr.ellipsoids[i].offset[1]});
-                js_ellipsoid_offset.Push(JsNumber{(double)dr.ellipsoids[i].offset[2]});
+                js_ellipsoid_offset.Push(JsNumber{dr.ellipsoids[i].offset[0]});
+                js_ellipsoid_offset.Push(JsNumber{dr.ellipsoids[i].offset[1]});
+                js_ellipsoid_offset.Push(JsNumber{dr.ellipsoids[i].offset[2]});
                 js_ellipsoid.Push("offset", std::move(js_ellipsoid_offset));
             }
 
-            js_ellipsoid.Push("radius", JsNumber{(double)dr.ellipsoids[i].radius});
+            js_ellipsoid.Push("radius", JsNumber{dr.ellipsoids[i].radius});
 
             { // write axis
                 JsArrayP js_ellipsoid_axis(alloc);
-                js_ellipsoid_axis.Push(JsNumber{(double)dr.ellipsoids[i].axis[0]});
-                js_ellipsoid_axis.Push(JsNumber{(double)dr.ellipsoids[i].axis[1]});
-                js_ellipsoid_axis.Push(JsNumber{(double)dr.ellipsoids[i].axis[2]});
+                js_ellipsoid_axis.Push(JsNumber{dr.ellipsoids[i].axis[0]});
+                js_ellipsoid_axis.Push(JsNumber{dr.ellipsoids[i].axis[1]});
+                js_ellipsoid_axis.Push(JsNumber{dr.ellipsoids[i].axis[2]});
                 js_ellipsoid.Push("axis", std::move(js_ellipsoid_axis));
             }
 

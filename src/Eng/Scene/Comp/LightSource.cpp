@@ -76,9 +76,9 @@ void LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
     { // Write color
         JsArrayP js_color(alloc);
 
-        js_color.Push(JsNumber{double(ls.col[0])});
-        js_color.Push(JsNumber{double(ls.col[1])});
-        js_color.Push(JsNumber{double(ls.col[2])});
+        js_color.Push(JsNumber{ls.col[0]});
+        js_color.Push(JsNumber{ls.col[1]});
+        js_color.Push(JsNumber{ls.col[2]});
 
         js_out.Push("color", std::move(js_color));
     }
@@ -86,28 +86,28 @@ void LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
     { // Write offset
         JsArrayP js_offset(alloc);
 
-        js_offset.Push(JsNumber{double(ls.offset[0])});
-        js_offset.Push(JsNumber{double(ls.offset[1])});
-        js_offset.Push(JsNumber{double(ls.offset[2])});
+        js_offset.Push(JsNumber{ls.offset[0]});
+        js_offset.Push(JsNumber{ls.offset[1]});
+        js_offset.Push(JsNumber{ls.offset[2]});
 
         js_out.Push("offset", std::move(js_offset));
     }
 
     if (ls.radius != 1.0f) {
-        js_out.Push("radius", JsNumber{double(ls.radius)});
+        js_out.Push("radius", JsNumber{ls.radius});
     }
 
     { // Write direction and angle
         JsArrayP js_dir(alloc);
 
-        js_dir.Push(JsNumber{double(ls.dir[0])});
-        js_dir.Push(JsNumber{double(ls.dir[1])});
-        js_dir.Push(JsNumber{double(ls.dir[2])});
+        js_dir.Push(JsNumber{ls.dir[0]});
+        js_dir.Push(JsNumber{ls.dir[1]});
+        js_dir.Push(JsNumber{ls.dir[2]});
 
         js_out.Push("direction", std::move(js_dir));
 
         if (ls.angle_deg != 45.0f) {
-            js_out.Push("angle", JsNumber{double(ls.angle_deg)});
+            js_out.Push("angle", JsNumber{ls.angle_deg});
         }
     }
 
@@ -118,8 +118,8 @@ void LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {
         JsArrayP js_shadow_bias(alloc);
 
-        js_shadow_bias.Push(JsNumber{double(ls.shadow_bias[0])});
-        js_shadow_bias.Push(JsNumber{double(ls.shadow_bias[1])});
+        js_shadow_bias.Push(JsNumber{ls.shadow_bias[0]});
+        js_shadow_bias.Push(JsNumber{ls.shadow_bias[1]});
 
         js_out.Push("shadow_bias", std::move(js_shadow_bias));
     }
