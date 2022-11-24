@@ -495,7 +495,6 @@ void SceneManager::InitScene_PT(bool _override) {
             tex_desc.generate_mipmaps = false;
 
             env_desc.env_map = ray_scene_->AddTexture(tex_desc);
-            env_desc.env_clamp = 4.0f;
         }
 
         ray_scene_->SetEnvironment(env_desc);
