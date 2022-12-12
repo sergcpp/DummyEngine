@@ -511,7 +511,6 @@ void SceneManager::InitScene_PT(bool _override) {
         cam_desc.fov = cam_.angle();
         cam_desc.gamma = 1.0f;
         cam_desc.focus_distance = 1.0f;
-        cam_desc.focus_factor = 0.0f;
 
         ray_scene_->AddCamera(cam_desc);
     }
