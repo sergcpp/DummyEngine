@@ -3,7 +3,8 @@ project(_Dummy)
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo" CACHE STRING "" FORCE)
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;Asan" CACHE STRING "" FORCE)
+set_property(GLOBAL PROPERTY DEBUG_CONFIGURATIONS "Debug;Asan")
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
@@ -11,9 +12,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-small-functions ")
         elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            # allow to inline some functions in debug mode
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1")
-        
             if(CMAKE_SIZEOF_VOID_P EQUAL 8)
                 set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64)
@@ -22,6 +20,10 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
                 set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
             endif()
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs")
+            # allow to inline some functions in debug mode
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1 /fp:except")
+            set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} /MDd /fsanitize=address")
+            set(CMAKE_EXE_LINKER_FLAGS_ASAN "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
         endif()
     else(WIN32)
         # allow to inline some functions in debug mode
