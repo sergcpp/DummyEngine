@@ -230,8 +230,9 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
     }
 
     template <typename K2> V *Find(uint32_t hash, const K2 &key) {
-        if (!capacity_)
+        if (!capacity_) {
             return nullptr;
+        }
 
         const uint8_t ctrl = OccupiedBit | (hash & HashMask);
 
@@ -243,8 +244,9 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
             }
 
             i = (i + 1) & (capacity_ - 1);
-            if (i == end)
+            if (i == end) {
                 break;
+            }
         }
 
         return nullptr;
