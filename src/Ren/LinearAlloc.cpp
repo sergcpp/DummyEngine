@@ -51,7 +51,7 @@ uint32_t Ren::LinearAlloc::Alloc(const uint32_t req_size, const char *tag) {
 
     uint32_t loc_beg = 0;
     // Skip initial occupied blocks
-    while (!bitmap_[loc_beg]) {
+    while (loc_beg < (block_count_ / BitmapGranularity) && !bitmap_[loc_beg]) {
         ++loc_beg;
     }
 
