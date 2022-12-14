@@ -13,7 +13,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "rt_shadow_prepare_mask_interface.glsl"
+#include "rt_shadow_prepare_mask_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
 /*

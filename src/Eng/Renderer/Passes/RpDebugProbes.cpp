@@ -6,7 +6,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
-#include "../assets/shaders/internal/probe_interface.glsl"
+#include "../assets/shaders/internal/probe_interface.h"
 
 void RpDebugProbes::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                           const char shared_data_buf_name[], const char output_tex_name[]) {

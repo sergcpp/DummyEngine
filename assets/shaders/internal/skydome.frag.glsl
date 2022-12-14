@@ -6,7 +6,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "skydome_interface.glsl"
+#include "skydome_interface.h"
 
 /*
 PERM @COLOR_ONLY

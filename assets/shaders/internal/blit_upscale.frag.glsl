@@ -6,7 +6,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "blit_upscale_interface.glsl"
+#include "blit_upscale_interface.h"
 
 /*
 UNIFORM_BLOCKS

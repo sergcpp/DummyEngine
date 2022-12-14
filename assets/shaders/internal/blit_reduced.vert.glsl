@@ -1,7 +1,7 @@
 #version 310 es
 
 #include "_vs_common.glsl"
-#include "blit_reduced_interface.glsl"
+#include "blit_reduced_interface.h"
 
 /*
 UNIFORM_BLOCKS

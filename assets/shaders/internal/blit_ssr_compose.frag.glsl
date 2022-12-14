@@ -9,7 +9,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "blit_ssr_compose_interface.glsl"
+#include "blit_ssr_compose_interface.h"
 
 /*
 UNIFORM_BLOCKS

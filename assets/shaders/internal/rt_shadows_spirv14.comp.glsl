@@ -9,7 +9,7 @@
 
 #include "_rt_common.glsl"
 #include "_texturing.glsl"
-#include "rt_shadows_interface.glsl"
+#include "rt_shadows_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
 LAYOUT_PARAMS uniform UniformParams {

@@ -6,7 +6,7 @@
 #include "_texturing.glsl"
 #include "_vegetation.glsl"
 
-#include "shadow_interface.glsl"
+#include "shadow_interface.h"
 
 /*
 PERM @TRANSPARENT_PERM

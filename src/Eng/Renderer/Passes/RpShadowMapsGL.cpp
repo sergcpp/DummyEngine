@@ -5,7 +5,7 @@
 #include <Ren/RastState.h>
 
 #include "../Renderer_Structs.h"
-#include "../assets/shaders/internal/shadow_interface.glsl"
+#include "../assets/shaders/internal/shadow_interface.h"
 
 namespace RpSharedInternal {
 void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,

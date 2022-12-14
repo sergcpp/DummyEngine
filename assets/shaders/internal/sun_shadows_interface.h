@@ -1,0 +1,27 @@
+#ifndef SUN_SHADOWS_INTERFACE_H
+#define SUN_SHADOWS_INTERFACE_H
+
+#include "_interface_common.h"
+
+INTERFACE_START(SunShadows)
+
+struct Params {
+    UVEC2_TYPE img_size;
+};
+
+struct RayPayload {
+    VEC3_TYPE col;
+    float cone_width;
+};
+
+DEF_CONST_INT(LOCAL_GROUP_SIZE_X, 8)
+DEF_CONST_INT(LOCAL_GROUP_SIZE_Y, 8)
+
+DEF_CONST_INT(DEPTH_TEX_SLOT, 1)
+DEF_CONST_INT(NORM_TEX_SLOT, 2)
+DEF_CONST_INT(SHADOW_TEX_SLOT, 3)
+DEF_CONST_INT(OUT_SHADOW_IMG_SLOT, 0)
+
+INTERFACE_END
+
+#endif // SUN_SHADOWS_INTERFACE_H

@@ -2,13 +2,13 @@
 
 #include <Ren/Context.h>
 
-#include "../assets/shaders/internal/rt_shadow_classify_interface.glsl"
-#include "../assets/shaders/internal/rt_shadow_classify_tiles_interface.glsl"
-#include "../assets/shaders/internal/rt_shadow_debug_interface.glsl"
-#include "../assets/shaders/internal/rt_shadow_filter_interface.glsl"
-#include "../assets/shaders/internal/rt_shadow_prepare_mask_interface.glsl"
-#include "../assets/shaders/internal/rt_shadows_interface.glsl"
-#include "../assets/shaders/internal/sun_shadows_interface.glsl"
+#include "../assets/shaders/internal/rt_shadow_classify_interface.h"
+#include "../assets/shaders/internal/rt_shadow_classify_tiles_interface.h"
+#include "../assets/shaders/internal/rt_shadow_debug_interface.h"
+#include "../assets/shaders/internal/rt_shadow_filter_interface.h"
+#include "../assets/shaders/internal/rt_shadow_prepare_mask_interface.h"
+#include "../assets/shaders/internal/rt_shadows_interface.h"
+#include "../assets/shaders/internal/sun_shadows_interface.h"
 
 void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,

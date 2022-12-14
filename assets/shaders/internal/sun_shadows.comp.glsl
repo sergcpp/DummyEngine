@@ -6,7 +6,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "sun_shadows_interface.glsl"
+#include "sun_shadows_interface.h"
 
 /*
 UNIFORM_BLOCKS

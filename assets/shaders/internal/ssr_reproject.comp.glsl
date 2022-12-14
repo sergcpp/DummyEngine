@@ -8,7 +8,7 @@
 
 #include "_cs_common.glsl"
 #include "ssr_common.glsl"
-#include "ssr_reproject_interface.glsl"
+#include "ssr_reproject_interface.h"
 
 /*
 UNIFORM_BLOCKS

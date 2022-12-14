@@ -6,7 +6,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "ssr_vs_depth_interface.glsl"
+#include "ssr_vs_depth_interface.h"
 
 /*
 UNIFORM_BLOCKS

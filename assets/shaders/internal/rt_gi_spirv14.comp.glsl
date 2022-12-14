@@ -9,7 +9,7 @@
 #include "_rt_common.glsl"
 #include "_texturing.glsl"
 #include "gi_common.glsl"
-#include "rt_gi_interface.glsl"
+#include "rt_gi_interface.h"
 
 /*
 UNIFORM_BLOCKS

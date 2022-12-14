@@ -3,7 +3,7 @@
 
 #include "_rt_common.glsl"
 #include "_texturing.glsl"
-#include "rt_gi_interface.glsl"
+#include "rt_gi_interface.h"
 
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     RTGeoInstance g_geometries[];

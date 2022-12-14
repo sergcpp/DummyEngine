@@ -9,7 +9,7 @@
 #include "_rt_common.glsl"
 #include "_texturing.glsl"
 #include "ssr_common.glsl"
-#include "rt_reflections_interface.glsl"
+#include "rt_reflections_interface.h"
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

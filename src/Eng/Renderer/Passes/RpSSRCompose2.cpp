@@ -9,7 +9,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/blit_ssr_compose2_interface.glsl"
+#include "../assets/shaders/internal/blit_ssr_compose2_interface.h"
 
 void RpSSRCompose2::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);

@@ -6,7 +6,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "rt_shadow_filter_interface.glsl"
+#include "rt_shadow_filter_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
 /*

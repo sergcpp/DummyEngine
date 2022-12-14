@@ -1,7 +1,7 @@
 #version 310 es
 
 #include "_common.glsl"
-#include "skinning_interface.glsl"
+#include "skinning_interface.h"
 
 /*
 UNIFORM_BLOCKS

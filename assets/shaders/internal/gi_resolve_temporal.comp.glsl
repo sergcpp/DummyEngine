@@ -13,7 +13,7 @@
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
 #include "taa_common.glsl"
-#include "gi_resolve_temporal_interface.glsl"
+#include "gi_resolve_temporal_interface.h"
 
 /*
 UNIFORM_BLOCKS

@@ -1,0 +1,20 @@
+#ifndef BLIT_UPSCALE_INTERFACE_H
+#define BLIT_UPSCALE_INTERFACE_H
+
+#include "_interface_common.h"
+
+INTERFACE_START(Upscale)
+
+struct Params {
+    VEC4_TYPE transform;
+    VEC4_TYPE resolution;
+    VEC4_TYPE clip_info;
+};
+
+DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
+DEF_CONST_INT(DEPTH_LOW_TEX_SLOT, 1)
+DEF_CONST_INT(INPUT_TEX_SLOT, 2)
+
+INTERFACE_END
+
+#endif // BLIT_UPSCALE_INTERFACE_H

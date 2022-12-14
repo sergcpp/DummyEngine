@@ -8,7 +8,7 @@
 
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
-#include "gi_reproject_interface.glsl"
+#include "gi_reproject_interface.h"
 
 /*
 UNIFORM_BLOCKS

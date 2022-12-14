@@ -6,7 +6,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "debug_velocity_interface.glsl"
+#include "debug_velocity_interface.h"
 
 /*
 UNIFORM_BLOCKS

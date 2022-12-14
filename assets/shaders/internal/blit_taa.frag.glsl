@@ -7,7 +7,7 @@
 
 #include "_fs_common.glsl"
 #include "taa_common.glsl"
-#include "blit_taa_interface.glsl"
+#include "blit_taa_interface.h"
 
 /*
 UNIFORM_BLOCKS
