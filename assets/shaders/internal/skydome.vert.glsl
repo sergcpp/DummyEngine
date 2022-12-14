@@ -6,7 +6,7 @@ UNIFORM_BLOCKS
 */
 
 #include "_vs_common.glsl"
-#include "skydome_interface.glsl"
+#include "skydome_interface.h"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)

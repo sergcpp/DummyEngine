@@ -10,7 +10,7 @@
 
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
-#include "gi_blur_interface.glsl"
+#include "gi_blur_interface.h"
 
 /*
 UNIFORM_BLOCKS

@@ -7,7 +7,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 #include "../../Utils/ShaderLoader.h"
-#include "../assets/shaders/internal/ellipsoid_interface.glsl"
+#include "../assets/shaders/internal/ellipsoid_interface.h"
 
 void RpDebugEllipsoids::Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
                               const char shared_data_buf_name[], const char output_tex_name[]) {

@@ -13,7 +13,7 @@
 
 #include "_cs_common.glsl"
 #include "gi_common.glsl"
-#include "gi_classify_tiles_interface.glsl"
+#include "gi_classify_tiles_interface.h"
 
 /*
 UNIFORM_BLOCKS

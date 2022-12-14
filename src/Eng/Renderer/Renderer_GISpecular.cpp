@@ -2,15 +2,15 @@
 
 #include <Ren/Context.h>
 
-#include "../assets/shaders/internal/blit_ssr_dilate_interface.glsl"
-#include "../assets/shaders/internal/blit_ssr_interface.glsl"
-#include "../assets/shaders/internal/ssr_classify_tiles_interface.glsl"
-#include "../assets/shaders/internal/ssr_prefilter_interface.glsl"
-#include "../assets/shaders/internal/ssr_reproject_interface.glsl"
-#include "../assets/shaders/internal/ssr_resolve_temporal_interface.glsl"
-#include "../assets/shaders/internal/ssr_trace_hq_interface.glsl"
-#include "../assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.glsl"
-#include "../assets/shaders/internal/ssr_write_indirect_args_interface.glsl"
+#include "../assets/shaders/internal/blit_ssr_dilate_interface.h"
+#include "../assets/shaders/internal/blit_ssr_interface.h"
+#include "../assets/shaders/internal/ssr_classify_tiles_interface.h"
+#include "../assets/shaders/internal/ssr_prefilter_interface.h"
+#include "../assets/shaders/internal/ssr_reproject_interface.h"
+#include "../assets/shaders/internal/ssr_resolve_temporal_interface.h"
+#include "../assets/shaders/internal/ssr_trace_hq_interface.h"
+#include "../assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.h"
+#include "../assets/shaders/internal/ssr_write_indirect_args_interface.h"
 
 void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                    const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,

@@ -10,7 +10,7 @@
 
 #include "_cs_common.glsl"
 #include "ssr_common.glsl"
-#include "ssr_trace_hq_interface.glsl"
+#include "ssr_trace_hq_interface.h"
 
 /*
 UNIFORM_BLOCKS

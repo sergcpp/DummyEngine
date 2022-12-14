@@ -8,7 +8,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/rt_gi_interface.glsl"
+#include "../assets/shaders/internal/rt_gi_interface.h"
 
 void RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());

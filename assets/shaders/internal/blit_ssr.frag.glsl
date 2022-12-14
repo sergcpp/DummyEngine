@@ -8,7 +8,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "blit_ssr_interface.glsl"
+#include "blit_ssr_interface.h"
 
 /*
 UNIFORM_BLOCKS

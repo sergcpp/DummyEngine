@@ -5,7 +5,7 @@
 #include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
-#include "shadow_interface.glsl"
+#include "shadow_interface.h"
 
 /*
 PERM @TRANSPARENT_PERM

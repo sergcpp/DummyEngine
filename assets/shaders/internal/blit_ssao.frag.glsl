@@ -6,7 +6,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "blit_ssao_interface.glsl"
+#include "blit_ssao_interface.h"
 
 /*
 UNIFORM_BLOCKS

@@ -7,7 +7,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/rt_debug_interface.glsl"
+#include "../assets/shaders/internal/rt_debug_interface.h"
 
 void RpDebugRT::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());

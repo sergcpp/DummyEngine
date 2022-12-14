@@ -6,7 +6,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "gbuffer_shade_interface.glsl"
+#include "gbuffer_shade_interface.h"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 

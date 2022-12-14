@@ -1,0 +1,10 @@
+#ifndef GBUFFER_FILL_INTERFACE_H
+#define GBUFFER_FILL_INTERFACE_H
+
+#include "_interface_common.h"
+
+INTERFACE_START(GBufferFill)
+
+INTERFACE_END
+
+#endif // GBUFFER_FILL_INTERFACE_H

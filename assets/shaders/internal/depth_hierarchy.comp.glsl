@@ -9,7 +9,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "depth_hierarchy_interface.glsl"
+#include "depth_hierarchy_interface.h"
 
 /*
 UNIFORM_BLOCKS

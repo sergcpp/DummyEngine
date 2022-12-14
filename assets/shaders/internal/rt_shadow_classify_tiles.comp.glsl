@@ -14,7 +14,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "rt_shadow_classify_tiles_interface.glsl"
+#include "rt_shadow_classify_tiles_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
 /*

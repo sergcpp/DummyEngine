@@ -9,7 +9,7 @@
 #include "_swrt_common.glsl"
 #include "_texturing.glsl"
 
-#include "rt_debug_interface.glsl"
+#include "rt_debug_interface.h"
 
 /*
 UNIFORM_BLOCKS

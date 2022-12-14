@@ -7,17 +7,17 @@
 #include "../Utils/ShaderLoader.h"
 #include "Renderer_Names.h"
 
-#include "../assets/shaders/internal/blit_bilateral_interface.glsl"
-#include "../assets/shaders/internal/blit_down_depth_interface.glsl"
-#include "../assets/shaders/internal/blit_down_interface.glsl"
-#include "../assets/shaders/internal/blit_gauss_interface.glsl"
-#include "../assets/shaders/internal/blit_ssao_interface.glsl"
-#include "../assets/shaders/internal/blit_static_vel_interface.glsl"
-#include "../assets/shaders/internal/blit_taa_interface.glsl"
-#include "../assets/shaders/internal/blit_upscale_interface.glsl"
-#include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
+#include "../assets/shaders/internal/blit_bilateral_interface.h"
+#include "../assets/shaders/internal/blit_down_depth_interface.h"
+#include "../assets/shaders/internal/blit_down_interface.h"
+#include "../assets/shaders/internal/blit_gauss_interface.h"
+#include "../assets/shaders/internal/blit_ssao_interface.h"
+#include "../assets/shaders/internal/blit_static_vel_interface.h"
+#include "../assets/shaders/internal/blit_taa_interface.h"
+#include "../assets/shaders/internal/blit_upscale_interface.h"
+#include "../assets/shaders/internal/gbuffer_shade_interface.h"
 
-#include "../assets/shaders/internal/debug_velocity_interface.glsl"
+#include "../assets/shaders/internal/debug_velocity_interface.h"
 
 namespace RendererInternal {
 extern const int TaaSampleCountStatic;

@@ -5,7 +5,7 @@
     precision highp float;
 #endif
 
-#include "ssr_write_indir_rt_dispatch_interface.glsl"
+#include "ssr_write_indir_rt_dispatch_interface.h"
 
 layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];

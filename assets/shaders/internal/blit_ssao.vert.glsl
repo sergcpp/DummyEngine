@@ -1,7 +1,7 @@
 #version 310 es
 
 #include "_vs_common.glsl"
-#include "blit_ssao_interface.glsl"
+#include "blit_ssao_interface.h"
 
 /*
 UNIFORM_BLOCKS

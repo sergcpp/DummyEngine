@@ -12,7 +12,7 @@ UNIFORM_BLOCKS
 */
 
 #include "_fs_common.glsl"
-#include "blit_static_vel_interface.glsl"
+#include "blit_static_vel_interface.h"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)

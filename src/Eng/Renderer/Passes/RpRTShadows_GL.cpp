@@ -8,7 +8,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/rt_shadows_interface.glsl"
+#include "../assets/shaders/internal/rt_shadows_interface.h"
 
 void RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 

@@ -6,7 +6,7 @@
 #include "../../Renderer/PrimDraw.h"
 
 #include "../Renderer_Structs.h"
-#include "../assets/shaders/internal/skydome_interface.glsl"
+#include "../assets/shaders/internal/skydome_interface.h"
 
 void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                             RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {

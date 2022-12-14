@@ -9,7 +9,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/gbuffer_shade_interface.glsl"
+#include "../assets/shaders/internal/gbuffer_shade_interface.h"
 
 void RpGBufferShade::Setup(RpBuilder &builder, const ViewState *view_state, const char shared_data_buf[],
                            const char cells_buf[], const char items_buf[], const char lights_buf[],

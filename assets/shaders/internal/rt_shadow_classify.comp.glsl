@@ -13,7 +13,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "rt_shadow_classify_interface.glsl"
+#include "rt_shadow_classify_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
 /*

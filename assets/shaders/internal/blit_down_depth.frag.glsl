@@ -7,7 +7,7 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "blit_down_depth_interface.glsl"
+#include "blit_down_depth_interface.h"
 
 /*
 UNIFORM_BLOCKS

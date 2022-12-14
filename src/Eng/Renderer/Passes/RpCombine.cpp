@@ -10,7 +10,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/blit_combine_interface.glsl"
+#include "../assets/shaders/internal/blit_combine_interface.h"
 
 void RpCombine::Execute(RpBuilder &builder) {
     RpAllocTex &color_tex = builder.GetReadTexture(pass_data_->color_tex);

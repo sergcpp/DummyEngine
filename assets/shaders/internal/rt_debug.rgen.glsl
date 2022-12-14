@@ -2,7 +2,7 @@
 #extension GL_EXT_ray_tracing : require
 
 #include "_common.glsl"
-#include "rt_debug_interface.glsl"
+#include "rt_debug_interface.h"
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout (binding = REN_UB_SHARED_DATA_LOC, std140)

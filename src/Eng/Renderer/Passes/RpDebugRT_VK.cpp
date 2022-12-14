@@ -8,7 +8,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/rt_debug_interface.glsl"
+#include "../assets/shaders/internal/rt_debug_interface.h"
 
 void RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data_buf);

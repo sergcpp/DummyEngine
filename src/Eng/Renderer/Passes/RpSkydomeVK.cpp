@@ -7,7 +7,7 @@
 #include "../../Renderer/PrimDraw.h"
 
 #include "../Renderer_Structs.h"
-#include "../assets/shaders/internal/skydome_interface.glsl"
+#include "../assets/shaders/internal/skydome_interface.h"
 
 namespace RpSkydomeInternal {
 extern const float __skydome_positions[];

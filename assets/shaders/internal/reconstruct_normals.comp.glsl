@@ -7,7 +7,7 @@
 #endif
 
 #include "_cs_common.glsl"
-#include "reconstruct_normals_interface.glsl"
+#include "reconstruct_normals_interface.h"
 
 /*
 UNIFORM_BLOCKS
