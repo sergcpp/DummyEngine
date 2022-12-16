@@ -76,6 +76,7 @@ struct assets_context_t {
     std::unique_ptr<SceneManagerInternal::AssetCache> cache;
     Sys::MultiPoolAllocator<char> *mp_alloc;
     Sys::ThreadPool *p_threads;
+    std::mutex cache_mtx;
 };
 
 // TODO: remove this!!!

@@ -16,6 +16,7 @@
 #include <Ray/RendererFactory.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
+#include <Sys/ThreadPool.h>
 
 #if defined(USE_VK_RENDER)
 #include <Ren/VKCtx.h>
@@ -295,14 +296,16 @@ void Viewer::PrepareAssets(const char *platform) {
     const double t1 = Sys::GetTimeS();
     SceneManager::RegisterAsset("tei.json", "dict", HConvTEIToDict);
 
+    Sys::ThreadPool temp_threads(8, "prepare_assets_thread");
+
 #if !defined(__ANDROID__)
     if (strcmp(platform, "all") == 0) {
-        SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
-        SceneManager::PrepareAssets("assets", "assets_android", "android", nullptr, &log);
+        SceneManager::PrepareAssets("assets", "assets_pc", "pc", &temp_threads, &log);
+        SceneManager::PrepareAssets("assets", "assets_android", "android", &temp_threads, &log);
     } else {
         std::string out_folder = "assets_";
         out_folder += platform;
-        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, nullptr, &log);
+        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, &temp_threads, &log);
     }
 #endif
     const double t2 = Sys::GetTimeS();

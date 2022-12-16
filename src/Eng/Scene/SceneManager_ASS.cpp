@@ -193,7 +193,7 @@ void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder,
 
 void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder,
                        const std::function<void(assets_context_t &ctx, const char *)> &callback,
-                       Sys::ThreadPool *threads, std::vector<std::future<void>> &events) {
+                       Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
         ctx.log->Error("Cannot open folder %s", in_folder);
@@ -210,13 +210,18 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder,
             path += '/';
             path += in_ent->d_name;
 
-            ReadAllFiles_r(ctx, path.c_str(), callback);
+            ReadAllFiles_MT_r(ctx, path.c_str(), callback, threads, events);
         } else {
             std::string path = in_folder;
             path += '/';
             path += in_ent->d_name;
 
-            events.push_back(threads->Enqueue([path, &ctx, &callback]() { callback(ctx, path.c_str()); }));
+            if (events.size() > 64) {
+                events.front().wait();
+                events.pop_front();
+            }
+
+            events.push_back(threads->Enqueue([path, &ctx, callback]() { callback(ctx, path.c_str()); }));
         }
     }
 
@@ -300,10 +305,15 @@ bool CheckAssetChanged(const char *in_file, const char *out_file, assets_context
     }
 #endif
 
+    if (strstr(in_file, "Antenna_Metal_diff")) {
+        volatile int ii = 0;
+    }
+
     char in_t[32] = "", out_t[32] = "";
     GetFileModifyTime(in_file, in_t, ctx, true /* report_error */);
     GetFileModifyTime(out_file, out_t, ctx, false /* report_error */);
 
+    std::lock_guard<std::mutex> _(ctx.cache_mtx);
     JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
     const int *in_ndx = ctx.cache->db_map.Find(in_file);
@@ -679,12 +689,15 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             return;
         }
 
+        //std::lock_guard<std::mutex> _(ctx.cache_mtx);
+
         Ren::SmallVector<std::string, 32> dependencies;
         const bool res = handler->convert(ctx, in_file, out_file.c_str(), dependencies);
         if (res) {
             const uint32_t out_hash = HashFile(out_file.c_str(), ctx.log);
             const std::string out_hash_str = std::to_string(out_hash);
 
+            std::lock_guard<std::mutex> _(ctx.cache_mtx);
             JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
             const int *in_ndx = ctx.cache->db_map.Find(in_file);
@@ -783,16 +796,16 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
     glslang_initialize_process();
 
-    /*if (p_threads) {
-        std::vector<std::future<void>> events;
+    if (p_threads) {
+        std::deque<std::future<void>> events;
         ReadAllFiles_MT_r(ctx, in_folder, convert_file, p_threads, events);
 
         for (std::future<void> &e : events) {
             e.wait();
         }
-    } else {*/
-    ReadAllFiles_r(ctx, in_folder, convert_file);
-    //}
+    } else {
+        ReadAllFiles_r(ctx, in_folder, convert_file);
+    }
 
     WriteDB(ctx.cache->js_db, out_folder);
 
@@ -868,6 +881,7 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
                     if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(), average_color)) {
                         ctx.log->Error("[PrepareAssets] Failed to get average color of %s", tex_name.c_str());
                     } else {
+                        std::lock_guard<std::mutex> _(ctx.cache_mtx);
                         ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
                     }
                 }

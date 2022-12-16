@@ -825,7 +825,10 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const 
     }
     free(image_data);
 
-    ctx.cache->WriteTextureAverage(in_file, average_color);
+    {
+        std::lock_guard<std::mutex> _(ctx.cache_mtx);
+        ctx.cache->WriteTextureAverage(in_file, average_color);
+    }
 
     return res;
 }
