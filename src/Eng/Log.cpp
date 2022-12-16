@@ -11,19 +11,19 @@
 #endif
 
 namespace EngInternal {
+std::mutex g_log_mtx;
 void TimedOutput(FILE *dst, const char *fmt, va_list args) {
     auto tp = std::chrono::system_clock::now();
     time_t now = std::chrono::system_clock::to_time_t(tp); // time(nullptr);
+
+    std::lock_guard<std::mutex> _(g_log_mtx);
 
     char buff[32];
     strftime(buff, sizeof(buff), "%Y-%m-%d %H:%M:%S", localtime(&now));
 
     fputs(buff, dst);
-    fprintf(
-        dst, ".%03d | ",
-        (int)(std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch())
-                  .count() %
-              1000));
+    fprintf(dst, ".%03d | ",
+            int(std::chrono::duration_cast<std::chrono::milliseconds>(tp.time_since_epoch()).count() % 1000));
     vfprintf(dst, fmt, args);
     putc('\n', dst);
 }
