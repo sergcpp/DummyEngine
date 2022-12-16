@@ -2,6 +2,9 @@
 
 #include <fstream>
 
+#include <glslang/Include/glslang_c_interface.h>
+#include <glslang/Public/resource_limits_c.h>
+
 #include "../Renderer/Renderer_GL_Defines.inl"
 
 #define _AS_STR(x) #x
@@ -176,6 +179,9 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
             } else if (line.find("PERM ") == 0) { // NOLINT
                 dst_stream << line << "\r\n";
                 permutations.emplace_back(line.substr(5));
+                if (permutations.back().back() == '\r') {
+                    permutations.back().pop_back();
+                }
             } else {
                 InlineShaderConstants(ctx, line);
 
@@ -212,14 +218,8 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 
                 ctx.log->Info("[PrepareAssets] Prep %s", spv_file.c_str());
                 std::remove(spv_file.c_str());
-#if defined(_WIN32)
-                std::string compile_cmd = "src/libs/spirv/win32/glslangValidator";
-#elif defined(__linux__)
-                std::string compile_cmd = "src/libs/spirv/linux/glslangValidator";
-#elif defined(__APPLE__)
-                std::string compile_cmd = "src/libs/spirv/macos/glslangValidator";
-#endif
 
+                std::string preamble;
                 if (!perm.empty()) {
                     const char *params = perm.c_str();
                     if (!params || params[0] != '@') {
@@ -232,23 +232,26 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
                     const char *p2 = p1 + 1;
                     while (*p2) {
                         if (*p2 == '=') {
-                            compile_cmd += " -D";
-                            compile_cmd += std::string(p1, p2);
+                            preamble += "#define ";
+                            preamble += std::string(p1, p2);
 
                             p1 = p2 + 1;
                             while (p2 && *p2 && *p2 != ';') {
                                 ++p2;
                             }
 
-                            compile_cmd += std::string(p1, p2);
+                            preamble += std::string(p1, p2);
+                            preamble += "\n";
 
                             if (*p2) {
                                 p1 = ++p2;
                             }
                             ++count;
                         } else if (*p2 == ';') {
-                            compile_cmd += " -D";
-                            compile_cmd += std::string(p1, p2);
+                            preamble += "#define ";
+                            preamble += std::string(p1, p2);
+                            preamble += "\n";
+
                             p1 = ++p2;
                             ++count;
                         }
@@ -259,138 +262,143 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
                     }
 
                     if (p1 != p2) {
-                        compile_cmd += " -D";
-                        compile_cmd += std::string(p1, p2);
+                        preamble += "#define ";
+                        preamble += std::string(p1, p2);
+                        preamble += "\n";
+
                         ++count;
                     }
                 }
 
+                glslang_input_t glslang_input = {};
+                glslang_input.language = GLSLANG_SOURCE_GLSL;
+                glslang_input.target_language = GLSLANG_TARGET_SPV;
+                glslang_input.default_version = 100;
+                glslang_input.default_profile = GLSLANG_NO_PROFILE;
+                glslang_input.force_default_version_and_profile = false;
+                glslang_input.forward_compatible = false;
+                glslang_input.messages = GLSLANG_MSG_DEFAULT_BIT;
+                glslang_input.resource = glslang_default_resource();
+
+                std::ifstream glsl_file(out_file, std::ios::binary | std::ios::ate);
+                const size_t glsl_file_size = size_t(glsl_file.tellg());
+                glsl_file.seekg(0, std::ios::beg);
+
+                std::unique_ptr<char[]> glsl_file_data(new char[glsl_file_size + 1]);
+                glsl_file.read(glsl_file_data.get(), glsl_file_size);
+                glsl_file_data[glsl_file_size] = 0;
+
+                if (strstr(out_file, ".vert.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_VERTEX;
+                } else if (strstr(out_file, ".frag.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_FRAGMENT;
+                } else if (strstr(out_file, ".comp.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_COMPUTE;
+                } else if (strstr(out_file, ".geom.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_GEOMETRY;
+                } else if (strstr(out_file, ".tesc.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_TESSCONTROL;
+                } else if (strstr(out_file, ".tese.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_TESSEVALUATION;
+                } else if (strstr(out_file, ".rgen.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_RAYGEN;
+                } else if (strstr(out_file, ".rchit.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_CLOSESTHIT;
+                } else if (strstr(out_file, ".rahit.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_ANYHIT;
+                } else if (strstr(out_file, ".rmiss.glsl")) {
+                    glslang_input.stage = GLSLANG_STAGE_MISS;
+                }
+
+                glslang_input.code = glsl_file_data.get();
+
                 if (is_vk) {
-                    compile_cmd += " -V ";
+                    glslang_input.client = GLSLANG_CLIENT_VULKAN;
+                    glslang_input.client_version = GLSLANG_TARGET_VULKAN_1_1;
                     if (use_spv14) {
-                        compile_cmd += " --target-env spirv1.4 ";
+                        glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_4;
                     } else {
-                        compile_cmd += " --target-env spirv1.3 ";
+                        glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_3;
                     }
                 } else {
-                    compile_cmd += " -G --target-env spirv1.3 ";
+                    glslang_input.client = GLSLANG_CLIENT_OPENGL;
+                    glslang_input.client_version = GLSLANG_TARGET_OPENGL_450;
+                    glslang_input.target_language_version = GLSLANG_TARGET_SPV_1_3;
                 }
-                compile_cmd += out_file;
-                compile_cmd += " -o \"";
-                compile_cmd += spv_file;
-                compile_cmd += '\"';
 
-#ifdef _WIN32
-                std::replace(compile_cmd.begin(), compile_cmd.end(), '/', '\\');
-#endif
-                int res = system(compile_cmd.c_str());
-                if (res != 0) {
-                    ctx.log->Error("[PrepareAssets] Failed to compile %s", spv_file.c_str());
+                glslang_shader_t *shader = glslang_shader_create(&glslang_input);
+
+                if (!preamble.empty()) {
+                    glslang_shader_set_preamble(shader, preamble.c_str());
+                }
+
+                if (!glslang_shader_preprocess(shader, &glslang_input)) {
+                    ctx.log->Error("[PrepareAssets] GLSL preprocessing failed %s", out_file);
+
+                    ctx.log->Error("%s", glslang_shader_get_info_log(shader));
+                    ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
+                    ctx.log->Error("%s", glslang_input.code);
+
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
 #endif
+
+                    glslang_shader_delete(shader);
                     return false;
                 }
 
-#if defined(_WIN32)
-                std::string optimize_cmd = "src/libs/spirv/win32/spirv-opt "
-#elif defined(__linux__)
-                std::string optimize_cmd = "src/libs/spirv/linux/spirv-opt "
-#elif defined(__APPLE__)
-                std::string optimize_cmd = "src/libs/spirv/macos/spirv-opt "
-#endif
-                                           "--preserve-bindings "
-                                           "--wrap-opkill "
-                                           "--eliminate-dead-branches "
-                                           "--merge-return "
-                                           //"--inline-entry-points-exhaustive "
-                                           "--eliminate-dead-functions "
-                                           "--eliminate-dead-code-aggressive "
-                                           "--private-to-local "
-                                           "--eliminate-local-single-block "
-                                           "--eliminate-local-single-store "
-                                           "--eliminate-dead-code-aggressive "
-                                           "--scalar-replacement=100 "
-                                           "--convert-local-access-chains "
-                                           "--eliminate-local-single-block "
-                                           "--eliminate-local-single-store "
-                                           "--eliminate-dead-code-aggressive "
-                                           //"--ssa-rewrite "
-                                           "--eliminate-dead-code-aggressive "
-                                           "--ccp "
-                                           "--eliminate-dead-code-aggressive "
-                                           "--loop-unroll "
-                                           "--eliminate-dead-branches "
-                                           "--redundancy-elimination "
-                                           "--combine-access-chains "
-                                           "--simplify-instructions "
-                                           "--scalar-replacement=100 "
-                                           "--convert-local-access-chains "
-                                           //"--eliminate-local-single-block "
-                                           "--eliminate-local-single-store "
-                                           "--eliminate-dead-code-aggressive "
-                                           //"--ssa-rewrite "
-                                           "--eliminate-dead-code-aggressive "
-                                           "--vector-dce "
-                                           "--eliminate-dead-inserts "
-                                           "--eliminate-dead-branches "
-                                           "--simplify-instructions "
-                                           "--if-conversion "
-                                           "--copy-propagate-arrays "
-                                           "--reduce-load-size "
-                                           "--eliminate-dead-code-aggressive "
-                                           "--merge-blocks "
-                                           "--redundancy-elimination "
-                                           "--eliminate-dead-branches "
-                                           "--merge-blocks "
-                                           "--simplify-instructions "
-                                           "--validate-after-all ";
+                if (!glslang_shader_parse(shader, &glslang_input)) {
+                    ctx.log->Error("[PrepareAssets] GLSL parsing failed %s", out_file);
+                    ctx.log->Error("%s", glslang_shader_get_info_log(shader));
+                    ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
+                    // ctx.log->Error("%s", glslang_shader_get_preprocessed_code(shader));
 
-                optimize_cmd += '\"';
-                optimize_cmd += spv_file;
-                optimize_cmd += "\" -o \"";
-                optimize_cmd += spv_file;
-                optimize_cmd += '\"';
-
-#ifdef _WIN32
-                std::replace(optimize_cmd.begin(), optimize_cmd.end(), '/', '\\');
-#endif
-                res = system(optimize_cmd.c_str());
-                if (res != 0) {
-                    ctx.log->Error("[PrepareAssets] Failed to optimize %s", spv_file.c_str());
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
 #endif
+
+                    glslang_shader_delete(shader);
                     return false;
                 }
 
-#if 0
-                std::string cross_cmd = "src/libs/spirv/spirv-cross ";
-                if (strcmp(ctx.platform, "pc") == 0) {
-                    cross_cmd += "--version 430 ";
-                } else if (strcmp(ctx.platform, "android") == 0) {
-                    cross_cmd += "--version 310 --es ";
-                    cross_cmd += "--extension GL_EXT_texture_buffer ";
-                }
-                cross_cmd +=
-                    "--no-support-nonzero-baseinstance --glsl-emit-push-constant-as-ubo ";
-                cross_cmd += spv_file;
-                cross_cmd += " --output ";
-                cross_cmd += out_file;
+                glslang_program_t *program = glslang_program_create();
+                glslang_program_add_shader(program, shader);
 
-#ifdef _WIN32
-                std::replace(cross_cmd.begin(), cross_cmd.end(), '/', '\\');
-#endif
-                // res = system(cross_cmd.c_str());
-                if (res != 0) {
-                    ctx.log->Error("[PrepareAssets] Failed to cross-compile %s",
-                                   spv_file.c_str());
+                int msg_rules = GLSLANG_MSG_SPV_RULES_BIT;
+                if (is_vk) {
+                    msg_rules |= GLSLANG_MSG_VULKAN_RULES_BIT;
+                }
+                if (!glslang_program_link(program, msg_rules)) {
+                    ctx.log->Error("GLSL linking failed %s\n", out_file);
+                    ctx.log->Error("%s\n", glslang_program_get_info_log(program));
+                    ctx.log->Error("%s\n", glslang_program_get_info_debug_log(program));
+
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
 #endif
+
+                    glslang_program_delete(program);
+                    glslang_shader_delete(shader);
                     return false;
                 }
-#endif
+
+                glslang_program_SPIRV_generate(program, glslang_input.stage);
+
+                std::vector<uint32_t> out_shader_module(glslang_program_SPIRV_get_size(program));
+                glslang_program_SPIRV_get(program, out_shader_module.data());
+
+                { // write output file
+                    std::ofstream out_spv_file(spv_file, std::ios::binary);
+                    out_spv_file.write((char *)out_shader_module.data(), out_shader_module.size() * sizeof(uint32_t));
+                }
+
+                // const char *spirv_messages = glslang_program_SPIRV_get_messages(program);
+                // if (spirv_messages) {
+                //     ctx.log->Info("(%s) %s\b", out_file, spirv_messages);
+                // }
+
+                glslang_program_delete(program);
+                glslang_shader_delete(shader);
             }
         }
     }

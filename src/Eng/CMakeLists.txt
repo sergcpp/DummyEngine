@@ -6,11 +6,29 @@ OPTION(ENABLE_UNITYBUILD "Enable compilation of a few large cpp file" ON)
 IF(WIN32)
     set(VPX_LIB "vpxmd")
     set(ITT_LIB "libittnotify")
+    set(GLSLANG_LIBS debug GenericCodeGend                  optimized GenericCodeGen
+                     debug glslangd                         optimized glslang
+                     debug glslang-default-resource-limitsd optimized glslang-default-resource-limits
+                     debug MachineIndependentd              optimized MachineIndependent
+                     debug OGLCompilerd                     optimized OGLCompiler
+                     debug OSDependentd                     optimized OSDependent
+                     debug SPIRVd                           optimized SPIRV
+                     debug SPIRV-Toolsd                     optimized SPIRV-Tools
+                     debug SPIRV-Tools-optd                 optimized SPIRV-Tools-opt)
 ELSE(WIN32)
     set(VPX_LIB "vpx")
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Android" AND NOT CMAKE_APPLE_SILICON_PROCESSOR MATCHES "arm64")
         set(ITT_LIB "ittnotify")
     endif()
+    set(GLSLANG_LIBS glslang
+                     glslang-default-resource-limits
+                     MachineIndependent
+                     GenericCodeGen
+                     OGLCompiler
+                     OSDependent
+                     SPIRV
+                     SPIRV-Tools-opt
+                     SPIRV-Tools)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
@@ -314,6 +332,6 @@ if(ENABLE_UNITYBUILD)
 endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${ITT_LIB} ${VPX_LIB})
+target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})
 
 add_subdirectory(_tests)

@@ -27,6 +27,8 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
+#include <glslang/Include/glslang_c_interface.h>
+
 // TODO: pass defines as a parameter
 #include "../Renderer/Renderer_GL_Defines.inl"
 
@@ -779,6 +781,8 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         ctx.cache->js_db.Push("files", JsObjectP{mp_alloc});
     }
 
+    glslang_initialize_process();
+
     /*if (p_threads) {
         std::vector<std::future<void>> events;
         ReadAllFiles_MT_r(ctx, in_folder, convert_file, p_threads, events);
@@ -791,6 +795,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
     //}
 
     WriteDB(ctx.cache->js_db, out_folder);
+
+
+    glslang_finalize_process();
 
     return true;
 }
