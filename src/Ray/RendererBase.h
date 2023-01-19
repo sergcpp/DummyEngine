@@ -18,12 +18,16 @@ enum eRendererType : uint32_t {
     RendererSSE41 = (1 << 2),
     RendererAVX = (1 << 3),
     RendererAVX2 = (1 << 4),
-    RendererNEON = (1 << 5),
-    RendererVK = (1 << 6),
+    RendererAVX512 = (1 << 5),
+    RendererNEON = (1 << 6),
+    RendererVK = (1 << 7)
 };
 
 const char *RendererTypeName(eRendererType rt);
 eRendererType RendererTypeFromName(const char *name);
+
+/// Returns whether it is safe to call Render function for non-overlaping regions from different threads
+bool RendererSupportsMultithreading(eRendererType rt);
 
 /// Renderer settings
 struct settings_t {

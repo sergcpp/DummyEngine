@@ -8,94 +8,8 @@
 #pragma warning(disable : 4789) // buffer overrun
 #pragma warning(disable : 4127) // conditional expression is constant
 
-// Used to force loop unroll in release mode
-
-#define ITERATE(n, exp)  \
-    if ((n) == 16) {                \
-        { const int i = 0; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 2; exp }    \
-        { const int i = 3; exp }    \
-        { const int i = 4; exp }    \
-        { const int i = 5; exp }    \
-        { const int i = 6; exp }    \
-        { const int i = 7; exp }    \
-        { const int i = 8; exp }    \
-        { const int i = 9; exp }    \
-        { const int i = 10; exp }   \
-        { const int i = 11; exp }   \
-        { const int i = 12; exp }   \
-        { const int i = 13; exp }   \
-        { const int i = 14; exp }   \
-        { const int i = 15; exp }   \
-    } else if ((n) == 8) {          \
-        { const int i = 0; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 2; exp }    \
-        { const int i = 3; exp }    \
-        { const int i = 4; exp }    \
-        { const int i = 5; exp }    \
-        { const int i = 6; exp }    \
-        { const int i = 7; exp }    \
-    } else if ((n) == 4) {          \
-        { const int i = 0; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 2; exp }    \
-        { const int i = 3; exp }    \
-    } else if ((n) == 3) {          \
-        { const int i = 0; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 2; exp }    \
-    } else if ((n) == 2) {          \
-        { const int i = 0; exp }    \
-        { const int i = 1; exp }    \
-    } else if ((n) == 1) {          \
-        { const int i = 0; exp }    \
-    }
-
-#define ITERATE_R(n, exp)  \
-    if ((n) == 16) {                \
-        { const int i = 15; exp }   \
-        { const int i = 14; exp }   \
-        { const int i = 13; exp }   \
-        { const int i = 12; exp }   \
-        { const int i = 11; exp }   \
-        { const int i = 10; exp }   \
-        { const int i = 9; exp }    \
-        { const int i = 8; exp }    \
-        { const int i = 7; exp }    \
-        { const int i = 6; exp }    \
-        { const int i = 5; exp }    \
-        { const int i = 4; exp }    \
-        { const int i = 3; exp }    \
-        { const int i = 2; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 0; exp }    \
-    } else if ((n) == 8) {          \
-        { const int i = 7; exp }    \
-        { const int i = 6; exp }    \
-        { const int i = 5; exp }    \
-        { const int i = 4; exp }    \
-        { const int i = 3; exp }    \
-        { const int i = 2; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 0; exp }    \
-    } else if ((n) == 4) {          \
-        { const int i = 3; exp }    \
-        { const int i = 2; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 0; exp }    \
-    } else if ((n) == 3) {          \
-        { const int i = 2; exp }    \
-        { const int i = 1; exp }    \
-        { const int i = 0; exp }    \
-    } else if ((n) == 2) {          \
-        { const int i = 1; exp }    \
-        { const int i = 0; exp }    \
-    } else if ((n) == 1) {          \
-        { const int i = 0; exp }    \
-    }
-
+// Used to force loop unroll and make index compile-time constant
+// clang-format off
 #define ITERATE_2(exp)  \
         { const int i = 0; exp }    \
         { const int i = 1; exp }
@@ -139,9 +53,96 @@
         { const int i = 14; exp }   \
         { const int i = 15; exp }
 
+#define ITERATE(n, exp)                 \
+    if ((n) == 16) {                    \
+        { const int i = 0 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+        { const int i = 3 % n; exp }    \
+        { const int i = 4 % n; exp }    \
+        { const int i = 5 % n; exp }    \
+        { const int i = 6 % n; exp }    \
+        { const int i = 7 % n; exp }    \
+        { const int i = 8 % n; exp }    \
+        { const int i = 9 % n; exp }    \
+        { const int i = 10 % n; exp }   \
+        { const int i = 11 % n; exp }   \
+        { const int i = 12 % n; exp }   \
+        { const int i = 13 % n; exp }   \
+        { const int i = 14 % n; exp }   \
+        { const int i = 15 % n; exp }   \
+    } else if ((n) == 8) {              \
+        { const int i = 0 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+        { const int i = 3 % n; exp }    \
+        { const int i = 4 % n; exp }    \
+        { const int i = 5 % n; exp }    \
+        { const int i = 6 % n; exp }    \
+        { const int i = 7 % n; exp }    \
+    } else if ((n) == 4) {              \
+        { const int i = 0 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+        { const int i = 3 % n; exp }    \
+    } else if ((n) == 3) {              \
+        { const int i = 0 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+    } else if ((n) == 2) {              \
+        { const int i = 0 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+    } else if ((n) == 1) {              \
+        { const int i = 0; exp }        \
+    }
+
+#define ITERATE_R(n, exp)               \
+    if ((n) == 16) {                    \
+        { const int i = 15 % n; exp }   \
+        { const int i = 14 % n; exp }   \
+        { const int i = 13 % n; exp }   \
+        { const int i = 12 % n; exp }   \
+        { const int i = 11 % n; exp }   \
+        { const int i = 10 % n; exp }   \
+        { const int i = 9 % n; exp }    \
+        { const int i = 8 % n; exp }    \
+        { const int i = 7 % n; exp }    \
+        { const int i = 6 % n; exp }    \
+        { const int i = 5 % n; exp }    \
+        { const int i = 4 % n; exp }    \
+        { const int i = 3 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 0 % n; exp }    \
+    } else if ((n) == 8) {              \
+        { const int i = 7 % n; exp }    \
+        { const int i = 6 % n; exp }    \
+        { const int i = 5 % n; exp }    \
+        { const int i = 4 % n; exp }    \
+        { const int i = 3 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 0 % n; exp }    \
+    } else if ((n) == 4) {              \
+        { const int i = 3 % n; exp }    \
+        { const int i = 2 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 0 % n; exp }    \
+    } else if ((n) == 3) {              \
+        { const int i = 2 % n; exp }    \
+        { const int i = 1 % n; exp }    \
+        { const int i = 0 % n; exp }    \
+    } else if ((n) == 2) {              \
+        { const int i = 1 % n; exp }    \
+        { const int i = 0 % n; exp }    \
+    } else if ((n) == 1) {              \
+        { const int i = 0; exp }        \
+    }
+
 #define ITERATE_2_R(exp)  \
         { const int i = 1; exp }    \
         { const int i = 0; exp }
+// clang-format on
 
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -168,10 +169,16 @@ template <typename T, int S> class simd_vec {
     force_inline simd_vec(typename std::enable_if<sizeof...(Tail) + 1 == S, T>::type head, Tail... tail)
         : comp_{head, T(tail)...} {}
     force_inline explicit simd_vec(const T *f) { memcpy(&comp_, f, S * sizeof(T)); }
-    force_inline simd_vec(const T *f, simd_mem_aligned_tag) { memcpy(&comp_, f, S * sizeof(T)); }
+    force_inline simd_vec(const T *_f, simd_mem_aligned_tag) {
+        const auto *f = (const T *)assume_aligned(_f, sizeof(T));
+        memcpy(&comp_, f, S * sizeof(T));
+    }
 
-    force_inline T &operator[](int i) { return comp_[i]; }
-    force_inline const T &operator[](int i) const { return comp_[i]; }
+    force_inline T operator[](const int i) const { return comp_[i]; }
+
+    template <int i> force_inline T get() const { return comp_[i]; }
+    template <int i> force_inline void set(const T f) { comp_[i] = f; }
+    force_inline void set(const int i, const T f) { comp_[i] = f; }
 
     force_inline simd_vec<T, S> &operator+=(const simd_vec<T, S> &rhs) {
         ITERATE(S, { comp_[i] += rhs.comp_[i]; })
@@ -232,103 +239,151 @@ template <typename T, int S> class simd_vec {
     }
 
     force_inline simd_vec<T, S> operator==(T rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] == rhs ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] == rhs ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator==(const simd_vec<T, S> &rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] == rhs.comp_[i] ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] == rhs.comp_[i] ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator!=(T rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] != rhs ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] != rhs ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator!=(const simd_vec<T, S> &rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] != rhs.comp_[i] ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] != rhs.comp_[i] ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator<(const simd_vec<T, S> &rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] < rhs.comp_[i] ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] < rhs.comp_[i] ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator<=(const simd_vec<T, S> &rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] <= rhs.comp_[i] ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] <= rhs.comp_[i] ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator>(const simd_vec<T, S> &rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] > rhs.comp_[i] ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] > rhs.comp_[i] ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator>=(const simd_vec<T, S> &rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] >= rhs.comp_[i] ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] >= rhs.comp_[i] ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> &operator&=(const simd_vec<T, S> &rhs) {
-        ITERATE(S, { comp_[i] &= rhs.comp_[i]; })
+        ITERATE(S, { reinterpret_cast<uint32_t &>(comp_[i]) &= reinterpret_cast<const uint32_t &>(rhs.comp_[i]); })
         return *this;
     }
 
     force_inline simd_vec<T, S> operator<(T rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] < rhs ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] < rhs ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator<=(T rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] <= rhs ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] <= rhs ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator>(T rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] > rhs ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] > rhs ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
     force_inline simd_vec<T, S> operator>=(T rhs) const {
-        T set, not_set = T(0);
-        memset(&set, 0xFF, sizeof(T));
+        simd_vec<int, S> temp;
+        ITERATE(S, { temp.comp_[i] = comp_[i] >= rhs ? -1 : 0; })
+
+        static_assert(sizeof(simd_vec<T, S>) == sizeof(simd_vec<int, S>), "!");
+
         simd_vec<T, S> ret;
-        ITERATE(S, { ret.comp_[i] = comp_[i] >= rhs ? set : not_set; })
+        memcpy(&ret, &temp, sizeof(simd_vec<T, S>));
+
         return ret;
     }
 
@@ -348,25 +403,25 @@ template <typename T, int S> class simd_vec {
 
     force_inline explicit operator simd_vec<int, S>() const {
         simd_vec<int, S> ret;
-        ITERATE(S, { ret.comp_[i] = (int)comp_[i]; })
+        ITERATE(S, { ret.comp_[i] = int(comp_[i]); })
         return ret;
     }
 
     force_inline explicit operator simd_vec<float, S>() const {
         simd_vec<float, S> ret;
-        ITERATE(S, { ret.comp_[i] = (float)comp_[i]; })
+        ITERATE(S, { ret.comp_[i] = float(comp_[i]); })
         return ret;
     }
 
     force_inline simd_vec<T, S> sqrt() const {
         simd_vec<T, S> temp;
-        ITERATE(S, { temp[i] = std::sqrt(comp_[i]); })
+        ITERATE(S, { temp.set<i>(std::sqrt(comp_[i])); })
         return temp;
     }
 
     force_inline simd_vec<T, S> log() const {
         simd_vec<T, S> temp;
-        ITERATE(S, { temp[i] = std::log(comp_[i]); })
+        ITERATE(S, { temp.set<i>(std::log(comp_[i])); })
         return temp;
     }
 
@@ -384,12 +439,16 @@ template <typename T, int S> class simd_vec {
 
     force_inline void copy_to(T *f) const { memcpy(f, &comp_[0], S * sizeof(T)); }
 
-    force_inline void copy_to(T *f, simd_mem_aligned_tag) const { memcpy(f, &comp_[0], S * sizeof(T)); }
+    force_inline void copy_to(T *_f, simd_mem_aligned_tag) const {
+        auto *f = (T *)assume_aligned(_f, sizeof(T));
+        memcpy(f, &comp_[0], S * sizeof(T));
+    }
 
     force_inline bool all_zeros() const {
         ITERATE(S, {
-            if (comp_[i] != 0)
+            if (comp_[i] != 0) {
                 return false;
+            }
         })
         return true;
     }
@@ -399,8 +458,9 @@ template <typename T, int S> class simd_vec {
         const auto *src2 = reinterpret_cast<const uint8_t *>(&mask.comp_[0]);
 
         for (int i = 0; i < S * sizeof(T); i++) {
-            if ((src1[i] & src2[i]) != 0)
+            if ((src1[i] & src2[i]) != 0) {
                 return false;
+            }
         }
 
         return true;
@@ -408,14 +468,15 @@ template <typename T, int S> class simd_vec {
 
     force_inline bool not_all_zeros() const {
         ITERATE(S, {
-            if (comp_[i] != 0)
+            if (comp_[i] != 0) {
                 return true;
+            }
         })
         return false;
     }
 
-    force_inline void blend_to(const simd_vec<T, S> &mask,
-                               const simd_vec<T, S> &v1){
+    // clang-format off
+    force_inline void blend_to(const simd_vec<T, S> &mask, const simd_vec<T, S> &v1) {
         ITERATE(S, {
             if (mask.comp_[i] != T(0)) {
                 comp_[i] = v1.comp_[i];
@@ -423,14 +484,13 @@ template <typename T, int S> class simd_vec {
         })
     }
 
-    force_inline
-        void blend_inv_to(const simd_vec<T, S> &mask, const simd_vec<T, S> &v1){
+    force_inline void blend_inv_to(const simd_vec<T, S> &mask, const simd_vec<T, S> &v1) {
         ITERATE(S, {
             if (mask.comp_[i] == T(0)) {
                 comp_[i] = v1.comp_[i];
             }
         })
-    }
+    } // clang-format on
 
     force_inline int movemask() const {
         int res = 0;
@@ -495,15 +555,15 @@ template <typename T, int S> class simd_vec {
 
     force_inline static simd_vec<float, S> floor(const simd_vec<float, S> &v1) {
         simd_vec<float, S> temp;
-        ITERATE(S, { temp.comp_[i] = (float)((int)v1.comp_[i] - (v1.comp_[i] < 0.0f)); })
+        ITERATE(S, { temp.comp_[i] = float(int(v1.comp_[i]) - (v1.comp_[i] < 0.0f)); })
         return temp;
     }
 
     force_inline static simd_vec<float, S> ceil(const simd_vec<float, S> &v1) {
         simd_vec<float, S> temp;
         ITERATE(S, {
-            int _v = (int)v1.comp_[i];
-            temp.comp_[i] = (float)(_v + (v1.comp_[i] != _v));
+            int _v = int(v1.comp_[i]);
+            temp.comp_[i] = float(_v + (v1.comp_[i] != _v));
         })
         return temp;
     }
@@ -678,6 +738,7 @@ template <typename T, int S> class simd_vec {
     }
 
     friend force_inline const T *value_ptr(const simd_vec<T, S> &v1) { return &v1.comp_[0]; }
+    friend force_inline T *value_ptr(simd_vec<T, S> &v1) { return &v1.comp_[0]; }
 
     static int size() { return S; }
     static bool is_native() { return false; }
@@ -753,13 +814,6 @@ force_inline simd_vec<T, S> fmsub(const simd_vec<T, S> &a, const float b, const 
     return a * b - c;
 }
 
-template <int Scale = 1, typename T, int S>
-force_inline simd_vec<T, S> gather(const T *base_addr, const simd_vec<int, S> &vindex) {
-    simd_vec<T, S> res;
-    ITERATE(S, { res[i] = base_addr[vindex[i] * Scale]; });
-    return res;
-}
-
 template <typename T, int S> force_inline simd_vec<T, S> fmsub(const float a, const simd_vec<T, S> &b, const float c) {
     return a * b - c;
 }
@@ -773,7 +827,14 @@ force_inline simd_vec<T, S> mix(const simd_vec<T, S> &v1, const simd_vec<T, S> &
     return (simd_vec<T, S>{1} - k) * v1 + k * v2;
 }
 
-template <typename T, typename U, int S, bool Inv> class simd_comp_where_helper {
+template <typename T, int S>
+force_inline simd_vec<T, S> gather(const T *base_addr, const simd_vec<int, S> &vindex) {
+    simd_vec<T, S> res;
+    ITERATE(S, { res.template set<i>(base_addr[vindex[i]]); });
+    return res;
+}
+
+template <typename T, typename U, int S> class simd_comp_where_helper {
     const simd_vec<T, S> &mask_;
     simd_vec<T, S> &comp_;
 
@@ -781,79 +842,52 @@ template <typename T, typename U, int S, bool Inv> class simd_comp_where_helper 
     force_inline simd_comp_where_helper(const simd_vec<U, S> &mask, simd_vec<T, S> &vec)
         : mask_(reinterpret_cast<const simd_vec<T, S> &>(mask)), comp_(vec) {}
 
-    force_inline void operator=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, vec);
-        } else {
-            comp_.blend_inv_to(mask_, vec);
-        }
-    }
+    force_inline void operator=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, vec); }
+    force_inline void operator+=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, comp_ + vec); }
+    force_inline void operator-=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, comp_ - vec); }
+    force_inline void operator*=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, comp_ * vec); }
+    force_inline void operator/=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, comp_ / vec); }
+    force_inline void operator|=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, comp_ | vec); }
+    force_inline void operator&=(const simd_vec<T, S> &vec) { comp_.blend_to(mask_, comp_ & vec); }
+};
 
-    force_inline void operator+=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, comp_ + vec);
-        } else {
-            comp_.blend_inv_to(mask_, comp_ + vec);
-        }
-    }
+template <typename T, typename U, int S> class simd_comp_where_inv_helper {
+    const simd_vec<T, S> &mask_;
+    simd_vec<T, S> &comp_;
 
-    force_inline void operator-=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, comp_ - vec);
-        } else {
-            comp_.blend_inv_to(mask_, comp_ - vec);
-        }
-    }
+  public:
+    force_inline simd_comp_where_inv_helper(const simd_vec<U, S> &mask, simd_vec<T, S> &vec)
+        : mask_(reinterpret_cast<const simd_vec<T, S> &>(mask)), comp_(vec) {}
 
-    force_inline void operator*=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, comp_ * vec);
-        } else {
-            comp_.blend_inv_to(mask_, comp_ * vec);
-        }
-    }
-
-    force_inline void operator/=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, comp_ / vec);
-        } else {
-            comp_.blend_inv_to(mask_, comp_ / vec);
-        }
-    }
-
-    force_inline void operator|=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, comp_ | vec);
-        } else {
-            comp_.blend_inv_to(mask_, comp_ | vec);
-        }
-    }
-
-    force_inline void operator&=(const simd_vec<T, S> &vec) {
-        if (!Inv) {
-            comp_.blend_to(mask_, comp_ & vec);
-        } else {
-            comp_.blend_inv_to(mask_, comp_ & vec);
-        }
-    }
+    force_inline void operator=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, vec); }
+    force_inline void operator+=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, comp_ + vec); }
+    force_inline void operator-=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, comp_ - vec); }
+    force_inline void operator*=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, comp_ * vec); }
+    force_inline void operator/=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, comp_ / vec); }
+    force_inline void operator|=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, comp_ | vec); }
+    force_inline void operator&=(const simd_vec<T, S> &vec) { comp_.blend_inv_to(mask_, comp_ & vec); }
 };
 
 template <typename T, typename U, int S>
-force_inline simd_comp_where_helper<T, U, S, false> where(const simd_vec<U, S> &mask, simd_vec<T, S> &vec) {
+force_inline simd_comp_where_helper<T, U, S> where(const simd_vec<U, S> &mask, simd_vec<T, S> &vec) {
     return {mask, vec};
 }
 
 template <typename T, typename U, int S>
-force_inline simd_comp_where_helper<T, U, S, true> where_not(const simd_vec<U, S> &mask, simd_vec<T, S> &vec) {
+force_inline simd_comp_where_inv_helper<T, U, S> where_not(const simd_vec<U, S> &mask, simd_vec<T, S> &vec) {
     return {mask, vec};
 }
 
-template <int S> force_inline const simd_vec<int, S> &simd_cast(const simd_vec<float, S> &vec) {
-    return reinterpret_cast<const simd_vec<int, S> &>(vec);
+template <int S> force_inline simd_vec<int, S> simd_cast(const simd_vec<float, S> &vec) {
+    simd_vec<int, S> ret;
+    memcpy(&ret, &vec, sizeof(simd_vec<int, S>));
+    return ret;
 }
 
-template <int S> force_inline const simd_vec<float, S> &simd_cast(const simd_vec<int, S> &vec) {
-    return reinterpret_cast<const simd_vec<float, S> &>(vec);
+template <int S> force_inline const simd_vec<float, S> simd_cast(const simd_vec<int, S> &vec) {
+    simd_vec<float, S> ret;
+    memcpy(&ret, &vec, sizeof(simd_vec<float, S>));
+    return ret;
 }
 
 } // namespace NS
@@ -899,5 +933,3 @@ using simd_dvec16 = simd_dvec<16>;
 #endif
 
 #pragma warning(pop)
-
-//#undef ITERATE

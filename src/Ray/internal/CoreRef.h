@@ -47,7 +47,7 @@ struct ray_data_t {
     // 16-bit pixel coordinates of ray ((x << 16) | y)
     int xy;
     // four 8-bit ray depth counters
-    int ray_depth;
+    int depth;
 };
 #ifdef USE_RAY_DIFFERENTIALS
 static_assert(sizeof(ray_data_t) == 96, "!");
@@ -56,18 +56,22 @@ static_assert(sizeof(ray_data_t) == 56, "!");
 #endif
 
 struct shadow_ray_t {
-    // origin and direction
-    float o[3], d[3], dist;
+    // origin
+    float o[3];
+    // four 8-bit ray depth counters
+    int depth;
+    // direction and distance
+    float d[3], dist;
     // throughput color of ray
     float c[3];
     // 16-bit pixel coordinates of ray ((x << 16) | y)
     int xy;
 };
-static_assert(sizeof(shadow_ray_t) == 44, "!");
+static_assert(sizeof(shadow_ray_t) == 48, "!");
 
-const int RayPacketDimX = 1;
-const int RayPacketDimY = 1;
-const int RayPacketSize = RayPacketDimX * RayPacketDimY;
+const int RPDimX = 1;
+const int RPDimY = 1;
+const int RPSize = RPDimX * RPDimY;
 
 struct hit_data_t {
     int mask;
@@ -109,12 +113,33 @@ force_inline int hash(int x) {
     return reinterpret_cast<const int &>(ret);
 }
 
+force_inline simd_fvec4 rgbe_to_rgb(const color_t<uint8_t, 4> &rgbe) {
+    const float f = std::exp2(float(rgbe.v[3]) - 128.0f);
+    return simd_fvec4{to_norm_float(rgbe.v[0]) * f, to_norm_float(rgbe.v[1]) * f, to_norm_float(rgbe.v[2]) * f, 1.0f};
+}
+
+force_inline int total_depth(const ray_data_t &r) {
+    const int diff_depth = r.depth & 0x000000ff;
+    const int spec_depth = (r.depth >> 8) & 0x000000ff;
+    const int refr_depth = (r.depth >> 16) & 0x000000ff;
+    const int transp_depth = (r.depth >> 24) & 0x000000ff;
+    return diff_depth + spec_depth + refr_depth + transp_depth;
+}
+
+force_inline int total_depth(const shadow_ray_t &r) {
+    const int diff_depth = r.depth & 0x000000ff;
+    const int spec_depth = (r.depth >> 8) & 0x000000ff;
+    const int refr_depth = (r.depth >> 16) & 0x000000ff;
+    const int transp_depth = (r.depth >> 24) & 0x000000ff;
+    return diff_depth + spec_depth + refr_depth + transp_depth;
+}
+
 // Generation of rays
-void GeneratePrimaryRays(int iteration, const camera_t &cam, const rect_t &r, int w, int h, const float *halton,
+void GeneratePrimaryRays(int iteration, const camera_t &cam, const rect_t &r, int w, int h, const float *random_seq,
                          aligned_vector<ray_data_t> &out_rays);
 void SampleMeshInTextureSpace(int iteration, int obj_index, int uv_layer, const mesh_t &mesh, const transform_t &tr,
                               const uint32_t *vtx_indices, const vertex_t *vertices, const rect_t &r, int w, int h,
-                              const float *halton, aligned_vector<ray_data_t> &out_rays,
+                              const float *random_seq, aligned_vector<ray_data_t> &out_rays,
                               aligned_vector<hit_data_t> &out_inters);
 
 // Sorting of rays
@@ -235,9 +260,12 @@ simd_fvec4 SampleAnisotropic(const TexStorageBase *const textures[], uint32_t in
                              const simd_fvec2 &duv_dx, const simd_fvec2 &duv_dy);
 simd_fvec4 SampleLatlong_RGBE(const TexStorageRGBA &storage, uint32_t index, const simd_fvec4 &dir, float y_rotation);
 
-// Get visibility between two points accounting for transparent materials
-float ComputeVisibility(const float p[3], const float d[3], float dist, float rand_val, int rand_hash2,
-                        const scene_data_t &sc, uint32_t node_index, const TexStorageBase *const textures[]);
+// Trace rays through scene hierarchy
+void IntersectScene(ray_data_t &r, int min_transp_depth, int max_transp_depth, const float *random_seq,
+                    const scene_data_t &sc, uint32_t root_index, const TexStorageBase *const textures[],
+                    hit_data_t &inter);
+simd_fvec4 IntersectScene(const shadow_ray_t &r, int max_transp_depth, const scene_data_t &sc, uint32_t node_index,
+                          const TexStorageBase *const textures[]);
 
 // Compute derivatives at hit point
 void ComputeDerivatives(const simd_fvec4 &I, float t, const simd_fvec4 &do_dx, const simd_fvec4 &do_dy,
@@ -246,15 +274,21 @@ void ComputeDerivatives(const simd_fvec4 &I, float t, const simd_fvec4 &do_dx, c
 
 // Pick point on any light source for evaluation
 void SampleLightSource(const simd_fvec4 &P, const scene_data_t &sc, const TexStorageBase *const textures[],
-                       const float halton[], const float sample_off[2], light_sample_t &ls);
+                       const float random_seq[], const float sample_off[2], light_sample_t &ls);
 
 // Account for visible lights contribution
 void IntersectAreaLights(const ray_data_t &ray, const light_t lights[], Span<const uint32_t> visible_lights,
                          const transform_t transforms[], hit_data_t &inout_inter);
 
+// Get environment collor at direction
+simd_fvec4 Evaluate_EnvColor(const ray_data_t &ray, const environment_t &env, const TexStorageRGBA &tex_storage);
+// Get light color at intersection point
+simd_fvec4 Evaluate_LightColor(const ray_data_t &ray, const hit_data_t &inter, const environment_t &env,
+                               const TexStorageRGBA &tex_storage, const light_t *lights);
+
 // Shade
-Ray::pixel_color_t ShadeSurface(int px_index, const pass_info_t &pi, const hit_data_t &inter, const ray_data_t &ray,
-                                const float *halton, const scene_data_t &sc, uint32_t node_index,
+Ray::pixel_color_t ShadeSurface(const pass_settings_t &ps, const hit_data_t &inter, const ray_data_t &ray,
+                                const float *random_seq, const scene_data_t &sc, uint32_t node_index,
                                 const TexStorageBase *const textures[], ray_data_t *out_secondary_rays,
                                 int *out_secondary_rays_count, shadow_ray_t *out_shadow_rays,
                                 int *out_shadow_rays_count);

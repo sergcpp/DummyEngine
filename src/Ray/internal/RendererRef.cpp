@@ -30,25 +30,23 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
 
     const camera_t &cam = s->cams_[s->current_cam()].cam;
 
-    scene_data_t sc_data;
-
-    sc_data.env = &s->env_;
-    sc_data.mesh_instances = s->mesh_instances_.empty() ? nullptr : &s->mesh_instances_[0];
-    sc_data.mi_indices = s->mi_indices_.empty() ? nullptr : &s->mi_indices_[0];
-    sc_data.meshes = s->meshes_.empty() ? nullptr : &s->meshes_[0];
-    sc_data.transforms = s->transforms_.empty() ? nullptr : &s->transforms_[0];
-    sc_data.vtx_indices = s->vtx_indices_.empty() ? nullptr : &s->vtx_indices_[0];
-    sc_data.vertices = s->vertices_.empty() ? nullptr : &s->vertices_[0];
-    sc_data.nodes = s->nodes_.empty() ? nullptr : &s->nodes_[0];
-    sc_data.mnodes = s->mnodes_.empty() ? nullptr : &s->mnodes_[0];
-    sc_data.tris = s->tris_.empty() ? nullptr : &s->tris_[0];
-    sc_data.tri_indices = s->tri_indices_.empty() ? nullptr : &s->tri_indices_[0];
-    sc_data.mtris = s->mtris_.data();
-    sc_data.tri_materials = s->tri_materials_.empty() ? nullptr : &s->tri_materials_[0];
-    sc_data.materials = s->materials_.empty() ? nullptr : &s->materials_[0];
-    sc_data.lights = s->lights_.empty() ? nullptr : &s->lights_[0];
-    sc_data.li_indices = {s->li_indices_.data(), s->li_indices_.size()};
-    sc_data.visible_lights = {s->visible_lights_.data(), s->visible_lights_.size()};
+    const scene_data_t sc_data = {s->env_,
+                                  s->mesh_instances_.empty() ? nullptr : &s->mesh_instances_[0],
+                                  s->mi_indices_.empty() ? nullptr : &s->mi_indices_[0],
+                                  s->meshes_.empty() ? nullptr : &s->meshes_[0],
+                                  s->transforms_.empty() ? nullptr : &s->transforms_[0],
+                                  s->vtx_indices_.empty() ? nullptr : &s->vtx_indices_[0],
+                                  s->vertices_.empty() ? nullptr : &s->vertices_[0],
+                                  s->nodes_.empty() ? nullptr : &s->nodes_[0],
+                                  s->mnodes_.empty() ? nullptr : &s->mnodes_[0],
+                                  s->tris_.empty() ? nullptr : &s->tris_[0],
+                                  s->tri_indices_.empty() ? nullptr : &s->tri_indices_[0],
+                                  s->mtris_.data(),
+                                  s->tri_materials_.empty() ? nullptr : &s->tri_materials_[0],
+                                  s->materials_.empty() ? nullptr : &s->materials_[0],
+                                  s->lights_.empty() ? nullptr : &s->lights_[0],
+                                  {s->li_indices_.data(), s->li_indices_.size()},
+                                  {s->visible_lights_.data(), s->visible_lights_.size()}};
 
     const uint32_t macro_tree_root = s->macro_nodes_root_;
 
@@ -99,22 +97,13 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
 
     PassData &p = g_per_thread_pass_data;
 
-    {
+    // allocate sh data on demand
+    if (cam.pass_settings.flags & OutputSH) {
         std::lock_guard<std::mutex> _(mtx_);
 
-        // allocate sh data on demand
-        if (cam.pass_settings.flags & OutputSH) {
-            temp_buf_.Resize(w, h, true);
-            clean_buf_.Resize(w, h, true);
-        }
+        temp_buf_.Resize(w, h, true);
+        clean_buf_.Resize(w, h, true);
     }
-
-    pass_info_t pass_info = {};
-
-    pass_info.iteration = region.iteration;
-    pass_info.bounce = 0;
-    pass_info.settings = cam.pass_settings;
-    pass_info.settings.max_total_depth = std::min(pass_info.settings.max_total_depth, uint8_t(MAX_BOUNCES));
 
     const auto time_start = std::chrono::high_resolution_clock::now();
     std::chrono::time_point<std::chrono::high_resolution_clock> time_after_ray_gen;
@@ -129,21 +118,16 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         p.intersections.resize(p.primary_rays.size());
 
         for (size_t i = 0; i < p.primary_rays.size(); i++) {
-            const ray_data_t &r = p.primary_rays[i];
+            ray_data_t &r = p.primary_rays[i];
+
             hit_data_t &inter = p.intersections[i];
             inter = {};
             inter.t = cam.clip_end;
 
             if (macro_tree_root != 0xffffffff) {
-                if (sc_data.mnodes) {
-                    Traverse_MacroTree_WithStack_ClosestHit(
-                        r.o, r.d, sc_data.mnodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
-                        sc_data.meshes, sc_data.transforms, sc_data.mtris, sc_data.tri_indices, inter);
-                } else {
-                    Traverse_MacroTree_WithStack_ClosestHit(
-                        r.o, r.d, sc_data.nodes, macro_tree_root, sc_data.mesh_instances, sc_data.mi_indices,
-                        sc_data.meshes, sc_data.transforms, sc_data.tris, sc_data.tri_indices, inter);
-                }
+                IntersectScene(r, cam.pass_settings.min_transp_depth, cam.pass_settings.max_transp_depth,
+                               &region.halton_seq[hi + RAND_DIM_BASE_COUNT], sc_data, macro_tree_root, s->tex_storages_,
+                               inter);
                 // IntersectAreaLights(r, sc_data.lights, sc_data.visible_lights, sc_data.transforms, inter);
             }
         }
@@ -170,10 +154,8 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         const int x = (r.xy >> 16) & 0x0000ffff;
         const int y = r.xy & 0x0000ffff;
 
-        const int px_index = y * w + x;
-
         const pixel_color_t col = ShadeSurface(
-            px_index, pass_info, inter, r, &region.halton_seq[hi + RAND_DIM_BASE_COUNT], sc_data, macro_tree_root,
+            cam.pass_settings, inter, r, &region.halton_seq[hi + RAND_DIM_BASE_COUNT], sc_data, macro_tree_root,
             s->tex_storages_, &p.secondary_rays[0], &secondary_rays_count, &p.shadow_rays[0], &shadow_rays_count);
         temp_buf_.SetPixel(x, y, col);
     }
@@ -184,15 +166,12 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         const int x = (sh_r.xy >> 16) & 0x0000ffff;
         const int y = sh_r.xy & 0x0000ffff;
 
-        const int px_index = y * w + x;
-
-        const float visibility = ComputeVisibility(sh_r.o, sh_r.d, sh_r.dist,
-                                                   region.halton_seq[hi + RAND_DIM_BASE_COUNT + RAND_DIM_BSDF_PICK],
-                                                   hash(px_index), sc_data, macro_tree_root, s->tex_storages_);
+        const simd_fvec4 rc =
+            IntersectScene(sh_r, cam.pass_settings.max_transp_depth, sc_data, macro_tree_root, s->tex_storages_);
         pixel_color_t col = {};
-        col.r = visibility * sh_r.c[0];
-        col.g = visibility * sh_r.c[1];
-        col.b = visibility * sh_r.c[2];
+        col.r = rc[0];
+        col.g = rc[1];
+        col.b = rc[2];
         col.a = 0.0f;
 
         temp_buf_.AddPixel(x, y, col);
@@ -222,9 +201,7 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         }
     }
 
-    for (int bounce = 1; bounce <= pass_info.settings.max_total_depth && secondary_rays_count &&
-                         !(pass_info.settings.flags & SkipIndirectLight);
-         ++bounce) {
+    for (int bounce = 1; bounce <= cam.pass_settings.max_total_depth && secondary_rays_count; ++bounce) {
         const auto time_secondary_sort_start = std::chrono::high_resolution_clock::now();
 
         SortRays_CPU(&p.secondary_rays[0], size_t(secondary_rays_count), root_min, cell_size, &p.hash_values[0],
@@ -254,20 +231,15 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         const auto time_secondary_trace_start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < secondary_rays_count; i++) {
-            const ray_data_t &r = p.secondary_rays[i];
+            ray_data_t &r = p.secondary_rays[i];
+
             hit_data_t &inter = p.intersections[i];
             inter = {};
 
-            if (sc_data.mnodes) {
-                Traverse_MacroTree_WithStack_ClosestHit(r.o, r.d, sc_data.mnodes, macro_tree_root,
-                                                        sc_data.mesh_instances, sc_data.mi_indices, sc_data.meshes,
-                                                        sc_data.transforms, sc_data.mtris, sc_data.tri_indices, inter);
-            } else {
-                Traverse_MacroTree_WithStack_ClosestHit(r.o, r.d, sc_data.nodes, macro_tree_root,
-                                                        sc_data.mesh_instances, sc_data.mi_indices, sc_data.meshes,
-                                                        sc_data.transforms, sc_data.tris, sc_data.tri_indices, inter);
-            }
-            if (r.ray_depth & 0x00ffffff) { // not only a transparency ray
+            IntersectScene(r, cam.pass_settings.min_transp_depth, cam.pass_settings.max_transp_depth,
+                           &region.halton_seq[hi + RAND_DIM_BASE_COUNT], sc_data, macro_tree_root, s->tex_storages_,
+                           inter);
+            if (r.depth & 0x00ffffff) { // not only a transparency ray
                 IntersectAreaLights(r, sc_data.lights, sc_data.visible_lights, sc_data.transforms, inter);
             }
         }
@@ -279,8 +251,6 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         shadow_rays_count = 0;
         std::swap(p.primary_rays, p.secondary_rays);
 
-        pass_info.bounce = bounce;
-
         for (int i = 0; i < rays_count; ++i) {
             const ray_data_t &r = p.primary_rays[i];
             const hit_data_t &inter = p.intersections[i];
@@ -288,12 +258,9 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
             const int x = (r.xy >> 16) & 0x0000ffff;
             const int y = r.xy & 0x0000ffff;
 
-            const int px_index = y * w + x;
-
-            pixel_color_t col = ShadeSurface(
-                px_index, pass_info, inter, r,
-                &region.halton_seq[hi + RAND_DIM_BASE_COUNT + bounce * RAND_DIM_BOUNCE_COUNT], sc_data, macro_tree_root,
-                s->tex_storages_, &p.secondary_rays[0], &secondary_rays_count, &p.shadow_rays[0], &shadow_rays_count);
+            pixel_color_t col = ShadeSurface(cam.pass_settings, inter, r, &region.halton_seq[hi + RAND_DIM_BASE_COUNT],
+                                             sc_data, macro_tree_root, s->tex_storages_, &p.secondary_rays[0],
+                                             &secondary_rays_count, &p.shadow_rays[0], &shadow_rays_count);
             col.a = 0.0f;
 
             temp_buf_.AddPixel(x, y, col);
@@ -305,16 +272,12 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
             const int x = (sh_r.xy >> 16) & 0x0000ffff;
             const int y = sh_r.xy & 0x0000ffff;
 
-            const int px_index = y * w + x;
-
-            const float visibility = ComputeVisibility(
-                sh_r.o, sh_r.d, sh_r.dist,
-                region.halton_seq[hi + RAND_DIM_BASE_COUNT + bounce * RAND_DIM_BOUNCE_COUNT + RAND_DIM_BSDF_PICK],
-                hash(px_index), sc_data, macro_tree_root, s->tex_storages_);
+            const simd_fvec4 rc =
+                IntersectScene(sh_r, cam.pass_settings.max_transp_depth, sc_data, macro_tree_root, s->tex_storages_);
             pixel_color_t col = {};
-            col.r = visibility * sh_r.c[0];
-            col.g = visibility * sh_r.c[1];
-            col.b = visibility * sh_r.c[2];
+            col.r = rc[0];
+            col.g = rc[1];
+            col.b = rc[2];
             col.a = 0.0f;
 
             temp_buf_.AddPixel(x, y, col);
@@ -359,10 +322,10 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
 
         if (cam.dtype == SRGB) {
             ITERATE_3({
-                if (c[i] < 0.0031308f) {
-                    c[i] = 12.92f * c[i];
+                if (c.get<i>() < 0.0031308f) {
+                    c.set<i>(12.92f * c[i]);
                 } else {
-                    c[i] = 1.055f * std::pow(c[i], (1.0f / 2.4f)) - 0.055f;
+                    c.set<i>(1.055f * std::pow(c[i], (1.0f / 2.4f)) - 0.055f);
                 }
             })
         }

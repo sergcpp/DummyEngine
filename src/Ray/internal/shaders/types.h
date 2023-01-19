@@ -82,7 +82,6 @@ const int PrincipledNode = 6;
 
 const UINT_TYPE MAT_FLAG_MULT_IMPORTANCE = (1u << 0u);
 const UINT_TYPE MAT_FLAG_MIX_ADD = (1u << 1u);
-const UINT_TYPE MAT_FLAG_SKY_PORTAL = (1u << 2u);
 
 const int NUM_MIP_LEVELS = 14;
 const int MAX_MIP_LEVEL = NUM_MIP_LEVELS - 1;
@@ -115,12 +114,16 @@ struct ray_data_t {
 	float cone_width, cone_spread;
 #endif
 	int xy;
-	int ray_depth;
+	int depth;
 };
 
 struct shadow_ray_t {
-    // origin and direction
-    float o[3], d[3], dist;
+    // origin
+    float o[3];
+    // four 8-bit ray depth counters
+    int depth;
+    // direction and distance
+    float d[3], dist;
     // throughput color of ray
     float c[3];
     // 16-bit pixel coordinates of ray ((x << 16) | y)

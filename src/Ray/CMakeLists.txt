@@ -14,17 +14,23 @@ IF(MSVC)
         set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} /MTd /fsanitize=address")
         set(CMAKE_EXE_LINKER_FLAGS_ASAN "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
     endif()
+    add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
 ELSE(MSVC)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Android" AND NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64" AND
        NOT "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -msse2 -mfma")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -mfma -fno-strict-aliasing")
         IF(WIN32)
         ELSE(WIN32)
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
         ENDIF(WIN32)
     endif()
+    if(APPLE)
+        add_compile_definitions(VK_USE_PLATFORM_MACOS_MVK)
+    else(APPLE)
+        add_compile_definitions(VK_USE_PLATFORM_XLIB_KHR)
+    endif(APPLE)
 ENDIF(MSVC)
 
 set(INTERNAL_SOURCE_FILES internal/Bitmap.h
@@ -73,6 +79,8 @@ if (ENABLE_SIMD_IMPL)
                               internal/RendererAVX.cpp
                               internal/RendererAVX2.h
                               internal/RendererAVX2.cpp
+                              internal/RendererAVX512.h
+                              internal/RendererAVX512.cpp
                               internal/UtilsSSE2.cpp)
 endif()
 
@@ -101,14 +109,23 @@ if (ENABLE_GPU_IMPL)
                               internal/VectorVK.h)
 endif()
 
-if(MSVC AND NOT "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
-    if(NOT CMAKE_CL_64)
-        set_source_files_properties(internal/RendererSSE2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
-        set_source_files_properties(internal/RendererSSE41.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+if(NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64")
+    if(MSVC)
+        if(NOT CMAKE_CL_64)
+            set_source_files_properties(internal/RendererSSE2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+            set_source_files_properties(internal/RendererSSE41.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+        endif()
+        set_source_files_properties(internal/RendererAVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
+        set_source_files_properties(internal/RendererAVX2.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
+        set_source_files_properties(internal/RendererAVX512.cpp PROPERTIES COMPILE_FLAGS /arch:AVX512)
+    else()
+        set_source_files_properties(internal/RendererSSE2.cpp PROPERTIES COMPILE_FLAGS -msse2)
+        set_source_files_properties(internal/RendererSSE41.cpp PROPERTIES COMPILE_FLAGS -msse4.1)
+        set_source_files_properties(internal/RendererAVX.cpp PROPERTIES COMPILE_FLAGS -mavx)
+        set_source_files_properties(internal/RendererAVX2.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+        set_source_files_properties(internal/RendererAVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mavx512dq")
     endif()
-    set_source_files_properties(internal/RendererAVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
-    set_source_files_properties(internal/RendererAVX2.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
-endif(MSVC AND NOT "${CMAKE_SYSTEM_PROCESSOR}" STREQUAL "arm64")
+endif(NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64")
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Config.h.in ${CMAKE_CURRENT_SOURCE_DIR}/Config.h)
 
@@ -184,6 +201,10 @@ set(SHADER_FILES    internal/shaders/_interface_common.h
                     internal/shaders/intersect.glsl
                     internal/shaders/intersect_area_lights.comp.glsl
                     internal/shaders/intersect_area_lights_interface.h
+                    internal/shaders/intersect_scene.comp.glsl
+                    internal/shaders/intersect_scene_interface.h
+                    internal/shaders/intersect_scene_shadow.comp.glsl
+                    internal/shaders/intersect_scene_shadow_interface.h
                     internal/shaders/mix_incremental.comp.glsl
                     internal/shaders/mix_incremental_interface.h
                     internal/shaders/postprocess.comp.glsl
@@ -192,13 +213,9 @@ set(SHADER_FILES    internal/shaders/_interface_common.h
                     internal/shaders/prepare_indir_args_interface.h
                     internal/shaders/primary_ray_gen.comp.glsl
                     internal/shaders/primary_ray_gen_interface.h
-                    internal/shaders/shade_hits.comp.glsl
-                    internal/shaders/shade_hits_interface.h
+                    internal/shaders/shade.comp.glsl
+                    internal/shaders/shade_interface.h
                     internal/shaders/texture.glsl
-                    internal/shaders/trace_rays.comp.glsl
-                    internal/shaders/trace_rays_interface.h
-                    internal/shaders/trace_shadow.comp.glsl
-                    internal/shaders/trace_shadow_interface.h
                     internal/shaders/traverse_bvh.glsl
                     internal/shaders/types.h)
 
@@ -229,42 +246,49 @@ if(ENABLE_UNITYBUILD)
     list(APPEND ALL_SOURCE_FILES _Ray.cpp)
     source_group("src" FILES _Ray.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Sse2.cpp)
-    source_group("src" FILES _Ray_Sse2.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_SSE2.cpp)
+    source_group("src" FILES _Ray_SSE2.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Sse41.cpp)
-    source_group("src" FILES _Ray_Sse41.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_SSE41.cpp)
+    source_group("src" FILES _Ray_SSE41.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Avx.cpp)
-    source_group("src" FILES _Ray_Avx.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_AVX.cpp)
+    source_group("src" FILES _Ray_AVX.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Avx2.cpp)
-    source_group("src" FILES _Ray_Avx2.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_AVX2.cpp)
+    source_group("src" FILES _Ray_AVX2.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Avx512.cpp)
-    source_group("src" FILES _Ray_Avx512.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_AVX512.cpp)
+    source_group("src" FILES _Ray_AVX512.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Neon.cpp)
-    source_group("src" FILES _Ray_Neon.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_NEON.cpp)
+    source_group("src" FILES _Ray_NEON.cpp)
 
-    list(APPEND ALL_SOURCE_FILES _Ray_Vk.cpp)
-    source_group("src" FILES _Ray_Vk.cpp)
+    list(APPEND ALL_SOURCE_FILES _Ray_VK.cpp)
+    source_group("src" FILES _Ray_VK.cpp)
 
-    if(MSVC AND NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64")
-        if(NOT CMAKE_CL_64)
-            set_source_files_properties(_Ray_Sse2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
-            set_source_files_properties(_Ray_Sse41.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
-        endif()
-        set_source_files_properties(_Ray_Avx.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
-        set_source_files_properties(_Ray_Avx2.cpp PROPERTIES COMPILE_FLAGS /arch:AVX2)
-        set_source_files_properties(_Ray_Avx512.cpp PROPERTIES COMPILE_FLAGS /arch:AVX512)
-    endif(MSVC AND NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64")
+    if(NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64")
+        if(MSVC)
+            if(NOT CMAKE_CL_64)
+                set_source_files_properties(_Ray_SSE2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+                set_source_files_properties(_Ray_SSE41.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+            endif()
+            set_source_files_properties(_Ray_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
+            set_source_files_properties(_Ray_AVX2.cpp PROPERTIES COMPILE_FLAGS /arch:AVX2)
+            set_source_files_properties(_Ray_AVX512.cpp PROPERTIES COMPILE_FLAGS /arch:AVX512)
+        else(MSVC)
+            set_source_files_properties(_Ray_SSE2.cpp PROPERTIES COMPILE_FLAGS -msse2)
+            set_source_files_properties(_Ray_SSE41.cpp PROPERTIES COMPILE_FLAGS -msse4.1)
+            set_source_files_properties(_Ray_AVX.cpp PROPERTIES COMPILE_FLAGS -mavx)
+            set_source_files_properties(_Ray_AVX2.cpp PROPERTIES COMPILE_FLAGS -mavx2)
+            set_source_files_properties(_Ray_AVX512.cpp PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mavx512dq")
+        endif(MSVC)
+    endif(NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "ARM64")
 endif()
 
 if(MSVC)
     list(APPEND ALL_SOURCE_FILES internal/_CustomTypes.natvis)
 endif(MSVC)
-
 
 add_library(Ray STATIC ${ALL_SOURCE_FILES})
 

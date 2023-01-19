@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "../Log.h"
+#include "CoreRef.h"
 #include "TextureUtilsRef.h"
 #include "Time_.h"
 
@@ -26,13 +27,22 @@ Ray::Ref::Scene::~Scene() {
 }
 
 void Ray::Ref::Scene::GetEnvironment(environment_desc_t &env) {
-    memcpy(&env.env_col[0], &env_.env_col, 3 * sizeof(float));
+    memcpy(env.env_col, env_.env_col, 3 * sizeof(float));
     env.env_map = env_.env_map;
+    memcpy(env.back_col, env_.back_col, 3 * sizeof(float));
+    env.back_map = env_.back_map;
+    env.env_map_rotation = env_.env_map_rotation;
+    env.back_map_rotation = env_.back_map_rotation;
+    env.multiple_importance = env_.multiple_importance;
 }
 
 void Ray::Ref::Scene::SetEnvironment(const environment_desc_t &env) {
-    memcpy(&env_.env_col, &env.env_col[0], 3 * sizeof(float));
+    memcpy(env_.env_col, env.env_col, 3 * sizeof(float));
     env_.env_map = env.env_map;
+    memcpy(env_.back_col, env.back_col, 3 * sizeof(float));
+    env_.back_map = env.back_map;
+    env_.env_map_rotation = env.env_map_rotation;
+    env_.back_map_rotation = env.back_map_rotation;
     env_.multiple_importance = env.multiple_importance;
 }
 
@@ -118,7 +128,7 @@ uint32_t Ray::Ref::Scene::AddMaterial(const shading_node_desc_t &m) {
     mat.flags = 0;
 
     if (m.type == DiffuseNode) {
-        mat.sheen_unorm = pack_unorm_16(_CLAMP(m.sheen, 0.0f, 1.0f));
+        mat.sheen_unorm = pack_unorm_16(_CLAMP(0.5f * m.sheen, 0.0f, 1.0f));
         mat.sheen_tint_unorm = pack_unorm_16(_CLAMP(m.tint, 0.0f, 1.0f));
         mat.textures[METALLIC_TEXTURE] = m.metallic_texture;
     } else if (m.type == GlossyNode) {
@@ -130,9 +140,6 @@ uint32_t Ray::Ref::Scene::AddMaterial(const shading_node_desc_t &m) {
         mat.strength = m.strength;
         if (m.multiple_importance) {
             mat.flags |= MAT_FLAG_MULT_IMPORTANCE;
-        }
-        if (m.sky_portal) {
-            mat.flags |= MAT_FLAG_SKY_PORTAL;
         }
     } else if (m.type == MixNode) {
         mat.strength = m.strength;
@@ -156,7 +163,7 @@ uint32_t Ray::Ref::Scene::AddMaterial(const principled_mat_desc_t &m) {
     main_mat.type = PrincipledNode;
     main_mat.textures[BASE_TEXTURE] = m.base_texture;
     memcpy(&main_mat.base_color[0], &m.base_color[0], 3 * sizeof(float));
-    main_mat.sheen_unorm = pack_unorm_16(_CLAMP(m.sheen, 0.0f, 1.0f));
+    main_mat.sheen_unorm = pack_unorm_16(_CLAMP(0.5f * m.sheen, 0.0f, 1.0f));
     main_mat.sheen_tint_unorm = pack_unorm_16(_CLAMP(m.sheen_tint, 0.0f, 1.0f));
     main_mat.roughness_unorm = pack_unorm_16(_CLAMP(m.roughness, 0.0f, 1.0f));
     main_mat.tangent_rotation = 2.0f * PI * _CLAMP(m.anisotropic_rotation, 0.0f, 1.0f);
@@ -603,8 +610,7 @@ uint32_t Ray::Ref::Scene::AddMeshInstance(const uint32_t mesh_index, const float
             const tri_mat_data_t &tri_mat = tri_materials_[tri];
 
             const material_t &front_mat = materials_[tri_mat.front_mi & MATERIAL_INDEX_BITS];
-            if (front_mat.type == EmissiveNode &&
-                (front_mat.flags & (MAT_FLAG_MULT_IMPORTANCE | MAT_FLAG_SKY_PORTAL))) {
+            if (front_mat.type == EmissiveNode && (front_mat.flags & MAT_FLAG_MULT_IMPORTANCE)) {
                 light_t new_light = {};
                 new_light.cast_shadow = 1;
                 new_light.type = LIGHT_TYPE_TRI;
@@ -788,7 +794,7 @@ void Ray::Ref::Scene::RebuildTLAS() {
 void Ray::Ref::Scene::PrepareEnvMapQTree() {
     const int tex = (env_.env_map & 0x00ffffff);
     simd_ivec2 size;
-    tex_storage_rgba_.GetIRes(tex, 0, &size[0]);
+    tex_storage_rgba_.GetIRes(tex, 0, value_ptr(size));
 
     const int lowest_dim = std::min(size[0], size[1]);
 
@@ -803,7 +809,7 @@ void Ray::Ref::Scene::PrepareEnvMapQTree() {
     float total_lum = 0.0f;
 
     { // initialize the first quadtree level
-        env_map_qtree_.mips.emplace_back(cur_res * cur_res / 4, 0.0f);
+        env_map_qtree_.mips.emplace_back(cur_res * cur_res, 0.0f);
 
         for (int y = 0; y < size[1]; ++y) {
             const float theta = PI * float(y) / size[1];
@@ -815,13 +821,11 @@ void Ray::Ref::Scene::PrepareEnvMapQTree() {
 
                 const float cur_lum = (col_rgb[0] + col_rgb[1] + col_rgb[2]);
 
-                simd_fvec4 dir;
-                dir[0] = std::sin(theta) * std::cos(phi);
-                dir[1] = std::cos(theta);
-                dir[2] = std::sin(theta) * std::sin(phi);
+                auto dir =
+                    simd_fvec4{std::sin(theta) * std::cos(phi), std::cos(theta), std::sin(theta) * std::sin(phi), 0.0f};
 
                 simd_fvec2 q;
-                DirToCanonical(value_ptr(dir), 0.0f, &q[0]);
+                DirToCanonical(value_ptr(dir), 0.0f, value_ptr(q));
 
                 int qx = _CLAMP(int(cur_res * q[0]), 0, cur_res - 1);
                 int qy = _CLAMP(int(cur_res * q[1]), 0, cur_res - 1);
@@ -833,21 +837,22 @@ void Ray::Ref::Scene::PrepareEnvMapQTree() {
                 qx /= 2;
                 qy /= 2;
 
-                float &q_lum = env_map_qtree_.mips[0][qy * cur_res / 2 + qx][index];
-                q_lum = std::max(q_lum, cur_lum);
+                auto &qvec = reinterpret_cast<simd_fvec4 &>(env_map_qtree_.mips[0][4 * (qy * cur_res / 2 + qx)]);
+                qvec.set(index, std::max(qvec[index], cur_lum));
             }
         }
 
-        for (const simd_fvec4 &v : env_map_qtree_.mips[0]) {
-            total_lum += (v[0] + v[1] + v[2] + v[3]);
+        for (const float v : env_map_qtree_.mips[0]) {
+            total_lum += v;
         }
 
         cur_res /= 2;
     }
 
     while (cur_res > 1) {
-        env_map_qtree_.mips.emplace_back(cur_res * cur_res / 4, 0.0f);
-        const auto &prev_mip = env_map_qtree_.mips[env_map_qtree_.mips.size() - 2];
+        env_map_qtree_.mips.emplace_back(cur_res * cur_res, 0.0f);
+        const auto *prev_mip =
+            reinterpret_cast<const simd_fvec4 *>(env_map_qtree_.mips[env_map_qtree_.mips.size() - 2].data());
 
         for (int y = 0; y < cur_res; ++y) {
             for (int x = 0; x < cur_res; ++x) {
@@ -861,7 +866,7 @@ void Ray::Ref::Scene::PrepareEnvMapQTree() {
                 const int qx = (x / 2);
                 const int qy = (y / 2);
 
-                env_map_qtree_.mips.back()[qy * cur_res / 2 + qx][index] = res_lum;
+                env_map_qtree_.mips.back()[4 * (qy * cur_res / 2 + qx) + index] = res_lum;
             }
         }
 
@@ -878,7 +883,7 @@ void Ray::Ref::Scene::PrepareEnvMapQTree() {
     int the_last_required_lod;
     for (int lod = int(env_map_qtree_.mips.size()) - 1; lod >= 0; --lod) {
         the_last_required_lod = lod;
-        const auto &cur_mip = env_map_qtree_.mips[lod];
+        const auto *cur_mip = reinterpret_cast<const simd_fvec4 *>(env_map_qtree_.mips[lod].data());
 
         bool subdivision_required = false;
         for (int y = 0; y < (cur_res / 2) && !subdivision_required; ++y) {
@@ -910,7 +915,7 @@ void Ray::Ref::Scene::PrepareEnvMapQTree() {
 
     env_.qtree_levels = int(env_map_qtree_.mips.size());
     for (int i = 0; i < env_.qtree_levels; ++i) {
-        env_.qtree_mips[i] = value_ptr(env_map_qtree_.mips[i][0]);
+        env_.qtree_mips[i] = env_map_qtree_.mips[i].data();
     }
     for (int i = env_.qtree_levels; i < countof(env_.qtree_mips); ++i) {
         env_.qtree_mips[i] = nullptr;

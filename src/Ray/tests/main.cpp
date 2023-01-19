@@ -86,6 +86,7 @@ void test_alpha_mat0(const char *arch_list[], const char *preferred_device);
 void test_alpha_mat1(const char *arch_list[], const char *preferred_device);
 void test_alpha_mat2(const char *arch_list[], const char *preferred_device);
 void test_alpha_mat3(const char *arch_list[], const char *preferred_device);
+void test_alpha_mat4(const char *arch_list[], const char *preferred_device);
 void test_complex_mat0(const char *arch_list[], const char *preferred_device);
 void test_complex_mat1(const char *arch_list[], const char *preferred_device);
 void test_complex_mat2(const char *arch_list[], const char *preferred_device);
@@ -113,6 +114,8 @@ void test_texture();
 bool g_stop_on_fail = false;
 bool g_tests_success = true;
 std::atomic_bool g_log_contains_errors{false};
+bool g_catch_flt_exceptions = false;
+bool g_determine_sample_count = false;
 
 int main(int argc, char *argv[]) {
     using namespace std::chrono;
@@ -136,10 +139,11 @@ int main(int argc, char *argv[]) {
         }
     }
 
-#if defined(_WIN32)
+#if defined(_WIN32) && !defined(__clang__)
     const bool enable_fp_exceptions = !nocpu || full_tests;
     if (enable_fp_exceptions) {
         _controlfp(_EM_INEXACT, _MCW_EM);
+        g_catch_flt_exceptions = true;
     }
 #endif
 
@@ -147,11 +151,11 @@ int main(int argc, char *argv[]) {
     test_tex_storage();
     // test_mesh_lights();
 
-    static const char *ArchListFull[] = {"ref", "sse2", "sse41", "avx", "avx2", "neon", "vk", nullptr};
-    static const char *ArchListFullNoGPU[] = {"ref", "sse2", "sse41", "avx", "avx2", "neon", nullptr};
-    static const char *ArchListDefault[] = {"avx2", "neon", "vk", nullptr};
-    static const char *ArchListDefaultNoGPU[] = {"avx2", "neon", nullptr};
-    static const char *ArchListGPUOnly[] = {"vk", nullptr};
+    static const char *ArchListFull[] = {"REF", "SSE2", "SSE41", "AVX", "AVX2", "AVX512", "NEON", "VK", nullptr};
+    static const char *ArchListFullNoGPU[] = {"REF", "SSE2", "SSE41", "AVX", "AVX2", "AVX512", "NEON", nullptr};
+    static const char *ArchListDefault[] = {"AVX2", "NEON", "VK", nullptr};
+    static const char *ArchListDefaultNoGPU[] = {"AVX2", "AVX512", "NEON", nullptr};
+    static const char *ArchListGPUOnly[] = {"VK", nullptr};
 
     bool detailed_material_tests_needed = full_tests;
     bool tests_success_final = g_tests_success;
@@ -400,6 +404,7 @@ int main(int argc, char *argv[]) {
             test_alpha_mat1(arch_list, device_name);
             test_alpha_mat2(arch_list, device_name);
             test_alpha_mat3(arch_list, device_name);
+            test_alpha_mat4(arch_list, device_name);
             printf("Finished alpha_mat tests in %.2f minutes\n",
                    duration<double>(high_resolution_clock::now() - t2).count() / 60.0);
         }

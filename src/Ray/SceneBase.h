@@ -73,7 +73,6 @@ struct shading_node_desc_t {
     float tint = 0;
     uint32_t metallic_texture = 0xffffffff;
     bool multiple_importance = false;         ///< Enable explicit emissive geometry sampling
-    bool sky_portal = false;
     bool mix_add = false;
 };
 
@@ -222,6 +221,7 @@ struct camera_desc_t {
     float origin[3];                     ///< Camera origin
     float fwd[3] = {};                   ///< Camera forward unit vector
     float up[3];                         ///< Camera up vector (optional)
+    float shift[2] = {};                 ///< Camera shift
     float fov = 45.0f, gamma = 1.0f;     ///< Field of view in degrees, gamma
     float sensor_height = 0.036f;        ///< Camera sensor height
     float focus_distance = 1.0f;         ///< Distance to focus point
@@ -242,15 +242,20 @@ struct camera_desc_t {
     uint8_t max_diff_depth = 4;          ///< Maximum tracing depth of diffuse rays
     uint8_t max_spec_depth = 8;          ///< Maximum tracing depth of glossy rays
     uint8_t max_refr_depth = 8;          ///< Maximum tracing depth of glossy rays
-    uint8_t max_transp_depth = 8;        ///< Maximum tracing depth of transparency rays
-    uint8_t max_total_depth = 8;         ///< Maximum tracing depth of all rays
-    uint8_t termination_start_depth = 3; ///< Depth at which random rays termination starts
+    uint8_t max_transp_depth = 8;        ///< Maximum tracing depth of transparency rays (note: does not obey total depth)
+    uint8_t max_total_depth = 8;         ///< Maximum tracing depth of all rays (except transparency)
+    uint8_t min_total_depth = 2;         ///< Depth after which random rays termination starts
+    uint8_t min_transp_depth = 2;        ///< Depth after which random rays termination starts
 };
 
 /// Environment description
 struct environment_desc_t {
-    float env_col[3] = {0.0f};          ///< Environment color
+    float env_col[3] = {};              ///< Environment color
     uint32_t env_map = 0xffffffff;      ///< Environment texture
+    float back_col[3] = {};             ///< Background color
+    uint32_t back_map = 0xffffffff;     ///< Background texture
+    float env_map_rotation = 0.0f;
+    float back_map_rotation = 0.0f;
     bool multiple_importance = true;    ///< Enable explicit env map sampling
 };
 

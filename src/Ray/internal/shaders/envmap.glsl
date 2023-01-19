@@ -1,6 +1,8 @@
 #ifndef ENVMAP_GLSL
 #define ENVMAP_GLSL
 
+#include "types.h"
+
 vec3 CanonicalToDir(const vec2 p, const float y_rotation) {
     const float cos_theta = 2 * p[0] - 1;
     float phi = 2 * PI * p[1] + y_rotation;
@@ -37,7 +39,7 @@ float Evaluate_EnvQTree(const float y_rotation, sampler2D qtree_tex, const int q
     int res = 2;
     int lod = qtree_levels - 1;
 
-    vec2 p = DirToCanonical(L, y_rotation);
+    vec2 p = DirToCanonical(L, -y_rotation);
 
     float factor = 1.0;
 

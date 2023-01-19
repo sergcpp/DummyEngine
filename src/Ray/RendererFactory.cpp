@@ -10,6 +10,7 @@
 #if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
 #include "internal/RendererAVX.h"
 #include "internal/RendererAVX2.h"
+#include "internal/RendererAVX512.h"
 #include "internal/RendererSSE2.h"
 #include "internal/RendererSSE41.h"
 #elif defined(__ARM_NEON__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
@@ -34,8 +35,6 @@ LogNull g_null_log;
 } // namespace Ray
 
 Ray::RendererBase *Ray::CreateRenderer(const settings_t &s, ILog *log, const uint32_t enabled_types) {
-    CpuFeatures features = GetCpuFeatures();
-
 #ifdef ENABLE_GPU_IMPL
     if (enabled_types & RendererVK) {
         log->Info("Ray: Creating Vulkan renderer %ix%i", s.w, s.h);
@@ -49,21 +48,26 @@ Ray::RendererBase *Ray::CreateRenderer(const settings_t &s, ILog *log, const uin
 
 #if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
 #ifdef ENABLE_SIMD_IMPL
+    const CpuFeatures features = GetCpuFeatures();
+    if ((enabled_types & RendererAVX512) && features.avx512_supported) {
+        log->Info("Ray: Creating AVX512 renderer %ix%i", s.w, s.h);
+        return Avx512::CreateRenderer(s, log);
+    }
     if ((enabled_types & RendererAVX2) && features.avx2_supported) {
         log->Info("Ray: Creating AVX2 renderer %ix%i", s.w, s.h);
-        return new Avx2::Renderer(s, log);
+        return Avx2::CreateRenderer(s, log);
     }
     if ((enabled_types & RendererAVX) && features.avx_supported) {
         log->Info("Ray: Creating AVX renderer %ix%i", s.w, s.h);
-        return new Avx::Renderer(s, log);
+        return Avx::CreateRenderer(s, log);
     }
     if ((enabled_types & RendererSSE41) && features.sse41_supported) {
         log->Info("Ray: Creating SSE41 renderer %ix%i", s.w, s.h);
-        return new Sse41::Renderer(s, log);
+        return Sse41::CreateRenderer(s, log);
     }
     if ((enabled_types & RendererSSE2) && features.sse2_supported) {
         log->Info("Ray: Creating SSE2 renderer %ix%i", s.w, s.h);
-        return new Sse2::Renderer(s, log);
+        return Sse2::CreateRenderer(s, log);
     }
 #endif
 #ifdef ENABLE_REF_IMPL
@@ -76,7 +80,7 @@ Ray::RendererBase *Ray::CreateRenderer(const settings_t &s, ILog *log, const uin
 #ifdef ENABLE_SIMD_IMPL
     if (enabled_types & RendererNEON) {
         log->Info("Ray: Creating NEON renderer %ix%i", s.w, s.h);
-        return new Neon::Renderer(s, log);
+        return Neon::CreateRenderer(s, log);
     }
 #endif
 #ifdef ENABLE_REF_IMPL

@@ -3,8 +3,6 @@
 #include <vector>
 
 #include "../SceneBase.h"
-#include "BVHSplit.h"
-#include "CoreRef.h"
 #include "SmallVector.h"
 #include "SparseStorage.h"
 #include "TextureStorageRef.h"
@@ -22,7 +20,9 @@ template <int DimX, int DimY> class RendererSIMD;
 namespace Avx2 {
 template <int DimX, int DimY> class RendererSIMD;
 }
-
+namespace Avx512 {
+template <int DimX, int DimY> class RendererSIMD;
+}
 namespace Neon {
 template <int DimX, int DimY> class RendererSIMD;
 }
@@ -39,6 +39,7 @@ class Scene : public SceneBase {
     template <int DimX, int DimY> friend class Sse41::RendererSIMD;
     template <int DimX, int DimY> friend class Avx::RendererSIMD;
     template <int DimX, int DimY> friend class Avx2::RendererSIMD;
+    template <int DimX, int DimY> friend class Avx512::RendererSIMD;
     template <int DimX, int DimY> friend class Neon::RendererSIMD;
 
     ILog *log_;
@@ -74,7 +75,7 @@ class Scene : public SceneBase {
     uint32_t env_map_light_ = 0xffffffff;
     struct {
         int res = -1;
-        SmallVector<aligned_vector<simd_fvec4>, 16> mips;
+        SmallVector<aligned_vector<float, 16>, 16> mips;
     } env_map_qtree_;
 
     uint32_t macro_nodes_root_ = 0xffffffff, macro_nodes_count_ = 0;

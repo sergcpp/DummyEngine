@@ -1,6 +1,7 @@
 #include "Utils.h"
 
 #include <deque>
+#include <limits>
 
 #include "CoreRef.h"
 
@@ -220,22 +221,20 @@ std::unique_ptr<uint8_t[]> Ray::ConvertRGB32F_to_RGBE(const float image_data[], 
             Ref::simd_fvec4 val;
 
             if (channels == 3) {
-                val[0] = image_data[3 * (y * w + x) + 0];
-                val[1] = image_data[3 * (y * w + x) + 1];
-                val[2] = image_data[3 * (y * w + x) + 2];
+                val = Ref::simd_fvec4{image_data[3 * (y * w + x) + 0], image_data[3 * (y * w + x) + 1],
+                                      image_data[3 * (y * w + x) + 2], 0.0f};
             } else if (channels == 4) {
-                val[0] = image_data[4 * (y * w + x) + 0];
-                val[1] = image_data[4 * (y * w + x) + 1];
-                val[2] = image_data[4 * (y * w + x) + 2];
+                val = Ref::simd_fvec4{image_data[4 * (y * w + x) + 0], image_data[4 * (y * w + x) + 1],
+                                      image_data[4 * (y * w + x) + 2], 0.0f};
             }
 
             auto exp = Ref::simd_fvec4{std::log2(val[0]), std::log2(val[1]), std::log2(val[2]), 0.0f};
             for (int i = 0; i < 3; i++) {
-                exp[i] = std::ceil(exp[i]);
+                exp.set(i, std::ceil(exp[i]));
                 if (exp[i] < -128.0f) {
-                    exp[i] = -128.0f;
+                    exp.set(i, -128.0f);
                 } else if (exp[i] > 127.0f) {
-                    exp[i] = 127.0f;
+                    exp.set(i, 127.0f);
                 }
             }
 
@@ -244,10 +243,11 @@ std::unique_ptr<uint8_t[]> Ray::ConvertRGB32F_to_RGBE(const float image_data[], 
 
             Ref::simd_fvec4 mantissa = val / range;
             for (int i = 0; i < 3; i++) {
-                if (mantissa[i] < 0.0f)
-                    mantissa[i] = 0.0f;
-                else if (mantissa[i] > 1.0f)
-                    mantissa[i] = 1.0f;
+                if (mantissa[i] < 0.0f) {
+                    mantissa.set(i, 0.0f);
+                } else if (mantissa[i] > 1.0f) {
+                    mantissa.set(i, 1.0f);
+                }
             }
 
             const auto res = Ref::simd_fvec4{mantissa[0], mantissa[1], mantissa[2], common_exp + 128.0f};
@@ -532,9 +532,9 @@ void Ray::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
         std::unique_ptr<int32_t[]> tris;
     };
 
-    const int MaxSizeVertexCache = 32;
+    static const int MaxSizeVertexCache = 32;
 
-    auto get_vertex_score = [MaxSizeVertexCache](int32_t cache_pos, uint32_t active_tris_count) -> float {
+    auto get_vertex_score = [](int32_t cache_pos, uint32_t active_tris_count) -> float {
         const float CacheDecayPower = 1.5f;
         const float LastTriScore = 0.75f;
         const float ValenceBoostScale = 2.0f;
@@ -998,7 +998,11 @@ void SelectYCoCgDiagonal_Ref(const uint8_t block[64], uint8_t min_color[3], uint
     uint8_t c0 = min_color[1];
     uint8_t c1 = max_color[1];
 
-    c0 ^= c1 ^= mask &= c0 ^= c1; // WTF?
+    //c0 ^= c1 ^= mask &= c0 ^= c1;
+    c0 ^= c1;
+    mask &= c0;
+    c1 ^= mask;
+    c0 ^= c1;
 
     min_color[1] = c0;
     max_color[1] = c1;
@@ -1373,9 +1377,8 @@ void Ray::CompressImage_BC1(const uint8_t img_src[], const int w, const int h, u
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
-    const CpuFeatures cpu = GetCpuFeatures();
-
 #if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
+    const CpuFeatures cpu = GetCpuFeatures();
     if (cpu.sse2_supported && cpu.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * SrcChannels) {
             const int w_limited =
@@ -1437,9 +1440,8 @@ void Ray::CompressImage_BC3(const uint8_t img_src[], const int w, const int h, u
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
-    const CpuFeatures cpu = GetCpuFeatures();
-
 #if !defined(__aarch64__) && !defined(_M_ARM) && !defined(_M_ARM64)
+    const CpuFeatures cpu = GetCpuFeatures();
     if (cpu.sse2_supported && cpu.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
             for (int i = 0; i < w_aligned; i += 4) {
