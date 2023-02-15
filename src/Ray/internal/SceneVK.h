@@ -42,7 +42,7 @@ class Scene : public SceneBase {
         VkDescriptorSetLayout descr_layout = {};
         VkDescriptorSet descr_set = {};
 
-        BindlessTexData(Context *ctx) : descr_pool(ctx) {}
+        explicit BindlessTexData(Context *ctx) : descr_pool(ctx) {}
     };
 
     BindlessTexData bindless_tex_data_;
@@ -54,9 +54,10 @@ class Scene : public SceneBase {
     SparseStorage<light_t> lights_;
     Vector<uint32_t> li_indices_;
     Vector<uint32_t> visible_lights_;
+    Vector<uint32_t> blocker_lights_;
 
     environment_t env_;
-    uint32_t env_map_light_ = 0xffffffff;
+    LightHandle env_map_light_ = InvalidLightHandle;
     struct {
         int res = -1;
         SmallVector<aligned_vector<simd_fvec4>, 16> mips;
@@ -83,8 +84,8 @@ class Scene : public SceneBase {
     void PrepareBindlessTextures();
     void RebuildHWAccStructures();
 
-    uint32_t AddAtlasTexture(const tex_desc_t &t);
-    uint32_t AddBindlessTexture(const tex_desc_t &t);
+    TextureHandle AddAtlasTexture(const tex_desc_t &t);
+    TextureHandle AddBindlessTexture(const tex_desc_t &t);
 
     template <typename T, int N>
     void WriteTextureMips(const color_t<T, N> data[], const int _res[2], int mip_count, bool compress,
@@ -97,38 +98,38 @@ class Scene : public SceneBase {
     void GetEnvironment(environment_desc_t &env) override;
     void SetEnvironment(const environment_desc_t &env) override;
 
-    uint32_t AddTexture(const tex_desc_t &t) override {
+    TextureHandle AddTexture(const tex_desc_t &t) override {
         if (use_bindless_) {
             return AddBindlessTexture(t);
         } else {
             return AddAtlasTexture(t);
         }
     }
-    void RemoveTexture(uint32_t) override {}
+    void RemoveTexture(TextureHandle) override {}
 
-    uint32_t AddMaterial(const shading_node_desc_t &m) override;
-    uint32_t AddMaterial(const principled_mat_desc_t &m) override;
-    void RemoveMaterial(uint32_t) override {}
+    MaterialHandle AddMaterial(const shading_node_desc_t &m) override;
+    MaterialHandle AddMaterial(const principled_mat_desc_t &m) override;
+    void RemoveMaterial(MaterialHandle) override {}
 
-    uint32_t AddMesh(const mesh_desc_t &m) override;
-    void RemoveMesh(uint32_t) override;
+    MeshHandle AddMesh(const mesh_desc_t &m) override;
+    void RemoveMesh(MeshHandle) override;
 
-    uint32_t AddLight(const directional_light_desc_t &l) override;
-    uint32_t AddLight(const sphere_light_desc_t &l) override;
-    uint32_t AddLight(const spot_light_desc_t &l) override;
-    uint32_t AddLight(const rect_light_desc_t &l, const float *xform) override;
-    uint32_t AddLight(const disk_light_desc_t &l, const float *xform) override;
-    uint32_t AddLight(const line_light_desc_t &l, const float *xform) override;
-    void RemoveLight(uint32_t i) override;
+    LightHandle AddLight(const directional_light_desc_t &l) override;
+    LightHandle AddLight(const sphere_light_desc_t &l) override;
+    LightHandle AddLight(const spot_light_desc_t &l) override;
+    LightHandle AddLight(const rect_light_desc_t &l, const float *xform) override;
+    LightHandle AddLight(const disk_light_desc_t &l, const float *xform) override;
+    LightHandle AddLight(const line_light_desc_t &l, const float *xform) override;
+    void RemoveLight(LightHandle i) override;
 
-    uint32_t AddMeshInstance(uint32_t m_index, const float *xform) override;
-    void SetMeshInstanceTransform(uint32_t mi_index, const float *xform) override;
-    void RemoveMeshInstance(uint32_t) override;
+    MeshInstanceHandle AddMeshInstance(MeshHandle mesh, const float *xform) override;
+    void SetMeshInstanceTransform(MeshInstanceHandle mi_handle, const float *xform) override;
+    void RemoveMeshInstance(MeshInstanceHandle) override;
 
     void Finalize() override;
 
-    uint32_t triangle_count() override { return (uint32_t)0; }
-    uint32_t node_count() override { return (uint32_t)0; }
+    uint32_t triangle_count() const override { return 0; }
+    uint32_t node_count() const override { return 0; }
 };
 } // namespace Vk
 } // namespace Ray

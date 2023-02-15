@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "../SceneBase.h"
+#include "CoreRef.h"
 #include "SmallVector.h"
 #include "SparseStorage.h"
 #include "TextureStorageRef.h"
@@ -70,9 +71,10 @@ class Scene : public SceneBase {
     SparseStorage<light_t> lights_;
     std::vector<uint32_t> li_indices_;     // compacted list of all lights
     std::vector<uint32_t> visible_lights_; // compacted list of all visible lights
+    std::vector<uint32_t> blocker_lights_; // compacted list of all light blocker lights
 
     environment_t env_;
-    uint32_t env_map_light_ = 0xffffffff;
+    LightHandle env_map_light_ = InvalidLightHandle;
     struct {
         int res = -1;
         SmallVector<aligned_vector<float, 16>, 16> mips;
@@ -93,32 +95,32 @@ class Scene : public SceneBase {
     void GetEnvironment(environment_desc_t &env) override;
     void SetEnvironment(const environment_desc_t &env) override;
 
-    uint32_t AddTexture(const tex_desc_t &t) override;
-    void RemoveTexture(const uint32_t i) override { tex_storages_[i >> 24]->Free(i & 0x00ffffff); }
+    TextureHandle AddTexture(const tex_desc_t &t) override;
+    void RemoveTexture(const TextureHandle t) override { tex_storages_[t._index >> 24]->Free(t._index & 0x00ffffff); }
 
-    uint32_t AddMaterial(const shading_node_desc_t &m) override;
-    uint32_t AddMaterial(const principled_mat_desc_t &m) override;
-    void RemoveMaterial(const uint32_t i) override { materials_.erase(i); }
+    MaterialHandle AddMaterial(const shading_node_desc_t &m) override;
+    MaterialHandle AddMaterial(const principled_mat_desc_t &m) override;
+    void RemoveMaterial(const MaterialHandle m) override { materials_.erase(m._index); }
 
-    uint32_t AddMesh(const mesh_desc_t &m) override;
-    void RemoveMesh(uint32_t) override;
+    MeshHandle AddMesh(const mesh_desc_t &m) override;
+    void RemoveMesh(MeshHandle m) override;
 
-    uint32_t AddLight(const directional_light_desc_t &l) override;
-    uint32_t AddLight(const sphere_light_desc_t &l) override;
-    uint32_t AddLight(const spot_light_desc_t &l) override;
-    uint32_t AddLight(const rect_light_desc_t &l, const float *xform) override;
-    uint32_t AddLight(const disk_light_desc_t &l, const float *xform) override;
-    uint32_t AddLight(const line_light_desc_t &l, const float *xform) override;
-    void RemoveLight(uint32_t i) override;
+    LightHandle AddLight(const directional_light_desc_t &l) override;
+    LightHandle AddLight(const sphere_light_desc_t &l) override;
+    LightHandle AddLight(const spot_light_desc_t &l) override;
+    LightHandle AddLight(const rect_light_desc_t &l, const float *xform) override;
+    LightHandle AddLight(const disk_light_desc_t &l, const float *xform) override;
+    LightHandle AddLight(const line_light_desc_t &l, const float *xform) override;
+    void RemoveLight(LightHandle l) override;
 
-    uint32_t AddMeshInstance(uint32_t m_index, const float *xform) override;
-    void SetMeshInstanceTransform(uint32_t mi_index, const float *xform) override;
-    void RemoveMeshInstance(uint32_t) override;
+    MeshInstanceHandle AddMeshInstance(MeshHandle mesh, const float *xform) override;
+    void SetMeshInstanceTransform(MeshInstanceHandle mi, const float *xform) override;
+    void RemoveMeshInstance(MeshInstanceHandle) override;
 
     void Finalize() override;
 
-    uint32_t triangle_count() override { return uint32_t(tris_.size()); }
-    uint32_t node_count() override { return uint32_t(use_wide_bvh_ ? mnodes_.size() : nodes_.size()); }
+    uint32_t triangle_count() const override { return uint32_t(tris_.size()); }
+    uint32_t node_count() const override { return use_wide_bvh_ ? uint32_t(mnodes_.size()) : uint32_t(nodes_.size()); }
 };
 } // namespace Ref
 } // namespace Ray

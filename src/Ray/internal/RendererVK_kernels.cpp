@@ -253,6 +253,7 @@ void Ray::Vk::Renderer::kernel_ShadePrimaryHits(VkCommandBuffer cmd_buf, const p
 
     uniform_params.env_rotation = env.env_map_rotation;
     uniform_params.back_rotation = env.back_map_rotation;
+    uniform_params.env_mult_importance = sc_data.env->multiple_importance ? 1 : 0;
 
     if (use_bindless_) {
         assert(tex_descr_set);
@@ -321,6 +322,7 @@ void Ray::Vk::Renderer::kernel_ShadeSecondaryHits(VkCommandBuffer cmd_buf, const
 
     uniform_params.env_rotation = env.env_map_rotation;
     uniform_params.back_rotation = env.back_map_rotation;
+    uniform_params.env_mult_importance = sc_data.env->multiple_importance ? 1 : 0;
 
     if (use_bindless_) {
         assert(tex_descr_set);
@@ -360,7 +362,9 @@ void Ray::Vk::Renderer::kernel_IntersectSceneShadow(VkCommandBuffer cmd_buf, con
         {eBindTarget::SBuf, IntersectSceneShadow::VTX_INDICES_BUF_SLOT, sc_data.vtx_indices},
         {eBindTarget::SBuf, IntersectSceneShadow::SH_RAYS_BUF_SLOT, sh_rays},
         {eBindTarget::SBuf, IntersectSceneShadow::COUNTERS_BUF_SLOT, counters},
-        {eBindTarget::Image, IntersectSceneShadow::OUT_IMG_SLOT, out_img}};
+        {eBindTarget::SBuf, IntersectSceneShadow::LIGHTS_BUF_SLOT, sc_data.lights},
+        {eBindTarget::SBuf, IntersectSceneShadow::BLOCKER_LIGHTS_BUF_SLOT, sc_data.blocker_lights},
+        {eBindTarget::Image, IntersectSceneShadow::INOUT_IMG_SLOT, out_img}};
 
     if (use_hwrt_) {
         bindings.emplace_back(eBindTarget::AccStruct, IntersectSceneShadow::TLAS_SLOT, sc_data.rt_tlas);
@@ -380,6 +384,7 @@ void Ray::Vk::Renderer::kernel_IntersectSceneShadow(VkCommandBuffer cmd_buf, con
     uniform_params.img_size[1] = h_;
     uniform_params.node_index = node_index;
     uniform_params.max_transp_depth = settings.max_transp_depth;
+    uniform_params.blocker_lights_count = sc_data.blocker_lights_count;
 
     DispatchComputeIndirect(cmd_buf, pi_intersect_scene_shadow_, indir_args, sizeof(DispatchIndirectCommand), bindings,
                             &uniform_params, sizeof(uniform_params), ctx_->default_descr_alloc(), ctx_->log());
@@ -424,7 +429,7 @@ void Ray::Vk::Renderer::kernel_MixIncremental(VkCommandBuffer cmd_buf, const Tex
                     ctx_->default_descr_alloc(), ctx_->log());
 }
 
-void Ray::Vk::Renderer::kernel_Postprocess(VkCommandBuffer cmd_buf, const Texture2D &frame_buf,
+void Ray::Vk::Renderer::kernel_Postprocess(VkCommandBuffer cmd_buf, const Texture2D &frame_buf, const float exposure,
                                            const float /*inv_gamma*/, const int clamp, const int srgb,
                                            const Texture2D &out_pixels) const {
     const TransitionInfo res_transitions[] = {{&frame_buf, eResState::UnorderedAccess},
@@ -443,6 +448,7 @@ void Ray::Vk::Renderer::kernel_Postprocess(VkCommandBuffer cmd_buf, const Textur
     uniform_params.img_size[1] = h_;
     uniform_params.srgb = srgb;
     uniform_params._clamp = clamp;
+    uniform_params.exposure = std::pow(2.0f, exposure);
 
     DispatchCompute(cmd_buf, pi_postprocess_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                     ctx_->default_descr_alloc(), ctx_->log());

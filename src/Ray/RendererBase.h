@@ -13,13 +13,16 @@
 namespace Ray {
 /// Renderer flags used to choose backend
 enum eRendererType : uint32_t {
+    // Reference renderer, slightly vectorized, the easiest to modify and debug
     RendererRef = (1 << 0),
+    // SIMD renderers, heavily vectorized
     RendererSSE2 = (1 << 1),
     RendererSSE41 = (1 << 2),
     RendererAVX = (1 << 3),
     RendererAVX2 = (1 << 4),
     RendererAVX512 = (1 << 5),
     RendererNEON = (1 << 6),
+    // GPU renderer
     RendererVK = (1 << 7)
 };
 
@@ -31,7 +34,7 @@ bool RendererSupportsMultithreading(eRendererType rt);
 
 /// Renderer settings
 struct settings_t {
-    int w, h;
+    int w = 0, h = 0;
 #ifdef ENABLE_GPU_IMPL
     const char *preferred_device = nullptr;
     bool use_tex_compression = true; // temporarily GPU only
@@ -95,7 +98,7 @@ class RendererBase {
     /** @brief Clear framebuffer
         @param c color used to fill image
     */
-    virtual void Clear(const pixel_color_t &c = {0, 0, 0, 0}) = 0;
+    virtual void Clear(const pixel_color_t &c) = 0;
 
     /** @brief Create new scene
         @return pointer to new scene for specific backend
@@ -112,9 +115,11 @@ class RendererBase {
         unsigned long long time_primary_ray_gen_us;
         unsigned long long time_primary_trace_us;
         unsigned long long time_primary_shade_us;
+        unsigned long long time_primary_shadow_us;
         unsigned long long time_secondary_sort_us;
         unsigned long long time_secondary_trace_us;
         unsigned long long time_secondary_shade_us;
+        unsigned long long time_secondary_shadow_us;
     };
     virtual void GetStats(stats_t &st) = 0;
     virtual void ResetStats() = 0;

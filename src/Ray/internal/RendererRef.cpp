@@ -28,7 +28,7 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         return;
     }
 
-    const camera_t &cam = s->cams_[s->current_cam()].cam;
+    const camera_t &cam = s->cams_[s->current_cam()._index].cam;
 
     const scene_data_t sc_data = {s->env_,
                                   s->mesh_instances_.empty() ? nullptr : &s->mesh_instances_[0],
@@ -45,8 +45,9 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
                                   s->tri_materials_.empty() ? nullptr : &s->tri_materials_[0],
                                   s->materials_.empty() ? nullptr : &s->materials_[0],
                                   s->lights_.empty() ? nullptr : &s->lights_[0],
-                                  {s->li_indices_.data(), s->li_indices_.size()},
-                                  {s->visible_lights_.data(), s->visible_lights_.size()}};
+                                  {s->li_indices_},
+                                  {s->visible_lights_},
+                                  {s->blocker_lights_}};
 
     const uint32_t macro_tree_root = s->macro_nodes_root_;
 
@@ -61,26 +62,32 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
             root_max[0] = root_max[1] = root_max[2] = -MAX_DIST;
 
             if (root_node.child[0] & LEAF_NODE_BIT) {
-                ITERATE_3({ root_min[i] = root_node.bbox_min[i][0]; })
-                ITERATE_3({ root_max[i] = root_node.bbox_max[i][0]; })
+                UNROLLED_FOR(i, 3, {
+                    root_min[i] = root_node.bbox_min[i][0];
+                    root_max[i] = root_node.bbox_max[i][0];
+                })
             } else {
                 for (int j = 0; j < 8; j++) {
                     if (root_node.child[j] == 0x7fffffff) {
                         continue;
                     }
 
-                    ITERATE_3({ root_min[i] = root_node.bbox_min[i][j]; })
-                    ITERATE_3({ root_max[i] = root_node.bbox_max[i][j]; })
+                    UNROLLED_FOR(i, 3, {
+                        root_min[i] = root_node.bbox_min[i][j];
+                        root_max[i] = root_node.bbox_max[i][j];
+                    })
                 }
             }
         } else {
             const bvh_node_t &root_node = sc_data.nodes[macro_tree_root];
 
-            ITERATE_3({ root_min[i] = root_node.bbox_min[i]; })
-            ITERATE_3({ root_max[i] = root_node.bbox_max[i]; })
+            UNROLLED_FOR(i, 3, {
+                root_min[i] = root_node.bbox_min[i];
+                root_max[i] = root_node.bbox_max[i];
+            })
         }
 
-        ITERATE_3({ cell_size[i] = (root_max[i] - root_min[i]) / 255; })
+        UNROLLED_FOR(i, 3, { cell_size[i] = (root_max[i] - root_min[i]) / 255; })
     }
 
     const int w = final_buf_.w(), h = final_buf_.h();
@@ -160,25 +167,25 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         temp_buf_.SetPixel(x, y, col);
     }
 
+    const auto time_after_prim_shade = std::chrono::high_resolution_clock::now();
+
     for (int i = 0; i < shadow_rays_count; ++i) {
         const shadow_ray_t &sh_r = p.shadow_rays[i];
 
         const int x = (sh_r.xy >> 16) & 0x0000ffff;
         const int y = sh_r.xy & 0x0000ffff;
 
-        const simd_fvec4 rc =
+        simd_fvec4 rc =
             IntersectScene(sh_r, cam.pass_settings.max_transp_depth, sc_data, macro_tree_root, s->tex_storages_);
-        pixel_color_t col = {};
-        col.r = rc[0];
-        col.g = rc[1];
-        col.b = rc[2];
-        col.a = 0.0f;
+        rc *= IntersectAreaLights(sh_r, sc_data.lights, sc_data.blocker_lights, sc_data.transforms);
 
+        const pixel_color_t col = {rc[0], rc[1], rc[2], 0.0f};
         temp_buf_.AddPixel(x, y, col);
     }
 
-    const auto time_after_prim_shade = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::micro> secondary_sort_time{}, secondary_trace_time{}, secondary_shade_time{};
+    const auto time_after_prim_shadow = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::micro> secondary_sort_time{}, secondary_trace_time{}, secondary_shade_time{},
+        secondary_shadow_time{};
 
     p.hash_values.resize(secondary_rays_count);
     // p.head_flags.resize(secondary_rays_count);
@@ -266,30 +273,31 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
             temp_buf_.AddPixel(x, y, col);
         }
 
+        const auto time_secondary_shadow_start = std::chrono::high_resolution_clock::now();
+
         for (int i = 0; i < shadow_rays_count; ++i) {
             const shadow_ray_t &sh_r = p.shadow_rays[i];
 
             const int x = (sh_r.xy >> 16) & 0x0000ffff;
             const int y = sh_r.xy & 0x0000ffff;
 
-            const simd_fvec4 rc =
+            simd_fvec4 rc =
                 IntersectScene(sh_r, cam.pass_settings.max_transp_depth, sc_data, macro_tree_root, s->tex_storages_);
-            pixel_color_t col = {};
-            col.r = rc[0];
-            col.g = rc[1];
-            col.b = rc[2];
-            col.a = 0.0f;
+            rc *= IntersectAreaLights(sh_r, sc_data.lights, sc_data.blocker_lights, sc_data.transforms);
 
+            const pixel_color_t col = {rc[0], rc[1], rc[2], 0.0f};
             temp_buf_.AddPixel(x, y, col);
         }
 
-        const auto time_secondary_shade_end = std::chrono::high_resolution_clock::now();
+        const auto time_secondary_shadow_end = std::chrono::high_resolution_clock::now();
         secondary_sort_time +=
             std::chrono::duration<double, std::micro>{time_secondary_trace_start - time_secondary_sort_start};
         secondary_trace_time +=
             std::chrono::duration<double, std::micro>{time_secondary_shade_start - time_secondary_trace_start};
         secondary_shade_time +=
-            std::chrono::duration<double, std::micro>{time_secondary_shade_end - time_secondary_shade_start};
+            std::chrono::duration<double, std::micro>{time_secondary_shadow_start - time_secondary_shade_start};
+        secondary_shadow_time +=
+            std::chrono::duration<double, std::micro>{time_secondary_shadow_end - time_secondary_shadow_start};
     }
 
     {
@@ -303,9 +311,14 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
         stats_.time_primary_shade_us +=
             (unsigned long long)std::chrono::duration<double, std::micro>{time_after_prim_shade - time_after_prim_trace}
                 .count();
+        stats_.time_primary_shadow_us +=
+            (unsigned long long)std::chrono::duration<double, std::micro>{time_after_prim_shadow -
+                                                                          time_after_prim_shade}
+                .count();
         stats_.time_secondary_sort_us += (unsigned long long)secondary_sort_time.count();
         stats_.time_secondary_trace_us += (unsigned long long)secondary_trace_time.count();
         stats_.time_secondary_shade_us += (unsigned long long)secondary_shade_time.count();
+        stats_.time_secondary_shadow_us += (unsigned long long)secondary_shadow_time.count();
     }
 
     // factor used to compute incremental average
@@ -320,8 +333,12 @@ void Ray::Ref::Renderer::RenderScene(const SceneBase *scene, RegionContext &regi
     auto clamp_and_gamma_correct = [&cam](const pixel_color_t &p) {
         auto c = simd_fvec4{&p.r};
 
+        if (cam.exposure != 0.0f) {
+            c *= std::pow(2.0f, cam.exposure);
+        }
+
         if (cam.dtype == SRGB) {
-            ITERATE_3({
+            UNROLLED_FOR(i, 3, {
                 if (c.get<i>() < 0.0031308f) {
                     c.set<i>(12.92f * c[i]);
                 } else {

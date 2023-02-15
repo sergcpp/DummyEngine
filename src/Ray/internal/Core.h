@@ -7,8 +7,6 @@
 #include "../Types.h"
 #include "Span.h"
 
-// #define USE_RAY_DIFFERENTIALS
-
 #ifdef __GNUC__
 #define force_inline __attribute__((always_inline)) inline
 #define assume_aligned(ptr, sz) (__builtin_assume_aligned((const void *)ptr, sz))
@@ -154,8 +152,7 @@ struct material_t {
     };
     uint16_t roughness_unorm;
     uint16_t anisotropic_unorm;
-    float int_ior;
-    float ext_ior;
+    float ior;
     uint16_t sheen_unorm;
     uint16_t sheen_tint_unorm;
     uint16_t tint_unorm;
@@ -169,7 +166,7 @@ struct material_t {
     uint16_t normal_map_strength_unorm;
     uint16_t _pad;
 };
-static_assert(sizeof(material_t) == 80, "!");
+static_assert(sizeof(material_t) == 76, "!");
 
 const int LIGHT_TYPE_SPHERE = 0;
 const int LIGHT_TYPE_SPOT = 1;
@@ -230,7 +227,8 @@ struct bvh_settings_t {
     int min_primitives_in_leaf = 8;
 };
 
-template <typename T, size_t Alignment = alignof(T)> using aligned_vector = std::vector<T, aligned_allocator<T, Alignment>>;
+template <typename T, size_t Alignment = alignof(T)>
+using aligned_vector = std::vector<T, aligned_allocator<T, Alignment>>;
 
 // bit scan forward
 force_inline long GetFirstBit(long mask) {
@@ -309,9 +307,9 @@ uint32_t FlattenBVH_Recursive(const bvh_node_t *nodes, uint32_t node_index, uint
 bool NaiivePluckerTest(const float p[9], const float o[3], const float d[3]);
 
 void ConstructCamera(eCamType type, eFilterType filter, eDeviceType dtype, const float origin[3], const float fwd[3],
-                     const float up[3], const float shift[2], float fov, float sensor_height, float gamma,
-                     float focus_distance, float fstop, float lens_rotation, float lens_ratio, int lens_blades,
-                     float clip_start, float clip_end, camera_t *cam);
+                     const float up[3], const float shift[2], float fov, float sensor_height, float exposure,
+                     float gamma, float focus_distance, float fstop, float lens_rotation, float lens_ratio,
+                     int lens_blades, float clip_start, float clip_end, camera_t *cam);
 
 // Applies 4x4 matrix matrix transform to bounding box
 void TransformBoundingBox(const float bbox_min[3], const float bbox_max[3], const float *xform, float out_bbox_min[3],
@@ -386,7 +384,10 @@ struct environment_t {
 
 force_inline float to_norm_float(uint8_t v) {
     uint32_t val = 0x3f800000 + v * 0x8080 + (v + 1) / 2;
-    union { uint32_t i; float f; } ret = {val};
+    union {
+        uint32_t i;
+        float f;
+    } ret = {val};
     return ret.f - 1.0f;
 }
 
@@ -454,6 +455,7 @@ struct scene_data_t {
     const light_t *lights;
     Span<const uint32_t> li_indices;
     Span<const uint32_t> visible_lights;
+    Span<const uint32_t> blocker_lights;
 };
 
 } // namespace Ray

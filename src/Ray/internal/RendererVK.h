@@ -34,6 +34,8 @@ struct scene_data_t {
     const int li_count;
     const Buffer &visible_lights;
     const int visible_lights_count;
+    const Buffer &blocker_lights;
+    const int blocker_lights_count;
     const AccStructure &rt_tlas;
     const Texture2D &env_qtree;
     int env_qtree_levels;
@@ -71,11 +73,21 @@ class Renderer : public RendererBase {
 
     struct {
         int clamp, srgb;
-        float gamma;
+        float exposure, gamma;
     } postprocess_params_ = {};
 
     const pixel_color_t *frame_pixels_ = nullptr;
     std::vector<shl1_data_t> sh_data_host_;
+
+    struct {
+        int primary_ray_gen[2];
+        int primary_trace[2];
+        int primary_shade[2];
+        int primary_shadow[2];
+        SmallVector<int, MAX_BOUNCES * 2> secondary_trace;
+        SmallVector<int, MAX_BOUNCES * 2> secondary_shade;
+        SmallVector<int, MAX_BOUNCES * 2> secondary_shadow;
+    } timestamps_[MaxFramesInFlight] = {};
 
     stats_t stats_ = {0};
 
@@ -110,8 +122,8 @@ class Renderer : public RendererBase {
     void kernel_PrepareIndirArgs(VkCommandBuffer cmd_buf, const Buffer &inout_counters, const Buffer &out_indir_args);
     void kernel_MixIncremental(VkCommandBuffer cmd_buf, const Texture2D &fbuf1, const Texture2D &fbuf2, float k,
                                const Texture2D &out_img);
-    void kernel_Postprocess(VkCommandBuffer cmd_buf, const Texture2D &frame_buf, float inv_gamma, int clamp, int srgb,
-                            const Texture2D &out_pixels) const;
+    void kernel_Postprocess(VkCommandBuffer cmd_buf, const Texture2D &frame_buf, float exposure, float inv_gamma,
+                            int clamp, int srgb, const Texture2D &out_pixels) const;
     void kernel_DebugRT(VkCommandBuffer cmd_buf, const scene_data_t &sc_data, uint32_t node_index, const Buffer &rays,
                         const Texture2D &out_pixels);
 

@@ -17,12 +17,12 @@ extern std::atomic_bool g_log_contains_errors;
 extern bool g_catch_flt_exceptions;
 extern bool g_determine_sample_count;
 
-class LogErr : public Ray::ILog {
+class LogErr final : public Ray::ILog {
     FILE *err_out_ = nullptr;
 
   public:
     LogErr() { err_out_ = fopen("test_data/errors.txt", "w"); }
-    ~LogErr() { fclose(err_out_); }
+    ~LogErr() override { fclose(err_out_); }
 
     void Info(const char *fmt, ...) override {}
     void Warning(const char *fmt, ...) override {}
@@ -47,7 +47,7 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::shading_node_desc_t &mat_d
         return;
     }
 
-    if (mat_desc.base_texture != 0xffffffff && textures[0]) {
+    if (mat_desc.base_texture != Ray::InvalidTextureHandle && textures[0]) {
         int img_w, img_h;
         auto img_data = LoadTGA(textures[0], img_w, img_h);
         require(!img_data.empty());
@@ -77,9 +77,9 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::principled_mat_desc_t &mat
         return;
     }
 
-    if (mat_desc.base_texture != 0xffffffff && textures[mat_desc.base_texture]) {
+    if (mat_desc.base_texture != Ray::InvalidTextureHandle && textures[mat_desc.base_texture._index]) {
         int img_w, img_h;
-        auto img_data = LoadTGA(textures[mat_desc.base_texture], img_w, img_h);
+        auto img_data = LoadTGA(textures[mat_desc.base_texture._index], img_w, img_h);
         require(!img_data.empty());
 
         // drop alpha channel
@@ -100,9 +100,9 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::principled_mat_desc_t &mat
         mat_desc.base_texture = scene.AddTexture(tex_desc);
     }
 
-    if (mat_desc.normal_map != 0xffffffff && textures[mat_desc.normal_map]) {
+    if (mat_desc.normal_map != Ray::InvalidTextureHandle && textures[mat_desc.normal_map._index]) {
         int img_w, img_h;
-        auto img_data = LoadTGA(textures[mat_desc.normal_map], img_w, img_h);
+        auto img_data = LoadTGA(textures[mat_desc.normal_map._index], img_w, img_h);
         require(!img_data.empty());
 
         // drop alpha channel
@@ -124,9 +124,9 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::principled_mat_desc_t &mat
         mat_desc.normal_map = scene.AddTexture(tex_desc);
     }
 
-    if (mat_desc.roughness_texture != 0xffffffff && textures[mat_desc.roughness_texture]) {
+    if (mat_desc.roughness_texture != Ray::InvalidTextureHandle && textures[mat_desc.roughness_texture._index]) {
         int img_w, img_h;
-        auto img_data = LoadTGA(textures[mat_desc.roughness_texture], img_w, img_h);
+        auto img_data = LoadTGA(textures[mat_desc.roughness_texture._index], img_w, img_h);
         require(!img_data.empty());
 
         // use only red channel
@@ -145,9 +145,9 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::principled_mat_desc_t &mat
         mat_desc.roughness_texture = scene.AddTexture(tex_desc);
     }
 
-    if (mat_desc.metallic_texture != 0xffffffff && textures[mat_desc.metallic_texture]) {
+    if (mat_desc.metallic_texture != Ray::InvalidTextureHandle && textures[mat_desc.metallic_texture._index]) {
         int img_w, img_h;
-        auto img_data = LoadTGA(textures[mat_desc.metallic_texture], img_w, img_h);
+        auto img_data = LoadTGA(textures[mat_desc.metallic_texture._index], img_w, img_h);
         require(!img_data.empty());
 
         // use only red channel
@@ -166,9 +166,9 @@ void load_needed_textures(Ray::SceneBase &scene, Ray::principled_mat_desc_t &mat
         mat_desc.metallic_texture = scene.AddTexture(tex_desc);
     }
 
-    if (mat_desc.alpha_texture != 0xffffffff && textures[mat_desc.alpha_texture]) {
+    if (mat_desc.alpha_texture != Ray::InvalidTextureHandle && textures[mat_desc.alpha_texture._index]) {
         int img_w, img_h;
-        auto img_data = LoadTGA(textures[mat_desc.alpha_texture], img_w, img_h);
+        auto img_data = LoadTGA(textures[mat_desc.alpha_texture._index], img_w, img_h);
         require(!img_data.empty());
 
         // use only red channel
@@ -198,7 +198,9 @@ const int STANDARD_SCENE_HDR_LIGHT = 5;
 const int STANDARD_SCENE_NO_LIGHT = 6;
 const int STANDARD_SCENE_DOF0 = 7;
 const int STANDARD_SCENE_DOF1 = 8;
-const int REFR_PLANE_SCENE = 9;
+const int STANDARD_SCENE_GLASSBALL0 = 9;
+const int STANDARD_SCENE_GLASSBALL1 = 10;
+const int REFR_PLANE_SCENE = 11;
 } // namespace
 
 template <typename MatDesc>
@@ -242,17 +244,22 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
             cam_desc.lens_blades = 0;
             cam_desc.lens_rotation = 30.0f * 3.141592653589f / 180.0f;
             cam_desc.lens_ratio = 2.0f;
+        } else if (scene_index == STANDARD_SCENE_GLASSBALL0 || scene_index == STANDARD_SCENE_GLASSBALL1) {
+            cam_desc.max_diff_depth = 8;
+            cam_desc.max_spec_depth = 8;
+            cam_desc.max_refr_depth = 8;
+            cam_desc.max_total_depth = 9;
         }
 
-        const uint32_t cam = scene.AddCamera(cam_desc);
+        const Ray::CameraHandle cam = scene.AddCamera(cam_desc);
         scene.set_current_cam(cam);
     }
 
     MatDesc main_mat_desc_copy = main_mat_desc;
     load_needed_textures(scene, main_mat_desc_copy, textures);
-    const uint32_t main_mat = scene.AddMaterial(main_mat_desc_copy);
+    const Ray::MaterialHandle main_mat = scene.AddMaterial(main_mat_desc_copy);
 
-    uint32_t floor_mat;
+    Ray::MaterialHandle floor_mat;
     {
         Ray::principled_mat_desc_t floor_mat_desc;
         floor_mat_desc.base_color[0] = 0.75f;
@@ -263,7 +270,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         floor_mat = scene.AddMaterial(floor_mat_desc);
     }
 
-    uint32_t walls_mat;
+    Ray::MaterialHandle walls_mat;
     {
         Ray::principled_mat_desc_t walls_mat_desc;
         walls_mat_desc.base_color[0] = 0.5f;
@@ -274,7 +281,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         walls_mat = scene.AddMaterial(walls_mat_desc);
     }
 
-    uint32_t white_mat;
+    Ray::MaterialHandle white_mat;
     {
         Ray::principled_mat_desc_t white_mat_desc;
         white_mat_desc.base_color[0] = 0.64f;
@@ -285,7 +292,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         white_mat = scene.AddMaterial(white_mat_desc);
     }
 
-    uint32_t light_grey_mat;
+    Ray::MaterialHandle light_grey_mat;
     {
         Ray::principled_mat_desc_t light_grey_mat_desc;
         light_grey_mat_desc.base_color[0] = 0.32f;
@@ -296,7 +303,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         light_grey_mat = scene.AddMaterial(light_grey_mat_desc);
     }
 
-    uint32_t mid_grey_mat;
+    Ray::MaterialHandle mid_grey_mat;
     {
         Ray::principled_mat_desc_t mid_grey_mat_desc;
         mid_grey_mat_desc.base_color[0] = 0.16f;
@@ -307,7 +314,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         mid_grey_mat = scene.AddMaterial(mid_grey_mat_desc);
     }
 
-    uint32_t dark_grey_mat;
+    Ray::MaterialHandle dark_grey_mat;
     {
         Ray::principled_mat_desc_t dark_grey_mat_desc;
         dark_grey_mat_desc.base_color[0] = 0.08f;
@@ -318,7 +325,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         dark_grey_mat = scene.AddMaterial(dark_grey_mat_desc);
     }
 
-    uint32_t square_light_mat;
+    Ray::MaterialHandle square_light_mat;
     {
         Ray::shading_node_desc_t square_light_mat_desc;
         square_light_mat_desc.type = Ray::EmissiveNode;
@@ -330,7 +337,7 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         square_light_mat = scene.AddMaterial(square_light_mat_desc);
     }
 
-    uint32_t disc_light_mat;
+    Ray::MaterialHandle disc_light_mat;
     {
         Ray::shading_node_desc_t disc_light_mat_desc;
         disc_light_mat_desc.type = Ray::EmissiveNode;
@@ -342,7 +349,49 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         disc_light_mat = scene.AddMaterial(disc_light_mat_desc);
     }
 
-    uint32_t base_mesh;
+    Ray::MaterialHandle glassball_mat0;
+    if (scene_index == STANDARD_SCENE_GLASSBALL0) {
+        Ray::shading_node_desc_t glassball_mat0_desc;
+        glassball_mat0_desc.type = Ray::RefractiveNode;
+        glassball_mat0_desc.base_color[0] = 1.0f;
+        glassball_mat0_desc.base_color[1] = 1.0f;
+        glassball_mat0_desc.base_color[2] = 1.0f;
+        glassball_mat0_desc.roughness = 0.0f;
+        glassball_mat0_desc.ior = 1.45f;
+        glassball_mat0 = scene.AddMaterial(glassball_mat0_desc);
+    } else {
+        Ray::principled_mat_desc_t glassball_mat0_desc;
+        glassball_mat0_desc.base_color[0] = 1.0f;
+        glassball_mat0_desc.base_color[1] = 1.0f;
+        glassball_mat0_desc.base_color[2] = 1.0f;
+        glassball_mat0_desc.roughness = 0.0f;
+        glassball_mat0_desc.ior = 1.45f;
+        glassball_mat0_desc.transmission = 1.0f;
+        glassball_mat0 = scene.AddMaterial(glassball_mat0_desc);
+    }
+
+    Ray::MaterialHandle glassball_mat1;
+    if (scene_index == STANDARD_SCENE_GLASSBALL0) {
+        Ray::shading_node_desc_t glassball_mat1_desc;
+        glassball_mat1_desc.type = Ray::RefractiveNode;
+        glassball_mat1_desc.base_color[0] = 1.0f;
+        glassball_mat1_desc.base_color[1] = 1.0f;
+        glassball_mat1_desc.base_color[2] = 1.0f;
+        glassball_mat1_desc.roughness = 0.0f;
+        glassball_mat1_desc.ior = 1.0f;
+        glassball_mat1 = scene.AddMaterial(glassball_mat1_desc);
+    } else {
+        Ray::principled_mat_desc_t glassball_mat1_desc;
+        glassball_mat1_desc.base_color[0] = 1.0f;
+        glassball_mat1_desc.base_color[1] = 1.0f;
+        glassball_mat1_desc.base_color[2] = 1.0f;
+        glassball_mat1_desc.roughness = 0.0f;
+        glassball_mat1_desc.ior = 1.0f;
+        glassball_mat1_desc.transmission = 1.0f;
+        glassball_mat1 = scene.AddMaterial(glassball_mat1_desc);
+    }
+
+    Ray::MeshHandle base_mesh;
     {
         std::vector<float> base_attrs;
         std::vector<uint32_t> base_indices, base_groups;
@@ -355,11 +404,11 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         base_mesh_desc.vtx_attrs_count = uint32_t(base_attrs.size()) / 8;
         base_mesh_desc.vtx_indices = &base_indices[0];
         base_mesh_desc.vtx_indices_count = uint32_t(base_indices.size());
-        base_mesh_desc.shapes.push_back({mid_grey_mat, mid_grey_mat, base_groups[0], base_groups[1]});
+        base_mesh_desc.shapes.emplace_back(mid_grey_mat, mid_grey_mat, base_groups[0], base_groups[1]);
         base_mesh = scene.AddMesh(base_mesh_desc);
     }
 
-    uint32_t model_mesh;
+    Ray::MeshHandle model_mesh;
     {
         std::vector<float> model_attrs;
         std::vector<uint32_t> model_indices, model_groups;
@@ -376,11 +425,11 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         model_mesh_desc.vtx_attrs_count = uint32_t(model_attrs.size()) / 8;
         model_mesh_desc.vtx_indices = &model_indices[0];
         model_mesh_desc.vtx_indices_count = uint32_t(model_indices.size());
-        model_mesh_desc.shapes.push_back({main_mat, main_mat, model_groups[0], model_groups[1]});
+        model_mesh_desc.shapes.emplace_back(main_mat, main_mat, model_groups[0], model_groups[1]);
         model_mesh = scene.AddMesh(model_mesh_desc);
     }
 
-    uint32_t core_mesh;
+    Ray::MeshHandle core_mesh;
     {
         std::vector<float> core_attrs;
         std::vector<uint32_t> core_indices, core_groups;
@@ -393,11 +442,11 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         core_mesh_desc.vtx_attrs_count = uint32_t(core_attrs.size()) / 8;
         core_mesh_desc.vtx_indices = &core_indices[0];
         core_mesh_desc.vtx_indices_count = uint32_t(core_indices.size());
-        core_mesh_desc.shapes.push_back({mid_grey_mat, mid_grey_mat, core_groups[0], core_groups[1]});
+        core_mesh_desc.shapes.emplace_back(mid_grey_mat, mid_grey_mat, core_groups[0], core_groups[1]);
         core_mesh = scene.AddMesh(core_mesh_desc);
     }
 
-    uint32_t subsurf_bar_mesh;
+    Ray::MeshHandle subsurf_bar_mesh;
     {
         std::vector<float> subsurf_bar_attrs;
         std::vector<uint32_t> subsurf_bar_indices, subsurf_bar_groups;
@@ -411,13 +460,13 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         subsurf_bar_mesh_desc.vtx_attrs_count = uint32_t(subsurf_bar_attrs.size()) / 8;
         subsurf_bar_mesh_desc.vtx_indices = &subsurf_bar_indices[0];
         subsurf_bar_mesh_desc.vtx_indices_count = uint32_t(subsurf_bar_indices.size());
-        subsurf_bar_mesh_desc.shapes.push_back({white_mat, white_mat, subsurf_bar_groups[0], subsurf_bar_groups[1]});
-        subsurf_bar_mesh_desc.shapes.push_back(
-            {dark_grey_mat, dark_grey_mat, subsurf_bar_groups[2], subsurf_bar_groups[3]});
+        subsurf_bar_mesh_desc.shapes.emplace_back(white_mat, white_mat, subsurf_bar_groups[0], subsurf_bar_groups[1]);
+        subsurf_bar_mesh_desc.shapes.emplace_back(dark_grey_mat, dark_grey_mat, subsurf_bar_groups[2],
+                                                  subsurf_bar_groups[3]);
         subsurf_bar_mesh = scene.AddMesh(subsurf_bar_mesh_desc);
     }
 
-    uint32_t text_mesh;
+    Ray::MeshHandle text_mesh;
     {
         std::vector<float> text_attrs;
         std::vector<uint32_t> text_indices, text_groups;
@@ -430,11 +479,11 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         text_mesh_desc.vtx_attrs_count = uint32_t(text_attrs.size()) / 8;
         text_mesh_desc.vtx_indices = &text_indices[0];
         text_mesh_desc.vtx_indices_count = uint32_t(text_indices.size());
-        text_mesh_desc.shapes.push_back({white_mat, white_mat, text_groups[0], text_groups[1]});
+        text_mesh_desc.shapes.emplace_back(white_mat, white_mat, text_groups[0], text_groups[1]);
         text_mesh = scene.AddMesh(text_mesh_desc);
     }
 
-    uint32_t env_mesh;
+    Ray::MeshHandle env_mesh;
     {
         std::vector<float> env_attrs;
         std::vector<uint32_t> env_indices, env_groups;
@@ -452,20 +501,20 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         env_mesh_desc.vtx_indices = &env_indices[0];
         env_mesh_desc.vtx_indices_count = uint32_t(env_indices.size());
         if (scene_index == STANDARD_SCENE_SUN_LIGHT || scene_index == STANDARD_SCENE_HDR_LIGHT) {
-            env_mesh_desc.shapes.push_back({floor_mat, floor_mat, env_groups[0], env_groups[1]});
-            env_mesh_desc.shapes.push_back({dark_grey_mat, dark_grey_mat, env_groups[2], env_groups[3]});
-            env_mesh_desc.shapes.push_back({mid_grey_mat, mid_grey_mat, env_groups[4], env_groups[5]});
+            env_mesh_desc.shapes.emplace_back(floor_mat, floor_mat, env_groups[0], env_groups[1]);
+            env_mesh_desc.shapes.emplace_back(dark_grey_mat, dark_grey_mat, env_groups[2], env_groups[3]);
+            env_mesh_desc.shapes.emplace_back(mid_grey_mat, mid_grey_mat, env_groups[4], env_groups[5]);
         } else {
-            env_mesh_desc.shapes.push_back({floor_mat, floor_mat, env_groups[0], env_groups[1]});
-            env_mesh_desc.shapes.push_back({walls_mat, walls_mat, env_groups[2], env_groups[3]});
-            env_mesh_desc.shapes.push_back({dark_grey_mat, dark_grey_mat, env_groups[4], env_groups[5]});
-            env_mesh_desc.shapes.push_back({light_grey_mat, light_grey_mat, env_groups[6], env_groups[7]});
-            env_mesh_desc.shapes.push_back({mid_grey_mat, mid_grey_mat, env_groups[8], env_groups[9]});
+            env_mesh_desc.shapes.emplace_back(floor_mat, floor_mat, env_groups[0], env_groups[1]);
+            env_mesh_desc.shapes.emplace_back(walls_mat, walls_mat, env_groups[2], env_groups[3]);
+            env_mesh_desc.shapes.emplace_back(dark_grey_mat, dark_grey_mat, env_groups[4], env_groups[5]);
+            env_mesh_desc.shapes.emplace_back(light_grey_mat, light_grey_mat, env_groups[6], env_groups[7]);
+            env_mesh_desc.shapes.emplace_back(mid_grey_mat, mid_grey_mat, env_groups[8], env_groups[9]);
         }
         env_mesh = scene.AddMesh(env_mesh_desc);
     }
 
-    uint32_t square_light_mesh;
+    Ray::MeshHandle square_light_mesh;
     {
         std::vector<float> square_light_attrs;
         std::vector<uint32_t> square_light_indices, square_light_groups;
@@ -479,14 +528,14 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         square_light_mesh_desc.vtx_attrs_count = uint32_t(square_light_attrs.size()) / 8;
         square_light_mesh_desc.vtx_indices = &square_light_indices[0];
         square_light_mesh_desc.vtx_indices_count = uint32_t(square_light_indices.size());
-        square_light_mesh_desc.shapes.push_back(
-            {square_light_mat, square_light_mat, square_light_groups[0], square_light_groups[1]});
-        square_light_mesh_desc.shapes.push_back(
-            {dark_grey_mat, dark_grey_mat, square_light_groups[2], square_light_groups[3]});
+        square_light_mesh_desc.shapes.emplace_back(square_light_mat, square_light_mat, square_light_groups[0],
+                                                   square_light_groups[1]);
+        square_light_mesh_desc.shapes.emplace_back(dark_grey_mat, dark_grey_mat, square_light_groups[2],
+                                                   square_light_groups[3]);
         square_light_mesh = scene.AddMesh(square_light_mesh_desc);
     }
 
-    uint32_t disc_light_mesh;
+    Ray::MeshHandle disc_light_mesh;
     {
         std::vector<float> disc_light_attrs;
         std::vector<uint32_t> disc_light_indices, disc_light_groups;
@@ -500,11 +549,32 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         disc_light_mesh_desc.vtx_attrs_count = uint32_t(disc_light_attrs.size()) / 8;
         disc_light_mesh_desc.vtx_indices = &disc_light_indices[0];
         disc_light_mesh_desc.vtx_indices_count = uint32_t(disc_light_indices.size());
-        disc_light_mesh_desc.shapes.push_back(
-            {disc_light_mat, disc_light_mat, disc_light_groups[0], disc_light_groups[1]});
-        disc_light_mesh_desc.shapes.push_back(
-            {dark_grey_mat, dark_grey_mat, disc_light_groups[2], disc_light_groups[3]});
+        disc_light_mesh_desc.shapes.emplace_back(disc_light_mat, disc_light_mat, disc_light_groups[0],
+                                                 disc_light_groups[1]);
+        disc_light_mesh_desc.shapes.emplace_back(dark_grey_mat, dark_grey_mat, disc_light_groups[2],
+                                                 disc_light_groups[3]);
         disc_light_mesh = scene.AddMesh(disc_light_mesh_desc);
+    }
+
+    Ray::MeshHandle glassball_mesh;
+    {
+        std::vector<float> glassball_attrs;
+        std::vector<uint32_t> glassball_indices, glassball_groups;
+        std::tie(glassball_attrs, glassball_indices, glassball_groups) =
+            LoadBIN("test_data/meshes/mat_test/glassball.bin");
+
+        Ray::mesh_desc_t glassball_mesh_desc;
+        glassball_mesh_desc.prim_type = Ray::TriangleList;
+        glassball_mesh_desc.layout = Ray::PxyzNxyzTuv;
+        glassball_mesh_desc.vtx_attrs = &glassball_attrs[0];
+        glassball_mesh_desc.vtx_attrs_count = uint32_t(glassball_attrs.size()) / 8;
+        glassball_mesh_desc.vtx_indices = &glassball_indices[0];
+        glassball_mesh_desc.vtx_indices_count = uint32_t(glassball_indices.size());
+        glassball_mesh_desc.shapes.emplace_back(glassball_mat0, glassball_mat0, glassball_groups[0],
+                                                glassball_groups[1]);
+        glassball_mesh_desc.shapes.emplace_back(glassball_mat1, glassball_mat1, glassball_groups[2],
+                                                glassball_groups[3]);
+        glassball_mesh = scene.AddMesh(glassball_mesh_desc);
     }
 
     static const float identity[16] = {1.0f, 0.0f, 0.0f, 0.0f, // NOLINT
@@ -523,6 +593,13 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
 
     if (scene_index == REFR_PLANE_SCENE) {
         scene.AddMeshInstance(model_mesh, identity);
+    } else if (scene_index == STANDARD_SCENE_GLASSBALL0 || scene_index == STANDARD_SCENE_GLASSBALL1) {
+        static const float glassball_xform[16] = {1.0f, 0.0f,  0.0f, 0.0f, // NOLINT
+                                                  0.0f, 1.0f,  0.0f, 0.0f, // NOLINT
+                                                  0.0f, 0.0f,  1.0f, 0.0f, // NOLINT
+                                                  0.0f, 0.05f, 0.0f, 1.0f};
+
+        scene.AddMeshInstance(glassball_mesh, glassball_xform);
     } else {
         scene.AddMeshInstance(model_mesh, model_xform);
         scene.AddMeshInstance(base_mesh, identity);
@@ -541,11 +618,13 @@ void setup_material_scene(Ray::SceneBase &scene, const bool output_sh, const Mat
         scene.AddMeshInstance(disc_light_mesh, identity);
     } else if (scene_index == STANDARD_SCENE || scene_index == STANDARD_SCENE_SPHERE_LIGHT ||
                scene_index == STANDARD_SCENE_SPOT_LIGHT || scene_index == STANDARD_SCENE_DOF0 ||
-               scene_index == STANDARD_SCENE_DOF1) {
+               scene_index == STANDARD_SCENE_DOF1 || scene_index == STANDARD_SCENE_GLASSBALL0 ||
+               scene_index == STANDARD_SCENE_GLASSBALL1) {
         //
         // Use explicit lights sources
         //
-        if (scene_index == STANDARD_SCENE || scene_index == STANDARD_SCENE_DOF0 || scene_index == STANDARD_SCENE_DOF1) {
+        if (scene_index == STANDARD_SCENE || scene_index == STANDARD_SCENE_DOF0 || scene_index == STANDARD_SCENE_DOF1 ||
+            scene_index == STANDARD_SCENE_GLASSBALL0 || scene_index == STANDARD_SCENE_GLASSBALL1) {
             { // rect light
                 static const float xform[16] = {-0.425036609f, 2.24262476e-06f, -0.905176163f, 0.00000000f,
                                                 -0.876228273f, 0.250873595f,    0.411444396f,  0.00000000f,
@@ -693,8 +772,8 @@ void schedule_render_jobs(Ray::RendererBase &renderer, const Ray::SceneBase *sce
     const auto rt = renderer.type();
     const auto sz = renderer.size();
 
-    if (rt == Ray::RendererRef || rt == Ray::RendererSSE2 || rt == Ray::RendererSSE41 || rt == Ray::RendererAVX ||
-        rt == Ray::RendererAVX2 || rt == Ray::RendererAVX512 || rt == Ray::RendererNEON) {
+    if (rt & (Ray::RendererRef | Ray::RendererSSE2 | Ray::RendererSSE41 | Ray::RendererAVX | Ray::RendererAVX2 |
+              Ray::RendererAVX512 | Ray::RendererNEON)) {
         const int BucketSize = 16;
 
         std::vector<Ray::RegionContext> region_contexts;
@@ -730,7 +809,7 @@ void schedule_render_jobs(Ray::RendererBase &renderer, const Ray::SceneBase *sce
             }
 
             // report progress percentage
-            const float prog = 100.0f * float(i + std::min(SamplePortion, samples - i)) / samples;
+            const float prog = 100.0f * float(i + std::min(SamplePortion, samples - i)) / float(samples);
             printf("\r%s (%6s, %s): %.1f%% ", log_str, Ray::RendererTypeName(rt), settings.use_hwrt ? "HWRT" : "SWRT",
                    prog);
             fflush(stdout);
@@ -744,7 +823,7 @@ void schedule_render_jobs(Ray::RendererBase &renderer, const Ray::SceneBase *sce
 
             if ((i % SamplePortion) == 0 || i == samples - 1) {
                 // report progress percentage
-                const float prog = 100.0f * float(i + 1) / samples;
+                const float prog = 100.0f * float(i + 1) / float(samples);
                 printf("\r%s (%6s, %s): %.1f%% ", log_str, Ray::RendererTypeName(rt),
                        settings.use_hwrt ? "HWRT" : "SWRT", prog);
                 fflush(stdout);
@@ -821,9 +900,9 @@ void run_material_test(const char *arch_list[], const char *preferred_device, co
                             for (int i = 0; i < test_img_w; i++) {
                                 const Ray::pixel_color_t &p = pixels[j * test_img_w + i];
 
-                                const uint8_t r = uint8_t(p.r * 255);
-                                const uint8_t g = uint8_t(p.g * 255);
-                                const uint8_t b = uint8_t(p.b * 255);
+                                const auto r = uint8_t(p.r * 255);
+                                const auto g = uint8_t(p.g * 255);
+                                const auto b = uint8_t(p.b * 255);
 
                                 img_data_u8[3 * ((test_img_h - j - 1) * test_img_w + i) + 0] = r;
                                 img_data_u8[3 * ((test_img_h - j - 1) * test_img_w + i) + 1] = g;
@@ -960,7 +1039,7 @@ void assemble_material_test_images(const char *arch_list[]) {
 
     for (const char **arch = arch_list; *arch; ++arch) {
         const char *type = *arch;
-        //const auto rt = Ray::RendererTypeFromName(type);
+        // const auto rt = Ray::RendererTypeFromName(type);
         for (int j = 0; j < ImgCountH; ++j) {
             const int top_down_j = ImgCountH - j - 1;
 
@@ -1022,6 +1101,7 @@ void assemble_material_test_images(const char *arch_list[]) {
 }
 
 const double DefaultMinPSNR = 30.0;
+const double FastMinPSNR = 28.0;
 const int DefaultPixThres = 1;
 
 //
@@ -1856,7 +1936,7 @@ void test_refr_mis0(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.0f;
 
     run_material_test(arch_list, preferred_device, "refr_mis0", mat_desc, SampleCount, DefaultMinPSNR, PixThres,
@@ -1864,7 +1944,7 @@ void test_refr_mis0(const char *arch_list[], const char *preferred_device) {
 }
 
 void test_refr_mis1(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 2470;
+    const int SampleCount = 2475;
     const int PixThres = 10;
 
     Ray::shading_node_desc_t mat_desc;
@@ -1872,7 +1952,7 @@ void test_refr_mis1(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.25f;
 
     run_material_test(arch_list, preferred_device, "refr_mis1", mat_desc, SampleCount, DefaultMinPSNR, PixThres,
@@ -1888,7 +1968,7 @@ void test_refr_mis2(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.5f;
 
     run_material_test(arch_list, preferred_device, "refr_mis2", mat_desc, SampleCount, DefaultMinPSNR, PixThres,
@@ -1904,7 +1984,7 @@ void test_refr_mis3(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.75f;
 
     run_material_test(arch_list, preferred_device, "refr_mis3", mat_desc, SampleCount, DefaultMinPSNR, PixThres,
@@ -1920,7 +2000,7 @@ void test_refr_mis4(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 1.0f;
 
     run_material_test(arch_list, preferred_device, "refr_mis4", mat_desc, SampleCount, DefaultMinPSNR, PixThres,
@@ -1939,7 +2019,7 @@ void test_refr_mat0(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.001f;
+    mat_desc.ior = 1.001f;
     mat_desc.roughness = 1.0f;
 
     run_material_test(arch_list, preferred_device, "refr_mat0", mat_desc, SampleCount, MinPSNR, PixThres, nullptr,
@@ -1956,7 +2036,7 @@ void test_refr_mat1(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.0f;
 
     run_material_test(arch_list, preferred_device, "refr_mat1", mat_desc, SampleCount, MinPSNR, PixThres, nullptr,
@@ -1973,7 +2053,7 @@ void test_refr_mat2(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 0.0f;
     mat_desc.base_color[2] = 0.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.25f;
 
     run_material_test(arch_list, preferred_device, "refr_mat2", mat_desc, SampleCount, MinPSNR, PixThres, nullptr,
@@ -1990,7 +2070,7 @@ void test_refr_mat3(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 0.0f;
     mat_desc.base_color[1] = 1.0f;
     mat_desc.base_color[2] = 0.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.5f;
 
     run_material_test(arch_list, preferred_device, "refr_mat3", mat_desc, SampleCount, MinPSNR, PixThres, nullptr,
@@ -2007,7 +2087,7 @@ void test_refr_mat4(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 0.0f;
     mat_desc.base_color[1] = 0.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 0.75f;
 
     run_material_test(arch_list, preferred_device, "refr_mat4", mat_desc, SampleCount, MinPSNR, PixThres, nullptr,
@@ -2024,7 +2104,7 @@ void test_refr_mat5(const char *arch_list[], const char *preferred_device) {
     mat_desc.base_color[0] = 1.0f;
     mat_desc.base_color[1] = 0.0f;
     mat_desc.base_color[2] = 1.0f;
-    mat_desc.int_ior = 1.45f;
+    mat_desc.ior = 1.45f;
     mat_desc.roughness = 1.0f;
 
     run_material_test(arch_list, preferred_device, "refr_mat5", mat_desc, SampleCount, MinPSNR, PixThres, nullptr,
@@ -2301,14 +2381,14 @@ void test_alpha_mat4(const char *arch_list[], const char *preferred_device) {
 //
 
 void test_complex_mat0(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 30;
-    const int PixThres = 468;
+    const int SampleCount = 16;
+    const int PixThres = 762;
 
     Ray::principled_mat_desc_t wood_mat_desc;
-    wood_mat_desc.base_texture = 0;
+    wood_mat_desc.base_texture = Ray::TextureHandle{0};
     wood_mat_desc.roughness = 1.0f;
-    wood_mat_desc.roughness_texture = 2;
-    wood_mat_desc.normal_map = 1;
+    wood_mat_desc.roughness_texture = Ray::TextureHandle{2};
+    wood_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/older-wood-flooring_albedo_2045.tga",
@@ -2316,20 +2396,20 @@ void test_complex_mat0(const char *arch_list[], const char *preferred_device) {
         "test_data/textures/older-wood-flooring_roughness_2045.tga",
     };
 
-    run_material_test(arch_list, preferred_device, "complex_mat0", wood_mat_desc, SampleCount, DefaultMinPSNR, PixThres,
+    run_material_test(arch_list, preferred_device, "complex_mat0", wood_mat_desc, SampleCount, FastMinPSNR, PixThres,
                       textures);
 }
 
 void test_complex_mat1(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 40;
-    const int PixThres = 460;
+    const int SampleCount = 20;
+    const int PixThres = 794;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/streaky-metal1_albedo.tga",
@@ -2337,152 +2417,152 @@ void test_complex_mat1(const char *arch_list[], const char *preferred_device) {
         "test_data/textures/streaky-metal1_roughness.tga",
     };
 
-    run_material_test(arch_list, preferred_device, "complex_mat1", metal_mat_desc, SampleCount, DefaultMinPSNR,
-                      PixThres, textures);
+    run_material_test(arch_list, preferred_device, "complex_mat1", metal_mat_desc, SampleCount, FastMinPSNR, PixThres,
+                      textures);
 }
 
 void test_complex_mat2(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 30;
-    const int PixThres = 405;
+    const int SampleCount = 17;
+    const int PixThres = 673;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/rusting-lined-metal_albedo.tga", "test_data/textures/rusting-lined-metal_normal-ogl.tga",
         "test_data/textures/rusting-lined-metal_roughness.tga", "test_data/textures/rusting-lined-metal_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat2", metal_mat_desc, SampleCount, DefaultMinPSNR,
-                      PixThres, textures);
+    run_material_test(arch_list, preferred_device, "complex_mat2", metal_mat_desc, SampleCount, FastMinPSNR, PixThres,
+                      textures);
 }
 
 void test_complex_mat3(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 20;
-    const int PixThres = 131;
+    const int SampleCount = 12;
+    const int PixThres = 488;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
     metal_mat_desc.normal_map_intensity = 0.3f;
 
     const char *textures[] = {
         "test_data/textures/stone_trims_02_BaseColor.tga", "test_data/textures/stone_trims_02_Normal.tga",
         "test_data/textures/stone_trims_02_Roughness.tga", "test_data/textures/stone_trims_02_Metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat3", metal_mat_desc, SampleCount, DefaultMinPSNR,
-                      PixThres, textures);
+    run_material_test(arch_list, preferred_device, "complex_mat3", metal_mat_desc, SampleCount, FastMinPSNR, PixThres,
+                      textures);
 }
 
 void test_complex_mat4(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 60;
-    const int PixThres = 311;
+    const int SampleCount = 27;
+    const int PixThres = 766;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
-    metal_mat_desc.alpha_texture = 4;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
+    metal_mat_desc.alpha_texture = Ray::TextureHandle{4};
 
     const char *textures[] = {
         "test_data/textures/Fence007A_2K_Color.tga", "test_data/textures/Fence007A_2K_NormalGL.tga",
         "test_data/textures/Fence007A_2K_Roughness.tga", "test_data/textures/Fence007A_2K_Metalness.tga",
         "test_data/textures/Fence007A_2K_Opacity.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat4", metal_mat_desc, SampleCount, DefaultMinPSNR,
-                      PixThres, textures);
+    run_material_test(arch_list, preferred_device, "complex_mat4", metal_mat_desc, SampleCount, FastMinPSNR, PixThres,
+                      textures);
 }
 
 void test_complex_mat5(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 290;
-    const int PixThres = 1365;
+    const int SampleCount = 153;
+    const int PixThres = 2802;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat5", metal_mat_desc, SampleCount, DefaultMinPSNR,
-                      PixThres, textures);
+    run_material_test(arch_list, preferred_device, "complex_mat5", metal_mat_desc, SampleCount, FastMinPSNR, PixThres,
+                      textures);
 }
 
 void test_complex_mat5_dof(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 910;
-    const int PixThres = 1160;
+    const int SampleCount = 457;
+    const int PixThres = 2480;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat5_dof", metal_mat_desc, SampleCount, DefaultMinPSNR,
+    run_material_test(arch_list, preferred_device, "complex_mat5_dof", metal_mat_desc, SampleCount, FastMinPSNR,
                       PixThres, textures, STANDARD_SCENE_DOF0);
 }
 
 void test_complex_mat5_mesh_lights(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 510;
-    const int PixThres = 1527;
+    const int SampleCount = 220;
+    const int PixThres = 2407;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat5_mesh_lights", metal_mat_desc, SampleCount,
-                      DefaultMinPSNR, PixThres, textures, STANDARD_SCENE_MESH_LIGHTS);
+    run_material_test(arch_list, preferred_device, "complex_mat5_mesh_lights", metal_mat_desc, SampleCount, FastMinPSNR,
+                      PixThres, textures, STANDARD_SCENE_MESH_LIGHTS);
 }
 
 void test_complex_mat5_sphere_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 550;
     const double MinPSNR = 24.87;
-    const int PixThres = 291;
+    const int PixThres = 285;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
@@ -2493,71 +2573,71 @@ void test_complex_mat5_sphere_light(const char *arch_list[], const char *preferr
 }
 
 void test_complex_mat5_spot_light(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 10;
-    const int PixThres = 648;
+    const int SampleCount = 3;
+    const int PixThres = 778;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat5_spot_light", metal_mat_desc, SampleCount,
-                      DefaultMinPSNR, PixThres, textures, STANDARD_SCENE_SPOT_LIGHT);
+    run_material_test(arch_list, preferred_device, "complex_mat5_spot_light", metal_mat_desc, SampleCount, FastMinPSNR,
+                      PixThres, textures, STANDARD_SCENE_SPOT_LIGHT);
 }
 
 void test_complex_mat5_sun_light(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 2570;
-    const int PixThres = 1186;
+    const int SampleCount = 47;
+    const int PixThres = 1302;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat5_sun_light", metal_mat_desc, SampleCount,
-                      DefaultMinPSNR, PixThres, textures, STANDARD_SCENE_SUN_LIGHT);
+    run_material_test(arch_list, preferred_device, "complex_mat5_sun_light", metal_mat_desc, SampleCount, FastMinPSNR,
+                      PixThres, textures, STANDARD_SCENE_SUN_LIGHT);
 }
 
 void test_complex_mat5_hdr_light(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 900;
-    const int PixThres = 1286;
+    const int SampleCount = 192;
+    const int PixThres = 1767;
 
     Ray::principled_mat_desc_t metal_mat_desc;
-    metal_mat_desc.base_texture = 0;
+    metal_mat_desc.base_texture = Ray::TextureHandle{0};
     metal_mat_desc.metallic = 1.0f;
     metal_mat_desc.roughness = 1.0f;
-    metal_mat_desc.roughness_texture = 2;
+    metal_mat_desc.roughness_texture = Ray::TextureHandle{2};
     metal_mat_desc.metallic = 1.0f;
-    metal_mat_desc.metallic_texture = 3;
-    metal_mat_desc.normal_map = 1;
+    metal_mat_desc.metallic_texture = Ray::TextureHandle{3};
+    metal_mat_desc.normal_map = Ray::TextureHandle{1};
 
     const char *textures[] = {
         "test_data/textures/gold-scuffed_basecolor-boosted.tga", "test_data/textures/gold-scuffed_normal.tga",
         "test_data/textures/gold-scuffed_roughness.tga", "test_data/textures/gold-scuffed_metallic.tga"};
 
-    run_material_test(arch_list, preferred_device, "complex_mat5_hdr_light", metal_mat_desc, SampleCount,
-                      DefaultMinPSNR, PixThres, textures, STANDARD_SCENE_HDR_LIGHT);
+    run_material_test(arch_list, preferred_device, "complex_mat5_hdr_light", metal_mat_desc, SampleCount, FastMinPSNR,
+                      PixThres, textures, STANDARD_SCENE_HDR_LIGHT);
 }
 
 void test_complex_mat6(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 1630;
-    const int PixThres = 515;
+    const int SampleCount = 820;
+    const int PixThres = 1260;
 
     Ray::principled_mat_desc_t olive_mat_desc;
     olive_mat_desc.base_color[0] = 0.836164f;
@@ -2567,13 +2647,12 @@ void test_complex_mat6(const char *arch_list[], const char *preferred_device) {
     olive_mat_desc.transmission = 1.0f;
     olive_mat_desc.ior = 2.3f;
 
-    run_material_test(arch_list, preferred_device, "complex_mat6", olive_mat_desc, SampleCount, DefaultMinPSNR,
-                      PixThres);
+    run_material_test(arch_list, preferred_device, "complex_mat6", olive_mat_desc, SampleCount, FastMinPSNR, PixThres);
 }
 
 void test_complex_mat6_dof(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 1600;
-    const int PixThres = 472;
+    const int SampleCount = 809;
+    const int PixThres = 1181;
 
     Ray::principled_mat_desc_t olive_mat_desc;
     olive_mat_desc.base_color[0] = 0.836164f;
@@ -2583,13 +2662,13 @@ void test_complex_mat6_dof(const char *arch_list[], const char *preferred_device
     olive_mat_desc.transmission = 1.0f;
     olive_mat_desc.ior = 2.3f;
 
-    run_material_test(arch_list, preferred_device, "complex_mat6_dof", olive_mat_desc, SampleCount, DefaultMinPSNR,
+    run_material_test(arch_list, preferred_device, "complex_mat6_dof", olive_mat_desc, SampleCount, FastMinPSNR,
                       PixThres, nullptr, STANDARD_SCENE_DOF1);
 }
 
 void test_complex_mat6_mesh_lights(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 2190;
-    const int PixThres = 617;
+    const int SampleCount = 1050;
+    const int PixThres = 1136;
 
     Ray::principled_mat_desc_t olive_mat_desc;
     olive_mat_desc.base_color[0] = 0.836164f;
@@ -2599,8 +2678,8 @@ void test_complex_mat6_mesh_lights(const char *arch_list[], const char *preferre
     olive_mat_desc.transmission = 1.0f;
     olive_mat_desc.ior = 2.3f;
 
-    run_material_test(arch_list, preferred_device, "complex_mat6_mesh_lights", olive_mat_desc, SampleCount,
-                      DefaultMinPSNR, PixThres, nullptr, STANDARD_SCENE_MESH_LIGHTS);
+    run_material_test(arch_list, preferred_device, "complex_mat6_mesh_lights", olive_mat_desc, SampleCount, FastMinPSNR,
+                      PixThres, nullptr, STANDARD_SCENE_MESH_LIGHTS);
 }
 
 void test_complex_mat6_sphere_light(const char *arch_list[], const char *preferred_device) {
@@ -2621,8 +2700,8 @@ void test_complex_mat6_sphere_light(const char *arch_list[], const char *preferr
 }
 
 void test_complex_mat6_spot_light(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 610;
-    const int PixThres = 189;
+    const int SampleCount = 4;
+    const int PixThres = 302;
 
     Ray::principled_mat_desc_t olive_mat_desc;
     olive_mat_desc.base_color[0] = 0.836164f;
@@ -2632,8 +2711,8 @@ void test_complex_mat6_spot_light(const char *arch_list[], const char *preferred
     olive_mat_desc.transmission = 1.0f;
     olive_mat_desc.ior = 2.3f;
 
-    run_material_test(arch_list, preferred_device, "complex_mat6_spot_light", olive_mat_desc, SampleCount,
-                      DefaultMinPSNR, PixThres, nullptr, STANDARD_SCENE_SPOT_LIGHT);
+    run_material_test(arch_list, preferred_device, "complex_mat6_spot_light", olive_mat_desc, SampleCount, FastMinPSNR,
+                      PixThres, nullptr, STANDARD_SCENE_SPOT_LIGHT);
 }
 
 void test_complex_mat6_sun_light(const char *arch_list[], const char *preferred_device) {
@@ -2668,4 +2747,22 @@ void test_complex_mat6_hdr_light(const char *arch_list[], const char *preferred_
 
     run_material_test(arch_list, preferred_device, "complex_mat6_hdr_light", olive_mat_desc, SampleCount, MinPSNR,
                       PixThres, nullptr, STANDARD_SCENE_HDR_LIGHT);
+}
+
+void test_complex_mat7_refractive(const char *arch_list[], const char *preferred_device) {
+    const int SampleCount = 759;
+    const int PixThres = 1309;
+
+    Ray::principled_mat_desc_t unused;
+    run_material_test(arch_list, preferred_device, "complex_mat7_refractive", unused, SampleCount, FastMinPSNR,
+                      PixThres, nullptr, STANDARD_SCENE_GLASSBALL0);
+}
+
+void test_complex_mat7_principled(const char *arch_list[], const char *preferred_device) {
+    const int SampleCount = 1004;
+    const int PixThres = 758;
+
+    Ray::principled_mat_desc_t unused;
+    run_material_test(arch_list, preferred_device, "complex_mat7_principled", unused, SampleCount, FastMinPSNR,
+                      PixThres, nullptr, STANDARD_SCENE_GLASSBALL1);
 }

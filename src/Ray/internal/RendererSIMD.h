@@ -30,10 +30,10 @@ template <int S> struct PassData {
     PassData() = default;
 
     PassData(const PassData &rhs) = delete;
-    PassData(PassData &&rhs) { *this = std::move(rhs); }
+    PassData(PassData &&rhs) noexcept { *this = std::move(rhs); }
 
     PassData &operator=(const PassData &rhs) = delete;
-    PassData &operator=(PassData &&rhs) {
+    PassData &operator=(PassData &&rhs) noexcept {
         primary_rays = std::move(rhs.primary_rays);
         primary_masks = std::move(rhs.primary_masks);
         secondary_rays = std::move(rhs.secondary_rays);
@@ -89,8 +89,8 @@ template <int DimX, int DimY> class RendererSIMD : public RendererBase {
     SceneBase *CreateScene() override;
     void RenderScene(const SceneBase *scene, RegionContext &region) override;
 
-    virtual void GetStats(stats_t &st) override { st = stats_; }
-    virtual void ResetStats() override { stats_ = {0}; }
+    void GetStats(stats_t &st) override { st = stats_; }
+    void ResetStats() override { stats_ = {0}; }
 };
 
 template <int S> Ray::NS::PassData<S> &get_per_thread_pass_data() {
@@ -101,8 +101,12 @@ template <int S> Ray::NS::PassData<S> &get_per_thread_pass_data() {
 pixel_color_t clamp_and_gamma_correct(const pixel_color_t &p, const camera_t &cam) {
     auto c = simd_fvec4{&p.r};
 
+    if (cam.exposure != 0.0f) {
+        c *= std::pow(2.0f, cam.exposure);
+    }
+
     if (cam.dtype == SRGB) {
-        ITERATE_3({
+        UNROLLED_FOR(i, 3, {
             if (c.get<i>() < 0.0031308f) {
                 c.set<i>(12.92f * c.get<i>());
             } else {
@@ -131,7 +135,9 @@ pixel_color_t clamp_and_gamma_correct(const pixel_color_t &p, const camera_t &ca
 template <int DimX, int DimY>
 Ray::NS::RendererSIMD<DimX, DimY>::RendererSIMD(const settings_t &s, ILog *log)
     : log_(log), clean_buf_(s.w, s.h), final_buf_(s.w, s.h), temp_buf_(s.w, s.h), use_wide_bvh_(s.use_wide_bvh) {
-    auto rand_func = std::bind(UniformIntDistribution<uint32_t>(), std::mt19937(0));
+    auto mt = std::mt19937(0);
+    auto dist = UniformIntDistribution<uint32_t>{};
+    auto rand_func = [&]() { return dist(mt); };
     permutations_ = Ray::ComputeRadicalInversePermutations(g_primes, PrimesCount, rand_func);
 }
 
@@ -140,15 +146,15 @@ template <int DimX, int DimY> Ray::SceneBase *Ray::NS::RendererSIMD<DimX, DimY>:
 }
 
 template <int DimX, int DimY>
-void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionContext &region) {
+void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *scene, RegionContext &region) {
     const int S = DimX * DimY;
 
-    const auto s = dynamic_cast<const Ref::Scene *>(_s);
+    const auto s = dynamic_cast<const Ref::Scene *>(scene);
     if (!s) {
         return;
     }
 
-    const camera_t &cam = s->cams_[s->current_cam()].cam;
+    const camera_t &cam = s->cams_[s->current_cam()._index].cam;
 
     const scene_data_t sc_data = {s->env_,
                                   s->mesh_instances_.data(),
@@ -165,8 +171,9 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
                                   s->tri_materials_.empty() ? nullptr : &s->tri_materials_[0],
                                   s->materials_.empty() ? nullptr : &s->materials_[0],
                                   s->lights_.empty() ? nullptr : &s->lights_[0],
-                                  {s->li_indices_.data(), s->li_indices_.size()},
-                                  {s->visible_lights_.data(), s->visible_lights_.size()}};
+                                  {s->li_indices_},
+                                  {s->visible_lights_},
+                                  {s->blocker_lights_}};
 
     const uint32_t macro_tree_root = s->macro_nodes_root_;
 
@@ -181,26 +188,32 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
             root_max[0] = root_max[1] = root_max[2] = -MAX_DIST;
 
             if (root_node.child[0] & LEAF_NODE_BIT) {
-                ITERATE_3({ root_min[i] = root_node.bbox_min[i][0]; })
-                ITERATE_3({ root_max[i] = root_node.bbox_max[i][0]; })
+                UNROLLED_FOR(i, 3, {
+                    root_min[i] = root_node.bbox_min[i][0];
+                    root_max[i] = root_node.bbox_max[i][0];
+                })
             } else {
                 for (int j = 0; j < 8; j++) {
                     if (root_node.child[j] == 0x7fffffff) {
                         continue;
                     }
 
-                    ITERATE_3({ root_min[i] = root_node.bbox_min[i][j]; })
-                    ITERATE_3({ root_max[i] = root_node.bbox_max[i][j]; })
+                    UNROLLED_FOR(i, 3, {
+                        root_min[i] = root_node.bbox_min[i][j];
+                        root_max[i] = root_node.bbox_max[i][j];
+                    })
                 }
             }
         } else {
             const bvh_node_t &root_node = sc_data.nodes[macro_tree_root];
 
-            ITERATE_3({ root_min[i] = root_node.bbox_min[i]; })
-            ITERATE_3({ root_max[i] = root_node.bbox_max[i]; })
+            UNROLLED_FOR(i, 3, {
+                root_min[i] = root_node.bbox_min[i];
+                root_max[i] = root_node.bbox_max[i];
+            })
         }
 
-        ITERATE_3({ cell_size[i] = (root_max[i] - root_min[i]) / 255; })
+        UNROLLED_FOR(i, 3, { cell_size[i] = (root_max[i] - root_min[i]) / 255; })
     }
 
     const int w = final_buf_.w(), h = final_buf_.h();
@@ -286,7 +299,7 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
                          &secondary_rays_count, p.shadow_masks.data(), p.shadow_rays.data(), &shadow_rays_count);
 
         // TODO: vectorize this
-        ITERATE(S, {
+        UNROLLED_FOR_S(i, S, {
             if (p.primary_masks[ri].template get<i>()) {
                 temp_buf_.SetPixel(x.template get<i>(), y.template get<i>(),
                                    {out_rgba[0].template get<i>(), out_rgba[1].template get<i>(),
@@ -294,6 +307,8 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
             }
         })
     }
+
+    const auto time_after_prim_shade = std::chrono::high_resolution_clock::now();
 
     for (int ri = 0; ri < shadow_rays_count; ++ri) {
         const shadow_ray_t<S> &sh_r = p.shadow_rays[ri];
@@ -303,9 +318,12 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
         simd_fvec<S> rc[3];
         NS::IntersectScene(sh_r, p.shadow_masks[ri], cam.pass_settings.max_transp_depth, sc_data, macro_tree_root,
                            s->tex_storages_, rc);
+        const simd_fvec<S> k = NS::IntersectAreaLights(sh_r, p.shadow_masks[ri], sc_data.lights, sc_data.blocker_lights,
+                                                       sc_data.transforms);
+        UNROLLED_FOR(i, 3, { rc[i] *= k; })
 
         // TODO: vectorize this
-        ITERATE(S, {
+        UNROLLED_FOR_S(i, S, {
             if (p.shadow_masks[ri].template get<i>()) {
                 temp_buf_.AddPixel(x.template get<i>(), y.template get<i>(),
                                    {rc[0].template get<i>(), rc[1].template get<i>(), rc[2].template get<i>(), 0.0f});
@@ -313,8 +331,9 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
         })
     }
 
-    const auto time_after_prim_shade = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double, std::micro> secondary_sort_time{}, secondary_trace_time{}, secondary_shade_time{};
+    const auto time_after_prim_shadow = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double, std::micro> secondary_sort_time{}, secondary_trace_time{}, secondary_shade_time{},
+        secondary_shadow_time{};
 
     p.hash_values.resize(p.primary_rays.size());
     // p.head_flags.resize(p.primary_rays.size() * S);
@@ -382,7 +401,7 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
                              p.shadow_rays.data(), &shadow_rays_count);
 
             // TODO: vectorize this
-            ITERATE(S, {
+            UNROLLED_FOR_S(i, S, {
                 if (p.primary_masks[ri].template get<i>()) {
                     temp_buf_.AddPixel(x.template get<i>(), y.template get<i>(),
                                        {out_rgba[0].template get<i>(), out_rgba[1].template get<i>(),
@@ -390,6 +409,8 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
                 }
             })
         }
+
+        auto time_secondary_shadow_start = std::chrono::high_resolution_clock::now();
 
         for (int ri = 0; ri < shadow_rays_count; ++ri) {
             const shadow_ray_t<S> &sh_r = p.shadow_rays[ri];
@@ -399,9 +420,12 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
             simd_fvec<S> rc[3];
             IntersectScene(sh_r, p.shadow_masks[ri], cam.pass_settings.max_transp_depth, sc_data, macro_tree_root,
                            s->tex_storages_, rc);
+            const simd_fvec<S> k = NS::IntersectAreaLights(sh_r, p.shadow_masks[ri], sc_data.lights,
+                                                           sc_data.blocker_lights, sc_data.transforms);
+            UNROLLED_FOR(i, 3, { rc[i] *= k; })
 
             // TODO: vectorize this
-            ITERATE(S, {
+            UNROLLED_FOR_S(i, S, {
                 if (p.shadow_masks[ri].template get<i>()) {
                     temp_buf_.AddPixel(
                         x.template get<i>(), y.template get<i>(),
@@ -410,13 +434,15 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
             })
         }
 
-        auto time_secondary_shade_end = std::chrono::high_resolution_clock::now();
+        auto time_secondary_shadow_end = std::chrono::high_resolution_clock::now();
         secondary_sort_time +=
             std::chrono::duration<double, std::micro>{time_secondary_trace_start - time_secondary_sort_start};
         secondary_trace_time +=
             std::chrono::duration<double, std::micro>{time_secondary_shade_start - time_secondary_trace_start};
         secondary_shade_time +=
-            std::chrono::duration<double, std::micro>{time_secondary_shade_end - time_secondary_shade_start};
+            std::chrono::duration<double, std::micro>{time_secondary_shadow_start - time_secondary_shade_start};
+        secondary_shadow_time +=
+            std::chrono::duration<double, std::micro>{time_secondary_shadow_end - time_secondary_shadow_start};
     }
 
     {
@@ -430,13 +456,18 @@ void Ray::NS::RendererSIMD<DimX, DimY>::RenderScene(const SceneBase *_s, RegionC
         stats_.time_primary_shade_us +=
             (unsigned long long)std::chrono::duration<double, std::micro>{time_after_prim_shade - time_after_prim_trace}
                 .count();
+        stats_.time_primary_shadow_us +=
+            (unsigned long long)std::chrono::duration<double, std::micro>{time_after_prim_shadow -
+                                                                          time_after_prim_shade}
+                .count();
         stats_.time_secondary_sort_us += (unsigned long long)secondary_sort_time.count();
         stats_.time_secondary_trace_us += (unsigned long long)secondary_trace_time.count();
         stats_.time_secondary_shade_us += (unsigned long long)secondary_shade_time.count();
+        stats_.time_secondary_shadow_us += (unsigned long long)secondary_shadow_time.count();
     }
 
     // factor used to compute incremental average
-    const float mix_factor = 1.0f / region.iteration;
+    const float mix_factor = 1.0f / float(region.iteration);
 
     clean_buf_.MixWith(temp_buf_, rect, mix_factor);
     if (cam.pass_settings.flags & OutputSH) {

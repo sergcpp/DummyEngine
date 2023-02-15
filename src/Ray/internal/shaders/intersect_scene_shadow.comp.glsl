@@ -64,11 +64,19 @@ layout(std430, binding = COUNTERS_BUF_SLOT) readonly buffer Counters {
     uint g_counters[];
 };
 
+layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer Lights {
+    light_t g_lights[];
+};
+
+layout(std430, binding = BLOCKER_LIGHTS_BUF_SLOT) readonly buffer BlockerLights {
+    uint g_blocker_lights[];
+};
+
 #if HWRT
 layout(binding = TLAS_SLOT) uniform accelerationStructureEXT g_tlas;
 #endif
 
-layout(binding = OUT_IMG_SLOT, rgba32f) uniform image2D g_out_img;
+layout(binding = INOUT_IMG_SLOT, rgba32f) uniform image2D g_inout_img;
 
 #define FETCH_TRI(j) g_tris[j]
 #include "traverse_bvh.glsl"
@@ -171,11 +179,13 @@ bool Traverse_MacroTree_WithStack(vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, 
     return false;
 }
 
-vec3 IntersectSceneShadow(shadow_ray_t r, float dist) {
+vec3 IntersectSceneShadow(shadow_ray_t r) {
     vec3 ro = vec3(r.o[0], r.o[1], r.o[2]);
     vec3 rd = vec3(r.d[0], r.d[1], r.d[2]);
     vec3 rc = vec3(r.c[0], r.c[1], r.c[2]);
     int depth = (r.depth >> 24);
+
+    float dist = r.dist > 0.0 ? r.dist : MAX_DIST;
 #if !HWRT
     const vec3 inv_d = safe_invert(rd);
 
@@ -236,7 +246,7 @@ vec3 IntersectSceneShadow(shadow_ray_t r, float dist) {
                 g_stack[gl_LocalInvocationIndex][2 * stack_size + 1] = floatBitsToUint(weight * mix_val);
                 ++stack_size;
             } else if (mat.type == TransparentNode) {
-                throughput +=weight * vec3(mat.base_color[0], mat.base_color[1], mat.base_color[2]);
+                throughput += weight * vec3(mat.base_color[0], mat.base_color[1], mat.base_color[2]);
             }
         }
 
@@ -254,29 +264,34 @@ vec3 IntersectSceneShadow(shadow_ray_t r, float dist) {
 
     return rc;
 #else
-    const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
+    while (dist > HIT_BIAS) {
+        rayQueryEXT rq;
+        rayQueryInitializeEXT(rq,               // rayQuery
+                              g_tlas,           // topLevel
+                              0,                // rayFlags
+                              0xff,             // cullMask
+                              ro,               // origin
+                              0.0,              // tMin
+                              rd,               // direction
+                              dist              // tMax
+                              );
 
-    rayQueryEXT rq;
-    rayQueryInitializeEXT(rq,               // rayQuery
-                          g_tlas,           // topLevel
-                          ray_flags,        // rayFlags
-                          0xff,             // cullMask
-                          ro,               // origin
-                          0.0,              // tMin
-                          rd,               // direction
-                          dist              // tMax
-                          );
-    while(rayQueryProceedEXT(rq)) {
-        if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
+        while(rayQueryProceedEXT(rq)) {
+            if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
+                rayQueryConfirmIntersectionEXT(rq);
+            }
+        }
+
+        if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
             // perform alpha test
-            const int primitive_offset = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
-            const int obj_index = rayQueryGetIntersectionInstanceIdEXT(rq, false);
-            const int tri_index = primitive_offset + rayQueryGetIntersectionPrimitiveIndexEXT(rq, false);
+            const int primitive_offset = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
+            const int obj_index = rayQueryGetIntersectionInstanceIdEXT(rq, true);
+            const int tri_index = primitive_offset + rayQueryGetIntersectionPrimitiveIndexEXT(rq, true);
 
             const uint front_mi = (g_tri_materials[tri_index] >> 16u) & 0xffff;
             const uint back_mi = (g_tri_materials[tri_index] & 0xffff);
 
-            const bool is_backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, false);
+            const bool is_backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
             const bool solid_hit = (!is_backfacing && (front_mi & MATERIAL_SOLID_BIT) != 0) ||
                                    (is_backfacing && (back_mi & MATERIAL_SOLID_BIT) != 0);
             if (solid_hit || depth > g_params.max_transp_depth) {
@@ -289,7 +304,7 @@ vec3 IntersectSceneShadow(shadow_ray_t r, float dist) {
             const vertex_t v2 = g_vertices[g_vtx_indices[tri_index * 3 + 1]];
             const vertex_t v3 = g_vertices[g_vtx_indices[tri_index * 3 + 2]];
 
-            const vec2 uv = rayQueryGetIntersectionBarycentricsEXT(rq, false);
+            const vec2 uv = rayQueryGetIntersectionBarycentricsEXT(rq, true);
             const float w = 1.0 - uv.x - uv.y;
             const vec2 sh_uvs = vec2(v1.t[0][0], v1.t[0][1]) * w + vec2(v2.t[0][0], v2.t[0][1]) * uv.x + vec2(v3.t[0][0], v3.t[0][1]) * uv.y;
 
@@ -318,7 +333,7 @@ vec3 IntersectSceneShadow(shadow_ray_t r, float dist) {
                     g_stack[gl_LocalInvocationIndex][2 * stack_size + 1] = floatBitsToUint(weight * mix_val);
                     ++stack_size;
                 } else if (mat.type == TransparentNode) {
-                    throughput +=weight * vec3(mat.base_color[0], mat.base_color[1], mat.base_color[2]);
+                    throughput += weight * vec3(mat.base_color[0], mat.base_color[1], mat.base_color[2]);
                 }
             }
 
@@ -326,13 +341,86 @@ vec3 IntersectSceneShadow(shadow_ray_t r, float dist) {
             if (lum(rc) < FLT_EPS) {
                 break;
             }
-
-            ++depth;
         }
+
+        const float t = rayQueryGetIntersectionTEXT(rq, true) + HIT_BIAS;
+        ro += rd * t;
+        dist -= t;
+
+        ++depth;
     }
 
     return rc;
 #endif
+}
+
+float IntersectAreaLightsShadow(shadow_ray_t r) {
+    vec3 ro = vec3(r.o[0], r.o[1], r.o[2]);
+    vec3 rd = vec3(r.d[0], r.d[1], r.d[2]);
+
+    float rdist = abs(r.dist);
+
+    for (uint li = 0; li < g_params.blocker_lights_count; ++li) {
+        uint light_index = g_blocker_lights[li];
+        light_t l = g_lights[light_index];
+        [[dont_flatten]] if ((l.type_and_param0.x & (1 << 7)) != 0 && r.dist >= 0.0) { // sky portal
+            continue;
+        }
+
+        uint light_type = (l.type_and_param0.x & 0x1f);
+        if (light_type == LIGHT_TYPE_RECT) {
+            vec3 light_pos = l.RECT_POS;
+            vec3 light_u = l.RECT_U;
+            vec3 light_v = l.RECT_V;
+
+            vec3 light_forward = normalize(cross(light_u, light_v));
+
+            float plane_dist = dot(light_forward, light_pos);
+            float cos_theta = dot(rd, light_forward);
+            float t = (plane_dist - dot(light_forward, ro)) / cos_theta;
+
+            if (cos_theta < 0.0 && t > HIT_EPS && t < rdist) {
+                light_u /= dot(light_u, light_u);
+                light_v /= dot(light_v, light_v);
+
+                vec3 p = ro + rd * t;
+                vec3 vi = p - light_pos;
+                float a1 = dot(light_u, vi);
+                if (a1 >= -0.5 && a1 <= 0.5) {
+                    float a2 = dot(light_v, vi);
+                    if (a2 >= -0.5 && a2 <= 0.5) {
+                        return 0.0;
+                    }
+                }
+            }
+        } else if (light_type == LIGHT_TYPE_DISK) {
+            vec3 light_pos = l.DISK_POS;
+            vec3 light_u = l.DISK_U;
+            vec3 light_v = l.DISK_V;
+
+            vec3 light_forward = normalize(cross(light_u, light_v));
+
+            float plane_dist = dot(light_forward, light_pos);
+            float cos_theta = dot(rd, light_forward);
+            float t = (plane_dist - dot(light_forward, ro)) / cos_theta;
+
+            if (cos_theta < 0.0 && t > HIT_EPS && t < rdist) {
+                light_u /= dot(light_u, light_u);
+                light_v /= dot(light_v, light_v);
+
+                vec3 p = ro + rd * t;
+                vec3 vi = p - light_pos;
+                float a1 = dot(light_u, vi);
+                float a2 = dot(light_v, vi);
+
+                if (sqrt(a1 * a1 + a2 * a2) <= 0.5) {
+                    return 0.0;
+                }
+            }
+        }
+    }
+
+    return 1.0;
 }
 
 void main() {
@@ -343,13 +431,13 @@ void main() {
 
     shadow_ray_t sh_ray = g_sh_rays[index];
 
-    const vec3 rc = IntersectSceneShadow(sh_ray, sh_ray.dist);
+    const vec3 rc = IntersectSceneShadow(sh_ray) * IntersectAreaLightsShadow(sh_ray);
     if (lum(rc) > 0.0) {
         const int x = (sh_ray.xy >> 16) & 0xffff;
         const int y = (sh_ray.xy & 0xffff);
 
-        vec3 col = imageLoad(g_out_img, ivec2(x, y)).rgb;
+        vec3 col = imageLoad(g_inout_img, ivec2(x, y)).rgb;
         col += rc;
-        imageStore(g_out_img, ivec2(x, y), vec4(col, 1.0));
+        imageStore(g_inout_img, ivec2(x, y), vec4(col, 1.0));
     }
 }

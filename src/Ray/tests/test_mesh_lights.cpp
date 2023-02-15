@@ -104,41 +104,41 @@ Ray::RendererOCL
                     cam_desc.output_sh = output_sh;
                     cam_desc.clamp = true;
 
-                    const uint32_t cam = scene->AddCamera(cam_desc);
+                    const Ray::CameraHandle cam = scene->AddCamera(cam_desc);
                     scene->set_current_cam(cam);
 
                     scene->SetEnvironment(env_desc);
 
-                    const uint32_t t1 = scene->AddTexture(tex_desc1);
+                    const Ray::TextureHandle t1 = scene->AddTexture(tex_desc1);
 
                     mat_desc1.base_texture = t1;
-                    const uint32_t m1 = scene->AddMaterial(mat_desc1);
+                    const Ray::MaterialHandle m1 = scene->AddMaterial(mat_desc1);
 
                     mat_desc2.base_texture = t1;
-                    const uint32_t m2 = scene->AddMaterial(mat_desc2);
+                    const Ray::MaterialHandle m2 = scene->AddMaterial(mat_desc2);
 
                     mat_desc3.base_texture = t1;
-                    const uint32_t m3 = scene->AddMaterial(mat_desc3);
+                    const Ray::MaterialHandle m3 = scene->AddMaterial(mat_desc3);
 
                     mat_desc4.base_texture = t1;
-                    const uint32_t m4 = scene->AddMaterial(mat_desc4);
+                    const Ray::MaterialHandle m4 = scene->AddMaterial(mat_desc4);
 
-                    mesh_desc.shapes.push_back({m1, m1, groups[0], groups[1]});
-                    mesh_desc.shapes.push_back({m2, m2, groups[2], groups[3]});
-                    mesh_desc.shapes.push_back({m3, m3, groups[4], groups[5]});
-                    mesh_desc.shapes.push_back({m4, m4, groups[6], groups[7]});
+                    mesh_desc.shapes.emplace_back(m1, m1, groups[0], groups[1]);
+                    mesh_desc.shapes.emplace_back(m2, m2, groups[2], groups[3]);
+                    mesh_desc.shapes.emplace_back(m3, m3, groups[4], groups[5]);
+                    mesh_desc.shapes.emplace_back(m4, m4, groups[6], groups[7]);
 
-                    const uint32_t mesh = scene->AddMesh(mesh_desc);
+                    const Ray::MeshHandle mesh = scene->AddMesh(mesh_desc);
 
                     const float xform[16] = {1.0f, 0.0f, 0.0f, 0.0f, // NOLINT
                                              0.0f, 1.0f, 0.0f, 0.0f, // NOLINT
                                              0.0f, 0.0f, 1.0f, 0.0f, // NOLINT
                                              0.0f, 0.0f, 0.0f, 1.0f};
 
-                    const uint32_t mesh_instance = scene->AddMeshInstance(mesh, xform);
+                    const Ray::MeshInstanceHandle mesh_instance = scene->AddMeshInstance(mesh, xform);
                     (void)mesh_instance;
 
-                    renderer->Clear();
+                    renderer->Clear({0, 0, 0, 0});
 
                     auto reg = Ray::RegionContext{{0, 0, 64, 64}};
                     for (int i = 0; i < NUM_SAMPLES; ++i) {
@@ -161,9 +161,9 @@ Ray::RendererOCL
                         for (int i = 0; i < img_w; i++) {
                             const Ray::pixel_color_t &p = pixels[i];
 
-                            const uint8_t r = uint8_t(p.r * 255);
-                            const uint8_t g = uint8_t(p.g * 255);
-                            const uint8_t b = uint8_t(p.b * 255);
+                            const auto r = uint8_t(p.r * 255);
+                            const auto g = uint8_t(p.g * 255);
+                            const auto b = uint8_t(p.b * 255);
 
                             img_data_u8[3 * ((img_h - j - 1) * img_w + i) + 0] = r;
                             img_data_u8[3 * ((img_h - j - 1) * img_w + i) + 1] = g;

@@ -68,7 +68,7 @@ struct camera_t {
     eFilterType filter;
     eDeviceType dtype;
     eLensUnits ltype;
-    float fov, gamma, sensor_height;
+    float fov, exposure, gamma, sensor_height;
     float focus_distance, focal_length, fstop, lens_rotation, lens_ratio;
     int lens_blades;
     float clip_start, clip_end;
@@ -76,16 +76,4 @@ struct camera_t {
     uint32_t mi_index, uv_index;
     pass_settings_t pass_settings;
 };
-
-#if !defined(DISABLE_OCL)
-namespace Ocl {
-struct Device {
-    std::string name;
-};
-struct Platform {
-    std::string vendor, name;
-    std::vector<Device> devices;
-};
-} // namespace Ocl
-#endif
 } // namespace Ray

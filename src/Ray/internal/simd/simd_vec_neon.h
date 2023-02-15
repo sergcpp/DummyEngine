@@ -5,7 +5,9 @@
 #include <arm_neon.h>
 
 #ifndef NDEBUG
-#define VALIDATE_MASKS 1
+#define validate_mask(m) __assert_valid_mask(m)
+#else
+#define validate_mask(m) ((void)m)
 #endif
 
 namespace Ray {
@@ -200,14 +202,14 @@ template <> class simd_vec<float, 4> {
 
         alignas(16) float comp[4];
         vst1q_f32(comp, vec_);
-        ITERATE_4({ comp[i] = std::sqrt(comp[i]); })
+        UNROLLED_FOR(i, 4, { comp[i] = std::sqrt(comp[i]); })
         return simd_vec<float, 4>{comp, simd_mem_aligned};
     }
 
     force_inline simd_vec<float, 4> log() const {
         alignas(16) float comp[4];
         vst1q_f32(comp, vec_);
-        ITERATE_4({ comp[i] = std::log(comp[i]); })
+        UNROLLED_FOR(i, 4, { comp[i] = std::log(comp[i]); })
         return simd_vec<float, 4>{comp, simd_mem_aligned};
     }
 
@@ -218,7 +220,7 @@ template <> class simd_vec<float, 4> {
         vst1q_f32(comp, vec_);
 
         float temp = 0.0f;
-        ITERATE_4({ temp += comp[i] * comp[i]; })
+        UNROLLED_FOR(i, 4, { temp += comp[i] * comp[i]; })
         return temp;
     }
 
@@ -229,28 +231,14 @@ template <> class simd_vec<float, 4> {
     }
 
     force_inline void vectorcall blend_to(const simd_vec<float, 4> mask, const simd_vec<float, 4> v1) {
-#if VALIDATE_MASKS
-        alignas(16) float comp[4];
-        vst1q_f32(comp, vec_);
-        ITERATE_4({
-            assert(reinterpret_cast<const uint32_t &>(comp[i]) == 0 ||
-                   reinterpret_cast<const uint32_t &>(comp[i]) == 0xffffffff);
-        })
-#endif
+        validate_mask(mask);
         int32x4_t temp1 = vandq_s32(vreinterpretq_s32_f32(v1.vec_), vreinterpretq_s32_f32(mask.vec_));
         int32x4_t temp2 = vbicq_s32(vreinterpretq_s32_f32(vec_), vreinterpretq_s32_f32(mask.vec_));
         vec_ = vreinterpretq_f32_s32(vorrq_s32(temp1, temp2));
     }
 
     force_inline void vectorcall blend_inv_to(const simd_vec<float, 4> mask, const simd_vec<float, 4> v1) {
-#if VALIDATE_MASKS
-        alignas(16) float comp[4];
-        vst1q_f32(comp, vec_);
-        ITERATE_4({
-            assert(reinterpret_cast<const uint32_t &>(comp[i]) == 0 ||
-                   reinterpret_cast<const uint32_t &>(comp[i]) == 0xffffffff);
-        })
-#endif
+        validate_mask(mask);
         int32x4_t temp1 = vandq_s32(vreinterpretq_s32_f32(vec_), vreinterpretq_s32_f32(mask.vec_));
         int32x4_t temp2 = vbicq_s32(vreinterpretq_s32_f32(v1.vec_), vreinterpretq_s32_f32(mask.vec_));
         vec_ = vreinterpretq_f32_s32(vorrq_s32(temp1, temp2));
@@ -438,13 +426,23 @@ template <> class simd_vec<float, 4> {
         alignas(16) float comp1[4], comp2[4];
         vst1q_f32(comp1, v1.vec_);
         vst1q_f32(comp2, v2.vec_);
-        ITERATE_4({ comp1[i] = std::pow(comp1[i], comp2[i]); })
+        UNROLLED_FOR(i, 4, { comp1[i] = std::pow(comp1[i], comp2[i]); })
         return simd_vec<float, 4>{comp1, simd_mem_aligned};
     }
 
     friend force_inline simd_vec<float, 4> vectorcall normalize(const simd_vec<float, 4> v1) {
         return v1 / v1.length();
     }
+
+#ifndef NDEBUG
+    friend void vectorcall __assert_valid_mask(const simd_vec<float, 4> mask) {
+        UNROLLED_FOR(i, 4, {
+            const float val = mask.get<i>();
+            assert(reinterpret_cast<const uint32_t &>(val) == 0 ||
+                   reinterpret_cast<const uint32_t &>(val) == 0xffffffff);
+        })
+    }
+#endif
 
     friend force_inline const float *value_ptr(const simd_vec<float, 4> &v1) {
         return reinterpret_cast<const float *>(&v1.vec_);
@@ -528,12 +526,12 @@ template <> class simd_vec<int, 4> {
 
     force_inline simd_vec<int, 4> &vectorcall operator/=(const simd_vec<int, 4> rhs) {
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ vec_.n128_i32[i] /= rhs.vec_.n128_i32[i]; })
+        UNROLLED_FOR(i, 4, { vec_.n128_i32[i] /= rhs.vec_.n128_i32[i]; })
 #else
         alignas(16) int comp[4], rhs_comp[4];
         vst1q_s32(comp, vec_);
         vst1q_s32(rhs_comp, rhs.vec_);
-        ITERATE_4({ comp[i] = comp[i] / rhs_comp[i]; })
+        UNROLLED_FOR(i, 4, { comp[i] = comp[i] / rhs_comp[i]; })
         vec_ = vld1q_s32(comp);
 #endif
         return *this;
@@ -541,11 +539,11 @@ template <> class simd_vec<int, 4> {
 
     force_inline simd_vec<int, 4> &vectorcall operator/=(const int rhs) {
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ vec_.n128_i32[i] /= rhs; })
+        UNROLLED_FOR(i, 4, { vec_.n128_i32[i] /= rhs; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, vec_);
-        ITERATE_4({ comp[i] = comp[i] / rhs; })
+        UNROLLED_FOR(i, 4, { comp[i] = comp[i] / rhs; })
         vec_ = vld1q_s32(comp);
 #endif
         return *this;
@@ -669,28 +667,14 @@ template <> class simd_vec<int, 4> {
     }
 
     force_inline void vectorcall blend_to(const simd_vec<int, 4> mask, const simd_vec<int, 4> v1) {
-#if VALIDATE_MASKS
-        alignas(16) int comp[4];
-        vst1q_s32(comp, mask.vec_);
-        ITERATE_4({
-            assert(reinterpret_cast<const uint32_t &>(comp[i]) == 0 ||
-                   reinterpret_cast<const uint32_t &>(comp[i]) == 0xffffffff);
-        })
-#endif
+        validate_mask(mask);
         int32x4_t temp1 = vandq_s32(v1.vec_, mask.vec_);
         int32x4_t temp2 = vbicq_s32(vec_, mask.vec_);
         vec_ = vorrq_s32(temp1, temp2);
     }
 
     force_inline void vectorcall blend_inv_to(const simd_vec<int, 4> mask, const simd_vec<int, 4> v1) {
-#if VALIDATE_MASKS
-        alignas(16) int comp[4];
-        vst1q_s32(comp, mask.vec_);
-        ITERATE_4({
-            assert(reinterpret_cast<const uint32_t &>(comp[i]) == 0 ||
-                   reinterpret_cast<const uint32_t &>(comp[i]) == 0xffffffff);
-        })
-#endif
+        validate_mask(mask);
         int32x4_t temp1 = vandq_s32(vec_, mask.vec_);
         int32x4_t temp2 = vbicq_s32(v1.vec_, mask.vec_);
         vec_ = vorrq_s32(temp1, temp2);
@@ -714,7 +698,7 @@ template <> class simd_vec<int, 4> {
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, vec_);
-        ITERATE_4({ res |= comp[i] != 0; })
+        UNROLLED_FOR(i, 4, { res |= comp[i] != 0; })
 #endif
         return res == 0;
     }
@@ -727,7 +711,7 @@ template <> class simd_vec<int, 4> {
         alignas(16) int comp[4], mask_comp[4];
         vst1q_s32(comp, vec_);
         vst1q_s32(mask_comp, mask.vec_);
-        ITERATE_4({ res |= (comp[i] & mask_comp[i]) != 0; })
+        UNROLLED_FOR(i, 4, { res |= (comp[i] & mask_comp[i]) != 0; })
 #endif
         return res == 0;
     }
@@ -785,12 +769,12 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator*(const simd_vec<int, 4> v1, const simd_vec<int, 4> v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] * v2.vec_.n128_i32[i]; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] * v2.vec_.n128_i32[i]; })
 #else
         alignas(16) int comp1[4], comp2[4];
         vst1q_s32(comp1, v1.vec_);
         vst1q_s32(comp2, v2.vec_);
-        ITERATE_4({ comp1[i] = comp1[i] * comp2[i]; })
+        UNROLLED_FOR(i, 4, { comp1[i] = comp1[i] * comp2[i]; })
         ret.vec_ = vld1q_s32(comp1);
 #endif
         return ret;
@@ -799,12 +783,12 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator/(const simd_vec<int, 4> v1, const simd_vec<int, 4> v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] / v2.vec_.n128_i32[i]; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] / v2.vec_.n128_i32[i]; })
 #else
         alignas(16) int comp1[4], comp2[4];
         vst1q_s32(comp1, v1.vec_);
         vst1q_s32(comp2, v2.vec_);
-        ITERATE_4({ comp1[i] = comp1[i] / comp2[i]; })
+        UNROLLED_FOR(i, 4, { comp1[i] = comp1[i] / comp2[i]; })
         ret.vec_ = vld1q_s32(comp1);
 #endif
         return ret;
@@ -825,11 +809,11 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator*(const simd_vec<int, 4> v1, const int v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] * v2; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] * v2; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, v1.vec_);
-        ITERATE_4({ comp[i] *= v2; })
+        UNROLLED_FOR(i, 4, { comp[i] *= v2; })
         ret.vec_ = vld1q_s32(comp);
 #endif
         return ret;
@@ -838,11 +822,11 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator/(const simd_vec<int, 4> v1, const int v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] / v2; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_i32[i] = v1.vec_.n128_i32[i] / v2; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, v1.vec_);
-        ITERATE_4({ comp[i] /= v2; })
+        UNROLLED_FOR(i, 4, { comp[i] /= v2; })
         ret.vec_ = vld1q_s32(comp);
 #endif
         return ret;
@@ -861,11 +845,11 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator*(const int v1, const simd_vec<int, 4> v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_i32[i] = v1 * v2.vec_.n128_i32[i]; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_i32[i] = v1 * v2.vec_.n128_i32[i]; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, v2.vec_);
-        ITERATE_4({ comp[i] *= v1; })
+        UNROLLED_FOR(i, 4, { comp[i] *= v1; })
         ret.vec_ = vld1q_s32(comp);
 #endif
         return ret;
@@ -874,11 +858,11 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator/(const int v1, const simd_vec<int, 4> v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_i32[i] = v1 / v2.vec_.n128_i32[i]; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_i32[i] = v1 / v2.vec_.n128_i32[i]; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, v2.vec_);
-        ITERATE_4({ comp[i] = v1 / comp[i]; })
+        UNROLLED_FOR(i, 4, { comp[i] = v1 / comp[i]; })
         ret.vec_ = vld1q_s32(comp);
 #endif
         return ret;
@@ -887,12 +871,12 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator>>(const simd_vec<int, 4> v1, const simd_vec<int, 4> v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] >> v2.vec_.n128_u32[i]; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] >> v2.vec_.n128_u32[i]; })
 #else
         alignas(16) int comp1[4], comp2[4];
         vst1q_s32(comp1, v1.vec_);
         vst1q_s32(comp2, v2.vec_);
-        ITERATE_4({ comp1[i] = reinterpret_cast<const unsigned &>(comp1[i]) >> comp2[i]; })
+        UNROLLED_FOR(i, 4, { comp1[i] = reinterpret_cast<const unsigned &>(comp1[i]) >> comp2[i]; })
         ret.vec_ = vld1q_s32(comp1);
 #endif
         return ret;
@@ -901,11 +885,11 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator>>(const simd_vec<int, 4> v1, const int v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] >> v2; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] >> v2; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, v1.vec_);
-        ITERATE_4({ comp[i] = reinterpret_cast<const unsigned &>(comp[i]) >> v2; })
+        UNROLLED_FOR(i, 4, { comp[i] = reinterpret_cast<const unsigned &>(comp[i]) >> v2; })
         ret.vec_ = vld1q_s32(comp);
 #endif
         return ret;
@@ -914,12 +898,12 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator<<(const simd_vec<int, 4> v1, const simd_vec<int, 4> v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] << v2.vec_.n128_u32[i]; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] << v2.vec_.n128_u32[i]; })
 #else
         alignas(16) int comp1[4], comp2[4];
         vst1q_s32(comp1, v1.vec_);
         vst1q_s32(comp2, v2.vec_);
-        ITERATE_4({ comp1[i] = comp1[i] << comp2[i]; })
+        UNROLLED_FOR(i, 4, { comp1[i] = comp1[i] << comp2[i]; })
         ret.vec_ = vld1q_s32(comp1);
 #endif
         return ret;
@@ -928,11 +912,11 @@ template <> class simd_vec<int, 4> {
     friend force_inline simd_vec<int, 4> vectorcall operator<<(const simd_vec<int, 4> v1, const int v2) {
         simd_vec<int, 4> ret;
 #if defined(_MSC_VER) && !defined(__clang__)
-        ITERATE_4({ ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] << v2; })
+        UNROLLED_FOR(i, 4, { ret.vec_.n128_u32[i] = v1.vec_.n128_u32[i] << v2; })
 #else
         alignas(16) int comp[4];
         vst1q_s32(comp, v1.vec_);
-        ITERATE_4({ comp[i] = comp[i] << v2; })
+        UNROLLED_FOR(i, 4, { comp[i] = comp[i] << v2; })
         ret.vec_ = vld1q_s32(comp);
 #endif
         return ret;
@@ -947,7 +931,7 @@ template <> class simd_vec<int, 4> {
     friend force_inline bool vectorcall is_equal(const simd_vec<int, 4> v1, const simd_vec<int, 4> v2) {
 #if defined(_MSC_VER) && !defined(__clang__)
         bool res = true;
-        ITERATE_4({ res &= (v1.vec_.n128_i32[i] == v2.vec_.n128_i32[i]); })
+        UNROLLED_FOR(i, 4, { res &= (v1.vec_.n128_i32[i] == v2.vec_.n128_i32[i]); })
         return res;
 #else
         alignas(16) int comp1[4], comp2[4];
@@ -955,10 +939,19 @@ template <> class simd_vec<int, 4> {
         vst1q_s32(comp2, v2.vec_);
 
         bool res = true;
-        ITERATE_4({ res &= (comp1[i] == comp2[i]); })
+        UNROLLED_FOR(i, 4, { res &= (comp1[i] == comp2[i]); })
         return res;
 #endif
     }
+
+#ifndef NDEBUG
+    friend void vectorcall __assert_valid_mask(const simd_vec<int, 4> mask) {
+        UNROLLED_FOR(i, 4, {
+            const int val = mask.get<i>();
+            assert(val == 0 || val == -1);
+        })
+    }
+#endif
 
     friend force_inline const int *value_ptr(const simd_vec<int, 4> &v1) {
         return reinterpret_cast<const int *>(&v1.vec_);
@@ -978,4 +971,4 @@ force_inline simd_vec<float, 4>::operator simd_vec<int, 4>() const {
 } // namespace NS
 } // namespace Ray
 
-#undef VALIDATE_MASKS
+#undef validate_mask
