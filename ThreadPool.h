@@ -11,9 +11,10 @@
 #include <thread>
 #include <vector>
 
-#include <optick/optick.h>
-#include <vtune/ittnotify.h>
-extern __itt_domain *__g_itt_domain;
+//#include <optick/optick.h>
+//#include <vtune/ittnotify.h>
+//extern __itt_domain * __g_itt_domain;
+
 
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -53,8 +54,8 @@ inline ThreadPool::ThreadPool(size_t threads_count, const char *threads_name)
             if (threads_name) {
                 sprintf(name_buf, "%s_%i", threads_name, int(i));
             }
-            __itt_thread_set_name(name_buf);
-            OPTICK_THREAD(name_buf);
+            //__itt_thread_set_name(name_buf);
+            //OPTICK_THREAD(name_buf);
 
             for (;;) {
                 std::function<void()> task;
@@ -150,7 +151,7 @@ inline QThreadPool::QThreadPool(const int threads_count, const int q_count,
             } else {
                 sprintf(name_buf, "worker_thread_%i", int(i));
             }
-            __itt_thread_set_name(name_buf);
+            //__itt_thread_set_name(name_buf);
 
             for (;;) {
                 std::function<void()> task;
