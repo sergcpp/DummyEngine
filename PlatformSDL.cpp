@@ -71,7 +71,7 @@ int Sys::Platform::Init(const std::string &window_name, int w, int h) {
     height_ = h;
 
 #if defined(USE_GL_RENDER)
-    gl_ctx_ = SDL_GL_CreateContext(window_);
+    gl_ctx_main_ = SDL_GL_CreateContext(window_);
 #if !defined(__EMSCRIPTEN__)
     SDL_GL_SetSwapInterval(0);
 #endif
@@ -83,7 +83,7 @@ int Sys::Platform::Init(const std::string &window_name, int w, int h) {
     if (!texture_) return -1;
 #endif
 
-    Sys::InitWorker();
+    InitWorker();
 
     return 0;
 }
@@ -102,9 +102,9 @@ void Sys::Platform::Release() {
     sdl_lib_ = {};
 
 #if defined(USE_GL_RENDER)
-    if (gl_ctx_) {
-        SDL_GL_DeleteContext(gl_ctx_);
-        gl_ctx_ = nullptr;
+    if (gl_ctx_main_) {
+        SDL_GL_DeleteContext(gl_ctx_main_);
+        gl_ctx_main_ = nullptr;
     }
 #elif defined(USE_SW_RENDER)
     if (texture_) {
@@ -124,7 +124,7 @@ void Sys::Platform::Release() {
         //SDL_Quit();
     }
 
-    Sys::StopWorker();
+    StopWorker();
 }
 
 void Sys::Platform::DrawPixels(const void *pixels) {

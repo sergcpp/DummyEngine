@@ -2,54 +2,70 @@
 
 #include <cassert>
 #include <cstring>
-#include <sstream>
 #include <stdexcept>
 
 #ifdef __ANDROID__
 #include <android/asset_manager.h>
 #include <android/asset_manager_jni.h>
 #else
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #endif
 
 #include "Pack.h"
 
 namespace Sys {
-class CannotOpenFileException : public std::runtime_error {
-    std::string file_name_;
-
-    static std::ostringstream cnvt;
-public:
-    explicit CannotOpenFileException(const char *file_name) : std::runtime_error("Cannot open file!"), file_name_(file_name) {}
-    ~CannotOpenFileException() throw() {}
-
-    const char *what() const throw() {
-        cnvt.str("");
-        cnvt << std::runtime_error::what() << " : \"" << file_name_ << "\"" << std::endl;
-        return cnvt.str().c_str();
-    }
-};
-
 struct Package {
     std::string name;
     std::vector<Sys::FileDesc> file_list;
 };
 
 std::vector<Package> added_packages;
-}
-
-
-std::ostringstream Sys::CannotOpenFileException::cnvt;
+} // namespace Sys
 
 #ifdef __ANDROID__
-AAssetManager* Sys::AssetFile::asset_manager_ = nullptr;
+AAssetManager *Sys::AssetFile::asset_manager_ = nullptr;
 #endif
 
-Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(file_name), size_(0), pos_override_(0) {
+Sys::AssetFile::AssetFile(const char *file_name, const eOpenMode mode) {
+    Open(file_name, mode);
+}
+
+Sys::AssetFile::~AssetFile() {
+    Close();
+}
+
+Sys::AssetFile::AssetFile(AssetFile &&rhs) noexcept {
+    (*this) = std::move(rhs);
+}
+
+Sys::AssetFile& Sys::AssetFile::operator=(AssetFile&& rhs) noexcept {
+    Close();
+
+#ifdef __ANDROID__
+    asset_file_ = rhs.asset_file_;
+    rhs.asset_file_ = nullptr;
+#else
+    file_stream_ = rhs.file_stream_;
+    rhs.file_stream_ = nullptr;
+#endif
+    mode_ = rhs.mode_;
+    rhs.mode_ = eOpenMode::None;
+    name_ = std::move(rhs.name_);
+    size_ = rhs.size_;
+    rhs.size_ = 0;
+    pos_override_ = rhs.pos_override_;
+    rhs.pos_override_ = 0;
+
+    return (*this);
+}
+
+bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
     using namespace std;
 
-    if (mode == FileIn) {
+    Close();
+
+    if (mode == eOpenMode::In) {
 #ifdef __ANDROID__
         if (file_name[0] == '.' && file_name[1] == '/') {
             file_name += 2;
@@ -84,74 +100,83 @@ Sys::AssetFile::AssetFile(const char *file_name, int mode) : mode_(mode), name_(
             file_name = full_path.c_str();
         }
 
-        asset_file_ = AAssetManager_open(asset_manager_, file_name, AASSET_MODE_BUFFER);
-        if (!asset_file_) {
-            throw CannotOpenFileException(file_name);
+        asset_file_ =
+            AAssetManager_open(asset_manager_, file_name, AASSET_MODE_STREAMING);
+        if (asset_file_) {
+            size_ = AAsset_getLength(asset_file_);
+        } else {
+            size_ = 0;
         }
-
-        size_ = AAsset_getLength(asset_file_);
 #else
         file_stream_ = new std::fstream();
 
+        bool found_in_package = false;
+
         string fname = file_name;
-        for (auto &p : added_packages) {
-            for (auto &f : p.file_list) {
+        for (Package& p : added_packages) {
+            for (FileDesc& f : p.file_list) {
                 if (fname == f.name) {
                     file_stream_->open(p.name, std::ios::in | std::ios::binary);
-                    if (!file_stream_->good()) {
-                        throw Sys::CannotOpenFileException(file_name);
-                    }
-                    file_stream_->seekg(f.off, ios::beg);
-                    pos_override_ = f.off;
-                    size_ = f.size;
-                    goto OPENED;
+                    if (file_stream_->good()) {
+                        file_stream_->seekg(f.off, ios::beg);
+                        pos_override_ = f.off;
+                        size_ = f.size;
+                        found_in_package = true;
+                        break;
                 }
             }
         }
+            if (found_in_package)
+                break;
+        }
 
-        file_stream_->open(file_name, std::ios::in | std::ios::binary);
-        file_stream_->seekg(0, std::ios::end);
-        size_ = (size_t)file_stream_->tellg();
-        file_stream_->seekg(0, std::ios::beg);
-OPENED:
-        if (!file_stream_->good()) {
-            throw Sys::CannotOpenFileException(file_name);
+        if (!found_in_package) {
+            file_stream_->open(file_name, std::ios::in | std::ios::binary);
+            file_stream_->seekg(0, std::ios::end);
+            size_ = (size_t)file_stream_->tellg();
+            file_stream_->seekg(0, std::ios::beg);
         }
 #endif
-    } else if (mode == FileOut) {
+    } else if (mode == eOpenMode::Out) {
 #ifdef __ANDROID__
-        throw std::runtime_error("Cannot write to assets folder!");
+        throw std::runtime_error("Cannot write to assets folder on Android!");
 #else
         file_stream_ = new std::fstream();
         file_stream_->open(file_name, std::ios::out | std::ios::binary);
-        if (!file_stream_->good()) {
-            cout << "Can`t open file " << file_name << endl;
-            throw CannotOpenFileException(file_name);
-        }
 #endif
     }
+
+    mode_ = mode;
+    name_ = file_name;
+
+    return size_ != 0;
 }
 
-Sys::AssetFile::~AssetFile() {
+void Sys::AssetFile::Close() {
 #ifdef __ANDROID__
-    AAsset_close(asset_file_);
+    if (asset_file_) {
+        AAsset_close(asset_file_);
+    }
 #else
     delete file_stream_;
 #endif
+    mode_ = eOpenMode::None;
+    size_ = 0;
 }
 
-bool Sys::AssetFile::Read(char *buf, size_t size) {
-    assert(mode_ == FileIn);
+size_t Sys::AssetFile::Read(char *buf, const size_t size) {
 #ifdef __ANDROID__
-    return !(AAsset_read(asset_file_, buf, size) < 0);
+    return size_t(AAsset_read(asset_file_, buf, size));
 #else
-    assert(file_stream_);
+    if (!file_stream_) {
+        return 0;
+    }
     file_stream_->read(buf, size);
-    return bool(*file_stream_);
+    return size_t(file_stream_->gcount());
 #endif
 }
 
-void Sys::AssetFile::Seek(size_t pos) {
+void Sys::AssetFile::SeekAbsolute(const uint64_t pos) {
 #ifdef __ANDROID__
     AAsset_seek(asset_file_, pos, SEEK_SET);
 #else
@@ -159,23 +184,29 @@ void Sys::AssetFile::Seek(size_t pos) {
 #endif
 }
 
-Sys::AssetFile::operator bool() {
+void Sys::AssetFile::SeekRelative(const int64_t off) {
 #ifdef __ANDROID__
-    return bool(AAsset_getLength(asset_file_));
+    AAsset_seek(asset_file_, off, SEEK_CUR);
 #else
-    return file_stream_ != nullptr && bool(*file_stream_);
+    file_stream_->seekg(off, std::ios::cur);
 #endif
 }
 
-bool Sys::AssetFile::ReadFloat(float &f) {
-    return this->Read((char *)&f, sizeof(float));
+Sys::AssetFile::operator bool() {
+#ifdef __ANDROID__
+    return asset_file_ && bool(AAsset_getLength(asset_file_));
+#else
+    return file_stream_ && file_stream_->good();
+#endif
 }
 
 #ifndef __ANDROID__
-bool Sys::AssetFile::Write(const char *buf, size_t size) {
-    assert(file_stream_);
+bool Sys::AssetFile::Write(const char *buf, const size_t size) {
+    if (!file_stream_) {
+        return false;
+    }
     file_stream_->write(buf, size);
-    return bool(*file_stream_);
+    return file_stream_->good();
 }
 #endif
 
@@ -183,14 +214,12 @@ size_t Sys::AssetFile::pos() {
 #ifdef __ANDROID__
     return AAsset_seek(asset_file_, 0, SEEK_CUR);
 #else
-    return (size_t)file_stream_->tellg() - pos_override_;
+    return size_t(file_stream_->tellg()) - pos_override_;
 #endif
 }
 
 #ifdef __ANDROID__
-void Sys::AssetFile::InitAssetManager(class AAssetManager* am) {
-    asset_manager_ = am;
-}
+void Sys::AssetFile::InitAssetManager(class AAssetManager *am) { asset_manager_ = am; }
 int32_t Sys::AssetFile::descriptor(off_t *start, off_t *len) {
     return AAsset_openFileDescriptor(asset_file_, start, len);
 }
@@ -199,7 +228,7 @@ int32_t Sys::AssetFile::descriptor(off_t *start, off_t *len) {
 void Sys::AssetFile::AddPackage(const char *name) {
     size_t ln = strlen(name);
     if (ln < 6 || name[ln - 5] != '.' || name[ln - 4] != 'p' || name[ln - 3] != 'a' ||
-            name[ln - 2] != 'c' || name[ln - 1] != 'k') {
+        name[ln - 2] != 'c' || name[ln - 1] != 'k') {
         throw std::runtime_error("Invalid package file!");
     }
     added_packages.emplace_back();

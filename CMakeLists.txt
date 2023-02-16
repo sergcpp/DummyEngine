@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.12)
+cmake_minimum_required(VERSION 3.1)
 project(Sys)
 
 OPTION(ENABLE_UNITYBUILD "Enable compilation of one large cpp file" ON)
@@ -18,11 +18,12 @@ set(SOURCE_FILES AssetFile.h
                  AssetFileIO.h
                  AssetFileIO.cpp
                  AsyncFileReader.h
-                 AsyncFileReader.cpp
                  BinaryTree.h
+                 BitmapAlloc.h
                  Delegate.h
                  DynLib.h
                  DynLib.cpp
+                 InplaceFunction.h
                  Json.h
                  Json.cpp
                  Log.h
@@ -36,11 +37,26 @@ set(SOURCE_FILES AssetFile.h
                  PlatformSDL.cpp
                  PoolAlloc.h
                  Signal_.h
+                 SmallVector.h
                  SpinLock.h
                  ThreadPool.h
                  ThreadWorker.h
                  Time_.h
-                 Time.cpp)
+                 Time.cpp
+                 Variant.h)
+
+IF(WIN32)
+set(SOURCE_FILES ${SOURCE_FILES}
+                 AsyncFileReader_win32.cpp)
+ELSE(WIN32)
+IF(APPLE)
+    set(SOURCE_FILES ${SOURCE_FILES}
+                     AsyncFileReader_posix_aio.cpp)
+ELSE(APPLE)
+    set(SOURCE_FILES ${SOURCE_FILES}
+                     AsyncFileReader_aio.cpp)
+ENDIF(APPLE)
+ENDIF(WIN32)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 
@@ -52,6 +68,10 @@ if(ENABLE_UNITYBUILD)
     list(APPEND ALL_SOURCE_FILES _Sys.cpp)
     source_group("src" FILES _Sys.cpp)
 endif()
+
+if(MSVC)
+    list(APPEND ALL_SOURCE_FILES _CustomTypes.natvis)
+endif(MSVC)
 
 add_library(Sys STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Sys ${LIBS})

@@ -11,22 +11,18 @@ void test_optional() {
         // Create Optional
         class MyObj {
             bool b;
-        public:
-            MyObj(int) : b(true) {
-                printf("constructed\n");
-            }
+
+          public:
+            MyObj(int) : b(true) { }
             MyObj(const MyObj &rhs) {
                 b = rhs.b;
-                printf("copied\n");
             }
-            MyObj(MyObj &&rhs) {
-                printf("moved\n");
+            MyObj(MyObj &&rhs) noexcept {
                 b = rhs.b;
                 rhs.b = false;
             }
             ~MyObj() {
                 if (b) {
-                    printf("destroyed\n");
                 }
             }
         };
@@ -45,4 +41,3 @@ void test_optional() {
         require(!v2.initialized());
     }
 }
-

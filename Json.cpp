@@ -1,43 +1,80 @@
 #include "Json.h"
 
-//#include <cctype>
-//#include <cassert>
 #include <cstring>
 
 #include <iostream>
 #include <stdexcept>
 
-//#pragma warning(disable : 4996)
-
-bool JsNumber::Read(std::istream &in) {
+bool JsLiteral::Read(std::istream &in) {
     char c;
-    while (in.read(&c, 1) && isspace(c));
+    while (in.read(&c, 1) && isspace(c))
+        ;
     in.seekg(-1, std::ios::cur);
-    return bool(in >> val);
+
+    char str[5]{};
+    if (!in.read(str, 4))
+        return false;
+
+    if (strcmp(str, "null") == 0) {
+        val = JsLiteralType::Null;
+        return true;
+    } else if (strcmp(str, "true") == 0) {
+        val = JsLiteralType::True;
+        return true;
+    } else if (strcmp(str, "fals") == 0) {
+        if (!in.read(&c, 1) || c != 'e')
+            return false;
+        val = JsLiteralType::False;
+        return true;
+    }
+
+    std::cerr << "JsLiteral::Read(): null, true or false expected" << std::endl;
+    return false;
 }
 
-void JsNumber::Write(std::ostream &out, JsFlags /*flags*/) const {
-    out << val;
+void JsLiteral::Write(std::ostream &out, const JsFlags /*flags*/) const {
+    if (val == JsLiteralType::True) {
+        out << "true";
+    } else if (val == JsLiteralType::False) {
+        out << "false";
+    } else if (val == JsLiteralType::Null) {
+        out << "null";
+    }
 }
 
 /////////////////////////////////////////////////////////////////
 
-bool JsString::Read(std::istream &in) {
+bool JsNumber::Read(std::istream &in) {
+    char c;
+    while (in.read(&c, 1) && isspace(c))
+        ;
+    in.seekg(-1, std::ios::cur);
+    return bool(in >> val);
+}
+
+void JsNumber::Write(std::ostream &out, const JsFlags /*flags*/) const { out << val; }
+
+/////////////////////////////////////////////////////////////////
+
+template <typename Alloc> bool JsStringT<Alloc>::Read(std::istream &in) {
     char cur, prev = 0;
-    while (in.read(&cur, 1) && isspace(cur));
+    while (in.read(&cur, 1) && isspace(cur))
+        ;
     if (cur != '\"') {
         std::cerr << "JsString::Read(): Expected '\"' instead of " << cur << std::endl;
         return false;
     }
     while (in.read(&cur, 1)) {
-        if (cur == '\"' && prev != '\\') break;
+        if (cur == '\"' && prev != '\\')
+            break;
         if (prev == '\\') {
             char new_c = 0;
-            if (cur == '\"' || cur == '\\' || cur == '/' || cur == '\t' || cur == '\n' || cur == '\r' || cur == '\f' || cur == '\b') {
+            if (cur == '\"' || cur == '\\' || cur == '/' || cur == '\t' || cur == '\n' ||
+                cur == '\r' || cur == '\f' || cur == '\b') {
                 new_c = cur;
             }
             if (new_c) {
-                val = val.substr(0, val.length() - 1);
+                val.pop_back();
                 val += new_c;
             }
         }
@@ -47,35 +84,56 @@ bool JsString::Read(std::istream &in) {
     return true;
 }
 
-void JsString::Write(std::ostream &out, JsFlags /*flags*/) const {
+template <typename Allocator>
+void JsStringT<Allocator>::Write(std::ostream &out, const JsFlags /*flags*/) const {
     out << '\"' << val << '\"';
 }
 
+template struct JsStringT<std::allocator<char>>;
+template struct JsStringT<Sys::MultiPoolAllocator<char>>;
+
 /////////////////////////////////////////////////////////////////
 
-JsArray::JsArray(const JsElement *v, size_t num) {
+template <typename Alloc>
+JsArrayT<Alloc>::JsArrayT(const JsElementT<Alloc> *v, const size_t num,
+                          const Alloc &alloc)
+    : elements(alloc) {
     elements.assign(v, v + num);
 }
 
-JsArray::JsArray(const std::initializer_list<JsElement> &l) {
-    elements.assign(l);
+template <typename Alloc> JsElementT<Alloc> &JsArrayT<Alloc>::operator[](const size_t i) {
+    auto it = elements.begin();
+    std::advance(it, i);
+    return *it;
 }
 
-JsArray::JsArray(std::initializer_list<JsElement> &&l) {
-    elements.assign(std::move(l));
+template <typename Alloc>
+const JsElementT<Alloc> &JsArrayT<Alloc>::operator[](const size_t i) const {
+    auto it = elements.cbegin();
+    std::advance(it, i);
+    return *it;
 }
 
-const JsElement &JsArray::at(size_t i) const {
-    if (i >= Size()) throw std::out_of_range("Index out of range!");
+template <typename Alloc>
+const JsElementT<Alloc> &JsArrayT<Alloc>::at(const size_t i) const {
+    if (i >= Size()) {
+        throw std::out_of_range("Index out of range!");
+    }
     return operator[](i);
 }
 
-bool JsArray::operator==(const JsArray &rhs) const {
-    if (elements.size() != rhs.elements.size()) return false;
+template <typename Alloc> bool JsArrayT<Alloc>::operator==(const JsArrayT &rhs) const {
+    if (elements.size() != rhs.elements.size()) {
+        return false;
+    }
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
 }
 
-bool JsArray::Read(std::istream &in) {
+template <typename Alloc> void JsArrayT<Alloc>::Push(JsElementT<Alloc> &&el) {
+    elements.emplace_back(std::move(el));
+}
+
+template <typename Alloc> bool JsArrayT<Alloc>::Read(std::istream &in) {
     char c;
     if (!in.read(&c, 1) || c != '[') {
         std::cerr << "JsArray::Read(): Expected '[' instead of " << c << std::endl;
@@ -83,19 +141,25 @@ bool JsArray::Read(std::istream &in) {
     }
 
     while (in.read(&c, 1)) {
-        if (isspace(c)) continue;
-        if (c == ']') return true;
+        if (::isspace(c)) {
+            continue;
+        }
+        if (c == ']') {
+            return true;
+        }
         in.seekg(-1, std::ios::cur);
 
-        elements.emplace_back(JS_NULL);
-        if (!elements.back().Read(in)) {
+        elements.emplace_back(JsLiteralType::Null);
+        if (!elements.back().Read(in, elements.get_allocator())) {
             return false;
         }
 
-        while (in.read(&c, 1) && isspace(c));
+        while (in.read(&c, 1) && isspace(c))
+            ;
         if (c != ',') {
             if (c != ']') {
-                std::cerr << "JsArray::Read(): Expected ']' instead of " << c << std::endl;
+                std::cerr << "JsArray::Read(): Expected ']' instead of " << c
+                          << std::endl;
                 return false;
             }
             return true;
@@ -104,7 +168,8 @@ bool JsArray::Read(std::istream &in) {
     return false;
 }
 
-void JsArray::Write(std::ostream &out, JsFlags flags) const {
+template <typename Alloc>
+void JsArrayT<Alloc>::Write(std::ostream &out, JsFlags flags) const {
     flags.level++;
     std::string ident_str;
     if (flags.use_new_lines) {
@@ -112,7 +177,7 @@ void JsArray::Write(std::ostream &out, JsFlags flags) const {
     }
     if (flags.ident_levels) {
         for (int i = 0; i < flags.level; i++) {
-            ident_str += '\t';
+            ident_str += flags.use_spaces ? "    " : "\t";
         }
     }
     out << '[';
@@ -124,30 +189,48 @@ void JsArray::Write(std::ostream &out, JsFlags flags) const {
         }
     }
     if (!ident_str.empty()) {
-        ident_str = ident_str.substr(0, ident_str.length() - 1);
+        ident_str = ident_str.substr(0, ident_str.length() - (flags.use_spaces ? 4 : 1));
     }
     out << ident_str << ']';
 }
 
+template struct JsArrayT<std::allocator<char>>;
+template struct JsArrayT<Sys::MultiPoolAllocator<char>>;
+
 /////////////////////////////////////////////////////////////////
 
-std::pair<std::string, JsElement> &JsObject::operator[](size_t i) {
+template <typename Alloc>
+const std::pair<StdString<Alloc>, JsElementT<Alloc>> &
+JsObjectT<Alloc>::operator[](size_t i) const {
+    auto it = elements.cbegin();
+    std::advance(it, i);
+    return *it;
+}
+
+template <typename Alloc>
+std::pair<StdString<Alloc>, JsElementT<Alloc>> &JsObjectT<Alloc>::operator[](size_t i) {
     auto it = elements.begin();
     std::advance(it, i);
     return *it;
 }
 
-JsElement &JsObject::operator[](const std::string &s) {
+template <typename Alloc>
+JsElementT<Alloc> &JsObjectT<Alloc>::operator[](const StdString<Alloc> &s) {
     for (auto &e : elements) {
         if (e.first == s) {
             return e.second;
         }
     }
-    elements.emplace_back(s, JsLiteral{ JS_NULL });
+    elements.emplace_back(s, JsLiteral{JsLiteralType::Null});
     return elements.back().second;
 }
 
-const JsElement &JsObject::at(const std::string &s) const {
+template <typename Alloc> JsElementT<Alloc> &JsObjectT<Alloc>::operator[](const char *s) {
+    return operator[](StdString<Alloc>{s, elements.get_allocator()});
+}
+
+template <typename Alloc>
+const JsElementT<Alloc> &JsObjectT<Alloc>::at(const char *s) const {
     for (const auto &e : elements) {
         if (e.first == s) {
             return e.second;
@@ -156,7 +239,7 @@ const JsElement &JsObject::at(const std::string &s) const {
     throw std::out_of_range(std::string("No such element! \"") + s + "\"");
 }
 
-JsElement &JsObject::at(const std::string &s) {
+template <typename Alloc> JsElementT<Alloc> &JsObjectT<Alloc>::at(const char *s) {
     for (auto &e : elements) {
         if (e.first == s) {
             return e.second;
@@ -165,58 +248,99 @@ JsElement &JsObject::at(const std::string &s) {
     throw std::out_of_range(std::string("No such element! \"") + s + "\"");
 }
 
-bool JsObject::operator==(const JsObject &rhs) const {
-    if (elements.size() != rhs.elements.size()) return false;
+template <typename Alloc>
+const JsElementT<Alloc> &JsObjectT<Alloc>::at(const StdString<Alloc> &s) const {
+    for (const auto &e : elements) {
+        if (e.first == s) {
+            return e.second;
+        }
+    }
+    throw std::out_of_range(std::string("No such element! \"") + s.c_str() + "\"");
+}
+
+template <typename Alloc>
+JsElementT<Alloc> &JsObjectT<Alloc>::at(const StdString<Alloc> &s) {
+    for (auto &e : elements) {
+        if (e.first == s) {
+            return e.second;
+        }
+    }
+    throw std::out_of_range(std::string("No such element! \"") + s.c_str() + "\"");
+}
+
+template <typename Alloc> bool JsObjectT<Alloc>::operator==(const JsObjectT &rhs) const {
+    if (elements.size() != rhs.elements.size()) {
+        return false;
+    }
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
 }
 
-bool JsObject::Has(const std::string &s) const {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            return true;
+template <typename Alloc> size_t JsObjectT<Alloc>::IndexOf(const char *s) const {
+    for (auto it = elements.begin(); it != elements.end(); ++it) {
+        if (it->first == s) {
+            return std::distance(elements.begin(), it);
         }
     }
-    return false;
+    return elements.size();
 }
 
-void JsObject::Push(const std::string &s, const JsElement &el) {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            e.second = el;
-            return;
+template <typename Alloc> size_t JsObjectT<Alloc>::IndexOf(const StdString<Alloc> &s) const {
+    for (auto it = elements.begin(); it != elements.end(); ++it) {
+        if (it->first == s) {
+            return std::distance(elements.begin(), it);
         }
     }
+    return elements.size();
+}
+
+template <typename Alloc>
+size_t JsObjectT<Alloc>::Push(const StdString<Alloc> &s, const JsElementT<Alloc> &el) {
     elements.emplace_back(s, el);
+    return elements.size() - 1;
 }
 
-bool JsObject::Read(std::istream &in) {
+template <typename Alloc>
+size_t JsObjectT<Alloc>::Push(const StdString<Alloc> &s, JsElementT<Alloc> &&el) {
+    elements.emplace_back(s, std::move(el));
+    return elements.size() - 1;
+}
+
+template <typename Alloc> bool JsObjectT<Alloc>::Read(std::istream &in) {
     char c;
     if (!in.read(&c, 1) || c != '{') {
         std::cerr << "JsObject::Read(): Expected '{' instead of " << c << std::endl;
         return false;
     }
     while (in.read(&c, 1)) {
-        if (isspace(c)) continue;
-        if (c == '}') return true;
+        if (isspace(c)) {
+            continue;
+        }
+        if (c == '}') {
+            return true;
+        }
         in.seekg(-1, std::ios::cur);
 
-        JsString key;
+        JsStringT<Alloc> key(elements.get_allocator());
         if (!key.Read(in)) {
             return false;
         }
 
-        while (in.read(&c, 1) && isspace(c));
-        if (c != ':') return false;
+        while (in.read(&c, 1) && isspace(c))
+            ;
+        if (c != ':')
+            return false;
 
-        while (in.read(&c, 1) && isspace(c));
+        while (in.read(&c, 1) && isspace(c))
+            ;
         in.seekg(-1, std::ios::cur);
 
-        elements.emplace_back(key.val, JsLiteral{ JS_NULL });
-        if (!elements.back().second.Read(in)) {
+        elements.emplace_back(key.val, JsLiteral{JsLiteralType::Null});
+        if (!elements.back().second.Read(in, elements.get_allocator())) {
             return false;
         }
 
-        while (in.read(&c, 1) && isspace(c));
+        while (in.read(&c, 1) && isspace(c))
+            ;
         if (c != ',') {
             return (c == '}');
         }
@@ -224,7 +348,8 @@ bool JsObject::Read(std::istream &in) {
     return false;
 }
 
-void JsObject::Write(std::ostream &out, JsFlags flags) const {
+template <typename Alloc>
+void JsObjectT<Alloc>::Write(std::ostream &out, JsFlags flags) const {
     flags.level++;
     std::string ident_str;
     if (flags.use_new_lines) {
@@ -232,7 +357,7 @@ void JsObject::Write(std::ostream &out, JsFlags flags) const {
     }
     if (flags.ident_levels) {
         for (int i = 0; i < flags.level; i++) {
-            ident_str += '\t';
+            ident_str += flags.use_spaces ? "    " : "\t";
         }
     }
     out << '{';
@@ -245,272 +370,332 @@ void JsObject::Write(std::ostream &out, JsFlags flags) const {
         }
     }
     if (!ident_str.empty()) {
-        ident_str = ident_str.substr(0, ident_str.length() - 1);
+        ident_str = ident_str.substr(0, ident_str.length() - (flags.use_spaces ? 4 : 1));
     }
     out << ident_str << '}';
 }
 
-/////////////////////////////////////////////////////////////////
-
-bool JsLiteral::Read(std::istream &in) {
-    char c;
-    while (in.read(&c, 1) && isspace(c));
-    in.seekg(-1, std::ios::cur);
-
-    char str[5] {};
-    if (!in.read(str, 4)) return false;
-
-    if (strcmp(str, "null") == 0) {
-        val = JS_NULL;
-        return true;
-    } else if (strcmp(str, "true") == 0) {
-        val = JS_TRUE;
-        return true;
-    } else if (strcmp(str, "fals") == 0) {
-        if (!in.read(&c, 1) || c != 'e') return false;
-        val = JS_FALSE;
-        return true;
-    }
-
-    std::cerr << "JsLiteral::Read(): null, true or false expected" << std::endl;
-    return false;
-}
-
-void JsLiteral::Write(std::ostream &out, JsFlags /*flags*/) const {
-    if (val == JS_TRUE) {
-        out << "true";
-    } else if (val == JS_FALSE) {
-        out << "false";
-    } else if (val == JS_NULL) {
-        out << "null";
-    }
-}
+template struct JsObjectT<std::allocator<char>>;
+template struct JsObjectT<Sys::MultiPoolAllocator<char>>;
 
 /////////////////////////////////////////////////////////////////
 
-void JsElement::DestroyValue() {
-    if (type_ == JS_NUMBER) {
-        delete num_;
-        num_ = nullptr;
-    } else if (type_ == JS_STRING) {
-        delete str_;
-        str_ = nullptr;
-    } else if (type_ == JS_ARRAY) {
-        delete arr_;
-        arr_ = nullptr;
-    } else if (type_ == JS_OBJECT) {
-        delete obj_;
-        obj_ = nullptr;
-    } else if (type_ == JS_LITERAL) {
-        delete lit_;
-        lit_ = nullptr;
+template <typename Alloc>
+JsElementT<Alloc>::JsElementT(const JsLiteralType lit_type) : type_(JsType::Literal) {
+    new (&data_) JsLiteral{lit_type};
+}
+
+template <typename Alloc>
+JsElementT<Alloc>::JsElementT(const double val) : type_(JsType::Number) {
+    new (&data_) JsNumber{val};
+}
+
+template <typename Alloc>
+JsElementT<Alloc>::JsElementT(const char *str, const Alloc &alloc)
+    : type_(JsType::String) {
+    new (&data_) JsStringT<Alloc>{str, alloc};
+}
+
+template <typename Alloc>
+JsElementT<Alloc>::JsElementT(const JsType type, const Alloc &alloc) : type_(type) {
+    if (type_ == JsType::Literal) {
+        new (&data_) JsLiteral{JsLiteralType::Null};
+    } else if (type_ == JsType::Number) {
+        new (&data_) JsNumber{};
+    } else if (type_ == JsType::String) {
+        new (&data_) JsStringT<Alloc>{alloc};
+    } else if (type_ == JsType::Array) {
+        new (&data_) JsArrayT<Alloc>{alloc};
+    } else if (type_ == JsType::Object) {
+        new (&data_) JsObjectT<Alloc>{alloc};
     }
 }
 
-JsElement::JsElement(double val) : type_(JS_NUMBER) {
-    num_ = new JsNumber(val);
+template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsLiteral &rhs) {
+    new (&data_) JsLiteral{rhs};
+    type_ = JsType::Literal;
 }
 
-JsElement::JsElement(const char *str) : type_(JS_STRING) {
-    str_ = new JsString(str);
+template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsNumber &rhs) {
+    new (&data_) JsNumber{rhs};
+    type_ = JsType::Number;
 }
 
-JsElement::JsElement(JsLiteralType lit_type) : type_(JS_LITERAL) {
-    lit_ = new JsLiteral(lit_type);
+template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsStringT<Alloc> &rhs) {
+    new (&data_) JsStringT<Alloc>{rhs};
+    type_ = JsType::String;
 }
 
-JsElement::JsElement(JsType type) : type_(type) {
-    if (type_ == JS_NUMBER) {
-        num_ = new JsNumber();
-    } else if (type_ == JS_STRING) {
-        str_ = new JsString();
-    } else if (type_ == JS_ARRAY) {
-        arr_ = new JsArray();
-    } else if (type_ == JS_OBJECT) {
-        obj_ = new JsObject();
-    } else if (type_ == JS_LITERAL) {
-        lit_ = new JsLiteral(JS_NULL);
+template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsArrayT<Alloc> &rhs) {
+    new (&data_) JsArrayT<Alloc>{rhs};
+    type_ = JsType::Array;
+}
+
+template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsObjectT<Alloc> &rhs) {
+    new (&data_) JsObjectT<Alloc>{rhs};
+    type_ = JsType::Object;
+}
+
+template <typename Alloc> JsElementT<Alloc>::JsElementT(const JsElementT<Alloc> &rhs) {
+    if (rhs.type_ == JsType::Literal) {
+        new (&data_) JsLiteral{reinterpret_cast<const JsLiteral &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Number) {
+        new (&data_) JsNumber{reinterpret_cast<const JsNumber &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::String) {
+        new (&data_)
+            JsStringT<Alloc>{reinterpret_cast<const JsStringT<Alloc> &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Array) {
+        new (&data_)
+            JsArrayT<Alloc>{reinterpret_cast<const JsArrayT<Alloc> &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Object) {
+        new (&data_)
+            JsObjectT<Alloc>{reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_)};
     }
-}
-
-JsElement::JsElement(const JsNumber &rhs) {
-    type_ = JS_NUMBER;
-    num_ = new JsNumber(rhs);
-}
-
-JsElement::JsElement(const JsString &rhs) {
-    type_ = JS_STRING;
-    str_ = new JsString(rhs);
-}
-
-JsElement::JsElement(const JsArray &rhs) {
-    type_ = JS_ARRAY;
-    arr_ = new JsArray(rhs);
-}
-
-JsElement::JsElement(const JsObject &rhs) {
-    type_ = JS_OBJECT;
-    obj_ = new JsObject(rhs);
-}
-
-JsElement::JsElement(const JsLiteral &rhs) {
-    type_ = JS_LITERAL;
-    lit_ = new JsLiteral(rhs);
-}
-
-JsElement::JsElement(const JsElement &rhs) {
     type_ = rhs.type_;
-    if (type_ == JS_NUMBER) {
-        num_ = new JsNumber(*rhs.num_);
-    } else if (type_ == JS_STRING) {
-        str_ = new JsString(*rhs.str_);
-    } else if (type_ == JS_ARRAY) {
-        arr_ = new JsArray(*rhs.arr_);
-    } else if (type_ == JS_OBJECT) {
-        obj_ = new JsObject(*rhs.obj_);
-    } else if (type_ == JS_LITERAL) {
-        lit_ = new JsLiteral(*rhs.lit_);
+}
+
+template <typename Alloc> JsElementT<Alloc>::JsElementT(JsStringT<Alloc> &&rhs) {
+    new (&data_) JsStringT<Alloc>{std::move(rhs)};
+    type_ = JsType::String;
+}
+
+template <typename Alloc> JsElementT<Alloc>::JsElementT(JsArrayT<Alloc> &&rhs) {
+    new (&data_) JsArrayT<Alloc>{std::move(rhs)};
+    type_ = JsType::Array;
+}
+
+template <typename Alloc> JsElementT<Alloc>::JsElementT(JsObjectT<Alloc> &&rhs) {
+    new (&data_) JsObjectT<Alloc>{std::move(rhs)};
+    type_ = JsType::Object;
+}
+
+template <typename Alloc> JsElementT<Alloc>::JsElementT(JsElementT<Alloc> &&rhs) {
+    if (rhs.type_ == JsType::Literal) {
+        new (&data_) JsLiteral{reinterpret_cast<const JsLiteral &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Number) {
+        new (&data_) JsNumber{reinterpret_cast<const JsNumber &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::String) {
+        new (&data_)
+            JsStringT<Alloc>{std::move(reinterpret_cast<JsStringT<Alloc> &>(rhs.data_))};
+    } else if (rhs.type_ == JsType::Array) {
+        new (&data_)
+            JsArrayT<Alloc>{std::move(reinterpret_cast<JsArrayT<Alloc> &>(rhs.data_))};
+    } else if (rhs.type_ == JsType::Object) {
+        new (&data_)
+            JsObjectT<Alloc>{std::move(reinterpret_cast<JsObjectT<Alloc> &>(rhs.data_))};
     }
+    type_ = rhs.type_;
 }
 
-JsElement::~JsElement() {
-    DestroyValue();
+template <typename Alloc> JsElementT<Alloc>::~JsElementT() { Destroy(); }
+
+template <typename Alloc> void JsElementT<Alloc>::Destroy() {
+    if (type_ == JsType::Literal) {
+        reinterpret_cast<JsLiteral &>(data_).~JsLiteral();
+    } else if (type_ == JsType::Number) {
+        reinterpret_cast<JsNumber &>(data_).~JsNumber();
+    } else if (type_ == JsType::String) {
+        reinterpret_cast<JsStringT<Alloc> &>(data_).~JsStringT();
+    } else if (type_ == JsType::Array) {
+        reinterpret_cast<JsArrayT<Alloc> &>(data_).~JsArrayT();
+    } else if (type_ == JsType::Object) {
+        reinterpret_cast<JsObjectT<Alloc> &>(data_).~JsObjectT();
+    }
+    type_ = JsType::Invalid;
 }
 
-JsElement::operator JsNumber &() {
-    if (type_ != JS_NUMBER) throw std::runtime_error("Wrong type!");
-    return *num_;
+template <typename Alloc> JsLiteral &JsElementT<Alloc>::as_lit() {
+    if (type_ != JsType::Literal) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<JsLiteral &>(data_);
 }
 
-JsElement::operator JsString &() {
-    if (type_ != JS_STRING) throw std::runtime_error("Wrong type!");
-    return *str_;
+template <typename Alloc> JsNumber &JsElementT<Alloc>::as_num() {
+    if (type_ != JsType::Number) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<JsNumber &>(data_);
 }
 
-JsElement::operator JsArray &() {
-    if (type_ != JS_ARRAY) throw std::runtime_error("Wrong type!");
-    return *arr_;
+template <typename Alloc> JsStringT<Alloc> &JsElementT<Alloc>::as_str() {
+    if (type_ != JsType::String) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<JsStringT<Alloc> &>(data_);
 }
 
-JsElement::operator JsObject &() {
-    if (type_ != JS_OBJECT) throw std::runtime_error("Wrong type!");
-    return *obj_;
+template <typename Alloc> JsArrayT<Alloc> &JsElementT<Alloc>::as_arr() {
+    if (type_ != JsType::Array) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<JsArrayT<Alloc> &>(data_);
 }
 
-JsElement::operator JsLiteral &() {
-    if (type_ != JS_LITERAL) throw std::runtime_error("Wrong type!");
-    return *lit_;
+template <typename Alloc> JsObjectT<Alloc> &JsElementT<Alloc>::as_obj() {
+    if (type_ != JsType::Object) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<JsObjectT<Alloc> &>(data_);
 }
 
 //
 
-JsElement::operator const JsNumber &() const {
-    if (type_ != JS_NUMBER) throw std::runtime_error("Wrong type!");
-    return *num_;
+template <typename Alloc> const JsLiteral &JsElementT<Alloc>::as_lit() const {
+    if (type_ != JsType::Literal) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<const JsLiteral &>(data_);
 }
 
-JsElement::operator const JsString &() const {
-    if (type_ != JS_STRING) throw std::runtime_error("Wrong type!");
-    return *str_;
+template <typename Alloc> const JsNumber &JsElementT<Alloc>::as_num() const {
+    if (type_ != JsType::Number) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<const JsNumber &>(data_);
 }
 
-JsElement::operator const JsArray &() const {
-    if (type_ != JS_ARRAY) throw std::runtime_error("Wrong type!");
-    return *arr_;
+template <typename Alloc> const JsStringT<Alloc> &JsElementT<Alloc>::as_str() const {
+    if (type_ != JsType::String) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<const JsStringT<Alloc> &>(data_);
 }
 
-JsElement::operator const JsObject &() const {
-    if (type_ != JS_OBJECT) throw std::runtime_error("Wrong type!");
-    return *obj_;
+template <typename Alloc> const JsArrayT<Alloc> &JsElementT<Alloc>::as_arr() const {
+    if (type_ != JsType::Array) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<const JsArrayT<Alloc> &>(data_);
 }
 
-JsElement::operator const JsLiteral &() const {
-    if (type_ != JS_LITERAL) throw std::runtime_error("Wrong type!");
-    return *lit_;
+template <typename Alloc> const JsObjectT<Alloc> &JsElementT<Alloc>::as_obj() const {
+    if (type_ != JsType::Object) {
+        throw std::bad_cast();
+    }
+    return reinterpret_cast<const JsObjectT<Alloc> &>(data_);
 }
 
-JsElement &JsElement::operator=(JsElement &&rhs) {
-    DestroyValue();
+//
+
+template <typename Alloc>
+JsElementT<Alloc> &JsElementT<Alloc>::operator=(JsElementT &&rhs) noexcept {
+    Destroy();
+    if (rhs.type_ == JsType::Literal) {
+        new (&data_) JsLiteral{reinterpret_cast<JsLiteral &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Number) {
+        new (&data_) JsNumber{reinterpret_cast<JsNumber &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::String) {
+        new (&data_)
+            JsStringT<Alloc>{std::move(reinterpret_cast<JsStringT<Alloc> &>(rhs.data_))};
+    } else if (rhs.type_ == JsType::Array) {
+        new (&data_)
+            JsArrayT<Alloc>{std::move(reinterpret_cast<JsArrayT<Alloc> &>(rhs.data_))};
+    } else if (rhs.type_ == JsType::Object) {
+        new (&data_)
+            JsObjectT<Alloc>{std::move(reinterpret_cast<JsObjectT<Alloc> &>(rhs.data_))};
+    }
     type_ = rhs.type_;
-    p_ = rhs.p_;
-    rhs.p_ = nullptr;
-
     return *this;
 }
 
-JsElement &JsElement::operator=(const JsElement &rhs) {
-    DestroyValue();
-    type_ = rhs.type_;
-    if (type_ == JS_NUMBER) {
-        num_ = new JsNumber(*rhs.num_);
-    } else if (type_ == JS_STRING) {
-        str_ = new JsString(*rhs.str_);
-    } else if (type_ == JS_ARRAY) {
-        arr_ = new JsArray(*rhs.arr_);
-    } else if (type_ == JS_OBJECT) {
-        obj_ = new JsObject(*rhs.obj_);
-    } else if (type_ == JS_LITERAL) {
-        lit_ = new JsLiteral(*rhs.lit_);
+template <typename Alloc>
+JsElementT<Alloc> &JsElementT<Alloc>::operator=(const JsElementT &rhs) {
+    if (&rhs == this) {
+        return *this;
     }
+
+    Destroy();
+    if (rhs.type_ == JsType::Literal) {
+        new (&data_) JsLiteral{reinterpret_cast<const JsLiteral &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Number) {
+        new (&data_) JsNumber{reinterpret_cast<const JsNumber &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::String) {
+        new (&data_)
+            JsStringT<Alloc>{reinterpret_cast<const JsStringT<Alloc> &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Array) {
+        new (&data_)
+            JsArrayT<Alloc>{reinterpret_cast<const JsArrayT<Alloc> &>(rhs.data_)};
+    } else if (rhs.type_ == JsType::Object) {
+        new (&data_)
+            JsObjectT<Alloc>{reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_)};
+    }
+    type_ = rhs.type_;
     return *this;
 }
 
-bool JsElement::operator==(const JsElement &rhs) const {
-    if (type_ != rhs.type_) return false;
-    if (type_ == JS_NUMBER) {
-        return *num_ == *rhs.num_;
-    } else if (type_ == JS_STRING) {
-        return *str_ == *rhs.str_;
-    } else if (type_ == JS_ARRAY) {
-        return *arr_ == *rhs.arr_;
-    } else if (type_ == JS_OBJECT) {
-        return *obj_ == *rhs.obj_;
-    } else if (type_ == JS_LITERAL) {
-        return *lit_ == *rhs.lit_;
+template <typename Alloc>
+bool JsElementT<Alloc>::operator==(const JsElementT &rhs) const {
+    if (type_ != rhs.type_)
+        return false;
+
+    if (type_ == JsType::Literal) {
+        return reinterpret_cast<const JsLiteral &>(data_) ==
+               reinterpret_cast<const JsLiteral &>(rhs.data_);
+    } else if (type_ == JsType::Number) {
+        return reinterpret_cast<const JsNumber &>(data_) ==
+               reinterpret_cast<const JsNumber &>(rhs.data_);
+    } else if (type_ == JsType::String) {
+        return reinterpret_cast<const JsStringT<Alloc> &>(data_) ==
+               reinterpret_cast<const JsStringT<Alloc> &>(rhs.data_);
+    } else if (type_ == JsType::Array) {
+        return reinterpret_cast<const JsArrayT<Alloc> &>(data_) ==
+               reinterpret_cast<const JsArrayT<Alloc> &>(rhs.data_);
+    } else if (type_ == JsType::Object) {
+        return reinterpret_cast<const JsObjectT<Alloc> &>(data_) ==
+               reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_);
     }
+
     return false;
 }
 
-bool JsElement::Read(std::istream &in) {
-    DestroyValue();
+template <typename Alloc>
+bool JsElementT<Alloc>::Read(std::istream &in, const Alloc &alloc) {
+    Destroy();
+
     char c;
-    while (in.read(&c, 1) && isspace(c));
+    while (in.read(&c, 1) && isspace(c))
+        ;
     in.seekg(-1, std::ios::cur);
     if (c == '\"') {
-        type_ = JS_STRING;
-        str_ = new JsString();
-        return str_->Read(in);
+        new (&data_) JsStringT<Alloc>{alloc};
+        type_ = JsType::String;
+        return reinterpret_cast<JsStringT<Alloc> &>(data_).Read(in);
     } else if (c == '[') {
-        type_ = JS_ARRAY;
-        arr_ = new JsArray();
-        return arr_->Read(in);
+        new (&data_) JsArrayT<Alloc>{alloc};
+        type_ = JsType::Array;
+        return reinterpret_cast<JsArrayT<Alloc> &>(data_).Read(in);
     } else if (c == '{') {
-        type_ = JS_OBJECT;
-        obj_ = new JsObject();
-        return obj_->Read(in);
+        new (&data_) JsObjectT<Alloc>{alloc};
+        type_ = JsType::Object;
+        return reinterpret_cast<JsObjectT<Alloc> &>(data_).Read(in);
     } else {
         if (isdigit(c) || c == '-') {
-            type_ = JS_NUMBER;
-            num_ = new JsNumber();
-            return num_->Read(in);
+            new (&data_) JsNumber{};
+            type_ = JsType::Number;
+            return reinterpret_cast<JsNumber &>(data_).Read(in);
         } else {
-            type_ = JS_LITERAL;
-            lit_ = new JsLiteral(JS_NULL);
-            return lit_->Read(in);
+            new (&data_) JsLiteral{JsLiteralType::Null};
+            type_ = JsType::Literal;
+            return reinterpret_cast<JsLiteral &>(data_).Read(in);
         }
     }
 }
 
-void JsElement::Write(std::ostream &out, JsFlags flags) const {
-    if (type_ == JS_NUMBER) {
-        num_->Write(out, flags);
-    } else if (type_ == JS_STRING) {
-        str_->Write(out, flags);
-    } else if (type_ == JS_ARRAY) {
-        arr_->Write(out, flags);
-    } else if (type_ == JS_OBJECT) {
-        obj_->Write(out, flags);
-    } else if (type_ == JS_LITERAL) {
-        lit_->Write(out, flags);
+template <typename Alloc>
+void JsElementT<Alloc>::Write(std::ostream &out, const JsFlags flags) const {
+    if (type_ == JsType::Literal) {
+        reinterpret_cast<const JsLiteral &>(data_).Write(out, flags);
+    } else if (type_ == JsType::Number) {
+        reinterpret_cast<const JsNumber &>(data_).Write(out, flags);
+    } else if (type_ == JsType::String) {
+        reinterpret_cast<const JsStringT<Alloc> &>(data_).Write(out, flags);
+    } else if (type_ == JsType::Array) {
+        reinterpret_cast<const JsArrayT<Alloc> &>(data_).Write(out, flags);
+    } else if (type_ == JsType::Object) {
+        reinterpret_cast<const JsObjectT<Alloc> &>(data_).Write(out, flags);
     }
 }
+
+template struct JsElementT<std::allocator<char>>;
+template struct JsElementT<Sys::MultiPoolAllocator<char>>;

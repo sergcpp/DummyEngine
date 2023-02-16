@@ -48,12 +48,6 @@ public:
         return results;
     }
 
-    /*void FireV() {
-        for (auto &d : delegates_) {
-            d();
-        }
-    }*/
-
     template<R(*TFunc)(Args... args)>
     void Connect() {
         delegates_.emplace_back();
@@ -70,6 +64,63 @@ public:
     void Connect(const T *p_object) {
         delegates_.emplace_back();
         delegates_.back().template Bind<T, TMethod>(p_object);
+    }
+};
+
+template<typename TSignature, int N = 8>
+class SignalN;
+
+template<typename R, typename ...Args, int N>
+class SignalN<R(Args... args), N> {
+    Delegate<R(Args... args)> delegates_[N];
+    int count_ = 0;
+  public:
+    int size() const {
+        return count_;
+    }
+
+    void clear() {
+        fill(std::begin(delegates_), std::begin(delegates_) + count_, {});
+        count_ = 0;
+    }
+
+    R FireOne(size_t i, Args... args) {
+        return delegates_[i](args...);
+    }
+
+    void FireN(Args... args) {
+        for (int i = 0; i < count_; i++) {
+            delegates_[i](args...);
+        }
+    }
+
+    R FireL(Args... args) {
+        if (!count_) return R();
+        for (int i = 0; i < count_ - 1; i++) {
+            delegates_[i](args...);
+        }
+        return delegates_[count_ - 1](args...);
+    }
+
+    void FireV(Args... args, R *results) {
+        for (int i = 0; i < count_; i++) {
+            results[i] = delegates_[i](args...);
+        }
+    }
+
+    template<R(*TFunc)(Args... args)>
+    void Connect() {
+        delegates_[count_++].template Bind<TFunc>();
+    }
+
+    template<class T, R(T::*TMethod)(Args... args)>
+    void Connect(T *p_object) {
+        delegates_[count_++].template Bind<T, TMethod>(p_object);
+    }
+
+    template<class T, R(T::*TMethod)(Args... args) const>
+    void Connect(const T *p_object) {
+        delegates_[count_++].template Bind<T, TMethod>(p_object);
     }
 };
 

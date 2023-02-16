@@ -1,6 +1,6 @@
 #pragma once
 
-#if defined(WIN32)
+#if defined(_WIN32)
 #ifndef _WINDEF_
 struct HINSTANCE__; // Forward or never
 typedef HINSTANCE__* HINSTANCE;
@@ -9,7 +9,7 @@ typedef HINSTANCE__* HINSTANCE;
 
 namespace Sys {
 class DynLib {
-#if defined(WIN32)
+#if defined(_WIN32)
     HINSTANCE handle_;
 #elif defined(__unix__) || defined(__APPLE__)
     void *handle_;
@@ -19,14 +19,14 @@ public:
     explicit DynLib(const char *name);
 
     DynLib(const DynLib &rhs) = delete;
-    DynLib(DynLib &&rhs);
+    DynLib(DynLib &&rhs) noexcept;
 
     DynLib &operator=(const DynLib &rhs) = delete;
-    DynLib &operator=(DynLib &&rhs);
+    DynLib &operator=(DynLib &&rhs) noexcept;
 
     ~DynLib();
 
-    operator bool() const;
+    explicit operator bool() const;
 
     void *GetProcAddress(const char *name);
 };

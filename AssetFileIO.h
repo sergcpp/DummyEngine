@@ -23,6 +23,6 @@ void LoadAssetComplete(const char *url, T1 onload, T2 onerror) {
 }
 
 void InitWorker();
-void StopWorker();
+bool StopWorker();
 }
 

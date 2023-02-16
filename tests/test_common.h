@@ -13,7 +13,7 @@ static void handle_assert(bool passed, const char* assert, const char* file, lon
     }
 }
 
-#define require(x) handle_assert(x, #x , __FILE__, __LINE__ )
+#define require(x) handle_assert((x), #x , __FILE__, __LINE__ )
 
 #define require_throws(expr) {          \
             bool _ = false;             \
@@ -37,7 +37,7 @@ static void handle_assert(bool passed, const char* assert, const char* file, lon
 
 class Approx {
 public:
-    Approx(double val, double eps = 0.001) : val(val), eps(eps) {
+    explicit Approx(double val, double eps = 0.001) : val(val), eps(eps) {
         assert(eps > 0);
     }
 

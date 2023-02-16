@@ -8,7 +8,7 @@
 #include "../Pack.h"
 
 namespace {
-std::vector<std::string> file_list = { "./constant.fs", "./src/CMakeLists.txt" };
+std::vector<std::string> file_list = {"./constant.fs", "./src/CMakeLists.txt"};
 }
 
 void test_pack() {
@@ -21,12 +21,12 @@ void test_pack() {
             auto it = std::find(file_list.begin(), file_list.end(), name);
             require(it != file_list.end());
 
-            Sys::AssetFile in_file(name, Sys::AssetFile::FileIn);
+            Sys::AssetFile in_file(name, Sys::eOpenMode::In);
             require(in_file.size() == size);
 
             std::unique_ptr<char[]> buf(new char[size]);
             in_file.Read(buf.get(), (size_t)size);
-            const char *p1 = (char*)data;
+            const char *p1 = (char *)data;
             const char *p2 = buf.get();
             require(memcmp(p1, p2, (size_t)size) == 0);
         };
@@ -42,7 +42,7 @@ void test_pack() {
         // Add package to AssetFile
         Sys::AssetFile::AddPackage("./my_pack.pack");
 
-        Sys::AssetFile in_file1("./constant.fs", Sys::AssetFile::FileIn);
+        Sys::AssetFile in_file1("./constant.fs", Sys::eOpenMode::In);
         std::ifstream in_file2("./constant.fs", std::ios::ate | std::ios::binary);
         size_t size = (size_t)in_file2.tellg();
         in_file2.seekg(0, std::ios::beg);
