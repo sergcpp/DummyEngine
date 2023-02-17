@@ -32,9 +32,6 @@ set(SOURCE_FILES AssetFile.h
                  Optional.h
                  Pack.h
                  Pack.cpp
-                 Platform.h
-                 PlatformSDL.h
-                 PlatformSDL.cpp
                  PoolAlloc.h
                  Signal_.h
                  SmallVector.h
