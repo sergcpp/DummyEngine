@@ -171,13 +171,13 @@ macos-x86_64-build-job:
   extends:
     - .macos-x86_64-build-job
   tags:
-    - macos,x86_64
+    - macos
 
 macos-arm64-build-job:
   extends:
     - .macos-arm64-build-job
   tags:
-    - macos,arm64
+    - macos
 
 windows-x86_64-cpu-test-job:
   variables:
