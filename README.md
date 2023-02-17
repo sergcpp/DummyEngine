@@ -1,1 +1,1 @@
-Small library with platform-dependent stuff.
+# Small library with platform-dependent stuff
