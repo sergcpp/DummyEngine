@@ -14,4 +14,4 @@
 - This CHANGELOG file
 
 [unreleased]: https://gitlab.com/sergcpp/Sys/-/compare/v0.1.0...master
-[0.0.1]: https://gitlab.com/sergcpp/Sys/-/releases/v0.1.0
+[0.1.0]: https://gitlab.com/sergcpp/Sys/-/releases/v0.1.0
