@@ -469,7 +469,7 @@ template <typename Alloc> JsElementT<Alloc>::JsElementT(JsObjectT<Alloc> &&rhs) 
     type_ = JsType::Object;
 }
 
-template <typename Alloc> JsElementT<Alloc>::JsElementT(JsElementT<Alloc> &&rhs) {
+template <typename Alloc> JsElementT<Alloc>::JsElementT(JsElementT<Alloc> &&rhs) noexcept {
     if (rhs.type_ == JsType::Literal) {
         new (&data_) JsLiteral{reinterpret_cast<const JsLiteral &>(rhs.data_)};
     } else if (rhs.type_ == JsType::Number) {
