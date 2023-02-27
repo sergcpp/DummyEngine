@@ -5,6 +5,9 @@
 ### Added
 ### Fixed
 ### Changed
+
+- Async file reader is created on demand
+
 ### Removed
 
 ## [0.1.0] - 2023-02-18
