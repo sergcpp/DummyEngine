@@ -1,5 +1,7 @@
 #include "DynLib.h"
 
+#include <string>
+
 #if defined(_WIN32)
 #include "Windows.h"
 #elif defined(__unix__) || defined(__APPLE__)
