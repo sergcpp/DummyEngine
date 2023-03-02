@@ -3,10 +3,13 @@
 ## [Unreleased]
 
 ### Added
+
+    - Automatic dynlib extensions (.dll, .so, .dylib)
+
 ### Fixed
 ### Changed
 
-- Async file reader is created on demand
+    - Async file reader is created on demand
 
 ### Removed
 
@@ -14,7 +17,7 @@
 
 ### Added
 
-- This CHANGELOG file
+    - This CHANGELOG file
 
 [unreleased]: https://gitlab.com/sergcpp/Sys/-/compare/v0.1.0...master
 [0.1.0]: https://gitlab.com/sergcpp/Sys/-/releases/v0.1.0
