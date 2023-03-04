@@ -3,6 +3,8 @@
 #include <string>
 
 #if defined(_WIN32)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 #elif defined(__unix__) || defined(__APPLE__)
 #include "dlfcn.h"
