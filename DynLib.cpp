@@ -1,5 +1,7 @@
 #include "DynLib.h"
 
+#include <cstring>
+
 #include <string>
 
 #if defined(_WIN32)
