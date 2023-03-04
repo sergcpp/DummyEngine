@@ -10,11 +10,11 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_normal
     - cd build_normal
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_UNITYBUILD=OFF
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_UNITY_BUILD=OFF
     - cd ..
     - mkdir build_unity
     - cd build_unity
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - cmake --build build_normal --target ALL_BUILD --config Release --parallel 16
     - cmake --build build_normal --target ALL_BUILD --config Asan --parallel 16
@@ -38,11 +38,11 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_normal
     - cd build_normal
-    - cmake .. -G "Visual Studio 17 2022" -A ARM64 -DENABLE_UNITYBUILD=OFF
+    - cmake .. -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_UNITY_BUILD=OFF
     - cd ..
     - mkdir build_unity
     - cd build_unity
-    - cmake .. -G "Visual Studio 17 2022" -A ARM64 -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - cmake --build build_normal --target ALL_BUILD --config Release --parallel 16
     - cmake --build build_normal --target ALL_BUILD --config Asan --parallel 16
@@ -66,11 +66,11 @@ stages:
     - echo "Compiling the code..."
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - mkdir build_dbg
     - cd build_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - cmake --build build --target all --parallel 16
     - cmake --build build_dbg --target all --parallel 16
@@ -91,11 +91,11 @@ stages:
     - echo "Compiling the code..."
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DCMAKE_BUILD_TYPE=Release -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - mkdir build_dbg
     - cd build_dbg
-    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DCMAKE_BUILD_TYPE=Debug -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - cmake --build build --target all --parallel 16
     - cmake --build build_dbg --target all --parallel 16
@@ -116,11 +116,11 @@ stages:
     - echo "Compiling the code..."
     - mkdir build
     - cd build
-    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=arm64 -DCMAKE_BUILD_TYPE=Release -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=arm64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - mkdir build_dbg
     - cd build_dbg
-    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=arm64 -DCMAKE_BUILD_TYPE=Debug -DENABLE_UNITYBUILD=ON
+    - cmake .. -DCMAKE_APPLE_SILICON_PROCESSOR=arm64 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_UNITY_BUILD=ON
     - cd ..
     - cmake --build build --target all --parallel 16
     - cmake --build build_dbg --target all --parallel 16
