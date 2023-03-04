@@ -27,6 +27,7 @@ Sys::DynLib::DynLib(const char *name) {
 #elif defined(__APPLE__)
         name_with_ext += ".dylib";
 #endif
+        name = name_with_ext.c_str();
     }
 #if defined(_WIN32)
     handle_ = LoadLibraryA(name);
