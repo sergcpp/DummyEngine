@@ -36,7 +36,6 @@ set(SOURCE_FILES AssetFile.h
                  InplaceFunction.h
                  Json.h
                  Json.cpp
-                 Log.h
                  MemBuf.h
                  MonoAlloc.h
                  Optional.h

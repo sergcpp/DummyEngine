@@ -6,7 +6,6 @@
 
 #include "../AssetFile.h"
 #include "../AsyncFileReader.h"
-#include "../Log.h"
 
 void test_async_file() {
     const char *test_file_name = "test.bin";
