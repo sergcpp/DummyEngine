@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.1)
 project(test_Sys)
 
+find_library(CORE_GRAPHICS CoreGraphics)
+
+IF(MSVC)
+ELSE(MSVC)
+    if(APPLE)
+        set(LIBS ${CORE_GRAPHICS})
+    else(APPLE)
+        set(LIBS X11)
+    endif(APPLE)
+ENDIF(MSVC)
+
 add_executable(test_Sys main.cpp
                         test_alloc.cpp
                         test_async_file.cpp
@@ -12,7 +23,7 @@ add_executable(test_Sys main.cpp
                         test_signal.cpp
                         test_vector.cpp)
 
-target_link_libraries(test_Sys Sys)
+target_link_libraries(test_Sys Sys ${LIBS})
 
 set_target_properties(test_Sys PROPERTIES OUTPUT_NAME_DEBUG test_Sys-dbg)
 set_target_properties(test_Sys PROPERTIES OUTPUT_NAME_RELWITHDEBINFO test_Sys-dev)
