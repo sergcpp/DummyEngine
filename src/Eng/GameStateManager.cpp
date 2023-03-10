@@ -2,15 +2,13 @@
 
 #include <stdexcept>
 
-#include <Sys/Log.h>
-
 GameStateManager::~GameStateManager() {
     Clear();
 }
 
 std::shared_ptr<GameState> GameStateManager::Peek() {
     if (states_.empty()) {
-        return std::shared_ptr<GameState>();
+        return {};
     } else {
         return states_.back();
     }
