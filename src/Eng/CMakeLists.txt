@@ -3,6 +3,8 @@ project(Eng)
 
 OPTION(ENABLE_UNITYBUILD "Enable compilation of a few large cpp file" ON)
 
+set(CMAKE_CXX_STANDARD 14)
+
 IF(WIN32)
     set(VPX_LIB "vpxmd")
     set(ITT_LIB "libittnotify")
@@ -29,7 +31,6 @@ ELSE(WIN32)
                      SPIRV
                      SPIRV-Tools-opt
                      SPIRV-Tools)
-    set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
 
