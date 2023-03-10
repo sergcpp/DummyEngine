@@ -28,7 +28,6 @@
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
 #include <Sys/DynLib.h>
-#include <Sys/Log.h>
 #include <Sys/Time_.h>
 #include <Eng/Input/Keycode.h>
 
@@ -1922,10 +1921,10 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
                                        Ren::eTexLoadStatus status;
                                        ctx_->LoadTexture2D(tex_name.c_str(), data, size, p, ctx_->default_stage_bufs(),
                                                            ctx_->default_mem_allocs(), &status);
-                                       LOGI("Texture %s loaded", tex_name.c_str());
+                                       printf("Texture %s loaded", tex_name.c_str());
                                    });
                                },
-                               [tex_name]() { LOGE("Error loading %s", tex_name.c_str()); });
+                               [tex_name]() { printf("Error loading %s", tex_name.c_str()); });
     }
 
     return ret;
@@ -1948,7 +1947,7 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
         Sys::AssetFile vs_file(string("assets_pc/shaders/") + vs_shader),
             fs_file(string("assets_pc/shaders/") + fs_shader);
         if (!vs_file || !fs_file) {
-            LOGE("Error loading program %s", prog_name);
+            printf("Error loading program %s", prog_name);
             return;
         }
 
@@ -1982,7 +1981,7 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
 
     const bool res = new_pipeline.Init(ctx_->api_ctx(), rast_state, prog, &draw_vi_, &rp_draw_, 0, ctx_->log());
     if (!res) {
-        LOGE("Failed to initialize pipeline!");
+        printf("Failed to initialize pipeline!");
     }
 
     out_pipelines.emplace_back(&pipelines_, new_index);
@@ -2000,7 +1999,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(const char *name) {
     if (!ret->ready()) {
         Sys::AssetFile in_file(string("assets_pc/materials/") + name);
         if (!in_file) {
-            LOGE("Error loading material %s", name);
+            printf("Error loading material %s", name);
             return ret;
         }
 
