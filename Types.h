@@ -5,26 +5,6 @@
 #include <cstdint>
 #include <cstring>
 
-/*namespace {
-    enum endian_t : uint32_t {
-        LITTLE_ENDIAN = 0x00000001,
-        BIG_ENDIAN = 0x01000000,
-        PDP_ENDIAN = 0x00010000,
-        UNKNOWN_ENDIAN = 0xFFFFFFFF
-    };
-
-    //constexpr
-    endian_t getEndianOrder() {
-        return ((0xFFFFFFFF & 1) == LITTLE_ENDIAN)
-               ? LITTLE_ENDIAN
-               : ((0xFFFFFFFF & 1) == BIG_ENDIAN)
-                 ? BIG_ENDIAN
-                 : ((0xFFFFFFFF & 1) == PDP_ENDIAN)
-                   ? PDP_ENDIAN
-                   : UNKNOWN_ENDIAN;
-    }
-}*/
-
 #define _ENDIANNESS_ LITTLE_ENDIAN
 
 #pragma warning(disable : 4996)
@@ -49,11 +29,11 @@ namespace Net {
 
 #if _ENDIANNESS_ == LITTLE_ENDIAN && !defined(TEST_BE)
 namespace Net {
-    typedef int16_t     le_int16;
-    typedef uint16_t    le_uint16;
-    typedef int32_t     le_int32;
-    typedef uint32_t    le_uint32;
-    typedef float       le_float32;
+    typedef int16_t le_int16;
+    typedef uint16_t le_uint16;
+    typedef int32_t le_int32;
+    typedef uint32_t le_uint32;
+    typedef float le_float32;
 
     template<typename T>
     T hton(T v) {
@@ -115,6 +95,7 @@ struct StrParam {
     StrParam() {
         memset(str, 0, sizeof(str));
     }
+
     StrParam(const char *s) {
         strcpy(str, s);
     }

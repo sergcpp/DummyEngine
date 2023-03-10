@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <string>
 
 namespace Net {
@@ -9,31 +11,40 @@ namespace Net {
             address_ = 0;
             port_ = 0;
         }
-        Address(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned short port) {
+
+        Address(uint8_t a, uint8_t b, uint8_t c, uint8_t d, uint16_t port) {
             address_ = (a << 24) | (b << 16) | (c << 8) | d;
             port_ = port;
         }
+
         Address(unsigned int address, unsigned short port) {
             address_ = address;
             port_ = port;
         }
+
         Address(const char *str);
-        unsigned int address() const {
+
+        uint32_t address() const {
             return address_;
         }
-        unsigned char a() const {
-            return (unsigned char)(address_ >> 24);
+
+        uint8_t a() const {
+            return (unsigned char) (address_ >> 24);
         }
-        unsigned char b() const {
-            return (unsigned char)(address_ >> 16);
+
+        uint8_t b() const {
+            return (unsigned char) (address_ >> 16);
         }
-        unsigned char c() const {
-            return (unsigned char)(address_ >> 8);
+
+        uint8_t c() const {
+            return (unsigned char) (address_ >> 8);
         }
-        unsigned char d() const {
-            return (unsigned char)(address_);
+
+        uint8_t d() const {
+            return (unsigned char) (address_);
         }
-        unsigned short port() const {
+
+        uint16_t port() const {
             return port_;
         }
 
@@ -42,9 +53,11 @@ namespace Net {
         bool operator==(const Address &other) const {
             return address_ == other.address_ && port_ == other.port_;
         }
+
         bool operator!=(const Address &other) const {
             return !(*this == other);
         }
+
         bool operator<(const Address &other) const {
             if (address_ < other.address_) {
                 return true;
@@ -58,8 +71,9 @@ namespace Net {
             }
             return false;
         }
+
     private:
-        unsigned int address_;
-        unsigned short port_;
+        uint32_t address_;
+        uint16_t port_;
     };
 }

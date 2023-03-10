@@ -6,18 +6,16 @@
 
 class TestMsg : public Net::BitMsg {
     uint8_t buf[256];
-public:
-    TestMsg() : BitMsg(buf, sizeof(buf)) {
-        memset(buf, 0, sizeof(buf));
-    }
+
+  public:
+    TestMsg() : BitMsg(buf, sizeof(buf)) { memset(buf, 0, sizeof(buf)); }
 
     size_t &len() { return len_; }
     uint8_t *write_data() { return write_data_; }
 };
 
 void test_bitmsg() {
-#if !defined(_MSC_VER)
-    {   // Wrong bits write number should throw runtime_error
+    { // Wrong bits write number should throw runtime_error
         TestMsg msg;
         assert_throws(msg.WriteBits(0, 0));
         assert_throws(msg.WriteBits(0, -32));
@@ -32,7 +30,7 @@ void test_bitmsg() {
         assert_nothrow(msg.WriteBits(-4, -3));
     }
 
-    {   // Write values
+    { // Write values
         TestMsg msg;
         assert(msg.len() == 0);
         msg.WriteBits(1, 1);
@@ -57,14 +55,14 @@ void test_bitmsg() {
         assert(msg.len() == 1);
     }
 
-    {   // Wrong bits read number should throw runtime_error
+    { // Wrong bits read number should throw runtime_error
         TestMsg msg;
         assert_throws(msg.ReadBits(0));
         assert_throws(msg.ReadBits(-32));
         assert_throws(msg.ReadBits(33));
     }
 
-    {   // Read values
+    { // Read values
         TestMsg msg;
         msg.len() = 2;
         msg.write_data()[0] = 0b11101001;
@@ -77,7 +75,7 @@ void test_bitmsg() {
         assert(msg.ReadBits(4) == 12);
     }
 
-    {   // Writing values
+    { // Writing values
         TestMsg msg;
 
         bool b = true;
@@ -89,7 +87,7 @@ void test_bitmsg() {
         unsigned i2 = 6565558;
         int64_t ll1 = 656555812345558;
         int temp = 121213345;
-        float f1 = *reinterpret_cast<float*>(&temp);
+        float f1 = *reinterpret_cast<float *>(&temp);
         msg.Write(b);
         assert(msg.write_data()[0] == 0b1);
         msg.Write<int8_t>(c1);
@@ -195,7 +193,7 @@ void test_bitmsg() {
         assert(msg.write_data()[26] == 0b0);
     }
 
-    {   // Reading values
+    { // Reading values
         TestMsg msg;
 
         msg.len() = 27;
@@ -235,8 +233,7 @@ void test_bitmsg() {
         assert(msg.Read<uint32_t>() == 6565558);
         assert(msg.Read<int64_t>() == 656555812345558);
         int temp = 121213345;
-        float f1 = *reinterpret_cast<float*>(&temp);
+        float f1 = *reinterpret_cast<float *>(&temp);
         assert(msg.Read<float>() == f1);
     }
-#endif
 }

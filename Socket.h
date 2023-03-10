@@ -6,12 +6,14 @@
 
 namespace Net {
     class SocketContext;
+
     class UDPSocket {
         std::shared_ptr<SocketContext> context_;
         int handle_;
         Address local_addr_;
     public:
         UDPSocket();
+
         ~UDPSocket();
 
         bool IsOpen() const {
@@ -23,11 +25,15 @@ namespace Net {
         }
 
         void Open(unsigned short port, bool reuse_addr = true);
+
         void Close();
+
         bool Send(const Address &destination, const void *data, int size);
+
         int Receive(Address &sender, void *data, int size);
 
         bool JoinMulticast(const Address &addr);
+
         bool DropMulticast(const Address &addr);
 
         bool SetBlocking(bool is_blocking);
@@ -39,12 +45,16 @@ namespace Net {
         Address remote_addr_;
     public:
         TCPSocket();
-        TCPSocket(TCPSocket &&rhs);
+
+        TCPSocket(TCPSocket &&rhs) noexcept;
+
         ~TCPSocket();
 
         TCPSocket(const TCPSocket &rhs) = delete;
+
         TCPSocket &operator=(const TCPSocket &rhs) = delete;
-        TCPSocket &operator=(TCPSocket &&rhs);
+
+        TCPSocket &operator=(TCPSocket &&rhs) noexcept;
 
         static TCPSocket PassClientConnection(TCPSocket &rhs) {
             TCPSocket ret;
@@ -68,13 +78,19 @@ namespace Net {
         }
 
         void Open(unsigned short port, bool reuse_addr = true);
+
         void Close();
+
         void CloseClient();
 
         bool Listen();
+
         bool Accept(bool is_blocking = false);
+
         bool Connect(const Address &dest);
+
         bool Send(const void *data, int size);
+
         int Receive(void *data, int size);
 
         bool SetBlocking(bool is_blocking);

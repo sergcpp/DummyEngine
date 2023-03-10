@@ -1,7 +1,7 @@
 #include "HTTPResponse.h"
 
-Net::HTTPResponse::HTTPResponse(int resp_code, const std::string &status_line)
-        : resp_code_(resp_code), status_line_(status_line), content_length_(0) {
+Net::HTTPResponse::HTTPResponse(int resp_code, std::string status_line)
+        : resp_code_(resp_code), status_line_(std::move(status_line)), content_length_(0) {
     if (status_line_.empty() && resp_code_ == 200) {
         status_line_ = "OK";
     }
@@ -15,7 +15,7 @@ std::string Net::HTTPResponse::str() const {
     std::string ret;
     ret += "HTTP/1.1 " + std::to_string(resp_code_) + " " + status_line_ + "\r\n";
 
-    for (auto &f : fields_) {
+    for (auto &f: fields_) {
         ret += f->key() + ": " + f->str() + "\r\n";
     }
 

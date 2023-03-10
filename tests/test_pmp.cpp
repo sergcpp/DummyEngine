@@ -1,18 +1,18 @@
 #include "test_common.h"
 
-#include <thread>
 #include <chrono>
+#include <thread>
 
 #include "../NAT_PMP.h"
 
 void test_pmp() {
 
-    {   // Should retrieve external ip first
+    { // Should retrieve external ip first
         Net::PMPSession s1(Net::PMP_UDP, Net::Address(127, 0, 0, 1, 5351), 30000, 30005);
         assert(s1.state() == Net::PMPSession::RETRIEVE_EXTERNAL_IP);
     }
 
-    {   // Retrieve external ip timeout
+    { // Retrieve external ip timeout
         Net::PMPSession s1(Net::PMP_UDP, Net::Address(127, 0, 0, 1, 5351), 30000, 30005);
         s1.Update(64000);
         assert(s1.state() == Net::PMPSession::IDLE_UNSUPPORTED);
@@ -21,7 +21,7 @@ void test_pmp() {
         assert(s1.state() == Net::PMPSession::IDLE_UNSUPPORTED);
     }
 
-    {   // Retrieve external ip unsupported version
+    { // Retrieve external ip unsupported version
         char recv_buf[128];
 
         Net::UDPSocket fake_gateway;
@@ -51,7 +51,7 @@ void test_pmp() {
         assert(s1.state() == Net::PMPSession::IDLE_RETRIEVE_EXTERNAL_IP_ERROR);
     }
 
-    {   // Retrieve external ip error
+    { // Retrieve external ip error
         char recv_buf[128];
 
         Net::UDPSocket fake_gateway;
@@ -67,7 +67,7 @@ void test_pmp() {
             Net::Address sender;
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
-                auto *req = (Net::PMPExternalIPRequest *) recv_buf;
+                auto *req = (Net::PMPExternalIPRequest *)recv_buf;
                 assert(req->vers() == 0);
                 assert(req->op() == 0);
 
@@ -88,7 +88,7 @@ void test_pmp() {
         assert(s1.state() == Net::PMPSession::IDLE_RETRIEVE_EXTERNAL_IP_ERROR);
     }
 
-    {   // Create port mapping timeout
+    { // Create port mapping timeout
         char recv_buf[128];
 
         Net::UDPSocket fake_gateway;
@@ -104,7 +104,7 @@ void test_pmp() {
             Net::Address sender;
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
-                auto *req = (Net::PMPExternalIPRequest *) recv_buf;
+                auto *req = (Net::PMPExternalIPRequest *)recv_buf;
                 assert(req->vers() == 0);
                 assert(req->op() == 0);
 
@@ -131,7 +131,7 @@ void test_pmp() {
         assert(s1.state() == Net::PMPSession::IDLE_UNSUPPORTED);
     }
 
-    {   // Create port mapping error
+    { // Create port mapping error
         char recv_buf[128];
 
         Net::UDPSocket fake_gateway;
@@ -147,7 +147,7 @@ void test_pmp() {
             Net::Address sender;
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
-                auto *req = (Net::PMPExternalIPRequest *) recv_buf;
+                auto *req = (Net::PMPExternalIPRequest *)recv_buf;
                 assert(req->vers() == 0);
                 assert(req->op() == 0);
 
@@ -170,7 +170,7 @@ void test_pmp() {
             Net::Address sender;
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPMappingRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
-                auto *req = (Net::PMPMappingRequest *) recv_buf;
+                auto *req = (Net::PMPMappingRequest *)recv_buf;
                 assert(req->vers() == 0);
                 assert(req->op() == 1);
                 assert(req->internal_port() == 30000);
@@ -193,7 +193,7 @@ void test_pmp() {
         assert(s1.state() == Net::PMPSession::IDLE_CREATE_PORT_MAPPING_ERROR);
     }
 
-    {   // Create port mapping success
+    { // Create port mapping success
         char recv_buf[128];
 
         Net::UDPSocket fake_gateway;
@@ -209,7 +209,7 @@ void test_pmp() {
             Net::Address sender;
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPExternalIPRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
-                auto *req = (Net::PMPExternalIPRequest *) recv_buf;
+                auto *req = (Net::PMPExternalIPRequest *)recv_buf;
                 assert(req->vers() == 0);
                 assert(req->op() == 0);
 
@@ -232,7 +232,7 @@ void test_pmp() {
             Net::Address sender;
             if (fake_gateway.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(Net::PMPMappingRequest) &&
                 sender == Net::Address(127, 0, 0, 1, s1.local_addr().port())) {
-                auto *req = (Net::PMPMappingRequest *) recv_buf;
+                auto *req = (Net::PMPMappingRequest *)recv_buf;
                 assert(req->vers() == 0);
                 assert(req->op() == 1);
                 assert(req->internal_port() == 30000);

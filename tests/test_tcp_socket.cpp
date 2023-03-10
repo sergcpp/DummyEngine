@@ -7,7 +7,7 @@
 
 void test_tcp_socket() {
 
-    {   // TCPSocket open/close
+    { // TCPSocket open/close
         Net::TCPSocket socket;
         assert(!socket.IsOpen());
         assert_nothrow(socket.Open(30000));
@@ -18,7 +18,7 @@ void test_tcp_socket() {
         assert(socket.IsOpen());
     }
 
-    {   // TCPSocket same port fail
+    { // TCPSocket same port fail
         Net::TCPSocket a, b;
         assert_nothrow(a.Open(30000, false));
         assert_throws(b.Open(30000, false));
@@ -26,7 +26,7 @@ void test_tcp_socket() {
         assert(!b.IsOpen());
     }
 
-    {   // TCPSocket send and receive packets
+    { // TCPSocket send and receive packets
         Net::TCPSocket a, b;
         assert_nothrow(a.Open(30000));
         assert_nothrow(b.Open(30001));
@@ -36,20 +36,24 @@ void test_tcp_socket() {
         assert(b.Listen());
 
         std::thread thr([&]() {
-            while (true) {
+            for(int i = 0; i < 1000; ++i) {
                 if (b.Accept()) {
-                    char buffer[256];
-                    int bytes_read = b.Receive(buffer, sizeof(buffer));
-                    if (bytes_read) {
-                        assert(bytes_read == sizeof(packet));
-                        assert(b.Send(packet, sizeof(packet)));
-                        bytes_read = a.Receive(buffer, sizeof(buffer));
-                        assert(bytes_read == sizeof(packet));
-                        break;
+                    for(int j = 0; j < 1000; ++j) {
+                        char buffer[256];
+                        int bytes_read = b.Receive(buffer, sizeof(buffer));
+                        if (bytes_read) {
+                            assert(bytes_read == sizeof(packet));
+                            assert(b.Send(packet, sizeof(packet)));
+                            bytes_read = a.Receive(buffer, sizeof(buffer));
+                            assert(bytes_read == sizeof(packet));
+                            return;
+                        }
+                        std::this_thread::sleep_for(std::chrono::milliseconds(10));
                     }
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10));
             }
+            assert(false);
         });
         assert(a.Connect(Net::Address(127, 0, 0, 1, 30001)));
         assert(a.Send(packet, sizeof(packet)));

@@ -11,7 +11,7 @@ namespace Net {
         size_t content_length_;
         std::vector<std::unique_ptr<HTTPField>> fields_;
     public:
-        HTTPResponse(int resp_code, const std::string &status_line = "");
+        explicit HTTPResponse(int resp_code, std::string status_line = {});
 
         void AddField(std::unique_ptr<HTTPField> &&field);
 

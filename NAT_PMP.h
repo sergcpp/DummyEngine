@@ -3,10 +3,12 @@
 #include <cstdint>
 
 #ifdef _WIN32
-    #include <winsock2.h>
+#include <winsock2.h>
 #endif
 #if defined(__linux__)
-    #include <arpa/inet.h>
+
+#include <arpa/inet.h>
+
 #endif
 
 #include <string>
@@ -43,6 +45,7 @@ namespace Net {
         }
 
         uint8_t vers() const { return buf[0]; }
+
         uint8_t op() const { return buf[1]; }
     };
 
@@ -59,30 +62,31 @@ namespace Net {
         }
 
         uint8_t vers() const { return buf[0]; }
+
         uint8_t op() const { return buf[1]; }
 
         uint16_t res_code() const {
-            return ntohs(*(uint16_t*)(&buf[2]));
+            return ntohs(*(uint16_t *) (&buf[2]));
         }
 
         uint32_t time() const {
-            return ntohl(*(uint32_t*)(&buf[4]));
+            return ntohl(*(uint32_t *) (&buf[4]));
         }
 
         uint32_t ip() const {
-            return ntohl(*(uint32_t*)(&buf[8]));
+            return ntohl(*(uint32_t *) (&buf[8]));
         }
 
         void set_res_code(uint16_t code) {
-            *(uint16_t*)(&buf[2]) = htons(code);
+            *(uint16_t *) (&buf[2]) = htons(code);
         }
 
         void set_time(uint32_t t) {
-            *(uint32_t*)(&buf[4]) = htonl(t);
+            *(uint32_t *) (&buf[4]) = htonl(t);
         }
 
         void set_ip(uint32_t ip) {
-            *(uint32_t*)(&buf[8]) = htonl(ip);
+            *(uint32_t *) (&buf[8]) = htonl(ip);
         }
     };
 
@@ -91,7 +95,7 @@ namespace Net {
 
         PMPMappingRequest(PMPProto proto, uint16_t internal_port, uint16_t external_port) {
             buf[0] = 0;
-            buf[1] = (proto == PMP_UDP) ? (uint8_t)OP_MAP_UDP_REQUEST : (uint8_t)OP_MAP_TCP_REQUEST;
+            buf[1] = (proto == PMP_UDP) ? (uint8_t) OP_MAP_UDP_REQUEST : (uint8_t) OP_MAP_TCP_REQUEST;
 
             buf[2] = 0;
             buf[3] = 0;
@@ -102,34 +106,35 @@ namespace Net {
         }
 
         uint8_t vers() const { return buf[0]; }
+
         uint8_t op() const { return buf[1]; }
 
         uint16_t reserved() const {
-            return *(uint16_t*)(&buf[2]);
+            return *(uint16_t *) (&buf[2]);
         }
 
         uint16_t internal_port() const {
-            return ntohs(*(uint16_t*)(&buf[4]));
+            return ntohs(*(uint16_t *) (&buf[4]));
         }
 
         uint16_t external_port() const {
-            return ntohs(*(uint16_t*)(&buf[6]));
+            return ntohs(*(uint16_t *) (&buf[6]));
         }
 
         uint32_t lifetime() const {
-            return ntohl(*(uint32_t*)(&buf[8]));
+            return ntohl(*(uint32_t *) (&buf[8]));
         }
 
         void set_internal_port(uint16_t port) {
-            *(uint16_t*)(&buf[4]) = htons(port);
+            *(uint16_t *) (&buf[4]) = htons(port);
         }
 
         void set_external_port(uint16_t port) {
-            *(uint16_t*)(&buf[6]) = htons(port);
+            *(uint16_t *) (&buf[6]) = htons(port);
         }
 
         void set_lifetime(uint32_t t) {
-            *(uint32_t*)(&buf[8]) = htonl(t);
+            *(uint32_t *) (&buf[8]) = htonl(t);
         }
     };
 
@@ -137,81 +142,85 @@ namespace Net {
         uint8_t buf[16];
 
         PMPMappingResponse() {}
+
         PMPMappingResponse(PMPProto proto) {
             buf[0] = 0;
-            buf[1] = (proto == PMP_UDP) ? (uint8_t)128 + OP_MAP_UDP_REQUEST : (uint8_t)128 + OP_MAP_TCP_REQUEST;
+            buf[1] = (proto == PMP_UDP) ? (uint8_t) 128 + OP_MAP_UDP_REQUEST : (uint8_t) 128 + OP_MAP_TCP_REQUEST;
         }
 
         uint8_t vers() const { return buf[0]; }
+
         uint8_t op() const { return buf[1]; }
 
         uint16_t res_code() const {
-            return ntohs(*(uint16_t*)(&buf[2]));
+            return ntohs(*(uint16_t *) (&buf[2]));
         }
 
         uint32_t time() const {
-            return ntohl(*(uint32_t*)(&buf[4]));
+            return ntohl(*(uint32_t *) (&buf[4]));
         }
 
         uint16_t internal_port() const {
-            return ntohs(*(uint16_t*)(&buf[8]));
+            return ntohs(*(uint16_t *) (&buf[8]));
         }
 
         uint16_t external_port() const {
-            return ntohs(*(uint16_t*)(&buf[10]));
+            return ntohs(*(uint16_t *) (&buf[10]));
         }
 
         uint32_t lifetime() const {
-            return ntohl(*(uint32_t*)(&buf[12]));
+            return ntohl(*(uint32_t *) (&buf[12]));
         }
 
         void set_res_code(uint16_t code) {
-            *(uint16_t*)(&buf[2]) = htons(code);
+            *(uint16_t *) (&buf[2]) = htons(code);
         }
 
         void set_time(uint32_t t) {
-            *(uint32_t*)(&buf[4]) = htonl(t);
+            *(uint32_t *) (&buf[4]) = htonl(t);
         }
 
         void set_internal_port(uint16_t port) {
-            *(uint16_t*)(&buf[8]) = htons(port);
+            *(uint16_t *) (&buf[8]) = htons(port);
         }
 
         void set_external_port(uint16_t port) {
-            *(uint16_t*)(&buf[10]) = htons(port);
+            *(uint16_t *) (&buf[10]) = htons(port);
         }
 
         void set_lifetime(uint32_t t) {
-            *(uint32_t*)(&buf[12]) = htonl(t);
+            *(uint32_t *) (&buf[12]) = htonl(t);
         }
     };
 
     struct PMPUnsupportedVersionResponse {
         uint8_t buf[8];
 
-        PMPUnsupportedVersionResponse() { }
+        PMPUnsupportedVersionResponse() {}
+
         PMPUnsupportedVersionResponse(PMPOpCode op) {
             buf[0] = 0;
-            buf[1] = (uint8_t)128 + op;
+            buf[1] = (uint8_t) 128 + op;
         }
 
         uint8_t vers() const { return buf[0]; }
+
         uint8_t op() const { return buf[1]; }
 
         uint16_t res_code() const {
-            return ntohs(*(uint16_t*)(&buf[2]));
+            return ntohs(*(uint16_t *) (&buf[2]));
         }
 
         uint32_t time() const {
-            return ntohl(*(uint32_t*)(&buf[4]));
+            return ntohl(*(uint32_t *) (&buf[4]));
         }
 
         void set_res_code(uint16_t code) {
-            *(uint16_t*)(&buf[2]) = htons(code);
+            *(uint16_t *) (&buf[2]) = htons(code);
         }
 
         void set_time(uint32_t t) {
-            *(uint32_t*)(&buf[4]) = htonl(t);
+            *(uint32_t *) (&buf[4]) = htonl(t);
         }
     };
 
@@ -229,8 +238,7 @@ namespace Net {
         };
 
         PMPSession(PMPProto proto, const Address &gateway_addr,
-                   unsigned short internal_port, unsigned short external_port,
-                   unsigned int lifetime = 7200);
+                   unsigned short internal_port, unsigned short external_port, unsigned int lifetime = 7200);
 
         Address local_addr() const {
             return sock_.local_addr();
@@ -239,6 +247,7 @@ namespace Net {
         State state() const { return state_; }
 
         unsigned int time() const { return time_; }
+
         Address external_ip() const { return external_ip_; }
 
         void Update(unsigned int dt_ms);

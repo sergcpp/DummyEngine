@@ -1,16 +1,17 @@
 #include "test_common.h"
 
 #include <cstring>
+#include <thread>
 
 #include "../ReliableUDPConnection.h"
 
 namespace {
-    const int maximum_sequence = 255;
+const int maximum_sequence = 255;
 }
 
 void test_reliable_udp_connection() {
 
-    {   // Check bit index for sequence
+    { // Check bit index for sequence
         assert(Net::ReliabilitySystem::bit_index_for_sequence(99, 100, maximum_sequence) == 0);
         assert(Net::ReliabilitySystem::bit_index_for_sequence(90, 100, maximum_sequence) == 9);
         assert(Net::ReliabilitySystem::bit_index_for_sequence(0, 1, maximum_sequence) == 0);
@@ -20,7 +21,7 @@ void test_reliable_udp_connection() {
         assert(Net::ReliabilitySystem::bit_index_for_sequence(254, 2, maximum_sequence) == 3);
     }
 
-    {   // Check generate ack bits
+    { // Check generate ack bits
         Net::PacketQueue packet_queue;
         for (int i = 0; i < 32; ++i) {
             Net::PacketData data(i, 0, 0);
@@ -33,7 +34,7 @@ void test_reliable_udp_connection() {
         assert(Net::ReliabilitySystem::generate_ack_bits(48, packet_queue, maximum_sequence) == 0xFFFF0000);
     }
 
-    {   // Check generate ack bits with wrap
+    { // Check generate ack bits with wrap
         Net::PacketQueue packet_queue;
         for (int i = 255 - 31; i <= 255; ++i) {
             Net::PacketData data(i, 0, 0);
@@ -41,13 +42,13 @@ void test_reliable_udp_connection() {
         }
         assert(packet_queue.size() == 32);
         assert(Net::ReliabilitySystem::generate_ack_bits(0, packet_queue, maximum_sequence) == 0xFFFFFFFF);
-        assert(Net::ReliabilitySystem::generate_ack_bits(255,   packet_queue, maximum_sequence) == 0x7FFFFFFF);
+        assert(Net::ReliabilitySystem::generate_ack_bits(255, packet_queue, maximum_sequence) == 0x7FFFFFFF);
         assert(Net::ReliabilitySystem::generate_ack_bits(1, packet_queue, maximum_sequence) == 0xFFFFFFFE);
-        assert(Net::ReliabilitySystem::generate_ack_bits(240,   packet_queue, maximum_sequence) == 0x0000FFFF);
-        assert(Net::ReliabilitySystem::generate_ack_bits(16,    packet_queue, maximum_sequence) == 0xFFFF0000);
+        assert(Net::ReliabilitySystem::generate_ack_bits(240, packet_queue, maximum_sequence) == 0x0000FFFF);
+        assert(Net::ReliabilitySystem::generate_ack_bits(16, packet_queue, maximum_sequence) == 0xFFFF0000);
     }
 
-    {   // Check process ack (1)
+    { // Check process ack (1)
         Net::PacketQueue packet_queue;
         for (int i = 0; i < 33; ++i) {
             Net::PacketData data(i, 0, 0);
@@ -57,8 +58,8 @@ void test_reliable_udp_connection() {
         std::vector<unsigned int> acks;
         float rtt = 0.0f;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(
-                32, 0xFFFFFFFF, packet_queue, acked_queue, acks, acked_packets, rtt, maximum_sequence);
+        Net::ReliabilitySystem::process_ack(32, 0xFFFFFFFF, packet_queue, acked_queue, acks, acked_packets, rtt,
+                                            maximum_sequence);
         assert(acks.size() == 33);
         assert(acked_packets == 33);
         assert(acked_queue.size() == 33);
@@ -73,7 +74,7 @@ void test_reliable_udp_connection() {
         }
     }
 
-    {   // Check process ack (2)
+    { // Check process ack (2)
         Net::PacketQueue pending_ack_queue;
         for (int i = 0; i < 33; ++i) {
             Net::PacketData data(i, 0, 0);
@@ -83,8 +84,8 @@ void test_reliable_udp_connection() {
         std::vector<unsigned int> acks;
         float rtt = 0.0f;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(
-                32, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt, maximum_sequence);
+        Net::ReliabilitySystem::process_ack(32, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                            maximum_sequence);
         assert(acks.size() == 17);
         assert(acked_packets == 17);
         assert(acked_queue.size() == 17);
@@ -103,7 +104,7 @@ void test_reliable_udp_connection() {
         }
     }
 
-    {   // Check process ack (3)
+    { // Check process ack (3)
         Net::PacketQueue pending_ack_queue;
         for (int i = 0; i < 32; ++i) {
             Net::PacketData data(i, 0, 0);
@@ -113,8 +114,8 @@ void test_reliable_udp_connection() {
         std::vector<unsigned int> acks;
         float rtt = 0.0f;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(
-                48, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt, maximum_sequence);
+        Net::ReliabilitySystem::process_ack(48, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                            maximum_sequence);
         assert(acks.size() == 16);
         assert(acked_packets == 16);
         assert(acked_queue.size() == 16);
@@ -133,7 +134,7 @@ void test_reliable_udp_connection() {
         }
     }
 
-    {   // Check process ack wrap around (1)
+    { // Check process ack wrap around (1)
         Net::PacketQueue pending_ack_queue;
         for (int i = 255 - 31; i <= 256; ++i) {
             Net::PacketData data(i & 0xFF, 0, 0);
@@ -145,8 +146,8 @@ void test_reliable_udp_connection() {
         std::vector<unsigned int> acks;
         float rtt = 0.0f;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(
-                0, 0xFFFFFFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt, maximum_sequence);
+        Net::ReliabilitySystem::process_ack(0, 0xFFFFFFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                            maximum_sequence);
         assert(acks.size() == 33);
         assert(acked_packets == 33);
         assert(acked_queue.size() == 33);
@@ -161,7 +162,7 @@ void test_reliable_udp_connection() {
         }
     }
 
-    {   // Check process ack wrap around (2)
+    { // Check process ack wrap around (2)
         Net::PacketQueue pending_ack_queue;
         for (int i = 255 - 31; i <= 256; ++i) {
             Net::PacketData data(i & 0xFF, 0, 0);
@@ -172,8 +173,8 @@ void test_reliable_udp_connection() {
         std::vector<unsigned int> acks;
         float rtt = 0.0f;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(
-                0, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt, maximum_sequence);
+        Net::ReliabilitySystem::process_ack(0, 0x0000FFFF, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                            maximum_sequence);
         assert(acks.size() == 17);
         assert(acked_packets == 17);
         assert(acked_queue.size() == 17);
@@ -192,7 +193,7 @@ void test_reliable_udp_connection() {
         }
     }
 
-    {   // Check process ack wrap around (3)
+    { // Check process ack wrap around (3)
         Net::PacketQueue pending_ack_queue;
         for (int i = 255 - 31; i <= 255; ++i) {
             Net::PacketData data(i & 0xFF, 0, 0);
@@ -203,8 +204,8 @@ void test_reliable_udp_connection() {
         std::vector<unsigned int> acks;
         float rtt = 0.0f;
         unsigned int acked_packets = 0;
-        Net::ReliabilitySystem::process_ack(
-                16, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt, maximum_sequence);
+        Net::ReliabilitySystem::process_ack(16, 0xFFFF0000, pending_ack_queue, acked_queue, acks, acked_packets, rtt,
+                                            maximum_sequence);
         assert(acks.size() == 16);
         assert(acked_packets == 16);
         assert(acked_queue.size() == 16);
@@ -223,11 +224,11 @@ void test_reliable_udp_connection() {
         }
     }
 
-    {   // Test join
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
+    { // Test join
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
         const float timeout_s_s = 1.0f;
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s_s);
@@ -270,16 +271,18 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
         assert(client.connected());
         assert(server.connected());
     }
 
-    {   // Test payload
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
+    { // Test payload
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
         const float timeout_s_s = 0.1f;
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s_s);
@@ -310,7 +313,7 @@ void test_reliable_udp_connection() {
                 if (bytes_read == 0) {
                     break;
                 }
-                assert(strcmp((const char *) packet, "server to client") == 0);
+                assert(strcmp((const char *)packet, "server to client") == 0);
             }
 
             while (true) {
@@ -319,22 +322,24 @@ void test_reliable_udp_connection() {
                 if (bytes_read == 0) {
                     break;
                 }
-                assert(strcmp((const char *) packet, "client to server") == 0);
+                assert(strcmp((const char *)packet, "client to server") == 0);
             }
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
         assert(client.connected());
         assert(server.connected());
     }
 
-    {   // Test acks
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
-        const float timeout_s   = 0.1f;
+    { // Test acks
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
+        const float timeout_s = 0.1f;
         const unsigned int packet_count = 100;
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s);
@@ -420,18 +425,20 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
         assert(client.connected());
         assert(server.connected());
     }
 
-    {   // Test ack bits
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
-        const float timeout_s   = 0.1f;
+    { // Test ack bits
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
+        const float timeout_s = 0.1f;
         const unsigned int packet_count = 100;
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s);
@@ -478,7 +485,7 @@ void test_reliable_udp_connection() {
                 }
 
                 int ack_count = 0;
-                unsigned int * acks = NULL;
+                unsigned int *acks = NULL;
                 client.reliability_system().GetAcks(&acks, ack_count);
                 assert((ack_count == 0 || (ack_count != 0 && acks)));
                 for (int i = 0; i < ack_count; ++i) {
@@ -531,18 +538,20 @@ void test_reliable_udp_connection() {
             all_packets_acked = clientAckCount == packet_count && serverAckCount == packet_count;
 
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
 
         assert(client.connected());
         assert(server.connected());
     }
 
-    {   // Test packet loss
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.001f;
-        const float timeout_s   = 0.1f;
+    { // Test packet loss
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.001f;
+        const float timeout_s = 0.1f;
         const unsigned int packet_count = 100;
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s);
@@ -592,7 +601,7 @@ void test_reliable_udp_connection() {
                 }
 
                 int ack_count = 0;
-                unsigned int * acks = NULL;
+                unsigned int *acks = NULL;
                 client.reliability_system().GetAcks(&acks, ack_count);
                 assert((ack_count == 0 || (ack_count != 0 && acks)));
                 for (int i = 0; i < ack_count; ++i) {
@@ -621,7 +630,7 @@ void test_reliable_udp_connection() {
             }
 
             int ack_count = 0;
-            unsigned int * acks = NULL;
+            unsigned int *acks = NULL;
             server.reliability_system().GetAcks(&acks, ack_count);
             assert((ack_count == 0 || (ack_count != 0 && acks)));
             for (int i = 0; i < ack_count; ++i) {
@@ -650,19 +659,21 @@ void test_reliable_udp_connection() {
             all_packets_acked = clientAckCount == packet_count / 2 && serverAckCount == packet_count / 2;
 
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(dt_s * 1000)));
         }
         assert(client.connected());
         assert(server.connected());
     }
 
-    {   // Test sequence wrap around
-        const int server_port   = 30000;
-        const int client_port   = 30001;
-        const int protocol_id   = 0x11112222;
-        const float dt_s        = 0.05f;
-        const float timeout_s   = 1000.0f;
+    { // Test sequence wrap around
+        const int server_port = 30000;
+        const int client_port = 30001;
+        const int protocol_id = 0x11112222;
+        const float dt_s = 0.05f;
+        const float timeout_s = 1000.0f;
         const unsigned int packet_count = 256;
-        const unsigned int max_sequence = 31;       // [0,31]
+        const unsigned int max_sequence = 31; // [0,31]
 
         Net::ReliableUDPConnection client(protocol_id, timeout_s, max_sequence);
         Net::ReliableUDPConnection server(protocol_id, timeout_s, max_sequence);
@@ -704,7 +715,7 @@ void test_reliable_udp_connection() {
                 }
                 assert(bytes_read == sizeof(packet));
                 for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                    //assert(packet[i] == (unsigned char)i);
+                    // assert(packet[i] == (unsigned char)i);
                 }
             }
 
@@ -716,12 +727,12 @@ void test_reliable_udp_connection() {
                 }
                 assert(bytes_read == sizeof(packet));
                 for (unsigned int i = 0; i < sizeof(packet); ++i) {
-                    //assert(packet[i] == (unsigned char)i);
+                    // assert(packet[i] == (unsigned char)i);
                 }
             }
 
             int ack_count = 0;
-            unsigned int * acks = NULL;
+            unsigned int *acks = NULL;
             client.reliability_system().GetAcks(&acks, ack_count);
             assert((ack_count == 0 || (ack_count != 0 && acks)));
             for (int i = 0; i < ack_count; ++i) {
@@ -748,6 +759,8 @@ void test_reliable_udp_connection() {
 
             client.Update(dt_s);
             server.Update(dt_s);
+
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
 
         assert(client.connected());

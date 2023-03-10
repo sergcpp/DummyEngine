@@ -3,19 +3,21 @@
 #include <algorithm>
 
 #ifdef _WIN32
-    #include <winsock2.h>
+#include <winsock2.h>
 #endif
 #if defined(__linux__)
-    #include <arpa/inet.h>
+
+#include <arpa/inet.h>
+
 #endif
 
 bool Net::GenPCPNonce(void *buf, int len) {
     if (len < 12) return false;
 
-    int32_t *p = (int32_t *)buf;
-    p[0] = rand();
-    p[1] = rand();
-    p[2] = rand();
+    auto *p = (int32_t *) buf;
+    p[0] = rand();  // NOLINT
+    p[1] = rand();  // NOLINT
+    p[2] = rand();  // NOLINT
 
     return true;
 }
@@ -23,15 +25,15 @@ bool Net::GenPCPNonce(void *buf, int len) {
 /*************** PCPRequest ***************/
 
 bool Net::PCPRequest::Read(const void *buf, int size) {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *) buf;
 
     if (size < 24) return false;
 
-    if (p[0] != 2 || (p[1] & (1 << 7))) return false; // 0b10000000
+    if (p[0] != 2 || (p[1] & (1u << 7u))) return false; // 0b10000000
 
-    opcode_ = (PCPOpCode)(p[1] & ((1 << 7) - 1)); // 0b01111111
+    opcode_ = (PCPOpCode) (p[1] & ((1u << 7u) - 1)); // 0b01111111
 
-    lifetime_ = ntohl(*(uint32_t*)(&p[4]));
+    lifetime_ = ntohl(*(uint32_t *) (&p[4]));
 
     client_address_ = Net::Address(p[20], p[21], p[22], p[23], 0);
 
@@ -71,7 +73,7 @@ bool Net::PCPRequest::Read(const void *buf, int size) {
 }
 
 int Net::PCPRequest::Write(void *buf, int size) const {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *) buf;
 
     if (opcode_ == OP_NONE || size < 24) return -1;
 
@@ -82,14 +84,14 @@ int Net::PCPRequest::Write(void *buf, int size) const {
     p[1] = 0;
 
     // opcode
-    p[1] |= opcode_ & 0xFF;
+    p[1] |= uint8_t(opcode_) & 0xFFu;
 
     // reserved
     p[2] = 0;
     p[3] = 0;
 
-    // filetime
-    *(uint32_t*)(&p[4]) = htonl(lifetime_);
+    // lifetime
+    *(uint32_t *) (&p[4]) = htonl(lifetime_);
 
     // ipv4 mapped to ipv6
     p[8] = p[9] = p[10] = p[11] = 0;
@@ -167,17 +169,17 @@ int Net::PCPRequest::Write(void *buf, int size) const {
 /*************** PCPResponse ***************/
 
 bool Net::PCPResponse::Read(const void *buf, int size) {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *) buf;
 
     if (size < 24) return false;
 
-    if (p[0] != 2 || !(p[1] & (1 << 7))) return false; // 0b10000000
+    if (p[0] != 2 || !(p[1] & (1u << 7u))) return false; // 0b10000000
 
-    opcode_ = (PCPOpCode)(p[1] & ((1 << 7) - 1)); // 0b01111111
-    res_code_ = (PCPResCode)p[3];
+    opcode_ = (PCPOpCode) (p[1] & ((1u << 7u) - 1)); // 0b01111111
+    res_code_ = (PCPResCode) p[3];
 
-    lifetime_ = ntohl(*(uint32_t*)(&p[4]));
-    time_ = ntohl(*(uint32_t*)(&p[8]));
+    lifetime_ = ntohl(*(uint32_t *) (&p[4]));
+    time_ = ntohl(*(uint32_t *) (&p[8]));
 
     p = &p[24];
     if (opcode_ == OP_ANNOUNCE) {
@@ -186,10 +188,10 @@ bool Net::PCPResponse::Read(const void *buf, int size) {
         if (size < 24 + 36) return false;
 
         memcpy(&nonce_, &p[0], sizeof(PCPNonce));
-        proto_ = (PCPProto)p[12];
+        proto_ = (PCPProto) p[12];
 
-        internal_port_ = ntohs(*(uint16_t*)(&p[16]));
-        external_port_ = ntohs(*(uint16_t*)(&p[18]));
+        internal_port_ = ntohs(*(uint16_t *) (&p[16]));
+        external_port_ = ntohs(*(uint16_t *) (&p[18]));
 
         external_address_ = Address(p[32], p[33], p[34], p[35], 0);
 
@@ -198,14 +200,14 @@ bool Net::PCPResponse::Read(const void *buf, int size) {
         if (size < 24 + 56) return false;
 
         memcpy(&nonce_, &p[0], sizeof(PCPNonce));
-        proto_ = (PCPProto)p[12];
+        proto_ = (PCPProto) p[12];
 
-        internal_port_ = ntohs(*(uint16_t*)(&p[16]));
-        external_port_ = ntohs(*(uint16_t*)(&p[18]));
+        internal_port_ = ntohs(*(uint16_t *) (&p[16]));
+        external_port_ = ntohs(*(uint16_t *) (&p[18]));
 
         external_address_ = Net::Address(p[32], p[33], p[34], p[35], 0);
 
-        remote_port_ = ntohs(*(uint16_t*)(&p[36]));
+        remote_port_ = ntohs(*(uint16_t *) (&p[36]));
 
         remote_address_ = Address(p[52], p[53], p[54], p[55], 0);
 
@@ -216,7 +218,7 @@ bool Net::PCPResponse::Read(const void *buf, int size) {
 }
 
 int Net::PCPResponse::Write(void *buf, int size) const {
-    uint8_t *p = (uint8_t *)buf;
+    auto *p = (uint8_t *) buf;
 
     if (opcode_ == OP_NONE || size < 24) return -1;
 
@@ -224,18 +226,18 @@ int Net::PCPResponse::Write(void *buf, int size) const {
     p[0] = 2;
 
     // response
-    p[1] = 1 << 7; // 0b10000000
+    p[1] = 1u << 7u; // 0b10000000
 
     // opcode
-    p[1] |= opcode_ & 0xFF;
+    p[1] |= uint8_t(opcode_) & 0xFFu;
 
     // reserved
     p[2] = 0;
 
-    p[3] = res_code_ & 0xFF;
+    p[3] = uint8_t(res_code_) & 0xFFu;
 
-    *(uint32_t*)(&p[4]) = htonl(lifetime_);
-    *(uint32_t*)(&p[8]) = htonl(time_);
+    *(uint32_t *) (&p[4]) = htonl(lifetime_);
+    *(uint32_t *) (&p[8]) = htonl(time_);
 
     // reserved
     memset(&p[12], 0, 12);
@@ -250,8 +252,8 @@ int Net::PCPResponse::Write(void *buf, int size) const {
         p[12] = proto_;
         p[13] = p[14] = p[15] = 0;
 
-        *(uint16_t*)(&p[16]) = htons(internal_port_);
-        *(uint16_t*)(&p[18]) = htons(external_port_);
+        *(uint16_t *) (&p[16]) = htons(internal_port_);
+        *(uint16_t *) (&p[18]) = htons(external_port_);
 
         // ipv4 mapped to ipv6
         p[20] = p[21] = p[22] = p[23] = 0;
@@ -271,8 +273,8 @@ int Net::PCPResponse::Write(void *buf, int size) const {
         p[12] = proto_;
         p[13] = p[14] = p[15] = 0;
 
-        *(uint16_t*)(&p[16]) = htons(internal_port_);
-        *(uint16_t*)(&p[18]) = htons(external_port_);
+        *(uint16_t *) (&p[16]) = htons(internal_port_);
+        *(uint16_t *) (&p[18]) = htons(external_port_);
 
         // ipv4 mapped to ipv6
         p[20] = p[21] = p[22] = p[23] = 0;
@@ -284,7 +286,7 @@ int Net::PCPResponse::Write(void *buf, int size) const {
         p[34] = external_address_.c();
         p[35] = external_address_.d();
 
-        *(uint16_t*)(&p[36]) = htons(remote_port_);
+        *(uint16_t *) (&p[36]) = htons(remote_port_);
         p[38] = p[39] = 0;
 
         // ipv4 mapped to ipv6
@@ -312,8 +314,7 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
 
     if (state_ == REQUEST_MAPPING) {
         if (main_timer_ >= request_timer_) {
-            if ((MRC && request_counter_ >= MRC) ||
-                (MRD && main_timer_ >= MRD * 1000)) {
+            if ((MRC && request_counter_ >= MRC) || (MRD && main_timer_ >= MRD * 1000)) {
                 state_ = IDLE_FAILED;
                 return;
             }
@@ -326,7 +327,7 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
             sock_.Send(pcp_server_, buf, size);
 
             request_counter_++;
-            request_timer_ += rt_ * 1000;
+            request_timer_ += (unsigned int) (rt_ * 1000);
             rt_ = RT(rt_);
         }
 
@@ -349,7 +350,7 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
             }
         }
     } else if (state_ == IDLE_MAPPED) {
-        if (main_timer_ - mapped_time_ > (5.0f/8) * lifetime_) {
+        if (float(main_timer_ - mapped_time_) > (5.0f / 8) * float(lifetime_)) {
             rt_ = (1 + RAND()) * IRT;
             state_ = REQUEST_MAPPING;
         }
@@ -357,5 +358,5 @@ void Net::PCPSession::Update(unsigned int dt_ms) {
 }
 
 float Net::PCPSession::RT(float rt) {
-    return (1 + RAND()) * std::min<float>(2 * rt, (float)MRT);
+    return (1 + RAND()) * std::min<float>(2 * rt, float(MRT));
 }

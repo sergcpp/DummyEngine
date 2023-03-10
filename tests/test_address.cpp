@@ -3,8 +3,8 @@
 #include "../Address.h"
 
 void test_address() {
-
-    {   Net::Address addr;
+    {
+        Net::Address addr;
         assert(addr.a() == 0);
         assert(addr.b() == 0);
         assert(addr.c() == 0);
