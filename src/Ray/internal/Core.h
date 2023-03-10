@@ -21,6 +21,23 @@
 
 #pragma intrinsic(_BitScanForward)
 #pragma intrinsic(_bittestandcomplement)
+
+#ifdef _M_IX86
+// Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls
+force_inline unsigned char _BitScanForward64(unsigned long *Index, unsigned __int64 Mask) {
+    // Scan the Low Word
+    if (_BitScanForward(Index, static_cast<unsigned long>(Mask))) {
+        return 1;
+    }
+    // Scan the High Word
+    if (_BitScanForward(Index, static_cast<unsigned long>(Mask >> 32))) {
+        *Index += 32; // Create a bit offset from the LSB
+        return 1;
+    }
+    return 0;
+}
+#endif
+
 #endif
 
 #define unused(x) ((void)x)
@@ -280,9 +297,8 @@ bool PreprocessTri(const float *p, int stride, tri_accel_t *out_acc);
 
 // Builds BVH for mesh and precomputes triangle data
 uint32_t PreprocessMesh(const float *attrs, Span<const uint32_t> vtx_indices, eVertexLayout layout, int base_vertex,
-                        uint32_t tris_start, const bvh_settings_t &s, std::vector<bvh_node_t> &out_nodes,
-                        std::vector<tri_accel_t> &out_tris, std::vector<uint32_t> &out_indices,
-                        aligned_vector<mtri_accel_t> &out_tris2);
+                        const bvh_settings_t &s, std::vector<bvh_node_t> &out_nodes, std::vector<tri_accel_t> &out_tris,
+                        std::vector<uint32_t> &out_indices, aligned_vector<mtri_accel_t> &out_tris2);
 
 // Recursively builds linear bvh for a set of primitives
 uint32_t EmitLBVH_Recursive(const prim_t *prims, const uint32_t *indices, const uint32_t *morton_codes,
