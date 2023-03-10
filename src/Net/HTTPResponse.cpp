@@ -15,7 +15,7 @@ std::string Net::HTTPResponse::str() const {
     std::string ret;
     ret += "HTTP/1.1 " + std::to_string(resp_code_) + " " + status_line_ + "\r\n";
 
-    for (auto &f : fields_) {
+    for (auto &f: fields_) {
         ret += f->key() + ": " + f->str() + "\r\n";
     }
 

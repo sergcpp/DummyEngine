@@ -29,11 +29,11 @@ namespace Net {
 
 #if _ENDIANNESS_ == LITTLE_ENDIAN && !defined(TEST_BE)
 namespace Net {
-    typedef int16_t     le_int16;
-    typedef uint16_t    le_uint16;
-    typedef int32_t     le_int32;
-    typedef uint32_t    le_uint32;
-    typedef float       le_float32;
+    typedef int16_t le_int16;
+    typedef uint16_t le_uint16;
+    typedef int32_t le_int32;
+    typedef uint32_t le_uint32;
+    typedef float le_float32;
 
     template<typename T>
     T hton(T v) {
@@ -95,6 +95,7 @@ struct StrParam {
     StrParam() {
         memset(str, 0, sizeof(str));
     }
+
     StrParam(const char *s) {
         strcpy(str, s);
     }

@@ -1,10 +1,12 @@
 #include "NAT_PMP.h"
 
 Net::PMPSession::PMPSession(PMPProto proto, const Net::Address &gateway_addr,
-           unsigned short internal_port, unsigned short external_port,
-           unsigned int lifetime)
-        : state_(RETRIEVE_EXTERNAL_IP), time_(0), proto_(proto), gateway_addr_(gateway_addr), internal_port_(internal_port), external_port_(external_port),
-          lifetime_(lifetime), main_timer_(0), request_timer_(0), deadline_timer_(64000), period_(250), mapped_time_(0) {
+                            unsigned short internal_port, unsigned short external_port,
+                            unsigned int lifetime)
+        : state_(RETRIEVE_EXTERNAL_IP), time_(0), proto_(proto), gateway_addr_(gateway_addr),
+          internal_port_(internal_port), external_port_(external_port),
+          lifetime_(lifetime), main_timer_(0), request_timer_(0), deadline_timer_(64000), period_(250),
+          mapped_time_(0) {
     sock_.Open(0);
     multicast_listen_sock_.Open(5350);
 }
@@ -63,7 +65,8 @@ void Net::PMPSession::Update(unsigned int dt_ms) {
         }
 
         Address sender;
-        if (sock_.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(PMPMappingResponse) && sender == gateway_addr_) {
+        if (sock_.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(PMPMappingResponse) &&
+            sender == gateway_addr_) {
             const auto *resp = reinterpret_cast<const PMPMappingResponse *>(recv_buf);
             if (resp->vers() == 0 &&
                 resp->op() == 128 + (proto_ == PMP_UDP ? OP_MAP_UDP_REQUEST : OP_MAP_TCP_REQUEST)) {
@@ -78,7 +81,8 @@ void Net::PMPSession::Update(unsigned int dt_ms) {
         }
     } else if (state_ == IDLE_MAPPED) {
         Address sender;
-        if (multicast_listen_sock_.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(PMPExternalIPResponse) && sender.port() == gateway_addr_.port()) {
+        if (multicast_listen_sock_.Receive(sender, recv_buf, sizeof(recv_buf)) == sizeof(PMPExternalIPResponse) &&
+            sender.port() == gateway_addr_.port()) {
             const auto *resp = reinterpret_cast<const PMPExternalIPResponse *>(recv_buf);
             if (resp->vers() == 0 && resp->op() == 128 + OP_EXTERNAL_IP_REQUEST) {
 

@@ -1,4 +1,5 @@
 #pragma warning(disable : 4996)
+
 #include "Socket.h"
 
 #include <cassert>
@@ -7,29 +8,32 @@
 #include <cstring>
 #include <ctime>
 #include <stdexcept>
+
 #ifdef _WIN32
-    #include <winsock2.h>
-    #include <ws2ipdef.h>
-    #include <Ws2tcpip.h>
+#include <winsock2.h>
+#include <ws2ipdef.h>
+#include <Ws2tcpip.h>
 #endif
 #if defined(__linux__) || defined(__APPLE__) || defined(__EMSCRIPTEN__)
-    #include <fcntl.h>
-    #include <netdb.h>
-    #include <unistd.h>
-    #include <arpa/inet.h>
-    #include <netinet/in.h>
-    #include <sys/socket.h>
-    #include <sys/time.h>
+
+#include <fcntl.h>
+#include <netdb.h>
+#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/time.h>
+
 #endif
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
 #ifdef _WIN32
-    typedef int socklen_t;
-    //#define errno WSAGetLastError()
+typedef int socklen_t;
+//#define errno WSAGetLastError()
 #else
-    #define WSAEWOULDBLOCK 0
+#define WSAEWOULDBLOCK 0
 #endif
 
 class Net::SocketContext {
@@ -41,6 +45,7 @@ public:
         WSAStartup(MAKEWORD(2, 2), &WsaData);
 #endif
     }
+
     ~SocketContext() {  // NOLINT
 #ifdef _WIN32
         WSACleanup();
@@ -54,6 +59,7 @@ extern unsigned int g_android_local_ip_address;
 
 namespace {
     std::weak_ptr<Net::SocketContext> shrd_context;
+
     unsigned int GetLocalAddr() {
         unsigned int local_addr = 0;
 #ifndef __ANDROID__
@@ -65,7 +71,7 @@ namespace {
                 struct in_addr addr;    // NOLINT
                 memcpy(&addr, phe->h_addr_list[i++], sizeof(struct in_addr));
                 local_addr = ntohl(addr.s_addr);
-                auto a = (unsigned char)(local_addr >> 24u);
+                auto a = (unsigned char) (local_addr >> 24u);
                 if (a == 192 || a == 10 || a == 172) {
                     break;
                 }
@@ -122,7 +128,7 @@ void Net::UDPSocket::Open(unsigned short port, bool reuse_addr) {
 #ifndef __EMSCRIPTEN__
     if (reuse_addr) {
         int one = 1;
-        setsockopt(handle_, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(int));
+        setsockopt(handle_, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(int));
     }
 #endif
 
@@ -138,7 +144,7 @@ void Net::UDPSocket::Open(unsigned short port, bool reuse_addr) {
 #endif
     address.sin_port = htons(port);
 
-    if (::bind(handle_, (const sockaddr*)&address, sizeof(sockaddr_in)) < 0) {
+    if (::bind(handle_, (const sockaddr *) &address, sizeof(sockaddr_in)) < 0) {
         Close();
         throw std::runtime_error("Cannot bind socket.");
     }
@@ -147,13 +153,14 @@ void Net::UDPSocket::Open(unsigned short port, bool reuse_addr) {
 
     struct sockaddr_in sin; // NOLINT
     socklen_t addrlen = sizeof(sin);
-    if (getsockname(handle_, (struct sockaddr *)&sin, &addrlen) == 0 &&
+    if (getsockname(handle_, (struct sockaddr *) &sin, &addrlen) == 0 &&
         sin.sin_family == AF_INET &&
         addrlen == sizeof(sin)) {
         local_addr_ = Address(local_addr, ntohs(sin.sin_port));
     }
 
-    printf("\n%i.%i.%i.%i:%i\n", local_addr_.a(), local_addr_.b(), local_addr_.c(), local_addr_.d(), local_addr_.port());
+    printf("\n%i.%i.%i.%i:%i\n", local_addr_.a(), local_addr_.b(), local_addr_.c(), local_addr_.d(),
+           local_addr_.port());
 
     SetBlocking(false);
 }
@@ -180,9 +187,9 @@ bool Net::UDPSocket::Send(const Address &destination, const void *data, int size
     sockaddr_in address;    // NOLINT
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(destination.address());
-    address.sin_port = htons((unsigned short)destination.port());
+    address.sin_port = htons((unsigned short) destination.port());
 
-    int sent_bytes = (int)sendto(handle_, (const char *)data, size, 0, (sockaddr *)&address, sizeof(sockaddr_in));
+    int sent_bytes = (int) sendto(handle_, (const char *) data, size, 0, (sockaddr *) &address, sizeof(sockaddr_in));
 
     return sent_bytes == size;
 }
@@ -198,7 +205,7 @@ int Net::UDPSocket::Receive(Address &sender, void *data, int size) {
     sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(sockaddr_in);
 
-    int received_bytes = (int)recvfrom(handle_, (char *) data, (size_t)size, 0, (sockaddr *) &from, &from_len);
+    int received_bytes = (int) recvfrom(handle_, (char *) data, (size_t) size, 0, (sockaddr *) &from, &from_len);
 
     if (received_bytes <= 0) {
         return 0;
@@ -239,9 +246,10 @@ Net::TCPSocket::TCPSocket() : handle_(0), connection_(0) {
 }
 
 Net::TCPSocket::TCPSocket(TCPSocket &&rhs) noexcept
-        : context_(move(rhs.context_)), handle_(rhs.handle_), connection_(rhs.connection_), remote_addr_(rhs.remote_addr_) {
-    rhs.handle_      = 0;
-    rhs.connection_  = 0;
+        : context_(move(rhs.context_)), handle_(rhs.handle_), connection_(rhs.connection_),
+          remote_addr_(rhs.remote_addr_) {
+    rhs.handle_ = 0;
+    rhs.connection_ = 0;
     rhs.remote_addr_ = Address();
 }
 
@@ -251,13 +259,13 @@ Net::TCPSocket::~TCPSocket() {
 }
 
 Net::TCPSocket &Net::TCPSocket::operator=(TCPSocket &&rhs) noexcept {
-    context_        = move(rhs.context_);
-    handle_         = rhs.handle_;
-    connection_     = rhs.connection_;
-    remote_addr_    = rhs.remote_addr_;
+    context_ = move(rhs.context_);
+    handle_ = rhs.handle_;
+    connection_ = rhs.connection_;
+    remote_addr_ = rhs.remote_addr_;
 
-    rhs.handle_      = 0;
-    rhs.connection_  = 0;
+    rhs.handle_ = 0;
+    rhs.connection_ = 0;
     rhs.remote_addr_ = Address();
     return *this;
 }
@@ -272,7 +280,7 @@ void Net::TCPSocket::Open(unsigned short port, bool reuse_addr) {
 #ifndef __EMSCRIPTEN__
     if (reuse_addr) {
         int one = 1;
-        setsockopt(handle_, SOL_SOCKET, SO_REUSEADDR, (char *)&one, sizeof(int));
+        setsockopt(handle_, SOL_SOCKET, SO_REUSEADDR, (char *) &one, sizeof(int));
     }
 #endif
 
@@ -281,7 +289,7 @@ void Net::TCPSocket::Open(unsigned short port, bool reuse_addr) {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
-    if (::bind(handle_, (const sockaddr*)&address, sizeof(sockaddr_in)) < 0) {
+    if (::bind(handle_, (const sockaddr *) &address, sizeof(sockaddr_in)) < 0) {
         Close();
         throw std::runtime_error("Cannot bind socket.");
     }
@@ -327,7 +335,7 @@ bool Net::TCPSocket::Accept(bool is_blocking) {
     sockaddr_in from;   // NOLINT
     socklen_t from_len = sizeof(from);
 
-    connection_ = accept(handle_, (struct sockaddr *)&from, &from_len);
+    connection_ = accept(handle_, (struct sockaddr *) &from, &from_len);
     if (connection_ < 0) {
         connection_ = 0;
         return false;
@@ -350,9 +358,9 @@ bool Net::TCPSocket::Connect(const Address &dest) {
     sockaddr_in address;    // NOLINT
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(dest.address());
-    address.sin_port = htons((unsigned short)dest.port());
+    address.sin_port = htons((unsigned short) dest.port());
 
-    int res = connect(handle_, (struct sockaddr *)&address, sizeof(sockaddr_in));
+    int res = connect(handle_, (struct sockaddr *) &address, sizeof(sockaddr_in));
 /*
     int valopt;
     fd_set myset;
@@ -401,7 +409,7 @@ bool Net::TCPSocket::Send(const void *data, int size) {
     }
 #endif
 
-    int sent_bytes = (int)send(dst, (char *)data, (size_t)size, 0);
+    int sent_bytes = (int) send(dst, (char *) data, (size_t) size, 0);
 
     return sent_bytes == size;
 }
@@ -425,7 +433,7 @@ int Net::TCPSocket::Receive(void *data, int size) {
     }
 #endif
 
-    int received_bytes = (int)recv(src, (char *)data, (size_t)size, 0);
+    int received_bytes = (int) recv(src, (char *) data, (size_t) size, 0);
 
     if (received_bytes <= 0) {
         //printf("Error recv %d - %s\n", errno, strerror(errno));

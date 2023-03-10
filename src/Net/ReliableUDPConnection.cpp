@@ -22,16 +22,16 @@ bool Net::ReliableUDPConnection::SendPacket(const unsigned char data[], int size
     const int header_size = 12;
     unsigned char packet[MAX_PACKET_SIZE];
 
-    unsigned int seq      = reliability_system_.local_sequence();
-    unsigned int ack      = reliability_system_.remote_sequence();
+    unsigned int seq = reliability_system_.local_sequence();
+    unsigned int ack = reliability_system_.remote_sequence();
     unsigned int ack_bits = reliability_system_.GenerateAckBits();
 
     WriteHeader(packet, seq, ack, ack_bits);
-    memcpy(packet + header_size, data, (size_t)size);
+    memcpy(packet + header_size, data, (size_t) size);
     if (!UDPConnection::SendPacket(packet, size + header_size)) {
         return false;
     }
-    reliability_system_.PacketSent((void*)data, size);
+    reliability_system_.PacketSent((void *) data, size);
     return true;
 #else
     return UDPConnection::SendPacket(data, size);
@@ -50,12 +50,12 @@ int Net::ReliableUDPConnection::ReceivePacket(unsigned char data[], int size) {
         return 0;
     }
     unsigned int packet_sequence = 0,
-                 packet_ack = 0,
-                 packet_ack_bits = 0;
+            packet_ack = 0,
+            packet_ack_bits = 0;
     ReadHeader(packet, packet_sequence, packet_ack, packet_ack_bits);
     reliability_system_.PacketReceived(packet_sequence, received_bytes - header_size);
     reliability_system_.ProcessAck(packet_ack, packet_ack_bits);
-    memcpy(data, packet + header_size, (size_t)received_bytes - header_size);
+    memcpy(data, packet + header_size, (size_t) received_bytes - header_size);
 
     return received_bytes - header_size;
 #else

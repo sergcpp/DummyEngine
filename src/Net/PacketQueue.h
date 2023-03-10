@@ -8,15 +8,15 @@
 
 namespace Net {
     struct PacketData {
-        unsigned    sequence;
-        float       time;
-        int         size;
+        unsigned sequence;
+        float time;
+        int size;
 
-        PacketData(unsigned s, float t, int _size) : sequence(s), time(t), size(_size) { }
+        PacketData(unsigned s, float t, int _size) : sequence(s), time(t), size(_size) {}
     };
 
     inline bool sequence_more_recent(unsigned int s1, unsigned int s2, unsigned int max_sequence) {
-        return ((s1 > s2) && (s1 - s2 <= max_sequence/2)) || ((s2 > s1) && (s2 - s1 > max_sequence/2));
+        return ((s1 > s2) && (s1 - s2 <= max_sequence / 2)) || ((s2 > s1) && (s2 - s1 > max_sequence / 2));
     }
 
     class PacketQueue : public std::list<PacketData> {

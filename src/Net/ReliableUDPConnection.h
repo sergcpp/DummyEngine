@@ -7,6 +7,7 @@ namespace Net {
     class ReliableUDPConnection : public UDPConnection {
     public:
         ReliableUDPConnection(unsigned int protocol_id, float timeout, unsigned int max_sequence = 0xFFFFFFFF);
+
         ~ReliableUDPConnection();
 
         void set_packet_loss_mask(unsigned int mask) {
@@ -17,15 +18,19 @@ namespace Net {
             return reliability_system_;
         }
 
-        virtual bool SendPacket(const unsigned char data[], int size);
-        virtual int ReceivePacket(unsigned char data[], int size);
+        bool SendPacket(const unsigned char data[], int size) override;
 
-        void Update(float dt_s);
+        int ReceivePacket(unsigned char data[], int size) override;
+
+        void Update(float dt_s) override;
 
     protected:
         static void WriteInteger(unsigned char *data, unsigned int value);
+
         static void WriteHeader(unsigned char *header, unsigned int sequence, unsigned int ack, unsigned int ack_bits);
+
         static void ReadInteger(const unsigned char *data, unsigned int &value);
+
         static void ReadHeader(
                 const unsigned char *header, unsigned int &sequence, unsigned int &ack, unsigned int &ack_bits);
 

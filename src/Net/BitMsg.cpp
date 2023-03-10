@@ -10,14 +10,14 @@ namespace {
 #define MASK_FIRST_N(x) (uint64_t) ((1ull << (x)) - 1)
 #define MFN(x) MASK_FIRST_N(x)
     uint64_t mask_first_n_bits[33] = {
-        MFN(0x00u), MFN(0x01u), MFN(0x02u), MFN(0x03u),
-        MFN(0x04u), MFN(0x05u), MFN(0x06u), MFN(0x07u),
-        MFN(0x08u), MFN(0x09u), MFN(0x0Au), MFN(0x0Bu),
-        MFN(0x0Cu), MFN(0x0Du), MFN(0x0Eu), MFN(0x0Fu),
-        MFN(0x10u), MFN(0x11u), MFN(0x12u), MFN(0x13u),
-        MFN(0x14u), MFN(0x15u), MFN(0x16u), MFN(0x17u),
-        MFN(0x18u), MFN(0x19u), MFN(0x1Au), MFN(0x1Bu),
-        MFN(0x1Cu), MFN(0x1Du), MFN(0x1Eu), MFN(0x1Fu), 0xFFFFFFFFu
+            MFN(0x00u), MFN(0x01u), MFN(0x02u), MFN(0x03u),
+            MFN(0x04u), MFN(0x05u), MFN(0x06u), MFN(0x07u),
+            MFN(0x08u), MFN(0x09u), MFN(0x0Au), MFN(0x0Bu),
+            MFN(0x0Cu), MFN(0x0Du), MFN(0x0Eu), MFN(0x0Fu),
+            MFN(0x10u), MFN(0x11u), MFN(0x12u), MFN(0x13u),
+            MFN(0x14u), MFN(0x15u), MFN(0x16u), MFN(0x17u),
+            MFN(0x18u), MFN(0x19u), MFN(0x1Au), MFN(0x1Bu),
+            MFN(0x1Cu), MFN(0x1Du), MFN(0x1Eu), MFN(0x1Fu), 0xFFFFFFFFu
     };
 }
 
@@ -39,16 +39,19 @@ void Net::BitMsg::WriteBits(int val, int num_bits) {
     if (num_bits != 32) {
         if (num_bits > 0) {
             if (val > (1 << num_bits) - 1) {
-                throw std::runtime_error(std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));
+                throw std::runtime_error(
+                        std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));
             } else if (val < 0) {
                 throw std::runtime_error("Use negative number of bits for negative number");
             }
         } else {
             int r = 1 << (-num_bits - 1);
             if (val > r - 1) {
-                throw std::runtime_error(std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));
+                throw std::runtime_error(
+                        std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));
             } else if (val < -r) {
-                throw std::runtime_error(std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));
+                throw std::runtime_error(
+                        std::string("Value overflow: ") + std::to_string(val) + " " + std::to_string(num_bits));
             }
         }
     }
@@ -61,7 +64,7 @@ void Net::BitMsg::WriteBits(int val, int num_bits) {
         throw std::runtime_error("Overflow");
     }
 
-    temp_val_ |= (((uint64_t)val) & mask_first_n_bits[num_bits]) << uint64_t(write_bit_);
+    temp_val_ |= (((uint64_t) val) & mask_first_n_bits[num_bits]) << uint64_t(write_bit_);
     write_bit_ += num_bits;
 
     while (write_bit_ >= 8) {
@@ -71,7 +74,7 @@ void Net::BitMsg::WriteBits(int val, int num_bits) {
     }
 
     if (write_bit_ > 0) {
-        write_data_[len_] = (uint8_t)(temp_val_ & 255u);
+        write_data_[len_] = (uint8_t) (temp_val_ & 255u);
     }
 }
 

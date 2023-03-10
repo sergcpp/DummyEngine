@@ -1,13 +1,14 @@
 #pragma warning(disable : 4018)
+
 #include "HTTPBase.h"
 
 #include <cstring>
 
 //const char *ContentType::str_type[] {"text/html", "image/x-icon", "image/png"};
-std::vector<Net::ContentType::StrType> Net::ContentType::str_types = { { eType::TextHTML, "html", "text/html"   },
-                                                                       { eType::TextCSS, "css", "text/css"      },
-                                                                       { eType::ImageIcon, "ico", "image/x-icon"},
-                                                                       { eType::ImagePNG, "png", "image/png"    } };
+std::vector<Net::ContentType::StrType> Net::ContentType::str_types = {{eType::TextHTML,  "html", "text/html"},
+                                                                      {eType::TextCSS,   "css",  "text/css"},
+                                                                      {eType::ImageIcon, "ico",  "image/x-icon"},
+                                                                      {eType::ImagePNG,  "png",  "image/png"}};
 
 std::string Net::ContentType::TypeString(eType type) {
     if (size_t(type) < str_types.size() && str_types[int(type)].t == type) {

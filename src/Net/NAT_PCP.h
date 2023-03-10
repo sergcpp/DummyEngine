@@ -62,14 +62,23 @@ namespace Net {
         PCPRequest() : opcode_(OP_NONE) {}
 
         PCPOpCode opcode() const { return opcode_; }
+
         uint32_t lifetime() const { return lifetime_; }
+
         Net::Address client_address() const { return client_address_; }
+
         Net::Address external_address() const { return external_address_; }
+
         PCPNonce nonce() const { return nonce_; }
+
         PCPProto proto() const { return proto_; }
+
         uint16_t internal_port() const { return internal_port_; }
+
         uint16_t external_port() const { return external_port_; }
+
         uint16_t remote_port() const { return remote_port_; }
+
         Net::Address remote_address() const { return remote_address_; }
 
         void set_external_address(const Address &addr) {
@@ -77,39 +86,40 @@ namespace Net {
         }
 
         void MakeAnnounceRequest(const Address &client_address) {
-            opcode_         = OP_ANNOUNCE;
-            lifetime_       = 0;
+            opcode_ = OP_ANNOUNCE;
+            lifetime_ = 0;
             client_address_ = client_address;
         }
 
         void MakeMapRequest(
                 PCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
                 const Address &client_address, const PCPNonce &nonce) {
-            opcode_         = OP_MAP;
-            proto_          = proto;
-            internal_port_  = internal_port;
-            external_port_  = external_port;
-            lifetime_       = lifetime;
+            opcode_ = OP_MAP;
+            proto_ = proto;
+            internal_port_ = internal_port;
+            external_port_ = external_port;
+            lifetime_ = lifetime;
             client_address_ = client_address;
-            nonce_          = nonce;
+            nonce_ = nonce;
         }
 
         void MakePeerRequest(
                 PCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
                 const Address &external_address, uint16_t remote_port, const Address &remote_address,
                 const PCPNonce &nonce) {
-            opcode_             = OP_PEER;
-            proto_              = proto;
-            internal_port_      = internal_port;
-            external_port_      = external_port;
-            lifetime_           = lifetime;
-            external_address_   = external_address;
-            remote_port_        = remote_port;
-            remote_address_     = remote_address;
-            nonce_              = nonce;
+            opcode_ = OP_PEER;
+            proto_ = proto;
+            internal_port_ = internal_port;
+            external_port_ = external_port;
+            lifetime_ = lifetime;
+            external_address_ = external_address;
+            remote_port_ = remote_port;
+            remote_address_ = remote_address;
+            nonce_ = nonce;
         }
 
         bool Read(const void *buf, int size);
+
         int Write(void *buf, int size) const;
     };
 
@@ -126,53 +136,62 @@ namespace Net {
         PCPResponse() : opcode_(OP_NONE) {}
 
         PCPOpCode opcode() const { return opcode_; }
+
         PCPResCode res_code() const { return res_code_; }
+
         uint32_t lifetime() const { return lifetime_; }
+
         uint32_t time() const { return time_; }
+
         Address external_address() const { return external_address_; }
+
         PCPNonce nonce() const { return nonce_; }
+
         PCPProto proto() const { return proto_; }
+
         uint16_t internal_port() const { return internal_port_; }
+
         uint16_t external_port() const { return external_port_; }
 
         void MakeAnnounceResponse(PCPResCode res_code) {
-            opcode_     = OP_ANNOUNCE;
-            res_code_   = res_code;
-            lifetime_   = 0;
+            opcode_ = OP_ANNOUNCE;
+            res_code_ = res_code;
+            lifetime_ = 0;
         }
 
         void MakeMapResponse(
                 PCPProto proto, PCPResCode res_code, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
                 uint32_t time, const Address &external_address, const PCPNonce &nonce) {
-            opcode_             = OP_MAP;
-            res_code_           = res_code;
-            internal_port_      = internal_port;
-            external_port_      = external_port;
-            lifetime_           = lifetime;
-            time_               = time;
-            external_address_   = external_address;
-            nonce_              = nonce;
-            proto_              = proto;
+            opcode_ = OP_MAP;
+            res_code_ = res_code;
+            internal_port_ = internal_port;
+            external_port_ = external_port;
+            lifetime_ = lifetime;
+            time_ = time;
+            external_address_ = external_address;
+            nonce_ = nonce;
+            proto_ = proto;
         }
 
         void MakePeerResponse(
                 PCPProto proto, PCPResCode res_code, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
                 uint32_t time, const Address &external_address, uint16_t remote_port, const Address &remote_address,
                 const PCPNonce &nonce) {
-            opcode_             = OP_PEER;
-            res_code_           = res_code;
-            internal_port_      = internal_port;
-            external_port_      = external_port;
-            lifetime_           = lifetime;
-            time_               = time;
-            external_address_   = external_address;
-            remote_port_        = remote_port;
-            remote_address_     = remote_address;
-            nonce_              = nonce;
-            proto_              = proto;
+            opcode_ = OP_PEER;
+            res_code_ = res_code;
+            internal_port_ = internal_port;
+            external_port_ = external_port;
+            lifetime_ = lifetime;
+            time_ = time;
+            external_address_ = external_address;
+            remote_port_ = remote_port;
+            remote_address_ = remote_address;
+            nonce_ = nonce;
+            proto_ = proto;
         }
 
         bool Read(const void *buf, int size);
+
         int Write(void *buf, int size) const;
     };
 
@@ -201,9 +220,11 @@ namespace Net {
         }
 
         State state() const { return state_; }
+
         PCPResCode err_code() const { return err_code_; }
 
         void Update(unsigned int dt_ms);
+
     private:
         State state_;
 

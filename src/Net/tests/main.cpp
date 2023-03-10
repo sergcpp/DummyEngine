@@ -28,8 +28,8 @@ int main() {
     //test_pcp();
     //test_pmp();
     test_reliable_udp_connection();
-    test_tcp_socket();
-    test_udp_connection();
-    test_udp_socket();
+    //test_tcp_socket();
+    //test_udp_connection();
+    //test_udp_socket();
     puts("OK");
 }

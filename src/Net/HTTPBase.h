@@ -12,26 +12,40 @@ namespace Net {
         std::string key_;
     public:
         explicit HTTPField(std::string key) : key_(std::move(key)) {}
+
         virtual ~HTTPField() = default;
+
         const std::string &key() const {
             return key_;
         }
+
         virtual std::string str() const = 0;
     };
+
     class ContentType : public HTTPField {
     public:
-        enum class eType { TextHTML = 0, TextCSS, ImageIcon, ImagePNG, Unknown };
+        enum class eType {
+            TextHTML = 0, TextCSS, ImageIcon, ImagePNG, Unknown
+        };
+
         struct StrType {
             eType t;
             char ext[8], str[32];
-            StrType(eType t, const char *e, const char *s) : t (t) {
-                strcpy(ext, e); strcpy(str, s);
+
+            StrType(eType t, const char *e, const char *s) : t(t) {
+                strcpy(ext, e);
+                strcpy(str, s);
             }
         };
-        enum class Charset { UTF_8 };
+
+        enum class Charset {
+            UTF_8
+        };
         eType type;
         Charset charset;
+
         ContentType() : HTTPField("Content-Type"), type(eType::TextHTML), charset(Charset::UTF_8) {}
+
         std::string str() const override {
             std::string ret;
             ret += TypeString(type) + "; ";
@@ -45,23 +59,31 @@ namespace Net {
         }
 
         static std::vector<StrType> str_types;
+
         static std::string TypeString(eType type);
+
         static eType TypeByExt(const char *ext);
     };
+
     class ContentLen : public HTTPField {
     public:
         size_t len;
+
         ContentLen() : HTTPField("Content-Length"), len(0) {}
+
         std::string str() const override {
             std::string ret;
             ret += std::to_string(len);
             return ret;
         }
     };
+
     class MessageBody : public HTTPField {
     public:
         std::string val;
+
         MessageBody() : HTTPField("") {}
+
         std::string str() const override {
             if (val.empty()) {
                 return "";
@@ -69,14 +91,18 @@ namespace Net {
             return val + "\r\n";
         }
     };
+
     class SimpleField : public HTTPField {
     public:
         std::string val;
+
         SimpleField(const std::string &key, std::string val) : HTTPField(key), val(std::move(val)) {}
+
         std::string str() const override {
             return val;
         }
     };
+
     class HTTPBase {
     protected:
         ContentType content_type_;

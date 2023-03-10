@@ -1,4 +1,5 @@
 #pragma warning(disable : 4244)
+
 #include "ReliabilitySystem.h"
 
 #include <cstdio>
@@ -22,9 +23,9 @@ void Net::ReliabilitySystem::Reset() {
 }
 
 void Net::ReliabilitySystem::PacketSent(void *data, int size) {
-    if(sent_queue_.exists(local_sequence_)) {
+    if (sent_queue_.exists(local_sequence_)) {
         printf("local sequence %d exists\n", local_sequence_);
-        for(PacketQueue::iterator it = sent_queue_.begin(); it != sent_queue_.end(); it++) {
+        for (PacketQueue::iterator it = sent_queue_.begin(); it != sent_queue_.end(); it++) {
             printf(" + %d\n", it->sequence);
         }
     }
@@ -37,21 +38,21 @@ void Net::ReliabilitySystem::PacketSent(void *data, int size) {
     pending_ack_queue_.push_back(pdata);
     sent_packets_++;
     local_sequence_++;
-    if(local_sequence_ > max_sequence_) {
+    if (local_sequence_ > max_sequence_) {
         local_sequence_ = 0;
     }
 }
 
 void Net::ReliabilitySystem::PacketReceived(unsigned int sequence, int size) {
     recv_packets_++;
-    if(received_queue_.exists(sequence)) {
+    if (received_queue_.exists(sequence)) {
         return;
     }
 
     PacketData data(sequence, 0, size);
 
     received_queue_.push_back(data);
-    if(sequence_more_recent(sequence, remote_sequence_, max_sequence_)) {
+    if (sequence_more_recent(sequence, remote_sequence_, max_sequence_)) {
         remote_sequence_ = sequence;
     }
 }
@@ -64,16 +65,16 @@ void Net::ReliabilitySystem::Update(float dt_s) {
 }
 
 void Net::ReliabilitySystem::AdvanceQueueTime(float dt_s) {
-    for(auto &p : sent_queue_) {
+    for (auto &p: sent_queue_) {
         p.time += dt_s;
     }
-    for(auto &p : received_queue_) {
+    for (auto &p: received_queue_) {
         p.time += dt_s;
     }
-    for(auto &p : pending_ack_queue_) {
+    for (auto &p: pending_ack_queue_) {
         p.time += dt_s;
     }
-    for(auto &p : acked_queue_) {
+    for (auto &p: acked_queue_) {
         p.time += dt_s;
     }
 }
@@ -81,16 +82,16 @@ void Net::ReliabilitySystem::AdvanceQueueTime(float dt_s) {
 void Net::ReliabilitySystem::UpdateQueues() {
     const float epsilon = 0.001f;
 
-    while(!sent_queue_.empty() && sent_queue_.front().time > rtt_maximum_ + epsilon) {
+    while (!sent_queue_.empty() && sent_queue_.front().time > rtt_maximum_ + epsilon) {
         sent_queue_.pop_front();
     }
 
     if (!received_queue_.empty()) {
         const unsigned int latest_sequence = received_queue_.back().sequence;
         const unsigned int minimum_sequence =
-            latest_sequence >= 34 ? (latest_sequence - 34) : max_sequence_ - (34 - latest_sequence);
+                latest_sequence >= 34 ? (latest_sequence - 34) : max_sequence_ - (34 - latest_sequence);
         while (!received_queue_.empty() &&
-              !sequence_more_recent(received_queue_.front().sequence, minimum_sequence, max_sequence_)) {
+               !sequence_more_recent(received_queue_.front().sequence, minimum_sequence, max_sequence_)) {
             received_queue_.pop_front();
         }
     }
@@ -108,14 +109,14 @@ void Net::ReliabilitySystem::UpdateQueues() {
 void Net::ReliabilitySystem::UpdateStats() {
     int sent_bytes_per_second = 0;
 
-    for (const PacketData &pack : sent_queue_) {
+    for (const PacketData &pack: sent_queue_) {
         sent_bytes_per_second += pack.size;
     }
 
-    int acked_packets_per_second    = 0;
-    int acked_bytes_per_second      = 0;
+    int acked_packets_per_second = 0;
+    int acked_bytes_per_second = 0;
 
-    for (PacketData &pack : acked_queue_) {
+    for (PacketData &pack: acked_queue_) {
         if (pack.time >= rtt_maximum_) {
             acked_packets_per_second++;
             acked_bytes_per_second += pack.size;
@@ -132,13 +133,14 @@ void Net::ReliabilitySystem::GetAcks(unsigned int **acks, int &count) {
     if (!acks_.empty()) {
         *acks = &acks_[0];
     }
-    count = (int)acks_.size();
+    count = (int) acks_.size();
 }
 
-unsigned int Net::ReliabilitySystem::bit_index_for_sequence(unsigned int sequence, unsigned int ack, unsigned int max_sequence) {
+unsigned int
+Net::ReliabilitySystem::bit_index_for_sequence(unsigned int sequence, unsigned int ack, unsigned int max_sequence) {
     assert(sequence != ack);
     assert(!sequence_more_recent(sequence, ack, max_sequence));
-    if(sequence > ack) {
+    if (sequence > ack) {
         assert(ack < 33);
         assert(sequence <= max_sequence);
         return ack + (max_sequence - sequence);
@@ -152,12 +154,12 @@ unsigned int Net::ReliabilitySystem::bit_index_for_sequence(unsigned int sequenc
 unsigned int Net::ReliabilitySystem::generate_ack_bits(
         unsigned int ack, const PacketQueue &received_queue, unsigned int max_sequence) {
     unsigned int ack_bits = 0;
-    for(const PacketData &itor : received_queue) {
-        if(itor.sequence == ack || sequence_more_recent(itor.sequence, ack, max_sequence)) {
+    for (const PacketData &itor: received_queue) {
+        if (itor.sequence == ack || sequence_more_recent(itor.sequence, ack, max_sequence)) {
             break;
         }
         unsigned int bit_index = bit_index_for_sequence(itor.sequence, ack, max_sequence);
-        if(bit_index <= 31) {
+        if (bit_index <= 31) {
             ack_bits |= 1u << bit_index;
         }
     }

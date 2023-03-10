@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.1)
 project(Net)
 
+set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;Asan" CACHE STRING "" FORCE)
+
+IF(MSVC)
+    if (NOT DEFINED CMAKE_CXX_FLAGS_ASAN)
+        set(CMAKE_CXX_FLAGS_ASAN "/MTd /Zi /Od /RTC1 /fsanitize=address")
+        set(CMAKE_EXE_LINKER_FLAGS_ASAN "${CMAKE_EXE_LINKER_FLAGS_DEBUG} /INCREMENTAL:NO")
+    endif()
+ELSE(MSVC)
+ENDIF(MSVC)
+
+
 set(CMAKE_CXX_STANDARD  11)
 
 set(SOURCE_FILES    Address.h
@@ -53,19 +64,13 @@ set(LZO_SOURCE_FILES    minilzo/lzoconf.h
                         minilzo/minilzo.c)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
-set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src" FILES ${SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${HASH_SOURCE_FILES})
-set_source_files_properties(${HASH_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\hash" FILES ${HASH_SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${LZO_SOURCE_FILES})
-set_source_files_properties(${LZO_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src\\minilzo" FILES ${LZO_SOURCE_FILES})
-
-list(APPEND ALL_SOURCE_FILES _Net.cpp)
-source_group("src" FILES _Net.cpp)
 
 add_library(Net STATIC ${ALL_SOURCE_FILES})
 if(WIN32)
