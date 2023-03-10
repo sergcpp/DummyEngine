@@ -12,10 +12,10 @@ enum class JsType { Invalid = -1, Literal, Number, String, Array, Object };
 enum class JsLiteralType { Undefined, True, False, Null };
 
 struct JsFlags {
-    int ident_levels : 1;
-    int use_new_lines : 1;
-    int use_spaces : 1;
-    int level : 29;
+    unsigned ident_levels : 1;
+    unsigned use_new_lines : 1;
+    unsigned use_spaces : 1;
+    unsigned level : 29;
 
     JsFlags() : ident_levels(1), use_new_lines(1), use_spaces(0), level(0) {}
 };
@@ -65,12 +65,12 @@ inline bool operator!=(const StdStringP &lhs, const std::string &rhs) { return !
 template <typename Alloc> struct JsStringT {
     StdString<Alloc> val;
 
-    JsStringT(const Alloc &alloc = Alloc()) : val(alloc) {}
+    explicit JsStringT(const Alloc &alloc = Alloc()) : val(alloc) {}
     JsStringT(const JsStringT &rhs) = default;
-    JsStringT(JsStringT &&rhs) = default;
+    JsStringT(JsStringT &&rhs) noexcept = default;
 
     JsStringT &operator=(const JsStringT &rhs) = default;
-    JsStringT &operator=(JsStringT &&rhs) = default;
+    JsStringT &operator=(JsStringT &&rhs) noexcept = default;
 
     explicit JsStringT(const char *s, const Alloc &alloc = Alloc()) : val(s, alloc) {}
     explicit JsStringT(StdString<Alloc> s, const Alloc &alloc = Alloc()) : val(std::move(s), alloc) {}
@@ -89,9 +89,9 @@ template <typename Alloc> struct JsArrayT {
     using AllocV = typename Alloc::template rebind<JsElementT<Alloc>>::other;
     std::vector<JsElementT<Alloc>, AllocV> elements;
 
-    JsArrayT(const Alloc &alloc = Alloc()) : elements(alloc) {}
+    explicit JsArrayT(const Alloc &alloc = Alloc()) : elements(alloc) {}
     JsArrayT(const JsArrayT &rhs) = default;
-    JsArrayT(JsArrayT &&rhs) = default;
+    JsArrayT(JsArrayT &&rhs) noexcept = default;
     JsArrayT(const JsElementT<Alloc> *v, size_t num, const Alloc &alloc = Alloc());
 
     JsElementT<Alloc> &operator[](size_t i);
@@ -120,7 +120,7 @@ template <typename Alloc> struct JsObjectT {
     using AllocV = typename Alloc::template rebind<std::pair<StdString<Alloc>, JsElementT<Alloc>>>::other;
     std::vector<std::pair<StdString<Alloc>, JsElementT<Alloc>>, AllocV> elements;
 
-    JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc) {}
+    explicit JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc) {}
 
     const std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i) const;
     std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i);
@@ -187,10 +187,10 @@ template <typename Alloc> struct JsElementT {
     JsElementT(const JsLiteral &rhs);        // NOLINT
     JsElementT(const JsElementT &rhs);
 
-    JsElementT(JsStringT<Alloc> &&rhs);
-    JsElementT(JsArrayT<Alloc> &&rhs);
-    JsElementT(JsObjectT<Alloc> &&rhs);
-    JsElementT(JsElementT &&rhs);
+    explicit JsElementT(JsStringT<Alloc> &&rhs);
+    explicit JsElementT(JsArrayT<Alloc> &&rhs);
+    explicit JsElementT(JsObjectT<Alloc> &&rhs);
+    explicit JsElementT(JsElementT &&rhs) noexcept;
 
     ~JsElementT();
 

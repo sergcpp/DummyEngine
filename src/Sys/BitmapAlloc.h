@@ -13,7 +13,6 @@
 #include <intrin.h>
 
 #pragma intrinsic(_BitScanForward64)
-#pragma intrinsic(_tzcnt_u64)
 #endif
 
 namespace Sys {
@@ -29,7 +28,13 @@ force_inline bool GetFirstBit(const uint64_t mask, unsigned long *bit_index) {
 
 force_inline int CountTrailingZeroes(const uint64_t mask) {
 #ifdef _MSC_VER
-    return int(_tzcnt_u64(mask));
+    // return int(_tzcnt_u64(mask));
+    if (mask == 0) {
+        return 64;
+    }
+    unsigned long r = 0;
+    _BitScanForward64(&r, mask);
+    return r;
 #else
     if (mask == 0) {
         return 64;

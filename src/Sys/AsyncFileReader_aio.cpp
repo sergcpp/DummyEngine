@@ -1,5 +1,7 @@
 #include "AsyncFileReader.h"
 
+#include <cassert>
+
 #include <algorithm>
 
 #include <fcntl.h>

@@ -1,6 +1,12 @@
 #include "DynLib.h"
 
+#include <cstring>
+
+#include <string>
+
 #if defined(_WIN32)
+#define NOMINMAX
+#define WIN32_LEAN_AND_MEAN
 #include "Windows.h"
 #elif defined(__unix__) || defined(__APPLE__)
 #include "dlfcn.h"
@@ -13,6 +19,20 @@ Sys::DynLib::DynLib() {
 }
 
 Sys::DynLib::DynLib(const char *name) {
+    std::string name_with_ext;
+    const char *ext = strrchr(name, '.');
+    if (!ext) {
+        name_with_ext = name;
+        // Attach platform-preferred extension
+#if defined(_WIN32)
+        name_with_ext += ".dll";
+#elif defined(__unix__)
+        name_with_ext += ".so";
+#elif defined(__APPLE__)
+        name_with_ext += ".dylib";
+#endif
+        name = name_with_ext.c_str();
+    }
 #if defined(_WIN32)
     handle_ = LoadLibraryA(name);
 #elif defined(__unix__) || defined(__APPLE__)

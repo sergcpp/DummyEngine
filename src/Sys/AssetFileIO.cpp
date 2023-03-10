@@ -3,8 +3,7 @@
 #ifdef EMSCRIPTEN
 #include <emscripten.h>
 
-void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload,
-                            onerror_func onerror) {
+void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, onerror_func onerror) {
     emscripten_async_wget_data(url, arg, onload, onerror);
 }
 #else
@@ -15,17 +14,19 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload,
 #include "AsyncFileReader.h"
 #include "ThreadWorker.h"
 
-//#define IMITATE_LONG_LOAD
+// #define IMITATE_LONG_LOAD
 
 namespace Sys {
 std::unique_ptr<Sys::ThreadWorker> g_worker;
 std::unique_ptr<char[]> g_file_read_buffer;
 size_t g_file_read_buffer_size;
-Sys::AsyncFileReader g_file_reader;
+Sys::AsyncFileReader &g_file_reader() {
+    static Sys::AsyncFileReader file_reader;
+    return file_reader;
+}
 } // namespace Sys
 
-void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload,
-                            onerror_func onerror) {
+void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload, onerror_func onerror) {
     std::string url_str(url);
     g_worker->AddTask([url_str, arg, onload, onerror] {
 
@@ -36,9 +37,8 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload,
         size_t file_size = g_file_read_buffer_size;
         bool success = false;
 #if !defined(__ANDROID__) && !defined(__APPLE__)
-        success =
-            g_file_reader.ReadFileBlocking(url_str.c_str(), 0 /* file_offset */,
-                                           WholeFile, &g_file_read_buffer[0], file_size);
+        success = g_file_reader().ReadFileBlocking(url_str.c_str(), 0 /* file_offset */, WholeFile,
+                                                   &g_file_read_buffer[0], file_size);
 #else
         AssetFile in_file(url_str.c_str(), eOpenMode::In);
         if (in_file) {
@@ -60,9 +60,8 @@ void Sys::LoadAssetComplete(const char *url, void *arg, onload_func onload,
             g_file_read_buffer.reset(new char[g_file_read_buffer_size]);
             file_size = g_file_read_buffer_size;
 #if !defined(__ANDROID__) && !defined(__APPLE__)
-            success = g_file_reader.ReadFileBlocking(url_str.c_str(), 0 /* file_offset */,
-                                                     WholeFile, &g_file_read_buffer[0],
-                                                     file_size);
+            success = g_file_reader().ReadFileBlocking(url_str.c_str(), 0 /* file_offset */, WholeFile,
+                                                       &g_file_read_buffer[0], file_size);
 #else
             success = in_file.Read(&g_file_read_buffer[0], file_size);
 #endif

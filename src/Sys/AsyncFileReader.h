@@ -62,7 +62,7 @@ class FileReadBufBase {
 class DefaultFileReadBuf : public FileReadBufBase {
   public:
     DefaultFileReadBuf() = default;
-    ~DefaultFileReadBuf() override { Free(); }
+    ~DefaultFileReadBuf() override { DefaultFileReadBuf::Free(); }
 
     uint8_t *Alloc(size_t new_size) override;
     void Free() override;
