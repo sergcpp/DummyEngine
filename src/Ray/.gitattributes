@@ -1,0 +1,2 @@
+third-party/** linguist-vendored
+internal/shaders/output/** linguist-generated
