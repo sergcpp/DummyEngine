@@ -304,21 +304,21 @@ int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log, s
 
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 
-bool Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
-    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].r, w, h, 4);
+bool Write_RGBE(const Ray::color_rgba_t *out_data, int w, int h, const char *name) {
+    std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].v[0], w, h, 4);
     return WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */, name) == 1;
 }
 
-bool Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name) {
+bool Write_RGB(const Ray::color_rgba_t *out_data, int w, int h, const char *name) {
     std::vector<uint8_t> u8_data(w * h * 3);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            const Ray::pixel_color_t &p = out_data[y * w + x];
+            const Ray::color_rgba_t &p = out_data[y * w + x];
 
-            u8_data[(y * w + x) * 3 + 0] = uint8_t(std::min(int(p.r * 255), 255));
-            u8_data[(y * w + x) * 3 + 1] = uint8_t(std::min(int(p.g * 255), 255));
-            u8_data[(y * w + x) * 3 + 2] = uint8_t(std::min(int(p.b * 255), 255));
+            u8_data[(y * w + x) * 3 + 0] = uint8_t(std::min(int(p.v[0] * 255), 255));
+            u8_data[(y * w + x) * 3 + 1] = uint8_t(std::min(int(p.v[1] * 255), 255));
+            u8_data[(y * w + x) * 3 + 2] = uint8_t(std::min(int(p.v[2] * 255), 255));
         }
     }
 

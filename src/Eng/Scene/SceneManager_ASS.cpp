@@ -72,12 +72,13 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data
     }
 }
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height,
+std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int width, int height,
                                            float invalid_threshold, int filter_size) {
-    std::vector<Ray::pixel_color_t> temp_pixels1{pixels, pixels + width * height}, temp_pixels2{(size_t)width * height};
+    std::vector<Ray::color_rgba_t> temp_pixels1{pixels, pixels + width * height},
+        temp_pixels2{(size_t)width * height};
 
     // Avoid bound checks in debug
-    Ray::pixel_color_t *_temp_pixels1 = temp_pixels1.data(), *_temp_pixels2 = temp_pixels2.data();
+    Ray::color_rgba_t *_temp_pixels1 = temp_pixels1.data(), *_temp_pixels2 = temp_pixels2.data();
 
     // apply dilation filter
     for (int i = 0; i < filter_size; i++) {
@@ -85,20 +86,20 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                const Ray::pixel_color_t &in_p = _temp_pixels1[y * width + x];
-                Ray::pixel_color_t &out_p = _temp_pixels2[y * width + x];
+                const Ray::color_rgba_t &in_p = _temp_pixels1[y * width + x];
+                Ray::color_rgba_t &out_p = _temp_pixels2[y * width + x];
 
-                if (in_p.a >= invalid_threshold) {
-                    const float mul = 1.0f / in_p.a;
+                if (in_p.v[3] >= invalid_threshold) {
+                    const float mul = 1.0f / in_p.v[3];
 
-                    out_p.r = in_p.r * mul;
-                    out_p.g = in_p.g * mul;
-                    out_p.b = in_p.b * mul;
-                    out_p.a = in_p.a * mul;
+                    out_p.v[0] = in_p.v[0] * mul;
+                    out_p.v[1] = in_p.v[1] * mul;
+                    out_p.v[2] = in_p.v[2] * mul;
+                    out_p.v[3] = in_p.v[3] * mul;
                 } else {
                     has_invalid = true;
 
-                    Ray::pixel_color_t new_p = {0};
+                    Ray::color_rgba_t new_p = {0};
                     int count = 0;
 
                     const int _ys[] = {y - 1, y, y + 1};
@@ -111,12 +112,12 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
                             if ((_x == x && _y == y) || _x < 0 || _x > width - 1)
                                 continue;
 
-                            const Ray::pixel_color_t &p = _temp_pixels1[_y * width + _x];
-                            if (p.a >= invalid_threshold) {
-                                new_p.r += p.r;
-                                new_p.g += p.g;
-                                new_p.b += p.b;
-                                new_p.a += p.a;
+                            const Ray::color_rgba_t &p = _temp_pixels1[_y * width + _x];
+                            if (p.v[3] >= invalid_threshold) {
+                                new_p.v[0] += p.v[0];
+                                new_p.v[1] += p.v[1];
+                                new_p.v[2] += p.v[2];
+                                new_p.v[3] += p.v[3];
                                 ++count;
                             }
                         }
@@ -124,10 +125,10 @@ std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int
 
                     const float mul = count ? (1.0f / float(count)) : 1.0f;
 
-                    out_p.r = new_p.r * mul;
-                    out_p.g = new_p.g * mul;
-                    out_p.b = new_p.b * mul;
-                    out_p.a = new_p.a * mul;
+                    out_p.v[0] = new_p.v[0] * mul;
+                    out_p.v[1] = new_p.v[1] * mul;
+                    out_p.v[2] = new_p.v[2] * mul;
+                    out_p.v[3] = new_p.v[3] * mul;
                 }
             }
         }

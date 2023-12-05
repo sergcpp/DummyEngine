@@ -20,14 +20,14 @@ extern const int LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-bool Write_RGB(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
+bool Write_RGB(const Ray::color_rgba_t *out_data, int w, int h, const char *name);
 bool Write_RGBM(const float *out_data, int w, int h, int channels, bool flip_y, const char *name);
-bool Write_RGBE(const Ray::pixel_color_t *out_data, int w, int h, const char *name);
+bool Write_RGBE(const Ray::color_rgba_t *out_data, int w, int h, const char *name);
 
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data);
 
-std::vector<Ray::pixel_color_t> FlushSeams(const Ray::pixel_color_t *pixels, int width, int height,
-                                           float invalid_threshold, int filter_size);
+std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int width, int height,
+                                          float invalid_threshold, int filter_size);
 
 std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, bool flip_y);
 } // namespace SceneManagerInternal
@@ -81,8 +81,8 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
 
     std::tie(*w, *h) = ray_renderer_.size();
 
-    const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
-    return &pixels[0].r;
+    const Ray::color_data_rgba_t pixels = ray_renderer_.get_pixels_ref();
+    return &pixels.ptr[0].v[0];
 }
 
 void SceneManager::ResetLightmaps_PT() {
@@ -186,24 +186,24 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     if ((!cur_lm_indir_ && ray_reg_ctx_[0].iteration >= LmSamplesDirect) ||
         (cur_lm_indir_ && ray_reg_ctx_[0].iteration >= LmSamplesIndirect)) {
         { // Save lightmap to file
-            const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
+            const Ray::color_data_rgba_t pixels = ray_renderer_.get_pixels_ref();
 
             const int xpos = lm->pos[0], ypos = lm->pos[1];
 
             // Copy image to lightmap atlas
-            Ray::pixel_color_t *pt_lm_target = cur_lm_indir_ ? pt_lm_indir_.data() : pt_lm_direct_.data();
+            Ray::color_rgba_t *pt_lm_target = cur_lm_indir_ ? pt_lm_indir_.data() : pt_lm_direct_.data();
             for (int j = 0; j < res; j++) {
-                memcpy(&pt_lm_target[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &pixels[j * res],
-                       res * sizeof(Ray::pixel_color_t));
+                memcpy(&pt_lm_target[(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &pixels.ptr[j * res],
+                       res * sizeof(Ray::color_rgba_t));
             }
 
             if (cur_lm_indir_) {
                 std::vector<Ray::shl1_data_t> sh_data(ray_renderer_.get_sh_data_ref(),
                                                       ray_renderer_.get_sh_data_ref() + res * res);
-                std::vector<Ray::pixel_color_t> temp_pixels1(res * res, Ray::pixel_color_t{0.0f, 0.0f, 0.0f, 1.0f});
+                std::vector<Ray::color_rgba_t> temp_pixels1(res * res, Ray::color_rgba_t{0.0f, 0.0f, 0.0f, 1.0f});
 
                 for (int i = 0; i < res * res; i++) {
-                    const float coverage = pixels[i].a;
+                    const float coverage = pixels.ptr[i].v[3];
                     if (coverage < InvalidThreshold) {
                         continue;
                     }
@@ -240,25 +240,25 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 // Fill alpha channel with pixel 'validity'
                 for (int i = 0; i < res * res; i++) {
                     // Coverage division is already applied in previous step
-                    if (pixels[i].a > InvalidThreshold) {
-                        temp_pixels1[i].a = 1.0f;
+                    if (pixels.ptr[i].v[3] > InvalidThreshold) {
+                        temp_pixels1[i].v[3] = 1.0f;
                     } else {
                         // Mark pixel as invalid, so it is be processed during dilate
-                        temp_pixels1[i].a = 0.0f;
+                        temp_pixels1[i].v[3] = 0.0f;
                     }
                 }
 
                 for (int sh_l = 0; sh_l < 4; sh_l++) {
                     for (int i = 0; i < res * res; i++) {
-                        temp_pixels1[i].r = sh_data[i].coeff_r[sh_l];
-                        temp_pixels1[i].g = sh_data[i].coeff_g[sh_l];
-                        temp_pixels1[i].b = sh_data[i].coeff_b[sh_l];
+                        temp_pixels1[i].v[0] = sh_data[i].coeff_r[sh_l];
+                        temp_pixels1[i].v[1] = sh_data[i].coeff_g[sh_l];
+                        temp_pixels1[i].v[2] = sh_data[i].coeff_b[sh_l];
                     }
 
                     // Add image to atlas
                     for (int j = 0; j < res; j++) {
                         memcpy(&pt_lm_indir_sh_[sh_l][(ypos + j) * LIGHTMAP_ATLAS_RESX + xpos], &temp_pixels1[j * res],
-                               res * sizeof(Ray::pixel_color_t));
+                               res * sizeof(Ray::color_rgba_t));
                     }
                 }
             }
@@ -294,7 +294,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 { // Save direct lightmap
                     ren_ctx_.log()->Info("Flushing seams...");
                     const double t1 = Sys::GetTimeS();
-                    const std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(
+                    const std::vector<Ray::color_rgba_t> out_pixels = SceneManagerInternal::FlushSeams(
                         &pt_lm_direct_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
                     ren_ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
 
@@ -302,8 +302,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_direct.png";
 
-                    if (!SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
-                                                          false /* flip_y */, out_file_name.c_str())) {
+                    if (!SceneManagerInternal::Write_RGBM(&out_pixels[0].v[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
+                                                          4, false /* flip_y */, out_file_name.c_str())) {
                         ren_ctx_.log()->Error("Failed to write %s", out_file_name.c_str());
                         return false;
                     }
@@ -312,7 +312,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                 { // Save indirect lightmap
                     ren_ctx_.log()->Info("Flushing seams...");
                     const double t1 = Sys::GetTimeS();
-                    const std::vector<Ray::pixel_color_t> out_pixels = SceneManagerInternal::FlushSeams(
+                    const std::vector<Ray::color_rgba_t> out_pixels = SceneManagerInternal::FlushSeams(
                         &pt_lm_indir_[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
                     ren_ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
 
@@ -320,8 +320,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     out_file_name += scene_data_.name.c_str();
                     out_file_name += "_lm_indirect.png";
 
-                    if (!SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY, 4,
-                                                          false /* flip_y */, out_file_name.c_str())) {
+                    if (!SceneManagerInternal::Write_RGBM(&out_pixels[0].v[0], LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY,
+                                                          4, false /* flip_y */, out_file_name.c_str())) {
                         ren_ctx_.log()->Error("Failed to write %s", out_file_name.c_str());
                         return false;
                     }
@@ -331,7 +331,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
                     for (int sh_l = 0; sh_l < 4; sh_l++) {
                         ren_ctx_.log()->Info("Flushing seams...");
                         const double t1 = Sys::GetTimeS();
-                        std::vector<Ray::pixel_color_t> out_pixels =
+                        std::vector<Ray::color_rgba_t> out_pixels =
                             SceneManagerInternal::FlushSeams(&pt_lm_indir_sh_[sh_l][0], LIGHTMAP_ATLAS_RESX,
                                                              LIGHTMAP_ATLAS_RESY, InvalidThreshold, FilterSize);
                         ren_ctx_.log()->Info("                 done (%fs)", Sys::GetTimeS() - t1);
@@ -344,7 +344,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
                         if (sh_l == 0) {
                             // Save first band as HDR
-                            if (!SceneManagerInternal::Write_RGBM(&out_pixels[0].r, LIGHTMAP_ATLAS_RESX,
+                            if (!SceneManagerInternal::Write_RGBM(&out_pixels[0].v[0], LIGHTMAP_ATLAS_RESX,
                                                                   LIGHTMAP_ATLAS_RESY, 4, false /* flip_y */,
                                                                   out_file_name.c_str())) {
                                 ren_ctx_.log()->Error("Failed to write %s", out_file_name.c_str());
@@ -414,8 +414,8 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     ren_ctx_.log()->Info("Lightmap: %i %i/%i (%.1fs left)", int(cur_lm_obj_), SamplesDone, SamplesTotal,
                          seconds_per_iteration * (SamplesTotal - SamplesDone));
 
-    const Ray::pixel_color_t *pixels = ray_renderer_.get_pixels_ref();
-    *preview_pixels = &pixels[0].r;
+    const Ray::color_data_rgba_t pixels = ray_renderer_.get_pixels_ref();
+    *preview_pixels = &pixels.ptr[0].v[0];
     *w = res;
     *h = res;
 
@@ -448,7 +448,7 @@ void SceneManager::InitScene_PT(bool _override) {
             const std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
-            tex_desc.data = (const Ray::color_rgba8_t *)&tex_data[0];
+            tex_desc.data = tex_data;
             tex_desc.w = w;
             tex_desc.h = h;
             tex_desc.generate_mipmaps = false;
@@ -461,9 +461,9 @@ void SceneManager::InitScene_PT(bool _override) {
 
     { // Add main camera
         Ray::camera_desc_t cam_desc;
-        cam_desc.type = Ray::Persp;
-        cam_desc.dtype = Ray::None;
-        cam_desc.filter = Ray::Tent;
+        cam_desc.type = Ray::eCamType::Persp;
+        cam_desc.view_transform = Ray::eViewTransform::Standard;
+        cam_desc.filter = Ray::ePixelFilter::BlackmanHarris;
         cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
         cam_desc.fwd[2] = -1.0f;
@@ -476,9 +476,9 @@ void SceneManager::InitScene_PT(bool _override) {
 
     { // Add camera for lightmapping
         Ray::camera_desc_t cam_desc;
-        cam_desc.type = Ray::Geo;
-        cam_desc.dtype = Ray::None;
-        cam_desc.filter = Ray::Box;
+        cam_desc.type = Ray::eCamType::Geo;
+        cam_desc.view_transform = Ray::eViewTransform::Standard;
+        cam_desc.filter = Ray::ePixelFilter::Box;
         cam_desc.gamma = 1.0f;
         cam_desc.lighting_only = true;
         cam_desc.skip_direct_lighting = true;
@@ -515,10 +515,10 @@ void SceneManager::InitScene_PT(bool _override) {
     Ray::TextureHandle default_white_tex;
 
     { //  Add default white texture
-        const Ray::color_rgba8_t white = {255, 255, 255, 255};
+        const uint8_t white[] = {255, 255, 255, 255};
 
         Ray::tex_desc_t tex_desc;
-        tex_desc.data = &white;
+        tex_desc.data = white;
         tex_desc.w = tex_desc.h = 1;
         tex_desc.generate_mipmaps = true;
 
@@ -555,14 +555,16 @@ void SceneManager::InitScene_PT(bool _override) {
             auto mesh_it = loaded_meshes.find(mesh_name);
             if (mesh_it == loaded_meshes.end()) {
                 Ray::mesh_desc_t mesh_desc;
-                mesh_desc.prim_type = Ray::TriangleList;
-                mesh_desc.layout =
+                mesh_desc.prim_type = Ray::ePrimType::TriangleList;
+                /*mesh_desc.layout =
                     (mesh->type() == Ren::eMeshType::Colored) ? Ray::PxyzNxyzBxyzTuv : Ray::PxyzNxyzBxyzTuvTuv;
                 mesh_desc.vtx_attrs = (const float *)mesh->attribs();
                 mesh_desc.vtx_attrs_count = (uint32_t)(mesh->attribs_buf1().size / 16);
                 mesh_desc.vtx_indices = (const uint32_t *)mesh->indices();
                 mesh_desc.vtx_indices_count = (uint32_t)(mesh->indices_buf().size / sizeof(uint32_t));
-                mesh_desc.base_vertex = 0;
+                mesh_desc.base_vertex = 0;*/
+
+                std::vector<Ray::mat_group_desc_t> groups;
 
                 bool is_sparse = false;
 
@@ -586,7 +588,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         //    mat_desc.type = Ray::TransparentMaterial;
                         //    tex_ref = mat->texture(0);
                         //} else {
-                        mat_desc.type = Ray::DiffuseNode;
+                        mat_desc.type = Ray::eShadingNode::Diffuse;
                         tex_ref = mat->textures[0];
                         //}
 
@@ -603,7 +605,7 @@ void SceneManager::InitScene_PT(bool _override) {
                                 Ray::tex_desc_t tex_desc;
                                 tex_desc.w = params.w;
                                 tex_desc.h = params.h;
-                                tex_desc.data = &tex_data[0];
+                                tex_desc.data = {&tex_data[0].v[0], 4 * params.w * params.h};
                                 tex_desc.generate_mipmaps = true;
                                 tex_desc.is_srgb = bool(params.flags & Ren::eTexFlagBits::SRGB);
 
@@ -618,11 +620,13 @@ void SceneManager::InitScene_PT(bool _override) {
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
                     }
 
-                    mesh_desc.shapes.emplace_back(mat_it->second, Ray::InvalidMaterialHandle,
-                                                  size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
+                    groups.emplace_back(mat_it->second, Ray::InvalidMaterialHandle,
+                                        size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
                 }
 
-                if (!mesh_desc.shapes.empty()) {
+                mesh_desc.groups = groups;
+
+                /*if (!mesh_desc.groups.empty()) {
                     std::unique_ptr<uint32_t[]> compacted_indices;
                     if (is_sparse) {
                         compacted_indices.reset(new uint32_t[mesh_desc.vtx_indices_count]);
@@ -642,7 +646,7 @@ void SceneManager::InitScene_PT(bool _override) {
                         const Ray::MeshHandle new_mesh = ray_scene_->AddMesh(mesh_desc);
                         mesh_it = loaded_meshes.emplace(mesh_name, new_mesh).first;
                     }
-                }
+                }*/
             }
 
             if (mesh_it != loaded_meshes.end()) {

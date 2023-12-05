@@ -13,7 +13,7 @@
 #include <Eng/Scene/PhysicsManager.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
-#include <Ray/RendererFactory.h>
+#include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
 #include <Sys/ThreadPool.h>
@@ -120,7 +120,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
         auto scene_manager = std::make_shared<SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads);
-        scene_manager->SetPipelineInitializer(std::bind(&Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
+        scene_manager->SetPipelineInitializer(
+            std::bind(&Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
 
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
