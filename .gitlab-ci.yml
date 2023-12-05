@@ -3,7 +3,7 @@ stages:
   - test
   - deploy
 
-.windows-x86_64-gl-build-job:
+.windows-x86_64-gl-build-rel-job:
   stage: build
   tags:
     - windows
@@ -13,9 +13,7 @@ stages:
     - cd build_gl
     - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 8
-    - cmake --build build_gl --target ALL_BUILD --config Debug --parallel 8
-    - cmake --build build_gl --target ALL_BUILD --config RelWithDebInfo --parallel 8
+    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 16
     - echo "Compile complete."
     - mkdir windows-x86_64-gl
     - copy build_gl/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-gl
@@ -31,8 +29,34 @@ stages:
     paths:
       - windows-x86_64-gl/
     expire_in: 1 week
-    
-.windows-x86_64-vk-build-job:
+
+.windows-x86_64-gl-build-dbg-job:
+  stage: build
+  tags:
+    - windows
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_gl
+    - cd build_gl
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl --target ALL_BUILD --config Debug --parallel 16
+    - echo "Compile complete."
+
+.windows-x86_64-gl-build-dev-job:
+  stage: build
+  tags:
+    - windows
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_gl
+    - cd build_gl
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl --target ALL_BUILD --config RelWithDebInfo --parallel 16
+    - echo "Compile complete."
+
+.windows-x86_64-vk-build-rel-job:
   stage: build
   tags:
     - windows
@@ -42,9 +66,7 @@ stages:
     - cd build_vk
     - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Release --parallel 8
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Debug --parallel 8
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config RelWithDebInfo --parallel 8
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Release --parallel 16
     - echo "Compile complete."
     - mkdir windows-x86_64-vk
     - copy build_vk/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-vk
@@ -61,7 +83,33 @@ stages:
       - windows-x86_64-vk/
     expire_in: 1 week
 
-.linux-x86_64-gl-build-job:
+.windows-x86_64-vk-build-dbg-job:
+  stage: build
+  tags:
+    - windows
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk
+    - cd build_vk
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Debug --parallel 16
+    - echo "Compile complete."
+
+.windows-x86_64-vk-build-dev-job:
+  stage: build
+  tags:
+    - windows
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk
+    - cd build_vk
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config RelWithDebInfo --parallel 16
+    - echo "Compile complete."
+
+.linux-x86_64-gl-build-rel-job:
   stage: build
   tags:
     - linux
@@ -71,17 +119,7 @@ stages:
     - cd build_gl
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=GL -DENABLE_UNITYBUILD=ON
     - cd ..
-    - mkdir build_gl_dbg
-    - cd build_gl_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=GL -DENABLE_UNITYBUILD=ON
-    - cd ..
-    - mkdir build_gl_dev
-    - cd build_gl_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=GL -DENABLE_UNITYBUILD=ON
-    - cd ..
-    - cmake --build build_gl --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
-    - cmake --build build_gl_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
-    - cmake --build build_gl_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_gl --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
     - mkdir linux-x86_64-gl
     - cp build_gl/src/Eng/_tests/test_Eng linux-x86_64-gl
@@ -98,7 +136,33 @@ stages:
       - linux-x86_64-gl/
     expire_in: 1 week
 
-.linux-x86_64-vk-build-job:
+.linux-x86_64-gl-build-dbg-job:
+  stage: build
+  tags:
+    - linux
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_gl_dbg
+    - cd build_gl_dbg
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
+    - echo "Compile complete."
+
+.linux-x86_64-gl-build-dev-job:
+  stage: build
+  tags:
+    - linux
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_gl_dev
+    - cd build_gl_dev
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_gl_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
+    - echo "Compile complete."
+
+.linux-x86_64-vk-build-rel-job:
   stage: build
   tags:
     - linux
@@ -108,17 +172,7 @@ stages:
     - cd build_vk
     - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK -DENABLE_UNITYBUILD=ON
     - cd ..
-    - mkdir build_vk_dbg
-    - cd build_vk_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=VK -DENABLE_UNITYBUILD=ON
-    - cd ..
-    - mkdir build_vk_dev
-    - cd build_vk_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=VK -DENABLE_UNITYBUILD=ON
-    - cd ..
-    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
-    - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
-    - cmake --build build_vk_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 8
+    - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
     - mkdir linux-x86_64-vk
     - cp build_vk/src/Eng/_tests/test_Eng linux-x86_64-vk
@@ -134,7 +188,33 @@ stages:
     paths:
       - linux-x86_64-vk/
     expire_in: 1 week
-    
+
+.linux-x86_64-vk-build-dbg-job:
+  stage: build
+  tags:
+    - linux
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk_dbg
+    - cd build_vk_dbg
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
+    - echo "Compile complete."
+
+.linux-x86_64-vk-build-dev-job:
+  stage: build
+  tags:
+    - linux
+  script:
+    - echo "Compiling the code..."
+    - mkdir build_vk_dev
+    - cd build_vk_dev
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cd ..
+    - cmake --build build_vk_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
+    - echo "Compile complete."
+
 .macos-build-job:
   stage: build
   tags:
@@ -177,7 +257,7 @@ stages:
     - '& "$BIN_DIR/test_Eng"'
     - '& "$BIN_DIR/test_Ren"'
     - '& "$BIN_DIR/test_DummyLib"'
-    
+
 .windows-test-job-vk:
   stage: test
   script:
@@ -210,29 +290,93 @@ stages:
     - $BIN_DIR/test_Ren
     - $BIN_DIR/test_DummyLib
 
-windows-x86_64-gl-build-job:
+windows-x86_64-gl-build-rel-job:
   extends:
-    - .windows-x86_64-gl-build-job
+    - .windows-x86_64-gl-build-rel-job
   tags:
     - builder,windows,x86_64
-    
-windows-x86_64-vk-build-job:
+
+windows-x86_64-gl-build-dbg-job:
   extends:
-    - .windows-x86_64-vk-build-job
+    - .windows-x86_64-gl-build-dbg-job
   tags:
     - builder,windows,x86_64
-    
-linux-x86_64-gl-build-job:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+windows-x86_64-gl-build-dev-job:
   extends:
-    - .linux-x86_64-gl-build-job
+    - .windows-x86_64-gl-build-dev-job
+  tags:
+    - builder,windows,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+windows-x86_64-vk-build-rel-job:
+  extends:
+    - .windows-x86_64-vk-build-rel-job
+  tags:
+    - builder,windows,x86_64
+
+windows-x86_64-vk-build-dbg-job:
+  extends:
+    - .windows-x86_64-vk-build-dbg-job
+  tags:
+    - builder,windows,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+windows-x86_64-vk-build-dev-job:
+  extends:
+    - .windows-x86_64-vk-build-dev-job
+  tags:
+    - builder,windows,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+linux-x86_64-gl-build-rel-job:
+  extends:
+    - .linux-x86_64-gl-build-rel-job
   tags:
     - builder,linux,x86_64
-    
-linux-x86_64-vk-build-job:
+
+linux-x86_64-gl-build-dbg-job:
   extends:
-    - .linux-x86_64-vk-build-job
+    - .linux-x86_64-gl-build-dbg-job
   tags:
     - builder,linux,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+linux-x86_64-gl-build-dev-job:
+  extends:
+    - .linux-x86_64-gl-build-dev-job
+  tags:
+    - builder,linux,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+linux-x86_64-vk-build-rel-job:
+  extends:
+    - .linux-x86_64-vk-build-rel-job
+  tags:
+    - builder,linux,x86_64
+
+linux-x86_64-vk-build-dbg-job:
+  extends:
+    - .linux-x86_64-vk-build-dbg-job
+  tags:
+    - builder,linux,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+
+linux-x86_64-vk-build-dev-job:
+  extends:
+    - .linux-x86_64-vk-build-dev-job
+  tags:
+    - builder,linux,x86_64
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
 
 windows-x86_64-test-job-common:
   variables:
@@ -241,7 +385,7 @@ windows-x86_64-test-job-common:
   extends:
     - .windows-test-job-common
   needs:
-    - windows-x86_64-vk-build-job
+    - windows-x86_64-vk-build-rel-job
   tags:
     - windows,x86_64
 
@@ -252,7 +396,7 @@ windows-x86_64-test-job-gl:
   extends:
     - .windows-test-job-gl
   needs:
-    - windows-x86_64-gl-build-job
+    - windows-x86_64-gl-build-rel-job
   tags:
     - windows,x86_64
 
@@ -263,7 +407,7 @@ windows-x86_64-test-job-vk:
   extends:
     - .windows-test-job-vk
   needs:
-    - windows-x86_64-vk-build-job
+    - windows-x86_64-vk-build-rel-job
   tags:
     - windows,x86_64
 
@@ -274,7 +418,7 @@ linux-x86_64-test-job-common:
   extends:
     - .linux-test-job-common
   needs:
-    - linux-x86_64-vk-build-job
+    - linux-x86_64-vk-build-rel-job
   tags:
     - linux,x86_64
 
@@ -285,7 +429,7 @@ linux-x86_64-test-job-gl:
   extends:
     - .linux-test-job-gl
   needs:
-    - linux-x86_64-gl-build-job
+    - linux-x86_64-gl-build-rel-job
   tags:
     - linux,x86_64
 
@@ -296,7 +440,7 @@ linux-x86_64-test-job-vk:
   extends:
     - .linux-test-job-vk
   needs:
-    - linux-x86_64-vk-build-job
+    - linux-x86_64-vk-build-rel-job
   tags:
     - linux,x86_64
 
