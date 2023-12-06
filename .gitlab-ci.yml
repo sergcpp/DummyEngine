@@ -29,7 +29,7 @@ stages:
     - 'if (Test-Path "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -G "Ninja" -DRENDERER=GL -DCMAKE_BUILD_TYPE=Release
+    - cmake .. -G "Ninja" -DRENDERER=GL -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release
     - cd ..
     - cmake --build build_gl --config Release --parallel 16
     - echo "Compile complete."
@@ -100,7 +100,7 @@ stages:
     - 'if (Test-Path "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -G "Ninja" -DRENDERER=VK -DCMAKE_BUILD_TYPE=Release
+    - cmake .. -G "Ninja" -DRENDERER=VK -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Release --parallel 16
     - echo "Compile complete."
@@ -153,7 +153,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=GL
+    - cmake .. -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DRENDERER=GL
     - cd ..
     - cmake --build build_gl --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
@@ -206,7 +206,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK
+    - cmake .. -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."

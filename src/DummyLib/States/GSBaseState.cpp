@@ -23,6 +23,7 @@
 #include <Sys/Json.h>
 #include <Sys/MemBuf.h>
 #include <Sys/Time_.h>
+#undef GetObject
 
 #include "../Gui/DebugInfoUI.h"
 #include "../Gui/FontStorage.h"
