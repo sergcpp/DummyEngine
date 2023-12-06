@@ -9,20 +9,38 @@ stages:
     - windows
   script:
     - echo "Compiling the code..."
+    - |
+      function Invoke-Environment {
+        param
+        (
+            # Any cmd shell command, normally a configuration batch file.
+            [Parameter(Mandatory=$true)]
+            [string] $Command
+        )
+
+        $Command = "`"" + $Command + "`""
+        cmd /c "$Command > nul 2>&1 && set" | . { process {
+            if ($_ -match '^([^=]+)=(.*)') {
+                [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+            }
+        }}
+      }
+    - 'if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
+    - 'if (Test-Path "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Ninja" -DRENDERER=GL -DENABLE_UNITYBUILD=ON -DCMAKE_BUILD_TYPE=Release
     - cd ..
-    - cmake --build build_gl --target ALL_BUILD --config Release --parallel 16
+    - cmake --build build_gl --config Release --parallel 16
     - echo "Compile complete."
     - mkdir windows-x86_64-gl
-    - copy build_gl/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-gl
-    - copy build_gl/src/Ray/tests/Release/test_Ray.exe windows-x86_64-gl
-    - copy build_gl/src/Ren/tests/Release/test_Ren.exe windows-x86_64-gl
-    - copy build_gl/src/Ren/SW/tests/Release/test_SW.exe windows-x86_64-gl
-    - copy build_gl/src/Sys/tests/Release/test_Sys.exe windows-x86_64-gl
-    - copy build_gl/src/Net/tests/Release/test_Net.exe windows-x86_64-gl
-    - copy build_gl/src/DummyLib/tests/Release/test_DummyLib.exe windows-x86_64-gl
+    - copy build_gl/src/Eng/_tests/test_Eng.exe windows-x86_64-gl
+    - copy build_gl/src/Ray/tests/test_Ray.exe windows-x86_64-gl
+    - copy build_gl/src/Ren/tests/test_Ren.exe windows-x86_64-gl
+    - copy build_gl/src/Ren/SW/tests/test_SW.exe windows-x86_64-gl
+    - copy build_gl/src/Sys/tests/test_Sys.exe windows-x86_64-gl
+    - copy build_gl/src/Net/tests/test_Net.exe windows-x86_64-gl
+    - copy build_gl/src/DummyLib/tests/test_DummyLib.exe windows-x86_64-gl
     - copy DummyAppGL.exe windows-x86_64-gl
   artifacts:
     name: windows-x86_64-gl
@@ -62,20 +80,38 @@ stages:
     - windows
   script:
     - echo "Compiling the code..."
+    - |
+      function Invoke-Environment {
+        param
+        (
+            # Any cmd shell command, normally a configuration batch file.
+            [Parameter(Mandatory=$true)]
+            [string] $Command
+        )
+
+        $Command = "`"" + $Command + "`""
+        cmd /c "$Command > nul 2>&1 && set" | . { process {
+            if ($_ -match '^([^=]+)=(.*)') {
+                [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+            }
+        }}
+      }
+    - 'if (Test-Path "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
+    - 'if (Test-Path "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_UNITYBUILD=ON
+    - cmake .. -G "Ninja" -DRENDERER=VK -DENABLE_UNITYBUILD=ON -DCMAKE_BUILD_TYPE=Release
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Release --parallel 16
     - echo "Compile complete."
     - mkdir windows-x86_64-vk
-    - copy build_vk/src/Eng/_tests/Release/test_Eng.exe windows-x86_64-vk
-    - copy build_vk/src/Ray/tests/Release/test_Ray.exe windows-x86_64-vk
-    - copy build_vk/src/Ren/tests/Release/test_Ren.exe windows-x86_64-vk
-    - copy build_vk/src/Ren/SW/tests/Release/test_SW.exe windows-x86_64-vk
-    - copy build_vk/src/Sys/tests/Release/test_Sys.exe windows-x86_64-vk
-    - copy build_vk/src/Net/tests/Release/test_Net.exe windows-x86_64-vk
-    - copy build_vk/src/DummyLib/tests/Release/test_DummyLib.exe windows-x86_64-vk
+    - copy build_vk/src/Eng/_tests/test_Eng.exe windows-x86_64-vk
+    - copy build_vk/src/Ray/tests/test_Ray.exe windows-x86_64-vk
+    - copy build_vk/src/Ren/tests/test_Ren.exe windows-x86_64-vk
+    - copy build_vk/src/Ren/SW/tests/test_SW.exe windows-x86_64-vk
+    - copy build_vk/src/Sys/tests/test_Sys.exe windows-x86_64-vk
+    - copy build_vk/src/Net/tests/test_Net.exe windows-x86_64-vk
+    - copy build_vk/src/DummyLib/tests/test_DummyLib.exe windows-x86_64-vk
     - copy DummyAppVK.exe windows-x86_64-vk
   artifacts:
     name: windows-x86_64-vk
