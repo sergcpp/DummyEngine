@@ -46,7 +46,7 @@ GameBase::GameBase(const int w, const int h, const int validation_level, const c
 
 #if !defined(__EMSCRIPTEN__)
     unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1u);
-    auto pool = std::make_shared<Sys::ThreadPool>(num_threads, "worker");
+    auto pool = std::make_shared<Sys::ThreadPool>(num_threads, Sys::eThreadPriority::Normal, "worker");
     AddComponent(THREAD_POOL_KEY, pool);
 #endif
 

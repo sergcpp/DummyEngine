@@ -19,6 +19,7 @@ extern __itt_domain *__g_itt_domain;
 #include <Sys/ThreadPool.h>
 #include <Sys/ThreadWorker.h>
 #include <Sys/Time_.h>
+#undef GetObject
 
 #include "../Viewer.h"
 
@@ -50,7 +51,7 @@ extern const bool VerboseLogging;
 GSVideoTest::GSVideoTest(GameBase *game) : GSBaseState(game) {
     threads_ = game->GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
     aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
-    decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
+    //decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }
 
 void GSVideoTest::Enter() {
@@ -451,7 +452,7 @@ void GSVideoTest::UpdateVideoTextures() {
         const auto decode_result = decode_result_[tx];
 
         // Request new frame
-        const int q_index = tx % decoder_threads_->queue_count();
+        /*const int q_index = tx % decoder_threads_->queue_count();
         decoder_threads_->Enqueue(q_index, [this, tx]() {
             using namespace GSVideoTestInternal;
 
@@ -460,7 +461,7 @@ void GSVideoTest::UpdateVideoTextures() {
             decode_result_[tx] = vp_[tx].UpdateFrame(video_time_us_ / 1000);
 
             __itt_task_end(__g_itt_domain);
-        });
+        });*/
 
 #ifndef FORCE_UPLOAD_EVERY_FRAME
         if (decode_result == VideoPlayer::eFrUpdateResult::Updated)
@@ -507,7 +508,7 @@ void GSVideoTest::UpdateVideoTextures() {
         if (false) {
 #endif
             // Can update PBO from decoder thread
-            vid_update_done_[tx] = decoder_threads_->Enqueue(q_index, [this, tx, tex_to_update]() {
+            /*vid_update_done_[tx] = decoder_threads_->Enqueue(q_index, [this, tx, tex_to_update]() {
 #ifndef FORCE_UPLOAD_EVERY_FRAME
                 if (decode_result_[tx] != VideoPlayer::eFrUpdateResult::Updated) {
                     return;
@@ -524,7 +525,7 @@ void GSVideoTest::UpdateVideoTextures() {
                     FlushGPUCommands();
                 });
 #endif
-            });
+            });*/
         } else {
             // Have to update PBO from main thread
             UpdateStageBufWithDecodedFrame(tx, tex_to_update);

@@ -31,7 +31,7 @@ class Renderer;
 
 namespace Sys {
 class ThreadPool;
-class QThreadPool;
+//class QThreadPool;
 class ThreadWorker;
 } // namespace Sys
 
@@ -64,7 +64,7 @@ class GSVideoTest final : public GSBaseState {
     };
 
     std::future<void> vid_update_done_[5], tex_update_done_[5];
-    std::shared_ptr<Sys::QThreadPool> decoder_threads_;
+    //std::shared_ptr<Sys::QThreadPool> decoder_threads_;
 
     uint64_t video_time_us_ = 0;
 
