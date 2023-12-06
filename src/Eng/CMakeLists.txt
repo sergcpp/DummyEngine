@@ -28,7 +28,8 @@ ELSE(WIN32)
                      OSDependent
                      SPIRV
                      SPIRV-Tools-opt
-                     SPIRV-Tools)
+                     SPIRV-Tools
+                     X11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
 
