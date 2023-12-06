@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Phy-gitlab
-	branch = master
-	commit = 363d3323b301d51d3cc26f2646948fd7cbaa6ff5
+	branch = setup_ci
+	commit = c851a051c8087c1ca25226deb9346a8433f521c9
 	method = merge
 	cmdver = 0.4.6
-	parent = 60d721ef445308f5f6f982b5b28fe53a93fc7ed3
+	parent = 4c9feacc5e1d5fd35b6ace8573ef361a987203c4
