@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/Program.h>
+#include <Ren/GL.h>
 
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"

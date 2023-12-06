@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 project(Eng)
 
-OPTION(ENABLE_UNITYBUILD "Enable compilation of a few large cpp file" ON)
-
 set(CMAKE_CXX_STANDARD 14)
 
 IF(WIN32)
@@ -315,22 +313,6 @@ source_group("src\\Scene\\Comp" FILES ${SCENE_COMP_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
-
-# enable or disable unity build
-if(ENABLE_UNITYBUILD)
-    set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${GUI_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${INPUT_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${RENDERER_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${GRAPH_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${PASS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${SCENE_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${SCENE_COMP_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-    set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
-
-    list(APPEND ALL_SOURCE_FILES _Eng.cpp _Eng_Renderer0.cpp _Eng_Renderer1.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
-    source_group("src" FILES _Eng.cpp _Eng_Renderer0.cpp _Eng_Renderer1.cpp _Eng_Gui.cpp _Eng_Scene.cpp _Eng_Utils.cpp)
-endif()
 
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})

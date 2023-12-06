@@ -43,7 +43,7 @@ uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage &materi
     return i;
 }
 
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<BasicDrawBatch> batches, uint32_t i,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
                      uint32_t mask);
 } // namespace RpSharedInternal
 

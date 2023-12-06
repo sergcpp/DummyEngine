@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <memory>
+#include <limits>
 
 #include <Ren/MMat.h>
 

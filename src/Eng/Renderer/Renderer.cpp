@@ -57,8 +57,8 @@ const Ren::Vec2f HaltonSeq23[64] = {Ren::Vec2f{0.0000000000f, 0.0000000000f}, Re
                                     Ren::Vec2f{0.2343750000f, 0.2469136120f}, Ren::Vec2f{0.7343750000f, 0.5802469850f},
                                     Ren::Vec2f{0.4843750000f, 0.9135804180f}, Ren::Vec2f{0.9843750000f, 0.0617284030f}};
 
-const int TaaSampleCountNormal = 8;
-const int TaaSampleCountStatic = 64;
+extern const int TaaSampleCountNormal = 8;
+extern const int TaaSampleCountStatic = 64;
 
 #include "__brdf_lut.inl"
 #include "__cone_rt_lut.inl"

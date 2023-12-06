@@ -132,7 +132,7 @@ set_target_properties(test_DummyLib
                       test_SW
                       test_Snd
                       test_Sys PROPERTIES FOLDER Tests)
-                      
+
 set_target_properties(astc
                       stb
                       SPIRV-Reflect
