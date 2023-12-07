@@ -123,6 +123,13 @@ set_target_properties(Eng
                       Snd
                       Sys PROPERTIES FOLDER Libs)
 
+set_target_properties(00_basic
+                      01_texturing
+                      02_multithreading
+                      03_principled
+                      04_denoising
+                      05_physical_sky PROPERTIES FOLDER Samples)
+
 set_target_properties(test_DummyLib
                       test_Eng
                       test_Net
