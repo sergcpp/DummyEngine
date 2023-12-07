@@ -56,7 +56,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
     - cd ..
     - cmake --build build_gl --target ALL_BUILD --config Debug --parallel 16
     - echo "Compile complete."
@@ -69,7 +69,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=GL -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
     - cd ..
     - cmake --build build_gl --target ALL_BUILD --config RelWithDebInfo --parallel 16
     - echo "Compile complete."
@@ -100,7 +100,7 @@ stages:
     - 'if (Test-Path "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat") { Invoke-Environment "D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat" }'
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -G "Ninja" -DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release
+    - cmake .. -G "Ninja" -DRENDERER=VK -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Release --parallel 16
     - echo "Compile complete."
@@ -127,7 +127,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config Debug --parallel 16
     - echo "Compile complete."
@@ -140,7 +140,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON
+    - cmake .. -G "Visual Studio 17 2022" -A x64 -DRENDERER=VK -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --config RelWithDebInfo --parallel 16
     - echo "Compile complete."
@@ -153,7 +153,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl
     - cd build_gl
-    - cmake .. -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DRENDERER=GL
+    - cmake .. -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DRENDERER=GL -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
     - cd ..
     - cmake --build build_gl --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
@@ -180,7 +180,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl_dbg
     - cd build_gl_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=GL
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=GL -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
     - cd ..
     - cmake --build build_gl_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
@@ -193,7 +193,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_gl_dev
     - cd build_gl_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=GL
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=GL -DENABLE_REF_IMPL=OFF -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF
     - cd ..
     - cmake --build build_gl_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
@@ -206,7 +206,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk
     - cd build_vk
-    - cmake .. -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK
+    - cmake .. -DCMAKE_UNITY_BUILD=ON -DCMAKE_BUILD_TYPE=Release -DRENDERER=VK -DENABLE_REF_IMPL=OFF
     - cd ..
     - cmake --build build_vk --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
@@ -233,7 +233,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk_dbg
     - cd build_vk_dbg
-    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=VK
+    - cmake .. -DCMAKE_BUILD_TYPE=Debug -DRENDERER=VK -DENABLE_REF_IMPL=OFF
     - cd ..
     - cmake --build build_vk_dbg --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
@@ -246,7 +246,7 @@ stages:
     - echo "Compiling the code..."
     - mkdir build_vk_dev
     - cd build_vk_dev
-    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=VK
+    - cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo -DRENDERER=VK -DENABLE_REF_IMPL=OFF
     - cd ..
     - cmake --build build_vk_dev --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_DummyLib --parallel 16
     - echo "Compile complete."
