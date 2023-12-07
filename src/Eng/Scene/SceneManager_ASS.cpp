@@ -767,16 +767,9 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
         }
     };
 
-#ifdef __linux__
-    if (system("chmod +x src/libs/spirv/glslangValidator") || system("chmod +x src/libs/spirv/spirv-opt") ||
-        system("chmod +x src/libs/spirv/spirv-cross")) {
-        log->Info("[PrepareAssets] Failed to chmod executables!");
-    }
-#endif
-
     Sys::MultiPoolAllocator<char> mp_alloc(32, 512);
     assets_context_t ctx = {platform, log, {}, &mp_alloc};
-    ctx.cache.reset(new AssetCache(*ctx.mp_alloc));
+    ctx.cache = std::make_unique<AssetCache>(*ctx.mp_alloc);
 
     LoadDB(out_folder, ctx.cache->js_db);
 

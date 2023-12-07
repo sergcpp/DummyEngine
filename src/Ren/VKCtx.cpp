@@ -15,8 +15,8 @@ void *g_metal_layer = nullptr;
 } // namespace Ren
 
 bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], const int enabled_layers_count,
-                         const int validation_level, ILog *log) {
-    { // Find validation layer
+                         int validation_level, ILog *log) {
+    if (validation_level) { // Find validation layer
         uint32_t layers_count = 0;
         vkEnumerateInstanceLayerProperties(&layers_count, nullptr);
 
@@ -27,6 +27,18 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
         SmallVector<VkLayerProperties, 16> layers_available(layers_count);
         vkEnumerateInstanceLayerProperties(&layers_count, &layers_available[0]);
+
+        bool found_validation = false;
+        for (uint32_t i = 0; i < layers_count; i++) {
+            if (strcmp(layers_available[i].layerName, "VK_LAYER_KHRONOS_validation") == 0) {
+                found_validation = true;
+            }
+        }
+
+        if (!found_validation) {
+            log->Warning("Could not find validation layer");
+            validation_level = 0;
+        }
     }
 
     SmallVector<const char *, 16> desired_extensions;
@@ -92,8 +104,10 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
     VkInstanceCreateInfo instance_info = {VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO};
     instance_info.pApplicationInfo = &app_info;
-    instance_info.enabledLayerCount = enabled_layers_count;
-    instance_info.ppEnabledLayerNames = enabled_layers;
+    if (validation_level) {
+        instance_info.enabledLayerCount = enabled_layers_count;
+        instance_info.ppEnabledLayerNames = enabled_layers;
+    }
     instance_info.enabledExtensionCount = number_required_extensions + number_optional_extensions;
     instance_info.ppEnabledExtensionNames = desired_extensions.data();
 
