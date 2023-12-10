@@ -80,7 +80,7 @@ const VkAccessFlags g_access_flags_per_state_vk[] = {
     VK_ACCESS_INDIRECT_COMMAND_READ_BIT,                                                        // IndirectArgument
     VK_ACCESS_TRANSFER_WRITE_BIT,                                                               // CopyDst
     VK_ACCESS_TRANSFER_READ_BIT,                                                                // CopySrc
-    VK_ACCESS_SHADER_READ_BIT,                                                                  // BuildASRead
+    VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR,                                              // BuildASRead
     VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, // BuildASWrite
     VK_ACCESS_SHADER_READ_BIT,                                                                      // RayTracing
 };

@@ -21,14 +21,14 @@ extern const VkAttachmentLoadOp vk_load_ops[] = {
     VK_ATTACHMENT_LOAD_OP_LOAD,      // Load
     VK_ATTACHMENT_LOAD_OP_CLEAR,     // Clear
     VK_ATTACHMENT_LOAD_OP_DONT_CARE, // DontCare
-    VK_ATTACHMENT_LOAD_OP_NONE_EXT   // None
+    VK_ATTACHMENT_LOAD_OP_DONT_CARE  // None
 };
 static_assert((sizeof(vk_load_ops) / sizeof(vk_load_ops[0])) == int(eLoadOp::_Count), "!");
 
 extern const VkAttachmentStoreOp vk_store_ops[] = {
     VK_ATTACHMENT_STORE_OP_STORE,     // Store
     VK_ATTACHMENT_STORE_OP_DONT_CARE, // DontCare
-    VK_ATTACHMENT_STORE_OP_NONE_EXT   // None
+    VK_ATTACHMENT_STORE_OP_STORE      // None
 };
 static_assert((sizeof(vk_store_ops) / sizeof(vk_store_ops[0])) == int(eStoreOp::_Count), "!");
 
