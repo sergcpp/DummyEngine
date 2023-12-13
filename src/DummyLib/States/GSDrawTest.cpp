@@ -383,7 +383,7 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
 
                     const uint32_t mask = CompDrawableBit | CompAnimStateBit;
                     if ((wolf->comp_mask & mask) == mask) {
-                        auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+                        auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
                         as->anim_time_s = 4.0f * (float(rand()) / float(RAND_MAX)); // NOLINT
                     }
                 }
@@ -539,7 +539,7 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
 
             const uint32_t mask = CompTransform;
             if ((scooter->comp_mask & mask) == mask) {
-                auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(scooter->components[CompTransform]);
+                auto *tr = (Eng::Transform *)scene.comp_store[CompTransform]->Get(scooter->components[CompTransform]);
 
                 tr->world_from_object_prev = tr->world_from_object;
                 tr->world_from_object = Ren::Mat4f{1.0f};
@@ -792,9 +792,9 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
             const uint32_t mask = CompTransformBit | CompDrawableBit | CompAnimStateBit;
             if ((wolf->comp_mask & mask) == mask) {
-                auto *tr = (Transform *)scene.comp_store[CompTransform]->Get(wolf->components[CompTransform]);
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
+                auto *tr = (Eng::Transform *)scene.comp_store[CompTransform]->Get(wolf->components[CompTransform]);
+                auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(wolf->components[CompDrawable]);
+                auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(wolf->components[CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -830,8 +830,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
             const uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((scooter->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(scooter->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(scooter->components[CompAnimState]);
+                auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(scooter->components[CompDrawable]);
+                auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(scooter->components[CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -858,8 +858,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((sophia->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
+            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -887,8 +887,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((eric->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(eric->components[CompDrawable]);
+            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(eric->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -910,8 +910,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((zenith->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
+            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -933,8 +933,8 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
         const uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((palm->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(palm->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(palm->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(palm->components[CompDrawable]);
+            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(palm->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);

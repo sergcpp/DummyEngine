@@ -18,7 +18,8 @@ void RpResolve::Setup(RpBuilder &builder, const ViewState *view_state, const cha
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        //params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.format = Ren::eTexFormat::RawRGBA16F;
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

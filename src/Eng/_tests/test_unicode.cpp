@@ -3,6 +3,8 @@
 #include "../Gui/Utils.h"
 
 void test_unicode() {
+    printf("Test unicode            | ");
+
     const char test_str1[] = u8"z\u6c34\U0001d10b";
 
     { // utf8 -> unicode
@@ -40,4 +42,6 @@ void test_unicode() {
         require(utf16[6] == 0);
         require(utf16[7] == 0);
     }
+
+    printf("OK\n");
 }

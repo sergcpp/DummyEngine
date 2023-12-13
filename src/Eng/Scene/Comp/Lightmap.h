@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct Lightmap {
     // position and size in pixels of lightmap region on atlas
     int pos[2], size[2];
@@ -15,3 +16,4 @@ struct Lightmap {
 
     static const char *name() { return "lightmap"; }
 };
+} // namespace Eng

@@ -421,8 +421,8 @@ void ScriptedSequence::Reset() {
     const SceneData &scene = scene_manager_.scene_data();
 
     // auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
-    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
-    auto *sounds = (SoundSource *)scene.comp_store[CompSoundSource]->SequentialData();
+    auto *drawables = (Eng::Drawable *)scene.comp_store[CompDrawable]->SequentialData();
+    auto *sounds = (Eng::SoundSource *)scene.comp_store[CompSoundSource]->SequentialData();
 
     for (Track &track : tracks_) {
         track.active_count = 0;
@@ -436,7 +436,7 @@ void ScriptedSequence::Reset() {
             action.is_active = false;
             if (track.target_actor != 0xffffffff) {
                 SceneObject *actor = scene_manager_.GetObject(track.target_actor);
-                Drawable &dr = drawables[actor->components[CompDrawable]];
+                Eng::Drawable &dr = drawables[actor->components[CompDrawable]];
 
                 if (action.anim_ref) {
                     Ren::Mesh *target_mesh = dr.mesh.get();
@@ -445,7 +445,7 @@ void ScriptedSequence::Reset() {
                 }
 
                 if (actor->comp_mask & CompSoundSourceBit) {
-                    SoundSource &ss = sounds[actor->components[CompSoundSource]];
+                    Eng::SoundSource &ss = sounds[actor->components[CompSoundSource]];
                     ss.snd_src.ResetBuffers();
                 }
             } else if (track.type == eTrackType::Camera) {
@@ -497,10 +497,10 @@ void ScriptedSequence::Update(const double cur_time_s, bool playing) {
 void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &action, double time_cur_s, bool playing) {
     const SceneData &scene = scene_manager_.scene_data();
 
-    auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
-    auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
-    auto *anim_states = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
-    auto *sounds = (SoundSource *)scene.comp_store[CompSoundSource]->SequentialData();
+    auto *transforms = (Eng::Transform *)scene.comp_store[CompTransform]->SequentialData();
+    auto *drawables = (Eng::Drawable *)scene.comp_store[CompDrawable]->SequentialData();
+    auto *anim_states = (Eng::AnimState *)scene.comp_store[CompAnimState]->SequentialData();
+    auto *sounds = (Eng::SoundSource *)scene.comp_store[CompSoundSource]->SequentialData();
 
     const float t = float(time_cur_s - action.time_beg);
     const float t_norm = t / float(action.time_end - action.time_beg);
@@ -514,7 +514,7 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         uint32_t invalidate_mask = 0;
 
         { // update position
-            Transform &tr = transforms[actor_obj->components[CompTransform]];
+            Eng::Transform &tr = transforms[actor_obj->components[CompTransform]];
 
             const Ren::Vec3f new_rot = Mix(Ren::MakeVec3(action.rot_beg), Ren::MakeVec3(action.rot_end), t_norm);
 
@@ -536,8 +536,8 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         }
 
         { // update skeleton
-            Drawable &dr = drawables[actor_obj->components[CompDrawable]];
-            AnimState &as = anim_states[actor_obj->components[CompAnimState]];
+            Eng::Drawable &dr = drawables[actor_obj->components[CompDrawable]];
+            Eng::AnimState &as = anim_states[actor_obj->components[CompAnimState]];
 
             // keep previous palette for velocity calculation
             std::swap(as.matr_palette_curr, as.matr_palette_prev);
@@ -556,9 +556,9 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
         }
 
         if ((actor_obj->comp_mask & CompSoundSourceBit)) {
-            SoundSource &ss = sounds[actor_obj->components[CompSoundSource]];
+            Eng::SoundSource &ss = sounds[actor_obj->components[CompSoundSource]];
             if (action.sound_ref) {
-                const Transform &tr = transforms[actor_obj->components[CompTransform]];
+                const Eng::Transform &tr = transforms[actor_obj->components[CompTransform]];
 
                 if (std::abs(t - action.sound_offset - ss.snd_src.GetOffset()) > 0.05f) {
                     ss.snd_src.SetOffset(t - float(action.sound_offset));

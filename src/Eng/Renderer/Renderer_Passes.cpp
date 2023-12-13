@@ -7,17 +7,16 @@
 #include "../Utils/ShaderLoader.h"
 #include "Renderer_Names.h"
 
-#include "../assets/shaders/internal/blit_bilateral_interface.h"
-#include "../assets/shaders/internal/blit_down_depth_interface.h"
-#include "../assets/shaders/internal/blit_down_interface.h"
-#include "../assets/shaders/internal/blit_gauss_interface.h"
-#include "../assets/shaders/internal/blit_ssao_interface.h"
-#include "../assets/shaders/internal/blit_static_vel_interface.h"
-#include "../assets/shaders/internal/blit_taa_interface.h"
-#include "../assets/shaders/internal/blit_upscale_interface.h"
-#include "../assets/shaders/internal/gbuffer_shade_interface.h"
-
-#include "../assets/shaders/internal/debug_velocity_interface.h"
+#include "Shaders/blit_bilateral_interface.h"
+#include "Shaders/blit_down_depth_interface.h"
+#include "Shaders/blit_down_interface.h"
+#include "Shaders/blit_gauss_interface.h"
+#include "Shaders/blit_ssao_interface.h"
+#include "Shaders/blit_static_vel_interface.h"
+#include "Shaders/blit_taa_interface.h"
+#include "Shaders/blit_upscale_interface.h"
+#include "Shaders/gbuffer_shade_interface.h"
+#include "Shaders/debug_velocity_interface.h"
 
 namespace RendererInternal {
 extern const int TaaSampleCountStatic;
@@ -1287,7 +1286,8 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            //params.format = Ren::eTexFormat::RawRG11F_B10F;
+            params.format = Ren::eTexFormat::RawRGBA16F;
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

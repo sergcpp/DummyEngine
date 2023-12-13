@@ -1,12 +1,14 @@
 .dumps
 .vs
 .idea
+assets/shaders/internal/*
 assets_pc
 assets_android
 build-*
 check*
 DummyApp*.exe
-DummyAppVK
+DummyAppGL*
+DummyAppVK*
 libDummyApp*.so
 ModlApp.exe
 DummyApp.apk
@@ -23,3 +25,4 @@ test.mesh
 *.json8
 cmake-build*
 .DS_Store
+src/Eng/_tests/test_data/assets/shaders/internal/*

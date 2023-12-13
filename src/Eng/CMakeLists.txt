@@ -3,6 +3,10 @@ project(Eng)
 
 set(CMAKE_CXX_STANDARD 14)
 
+if(MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
+endif(MSVC)
+
 IF(WIN32)
     set(VPX_LIB "vpxmd")
     set(ITT_LIB "libittnotify")
@@ -186,7 +190,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/FrameBufGL.cpp
                         Renderer/PrimDrawGL.cpp
                         Renderer/RendererGL.cpp
-                        Renderer/Renderer_GL_Defines.inl
                         Renderer/Passes/RpDOF.h
                         Renderer/Passes/RpDOF.cpp
                         Renderer/Passes/RpFXAA.h
@@ -221,8 +224,7 @@ elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/FrameBufVK.cpp
                         Renderer/PrimDrawVK.cpp
-                        Renderer/RendererVK.cpp
-                        Renderer/Renderer_GL_Defines.inl)
+                        Renderer/RendererVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         Scene/SceneManagerVK.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} Renderer/Graph/GraphBuilderVK.cpp)
@@ -245,6 +247,11 @@ elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         Renderer/RendererSW.cpp)
 endif()
+
+file(GLOB RENDERER_SHADERS
+     "Renderer/Shaders/*.h"
+     "Renderer/Shaders/*.glsl"
+)
 
 set(SCENE_COMP_SOURCES
         Scene/Comp/Common.h
@@ -309,6 +316,9 @@ source_group("src\\Renderer\\Graph" FILES ${GRAPH_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${PASS_SOURCES})
 source_group("src\\Renderer\\Passes" FILES ${PASS_SOURCES})
+
+list(APPEND ALL_SOURCE_FILES ${RENDERER_SHADERS})
+source_group("src\\Renderer\\Shaders" FILES ${RENDERER_SHADERS})
 
 list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
 source_group("src\\Scene" FILES ${SCENE_SOURCES})

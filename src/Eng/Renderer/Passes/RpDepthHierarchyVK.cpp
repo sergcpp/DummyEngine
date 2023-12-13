@@ -6,8 +6,7 @@
 
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
-
-#include "../assets/shaders/internal/depth_hierarchy_interface.h"
+#include "../Shaders/depth_hierarchy_interface.h"
 
 void RpDepthHierarchy::Execute(RpBuilder &builder) {
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);

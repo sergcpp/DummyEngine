@@ -3,6 +3,8 @@
 #include "../Utils/Cmdline.h"
 
 void test_cmdline() {
+    printf("Test cmdline            | ");
+
     Cmdline cmdline;
 
     double result;
@@ -19,4 +21,6 @@ void test_cmdline() {
 
     require(cmdline.Execute("add 22.78925 -45.89898"));
     require(result == Approx(-23.10973));
+
+    printf("OK\n");
 }

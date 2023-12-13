@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct Decal {
     Ren::Mat4f view, proj;
     Ren::Vec4f mask, diff, norm, spec;
@@ -13,3 +14,4 @@ struct Decal {
 
     static const char *name() { return "decal"; }
 };
+}

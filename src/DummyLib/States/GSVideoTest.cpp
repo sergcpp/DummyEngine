@@ -49,7 +49,7 @@ extern const bool VerboseLogging;
 #endif
 
 GSVideoTest::GSVideoTest(GameBase *game) : GSBaseState(game) {
-    threads_ = game->GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
+    threads_ = game->threads();
     aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
     //decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }
@@ -76,7 +76,7 @@ void GSVideoTest::Enter() {
 
         const uint32_t mask = CompDrawableBit;
         if ((wall_pic->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(wall_pic->components[CompDrawable]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(wall_pic->components[CompDrawable]);
 
             Ren::Mesh *mesh = dr->mesh.get();
 

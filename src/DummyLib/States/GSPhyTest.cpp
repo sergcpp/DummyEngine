@@ -62,7 +62,7 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
                     js_scale.Push(JsNumber{Radius});
                     js_transform.Push("scale", std::move(js_scale));
                 }
-                new_object.Push(Transform::name(), std::move(js_transform));
+                new_object.Push(Eng::Transform::name(), std::move(js_transform));
             }
 
             { // Add physics component
@@ -87,14 +87,14 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
                     js_physics.Push("shape", std::move(js_shape));
                 }
 
-                new_object.Push(Physics::name(), std::move(js_physics));
+                new_object.Push(Eng::Physics::name(), std::move(js_physics));
             }
 
             { // Add drawable component
                 JsObjectP js_drawable(alloc);
                 js_drawable.Push("mesh_file", JsStringP{"sphere_hi.mesh", alloc});
                 js_drawable.Push("visible_to_probes", JsLiteral{JsLiteralType::False});
-                new_object.Push(Drawable::name(), std::move(js_drawable));
+                new_object.Push(Eng::Drawable::name(), std::move(js_drawable));
             }
 
             js_objects.Push(std::move(new_object));
@@ -119,7 +119,7 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
                     js_scale.Push(JsNumber{Radius});
                     js_transform.Push("scale", std::move(js_scale));
                 }
-                new_object.Push(Transform::name(), std::move(js_transform));
+                new_object.Push(Eng::Transform::name(), std::move(js_transform));
             }
 
             { // Add physics component
@@ -144,7 +144,7 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
                     js_physics.Push("shape", std::move(js_shape));
                 }
 
-                new_object.Push(Physics::name(), std::move(js_physics));
+                new_object.Push(Eng::Physics::name(), std::move(js_physics));
             }
 
             { // Add drawable component
@@ -158,7 +158,7 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
                     js_drawable.Push("material_override", std::move(js_material_override));
                 }
 
-                new_object.Push(Drawable::name(), std::move(js_drawable));
+                new_object.Push(Eng::Drawable::name(), std::move(js_drawable));
             }
 
             js_objects.Push(std::move(new_object));

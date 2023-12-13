@@ -5,7 +5,7 @@
 #include <Ren/GL.h>
 #include <Ren/ProbeStorage.h>
 
-#include "Renderer_GL_Defines.inl"
+#include "Shaders/Renderer_GL_Defines.inl"
 
 namespace PrimDrawInternal {
 extern const int SphereIndicesCount;

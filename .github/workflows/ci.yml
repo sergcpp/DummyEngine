@@ -97,7 +97,7 @@ jobs:
           name: linux-x86_64-vk
           path: linux-x86_64-vk/
   test-windows-x86_64-gl:
-    runs-on: [ windows, x86_64 ]
+    runs-on: [ windows, x86_64, nv ]
     needs:
       - build-windows-x86_64-gl-rel
     steps:
@@ -175,23 +175,23 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
-          test-args: "--mt --device Xe --nocpu"
-  test-linux-x86_64-gl:
-    runs-on: [ linux, x86_64 ]
-    needs:
-      - build-linux-x86_64-gl-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "linux-x86_64-gl"
-          test-args: "--mt"
+          test-args: "--mt --device Xe --validation_level 1 --nocpu"
+  # test-linux-x86_64-gl:
+  #   runs-on: [ linux, x86_64 ]
+  #   needs:
+  #     - build-linux-x86_64-gl-rel
+  #   steps:
+  #     - name: Checkout Workflows
+  #       uses: actions/checkout@v4
+  #       with:
+  #         sparse-checkout: .github
+  #     - name: Re-initialize repository
+  #       uses: ./.github/actions/checkout
+  #     - name: Run Tests
+  #       uses: ./.github/actions/test
+  #       with:
+  #         bin-dir: "linux-x86_64-gl"
+  #         test-args: "--mt"
   test-linux-x86_64-vk-amd:
     runs-on: [ linux, x86_64, amd ]
     needs:

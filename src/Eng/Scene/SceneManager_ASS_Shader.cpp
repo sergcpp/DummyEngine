@@ -5,7 +5,7 @@
 #include <glslang/Include/glslang_c_interface.h>
 #include <glslang/Public/resource_limits_c.h>
 
-#include "../Renderer/Renderer_GL_Defines.inl"
+#include "../Renderer/Shaders/Renderer_GL_Defines.inl"
 
 #define _AS_STR(x) #x
 #define AS_STR(x) _AS_STR(x)
@@ -356,7 +356,7 @@ bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file,
 #endif
 
                     glslang_shader_delete(shader);
-                    return false;
+                    continue;
                 }
 
                 glslang_program_t *program = glslang_program_create();

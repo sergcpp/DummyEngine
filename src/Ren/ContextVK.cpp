@@ -83,8 +83,10 @@ Ren::Context::~Context() {
         }
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
-        XCloseDisplay(g_dpy); // has to be done before instance destruction
-                              // (https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/1894)
+        if (g_dpy) {
+            XCloseDisplay(g_dpy); // has to be done before instance destruction
+                                  // (https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/1894)
+        }
 #endif
         vkDestroyInstance(api_ctx_->instance, nullptr);
     }
@@ -153,21 +155,29 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         api_ctx_->raytracing_supported = api_ctx_->ray_query_supported = false;
     }
 
-    if (!InitSwapChain(api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->res, api_ctx_->present_mode, w, h,
+    if (api_ctx_->present_family_index != 0xffffffff &&
+        !InitSwapChain(api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->res, api_ctx_->present_mode, w, h,
                        api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
                        api_ctx_->graphics_family_index, api_ctx_->surface, log)) {
         return false;
     }
 
+    const uint32_t family_index =
+        api_ctx_->present_family_index != 0xffffffff ? api_ctx_->present_family_index : api_ctx_->graphics_family_index;
     if (!InitCommandBuffers(api_ctx_->command_pool, api_ctx_->temp_command_pool, api_ctx_->setup_cmd_buf,
                             api_ctx_->draw_cmd_buf, api_ctx_->image_avail_semaphores,
                             api_ctx_->render_finished_semaphores, api_ctx_->in_flight_fences, api_ctx_->query_pools,
-                            api_ctx_->present_queue, api_ctx_->graphics_queue, api_ctx_->device,
-                            api_ctx_->present_family_index, log)) {
+                            api_ctx_->device, family_index, log)) {
         return false;
     }
 
-    if (!InitPresentImageViews(api_ctx_->present_images, api_ctx_->present_image_views, api_ctx_->device,
+    if (api_ctx_->present_family_index != 0xffffffff) {
+        vkGetDeviceQueue(api_ctx_->device, api_ctx_->present_family_index, 0, &api_ctx_->present_queue);
+    }
+    vkGetDeviceQueue(api_ctx_->device, api_ctx_->graphics_family_index, 0, &api_ctx_->graphics_queue);
+
+    if (api_ctx_->present_family_index != 0xffffffff &&
+        !InitPresentImageViews(api_ctx_->present_images, api_ctx_->present_image_views, api_ctx_->device,
                                api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->setup_cmd_buf,
                                api_ctx_->present_queue, log)) {
         return false;
@@ -181,10 +191,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     log_->Info("\tVulkan version\t: %i.%i", VK_API_VERSION_MAJOR(api_ctx_->device_properties.apiVersion),
                VK_API_VERSION_MINOR(api_ctx_->device_properties.apiVersion));
 
-    auto it =
-        std::find_if(std::begin(KnownVendors), std::end(KnownVendors), [this](const std::pair<uint32_t, const char *> v) {
-            return api_ctx_->device_properties.vendorID == v.first;
-        });
+    auto it = std::find_if(
+        std::begin(KnownVendors), std::end(KnownVendors),
+        [this](const std::pair<uint32_t, const char *> v) { return api_ctx_->device_properties.vendorID == v.first; });
     if (it != std::end(KnownVendors)) {
         log_->Info("\tVendor\t\t: %s", it->second);
     }

@@ -16,9 +16,23 @@ endif()
 add_executable(test_Eng main.cpp
                         test_common.h
                         test_cmdline.cpp
+                        test_materials.cpp
                         #test_object_pool.cpp
                         test_unicode.cpp
-                        test_widgets.cpp
-                        )
+                        test_widgets.cpp)
 
 target_link_libraries(test_Eng ${LIBS} Eng)
+
+set_target_properties(test_Eng PROPERTIES OUTPUT_NAME_DEBUG test_Eng-dbg)
+set_target_properties(test_Eng PROPERTIES OUTPUT_NAME_RELWITHDEBINFO test_Eng-dev)
+set_target_properties(test_Eng PROPERTIES OUTPUT_NAME_ASAN test_Eng-asan)
+set_target_properties(test_Eng PROPERTIES OUTPUT_NAME_TSAN test_Eng-tsan)
+set_target_properties(test_Eng PROPERTIES OUTPUT_NAME_RELEASE test_Eng)
+
+set_target_properties(test_Eng PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/test_data")
+
+add_custom_command(TARGET test_Eng
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../Renderer/Shaders
+                                                              ${CMAKE_CURRENT_SOURCE_DIR}/test_data/assets/shaders/internal
+                   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/../Renderer/Shaders)

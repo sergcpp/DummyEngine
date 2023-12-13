@@ -193,9 +193,15 @@ void Ren::LinearAlloc::PrintNode(int i, std::string prefix, bool is_tail, ILog *
 
 void Ren::LinearAlloc::Clear() {
     // Mark all blocks as free
+#if 1
+    for (uint32_t i = 0; i < (block_count_ + BitmapGranularity - 1) / BitmapGranularity; ++i) {
+        bitmap_[i] = 0xffffffffffffffff;
+    }
+#else
     for (uint32_t i = 0; i < block_count_; ++i) {
         const int xword_index = i / BitmapGranularity;
         const int bit_index = i % BitmapGranularity;
         bitmap_[xword_index] |= (1ull << bit_index);
     }
+#endif
 }

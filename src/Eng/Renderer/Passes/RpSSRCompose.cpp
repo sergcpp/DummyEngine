@@ -8,8 +8,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
-
-#include "../assets/shaders/internal/blit_ssr_compose_interface.h"
+#include "../Shaders/blit_ssr_compose_interface.h"
 
 void RpSSRCompose::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);

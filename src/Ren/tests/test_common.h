@@ -107,7 +107,7 @@ class TestContext : public Ren::Context {
         window_class.hCursor = LoadCursor(nullptr, IDC_ARROW);
         RegisterClassEx(&window_class);
 
-        hWnd = CreateWindow("TestClass", "!!", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, 100, 100, NULL, NULL,
+        hWnd = CreateWindow("TestClass", "!!", WS_OVERLAPPEDWINDOW /*| WS_VISIBLE*/, 0, 0, 100, 100, NULL, NULL,
                             GetModuleHandle(NULL), NULL);
 
         if (hWnd == NULL) {

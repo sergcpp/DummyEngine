@@ -69,7 +69,7 @@ class GSBaseState : public GameState {
     Ren::Camera temp_probe_cam_;
     FrameBuf temp_probe_buf_;
     DrawList temp_probe_lists_[6];
-    LightProbe *probe_to_render_ = nullptr, *probe_to_update_sh_ = nullptr;
+    Eng::LightProbe *probe_to_render_ = nullptr, *probe_to_update_sh_ = nullptr;
     bool probes_dirty_ = true;
     int probe_sh_update_iteration_ = 0;
     std::vector<int> probes_to_update_;

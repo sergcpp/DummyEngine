@@ -5,7 +5,9 @@
 #include "Renderer_Structs.h"
 #include "../Scene/SceneData.h"
 
+namespace Eng {
 struct LightSource;
+}
 class TextureAtlas;
 
 template <typename T>
@@ -36,7 +38,7 @@ struct DynArray {
 };
 
 struct ShadReg {
-    const LightSource *ls;
+    const Eng::LightSource *ls;
     int pos[2], size[2];
     float cam_near, cam_far; // for debugging
     uint32_t last_update, last_visible;

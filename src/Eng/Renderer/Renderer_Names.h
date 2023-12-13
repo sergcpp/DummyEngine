@@ -9,7 +9,7 @@ const char ITEMS_BUF[] = "Items Buffer";
 const char SHARED_DATA_BUF[] = "Shared Data Buffer";
 const char ATOMIC_CNT_BUF[] = "Atomic Counter Buffer";
 
-    const char SKIN_TRANSFORMS_BUF[] = "Skin Transforms Buffer";
+const char SKIN_TRANSFORMS_BUF[] = "Skin Transforms Buffer";
 const char SHAPE_KEYS_BUF[] = "Shape Keys Buffer";
 
 //

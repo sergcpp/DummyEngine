@@ -163,8 +163,8 @@ void GSUITest::UpdateAnim(const uint64_t dt_us) {
 
             uint32_t mask = CompDrawableBit | CompAnimStateBit;
             if ((sophia->comp_mask & mask) == mask) {
-                auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
-                auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+                auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
+                auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);

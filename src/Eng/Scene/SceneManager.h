@@ -70,6 +70,13 @@ struct AssetCache {
 };
 } // namespace SceneManagerInternal
 
+struct path_config_t {
+    const char *models_path = "./assets_pc/models/";
+    const char *textures_path = "./assets_pc/textures/";
+    const char *materials_path = "./assets_pc/materials/";
+    const char *shaders_path = "./assets_pc/shaders/";
+};
+
 struct assets_context_t {
     const char *platform;
     Ren::ILog *log;
@@ -83,10 +90,10 @@ struct assets_context_t {
 #include <Ren/RenderPass.h>
 #include <Ren/VertexInput.h>
 
-class SceneManager : public std::enable_shared_from_this<SceneManager> {
+class SceneManager {
   public:
     SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx, Ray::RendererBase &ray_renderer,
-                 Sys::ThreadPool &threads);
+                 Sys::ThreadPool &threads, const path_config_t &paths);
     ~SceneManager();
 
     SceneManager(const SceneManager &rhs) = delete;
@@ -220,6 +227,7 @@ class SceneManager : public std::enable_shared_from_this<SceneManager> {
     Sys::ThreadPool &threads_;
     std::vector<Ray::RegionContext> ray_reg_ctx_;
     std::unique_ptr<Ray::SceneBase> ray_scene_;
+    path_config_t paths_;
 
     Ren::Camera cam_;
     Ren::Vec3f last_cam_pos_;

@@ -42,7 +42,8 @@ void RpGBufferShade::Setup(RpBuilder &builder, const ViewState *view_state, cons
         Ren::Tex2DParams params;
         params.w = view_state->scr_res[0];
         params.h = view_state->scr_res[1];
-        params.format = Ren::eTexFormat::RawRG11F_B10F;
+        //params.format = Ren::eTexFormat::RawRG11F_B10F;
+        params.format = Ren::eTexFormat::RawRGBA16F;
         params.usage = (Ren::eTexUsage::Sampled | Ren::eTexUsage::Storage | Ren::eTexUsage::RenderTarget);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;

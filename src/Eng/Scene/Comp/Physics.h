@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct Physics {
     Phy::Body body;
 
@@ -12,3 +13,4 @@ struct Physics {
 
     static const char *name() { return "physics"; }
 };
+} // namespace Eng

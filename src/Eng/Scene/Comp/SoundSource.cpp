@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void SoundSource::Read(const JsObjectP &js_in, SoundSource &snd) {
+void Eng::SoundSource::Read(const JsObjectP &js_in, SoundSource &snd) {
     const JsArrayP &js_offset = js_in.at("offset").as_arr();
     snd.offset[0] = float(js_offset[0].as_num().val);
     snd.offset[1] = float(js_offset[1].as_num().val);
@@ -14,7 +14,7 @@ void SoundSource::Read(const JsObjectP &js_in, SoundSource &snd) {
     snd.bone_index = -1;
 }
 
-void SoundSource::Write(const SoundSource &snd, JsObjectP &js_out) {
+void Eng::SoundSource::Write(const SoundSource &snd, JsObjectP &js_out) {
     const auto &alloc = js_out.elements.get_allocator();
 
     { // write offset

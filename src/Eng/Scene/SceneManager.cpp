@@ -33,18 +33,6 @@ namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.05f;
 const float FAR_CLIP = 10000.0f;
 
-#if defined(__ANDROID__)
-const char *MODELS_PATH = "./assets/models/";
-const char *TEXTURES_PATH = "./assets/textures/";
-const char *MATERIALS_PATH = "./assets/materials/";
-const char *SHADERS_PATH = "./assets/shaders/";
-#else
-const char *MODELS_PATH = "./assets_pc/models/";
-const char *TEXTURES_PATH = "./assets_pc/textures/";
-const char *MATERIALS_PATH = "./assets_pc/materials/";
-const char *SHADERS_PATH = "./assets_pc/shaders/";
-#endif
-
 extern const int DECALS_ATLAS_RESX = 4096, DECALS_ATLAS_RESY = 2048;
 extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
@@ -114,7 +102,7 @@ int16_t f32_to_s16(const float value) { return int16_t(value * 32767); }
 uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
 uint8_t f32_to_u8(const float value) { return uint8_t(value * 255); }
 
-void __init_wind_params(const VegState &vs, const Environment &env, const Ren::Mat4f &object_from_world,
+void __init_wind_params(const Eng::VegState &vs, const Environment &env, const Ren::Mat4f &object_from_world,
                         InstanceData &instance) {
     instance.movement_scale = f32_to_u8(vs.movement_scale);
     instance.tree_mode = f32_to_u8(vs.tree_mode);
@@ -134,11 +122,11 @@ void __init_wind_params(const VegState &vs, const Environment &env, const Ren::M
 } // namespace SceneManagerInternal
 
 // TODO: remove this!
-#include "../Renderer/Renderer_GL_Defines.inl"
+#include "../Renderer/Shaders/Renderer_GL_Defines.inl"
 
 SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
-                           Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads)
-    : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer), threads_(threads),
+                           Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads, const path_config_t &paths)
+    : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer), threads_(threads), paths_(paths),
       cam_(Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, 0.0f}, Ren::Vec3f{0.0f, 1.0f, 0.0f}),
       mp_alloc_(32, 512) {
     using namespace SceneManagerConstants;
@@ -167,47 +155,47 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
     { // Register default components
         using namespace std::placeholders;
 
-        default_comp_storage_[CompTransform].reset(new DefaultCompStorage<Transform>);
+        default_comp_storage_[CompTransform].reset(new DefaultCompStorage<Eng::Transform>);
         RegisterComponent(CompTransform, default_comp_storage_[CompTransform].get(), nullptr);
 
-        default_comp_storage_[CompDrawable].reset(new DefaultCompStorage<Drawable>);
+        default_comp_storage_[CompDrawable].reset(new DefaultCompStorage<Eng::Drawable>);
         RegisterComponent(CompDrawable, default_comp_storage_[CompDrawable].get(),
                           std::bind(&SceneManager::PostloadDrawable, this, _1, _2, _3));
 
-        default_comp_storage_[CompOccluder].reset(new DefaultCompStorage<Occluder>);
+        default_comp_storage_[CompOccluder].reset(new DefaultCompStorage<Eng::Occluder>);
         RegisterComponent(CompOccluder, default_comp_storage_[CompOccluder].get(),
                           std::bind(&SceneManager::PostloadOccluder, this, _1, _2, _3));
 
-        default_comp_storage_[CompLightmap].reset(new DefaultCompStorage<Lightmap>);
+        default_comp_storage_[CompLightmap].reset(new DefaultCompStorage<Eng::Lightmap>);
         RegisterComponent(CompLightmap, default_comp_storage_[CompLightmap].get(),
                           std::bind(&SceneManager::PostloadLightmap, this, _1, _2, _3));
 
-        default_comp_storage_[CompLightSource].reset(new DefaultCompStorage<LightSource>);
+        default_comp_storage_[CompLightSource].reset(new DefaultCompStorage<Eng::LightSource>);
         RegisterComponent(CompLightSource, default_comp_storage_[CompLightSource].get(),
                           std::bind(&SceneManager::PostloadLightSource, this, _1, _2, _3));
 
-        default_comp_storage_[CompDecal].reset(new DefaultCompStorage<Decal>);
+        default_comp_storage_[CompDecal].reset(new DefaultCompStorage<Eng::Decal>);
         RegisterComponent(CompDecal, default_comp_storage_[CompDecal].get(),
                           std::bind(&SceneManager::PostloadDecal, this, _1, _2, _3));
 
-        default_comp_storage_[CompProbe].reset(new DefaultCompStorage<LightProbe>);
+        default_comp_storage_[CompProbe].reset(new DefaultCompStorage<Eng::LightProbe>);
         RegisterComponent(CompProbe, default_comp_storage_[CompProbe].get(),
                           std::bind(&SceneManager::PostloadLightProbe, this, _1, _2, _3));
 
-        default_comp_storage_[CompAnimState].reset(new DefaultCompStorage<AnimState>);
+        default_comp_storage_[CompAnimState].reset(new DefaultCompStorage<Eng::AnimState>);
         RegisterComponent(CompAnimState, default_comp_storage_[CompAnimState].get(), nullptr);
 
-        default_comp_storage_[CompVegState].reset(new DefaultCompStorage<VegState>);
+        default_comp_storage_[CompVegState].reset(new DefaultCompStorage<Eng::VegState>);
         RegisterComponent(CompVegState, default_comp_storage_[CompVegState].get(), nullptr);
 
-        default_comp_storage_[CompSoundSource].reset(new DefaultCompStorage<SoundSource>);
+        default_comp_storage_[CompSoundSource].reset(new DefaultCompStorage<Eng::SoundSource>);
         RegisterComponent(CompSoundSource, default_comp_storage_[CompSoundSource].get(),
                           std::bind(&SceneManager::PostloadSoundSource, this, _1, _2, _3));
 
-        default_comp_storage_[CompPhysics].reset(new DefaultCompStorage<Physics>);
+        default_comp_storage_[CompPhysics].reset(new DefaultCompStorage<Eng::Physics>);
         RegisterComponent(CompPhysics, default_comp_storage_[CompPhysics].get(), nullptr);
 
-        default_comp_storage_[CompAccStructure].reset(new DefaultCompStorage<AccStructure>);
+        default_comp_storage_[CompAccStructure].reset(new DefaultCompStorage<Eng::AccStructure>);
         RegisterComponent(CompAccStructure, default_comp_storage_[CompAccStructure].get(),
                           std::bind(&SceneManager::PostloadAccStructure, this, _1, _2, _3));
     }
@@ -225,9 +213,11 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
 
+    Ren::ILog *log = ren_ctx_.log();
+
     { // load error texture
         char name_buf[64];
-        sprintf(name_buf, "%serror.uncompressed.png", SceneManagerConstants::TEXTURES_PATH);
+        sprintf(name_buf, "%serror.uncompressed.png", paths_.textures_path);
 
         Sys::AssetFile in_file(name_buf);
         if (in_file) {
@@ -244,6 +234,8 @@ SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context
             error_tex_ = ren_ctx_.LoadTexture2D(name_buf, in_file_data.get(), int(in_file_size), p,
                                                 ren_ctx_.default_stage_bufs(), ren_ctx_.default_mem_allocs(), &status);
             assert(status == Ren::eTexLoadStatus::CreatedFromData);
+        } else {
+            log->Error("SceneManager: Failed to load error.uncompressed.png!");
         }
     }
 
@@ -376,7 +368,7 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
             }
         }
 
-        auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+        auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
         tr->bbox_min = obj_bbox[0];
         tr->bbox_max = obj_bbox[1];
         tr->UpdateBBox();
@@ -416,19 +408,19 @@ void SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             const std::string tex_names[6] = {
 #if !defined(__ANDROID__)
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_PX.dds",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_NX.dds",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_PY.dds",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_NY.dds",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_PZ.dds",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_NZ.dds"
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PX.dds",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NX.dds",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PY.dds",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NY.dds",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PZ.dds",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NZ.dds"
 #else
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_PX.ktx",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_NX.ktx",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_PY.ktx",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_NY.ktx",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_PZ.ktx",
-                std::string(TEXTURES_PATH) + js_env_map.val.c_str() + "_NZ.ktx"
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PX.ktx",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NX.ktx",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PY.ktx",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NY.ktx",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PZ.ktx",
+                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NZ.ktx"
 #endif
             };
 
@@ -645,7 +637,7 @@ void SceneManager::LoadProbeCache() {
 
     uint32_t probe_id = probe_storage->First();
     while (probe_id != 0xffffffff) {
-        auto *lprobe = (LightProbe *)probe_storage->Get(probe_id);
+        auto *lprobe = (Eng::LightProbe *)probe_storage->Get(probe_id);
         assert(lprobe);
 
         std::string file_path;
@@ -668,22 +660,16 @@ void SceneManager::LoadProbeCache() {
             file_path += ".ktx";
 #endif
 
-            std::weak_ptr<SceneManager> _self = shared_from_this();
             Sys::LoadAssetComplete(
                 file_path.c_str(),
-                [_self, probe_id, face_index](void *data, int size) {
-                    std::shared_ptr<SceneManager> self = _self.lock();
-                    if (!self) {
-                        return;
-                    }
+                [this, probe_id, face_index](void *data, int size) {
+                    ren_ctx_.ProcessSingleTask([this, probe_id, face_index, data, size]() {
+                        Ren::ILog *log = ren_ctx_.log();
 
-                    self->ren_ctx_.ProcessSingleTask([&self, probe_id, face_index, data, size]() {
-                        Ren::ILog *log = self->ren_ctx_.log();
+                        const int res = scene_data_.probe_storage.res();
+                        CompStorage *probe_storage = scene_data_.comp_store[CompProbe];
 
-                        const int res = self->scene_data_.probe_storage.res();
-                        CompStorage *probe_storage = self->scene_data_.comp_store[CompProbe];
-
-                        auto *lprobe = (LightProbe *)probe_storage->Get(probe_id);
+                        auto *lprobe = (Eng::LightProbe *)probe_storage->Get(probe_id);
                         assert(lprobe);
 
 #if !defined(__ANDROID__)
@@ -696,9 +682,9 @@ void SceneManager::LoadProbeCache() {
                         while (_res >= 16) {
                             const int len = ((_res + 3) / 4) * ((_res + 3) / 4) * 16;
 
-                            if (len > data_len || !self->scene_data_.probe_storage.SetPixelData(
+                            if (len > data_len || !scene_data_.probe_storage.SetPixelData(
                                                       level, lprobe->layer_index, face_index,
-                                                      Ren::DefaultCompressedRGBA, p_data, len, self->ren_ctx_.log())) {
+                                                      Ren::DefaultCompressedRGBA, p_data, len, ren_ctx_.log())) {
                                 log->Error("Failed to load probe texture!");
                             }
 
@@ -739,16 +725,11 @@ void SceneManager::LoadProbeCache() {
                             level++;
                         }
 #endif
-                        self->scene_data_.probe_storage.Finalize();
+                        scene_data_.probe_storage.Finalize();
                     });
                 },
-                [_self, probe_id, face_index]() {
-                    std::shared_ptr<SceneManager> self = _self.lock();
-                    if (!self) {
-                        return;
-                    }
-
-                    self->ren_ctx_.log()->Error("Failed to load probe %i face %i", probe_id, face_index);
+                [this, probe_id, face_index]() {
+                    ren_ctx_.log()->Error("Failed to load probe %i face %i", probe_id, face_index);
                 });
         }
 
@@ -785,7 +766,7 @@ void SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target,
 void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
-    auto *dr = (Drawable *)comp;
+    auto *dr = (Eng::Drawable *)comp;
 
     if (js_comp_obj.Has("mesh_file")) {
         const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
@@ -799,7 +780,7 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Re
         dr->mesh = LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
 
         if (status != Ren::eMeshLoadStatus::Found) {
-            const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
+            const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
 
 #if defined(__ANDROID__)
             Sys::AssetFile in_file(mesh_path.c_str());
@@ -834,7 +815,7 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Re
         dr->pt_mesh = LoadMesh(js_pt_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
 
         if (status != Ren::eMeshLoadStatus::Found) {
-            const std::string mesh_path = std::string(MODELS_PATH) + js_pt_mesh_file_name.val.c_str();
+            const std::string mesh_path = std::string(paths_.models_path) + js_pt_mesh_file_name.val.c_str();
 
             Sys::AssetFile in_file(mesh_path.c_str());
             size_t in_file_size = in_file.size();
@@ -873,7 +854,7 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Re
 
         for (const auto &js_anim : js_anims.elements) {
             const JsStringP &js_anim_name = js_anim.as_str();
-            const std::string anim_path = std::string(MODELS_PATH) + js_anim_name.val.c_str();
+            const std::string anim_path = std::string(paths_.models_path) + js_anim_name.val.c_str();
 
             Sys::AssetFile in_file(anim_path.c_str());
             size_t in_file_size = in_file.size();
@@ -894,7 +875,7 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Re
 
         // Attach ellipsoids to bones
         for (int i = 0; i < dr->ellipsoids_count; i++) {
-            Drawable::Ellipsoid &e = dr->ellipsoids[i];
+            Eng::Drawable::Ellipsoid &e = dr->ellipsoids[i];
             if (e.bone_name.empty()) {
                 e.bone_index = -1;
                 continue;
@@ -916,7 +897,7 @@ void SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Re
 void SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
-    auto *occ = (Occluder *)comp;
+    auto *occ = (Eng::Occluder *)comp;
 
     const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
@@ -924,7 +905,7 @@ void SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Re
     occ->mesh = LoadMesh(js_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
 
     if (status != Ren::eMeshLoadStatus::Found) {
-        const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
+        const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
 
         Sys::AssetFile in_file(mesh_path.c_str());
         size_t in_file_size = in_file.size();
@@ -948,7 +929,7 @@ void SceneManager::PostloadOccluder(const JsObjectP &js_comp_obj, void *comp, Re
 void SceneManager::PostloadLightmap(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
-    auto *lm = (Lightmap *)comp;
+    auto *lm = (Eng::Lightmap *)comp;
 
     const int node_id = scene_data_.lm_splitter.Allocate(lm->size, lm->pos);
     if (node_id == -1) {
@@ -964,7 +945,7 @@ void SceneManager::PostloadLightmap(const JsObjectP &js_comp_obj, void *comp, Re
 }
 
 void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
-    auto *ls = (LightSource *)comp;
+    auto *ls = (Eng::LightSource *)comp;
 
     // Compute bounding box of light source
     const auto pos = Ren::Vec4f{ls->offset[0], ls->offset[1], ls->offset[2], 1.0f},
@@ -999,7 +980,7 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
 
     const Ren::Vec3f side = Cross(_dir, up);
 
-    Transform ls_transform;
+    Eng::Transform ls_transform;
     ls_transform.world_from_object = Ren::Mat4f{
         Ren::Vec4f{side[0], -_dir[0], up[0], 0.0f}, Ren::Vec4f{side[1], -_dir[1], up[1], 0.0f},
         Ren::Vec4f{side[2], -_dir[2], up[2], 0.0f}, Ren::Vec4f{ls->offset[0], ls->offset[1], ls->offset[2], 1.0f}};
@@ -1014,7 +995,7 @@ void SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *comp,
 }
 
 void SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
-    auto *de = (Decal *)comp;
+    auto *de = (Eng::Decal *)comp;
 
     if (js_comp_obj.Has("mask")) {
         const JsStringP &js_mask = js_comp_obj.at("mask").as_str();
@@ -1083,7 +1064,7 @@ void SceneManager::PostloadDecal(const JsObjectP &js_comp_obj, void *comp, Ren::
 }
 
 void SceneManager::PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
-    auto *pr = (LightProbe *)comp;
+    auto *pr = (Eng::LightProbe *)comp;
 
     pr->layer_index = scene_data_.probe_storage.Allocate();
 
@@ -1093,7 +1074,7 @@ void SceneManager::PostloadLightProbe(const JsObjectP &js_comp_obj, void *comp, 
 }
 
 void SceneManager::PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
-    auto *snd = (SoundSource *)comp;
+    auto *snd = (Eng::SoundSource *)comp;
 
     const Ren::Vec3f center = 0.5f * (obj_bbox[0] + obj_bbox[1]);
     snd->snd_src.Init(1.0f, ValuePtr(center));
@@ -1102,7 +1083,7 @@ void SceneManager::PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp,
 void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]) {
     using namespace SceneManagerConstants;
 
-    auto *acc = (AccStructure *)comp;
+    auto *acc = (Eng::AccStructure *)comp;
 
     const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
@@ -1115,7 +1096,7 @@ void SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp
     acc->mesh = LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
 
     if (status != Ren::eMeshLoadStatus::Found) {
-        const std::string mesh_path = std::string(MODELS_PATH) + js_mesh_file_name.val.c_str();
+        const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
 
         Sys::AssetFile in_file(mesh_path.c_str());
         size_t in_file_size = in_file.size();
@@ -1159,7 +1140,7 @@ Ren::MaterialRef SceneManager::OnLoadMaterial(const char *name) {
     Ren::eMatLoadStatus status;
     Ren::MaterialRef ret = LoadMaterial(name, nullptr, &status, nullptr, nullptr, nullptr);
     if (!ret->ready()) {
-        Sys::AssetFile in_file(std::string(MATERIALS_PATH) + name);
+        Sys::AssetFile in_file(std::string(paths_.materials_path) + name);
         if (!in_file) {
             ren_ctx_.log()->Error("Error loading material %s", name);
             return ret;
@@ -1306,7 +1287,7 @@ Ren::Tex2DRef SceneManager::LoadTexture(const char *name, const void *data, int 
 Ren::Vec4f SceneManager::LoadDecalTexture(const char *name) {
     using namespace SceneManagerConstants;
 
-    const std::string file_name = TEXTURES_PATH + std::string(name);
+    const std::string file_name = paths_.textures_path + std::string(name);
 
     Sys::AssetFile in_file(file_name);
     size_t in_file_size = in_file.size();
@@ -1477,9 +1458,9 @@ void SceneManager::UpdateInstanceBuffer() {
 void SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end) {
     using namespace SceneManagerInternal;
 
-    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
-    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
-    const auto *vegs = (VegState *)scene_data_.comp_store[CompVegState]->SequentialData();
+    const auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *lightmaps = (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *vegs = (Eng::VegState *)scene_data_.comp_store[CompVegState]->SequentialData();
 
     if (!scene_data_.persistent_data.instance_buf) {
         scene_data_.persistent_data.instance_buf =
@@ -1498,7 +1479,7 @@ void SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end)
         SceneObject &obj = scene_data_.objects[i];
         assert(obj.comp_mask & CompTransformBit);
 
-        const Transform &tr = transforms[obj.components[CompTransform]];
+        const Eng::Transform &tr = transforms[obj.components[CompTransform]];
         const Ren::Mat4f world_from_object_trans = Transpose(tr.world_from_object);
         const Ren::Mat4f prev_world_from_object_trans = Transpose(tr.world_from_object_prev);
 
@@ -1507,10 +1488,10 @@ void SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end)
         memcpy(&instance.prev_model_matrix[0][0], ValuePtr(prev_world_from_object_trans), 12 * sizeof(float));
 
         if (obj.comp_mask & CompLightmapBit) {
-            const Lightmap &lm = lightmaps[obj.components[CompLightmap]];
+            const Eng::Lightmap &lm = lightmaps[obj.components[CompLightmap]];
             memcpy(&instance.lmap_transform[0], ValuePtr(lm.xform), 4 * sizeof(float));
         } else if (obj.comp_mask & CompVegStateBit) {
-            const VegState &vs = vegs[obj.components[CompVegState]];
+            const Eng::VegState &vs = vegs[obj.components[CompVegState]];
             __init_wind_params(vs, scene_data_.env, tr.object_from_world, instance);
         }
     }

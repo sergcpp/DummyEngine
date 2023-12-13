@@ -2,8 +2,6 @@
 
 #include <Sys/Json.h>
 
-void AccStructure::Read(const JsObjectP &js_in, AccStructure &acc) {
-    
-}
+void Eng::AccStructure::Read(const JsObjectP &js_in, AccStructure &acc) {}
 
-void AccStructure::Write(const AccStructure &acc, JsObjectP &js_out) {}
+void Eng::AccStructure::Write(const AccStructure &acc, JsObjectP &js_out) {}

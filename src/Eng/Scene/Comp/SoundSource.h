@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct SoundSource {
     Snd::Source snd_src;
     float offset[3];
@@ -15,3 +16,4 @@ struct SoundSource {
 
     static const char *name() { return "sound"; }
 };
+} // namespace Eng

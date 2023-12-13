@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct AccStructure {
     Ren::MeshRef mesh;
     float surf_area = 0.0f;
@@ -13,3 +14,4 @@ struct AccStructure {
 
     static const char *name() { return "acc_structure"; }
 };
+} // namespace Eng

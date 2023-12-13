@@ -11,11 +11,6 @@
 #include "../Utils/Load.h"
 
 namespace SceneManagerConstants {
-extern const char *MODELS_PATH;
-extern const char *TEXTURES_PATH;
-extern const char *MATERIALS_PATH;
-extern const char *SHADERS_PATH;
-
 extern const int LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY;
 } // namespace SceneManagerConstants
 
@@ -94,10 +89,10 @@ void SceneManager::ResetLightmaps_PT() {
 
     for (uint32_t i = 0; i < (uint32_t)scene_data_.objects.size(); i++) {
         if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
+            const auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(
                 scene_data_.objects[i].components[CompTransform]);
             const auto *lm =
-                (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
+                (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
 
             cur_lm_obj_ = i;
             cam_desc.mi_index = tr->pt_mi;
@@ -137,7 +132,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const int TileSizeCPU = 64;
 
     const SceneObject &cur_obj = scene_data_.objects[cur_lm_obj_];
-    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
+    const auto *lm = (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
     const int res = lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
@@ -278,7 +273,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
 
             for (uint32_t i = cur_lm_obj_ + 1; i < (uint32_t)scene_data_.objects.size(); i++) {
                 if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-                    const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
+                    const auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(
                         scene_data_.objects[i].components[CompTransform]);
 
                     cur_lm_obj_ = i;
@@ -544,9 +539,9 @@ void SceneManager::InitScene_PT(bool _override) {
     for (SceneObject &obj : scene_data_.objects) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-            const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+            const auto *dr = (Eng::Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
             const Ren::Mesh *mesh = dr->pt_mesh ? dr->pt_mesh.get() : dr->mesh.get();
-            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) ||
+            if (!(dr->vis_mask & uint32_t(Eng::Drawable::eDrVisibility::VisShadow)) ||
                 (mesh->type() != Ren::eMeshType::Simple && mesh->type() != Ren::eMeshType::Colored)) {
                 continue;
             }
@@ -650,7 +645,7 @@ void SceneManager::InitScene_PT(bool _override) {
             }
 
             if (mesh_it != loaded_meshes.end()) {
-                auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+                auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
                 tr->pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, ValuePtr(tr->world_from_object))._index;
             }
         }

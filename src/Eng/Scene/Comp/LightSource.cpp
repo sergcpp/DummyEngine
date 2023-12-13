@@ -6,12 +6,14 @@
 
 #include "../SceneData.h"
 
+namespace Eng {
 namespace LightSourceInternal {
 const char *g_type_names[] = {"point", "sphere", "rectangle", "disk", "line"};
 static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
-}
+} // namespace LightSourceInternal
+} // namespace Eng
 
-void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
+void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     using namespace LightSourceInternal;
 
     ls.type = eLightType::Point;
@@ -122,7 +124,7 @@ void LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     }
 }
 
-void LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
+void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
     using namespace LightSourceInternal;
 
     const auto &alloc = js_out.elements.get_allocator();

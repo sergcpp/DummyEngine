@@ -4,15 +4,15 @@
 
 #include "Renderer_Names.h"
 
-#include "../assets/shaders/internal/gi_blur_interface.h"
-#include "../assets/shaders/internal/gi_classify_tiles_interface.h"
-#include "../assets/shaders/internal/gi_prefilter_interface.h"
-#include "../assets/shaders/internal/gi_reproject_interface.h"
-#include "../assets/shaders/internal/gi_resolve_temporal_interface.h"
-#include "../assets/shaders/internal/gi_trace_ss_interface.h"
-#include "../assets/shaders/internal/gi_write_indir_rt_dispatch_interface.h"
-#include "../assets/shaders/internal/gi_write_indirect_args_interface.h"
-#include "../assets/shaders/internal/reconstruct_normals_interface.h"
+#include "Shaders/gi_blur_interface.h"
+#include "Shaders/gi_classify_tiles_interface.h"
+#include "Shaders/gi_prefilter_interface.h"
+#include "Shaders/gi_reproject_interface.h"
+#include "Shaders/gi_resolve_temporal_interface.h"
+#include "Shaders/gi_trace_ss_interface.h"
+#include "Shaders/gi_write_indir_rt_dispatch_interface.h"
+#include "Shaders/gi_write_indirect_args_interface.h"
+#include "Shaders/reconstruct_normals_interface.h"
 
 void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                                 const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,

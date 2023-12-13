@@ -6,8 +6,9 @@
 
 #include "Common.h"
 
+namespace Eng {
 class AnimState {
-public:
+  public:
     float anim_time_s = 0.0f;
     // TODO: allocate these from pool and of right length
     std::unique_ptr<Ren::Mat4f[]> matr_palette_curr, matr_palette_prev;
@@ -21,3 +22,4 @@ public:
 
     static const char *name() { return "anim_state"; }
 };
+} // namespace Eng

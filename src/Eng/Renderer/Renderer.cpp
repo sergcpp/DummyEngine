@@ -91,9 +91,9 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
         (max)[2], (min)[0], (max)[1], (min)[2], (max)[0], (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0],  \
         (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::shared_ptr<Sys::ThreadPool> threads)
-    : ctx_(ctx), sh_(sh), rand_(rand), threads_(std::move(threads)),
-      shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT), rp_builder_(ctx_, sh_) {
+Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
+    : ctx_(ctx), sh_(sh), rand_(rand), threads_(threads), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
+      rp_builder_(ctx_, sh_) {
     using namespace RendererInternal;
 
     swCullCtxInit(&cull_ctx_, ctx.w(), ctx.h(), 0.0f);
@@ -519,7 +519,8 @@ void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, D
     GatherDrawables(scene, cam, list);
 }
 
-void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data, const FrameBuf *target) {
+void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
+                               const Ren::Tex2DRef target) {
     using namespace RendererInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
@@ -624,8 +625,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         view_state_.act_res[1] = int(float(view_state_.scr_res[1]) * 1.0f);
 #endif
     } else {
-        view_state_.act_res[0] = target->w;
-        view_state_.act_res[1] = target->h;
+        view_state_.act_res[0] = target->params.w;
+        view_state_.act_res[1] = target->params.h;
     }
     assert(view_state_.act_res[0] <= view_state_.scr_res[0] && view_state_.act_res[1] <= view_state_.scr_res[1]);
 
@@ -868,8 +869,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // renormalization requires buffer with alpha channel
         frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
 #else
-        frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
-        //frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
+        //frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
+        frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
 #endif
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
@@ -1010,7 +1011,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
 
         const uint64_t fill_velocity =
             (EnableTaa | EnableSSR_HQ | EnableGI); // Temporal reprojection is used for gi, reflections and TAA
-        if ((list.render_flags & fill_velocity) != 0 && (list.render_flags & DebugWireframe) == 0) {
+        if ((list.render_flags & fill_velocity) != 0 && (list.render_flags & DebugWireframe) == 0 &&
+            (list.render_flags & EnableTaaStatic) == 0) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
         }
 
@@ -1327,6 +1329,8 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
                     params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
                     rp_combine_data_.output_tex = combine.AddColorOutput(output_tex, params);
+                } else if (target) {
+                    rp_combine_data_.output_tex = combine.AddColorOutput(target);
                 } else {
                     rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
                 }
@@ -1379,7 +1383,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // Use correct backbuffer image (assume topology is not changed)
         // TODO: get rid of this
         auto &combine = *rp_builder_.FindPass("COMBINE");
-        rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+        if (target) {
+            rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, target);
+        } else {
+            rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
+        }
 
         const float reduced_average = rp_read_brightness_.reduced_average();
 

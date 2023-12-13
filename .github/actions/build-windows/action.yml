@@ -20,7 +20,9 @@ runs:
         cmake --build build --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net --config ${{ inputs.config }} --parallel 16
         if [ -n "${{ inputs.bin-dir }}" ]; then
           mkdir $WORK_DIR/${{ inputs.bin-dir }}
+          mkdir $WORK_DIR/${{ inputs.bin-dir }}/test_data
           cp build/src/Eng/_tests/test_Eng.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp -ru src/Eng/_tests/test_data/assets $WORK_DIR/${{ inputs.bin-dir }}/test_data/assets
           cp build/src/Ray/tests/test_Ray.exe $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}

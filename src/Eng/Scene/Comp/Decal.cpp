@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void Decal::Read(const JsObjectP &js_in, Decal &de) {
+void Eng::Decal::Read(const JsObjectP &js_in, Decal &de) {
     if (js_in.Has("pos")) {
         const JsArrayP &js_pos = js_in.at("pos").as_arr();
 
@@ -43,4 +43,4 @@ void Decal::Read(const JsObjectP &js_in, Decal &de) {
                                 1.0f * dim[2]);
 }
 
-void Decal::Write(const Decal &de, JsObjectP &js_out) {}
+void Eng::Decal::Write(const Decal &de, JsObjectP &js_out) {}

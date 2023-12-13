@@ -708,7 +708,7 @@ void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const i
 }
 
 bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
-                             LightProbe &probe) {
+                             Eng::LightProbe &probe) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),

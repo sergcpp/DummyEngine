@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void Physics::Read(const JsObjectP &js_in, Physics &ph) {
+void Eng::Physics::Read(const JsObjectP &js_in, Physics &ph) {
     using Phy::real;
 
     if (js_in.Has("pos")) {
@@ -89,4 +89,4 @@ void Physics::Read(const JsObjectP &js_in, Physics &ph) {
     }
 }
 
-void Physics::Write(const Physics &ph, JsObjectP &js_out) {}
+void Eng::Physics::Write(const Physics &ph, JsObjectP &js_out) {}

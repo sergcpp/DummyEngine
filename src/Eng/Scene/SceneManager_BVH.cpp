@@ -73,14 +73,14 @@ void SceneManager::RebuildSceneBVH() {
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);
 
-    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
     for (const SceneObject &obj : scene_data_.objects) {
         if (obj.comp_mask & CompTransformBit) {
-            const Transform &tr = transforms[obj.components[CompTransform]];
+            const Eng::Transform &tr = transforms[obj.components[CompTransform]];
             const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
             primitives.push_back({0, 0, 0, tr.bbox_min_ws - BoundsMargin * d, tr.bbox_max_ws + BoundsMargin * d});
         }
@@ -143,7 +143,7 @@ void SceneManager::RebuildSceneBVH() {
             const auto new_node_index = (uint32_t)scene_data_.nodes.size();
 
             for (const uint32_t i : split_data.left_indices) {
-                Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
+                Eng::Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
                 tr.node_index = new_node_index;
             }
 
@@ -257,8 +257,8 @@ void SceneManager::UpdateObjects() {
     OPTICK_EVENT("SceneManager::UpdateObjects");
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
 
-    const auto *physes = (Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();
-    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *physes = (Eng::Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();
+    auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     scene_data_.update_counter++;
 
@@ -277,8 +277,8 @@ void SceneManager::UpdateObjects() {
         obj.last_change_mask = obj.change_mask;
 
         if (obj.change_mask & CompPhysicsBit) {
-            const Physics &ph = physes[obj.components[CompPhysics]];
-            Transform &tr = transforms[obj.components[CompTransform]];
+            const Eng::Physics &ph = physes[obj.components[CompPhysics]];
+            Eng::Transform &tr = transforms[obj.components[CompTransform]];
 
             tr.world_from_object_prev = tr.world_from_object;
             tr.world_from_object = Ren::Mat4f{1.0f};
@@ -303,7 +303,7 @@ void SceneManager::UpdateObjects() {
         }
 
         if (obj.change_mask & CompTransformBit) {
-            Transform &tr = transforms[obj.components[CompTransform]];
+            Eng::Transform &tr = transforms[obj.components[CompTransform]];
             tr.UpdateTemporaryData();
             if (tr.node_index != 0xffffffff) {
                 assert(tr.node_index < scene_data_.nodes.size());
@@ -338,7 +338,7 @@ void SceneManager::UpdateObjects() {
         SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
-            Transform &tr = transforms[obj.components[CompTransform]];
+            Eng::Transform &tr = transforms[obj.components[CompTransform]];
             tr.node_index = free_nodes[free_nodes_pos++];
 
             bvh_node_t &new_node = nodes[tr.node_index];
@@ -534,7 +534,7 @@ void SceneManager::InitSWRTAccStructures() {
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
     while (acc_index != 0xffffffff) {
-        auto *acc = (AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
+        auto *acc = (Eng::AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
         if (acc->mesh->blas) {
             // already processed
             acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
@@ -617,10 +617,10 @@ void SceneManager::InitSWRTAccStructures() {
     //
 
     // retrieve pointers to components for fast access
-    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
-    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
-    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
-    const auto *probes = (LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
+    const auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *acc_structs = (Eng::AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
+    const auto *lightmaps = (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *probes = (Eng::LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
     const CompStorage *probe_store = scene_data_.comp_store[CompProbe];
 
     std::vector<RTGeoInstance> geo_instances;
@@ -630,9 +630,9 @@ void SceneManager::InitSWRTAccStructures() {
             continue;
         }
 
-        const Transform &tr = transforms[obj.components[CompTransform]];
-        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
-        const Lightmap *lm = nullptr;
+        const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+        const Eng::AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+        const Eng::Lightmap *lm = nullptr;
         if (obj.comp_mask & CompLightmapBit) {
             lm = &lightmaps[obj.components[CompLightmap]];
         }
@@ -687,8 +687,8 @@ void SceneManager::InitSWRTAccStructures() {
                             continue;
                         }
 
-                        const Transform &probe_tr = transforms[probe.components[CompTransform]];
-                        const LightProbe &probe_pr = probes[probe.components[CompProbe]];
+                        const Eng::Transform &probe_tr = transforms[probe.components[CompTransform]];
+                        const Eng::LightProbe &probe_pr = probes[probe.components[CompProbe]];
 
                         const float dist2 =
                             Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),

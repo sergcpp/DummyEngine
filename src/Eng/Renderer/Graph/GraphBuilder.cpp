@@ -490,6 +490,7 @@ RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSt
         new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name().c_str();
         new_tex.desc = ref->params;
+        new_tex.external = true;
 
         ret.index = textures_.emplace(new_tex);
         name_to_texture_[new_tex.name] = ret.index;
@@ -616,6 +617,9 @@ void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
             }
         } else if (res.type == eRpResType::Texture) {
             RpAllocTex &tex = textures_.at(res.index);
+            if (tex.external) {
+                continue;
+            }
             if (tex.history_index != -1) {
                 RpAllocTex &hist_tex = textures_.at(tex.history_index);
                 // combine usage flags
@@ -948,7 +952,7 @@ void RpBuilder::BuildAliases() {
         RpAllocTex &tex1 = *i;
         const range_t &range1 = ranges[i.index()];
 
-        if (tex1.history_index != -1 || tex1.history_of != -1) {
+        if (tex1.external || tex1.history_index != -1 || tex1.history_of != -1) {
             continue;
         }
 
@@ -956,7 +960,7 @@ void RpBuilder::BuildAliases() {
             RpAllocTex &tex2 = *j;
             const range_t &range2 = ranges[j.index()];
 
-            if (tex2.history_index != -1 || tex2.history_of != -1 || aliases[j.index()] != -1) {
+            if (tex2.external || tex2.history_index != -1 || tex2.history_of != -1 || aliases[j.index()] != -1) {
                 continue;
             }
 

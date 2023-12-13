@@ -6,7 +6,6 @@ const float GRAVITY = -980.0f;
 
 const int NET_UPDATE_DELTA = 4 * UPDATE_DELTA;
 
-const char THREAD_POOL_KEY[] = "thread_pool";
 const char STATE_MANAGER_KEY[] = "state_manager";
 const char INPUT_MANAGER_KEY[] = "input_manager";
 const char FLOW_CONTROL_KEY[] = "flow_control";

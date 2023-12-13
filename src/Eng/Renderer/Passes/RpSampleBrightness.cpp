@@ -4,8 +4,7 @@
 
 #include "../../Renderer/PrimDraw.h"
 #include "../../Utils/ShaderLoader.h"
-
-#include "../assets/shaders/internal/blit_reduced_interface.h"
+#include "../Shaders/blit_reduced_interface.h"
 
 namespace RpSampleBrightnessInternal {
 const Ren::Vec2f poisson_disk[] = {

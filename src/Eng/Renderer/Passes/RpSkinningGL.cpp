@@ -5,7 +5,7 @@
 
 #include "../Renderer_Structs.h"
 
-#include "../assets/shaders/internal/skinning_interface.h"
+#include "../Shaders/skinning_interface.h"
 
 void RpSkinningExecutor::Execute(RpBuilder &builder) {
     RpAllocBuf &skin_vtx_buf = builder.GetReadBuffer(skin_vtx_buf_);

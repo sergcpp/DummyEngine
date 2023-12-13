@@ -38,7 +38,7 @@ extern "C" {
 #include "PrimDraw.h"
 
 #include "Renderer_DrawList.h"
-#include "Renderer_GL_Defines.inl"
+#include "Shaders/Renderer_GL_Defines.inl"
 
 namespace Sys {
 template <typename T> class MonoAlloc;
@@ -50,7 +50,7 @@ class ShaderLoader;
 
 class Renderer {
   public:
-    Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, std::shared_ptr<Sys::ThreadPool> threads);
+    Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
     ~Renderer();
 
     uint64_t render_flags() const { return render_flags_; }
@@ -67,7 +67,7 @@ class Renderer {
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
     void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                         const FrameBuf *target = nullptr);
+                         const Ren::Tex2DRef target = {});
 
     void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
@@ -78,13 +78,13 @@ class Renderer {
 
     void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
     void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
-    bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
+    bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, Eng::LightProbe &probe);
 
   private:
     Ren::Context &ctx_;
     ShaderLoader &sh_;
     Random &rand_;
-    std::shared_ptr<Sys::ThreadPool> threads_;
+    Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
     Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_,
         blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
@@ -127,8 +127,8 @@ EnableRTShadows*/
 #endif
     uint64_t render_flags_ = DefaultFlags;
 
-    DynArray<const LightSource *> litem_to_lsource_;
-    DynArray<const Decal *> ditem_to_decal_;
+    DynArray<const Eng::LightSource *> litem_to_lsource_;
+    DynArray<const Eng::Decal *> ditem_to_decal_;
 
     struct ProcessedObjData {
         uint32_t base_vertex;
@@ -325,7 +325,7 @@ EnableRTShadows*/
                                            ProcessedObjData proc_objects[], VisObj out_visible_objects[],
                                            std::atomic_int &inout_count);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
-                                          const LightSource *const *litem_to_lsource, DrawList &list,
+                                          const Eng::LightSource *const *litem_to_lsource, DrawList &list,
                                           std::atomic_int &items_count);
 
     // Generate auxiliary textures

@@ -39,6 +39,7 @@ struct ApiContext {
 
     VkSemaphore image_avail_semaphores[MaxFramesInFlight] = {};
     VkSemaphore render_finished_semaphores[MaxFramesInFlight] = {};
+    bool render_finished_semaphore_is_set[MaxFramesInFlight] = {};
     VkFence in_flight_fences[MaxFramesInFlight] = {};
 
     VkQueryPool query_pools[MaxFramesInFlight] = {};
@@ -75,10 +76,12 @@ inline VkDeviceSize AlignTo(VkDeviceSize size, VkDeviceSize alignment) {
     return alignment * ((size + alignment - 1) / alignment);
 }
 
+bool MatchDeviceNames(const char *name, const char *pattern);
+
 class ILog;
 
-bool InitVkInstance(VkInstance &instance, const char *enabled_layers[], int enabled_layers_count,
-                    int validation_level, ILog *log);
+bool InitVkInstance(VkInstance &instance, const char *enabled_layers[], int enabled_layers_count, int validation_level,
+                    ILog *log);
 bool InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log);
 bool ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &device_properties,
                             VkPhysicalDeviceMemoryProperties &mem_properties, uint32_t &present_family_index,
@@ -96,8 +99,7 @@ bool InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_command
                         VkSemaphore image_avail_semaphores[MaxFramesInFlight],
                         VkSemaphore render_finished_semaphores[MaxFramesInFlight],
                         VkFence in_flight_fences[MaxFramesInFlight], VkQueryPool query_pools[MaxFramesInFlight],
-                        VkQueue &present_queue, VkQueue &graphics_queue, VkDevice device, uint32_t present_family_index,
-                        ILog *log);
+                        VkDevice device, uint32_t family_index, ILog *log);
 bool InitPresentImageViews(SmallVectorImpl<VkImage> &present_images, SmallVectorImpl<VkImageView> &present_image_views,
                            VkDevice device, VkSwapchainKHR swapchain, VkSurfaceFormatKHR surface_format,
                            VkCommandBuffer setup_cmd_buf, VkQueue present_queue, ILog *log);

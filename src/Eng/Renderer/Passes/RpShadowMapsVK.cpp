@@ -6,8 +6,7 @@
 #include <Ren/VKCtx.h>
 
 #include "../Renderer_Structs.h"
-
-#include "../assets/shaders/internal/shadow_interface.h"
+#include "../Shaders/shadow_interface.h"
 
 namespace RpShadowMapsInternal {
 void _adjust_bias_and_viewport(VkCommandBuffer cmd_buf, const ShadowList &sh_list) {

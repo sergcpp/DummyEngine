@@ -65,6 +65,7 @@ struct RpAllocTex {
 
     std::string name;
     bool transient = false; // unused for now
+    bool external = false;
     int alias_of = -1;
     int history_of = -1;
     int history_index = -1;

@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct LightProbe {
     // streaming data
     float radius = 0.0f;
@@ -16,3 +17,4 @@ struct LightProbe {
 
     static const char *name() { return "probe"; }
 };
+} // namespace Eng

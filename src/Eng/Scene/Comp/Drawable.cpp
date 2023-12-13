@@ -3,7 +3,7 @@
 #include <Ren/Mesh.h>
 #include <Sys/Json.h>
 
-void Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
+void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     dr.flags = 0;
     dr.vis_mask = 0xffffffff;
 
@@ -56,7 +56,7 @@ void Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     }
 }
 
-void Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
+void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
     const auto &alloc = js_out.elements.get_allocator();
 
     if (dr.mesh) {

@@ -154,8 +154,8 @@ void GSUITest2::UpdateAnim(const uint64_t dt_us) {
 
         uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((zenith->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
+            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);

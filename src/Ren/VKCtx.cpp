@@ -14,6 +14,11 @@ void *g_metal_layer = nullptr;
 #endif
 } // namespace Ren
 
+bool Ren::MatchDeviceNames(const char *name, const char *pattern) {
+    std::regex match_name(pattern);
+    return std::regex_search(name, match_name) || strcmp(name, pattern) == 0;
+}
+
 bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], const int enabled_layers_count,
                          int validation_level, ILog *log) {
     if (validation_level) { // Find validation layer
@@ -139,9 +144,14 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
 
 bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
+    HWND window = GetActiveWindow();
+    if (!window) {
+        return true;
+    }
+
     VkWin32SurfaceCreateInfoKHR surface_create_info = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
     surface_create_info.hinstance = GetModuleHandle(NULL);
-    surface_create_info.hwnd = GetActiveWindow();
+    surface_create_info.hwnd = window;
 
     VkResult res = vkCreateWin32SurfaceKHR(instance, &surface_create_info, nullptr, &surface);
     if (res != VK_SUCCESS) {
@@ -149,6 +159,10 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
         return false;
     }
 #elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    if (!g_dpy || !g_win) {
+        return true;
+    }
+
     VkXlibSurfaceCreateInfoKHR surface_create_info = {VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR};
     surface_create_info.dpy = g_dpy;
     surface_create_info.window = g_win;
@@ -247,8 +261,10 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
         uint32_t present_family_index = 0xffffffff, graphics_family_index = 0xffffffff;
 
         for (uint32_t j = 0; j < queue_family_count; j++) {
-            VkBool32 supports_present;
-            vkGetPhysicalDeviceSurfaceSupportKHR(physical_devices[i], j, surface, &supports_present);
+            VkBool32 supports_present = VK_FALSE;
+            if (surface) {
+                vkGetPhysicalDeviceSurfaceSupportKHR(physical_devices[i], j, surface, &supports_present);
+            }
 
             if (supports_present && queue_family_properties[j].queueCount > 0 &&
                 queue_family_properties[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -265,7 +281,7 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
             }
         }
 
-        if (present_family_index != 0xffffffff && graphics_family_index != 0xffffffff) {
+        if (graphics_family_index != 0xffffffff) {
             int score = 0;
 
             if (device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
@@ -287,12 +303,9 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 score += 100;
             }
 
-            if (preferred_device) {
-                std::regex match_name(preferred_device);
-                if (std::regex_search(device_properties.deviceName, match_name)) {
-                    // preferred device found
-                    score += 100000;
-                }
+            if (preferred_device && MatchDeviceNames(device_properties.deviceName, preferred_device)) {
+                // preferred device found
+                score += 100000;
             }
 
             if (score > best_score) {
@@ -325,25 +338,24 @@ bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint3
                        bool enable_dynamic_rendering, const char *enabled_layers[], int enabled_layers_count,
                        ILog *log) {
     VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
+    int infos_count = 0;
     const float queue_priorities[] = {1.0f};
 
-    { // present queue
-        queue_create_infos[0] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        queue_create_infos[0].queueFamilyIndex = present_family_index;
-        queue_create_infos[0].queueCount = 1;
-
-        queue_create_infos[0].pQueuePriorities = queue_priorities;
+    if (present_family_index != 0xffffffff) {
+        // present queue
+        queue_create_infos[infos_count] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+        queue_create_infos[infos_count].queueFamilyIndex = present_family_index;
+        queue_create_infos[infos_count].queueCount = 1;
+        queue_create_infos[infos_count].pQueuePriorities = queue_priorities;
+        ++infos_count;
     }
-    int infos_count = 1;
 
     if (graphics_family_index != present_family_index) {
         // graphics queue
-        queue_create_infos[1] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        queue_create_infos[1].queueFamilyIndex = graphics_family_index;
-        queue_create_infos[1].queueCount = 1;
-
-        queue_create_infos[1].pQueuePriorities = queue_priorities;
-
+        queue_create_infos[infos_count] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+        queue_create_infos[infos_count].queueFamilyIndex = graphics_family_index;
+        queue_create_infos[infos_count].queueCount = 1;
+        queue_create_infos[infos_count].pQueuePriorities = queue_priorities;
         ++infos_count;
     }
 
@@ -592,14 +604,10 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
                              VkSemaphore image_avail_semaphores[MaxFramesInFlight],
                              VkSemaphore render_finished_semaphores[MaxFramesInFlight],
                              VkFence in_flight_fences[MaxFramesInFlight], VkQueryPool query_pools[MaxFramesInFlight],
-                             VkQueue &present_queue, VkQueue &graphics_queue, VkDevice device,
-                             uint32_t present_family_index, ILog *log) {
-    vkGetDeviceQueue(device, present_family_index, 0, &present_queue);
-    graphics_queue = present_queue;
-
+                             VkDevice device, uint32_t family_index, ILog *log) {
     VkCommandPoolCreateInfo cmd_pool_create_info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     cmd_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    cmd_pool_create_info.queueFamilyIndex = present_family_index;
+    cmd_pool_create_info.queueFamilyIndex = family_index;
 
     VkResult res = vkCreateCommandPool(device, &cmd_pool_create_info, nullptr, &command_pool);
     if (res != VK_SUCCESS) {
@@ -610,7 +618,7 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
     { // create pool for temporary commands
         VkCommandPoolCreateInfo tmp_cmd_pool_create_info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
         tmp_cmd_pool_create_info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        tmp_cmd_pool_create_info.queueFamilyIndex = present_family_index;
+        tmp_cmd_pool_create_info.queueFamilyIndex = family_index;
 
         res = vkCreateCommandPool(device, &tmp_cmd_pool_create_info, nullptr, &temp_command_pool);
         if (res != VK_SUCCESS) {

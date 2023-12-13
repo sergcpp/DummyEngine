@@ -30,14 +30,9 @@
 #include <glslang/Include/glslang_c_interface.h>
 
 // TODO: pass defines as a parameter
-#include "../Renderer/Renderer_GL_Defines.inl"
+#include "../Renderer/Shaders/Renderer_GL_Defines.inl"
 
 namespace SceneManagerInternal {
-extern const char *MODELS_PATH;
-extern const char *TEXTURES_PATH;
-extern const char *MATERIALS_PATH;
-extern const char *SHADERS_PATH;
-
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
 

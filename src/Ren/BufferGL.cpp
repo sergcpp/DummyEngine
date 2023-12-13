@@ -178,7 +178,7 @@ uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const u
 
 #ifndef NDEBUG
     for (auto it = std::begin(flushed_ranges_); it != std::end(flushed_ranges_);) {
-        if (offset + size >= it->range.first && offset < it->range.first + it->range.second) {
+        if (offset + size > it->range.first && offset < it->range.first + it->range.second) {
             const WaitResult res = it->fence.ClientWaitSync(0);
             assert(res == WaitResult::Success);
             it = flushed_ranges_.erase(it);

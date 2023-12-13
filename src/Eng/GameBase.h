@@ -14,8 +14,13 @@ struct TimeInterval {
     uint64_t start_timepoint_us = 0, end_timepoint_us = 0;
 };
 
+namespace Sys {
+class ThreadPool;
+}
+
 class GameBase {
   protected:
+    std::unique_ptr<Sys::ThreadPool> threads_;
     std::map<std::string, std::shared_ptr<void>> components_;
     FrameInfo fr_info_;
 
@@ -24,6 +29,8 @@ class GameBase {
   public:
     GameBase(int w, int h, int validation_level, const char *device_name);
     virtual ~GameBase();
+
+    Sys::ThreadPool *threads() { return threads_.get(); }
 
     virtual void Resize(int w, int h);
 

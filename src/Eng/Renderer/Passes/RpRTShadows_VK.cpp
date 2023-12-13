@@ -7,8 +7,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
-
-#include "../assets/shaders/internal/rt_shadows_interface.h"
+#include "../Shaders/rt_shadows_interface.h"
 
 void RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);

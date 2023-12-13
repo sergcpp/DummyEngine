@@ -36,7 +36,7 @@ class ThreadWorker;
 } // namespace Sys
 
 class GSVideoTest final : public GSBaseState {
-    std::shared_ptr<Sys::ThreadPool> threads_;
+    Sys::ThreadPool *threads_;
     std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread_;
 
     int view_pointer_ = 0, move_pointer_ = 0;

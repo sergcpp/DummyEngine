@@ -6,7 +6,7 @@
 #include <Ren/MMat.h>
 #include <Ren/SmallVector.h>
 
-#include "Renderer_GL_Defines.inl"
+#include "Shaders/Renderer_GL_Defines.inl"
 
 struct LightItem {
     float col[3];

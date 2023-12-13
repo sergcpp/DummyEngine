@@ -67,7 +67,7 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
 
     // Prepare cam for probes updating
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
-    temp_probe_cam_.set_render_mask(uint32_t(Drawable::eDrVisibility::VisProbes));
+    temp_probe_cam_.set_render_mask(uint32_t(Eng::Drawable::eDrVisibility::VisProbes));
 
     //
     // Create required staging buffers
@@ -859,7 +859,7 @@ void GSBaseState::Draw() {
 
                 // Render probe cubemap
                 if (probe_to_render_) {
-                    for (int i = 0; i < 6; i++) {
+                    /*for (int i = 0; i < 6; i++) {
                         renderer_->ExecuteDrawList(temp_probe_lists_[i], scene_manager_->persistent_data(),
                                                    &temp_probe_buf_);
                         renderer_->BlitToTempProbeFace(temp_probe_buf_, scene_data.probe_storage, i);
@@ -868,7 +868,7 @@ void GSBaseState::Draw() {
                     renderer_->BlitPrefilterFromTemp(scene_data.probe_storage, probe_to_render_->layer_index);
 
                     probe_to_update_sh_ = probe_to_render_;
-                    probe_to_render_ = nullptr;
+                    probe_to_render_ = nullptr;*/
                 }
             }
 
@@ -1093,8 +1093,8 @@ void GSBaseState::UpdateFrame(int list_index) {
             log_->Info("Updating probe");
             SceneObject *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
             auto *probe =
-                (LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
-            auto *probe_tr = (Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(
+                (Eng::LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
+            auto *probe_tr = (Eng::Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(
                 probe_obj->components[CompTransform]);
 
             auto pos = Ren::Vec4f{probe->offset[0], probe->offset[1], probe->offset[2], 1.0f};

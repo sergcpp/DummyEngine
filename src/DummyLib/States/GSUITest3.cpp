@@ -207,8 +207,8 @@ void GSUITest3::UpdateAnim(const uint64_t dt_us) {
 
         uint32_t mask = CompDrawableBit | CompAnimStateBit;
         if ((book->comp_mask & mask) == mask) {
-            auto *dr = (Drawable *)scene.comp_store[CompDrawable]->Get(book->components[CompDrawable]);
-            auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(book->components[CompDrawable]);
+            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
 
             const int cur_page = paged_reader_->cur_page(), page_count = paged_reader_->page_count();
 
@@ -388,7 +388,7 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
 
                 const uint32_t mask = CompDrawableBit | CompAnimStateBit;
                 if ((book->comp_mask & mask) == mask) {
-                    auto *as = (AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
+                    auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
                     as->anim_time_s = 0.0f;
                 }
             }

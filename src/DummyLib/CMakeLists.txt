@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.1)
+cmake_minimum_required(VERSION 3.5)
 project(DummyLib)
 
 set(SOURCE_FILES    Viewer.h
@@ -91,5 +91,12 @@ source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DummyLib Eng Net Phy Ray Ren Snd Sys astc ${LIBS})
+
+add_custom_command(TARGET DummyLib
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/Renderer/Shaders
+                                                              ${WORKING_DIRECTORY}/assets/shaders/internal
+                   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/Renderer/Shaders
+                   COMMENT "Copying shader files...")
 
 add_subdirectory(tests)

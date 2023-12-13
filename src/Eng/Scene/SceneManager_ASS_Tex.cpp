@@ -1064,7 +1064,7 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
     // write probes
     uint32_t cur_index = light_probe_storage->First();
     while (cur_index != 0xffffffff) {
-        const auto *lprobe = (const LightProbe *)light_probe_storage->Get(cur_index);
+        const auto *lprobe = (const Eng::LightProbe *)light_probe_storage->Get(cur_index);
         assert(lprobe);
 
         if (lprobe->layer_index != -1) {

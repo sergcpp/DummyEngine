@@ -23,8 +23,10 @@ runs:
         $WORK_DIR/${{ inputs.bin-dir }}/test_SW
         $WORK_DIR/${{ inputs.bin-dir }}/test_Sys
         $WORK_DIR/${{ inputs.bin-dir }}/test_Net
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
-        cd src/Ray/tests
+        cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }}
+        cd $WORK_DIR/../../builds/DummyEngine/src/Ray/tests
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ray ${{ inputs.test-args }}
+        cd ../../..
       shell: bash

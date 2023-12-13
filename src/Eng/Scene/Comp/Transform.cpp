@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void Transform::UpdateBBox() {
+void Eng::Transform::UpdateBBox() {
     bbox_min_ws = bbox_max_ws = Ren::Vec3f(world_from_object[3]);
 
     for (int j = 0; j < 3; j++) {
@@ -21,9 +21,9 @@ void Transform::UpdateBBox() {
     }
 }
 
-void Transform::UpdateInvMatrix() { object_from_world = Inverse(world_from_object); }
+void Eng::Transform::UpdateInvMatrix() { object_from_world = Inverse(world_from_object); }
 
-void Transform::Read(const JsObjectP &js_in, Transform &tr) {
+void Eng::Transform::Read(const JsObjectP &js_in, Transform &tr) {
     tr.world_from_object = Ren::Mat4f{1.0f};
 
     if (js_in.Has("pos")) {
@@ -68,7 +68,7 @@ void Transform::Read(const JsObjectP &js_in, Transform &tr) {
     tr.UpdateInvMatrix();
 }
 
-void Transform::Write(const Transform &tr, JsObjectP &js_out) {
+void Eng::Transform::Write(const Transform &tr, JsObjectP &js_out) {
     const auto &alloc = js_out.elements.get_allocator();
 
     { // write position

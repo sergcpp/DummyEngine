@@ -2,7 +2,7 @@
 
 #include <Sys/Json.h>
 
-void LightProbe::Read(const JsObjectP &js_in, LightProbe &pr) {
+void Eng::LightProbe::Read(const JsObjectP &js_in, LightProbe &pr) {
     if (js_in.Has("offset")) {
         const JsArrayP &js_offset = js_in.at("offset").as_arr();
 
@@ -29,7 +29,7 @@ void LightProbe::Read(const JsObjectP &js_in, LightProbe &pr) {
     }
 }
 
-void LightProbe::Write(const LightProbe &pr, JsObjectP &js_out) {
+void Eng::LightProbe::Write(const LightProbe &pr, JsObjectP &js_out) {
     const auto &alloc = js_out.elements.get_allocator();
 
     { // write offset

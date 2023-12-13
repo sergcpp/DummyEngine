@@ -107,9 +107,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
         using namespace std::placeholders;
 
         auto sh_loader = GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
-        auto threads = GetComponent<Sys::ThreadPool>(THREAD_POOL_KEY);
         auto random = GetComponent<Random>(RANDOM_KEY);
-        auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, *random, threads);
+        auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, *random, *threads_);
         AddComponent(RENDERER_KEY, renderer);
 
         Ray::settings_t s;
@@ -119,7 +118,9 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
         auto ray_renderer = std::shared_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
-        auto scene_manager = std::make_shared<SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads);
+        path_config_t paths;
+        auto scene_manager =
+            std::make_shared<SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads_, paths);
         scene_manager->SetPipelineInitializer(
             std::bind(&Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
 

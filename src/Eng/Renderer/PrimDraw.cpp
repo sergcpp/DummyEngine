@@ -2,7 +2,7 @@
 
 #include <Ren/Context.h>
 
-#include "Renderer_GL_Defines.inl"
+#include "Shaders/Renderer_GL_Defines.inl"
 
 namespace PrimDrawInternal {
 #if defined(USE_VK_RENDER)
@@ -135,10 +135,10 @@ bool PrimDraw::LazyInit(Ren::Context &ctx) {
 void PrimDraw::CleanUp() {
     using namespace PrimDrawInternal;
 
-    Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
-                   ndx_buf = ctx_->default_indices_buf();
-
     if (quad_vtx1_offset_ != 0xffffffff) {
+        Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
+                       ndx_buf = ctx_->default_indices_buf();
+
         uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
         mem_required += (16 - mem_required % 16); // align to vertex stride
 
@@ -150,6 +150,9 @@ void PrimDraw::CleanUp() {
     }
 
     if (sphere_vtx1_offset_ != 0xffffffff) {
+        Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
+                       ndx_buf = ctx_->default_indices_buf();
+
         vtx_buf1->FreeSubRegion(sphere_vtx1_offset_, SphereVerticesSize);
         assert(sphere_vtx2_offset_ != 0xffffffff);
         vtx_buf2->FreeSubRegion(sphere_vtx2_offset_, SphereVerticesSize);
@@ -158,6 +161,9 @@ void PrimDraw::CleanUp() {
     }
 
     if (temp_buf1_vtx_offset_ != 0xffffffff) {
+        Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
+                       ndx_buf = ctx_->default_indices_buf();
+
         vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_, TempBufSize);
         assert(temp_buf2_vtx_offset_ != 0xffffffff);
         vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_, TempBufSize);

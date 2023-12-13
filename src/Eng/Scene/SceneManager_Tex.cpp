@@ -11,8 +11,6 @@
 extern __itt_domain *__g_itt_domain;
 
 namespace SceneManagerConstants {
-extern const char *TEXTURES_PATH;
-
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
 
@@ -156,7 +154,7 @@ void SceneManager::TextureLoaderProc() {
         size_t read_offset = 0, read_size = 0;
 
         char path_buf[4096];
-        strcpy(path_buf, SceneManagerConstants::TEXTURES_PATH);
+        strcpy(path_buf, paths_.textures_path);
         strcat(path_buf, req->ref->name().c_str());
 
         bool read_success = true;

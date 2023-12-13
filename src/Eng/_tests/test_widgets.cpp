@@ -3,6 +3,8 @@
 #include "../Gui/BaseElement.h"
 
 void test_widgets() {
+    printf("Test widgets            | ");
+
     using Ren::Vec2f;
     using Ren::Vec2i;
 
@@ -72,8 +74,5 @@ void test_widgets() {
         }
     }
 
-    {   // LinearLayout tests
-        // TODO
-    }
-
+    printf("OK\n");
 }

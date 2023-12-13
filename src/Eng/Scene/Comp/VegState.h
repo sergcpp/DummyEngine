@@ -4,6 +4,7 @@
 
 #include "Common.h"
 
+namespace Eng {
 struct VegState {
     // streaming data
     float movement_scale = 1.0f;
@@ -12,7 +13,7 @@ struct VegState {
     float stretch = 0.0f;
 
     // temporary data
-    //Ren::Vec2f wind_scroll;
+    // Ren::Vec2f wind_scroll;
 
     static constexpr float WindNoiseLfScale = 128.0f;
 
@@ -21,3 +22,4 @@ struct VegState {
 
     static const char *name() { return "veg_state"; }
 };
+} // namespace Eng
