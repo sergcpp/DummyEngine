@@ -1,0 +1,375 @@
+name: CI
+
+on:
+  push:
+  schedule:
+    - cron: '0 2 * * *'  # Run every day at 2 o'clock
+
+env:
+  force_run_additional_tests: false
+
+jobs:
+  build-windows-x86_64-gl-rel:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "windows-x86_64-gl"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64-gl
+          path: windows-x86_64-gl/
+  build-windows-x86_64-gl-dbg:
+    runs-on: [ windows, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
+          config: "Debug"
+  build-windows-x86_64-gl-dev:
+    runs-on: [ windows, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
+          config: "RelWithDebInfo"
+  build-windows-x86_64-vk-rel:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "windows-x86_64-vk"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64-vk
+          path: windows-x86_64-vk/
+  build-windows-x86_64-vk-dbg:
+    runs-on: [ windows, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "Debug"
+  build-windows-x86_64-vk-dev:
+    runs-on: [ windows, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows-ninja
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "RelWithDebInfo"
+  build-linux-x86_64-gl-rel:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "linux-x86_64-gl"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x86_64-gl
+          path: linux-x86_64-gl/
+  build-linux-x86_64-gl-dbg:
+    runs-on: [ linux, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
+          config: "Debug"
+  build-linux-x86_64-gl-dev:
+    runs-on: [ linux, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
+          config: "RelWithDebInfo"
+  build-linux-x86_64-vk-rel:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
+          config: "Release"
+          bin-dir: "linux-x86_64-vk"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x86_64-vk
+          path: linux-x86_64-vk/
+  build-linux-x86_64-vk-dbg:
+    runs-on: [ linux, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "Debug"
+  build-linux-x86_64-vk-dev:
+    runs-on: [ linux, builder ]
+    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "RelWithDebInfo"
+  test-windows-x86_64-gl:
+    runs-on: [ windows, x86_64 ]
+    needs:
+      - build-windows-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-gl"
+          test-args: "--mt"
+  test-windows-x86_64-vk-amd:
+    runs-on: [ windows, x86_64, amd ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-vk"
+          test-args: "--mt --device AMD --nocpu"
+  test-windows-x86_64-vk-nv:
+    runs-on: [ windows, x86_64, nv ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-vk"
+          test-args: "--mt --device NV --nocpu"
+  test-windows-x86_64-vk-arc:
+    runs-on: [ windows, x86_64, arc ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-vk"
+          test-args: "--mt --device Arc --nocpu"
+  test-windows-x86_64-vk-xe:
+    runs-on: [ windows, x86_64, xe ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-vk"
+          test-args: "--mt --device Xe --nocpu"
+  test-linux-x86_64-gl:
+    runs-on: [ linux, x86_64 ]
+    needs:
+      - build-linux-x86_64-gl-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64-gl"
+          test-args: "--mt"
+  test-linux-x86_64-vk-amd:
+    runs-on: [ linux, x86_64, amd ]
+    needs:
+      - build-linux-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64-vk"
+          test-args: "--mt --device AMD --nocpu"
+  test-linux-x86_64-vk-nv:
+    runs-on: [ linux, x86_64, nv ]
+    needs:
+      - build-linux-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "linux-x86_64-vk"
+          test-args: "--mt --device NV --nocpu"
