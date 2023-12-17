@@ -18,11 +18,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-windows-ninja
+        uses: ./.gitea/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -34,7 +34,7 @@ jobs:
           path: windows-x86_64-gl/
   build-windows-x86_64-gl-dbg:
     runs-on: [ windows, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -42,17 +42,17 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-windows-ninja
+        uses: ./.gitea/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
           config: "Debug"
   build-windows-x86_64-gl-dev:
     runs-on: [ windows, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -60,11 +60,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-windows-ninja
+        uses: ./.gitea/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
           config: "RelWithDebInfo"
@@ -77,11 +77,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-windows-ninja
+        uses: ./.gitea/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -93,7 +93,7 @@ jobs:
           path: windows-x86_64-vk/
   build-windows-x86_64-vk-dbg:
     runs-on: [ windows, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -101,17 +101,17 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-windows-ninja
+        uses: ./.gitea/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "Debug"
   build-windows-x86_64-vk-dev:
     runs-on: [ windows, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -119,11 +119,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-windows-ninja
+        uses: ./.gitea/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "RelWithDebInfo"
@@ -136,11 +136,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-linux
+        uses: ./.gitea/actions/build-linux
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -152,7 +152,7 @@ jobs:
           path: linux-x86_64-gl/
   build-linux-x86_64-gl-dbg:
     runs-on: [ linux, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -160,17 +160,17 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-linux
+        uses: ./.gitea/actions/build-linux
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
           config: "Debug"
   build-linux-x86_64-gl-dev:
     runs-on: [ linux, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -178,11 +178,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-linux
+        uses: ./.gitea/actions/build-linux
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF"
           config: "RelWithDebInfo"
@@ -195,11 +195,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-linux
+        uses: ./.gitea/actions/build-linux
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -211,7 +211,7 @@ jobs:
           path: linux-x86_64-vk/
   build-linux-x86_64-vk-dbg:
     runs-on: [ linux, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -219,17 +219,17 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-linux
+        uses: ./.gitea/actions/build-linux
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "Debug"
   build-linux-x86_64-vk-dev:
     runs-on: [ linux, builder ]
-    if: github.event_name == 'schedule' || env.force_run_additional_tests == 'true'
+    if: gitea.event_name == 'schedule' || env.force_run_additional_tests == 'true'
     defaults:
       run:
         shell: bash
@@ -237,11 +237,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Compile the code
-        uses: ./.github/actions/build-linux
+        uses: ./.gitea/actions/build-linux
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "RelWithDebInfo"
@@ -253,11 +253,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "windows-x86_64-gl"
           test-args: "--mt"
@@ -269,11 +269,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device AMD --nocpu"
@@ -285,11 +285,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device NV --nocpu"
@@ -301,11 +301,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device Arc --nocpu"
@@ -317,11 +317,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device Xe --nocpu"
@@ -333,11 +333,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "linux-x86_64-gl"
           test-args: "--mt"
@@ -349,11 +349,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
           test-args: "--mt --device AMD --nocpu"
@@ -365,11 +365,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github
+          sparse-checkout: .gitea
       - name: Re-initialize repository
-        uses: ./.github/actions/checkout
+        uses: ./.gitea/actions/checkout
       - name: Run Tests
-        uses: ./.github/actions/test
+        uses: ./.gitea/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
           test-args: "--mt --device NV --nocpu"
