@@ -13,11 +13,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Compile the code
-        uses: ./.gitea/actions/build-windows-ninja
+        uses: ./.github/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -36,11 +36,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Compile the code
-        uses: ./.gitea/actions/build-windows-ninja
+        uses: ./.github/actions/build-windows-ninja
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -59,11 +59,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Compile the code
-        uses: ./.gitea/actions/build-linux
+        uses: ./.github/actions/build-linux
         with:
           cmake-args: "-DRENDERER=GL -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -82,11 +82,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Compile the code
-        uses: ./.gitea/actions/build-linux
+        uses: ./.github/actions/build-linux
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
@@ -104,11 +104,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-gl"
           test-args: "--mt"
@@ -120,11 +120,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device AMD --nocpu"
@@ -136,11 +136,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device NV --nocpu"
@@ -152,11 +152,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device Arc --nocpu"
@@ -168,11 +168,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "--mt --device Xe --nocpu"
@@ -184,11 +184,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-gl"
           test-args: "--mt"
@@ -200,11 +200,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
           test-args: "--mt --device AMD --nocpu"
@@ -216,11 +216,11 @@ jobs:
       - name: Checkout Workflows
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .gitea
+          sparse-checkout: .github
       - name: Re-initialize repository
-        uses: ./.gitea/actions/checkout
+        uses: ./.github/actions/checkout
       - name: Run Tests
-        uses: ./.gitea/actions/test
+        uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
           test-args: "--mt --device NV --nocpu"
