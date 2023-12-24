@@ -13,7 +13,8 @@ const bool EnableTextureAliasing = true;
 Ren::ILog *RpBuilder::log() { return ctx_.log(); }
 
 RpSubpass &RpBuilder::AddPass(const char *name) {
-    auto *new_rp = reinterpret_cast<RpSubpass *>(alloc_.allocate(sizeof(RpSubpass)));
+    char *mem = alloc_.allocate(sizeof(RpSubpass) + alignof(RpSubpass));
+    auto *new_rp = reinterpret_cast<RpSubpass *>(mem + alignof(RpSubpass) - (uintptr_t(mem) % alignof(RpSubpass)));
     alloc_.construct(new_rp, int(subpasses_.size()), name, *this);
     subpasses_.emplace_back(new_rp);
     return *subpasses_.back();

@@ -139,7 +139,8 @@ class RpBuilder {
     RpSubpass *FindPass(const char *name);
 
     template <typename T, class... Args> T *AllocPassData(Args &&...args) {
-        auto *new_data = reinterpret_cast<T *>(alloc_.allocate(sizeof(T)));
+        char *mem = alloc_.allocate(sizeof(T) + alignof(T));
+        auto *new_data = reinterpret_cast<T *>(mem + alignof(T) - (uintptr_t(mem) % alignof(T)));
         alloc_.construct(new_data, std::forward<Args>(args)...);
         subpass_data_.push_back(std::unique_ptr<T, void (*)(void *)>(new_data, pass_data_deleter<T>));
         return new_data;

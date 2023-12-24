@@ -198,7 +198,7 @@ template <typename T, int M, int N> force_inline Vec<T, M> operator*(const Mat<T
 }
 
 template <typename T, int M, int N, int P>
-force_inline Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
+Mat<T, M, P> operator*(const Mat<T, M, N> &lhs, const Mat<T, N, P> &rhs) {
     auto res = Mat<T, M, P>{Uninitialize};
     for (int m = 0; m < M; m++) {
         for (int p = 0; p < P; p++) {
