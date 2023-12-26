@@ -479,6 +479,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT  0x8A34
 
 #define GL_SYNC_GPU_COMMANDS_COMPLETE     0x9117
+#define GL_SYNC_FLUSH_COMMANDS_BIT        0x00000001
 #define GL_UNSIGNALED                     0x9118
 #define GL_SIGNALED                       0x9119
 #define GL_ALREADY_SIGNALED               0x911A

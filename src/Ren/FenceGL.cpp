@@ -41,7 +41,7 @@ void Ren::SyncFence::WaitSync() {
 Ren::WaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
     assert(sync_);
     auto sync = reinterpret_cast<GLsync>(sync_);
-    const GLenum res = glClientWaitSync(sync, 0, timeout_us);
+    const GLenum res = glClientWaitSync(sync, GL_SYNC_FLUSH_COMMANDS_BIT, timeout_us);
 
     WaitResult ret = WaitResult::Fail;
     if (res == GL_ALREADY_SIGNALED || res == GL_CONDITION_SATISFIED) {
