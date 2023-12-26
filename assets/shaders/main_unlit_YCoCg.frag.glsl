@@ -3,6 +3,9 @@
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
 //#extension GL_EXT_control_flow_attributes : enable
+#if !defined(VULKAN) && !defined(GL_SPIRV)
+#extension GL_ARB_bindless_texture : enable
+#endif
 
 $ModifyWarning
 

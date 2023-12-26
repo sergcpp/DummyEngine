@@ -1,10 +1,6 @@
 #ifndef _TEXTURING_GLSL
 #define _TEXTURING_GLSL
 
-#if !defined(VULKAN) && !defined(GL_SPIRV)
-#extension GL_ARB_bindless_texture : enable
-#endif
-
 #if defined(VULKAN) || defined(GL_ARB_bindless_texture)
 #define BINDLESS_TEXTURES
 #endif

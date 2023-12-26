@@ -1,5 +1,8 @@
 #version 310 es
 #extension GL_KHR_shader_subgroup_arithmetic : require
+#if !defined(VULKAN) && !defined(GL_SPIRV)
+#extension GL_ARB_bindless_texture : enable
+#endif
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;
