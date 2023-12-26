@@ -94,7 +94,7 @@ class GSBaseState : public GameState {
     int cmdline_history_index_ = -1;
     uint64_t cmdline_cursor_blink_us_ = 0;
     bool cmdline_enabled_ = false;
-    bool ui_enabled_ = false;
+    bool ui_enabled_ = true;
     bool shift_down_ = false;
 
     bool LoadScene(const char *name);

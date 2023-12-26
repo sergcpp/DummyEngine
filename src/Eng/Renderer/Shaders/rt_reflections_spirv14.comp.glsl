@@ -221,7 +221,7 @@ void main() {
             vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
             vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
 
-            //col *= (direct_lm + indirect_lm);
+            col *= (direct_lm + indirect_lm);
         } else {
             vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
             vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
@@ -229,10 +229,10 @@ void main() {
 
             vec3 normal = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
 
-            //col *= EvalSHIrradiance_NonLinear(normal,
-            //                                  g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
-            //                                  g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
-            //                                  g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
+            col *= EvalSHIrradiance_NonLinear(normal,
+                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
+                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
+                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
         }
 
         ray_len = hit_t;

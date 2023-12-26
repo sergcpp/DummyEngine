@@ -115,11 +115,12 @@ class Renderer {
 
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling /*| EnableSSR | EnableSSR_HQ*/ | EnableSSAO | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows /*| EnableTonemap | EnableBloom*/ | EnableTaa | EnableTaaStatic | EnableTimers |
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
+         EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
          EnableDOF /*|
 EnableRTShadows*/
-         | EnableDeferred | EnableHQ_HDR);
+         //| EnableDeferred | EnableHQ_HDR
+         );
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
