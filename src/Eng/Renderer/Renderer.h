@@ -21,7 +21,6 @@ extern "C" {
 #include "Passes/RpDepthHierarchy.h"
 #include "Passes/RpFXAA.h"
 #include "Passes/RpGBufferFill.h"
-#include "Passes/RpGBufferShade.h"
 #include "Passes/RpOpaque.h"
 #include "Passes/RpRTGI.h"
 #include "Passes/RpRTReflections.h"

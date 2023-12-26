@@ -156,8 +156,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
                     Renderer/Passes/RpDepthHierarchy.cpp
                     Renderer/Passes/RpGBufferFill.h
                     Renderer/Passes/RpGBufferFill.cpp
-                    Renderer/Passes/RpGBufferShade.h
-                    Renderer/Passes/RpGBufferShade.cpp
                     Renderer/Passes/RpOpaque.h
                     Renderer/Passes/RpOpaque.cpp
                     Renderer/Passes/RpReadBrightness.h
@@ -194,8 +192,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpDOF.cpp
                         Renderer/Passes/RpFXAA.h
                         Renderer/Passes/RpFXAA.cpp
-                        Renderer/Passes/RpResolve.h
-                        Renderer/Passes/RpResolve.cpp
                         Renderer/Passes/RpDebugEllipsoids.h
                         Renderer/Passes/RpDebugEllipsoids.cpp
                         Renderer/Passes/RpDebugProbes.h

@@ -410,6 +410,9 @@ Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::Threa
             {Ren::eTexFormat::RawRGBA8888, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store}
         };
+        if (render_flags_ & EnableHQ_HDR) {
+            color_rts[0].format = Ren::eTexFormat::RawRGBA16F;
+        }
 
         color_rts[2].flags = Ren::eTexFlagBits::SRGB;
 
