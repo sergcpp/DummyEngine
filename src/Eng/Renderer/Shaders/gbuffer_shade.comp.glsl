@@ -26,6 +26,7 @@
 UNIFORM_BLOCKS
     SharedDataBlock : $ubSharedDataLoc
     UniformParams : $ubUnifParamLoc
+PERM @HQ_HDR
 */
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -59,7 +60,11 @@ layout(binding = LTC_SHEEN_LUT_TEX_SLOT) uniform sampler2D g_ltc_sheen_lut[2];
 layout(binding = LTC_SPEC_LUT_TEX_SLOT) uniform sampler2D g_ltc_spec_lut[2];
 layout(binding = LTC_COAT_LUT_TEX_SLOT) uniform sampler2D g_ltc_coat_lut[2];
 
+#ifdef HQ_HDR
+layout(binding = OUT_COLOR_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
+#else
 layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
+#endif
 
 vec3 EvaluateLightSource() {
     return vec3(0.0);

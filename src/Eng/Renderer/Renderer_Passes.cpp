@@ -15,8 +15,8 @@
 #include "Shaders/blit_static_vel_interface.h"
 #include "Shaders/blit_taa_interface.h"
 #include "Shaders/blit_upscale_interface.h"
-#include "Shaders/gbuffer_shade_interface.h"
 #include "Shaders/debug_velocity_interface.h"
+#include "Shaders/gbuffer_shade_interface.h"
 
 namespace RendererInternal {
 extern const int TaaSampleCountStatic;
@@ -36,6 +36,13 @@ void Renderer::InitPipelines() {
         assert(prog->ready());
 
         if (!pi_gbuf_shade_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "gbuffer_shade_hq", "internal/gbuffer_shade.comp.glsl@HQ_HDR");
+        assert(prog_hq->ready());
+
+        if (!pi_gbuf_shade_hq_.Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -881,7 +888,8 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
         GBufferShade::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-        Ren::DispatchCompute(pi_gbuf_shade_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+        const Ren::Pipeline &pi = (render_flags_ & EnableHQ_HDR) ? pi_gbuf_shade_hq_ : pi_gbuf_shade_;
+        Ren::DispatchCompute(pi, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                              builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
 }
@@ -1286,8 +1294,11 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            //params.format = Ren::eTexFormat::RawRG11F_B10F;
-            params.format = Ren::eTexFormat::RawRGBA16F;
+            if (render_flags_ & EnableHQ_HDR) {
+                params.format = Ren::eTexFormat::RawRGBA16F;
+            } else {
+                params.format = Ren::eTexFormat::RawRG11F_B10F;
+            }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 

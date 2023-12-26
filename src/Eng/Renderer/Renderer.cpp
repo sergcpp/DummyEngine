@@ -872,8 +872,11 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
         // renormalization requires buffer with alpha channel
         frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
 #else
-        //frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
-        frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
+        if (render_flags_ & EnableHQ_HDR) {
+            frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
+        } else {
+            frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
+        }
 #endif
         frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;

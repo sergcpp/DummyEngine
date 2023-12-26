@@ -56,7 +56,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     Sys::ThreadPool threads(4);
     Renderer renderer(ren_ctx, shader_loader, rand, threads);
     renderer.set_render_flags(EnableZFill | EnableCulling | EnableSSAO | EnableLightmap | EnableLights | EnableDecals |
-                              EnableShadows | EnableTaa | EnableTaaStatic | EnableTimers | EnableDOF | EnableDeferred);
+                              EnableShadows | EnableTaa | EnableTaaStatic | EnableTimers | EnableDOF | EnableDeferred |
+                              EnableHQ_HDR);
 
     path_config_t paths;
     SceneManager scene_manager(ren_ctx, shader_loader, snd_ctx, *ray_renderer, threads, paths);

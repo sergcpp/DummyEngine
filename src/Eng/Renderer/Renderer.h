@@ -97,8 +97,7 @@ class Renderer {
     };
 
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_lut_[eLTCLut::_Count][2],
-        cone_rt_lut_,
-        noise_tex_;
+        cone_rt_lut_, noise_tex_;
     Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
 
@@ -117,9 +116,10 @@ class Renderer {
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling /*| EnableSSR | EnableSSR_HQ*/ | EnableSSAO | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows /*| EnableTonemap | EnableBloom*/ | EnableTaa | EnableTaaStatic | EnableTimers | EnableDOF /*|
-EnableRTShadows*/       
-         | EnableDeferred);
+         EnableDecals | EnableShadows /*| EnableTonemap | EnableBloom*/ | EnableTaa | EnableTaaStatic | EnableTimers |
+         EnableDOF /*|
+EnableRTShadows*/
+         | EnableDeferred | EnableHQ_HDR);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -218,7 +218,7 @@ EnableRTShadows*/
     PrimDraw prim_draw_;
     uint32_t frame_index_ = 0, accumulated_frames_ = 0;
 
-    Ren::Pipeline pi_skinning_, pi_gbuf_shade_;
+    Ren::Pipeline pi_skinning_, pi_gbuf_shade_, pi_gbuf_shade_hq_;
     // HQ SSR
     Ren::Pipeline pi_ssr_classify_tiles_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
