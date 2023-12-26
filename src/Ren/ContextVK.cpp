@@ -146,6 +146,13 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         return false;
     }
 
+    // Workaround for a buggy linux AMD driver, make sure vkGetBufferDeviceAddressKHR is not NULL
+    auto dev_vkGetBufferDeviceAddressKHR =
+        (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(api_ctx_->device, "vkGetBufferDeviceAddressKHR");
+    if (!dev_vkGetBufferDeviceAddressKHR) {
+        api_ctx_->raytracing_supported = api_ctx_->ray_query_supported = false;
+    }
+
     if (!InitSwapChain(api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->res, api_ctx_->present_mode, w, h,
                        api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
                        api_ctx_->graphics_family_index, api_ctx_->surface, log)) {
