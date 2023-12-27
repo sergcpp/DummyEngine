@@ -2,8 +2,10 @@
 
 #include "SamplingParams.h"
 #include "Storage.h"
+#include "VK.h"
 
 namespace Ren {
+struct ApiContext;
 class Sampler : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     VkSampler handle_ = VK_NULL_HANDLE;

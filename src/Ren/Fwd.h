@@ -2,6 +2,7 @@
 
 #include "Log.h"
 #include "Storage.h"
+#include "Pipeline.h"
 #include "Resource.h"
 
 namespace Ren {

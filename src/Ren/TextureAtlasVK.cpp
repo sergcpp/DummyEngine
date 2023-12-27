@@ -1,7 +1,10 @@
 #include "TextureAtlas.h"
 
+#include <stdexcept>
+
 //#include "GL.h"
 #include "Utils.h"
+#include "VKCtx.h"
 
 namespace Ren {
 extern const VkFormat g_vk_formats[];

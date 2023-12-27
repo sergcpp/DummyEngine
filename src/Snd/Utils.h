@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <istream>
+#include <memory>
 
 namespace Snd {
 enum class eWaveFormat : uint16_t {

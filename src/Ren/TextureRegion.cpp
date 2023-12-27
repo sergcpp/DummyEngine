@@ -1,6 +1,7 @@
 #include "TextureRegion.h"
 
 #include "TextureAtlas.h"
+#include "Utils.h"
 
 #include "stb/stb_image.h"
 

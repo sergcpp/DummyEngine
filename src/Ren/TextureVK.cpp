@@ -2,7 +2,10 @@
 
 #include <memory>
 
+#include "Log.h"
+#include "TextureParams.h"
 #include "Utils.h"
+#include "VKCtx.h"
 
 #include "stb/stb_image.h"
 
@@ -16,7 +19,7 @@
 #endif
 
 namespace Ren {
-const VkFormat g_vk_formats[] = {
+extern const VkFormat g_vk_formats[] = {
     VK_FORMAT_UNDEFINED,                // Undefined
     VK_FORMAT_R8G8B8_UNORM,             // RawRGB888
     VK_FORMAT_R8G8B8A8_UNORM,           // RawRGBA8888
@@ -137,6 +140,15 @@ VkImageUsageFlags to_vk_image_usage(const eTexUsage usage, const eTexFormat form
     }
     return ret;
 }
+
+eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb);
+
+extern const VkFilter g_vk_min_mag_filter[];
+extern const VkSamplerAddressMode g_vk_wrap_mode[];
+extern const VkSamplerMipmapMode g_vk_mipmap_mode[];
+extern const VkCompareOp g_vk_compare_ops[];
+
+extern const float AnisotropyLevel;
 } // namespace Ren
 
 Ren::Texture2D::Texture2D(const char *name, ApiContext *api_ctx, const Tex2DParams &p, MemoryAllocators *mem_allocs,

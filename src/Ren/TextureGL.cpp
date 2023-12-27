@@ -4,6 +4,7 @@
 #undef min
 #undef max
 
+#include "Context.h"
 #include "GL.h"
 #include "Utils.h"
 
@@ -197,6 +198,11 @@ GLenum ToSRGBFormat(const GLenum internal_format) {
     return 0xffffffff;
 }
 
+extern const uint32_t g_gl_min_filter[];
+extern const uint32_t g_gl_mag_filter[];
+extern const uint32_t g_gl_wrap_mode[];
+
+extern const float AnisotropyLevel;
 } // namespace Ren
 
 static_assert(sizeof(GLsync) == sizeof(void *), "!");

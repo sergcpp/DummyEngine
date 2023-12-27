@@ -1,8 +1,10 @@
 #pragma once
 
 #include "Storage.h"
+#include "TextureParams.h"
 
 namespace Ren {
+class Buffer;
 class TextureAtlasArray;
 
 class TextureRegion : public Ren::RefCounter {

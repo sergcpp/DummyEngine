@@ -4,6 +4,7 @@
 
 #include "Buffer.h"
 #include "GL.h"
+#include "Pipeline.h"
 #include "ProbeStorage.h"
 #include "Texture.h"
 

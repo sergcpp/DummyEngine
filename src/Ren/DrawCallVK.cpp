@@ -1,5 +1,9 @@
 #include "DrawCall.h"
 
+#include "AccStructure.h"
+#include "DescriptorPool.h"
+#include "Log.h"
+#include "Pipeline.h"
 #include "ProbeStorage.h"
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,

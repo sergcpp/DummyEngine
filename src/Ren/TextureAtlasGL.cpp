@@ -1,7 +1,14 @@
 #include "TextureAtlas.h"
 
+#include "Context.h"
 #include "GL.h"
 #include "Utils.h"
+
+namespace Ren {
+extern const uint32_t g_gl_min_filter[];
+extern const uint32_t g_gl_mag_filter[];
+extern const uint32_t g_gl_wrap_mode[];
+}
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,
                                 const eTexFormat formats[], const eTexFlags flags[], eTexFilter filter, ILog *log)

@@ -1,5 +1,6 @@
 #include "Resource.h"
 
+#include "Texture.h"
 #include "VK.h"
 
 namespace Ren {

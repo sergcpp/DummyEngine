@@ -3,6 +3,9 @@
 #include <Eng/Gui/Image9Patch.h>
 #include <Sys/Signal_.h>
 
+template <typename Alloc> struct JsObjectT;
+using JsObject = JsObjectT<std::allocator<char>>;
+
 class WordPuzzleUI : public Gui::BaseElement {
     struct OptionData {
         int pos, len;

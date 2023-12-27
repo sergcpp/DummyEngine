@@ -4,13 +4,16 @@
 #include "Fwd.h"
 #include "Program.h"
 #include "RastState.h"
+#include "RenderPass.h"
 #include "Span.h"
 #include "TextureParams.h"
 
 namespace Ren {
 struct ApiContext;
+class RenderPass;
 struct RenderTarget;
 struct RenderTargetInfo;
+class VertexInput;
 
 enum class ePipelineType : uint8_t { Undefined, Graphics, Compute, Raytracing };
 

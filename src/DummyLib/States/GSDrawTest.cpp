@@ -2,7 +2,9 @@
 
 #include <memory>
 
+#include <Eng/GameStateManager.h>
 #include <Eng/Gui/Renderer.h>
+#include <Eng/Log.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>

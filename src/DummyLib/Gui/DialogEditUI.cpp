@@ -1,7 +1,9 @@
 #include "DialogEditUI.h"
 
+#include <Eng/Gui/BitmapFont.h>
 #include <Eng/Utils/ScriptedDialog.h>
 #include <Eng/Utils/ScriptedSequence.h>
+#include <Sys/Time_.h>
 
 namespace DialogEditUIInternal {
 const Ren::Vec2f ElementSizePx = Ren::Vec2f{96.0f, 128.0f};

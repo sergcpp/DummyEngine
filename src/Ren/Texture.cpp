@@ -1,5 +1,9 @@
 #include "Texture.h"
 
+#if defined(USE_GL_RENDER)
+#include "GL.h"
+#endif
+
 namespace Ren {
 static const int g_block_res[][2] = {
     {4, 4},   // _4x4
@@ -78,32 +82,6 @@ const int g_per_pixel_data_len[] = {
 static_assert(sizeof(g_per_pixel_data_len) / sizeof(g_per_pixel_data_len[0]) == int(eTexFormat::_Count), "!");
 } // namespace Ren
 
-bool Ren::IsCompressedFormat(const eTexFormat format) {
-    switch (format) {
-    case eTexFormat::DXT1:
-    case eTexFormat::DXT3:
-    case eTexFormat::DXT5:
-    case eTexFormat::ASTC:
-        return true;
-    default:
-        return false;
-    }
-    return false;
-}
-
-int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter filter) {
-    int mip_count = 0;
-    if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear) {
-        int max_dim = std::max(w, h);
-        do {
-            mip_count++;
-        } while ((max_dim /= 2) >= min_res);
-    } else {
-        mip_count = 1;
-    }
-    return mip_count;
-}
-
 int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {
     switch (format) {
     case eTexFormat::DXT1:
@@ -157,46 +135,45 @@ uint32_t Ren::EstimateMemory(const Tex2DParams &params) {
 //
 // All this is needed when reading KTX files
 //
-
 #if !defined(USE_GL_RENDER)
-#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT 33776
-#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT 33777
-#define GL_COMPRESSED_RGBA_S3TC_DXT3_EXT 33778
-#define GL_COMPRESSED_RGBA_S3TC_DXT5_EXT 33779
+static const uint32_t GL_COMPRESSED_RGB_S3TC_DXT1_EXT = 33776;
+static const uint32_t GL_COMPRESSED_RGBA_S3TC_DXT1_EXT = 33777;
+static const uint32_t GL_COMPRESSED_RGBA_S3TC_DXT3_EXT = 33778;
+static const uint32_t GL_COMPRESSED_RGBA_S3TC_DXT5_EXT = 33779;
 
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT 35917
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT 35918
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT 35919
+static const uint32_t GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT = 35917;
+static const uint32_t GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT = 35918;
+static const uint32_t GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT = 35919;
 
-#define GL_COMPRESSED_RGBA_ASTC_4x4_KHR 0x93B0
-#define GL_COMPRESSED_RGBA_ASTC_5x4_KHR 0x93B1
-#define GL_COMPRESSED_RGBA_ASTC_5x5_KHR 0x93B2
-#define GL_COMPRESSED_RGBA_ASTC_6x5_KHR 0x93B3
-#define GL_COMPRESSED_RGBA_ASTC_6x6_KHR 0x93B4
-#define GL_COMPRESSED_RGBA_ASTC_8x5_KHR 0x93B5
-#define GL_COMPRESSED_RGBA_ASTC_8x6_KHR 0x93B6
-#define GL_COMPRESSED_RGBA_ASTC_8x8_KHR 0x93B7
-#define GL_COMPRESSED_RGBA_ASTC_10x5_KHR 0x93B8
-#define GL_COMPRESSED_RGBA_ASTC_10x6_KHR 0x93B9
-#define GL_COMPRESSED_RGBA_ASTC_10x8_KHR 0x93BA
-#define GL_COMPRESSED_RGBA_ASTC_10x10_KHR 0x93BB
-#define GL_COMPRESSED_RGBA_ASTC_12x10_KHR 0x93BC
-#define GL_COMPRESSED_RGBA_ASTC_12x12_KHR 0x93BD
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_4x4_KHR = 0x93B0;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_5x4_KHR = 0x93B1;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_5x5_KHR = 0x93B2;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_6x5_KHR = 0x93B3;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_6x6_KHR = 0x93B4;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_8x5_KHR = 0x93B5;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_8x6_KHR = 0x93B6;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_8x8_KHR = 0x93B7;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_10x5_KHR = 0x93B8;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_10x6_KHR = 0x93B9;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_10x8_KHR = 0x93BA;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_10x10_KHR = 0x93BB;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_12x10_KHR = 0x93BC;
+static const uint32_t GL_COMPRESSED_RGBA_ASTC_12x12_KHR = 0x93BD;
 
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR 0x93D0
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR 0x93D1
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR 0x93D2
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR 0x93D3
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR 0x93D4
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR 0x93D5
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR 0x93D6
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR 0x93D7
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR 0x93D8
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR 0x93D9
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR 0x93DA
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR 0x93DB
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR 0x93DC
-#define GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR 0x93DD
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR = 0x93D0;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR = 0x93D1;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR = 0x93D2;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR = 0x93D3;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR = 0x93D4;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR = 0x93D5;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR = 0x93D6;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR = 0x93D7;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR = 0x93D8;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR = 0x93D9;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR = 0x93DA;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR = 0x93DB;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR = 0x93DC;
+static const uint32_t GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR = 0x93DD;
 #endif
 
 Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb) {

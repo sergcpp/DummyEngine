@@ -60,11 +60,7 @@ if(${SOUND} STREQUAL "AL")
 endif()
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
-set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src" FILES ${SOURCE_FILES})
-
-list(APPEND ALL_SOURCE_FILES _Snd.cpp)
-source_group("src" FILES _Snd.cpp)
 
 add_library(Snd STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Snd ${LIBS})

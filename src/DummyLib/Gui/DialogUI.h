@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #include <Eng/Gui/BaseElement.h>
 #include <Sys/Signal_.h>
 

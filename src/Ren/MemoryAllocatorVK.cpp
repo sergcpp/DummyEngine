@@ -1,5 +1,7 @@
 #include "MemoryAllocator.h"
 
+#include "VKCtx.h"
+
 namespace Ren {
 uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, uint32_t mem_type_bits,
                         VkMemoryPropertyFlags desired_mem_flags) {

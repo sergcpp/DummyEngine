@@ -5,6 +5,8 @@
 #include "Log.h"
 #include "SmallVector.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 #if defined(__linux__)
 Display *g_dpy = nullptr;
@@ -929,4 +931,6 @@ void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(Ren::ApiContext *api_
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
     vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
-};
+}
+
+#undef COUNT_OF

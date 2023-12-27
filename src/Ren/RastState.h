@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 
 #include <Ren/MVec.h>
 
@@ -158,7 +159,7 @@ struct RastState {
 };
 
 inline bool operator==(const RastState &lhs, const RastState &rhs) {
-    return std::memcmp(&lhs, &rhs, sizeof(RastState)) == 0;
+    return memcmp(&lhs, &rhs, sizeof(RastState)) == 0;
 }
 
 //inline bool operator<(const RastState &lhs, const RastState &rhs) {}

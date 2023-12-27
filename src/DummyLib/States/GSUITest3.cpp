@@ -8,6 +8,7 @@
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
+#include <Eng/Log.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>

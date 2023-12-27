@@ -1,6 +1,7 @@
 #include "Fence.h"
 
 #include <cassert>
+#include <utility>
 
 #include "GL.h"
 

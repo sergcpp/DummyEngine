@@ -3,8 +3,10 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain; // NOLINT
 
+#include <Eng/Log.h>
+#include <Eng/Scene/SceneManager.h>
 #include <Ren/Context.h>
-//#include <Ren/GL.h>
+// #include <Ren/GL.h>
 #include <Ren/Utils.h>
 
 namespace GSVideoTestInternal {

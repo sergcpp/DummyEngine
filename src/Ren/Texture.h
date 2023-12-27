@@ -9,8 +9,6 @@
 namespace Ren {
 class Context;
 
-bool IsCompressedFormat(eTexFormat format);
-int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
 int GetBlockLenBytes(eTexFormat format, eTexBlock block);
 int GetBlockCount(int w, int h, eTexBlock block);
 int GetMipDataLenBytes(const int w, const int h, const eTexFormat format, const eTexBlock block);

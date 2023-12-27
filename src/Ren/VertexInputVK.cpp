@@ -1,5 +1,7 @@
 #include "VertexInput.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const VkFormat g_vk_attrib_formats[][4] = {
     {}, // Undefined
@@ -124,3 +126,5 @@ bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle
 
     return true;
 }
+
+#undef COUNT_OF

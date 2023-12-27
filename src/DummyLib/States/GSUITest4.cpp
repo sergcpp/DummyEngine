@@ -9,6 +9,7 @@
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Renderer.h>
 #include <Eng/Gui/Utils.h>
+#include <Eng/Log.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>
@@ -59,8 +60,7 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
         new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_, true /* debug */});
     dialog_ui_->make_choice_signal.Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
-    seq_edit_ui_.reset(
-        new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
+    seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
     dialog_edit_ui_.reset(

@@ -1,5 +1,7 @@
 #include "LinearAlloc.h"
 
+#include <cassert>
+
 #include "Log.h"
 
 #ifdef __GNUC__

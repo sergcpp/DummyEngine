@@ -1,6 +1,7 @@
 #include "Fence.h"
 
 #include <cassert>
+#include <utility>
 
 namespace Ren {
 #ifndef REN_EXCHANGE_DEFINED

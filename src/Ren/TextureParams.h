@@ -57,6 +57,10 @@ inline bool IsDepthStencilFormat(const eTexFormat format) {
     return format == eTexFormat::Depth24Stencil8 || format == eTexFormat::Depth32Stencil8;
 }
 
+bool IsCompressedFormat(const eTexFormat format);
+
+int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
+
 #if defined(__ANDROID__)
 const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::ASTC;
 #else

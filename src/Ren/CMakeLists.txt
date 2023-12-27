@@ -83,6 +83,7 @@ set(SOURCE_FILES Anim.h
                  Texture.cpp
                  TextureAtlas.h
                  TextureParams.h
+                 TextureParams.cpp
                  TextureRegion.h
                  TextureRegion.cpp
                  TextureSplitter.h
@@ -185,21 +186,22 @@ add_subdirectory(stb)
 add_subdirectory(SPIRV-Reflect)
 
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
-set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 source_group("src" FILES ${SOURCE_FILES})
-
-list(APPEND ALL_SOURCE_FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp _Ren_AVX512.cpp _Ren_NEON.cpp)
-source_group("src" FILES _Ren.cpp _Ren_SSE2.cpp _Ren_AVX.cpp _Ren_AVX512.cpp _Ren_NEON.cpp)
 
 if(MSVC)
     if(NOT CMAKE_CL_64)
-        set_source_files_properties(_Ren_SSE2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
+        set_source_files_properties(Utils_SSE2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
     endif()
-    set_source_files_properties(_Ren_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
-    set_source_files_properties(_Ren_AVX512.cpp PROPERTIES COMPILE_FLAGS /arch:AVX512)
+    set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
 
     list(APPEND ALL_SOURCE_FILES _CustomTypes.natvis)
+else(MSVC)
+    set_source_files_properties(Utils_SSE2.cpp PROPERTIES COMPILE_FLAGS -msse2)
+    set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS "-mavx2 -mfma")
 endif(MSVC)
+
+set_source_files_properties(GLExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Ren SW ${LIBS})

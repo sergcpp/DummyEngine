@@ -2,6 +2,8 @@
 
 #include "GL.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const uint32_t gl_cull_face[] = {
     0xffffffff, // None
@@ -197,3 +199,5 @@ void Ren::RastState::Apply(const RastState *ref) const {
         }
     }
 }
+
+#undef COUNT_OF

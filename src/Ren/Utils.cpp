@@ -1,5 +1,6 @@
 #include "Utils.h"
 
+#include <array>
 #include <deque>
 
 #include "CPUFeatures.h"
@@ -204,10 +205,6 @@ uint16_t f32_to_f16(const float value) {
         return ret;
     }
 }
-
-force_inline int16_t f32_to_s16(const float value) { return int16_t(value * 32767); }
-
-force_inline uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
 
 /*
     RGB <-> YCoCg

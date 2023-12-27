@@ -1,5 +1,8 @@
 #pragma once
 
+#include <utility>
+
+#include "SmallVector.h"
 #include "VK.h"
 
 namespace Ren {

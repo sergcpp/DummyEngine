@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include "Buffer.h"
+#include "TextureParams.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)

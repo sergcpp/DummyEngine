@@ -2,15 +2,18 @@
 
 //#include "GL.h"
 #include "Log.h"
+#include "VKCtx.h"
 
 #include "SPIRV-Reflect/spirv_reflect.h"
+
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
 namespace Ren {
 void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
                        SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
 bool IsMainThread();
 
-const VkShaderStageFlagBits g_shader_stages_vk[] = {
+extern const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_VERTEX_BIT,                  // Vert
     VK_SHADER_STAGE_FRAGMENT_BIT,                // Frag
     VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,    // Tesc
@@ -202,3 +205,5 @@ void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr
         p = q + 1;
     }
 }
+
+#undef COUNT_OF

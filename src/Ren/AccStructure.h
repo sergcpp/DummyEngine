@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #if defined(USE_VK_RENDER)
 #include "VKCtx.h"
 #endif

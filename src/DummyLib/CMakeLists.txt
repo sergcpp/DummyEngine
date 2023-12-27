@@ -61,34 +61,26 @@ elseif(${RENDERER} STREQUAL "SW")
 
 endif()
 
-
 list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
-#set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${SOURCE_FILES} PROPERTIES UNITY_GROUP "common")
 source_group("src" FILES ${SOURCE_FILES})
 
 list(APPEND ALL_SOURCE_FILES ${GUI_SOURCES})
-set_source_files_properties(${GUI_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${GUI_SOURCES} PROPERTIES UNITY_GROUP "gui")
 source_group("src\\Gui" FILES ${GUI_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${STATES_SOURCES})
-set_source_files_properties(${STATES_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${STATES_SOURCES} PROPERTIES UNITY_GROUP "states")
 source_group("src\\States" FILES ${STATES_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
-set_source_files_properties(${UTILS_SOURCES} PROPERTIES HEADER_FILE_ONLY TRUE)
+set_source_files_properties(${UTILS_SOURCES} PROPERTIES UNITY_GROUP "utils")
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
-
-list(APPEND ALL_SOURCE_FILES Gui/_Gui1.cpp)
-source_group("src\\Gui" FILES Gui/_Gui1.cpp)
-
-list(APPEND ALL_SOURCE_FILES States/_States.cpp)
-source_group("src\\States" FILES States/_States.cpp)
-
-list(APPEND ALL_SOURCE_FILES Utils/_Utils.cpp)
-source_group("src\\Utils" FILES Utils/_Utils.cpp)
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(DummyLib Eng Net Phy Ray Ren Snd Sys astc ${LIBS})
+
+set_target_properties(DummyLib PROPERTIES UNITY_BUILD_MODE GROUP)
 
 add_custom_command(TARGET DummyLib
                    POST_BUILD

@@ -3,6 +3,7 @@
 #include "Program.h"
 #include "RastState.h"
 #include "VertexInput.h"
+#include "VKCtx.h"
 
 namespace Ren {
 extern const VkShaderStageFlagBits g_shader_stages_vk[];

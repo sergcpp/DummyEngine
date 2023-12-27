@@ -4,6 +4,7 @@
 #include "Storage.h"
 
 namespace Ren {
+struct ApiContext;
 class Sampler : public RefCounter {
     uint32_t id_ = 0;
     SamplingParams params_;

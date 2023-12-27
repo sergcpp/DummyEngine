@@ -2,6 +2,7 @@
 
 //#include "GL.h"
 #include "Log.h"
+#include "VKCtx.h"
 
 #ifdef _MSC_VER
 #pragma warning(push)

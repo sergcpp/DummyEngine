@@ -7,6 +7,7 @@
 extern __itt_domain *__g_itt_domain;
 
 #include <Eng/Gui/Renderer.h>
+#include <Eng/Log.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/SceneManager.h>
 #include <Eng/Utils/Cmdline.h>

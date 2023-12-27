@@ -1,6 +1,9 @@
 #include "Mesh.h"
 
 #include <ctime>
+#include <istream>
+
+#include "Utils.h"
 
 #if defined(USE_GL_RENDER)
 #include "GL.h"
@@ -14,10 +17,6 @@
 #endif
 
 namespace Ren {
-uint16_t f32_to_f16(float value); // NOLINT
-int16_t f32_to_s16(float value);
-uint16_t f32_to_u16(float value);
-
 struct orig_vertex_t {
     float p[3];
     float n[3];

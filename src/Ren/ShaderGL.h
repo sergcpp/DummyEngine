@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+#include "Shader.h"
 #include "SmallVector.h"
 #include "Storage.h"
 #include "String.h"

@@ -14,6 +14,9 @@
 
 namespace Ren {
 bool ignore_optick_errors = false;
+#if defined(__linux__)
+extern Display *g_dpy;
+#endif
 
 VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT flags,
                                                    const VkDebugReportObjectTypeEXT objectType, const uint64_t object,
