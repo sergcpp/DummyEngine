@@ -80,6 +80,8 @@ int main(int argc, char *argv[]) {
     test_materials(mt_run_pool, device_name, validation_level);
 
     Sys::StopWorker();
+
+    return g_tests_success ? 0 : -1;
 }
 
 //

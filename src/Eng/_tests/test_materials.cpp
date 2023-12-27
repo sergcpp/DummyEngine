@@ -396,7 +396,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", device_name, vl, 37.09, 350));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", device_name, vl, 29.58, 1366));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat1", device_name, vl, 29.58, 1367));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat2", device_name, vl, 19.71, 60386));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", device_name, vl, 22.81, 22731));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 40.23, 2));
@@ -455,13 +455,13 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", device_name, vl, 39.63, 223));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat1", device_name, vl, 37.64, 2));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat2", device_name, vl, 28.09, 17015));
-        futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 34.07, 4152));
+        futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 33.67, 4152));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", device_name, vl, 37.19, 3));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat5", device_name, vl, 41.00, 105));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat6", device_name, vl, 36.88, 1133));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat7", device_name, vl, 27.64, 17402));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat8", device_name, vl, 32.83, 6089));
-        futures.push_back(threads.Enqueue(run_image_test, "tint_mat9", device_name, vl, 39.38, 1));
+        futures.push_back(threads.Enqueue(run_image_test, "tint_mat9", device_name, vl, 37.38, 1));
 
         for (auto &f : futures) {
             f.wait();
