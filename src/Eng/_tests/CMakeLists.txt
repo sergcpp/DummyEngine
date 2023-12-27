@@ -3,7 +3,7 @@ project(test_Eng)
 
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
-        set(LIBS winmm)
+        set(LIBS winmm opengl32)
     elseif(APPLE)
         
     else()
