@@ -9,7 +9,6 @@ extern "C" {
 }
 
 #include "../Scene/SceneData.h"
-#include "FrameBuf.h"
 #include "Passes/RpBuildAccStructures.h"
 #include "Passes/RpCombine.h"
 #include "Passes/RpDOF.h"
@@ -70,12 +69,12 @@ class Renderer {
 
     void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
-    void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count,
-                    float multiplier = 1.0f);
+    //void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count,
+    //                float multiplier = 1.0f);
     void BlitTexture(float px, float py, float sx, float sy, const Ren::Tex2DRef &tex, float multiplier = 1.0f,
                      bool is_ms = false);
 
-    void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
+    //void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
     void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
     bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
 
@@ -101,7 +100,7 @@ class Renderer {
     Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
 
-    FrameBuf probe_sample_buf_;
+    //FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;

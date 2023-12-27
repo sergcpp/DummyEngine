@@ -352,10 +352,11 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
 #endif
 }
 
+#if 0
 void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
                                const int first_att, const int att_count, const float multiplier) {
     using namespace RendererInternal;
-#if 0
+
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
                    vtx_buf2 = ctx_.default_vertex_buf2(),
                    ndx_buf = ctx_.default_indices_buf();
@@ -423,8 +424,8 @@ void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, c
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
-#endif
 }
+#endif
 
 void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, const float sy,
                                 const Ren::Tex2DRef &tex, const float multiplier, const bool is_ms) {
@@ -499,9 +500,10 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
 #endif
 }
 
+#if 0
 void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
     using namespace RendererInternal;
-#if 0
+
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
                    vtx_buf2 = ctx_.default_vertex_buf2(),
                    ndx_buf = ctx_.default_indices_buf();
@@ -615,8 +617,8 @@ void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::Prob
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2],
                viewport_before[3]);
-#endif
 }
+#endif
 
 void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
     using namespace RendererInternal;

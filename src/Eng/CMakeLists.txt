@@ -96,8 +96,7 @@ set(INPUT_SOURCE_FILES Input/InputManager.h
                        Input/InputManager.cpp
                        Input/Keycode.h)
 
-set(RENDERER_SOURCES    Renderer/FrameBuf.h
-                        Renderer/PrimDraw.h
+set(RENDERER_SOURCES    Renderer/PrimDraw.h
                         Renderer/PrimDraw.cpp
                         Renderer/Renderer.h
                         Renderer/Renderer.cpp
@@ -185,7 +184,6 @@ set(PASS_SOURCES    Renderer/Passes/RpBuildAccStructures.h
 
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        Renderer/FrameBufGL.cpp
                         Renderer/PrimDrawGL.cpp
                         Renderer/RendererGL.cpp
                         Renderer/Passes/RpDOF.h
@@ -218,7 +216,6 @@ if(${RENDERER} STREQUAL "GL")
                         Renderer/Passes/RpUpdateAccBuffersGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        Renderer/FrameBufVK.cpp
                         Renderer/PrimDrawVK.cpp
                         Renderer/RendererVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}

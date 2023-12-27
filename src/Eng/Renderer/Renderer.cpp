@@ -98,13 +98,13 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     swCullCtxInit(&cull_ctx_, ctx.w(), ctx.h(), 0.0f);
 
-    { // buffer used to sample probes
+    /*{ // buffer used to sample probes
         FrameBuf::ColorAttachmentDesc desc;
         desc.format = Ren::eTexFormat::RawRGBA32F;
         desc.filter = Ren::eTexFilter::NoFilter;
         desc.wrap = Ren::eTexWrap::ClampToEdge;
         probe_sample_buf_ = FrameBuf("Probe sample", ctx_, 24, 8, &desc, 1, {}, 1, ctx.log());
-    }
+    }*/
 
     static const uint8_t black[] = {0, 0, 0, 0}, white[] = {255, 255, 255, 255};
 

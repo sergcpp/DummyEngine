@@ -131,7 +131,7 @@ void GSBaseState::Enter() {
         background_thread_ = std::thread(std::bind(&GSBaseState::BackgroundProc, this));
     }
 
-    { // Create temporary buffer to update probes
+    /*{ // Create temporary buffer to update probes
         FrameBuf::ColorAttachmentDesc desc;
         desc.format = Ren::eTexFormat::RawRGB16F;
         desc.filter = Ren::eTexFilter::NoFilter;
@@ -139,7 +139,7 @@ void GSBaseState::Enter() {
 
         const int res = scene_manager_->scene_data().probe_storage.res();
         temp_probe_buf_ = FrameBuf("Temp probe", *ren_ctx_, res, res, &desc, 1, {}, 1, ren_ctx_->log());
-    }
+    }*/
 
     cmdline_history_.emplace_back();
 

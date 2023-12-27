@@ -10,7 +10,7 @@ extern const int page_order_indices[][4];
 } // namespace GSUITest3Internal
 
 void GSUITest3::InitBookMaterials() {
-    assert(page_buf_.w != -1 && page_buf_.h != -1 && "Page framebuffer is not initialized!");
+    /*assert(page_buf_.w != -1 && page_buf_.h != -1 && "Page framebuffer is not initialized!");
 
     { // register framebuffer texture
         Ren::Tex2DParams params;
@@ -36,7 +36,7 @@ void GSUITest3::InitBookMaterials() {
         }
 
         orig_page_mat_->textures[2] = page_tex_;
-    }
+    }*/
 }
 
 void GSUITest3::RedrawPages(Gui::Renderer *r) {
@@ -53,6 +53,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
 #ifndef DISABLE_MARKERS
     glPushDebugGroup(GL_DEBUG_SOURCE_APPLICATION, 0, -1, "PAGE DRAW");
 #endif
+#if 0
     auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
 
     glBindFramebuffer(GL_FRAMEBUFFER, page_buf_.fb);
@@ -86,6 +87,7 @@ void GSUITest3::RedrawPages(Gui::Renderer *r) {
     book_caption_font_->set_draw_mode(Gui::eDrawMode::DistanceField);
 
     r->Draw(page_buf_.w, page_buf_.h);
+#endif
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 

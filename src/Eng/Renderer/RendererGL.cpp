@@ -52,7 +52,7 @@ void Eng::Renderer::InitRendererInternal() {
 
     Ren::CheckError("[InitRendererInternal]: UBO creation", ctx_.log());
 
-    {
+    /*{
         GLuint probe_sample_pbo;
         glGenBuffers(1, &probe_sample_pbo);
         glBindBuffer(GL_PIXEL_PACK_BUFFER, probe_sample_pbo);
@@ -61,7 +61,7 @@ void Eng::Renderer::InitRendererInternal() {
 
         glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
         probe_sample_pbo_ = uint32_t(probe_sample_pbo);
-    }
+    }*/
 
     Ren::CheckError("[InitRendererInternal]: probe sample PBO", ctx_.log());
 
@@ -1218,7 +1218,7 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
     glBindVertexArray(0);
 }
 
-void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
+/*void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
                           const int first_att, const int att_count, const float multiplier) {
     using namespace RendererInternal;
 
@@ -1279,10 +1279,10 @@ void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, c
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
-}
+}*/
 
-void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, const float sy, const Ren::Tex2DRef &tex,
-                           const float multiplier, const bool is_ms) {
+void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, const float sy,
+                                const Ren::Tex2DRef &tex, const float multiplier, const bool is_ms) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1344,7 +1344,7 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 }
 
-void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
+/*void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1443,7 +1443,7 @@ void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::Prob
 
     glBindFramebuffer(GL_FRAMEBUFFER, framebuf_before);
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
-}
+}*/
 
 void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
     using namespace RendererInternal;
@@ -1528,9 +1528,9 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
 }
 
 bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
-                             Eng::LightProbe &probe) {
+                                  Eng::LightProbe &probe) {
     using namespace RendererInternal;
-
+#if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
                    ndx_buf = ctx_.default_indices_buf();
 
@@ -1646,6 +1646,9 @@ bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int prob
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 
     return iteration == 64;
+#else
+    return false;
+#endif
 }
 
 #undef _AS_STR

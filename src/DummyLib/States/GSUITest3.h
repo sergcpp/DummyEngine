@@ -8,7 +8,6 @@
 #include <Eng/GameState.h>
 #include <Eng/Gui/BaseElement.h>
 #include <Eng/Gui/BitmapFont.h>
-#include <Eng/Renderer/FrameBuf.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
@@ -44,7 +43,7 @@ class GSUITest3 : public GSBaseState {
     float max_exposure_ = 1000.0f;
 
     std::unique_ptr<Gui::Renderer> page_renderer_;
-    FrameBuf page_buf_;
+    //FrameBuf page_buf_;
     Ren::Tex2DRef page_tex_;
     Ren::MaterialRef orig_page_mat_, page_mat_;
 

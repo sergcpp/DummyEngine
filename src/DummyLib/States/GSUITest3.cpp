@@ -100,25 +100,25 @@ void GSUITest3::Enter() {
             }
         }
 
-        {
+        /*{
             const auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
             paged_reader_.reset(new PagedReader{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
                                                 &page_root, book_main_font_, book_emph_font_, book_caption_font_});
 
             paged_reader_->LoadBook(js_book, "en", "de");
-        }
+        }*/
     }
 
     page_renderer_.reset(new Gui::Renderer{*ren_ctx_});
 
-    { // init page framebuffer
+    /*{ // init page framebuffer
         FrameBuf::ColorAttachmentDesc attachment;
         attachment.format = Ren::eTexFormat::RawRGB888;
         attachment.filter = Ren::eTexFilter::BilinearNoMipmap;
         attachment.wrap = Ren::eTexWrap::ClampToEdge;
 
         page_buf_ = FrameBuf{"Page buf", *ren_ctx_, 3072, 3072, &attachment, 1, {}, 1, log_.get()};
-    }
+    }*/
 
     InitBookMaterials();
 
@@ -269,7 +269,7 @@ void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 void GSUITest3::Draw() {
     using namespace GSUITest3Internal;
 
-    if (book_state_ != eBookState::BkClosed) {
+    /*if (book_state_ != eBookState::BkClosed) {
         if (book_state_ == eBookState::BkOpened) {
             if (hit_point_ndc_.initialized()) {
                 auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
@@ -291,7 +291,7 @@ void GSUITest3::Draw() {
             }
         }
         RedrawPages(page_renderer_.get());
-    }
+    }*/
 
     auto up_vector = Ren::Vec3f{0.0f, 1.0f, 0.0f};
     if (Length2(Cross(view_dir_, up_vector)) < 0.001f) {

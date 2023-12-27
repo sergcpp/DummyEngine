@@ -10,8 +10,8 @@ extern const int page_order_indices[][4];
 } // namespace GSUITest3Internal
 
 void GSUITest3::InitBookMaterials() {
-    assert(page_buf_.w != -1 && page_buf_.h != -1 &&
-           "Page framebuffer is not initialized!");
+    //assert(page_buf_.w != -1 && page_buf_.h != -1 &&
+    //       "Page framebuffer is not initialized!");
 #if 0
     { // register framebuffer texture
         Ren::Tex2DParams params;
