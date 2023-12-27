@@ -13,8 +13,9 @@ class Context;
 }
 
 class SceneManager;
-class ScriptedSequence;
 
+namespace Eng {
+class ScriptedSequence;
 class ScriptedDialog {
     Ren::Context &ren_ctx_;
     Snd::Context &snd_ctx_;
@@ -23,8 +24,7 @@ class ScriptedDialog {
     std::vector<ScriptedSequence> sequences_;
 
   public:
-    ScriptedDialog(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
-                   SceneManager &scene_manager);
+    ScriptedDialog(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager);
 
     bool empty() const { return sequences_.empty(); }
 
@@ -37,3 +37,4 @@ class ScriptedDialog {
     bool Load(const char *lookup_name, const JsObject &js_seq,
               bool (*read_sequence)(const char *name, JsObject &js_seq));
 };
+} // namespace Eng

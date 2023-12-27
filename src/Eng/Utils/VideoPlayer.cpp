@@ -23,9 +23,9 @@ struct IVFHeader {
 };
 static_assert(sizeof(IVFHeader) == 32, "!");
 
-static_assert(int(eYUVComp::Y) == VPX_PLANE_Y, "!");
-static_assert(int(eYUVComp::U) == VPX_PLANE_U, "!");
-static_assert(int(eYUVComp::V) == VPX_PLANE_V, "!");
+static_assert(int(Eng::eYUVComp::Y) == VPX_PLANE_Y, "!");
+static_assert(int(Eng::eYUVComp::U) == VPX_PLANE_U, "!");
+static_assert(int(Eng::eYUVComp::V) == VPX_PLANE_V, "!");
 
 int vpx_plane_width(const vpx_image_t *img, int plane) {
     if (plane && img->x_chroma_shift) {
@@ -42,6 +42,7 @@ int vpx_plane_height(const vpx_image_t *img, int plane) {
 }
 } // namespace VideoPlayerInternal
 
+namespace Eng {
 struct VpxCtx {
     bool initialized = false;
     vpx_codec_ctx_t codec = {};
@@ -68,14 +69,15 @@ struct VpxCtx {
 
     ~VpxCtx() { Destroy(); }
 };
+} // namespace Eng
 
-VideoPlayer::VideoPlayer() { ctx_.reset(new VpxCtx); }
+Eng::VideoPlayer::VideoPlayer() { ctx_.reset(new VpxCtx); }
 
-VideoPlayer::~VideoPlayer() = default;
+Eng::VideoPlayer::~VideoPlayer() = default;
 
-bool VideoPlayer::initialized() const { return ctx_->initialized; }
+bool Eng::VideoPlayer::initialized() const { return ctx_->initialized; }
 
-bool VideoPlayer::OpenAndPreload(const char *name, Ren::ILog *log) {
+bool Eng::VideoPlayer::OpenAndPreload(const char *name, Ren::ILog *log) {
     using namespace VideoPlayerInternal;
 
     if (!in_file_.Open(name)) {
@@ -160,13 +162,13 @@ bool VideoPlayer::OpenAndPreload(const char *name, Ren::ILog *log) {
     return true;
 }
 
-void VideoPlayer::Close() {
+void Eng::VideoPlayer::Close() {
     in_file_.Close();
     frames_.clear();
     ctx_->Destroy();
 }
 
-VideoPlayer::eFrUpdateResult VideoPlayer::UpdateFrame(const uint64_t time_ms) {
+Eng::VideoPlayer::eFrUpdateResult Eng::VideoPlayer::UpdateFrame(const uint64_t time_ms) {
     using namespace VideoPlayerInternal;
 
     if (!ctx_->initialized || frames_.size() < 2) {
@@ -232,7 +234,7 @@ VideoPlayer::eFrUpdateResult VideoPlayer::UpdateFrame(const uint64_t time_ms) {
     return eFrUpdateResult::Updated;
 }
 
-const uint8_t *VideoPlayer::GetImagePtr(const eYUVComp plane, int &w, int &h, int &stride) {
+const uint8_t *Eng::VideoPlayer::GetImagePtr(const eYUVComp plane, int &w, int &h, int &stride) {
     using namespace VideoPlayerInternal;
 
     if (cur_image_) {

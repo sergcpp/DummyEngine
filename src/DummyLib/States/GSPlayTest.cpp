@@ -47,9 +47,9 @@ GSPlayTest::GSPlayTest(GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
 
-    cam_ctrl_.reset(new FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
+    cam_ctrl_.reset(new Eng::FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
 
-    test_dialog_.reset(new ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
+    test_dialog_.reset(new Eng::ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
     dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(), *dialog_font_});
 

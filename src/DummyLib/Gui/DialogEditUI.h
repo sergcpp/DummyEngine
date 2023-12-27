@@ -5,8 +5,10 @@
 #include <Eng/Gui/Image9Patch.h>
 #include <Sys/Signal_.h>
 
+namespace Eng {
 class ScriptedDialog;
 class ScriptedSequence;
+}
 
 class DialogEditUI : public Gui::BaseElement {
     const Gui::BitmapFont &font_;
@@ -17,7 +19,7 @@ class DialogEditUI : public Gui::BaseElement {
     bool grabbed_rmb_ = false;
     Ren::Vec2f rmb_point_;
 
-    ScriptedDialog *dialog_ = nullptr;
+    Eng::ScriptedDialog *dialog_ = nullptr;
 
     int selected_element_ = -1;
     uint64_t selected_timestamp_ = 0;
@@ -27,7 +29,7 @@ class DialogEditUI : public Gui::BaseElement {
     void DrawCurveLocal(Gui::Renderer *r, const Ren::Vec2f &p0, const Ren::Vec2f &p1, const Ren::Vec2f &p2,
                         const Ren::Vec2f &p3, const Ren::Vec2f &width, const uint8_t color[4]) const;
 
-    using IterationCallback = std::function<bool(const ScriptedSequence *seq, const ScriptedSequence *parent, int depth,
+    using IterationCallback = std::function<bool(const Eng::ScriptedSequence *seq, const Eng::ScriptedSequence *parent, int depth,
                                                  int ndx, int parent_ndx, int choice_ndx, bool visited)>;
 
     void IterateElements(const IterationCallback &callback);
@@ -36,7 +38,7 @@ class DialogEditUI : public Gui::BaseElement {
     DialogEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Ren::Vec2f &pos, const Ren::Vec2f &size,
                  Gui::BaseElement *parent);
 
-    void set_dialog(ScriptedDialog *dialog) { dialog_ = dialog; }
+    void set_dialog(Eng::ScriptedDialog *dialog) { dialog_ = dialog; }
 
     void Draw(Gui::Renderer *r) override;
 

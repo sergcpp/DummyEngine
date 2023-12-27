@@ -2,14 +2,13 @@
 
 #include <cctype>
 
-Cmdline::Cmdline() {
+Eng::Cmdline::Cmdline() {}
+
+void Eng::Cmdline::RegisterCommand(const char *cmd, const CommandHandler &handler) {
+    cmd_handlers_[Ren::String{cmd}] = handler;
 }
 
-void Cmdline::RegisterCommand(const char *cmd, const CommandHandler &handler) {
-    cmd_handlers_[Ren::String{ cmd }] = handler;
-}
-
-bool Cmdline::Execute(const char *str) {
+bool Eng::Cmdline::Execute(const char *str) {
     ArgData argv[MaxArgumentCount];
     int argc = 0;
 
@@ -23,7 +22,7 @@ bool Cmdline::Execute(const char *str) {
     return false;
 }
 
-int Cmdline::NextHint(const char *str, const int i, Ren::String &out_str) const {
+int Eng::Cmdline::NextHint(const char *str, const int i, Ren::String &out_str) const {
     auto it = (i == -1) ? cmd_handlers_.cbegin() : ++cmd_handlers_.citer_at(i);
     for (; it != cmd_handlers_.cend(); ++it) {
         if (it->key.StartsWith(str)) {
@@ -34,10 +33,11 @@ int Cmdline::NextHint(const char *str, const int i, Ren::String &out_str) const 
     return -1;
 }
 
-bool Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
+bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
     const char *s = str;
     // skip white space
-    while (std::isspace(*s)) s++;
+    while (std::isspace(*s))
+        s++;
     // check if command is valid
     if (!std::isalpha(*s)) {
         return false;
@@ -46,9 +46,11 @@ bool Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
     out_argc = 0;
 
     while (*s) {
-        while (std::isspace(*s)) s++;
+        while (std::isspace(*s))
+            s++;
         const char *tok_start = s;
-        while (*s && !std::isspace(*s)) s++;
+        while (*s && !std::isspace(*s))
+            s++;
 
         out_argv[out_argc].str.str = tok_start;
         out_argv[out_argc].str.len = s - tok_start;

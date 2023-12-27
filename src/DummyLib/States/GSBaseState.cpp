@@ -37,7 +37,7 @@ const bool USE_TWO_THREADS = true;
 GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     using namespace GSBaseStateInternal;
 
-    cmdline_ = game->GetComponent<Cmdline>(CMDLINE_KEY);
+    cmdline_ = game->GetComponent<Eng::Cmdline>(CMDLINE_KEY);
 
     state_manager_ = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
     ren_ctx_ = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
@@ -144,7 +144,7 @@ void GSBaseState::Enter() {
     std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
     std::weak_ptr<GSBaseState> weak_this = std::dynamic_pointer_cast<GSBaseState>(state_manager->Peek());
 
-    cmdline_->RegisterCommand("r_wireframe", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_wireframe", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -154,7 +154,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_culling", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_culling", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -164,7 +164,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lightmap", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_lightmap", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -174,7 +174,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lights", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_lights", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -184,7 +184,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_decals", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_decals", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -194,7 +194,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_shadows", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_shadows", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -204,7 +204,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_msaa", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_msaa", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -214,7 +214,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_fxaa", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_fxaa", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -224,7 +224,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_taa", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_taa", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -237,7 +237,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_taaStatic", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_taaStatic", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -247,7 +247,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_pt", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_pt", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->use_pt_ = !shrd_this->use_pt_;
@@ -259,7 +259,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lm", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_lm", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->use_lm_ = !shrd_this->use_lm_;
@@ -272,7 +272,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_oit", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_oit", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -282,7 +282,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_zfill", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_zfill", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -292,7 +292,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_deferred", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_deferred", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -302,7 +302,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_gi", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_gi", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -312,7 +312,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_rtShadow", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_rtShadow", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -322,7 +322,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_updateProbes", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_updateProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             SceneData &scene_data = shrd_this->scene_manager_->scene_data();
@@ -338,7 +338,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_cacheProbes", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_cacheProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             const SceneData &scene_data = shrd_this->scene_manager_->scene_data();
@@ -353,8 +353,8 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("map", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
-        if (argc != 2 || argv[1].type != Cmdline::eArgType::ArgString) {
+    cmdline_->RegisterCommand("map", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc != 2 || argv[1].type != Eng::Cmdline::eArgType::ArgString) {
             return false;
         }
 
@@ -367,7 +367,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("save", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("save", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             JsObjectP out_scene(shrd_this->scene_manager_->mp_alloc());
@@ -428,7 +428,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_reloadTextures", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_reloadTextures", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->scene_manager_->ForceTextureReload();
@@ -436,7 +436,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showCull", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showCull", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -446,7 +446,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showShadows", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showShadows", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -456,7 +456,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showLights", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showLights", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -466,7 +466,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDecals", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showDecals", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -476,7 +476,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDeferred", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showDeferred", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -486,7 +486,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showBlur", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showBlur", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -496,7 +496,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showSSAO", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showSSAO", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -506,7 +506,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showTimings", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showTimings", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -516,7 +516,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showBVH", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showBVH", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -526,7 +526,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showProbes", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -536,7 +536,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showEllipsoids", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showEllipsoids", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -546,7 +546,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showRT", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showRT", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -565,7 +565,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDenoise", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showDenoise", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -587,7 +587,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showMotion", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showMotion", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -597,7 +597,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showUI", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_showUI", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->ui_enabled_ = !shrd_this->ui_enabled_;
@@ -605,7 +605,7 @@ void GSBaseState::Enter() {
         return true;
     });
 
-    cmdline_->RegisterCommand("r_freezeFrontend", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_freezeFrontend", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
@@ -1092,8 +1092,8 @@ void GSBaseState::UpdateFrame(int list_index) {
         if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
             log_->Info("Updating probe");
             SceneObject *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
-            auto *probe =
-                (Eng::LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(probe_obj->components[CompProbe]);
+            auto *probe = (Eng::LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(
+                probe_obj->components[CompProbe]);
             auto *probe_tr = (Eng::Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(
                 probe_obj->components[CompTransform]);
 

@@ -3,13 +3,14 @@
 #include "../Input/InputManager.h"
 #include <Ren/MMat.h>
 
+namespace Eng {
 class FreeCamController {
     float move_region_frac_;
     int width_, height_;
     int view_pointer_ = 0, move_pointer_ = 0;
 
-    float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0,
-          side_touch_speed_ = 0;
+    float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
+
   public:
     FreeCamController(int width, int height, float move_region_frac);
 
@@ -25,3 +26,4 @@ class FreeCamController {
     float view_fov = 20.0f, max_exposure = 1000.0f;
     bool invalidate_view = false;
 };
+} // namespace Eng

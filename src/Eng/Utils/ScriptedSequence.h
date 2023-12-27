@@ -7,10 +7,8 @@
 #include <Snd/Context.h>
 #include <Sys/Signal_.h>
 
-
 namespace Sys {
-template <typename T, typename FallBackAllocator>
-class MultiPoolAllocator;
+template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
 }
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
@@ -23,6 +21,7 @@ namespace Gui {
 class Renderer;
 }
 
+namespace Eng {
 enum class eTrackType { Actor, Camera, Invalid };
 
 enum class eActionType { Play, Look, Invalid };
@@ -84,20 +83,15 @@ class ScriptedSequence {
     eChoiceAlign choice_align_ = eChoiceAlign::Center;
     double end_time_, last_t_ = 0.0;
 
-    void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s,
-                      bool playing);
+    void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s, bool playing);
 
-    Ren::TextureRegionRef RenderSoundWave(const char *name, const void *samples_data,
-                                          int samples_count,
+    Ren::TextureRegionRef RenderSoundWave(const char *name, const void *samples_data, int samples_count,
                                           const Snd::BufParams &params);
 
   public:
-    ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
-                     SceneManager &scene_manager);
+    ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager);
 
-    const char *lookup_name() const {
-        return lookup_name_.empty() ? nullptr : lookup_name_.c_str();
-    }
+    const char *lookup_name() const { return lookup_name_.empty() ? nullptr : lookup_name_.c_str(); }
     const char *name() const { return name_.empty() ? nullptr : name_.c_str(); }
 
     double duration() const { return end_time_; }
@@ -176,3 +170,4 @@ class ScriptedSequence {
 
     static const char *ActionTypeNames[];
 };
+} // namespace Eng

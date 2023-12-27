@@ -17,12 +17,14 @@ class CaptionsUI;
 class DialogEditUI;
 class DialogUI;
 class Dictionary;
+namespace Eng {
 class FreeCamController;
+class ScriptedDialog;
+class ScriptedSequence;
+}
 class GameStateManager;
 class FontStorage;
 class SceneManager;
-class ScriptedDialog;
-class ScriptedSequence;
 class SeqEditUI;
 class WordPuzzleUI;
 
@@ -38,10 +40,10 @@ class GSPlayTest : public GSBaseState {
     bool is_playing_ = false;
     float play_started_time_s_ = 0.0f;
 
-    std::unique_ptr<FreeCamController> cam_ctrl_;
+    std::unique_ptr<Eng::FreeCamController> cam_ctrl_;
 
-    ScriptedSequence *test_seq_ = nullptr;
-    std::unique_ptr<ScriptedDialog> test_dialog_;
+    Eng::ScriptedSequence *test_seq_ = nullptr;
+    std::unique_ptr<Eng::ScriptedDialog> test_dialog_;
     std::unique_ptr<DialogUI> dialog_ui_;
 
     int dial_edit_mode_ = 1;

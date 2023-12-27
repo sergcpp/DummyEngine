@@ -89,7 +89,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     }
 
     { // create commnadline
-        auto cmdline = std::make_shared<Cmdline>();
+        auto cmdline = std::make_shared<Eng::Cmdline>();
         AddComponent(CMDLINE_KEY, cmdline);
     }
 

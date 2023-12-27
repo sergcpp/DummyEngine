@@ -5,14 +5,14 @@
 void test_cmdline() {
     printf("Test cmdline            | ");
 
-    Cmdline cmdline;
+    Eng::Cmdline cmdline;
 
     double result;
 
-    cmdline.RegisterCommand("add", [&result](int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline.RegisterCommand("add", [&result](int argc, Eng::Cmdline::ArgData *argv) -> bool {
         require(argc == 3);
-        require(argv[1].type == Cmdline::eArgType::ArgNumber);
-        require(argv[2].type == Cmdline::eArgType::ArgNumber);
+        require(argv[1].type == Eng::Cmdline::eArgType::ArgNumber);
+        require(argv[2].type == Eng::Cmdline::eArgType::ArgNumber);
 
         result = argv[1].val + argv[2].val;
 

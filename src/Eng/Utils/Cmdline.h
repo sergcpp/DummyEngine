@@ -4,16 +4,17 @@
 
 #include <Ren/HashMap32.h>
 
+namespace Eng {
 class Cmdline {
-public:
+  public:
     Cmdline();
 
     enum class eArgType { ArgNumber, ArgString };
 
     struct ArgData {
-        eArgType        type;
+        eArgType type;
         Ren::StringPart str;
-        double          val;
+        double val;
     };
     static const int MaxArgumentCount = 16;
     static const int MaxHistoryCount = 8;
@@ -30,3 +31,4 @@ public:
 
     bool Parse(const char *str, ArgData *out_argv, int &out_argc);
 };
+} // namespace Eng

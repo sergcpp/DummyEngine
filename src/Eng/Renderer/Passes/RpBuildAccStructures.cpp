@@ -30,7 +30,7 @@ void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
     auto &rt_tlas_stage_buf = p_list_->swrt.rt_tlas_nodes_stage_buf[rt_index_];
 
     if (rt_obj_instances.count) {
-        std::vector<prim_t> temp_primitives;
+        std::vector<Eng::prim_t> temp_primitives;
 
         for (uint32_t i = 0; i < rt_obj_instances.count; ++i) {
             const auto &inst = rt_obj_instances.data[i];
@@ -44,7 +44,7 @@ void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 
         std::vector<uint32_t> mi_indices;
 
-        split_settings_t s;
+        Eng::split_settings_t s;
         const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, mi_indices);
         assert(nodes_count <= REN_MAX_RT_TLAS_NODES);
 
@@ -107,7 +107,8 @@ void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 }
 
 // TODO: avoid duplication with SceneManager::PreprocessPrims_SAH
-uint32_t RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+uint32_t RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims,
+                                                           const Eng::split_settings_t &s,
                                                            std::vector<gpu_bvh_node_t> &out_nodes,
                                                            std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
@@ -132,8 +133,8 @@ uint32_t RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const prim_
     }
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, s);
+        Eng::split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices,
+                                                           prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         if (split_data.right_indices.empty()) {

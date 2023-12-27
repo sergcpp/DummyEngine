@@ -34,10 +34,10 @@ class Context;
 
 namespace Eng {
 class ShaderLoader;
-}
 
 struct prim_t;
 struct split_settings_t;
+} // namespace Eng
 
 #include <Sys/Json.h>
 
@@ -287,7 +287,7 @@ class SceneManager {
 
     void TextureLoaderProc();
 
-    static uint32_t PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+    static uint32_t PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims, const Eng::split_settings_t &s,
                                         std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
 
     std::vector<char> temp_buf;

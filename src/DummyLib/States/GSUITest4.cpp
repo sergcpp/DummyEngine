@@ -51,10 +51,10 @@ GSUITest4::GSUITest4(GameBase *game) : GSBaseState(game) {
 
     const float font_height = dialog_font_->height(ui_root_.get());
 
-    cam_ctrl_.reset(new FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
+    cam_ctrl_.reset(new Eng::FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
     dial_ctrl_.reset(new DialogController);
 
-    test_dialog_.reset(new ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
+    test_dialog_.reset(new Eng::ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
     dialog_ui_.reset(
         new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get(), *dialog_font_, true /* debug */});
@@ -94,7 +94,7 @@ void GSUITest4::Enter() {
     std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
     std::weak_ptr<GSUITest4> weak_this = std::dynamic_pointer_cast<GSUITest4>(state_manager->Peek());
 
-    cmdline_->RegisterCommand("dialog", [weak_this](int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("dialog", [weak_this](int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->LoadDialog(argv[1].str.str);
@@ -477,7 +477,7 @@ bool GSUITest4::HandleInput(const InputManager::Event &evt) {
             Viewer::PrepareAssets("pc");
             trigger_dialog_reload_ = true;
         } else if (evt.key_code == KeyF6) {
-            const ScriptedSequence *cur_seq = dial_ctrl_->GetCurSequence();
+            const Eng::ScriptedSequence *cur_seq = dial_ctrl_->GetCurSequence();
             SaveSequence(cur_seq->lookup_name());
         } else {
             input_processed = false;

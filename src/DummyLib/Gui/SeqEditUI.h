@@ -15,7 +15,7 @@ class SeqEditUI : public Gui::BaseElement {
     SeqEditUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
               const Gui::BaseElement *parent);
 
-    void set_sequence(ScriptedSequence *seq) { canvas_.set_sequence(seq); }
+    void set_sequence(Eng::ScriptedSequence *seq) { canvas_.set_sequence(seq); }
 
     void ZoomInTime() { timeline_.ZoomIn(); }
     void ZoomOutTime() { timeline_.ZoomOut(); }

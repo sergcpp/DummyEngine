@@ -75,7 +75,7 @@ void SceneManager::RebuildSceneBVH() {
 
     auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
-    std::vector<prim_t> primitives;
+    std::vector<Eng::prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
     for (const SceneObject &obj : scene_data_.objects) {
@@ -114,13 +114,13 @@ void SceneManager::RebuildSceneBVH() {
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
 
-    split_settings_t s;
+    Eng::split_settings_t s;
     s.oversplit_threshold = std::numeric_limits<float>::max();
     s.node_traversal_cost = 0.0f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, s);
+        Eng::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
+                                                           prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         const uint32_t leaf_index = uint32_t(scene_data_.nodes.size());
@@ -529,7 +529,7 @@ void SceneManager::InitSWRTAccStructures() {
     std::vector<gpu_mesh_instance_t> mesh_instances;
     std::vector<uint32_t> prim_indices;
 
-    std::vector<prim_t> temp_primitives;
+    std::vector<Eng::prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
@@ -595,7 +595,7 @@ void SceneManager::InitSWRTAccStructures() {
             ++new_mesh.geo_count;
         }
 
-        split_settings_t s;
+        Eng::split_settings_t s;
         new_mesh.node_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
 
         for (int i = new_mesh.tris_index; i < int(prim_indices.size()); ++i) {
@@ -772,8 +772,8 @@ void SceneManager::InitSWRTAccStructures() {
     const uint32_t max_nodes_count = REN_MAX_RT_TLAS_NODES;
     scene_data_.persistent_data.rt_tlas_buf =
         ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
-    scene_data_.persistent_data.rt_sh_tlas_buf =
-        ren_ctx_.LoadBuffer("TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
+    scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
+        "TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
 
 #if defined(USE_VK_RENDER)
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
@@ -797,7 +797,7 @@ void SceneManager::InitSWRTAccStructures() {
 #endif
 }
 
-uint32_t SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+uint32_t SceneManager::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims, const Eng::split_settings_t &s,
                                            std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
@@ -821,8 +821,8 @@ uint32_t SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const 
     }
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, s);
+        Eng::split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices,
+                                                           prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         if (split_data.right_indices.empty()) {

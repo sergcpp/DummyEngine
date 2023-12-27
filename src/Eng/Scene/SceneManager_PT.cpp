@@ -440,7 +440,7 @@ void SceneManager::InitScene_PT(bool _override) {
             env_map_path += scene_data_.env.env_map_name_pt.c_str();
 
             int w, h;
-            const std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
+            const std::vector<uint8_t> tex_data = Eng::LoadHDR(env_map_path.c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = tex_data;

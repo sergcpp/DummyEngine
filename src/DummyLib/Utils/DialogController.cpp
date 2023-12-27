@@ -5,7 +5,7 @@
 
 DialogController::DialogController() = default;
 
-void DialogController::SetDialog(ScriptedDialog *dialog) {
+void DialogController::SetDialog(Eng::ScriptedDialog *dialog) {
     dialog_ = dialog;
     SetCurSequence(0);
 }
@@ -61,15 +61,15 @@ void DialogController::Update(const double cur_time_s) {
         }
     } else if (state_ == eState::ChoicePlaying || state_ == eState::ChoicePaused) {
         int off = 0;
-        if (cur_seq_->choice_align() == eChoiceAlign::Left) {
+        if (cur_seq_->choice_align() == Eng::eChoiceAlign::Left) {
             off = -1;
-        } else if (cur_seq_->choice_align() == eChoiceAlign::Right) {
+        } else if (cur_seq_->choice_align() == Eng::eChoiceAlign::Right) {
             off = 1;
         }
 
         const int choices_count = cur_seq_->GetChoicesCount();
         for (int i = 0; i < choices_count; i++) {
-            const SeqChoice *ch = cur_seq_->GetChoice(i);
+            const Eng::SeqChoice *ch = cur_seq_->GetChoice(i);
             push_choice_signal.FireN(ch->key.c_str(), ch->text.c_str(), off);
         }
 
@@ -117,7 +117,7 @@ void DialogController::SetCurSequence(const int id) {
 
 void DialogController::MakeChoice(const char *key) {
     if (cur_seq_) {
-        SeqChoice *ch = cur_seq_->GetChoice(key);
+        Eng::SeqChoice *ch = cur_seq_->GetChoice(key);
         next_seq_id_ = ch->seq_id;
         if (!ch->puzzle_name.empty()) {
             start_puzzle_signal.FireN(ch->puzzle_name.c_str());

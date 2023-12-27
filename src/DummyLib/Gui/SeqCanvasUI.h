@@ -13,7 +13,7 @@ class SeqCanvasUI : public Gui::BaseElement {
     float time_range_[2] = {0.0f, 8.0f};
     float time_cur_ = 1.0f;
 
-    ScriptedSequence *sequence_ = nullptr;
+    Eng::ScriptedSequence *sequence_ = nullptr;
 
     Ren::Vec2i selected_index_ = Ren::Vec2i{-1, -1};
     enum eDragFlags { DragBeg = (1u << 0u), DragEnd = (1u << 1u) };
@@ -23,14 +23,14 @@ class SeqCanvasUI : public Gui::BaseElement {
 
     float GetTimeFromPoint(float px);
     float GetPointFromTime(float t);
-    SeqAction *GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_index, uint32_t &flags);
+    Eng::SeqAction *GetActionAtPoint(const Ren::Vec2f &p, Ren::Vec2i &out_index, uint32_t &flags);
     Ren::Vec2f SnapToPixels(const Ren::Vec2f &p);
 
   public:
     SeqCanvasUI(Ren::Context &ctx, const Gui::BitmapFont &font, const Gui::Vec2f &pos, const Gui::Vec2f &size,
                 const Gui::BaseElement *parent);
 
-    void set_sequence(ScriptedSequence *seq) { sequence_ = seq; }
+    void set_sequence(Eng::ScriptedSequence *seq) { sequence_ = seq; }
 
     void Draw(Gui::Renderer *r) override;
 

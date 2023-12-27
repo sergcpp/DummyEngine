@@ -574,7 +574,7 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index, const int 
 
     { // copy Y plane
         int w, h, stride;
-        const uint8_t *y_img = vp_[tex_index].GetImagePtr(eYUVComp::Y, w, h, stride);
+        const uint8_t *y_img = vp_[tex_index].GetImagePtr(Eng::eYUVComp::Y, w, h, stride);
         if (y_img && w == tex_w && h == tex_h) {
             if (y_sbuf_[tex_index].mapped_ptr()) { // persistent mapping case
                 const int range_offset = frame_index * w * h;
@@ -597,9 +597,9 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index, const int 
 
     { // copy UV planes
         int u_w, u_h, u_stride;
-        const uint8_t *u_img = vp_[tex_index].GetImagePtr(eYUVComp::U, u_w, u_h, u_stride);
+        const uint8_t *u_img = vp_[tex_index].GetImagePtr(Eng::eYUVComp::U, u_w, u_h, u_stride);
         int v_w, v_h, v_stride;
-        const uint8_t *v_img = vp_[tex_index].GetImagePtr(eYUVComp::V, v_w, v_h, v_stride);
+        const uint8_t *v_img = vp_[tex_index].GetImagePtr(Eng::eYUVComp::V, v_w, v_h, v_stride);
         if (u_img && u_w == (tex_w / 2) && u_h == (tex_h / 2) && v_img && v_w == (tex_w / 2) && v_h == (tex_h / 2)) {
             const int range_offset = 2 * frame_index * u_w * u_h;
 
@@ -635,7 +635,7 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
 
     { // copy Y plane
         int w, h, stride;
-        const uint8_t *y_img = vp_[tex_index].GetImagePtr(eYUVComp::Y, w, h, stride);
+        const uint8_t *y_img = vp_[tex_index].GetImagePtr(Eng::eYUVComp::Y, w, h, stride);
         if (y_img && w == tex_w && h == tex_h) {
             const int range_offset = frame_index * w * h;
             uint8_t *y_out = y_sbuf_[tex_index].mapped_ptr() + range_offset;
@@ -657,9 +657,9 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame_Persistent(const int tex_index,
 
     { // copy UV planes
         int u_w, u_h, u_stride;
-        const uint8_t *u_img = vp_[tex_index].GetImagePtr(eYUVComp::U, u_w, u_h, u_stride);
+        const uint8_t *u_img = vp_[tex_index].GetImagePtr(Eng::eYUVComp::U, u_w, u_h, u_stride);
         int v_w, v_h, v_stride;
-        const uint8_t *v_img = vp_[tex_index].GetImagePtr(eYUVComp::V, v_w, v_h, v_stride);
+        const uint8_t *v_img = vp_[tex_index].GetImagePtr(Eng::eYUVComp::V, v_w, v_h, v_stride);
         if (u_img && u_w == (tex_w / 2) && u_h == (tex_h / 2) && v_img && v_w == (tex_w / 2) && v_h == (tex_h / 2)) {
             const int range_offset = 2 * frame_index * u_w * u_h;
             uint8_t *uv_out = uv_sbuf_[tex_index].mapped_ptr() + range_offset;

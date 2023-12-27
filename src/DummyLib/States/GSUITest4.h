@@ -18,11 +18,13 @@ class DialogController;
 class DialogEditUI;
 class DialogUI;
 class Dictionary;
+namespace Eng {
 class FreeCamController;
+class ScriptedDialog;
+}
 class GameStateManager;
 class FontStorage;
 class SceneManager;
-class ScriptedDialog;
 class ScriptedSequence;
 class SeqEditUI;
 class WordPuzzleUI;
@@ -37,10 +39,10 @@ class GSUITest4 final : public GSBaseState {
     float test_time_counter_s = 0.0f;
 
     bool use_free_cam_ = true;
-    std::unique_ptr<FreeCamController> cam_ctrl_;
+    std::unique_ptr<Eng::FreeCamController> cam_ctrl_;
     std::unique_ptr<DialogController> dial_ctrl_;
 
-    std::unique_ptr<ScriptedDialog> test_dialog_;
+    std::unique_ptr<Eng::ScriptedDialog> test_dialog_;
     std::unique_ptr<DialogUI> dialog_ui_;
     std::unique_ptr<WordPuzzleUI> word_puzzle_;
 

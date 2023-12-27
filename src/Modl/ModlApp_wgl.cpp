@@ -22,6 +22,7 @@
 #elif defined(USE_SW_RENDER)
 #include <Ren/SW/SW.h>
 #endif
+#include <Eng/Input/Keycode.h>
 #include <Ren/Mesh.h>
 #include <Ren/TaskExecutor.h>
 #include <Ren/Utils.h>
@@ -29,7 +30,6 @@
 #include <Sys/AssetFileIO.h>
 #include <Sys/DynLib.h>
 #include <Sys/Time_.h>
-#include <Eng/Input/Keycode.h>
 
 #include "../Eng/Utils/BVHSplit.cpp"
 
@@ -185,7 +185,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
             if (key_code == Key0) {
                 g_app->view_mode_ = ModlApp::eViewMode(0);
-            } else  if (key_code >= Key1 && key_code <= Key9) {
+            } else if (key_code >= Key1 && key_code <= Key9) {
                 g_app->view_mode_ = ModlApp::eViewMode(key_code - Key1 + 1);
             } else if (key_code == KeyR) {
                 g_app->angle_x_ = g_app->angle_y_ = 0.0f;
@@ -195,9 +195,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
         break;
     }
     case WM_KEYUP: {
-        //const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
+        // const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
 
-        //g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        // g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEWHEEL: {
@@ -215,8 +215,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
-        //g_app->Resize(w, h);
-        //g_app->AddEvent(RawInputEv::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
+        // g_app->Resize(w, h);
+        // g_app->AddEvent(RawInputEv::Resize, 0, (float)w, (float)h, 0.0f, 0.0f);
     }
     default: {
         break;
@@ -505,9 +505,9 @@ int ModlApp::Init(const int w, const int h) {
     PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = nullptr;
     wglSwapIntervalEXT = reinterpret_cast<PFNWGLSWAPINTERVALEXTPROC>(wglGetProcAddress("wglSwapIntervalEXT"));
 
-    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", WS_OVERLAPPEDWINDOW,
-                                      CW_USEDEFAULT, CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top,
-                                      nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (GL)", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT,
+                                      CW_USEDEFAULT, rect.right - rect.left, rect.bottom - rect.top, nullptr, nullptr,
+                                      GetModuleHandle(nullptr), nullptr);
 
     device_context_ = GetDC(window_handle_);
 
@@ -1630,7 +1630,7 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         primitives_count += index_grp.size();
     }
 
-    std::vector<prim_t> primitives;
+    std::vector<Eng::prim_t> primitives;
     std::vector<uint32_t> tri_indices, prim_indices;
     primitives.reserve(primitives_count);
     tri_indices.reserve(primitives_count);
@@ -1651,7 +1651,7 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
             const Ren::Vec3f v2 = Ren::MakeVec3(&positions[3ull * i2]);
 
             primitives.emplace_back();
-            prim_t &new_prim = primitives.back();
+            Eng::prim_t &new_prim = primitives.back();
 
             new_prim.bbox_min = Min(v0, Min(v1, v2));
             new_prim.bbox_max = Max(v0, Max(v1, v2));
@@ -1688,13 +1688,13 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
 
-    split_settings_t s;
+    Eng::split_settings_t s;
     s.oversplit_threshold = 0.95f;
     s.node_traversal_cost = 0.025f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, s);
+        Eng::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
+                                                           prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         const auto leaf_index = (uint32_t)nodes.size();

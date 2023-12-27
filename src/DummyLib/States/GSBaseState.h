@@ -15,7 +15,6 @@
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
 
-class Cmdline;
 class DebugInfoUI;
 class GameStateManager;
 class FontStorage;
@@ -23,8 +22,9 @@ class SceneManager;
 class PhysicsManager;
 class Random;
 namespace Eng {
+class Cmdline;
 class ShaderLoader;
-}
+} // namespace Eng
 
 namespace Gui {
 class BaseElement;
@@ -41,7 +41,7 @@ class GSBaseState : public GameState {
   protected:
     GameBase *game_;
     std::weak_ptr<GameStateManager> state_manager_;
-    std::shared_ptr<Cmdline> cmdline_;
+    std::shared_ptr<Eng::Cmdline> cmdline_;
     std::shared_ptr<Ren::Context> ren_ctx_;
     std::shared_ptr<Snd::Context> snd_ctx_;
     std::shared_ptr<Ren::ILog> log_;

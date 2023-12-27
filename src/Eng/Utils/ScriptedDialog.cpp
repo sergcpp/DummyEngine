@@ -2,19 +2,18 @@
 
 #include "ScriptedSequence.h"
 
-ScriptedDialog::ScriptedDialog(Ren::Context &ren_ctx, Snd::Context &snd_ctx,
-                               SceneManager &scene_manager)
+Eng::ScriptedDialog::ScriptedDialog(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager)
     : ren_ctx_(ren_ctx), snd_ctx_(snd_ctx), scene_manager_(scene_manager) {}
 
-void ScriptedDialog::Clear() {
+void Eng::ScriptedDialog::Clear() {
     for (ScriptedSequence &seq : sequences_) {
         seq.Reset();
     }
     sequences_.clear();
 }
 
-bool ScriptedDialog::Load(const char *lookup_name, const JsObject &js_seq,
-                          bool (*read_sequence)(const char *name, JsObject &js_seq)) {
+bool Eng::ScriptedDialog::Load(const char *lookup_name, const JsObject &js_seq,
+                               bool (*read_sequence)(const char *name, JsObject &js_seq)) {
     sequences_.emplace_back(ren_ctx_, snd_ctx_, scene_manager_);
     if (sequences_.back().Load(lookup_name, js_seq)) {
         const int cur_seq_index = (int)sequences_.size() - 1;
@@ -41,22 +40,19 @@ bool ScriptedDialog::Load(const char *lookup_name, const JsObject &js_seq,
                 if (choice_seq_index == -1) {
                     JsObject js_next_seq;
                     if (!read_sequence(js_seq_name.val.c_str(), js_next_seq)) {
-                        ren_ctx_.log()->Error("Failed to read sequence %s",
-                                              js_seq_name.val.c_str());
+                        ren_ctx_.log()->Error("Failed to read sequence %s", js_seq_name.val.c_str());
                         return false;
                     }
 
                     choice_seq_index = (int)sequences_.size();
 
                     if (!Load(js_seq_name.val.c_str(), js_next_seq, read_sequence)) {
-                        ren_ctx_.log()->Error("Failed to load choise %s",
-                                              js_choice_key.val.c_str());
+                        ren_ctx_.log()->Error("Failed to load choise %s", js_choice_key.val.c_str());
                         return false;
                     }
                 }
 
-                SeqChoice *choice =
-                    sequences_[cur_seq_index].GetChoice(js_choice_key.val.c_str());
+                SeqChoice *choice = sequences_[cur_seq_index].GetChoice(js_choice_key.val.c_str());
                 choice->seq_id = choice_seq_index;
 
                 ++choice_index;

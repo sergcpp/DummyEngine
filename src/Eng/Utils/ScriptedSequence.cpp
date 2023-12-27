@@ -21,21 +21,21 @@ const char *SOUNDS_PATH = "./assets_pc/sounds/";
 #endif
 } // namespace ScriptedSequenceInternal
 
-const char *ScriptedSequence::ActionTypeNames[] = {"play", "look"};
+const char *Eng::ScriptedSequence::ActionTypeNames[] = {"play", "look"};
 
-ScriptedSequence::ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager)
+Eng::ScriptedSequence::ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager)
     : ren_ctx_(ren_ctx), snd_ctx_(snd_ctx), scene_manager_(scene_manager) {
     Reset();
 }
 
-void ScriptedSequence::Clear() {
+void Eng::ScriptedSequence::Clear() {
     name_.clear();
     tracks_.clear();
     actions_.clear();
     choices_count_ = 0;
 }
 
-bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
+bool Eng::ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     Clear();
@@ -298,7 +298,7 @@ bool ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
     return true;
 }
 
-void ScriptedSequence::Save(JsObject &js_seq) {
+void Eng::ScriptedSequence::Save(JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     { // write name
@@ -417,7 +417,7 @@ void ScriptedSequence::Save(JsObject &js_seq) {
     }
 }
 
-void ScriptedSequence::Reset() {
+void Eng::ScriptedSequence::Reset() {
     const SceneData &scene = scene_manager_.scene_data();
 
     // auto *transforms = (Transform *)scene.comp_store[CompTransform]->Get(0);
@@ -462,7 +462,7 @@ void ScriptedSequence::Reset() {
     }
 }
 
-void ScriptedSequence::Update(const double cur_time_s, bool playing) {
+void Eng::ScriptedSequence::Update(const double cur_time_s, bool playing) {
     for (Track &track : tracks_) {
         if (!track.active_count && (cur_time_s < track.time_beg || cur_time_s > track.time_end)) {
             continue;
@@ -494,7 +494,8 @@ void ScriptedSequence::Update(const double cur_time_s, bool playing) {
     }
 }
 
-void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &action, double time_cur_s, bool playing) {
+void Eng::ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &action, double time_cur_s,
+                                         bool playing) {
     const SceneData &scene = scene_manager_.scene_data();
 
     auto *transforms = (Eng::Transform *)scene.comp_store[CompTransform]->SequentialData();
@@ -654,8 +655,8 @@ void ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction &acti
     }
 }
 
-Ren::TextureRegionRef ScriptedSequence::RenderSoundWave(const char *name, const void *samples_data, int samples_count,
-                                                        const Snd::BufParams &params) {
+Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(const char *name, const void *samples_data,
+                                                             int samples_count, const Snd::BufParams &params) {
     { // check if sound-wave picture was already loaded
         Ren::eTexLoadStatus status;
         Ren::TextureRegionRef ret =

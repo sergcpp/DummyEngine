@@ -929,7 +929,7 @@ bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, co
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     int width, height;
-    const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
+    const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(in_file, width, height);
     const std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
 
     return Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);

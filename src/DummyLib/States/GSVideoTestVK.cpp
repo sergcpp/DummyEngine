@@ -16,7 +16,7 @@ void GSVideoTest::InitVideoTextures() {
         if (!vp_[tx].initialized()) {
             continue;
         }
-        const VideoPlayer &vp = vp_[tx];
+        const Eng::VideoPlayer &vp = vp_[tx];
 
         char name_buf[128];
 

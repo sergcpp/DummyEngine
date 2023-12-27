@@ -11,11 +11,12 @@ namespace Ren {
 class ILog;
 }
 
-struct VpxCtx;
-
 extern "C" {
 typedef struct vpx_image vpx_image_t;
 }
+
+namespace Eng {
+struct VpxCtx;
 
 enum class eYUVComp { Y, U, V };
 
@@ -61,3 +62,4 @@ class VideoPlayer {
     // return pointer to image that will be valid until Update will return 'FrameUpdated'
     const uint8_t *GetImagePtr(eYUVComp plane, int &w, int &h, int &stride);
 };
+} // namespace Eng

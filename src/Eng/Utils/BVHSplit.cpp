@@ -25,8 +25,9 @@ struct bbox_t {
     }
 };
 
-split_data_t SplitPrimitives_SAH(const prim_t *primitives, Ren::Span<const uint32_t> prim_indices,
-                                 const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max, const split_settings_t &s) {
+Eng::split_data_t Eng::SplitPrimitives_SAH(const prim_t *primitives, Ren::Span<const uint32_t> prim_indices,
+                                           const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max,
+                                           const split_settings_t &s) {
     const int prim_count = int(prim_indices.size());
     const bbox_t whole_box = {bbox_min, bbox_max};
 

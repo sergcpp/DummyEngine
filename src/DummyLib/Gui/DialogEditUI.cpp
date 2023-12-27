@@ -39,8 +39,8 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
         r->PushClipArea(dims_);
 
-        IterateElements([&](const ScriptedSequence *seq, const ScriptedSequence *parent, const int depth, const int ndx,
-                            const int parent_ndx, const int choice_ndx, const bool visited) {
+        IterateElements([&](const Eng::ScriptedSequence *seq, const Eng::ScriptedSequence *parent, const int depth,
+                            const int ndx, const int parent_ndx, const int choice_ndx, const bool visited) {
             const int elem_index = int(seq - dialog_->GetSequence(0));
 
             if (parent_ndx != -1) {
@@ -58,7 +58,7 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                 DrawCurveLocal(r, p0, p1, p2, p3, line_width, curve_color);
 
                 // draw choice id
-                const SeqChoice *choice = parent->GetChoice(choice_ndx);
+                const Eng::SeqChoice *choice = parent->GetChoice(choice_ndx);
                 assert(choice);
 
                 const uint8_t *text_color = (elem_index == selected_element_) ? Gui::ColorWhite : Gui::ColorBlack;
@@ -176,9 +176,9 @@ void DialogEditUI::IterateElements(const IterationCallback &callback) {
         const entry_t e = queue[queue_head];
         queue_head = (queue_head + 1) % 256;
 
-        const ScriptedSequence *seq = dialog_->GetSequence(e.id);
+        const Eng::ScriptedSequence *seq = dialog_->GetSequence(e.id);
         assert(seq);
-        const ScriptedSequence *parent = dialog_->GetSequence(e.parent_id);
+        const Eng::ScriptedSequence *parent = dialog_->GetSequence(e.parent_id);
         assert(parent);
 
         if (!callback(seq, parent, e.depth, e.ndx, e.parent_ndx, e.choice_ndx, e.visited)) {
@@ -188,7 +188,7 @@ void DialogEditUI::IterateElements(const IterationCallback &callback) {
         const int choices_count = seq->GetChoicesCount();
         const int child_depth = e.depth + 1;
         for (int i = 0; i < choices_count && !e.visited; i++) {
-            const SeqChoice *choice = seq->GetChoice(i);
+            const Eng::SeqChoice *choice = seq->GetChoice(i);
 
             int level = 0;
             bool visited = false;
@@ -216,8 +216,8 @@ void DialogEditUI::Press(const Ren::Vec2f &p, const bool push) {
 
         selected_element_ = -1;
 
-        IterateElements([&](const ScriptedSequence *seq, const ScriptedSequence *parent, const int depth, const int ndx,
-                            const int parent_ndx, const int choice_ndx, const bool visited) -> bool {
+        IterateElements([&](const Eng::ScriptedSequence *seq, const Eng::ScriptedSequence *parent, const int depth,
+                            const int ndx, const int parent_ndx, const int choice_ndx, const bool visited) -> bool {
             if (visited) {
                 return true;
             }

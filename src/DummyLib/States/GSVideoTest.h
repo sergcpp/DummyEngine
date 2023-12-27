@@ -31,7 +31,7 @@ class Renderer;
 
 namespace Sys {
 class ThreadPool;
-//class QThreadPool;
+// class QThreadPool;
 class ThreadWorker;
 } // namespace Sys
 
@@ -56,15 +56,15 @@ class GSVideoTest final : public GSBaseState {
     uint32_t wall_picture_indices_[5] = {0xffffffff};
 
     bool enable_video_update_ = true;
-    VideoPlayer vp_[5];
-    VideoPlayer::eFrUpdateResult decode_result_[5] = {
-        VideoPlayer::eFrUpdateResult::Reused, VideoPlayer::eFrUpdateResult::Reused,
-        VideoPlayer::eFrUpdateResult::Reused, VideoPlayer::eFrUpdateResult::Reused,
-        VideoPlayer::eFrUpdateResult::Reused,
+    Eng::VideoPlayer vp_[5];
+    Eng::VideoPlayer::eFrUpdateResult decode_result_[5] = {
+        Eng::VideoPlayer::eFrUpdateResult::Reused, Eng::VideoPlayer::eFrUpdateResult::Reused,
+        Eng::VideoPlayer::eFrUpdateResult::Reused, Eng::VideoPlayer::eFrUpdateResult::Reused,
+        Eng::VideoPlayer::eFrUpdateResult::Reused,
     };
 
     std::future<void> vid_update_done_[5], tex_update_done_[5];
-    //std::shared_ptr<Sys::QThreadPool> decoder_threads_;
+    // std::shared_ptr<Sys::QThreadPool> decoder_threads_;
 
     uint64_t video_time_us_ = 0;
 

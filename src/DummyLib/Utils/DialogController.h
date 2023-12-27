@@ -4,8 +4,10 @@
 
 #include <Sys/Signal_.h>
 
+namespace Eng {
 class ScriptedDialog;
 class ScriptedSequence;
+}
 
 class DialogController {
   public:
@@ -15,7 +17,7 @@ class DialogController {
 
     eState state() const { return state_; }
 
-    void SetDialog(ScriptedDialog *dialog);
+    void SetDialog(Eng::ScriptedDialog *dialog);
 
     void Play(double cur_time_s);
     void Pause();
@@ -24,7 +26,7 @@ class DialogController {
     double GetPlayTime() const { return play_time_s_; }
     void SetPlayTime(double cur_time_s, double play_time_s);
 
-    ScriptedSequence *GetCurSequence() { return cur_seq_; }
+    Eng::ScriptedSequence *GetCurSequence() { return cur_seq_; }
     void SetCurSequence(int id);
 
     void MakeChoice(const char *key);
@@ -37,8 +39,8 @@ class DialogController {
     Sys::SignalN<void(const char *puzzle)> start_puzzle_signal;
 
   private:
-    ScriptedDialog *dialog_ = nullptr;
-    ScriptedSequence *cur_seq_ = nullptr;
+    Eng::ScriptedDialog *dialog_ = nullptr;
+    Eng::ScriptedSequence *cur_seq_ = nullptr;
     int next_seq_id_ = -1;
 
     eState state_ = eState::Paused;

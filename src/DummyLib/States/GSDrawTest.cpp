@@ -58,7 +58,7 @@ void GSDrawTest::Enter() {
     std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
     std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager->Peek());
 
-    cmdline_->RegisterCommand("r_printCam", [weak_this](const int argc, Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_printCam", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             shrd_this->log_->Info("View Origin: { %f, %f, %f }", shrd_this->view_origin_[0], shrd_this->view_origin_[1],
