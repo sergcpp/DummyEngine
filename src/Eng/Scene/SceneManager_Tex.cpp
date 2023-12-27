@@ -56,7 +56,7 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
     }
 }
 
-void CaptureMaterialTextureChange(Ren::Context &ctx, SceneData &scene_data, const Ren::Tex2DRef &ref) {
+void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data, const Ren::Tex2DRef &ref) {
     uint32_t tex_user = ref->first_user;
     while (tex_user != 0xffffffff) {
         Ren::Material &mat = scene_data.materials[tex_user];
@@ -70,7 +70,7 @@ void CaptureMaterialTextureChange(Ren::Context &ctx, SceneData &scene_data, cons
 }
 } // namespace SceneManagerInternal
 
-void SceneManager::TextureLoaderProc() {
+void Eng::SceneManager::TextureLoaderProc() {
     using namespace SceneManagerConstants;
     using namespace SceneManagerInternal;
 
@@ -260,7 +260,7 @@ void SceneManager::TextureLoaderProc() {
     }
 }
 
-void SceneManager::EstimateTextureMemory(const int portion_size) {
+void Eng::SceneManager::EstimateTextureMemory(const int portion_size) {
     OPTICK_EVENT();
     if (scene_data_.textures.capacity() == 0) {
         return;
@@ -301,7 +301,7 @@ void SceneManager::EstimateTextureMemory(const int portion_size) {
     }
 }
 
-void SceneManager::ProcessPendingTextures(const int portion_size) {
+void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
     using namespace SceneManagerConstants;
 
     OPTICK_GPU_EVENT("ProcessPendingTextures");
@@ -499,7 +499,7 @@ void SceneManager::ProcessPendingTextures(const int portion_size) {
     }
 }
 
-void SceneManager::RebuildMaterialTextureGraph() {
+void Eng::SceneManager::RebuildMaterialTextureGraph() {
     OPTICK_EVENT();
 
     // reset texture user
@@ -536,8 +536,8 @@ void SceneManager::RebuildMaterialTextureGraph() {
     }
 }
 
-void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], const int visible_count,
-                                           const TexEntry desired_textures[], const int desired_count) {
+void Eng::SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], const int visible_count,
+                                                const TexEntry desired_textures[], const int desired_count) {
     OPTICK_EVENT();
 
     TexturesGCIteration(visible_textures, visible_count, desired_textures, desired_count);
@@ -585,8 +585,8 @@ void SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], co
     }
 }
 
-void SceneManager::TexturesGCIteration(const TexEntry visible_textures[], const int visible_count,
-                                       const TexEntry desired_textures[], const int desired_count) {
+void Eng::SceneManager::TexturesGCIteration(const TexEntry visible_textures[], const int visible_count,
+                                            const TexEntry desired_textures[], const int desired_count) {
     using namespace SceneManagerConstants;
 
     OPTICK_EVENT();
@@ -653,16 +653,16 @@ void SceneManager::TexturesGCIteration(const TexEntry visible_textures[], const 
     }
 }
 
-void SceneManager::InvalidateTexture(const Ren::Tex2DRef &ref) {
+void Eng::SceneManager::InvalidateTexture(const Ren::Tex2DRef &ref) {
     SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, ref);
 }
 
-void SceneManager::StartTextureLoader() {
+void Eng::SceneManager::StartTextureLoader() {
     tex_loader_stop_ = false;
     tex_loader_thread_ = std::thread(&SceneManager::TextureLoaderProc, this);
 }
 
-void SceneManager::StopTextureLoader() {
+void Eng::SceneManager::StopTextureLoader() {
     { // stop texture loading thread
         std::unique_lock<std::mutex> lock(tex_requests_lock_);
         tex_loader_stop_ = true;
@@ -686,7 +686,7 @@ void SceneManager::StopTextureLoader() {
     }
 }
 
-void SceneManager::ForceTextureReload() {
+void Eng::SceneManager::ForceTextureReload() {
     StopTextureLoader();
 
     std::vector<Ren::TransitionInfo> img_transitions;

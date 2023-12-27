@@ -61,7 +61,7 @@ class GSPlayTest : public GSBaseState {
     bool SaveSequence(const char *seq_name);
 
   public:
-    explicit GSPlayTest(GameBase *game);
+    explicit GSPlayTest(Eng::GameBase *game);
     ~GSPlayTest() final;
 
     void Enter() override;
@@ -72,5 +72,5 @@ class GSPlayTest : public GSBaseState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

@@ -5,9 +5,9 @@
 
 #include "../Graph/SubPass.h"
 
+namespace Eng {
 class PrimDraw;
 struct ViewState;
-
 struct RpCombineData {
     RpResRef color_tex;
     RpResRef blur_tex;
@@ -40,3 +40,4 @@ class RpCombine : public RpExecutor {
     }
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

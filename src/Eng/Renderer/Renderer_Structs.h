@@ -6,8 +6,21 @@
 #include <Ren/MMat.h>
 #include <Ren/SmallVector.h>
 
+#if defined(USE_VK_RENDER)
+#include <Ren/Buffer.h>
+#include <Ren/Fwd.h>
+#include <Ren/VK.h>
+#elif defined(USE_GL_RENDER)
+#include <Ren/Buffer.h>
+#endif
+
 #include "Shaders/Renderer_GL_Defines.inl"
 
+namespace Ren {
+class IAccStructure;
+}
+
+namespace Eng {
 struct LightItem {
     float col[3];
     int type;
@@ -81,7 +94,7 @@ struct InstanceData {
 };
 static_assert(sizeof(InstanceData) == 192, "!");
 
-struct BasicDrawBatch {                       // NOLINT
+struct BasicDrawBatch {                        // NOLINT
     static const uint32_t TypeSimple = 0b00u;  // simple
     static const uint32_t TypeVege = 0b01u;    // vegetation
     static const uint32_t TypeSkinned = 0b10u; // skeletal
@@ -319,10 +332,6 @@ struct RTGeoInstance {
 };
 static_assert(sizeof(RTGeoInstance) == 32, "!");
 
-namespace Ren {
-class IAccStructure;
-}
-
 struct RTObjInstance {
     float xform[3][4];
     float bbox_min_ws[3];
@@ -333,14 +342,6 @@ struct RTObjInstance {
     const Ren::IAccStructure *blas_ref;
 };
 static_assert(sizeof(RTObjInstance) == 64 + 24, "!");
-
-#if defined(USE_VK_RENDER)
-#include <Ren/Buffer.h>
-#include <Ren/Fwd.h>
-#include <Ren/VK.h>
-#elif defined(USE_GL_RENDER)
-#include <Ren/Buffer.h>
-#endif
 
 struct BindlessTextureData {
 #if defined(USE_VK_RENDER)
@@ -422,3 +423,5 @@ const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * REN_MAX_RT_TLA
 const size_t SharedDataBlockSize = 8 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");
+
+} // namespace Eng

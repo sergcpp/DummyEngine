@@ -10,7 +10,7 @@
 #define _AS_STR(x) #x
 #define AS_STR(x) _AS_STR(x)
 
-void SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &line) {
+void Eng::SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &line) {
     static std::once_flag constants_initialized;
     static Ren::HashMap32<std::string, std::string> shader_constants;
     std::call_once(constants_initialized, [&]() {
@@ -78,8 +78,8 @@ void SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &lin
     }
 }
 
-bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
-                                   Ren::SmallVectorImpl<std::string> &out_dependencies) {
+bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
+                                        Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::ifstream src_stream(in_file, std::ios::binary);
     if (!src_stream) {
         ctx.log->Error("Failed to open %s", in_file);
@@ -125,8 +125,8 @@ bool SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, s
     return true;
 }
 
-bool SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                     Ren::SmallVectorImpl<std::string> &out_dependencies) {
+bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                          Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::remove(out_file);
 
     std::vector<std::string> permutations;

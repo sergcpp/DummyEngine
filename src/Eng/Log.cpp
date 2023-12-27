@@ -30,21 +30,21 @@ void TimedOutput(FILE *dst, const char *fmt, va_list args) {
 }
 } // namespace EngInternal
 
-void LogStdout::Info(const char *fmt, ...) {
+void Eng::LogStdout::Info(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
     EngInternal::TimedOutput(stdout, fmt, vl);
     va_end(vl);
 }
 
-void LogStdout::Warning(const char *fmt, ...) {
+void Eng::LogStdout::Warning(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
     EngInternal::TimedOutput(stdout, fmt, vl);
     va_end(vl);
 }
 
-void LogStdout::Error(const char *fmt, ...) {
+void Eng::LogStdout::Error(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
     EngInternal::TimedOutput(stderr, fmt, vl);
@@ -53,23 +53,23 @@ void LogStdout::Error(const char *fmt, ...) {
 
 #ifdef __ANDROID__
 
-LogAndroid::LogAndroid(const char *log_tag) { strcpy(log_tag_, log_tag); }
+Eng::LogAndroid::LogAndroid(const char *log_tag) { strcpy(log_tag_, log_tag); }
 
-void LogAndroid::Info(const char *fmt, ...) {
+void Eng::LogAndroid::Info(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
     __android_log_vprint(ANDROID_LOG_INFO, log_tag_, fmt, vl);
     va_end(vl);
 }
 
-void LogAndroid::Warning(const char *fmt, ...) {
+void Eng::LogAndroid::Warning(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
     __android_log_vprint(ANDROID_LOG_INFO, log_tag_, fmt, vl);
     va_end(vl);
 }
 
-void LogAndroid::Error(const char *fmt, ...) {
+void Eng::LogAndroid::Error(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
     __android_log_vprint(ANDROID_LOG_ERROR, log_tag_, fmt, vl);

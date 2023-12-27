@@ -10,11 +10,11 @@
 
 #include "../Shaders/rt_shadows_interface.h"
 
-void RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTShadows::Execute_SWRT(RpBuilder &builder) {
+void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -100,7 +100,7 @@ void RpRTShadows::Execute_SWRT(RpBuilder &builder) {
                                  sizeof(uniform_params), nullptr, ctx.log());
 }
 
-void RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef rt_shadows_swrt_prog =
             sh.LoadProgram(ctx, "rt_shadows_swrt", "internal/rt_shadows_swrt.comp.glsl");

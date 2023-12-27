@@ -6,13 +6,15 @@
 #include "GameState.h"
 #include "Input/InputManager.h"
 
+namespace Eng {
 class GameState;
 
 class GameStateManager {
     std::vector<std::shared_ptr<GameState>> states_;
 
     bool pop_later_ = false;
-public:
+
+  public:
     virtual ~GameStateManager();
 
     std::shared_ptr<GameState> Peek();
@@ -32,6 +34,7 @@ public:
 
     void Draw();
 
-    void HandleInput(InputManager::Event &);
+    void HandleInput(Eng::InputManager::Event &);
 };
 
+} // namespace Eng

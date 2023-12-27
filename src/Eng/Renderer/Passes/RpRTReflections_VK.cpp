@@ -9,7 +9,7 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/rt_reflections_interface.h"
 
-void RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
+void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -88,7 +88,7 @@ void RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
                               indir_args_buf.ref->vk_device_address());
 }
 
-void RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
+void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -166,7 +166,7 @@ void RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
                           VkDeviceSize(sizeof(VkTraceRaysIndirectCommandKHR)));
 }
 
-void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
+void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -290,7 +290,7 @@ void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
                           VkDeviceSize(sizeof(VkTraceRaysIndirectCommandKHR)));
 }
 
-void RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         if (ctx.capabilities.raytracing) {
             Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(

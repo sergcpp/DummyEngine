@@ -91,7 +91,7 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
         (max)[2], (min)[0], (max)[1], (min)[2], (max)[0], (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0],  \
         (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, Eng::ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
+Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
     : ctx_(ctx), sh_(sh), rand_(rand), threads_(threads), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
       rp_builder_(ctx_, sh_) {
     using namespace RendererInternal;
@@ -512,18 +512,18 @@ Renderer::Renderer(Ren::Context &ctx, Eng::ShaderLoader &sh, Random &rand, Sys::
 #endif
 }
 
-Renderer::~Renderer() {
+Eng::Renderer::~Renderer() {
     prim_draw_.CleanUp();
     DestroyRendererInternal();
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
+void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
     GatherDrawables(scene, cam, list);
 }
 
-void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                               const Ren::Tex2DRef target) {
+void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
+                                    const Ren::Tex2DRef target) {
     using namespace RendererInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
@@ -1436,7 +1436,7 @@ void Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &pe
     __itt_task_end(__g_itt_domain);
 }
 
-void Renderer::InitBackendInfo() {
+void Eng::Renderer::InitBackendInfo() {
     if (frame_index_ < 10) {
         // Skip a few initial frames
         return;
@@ -1458,9 +1458,9 @@ void Renderer::InitBackendInfo() {
     }
 }
 
-void Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
-                                       Ren::PipelineStorage &storage,
-                                       Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const {
+void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
+                                            Ren::PipelineStorage &storage,
+                                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const {
     for (int i = 0; i < int(eFwdPipeline::_Count); ++i) {
         Ren::RastState rast_state = rast_states_[i];
 

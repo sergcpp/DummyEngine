@@ -4,8 +4,6 @@
 
 #include <vector>
 
-struct SceneData;
-
 namespace Phy {
 class Body;
 
@@ -14,6 +12,8 @@ struct contact_t;
 struct pseudo_body_t;
 } // namespace Phy
 
+namespace Eng {
+struct SceneData;
 class PhysicsManager {
     std::vector<uint32_t> updated_objects_;
     std::vector<Phy::contact_t> contacts_;
@@ -32,3 +32,4 @@ class PhysicsManager {
         return updated_objects_.data();
     }
 };
+} // namespace Eng

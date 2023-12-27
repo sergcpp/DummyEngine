@@ -15,11 +15,8 @@
 
 #include "GSBaseState.h"
 
-class Cmdline;
 class DebugInfoUI;
-class GameStateManager;
 class FontStorage;
-class SceneManager;
 
 namespace Gui {
 class BaseElement;
@@ -68,7 +65,7 @@ class GSDrawTest final : public GSBaseState {
     void TestUpdateAnims(float delta_time_s);
 
   public:
-    explicit GSDrawTest(GameBase *game);
+    explicit GSDrawTest(Eng::GameBase *game);
     ~GSDrawTest() final = default;
 
     void Enter() override;
@@ -79,5 +76,5 @@ class GSDrawTest final : public GSBaseState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

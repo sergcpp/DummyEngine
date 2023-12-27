@@ -23,7 +23,7 @@ const char *SOUNDS_PATH = "./assets_pc/sounds/";
 
 const char *Eng::ScriptedSequence::ActionTypeNames[] = {"play", "look"};
 
-Eng::ScriptedSequence::ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager)
+Eng::ScriptedSequence::ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, Eng::SceneManager &scene_manager)
     : ren_ctx_(ren_ctx), snd_ctx_(snd_ctx), scene_manager_(scene_manager) {
     Reset();
 }

@@ -11,7 +11,7 @@
 #include "GSUITest4.h"
 #include "GSVideoTest.h"
 
-std::shared_ptr<GameState> GSCreate(eGameState state, GameBase *game) {
+std::shared_ptr<Eng::GameState> GSCreate(eGameState state, Eng::GameBase *game) {
     if (state == eGameState::GS_DRAW_TEST) {
         return std::make_shared<GSDrawTest>(game);
     } else if (state == eGameState::GS_PHY_TEST) {

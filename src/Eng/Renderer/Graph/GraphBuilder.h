@@ -22,9 +22,6 @@
 
 namespace Eng {
 class ShaderLoader;
-}
-
-class RpBuilder;
 
 struct rp_write_pass_t {
     int16_t pass_index;
@@ -198,3 +195,4 @@ class RpBuilder {
 
     Ren::SmallVector<pass_timing_t, 256> pass_timings_[Ren::MaxFramesInFlight];
 };
+} // namespace Eng

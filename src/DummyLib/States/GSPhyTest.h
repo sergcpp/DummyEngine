@@ -49,7 +49,7 @@ class GSPhyTest final : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
   public:
-    explicit GSPhyTest(GameBase *game);
+    explicit GSPhyTest(Eng::GameBase *game);
     ~GSPhyTest() final = default;
 
     void Enter() override;
@@ -60,5 +60,5 @@ class GSPhyTest final : public GSBaseState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

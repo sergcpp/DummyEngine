@@ -21,7 +21,7 @@ const int U_FADE = 16;
 const int U_RES = 15;
 } // namespace RendererInternal
 
-void Renderer::InitRendererInternal() {
+void Eng::Renderer::InitRendererInternal() {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -75,7 +75,7 @@ void Renderer::InitRendererInternal() {
     Ren::CheckError("[InitRendererInternal]: temp framebuffer", ctx_.log());
 }
 
-void Renderer::DestroyRendererInternal() {
+void Eng::Renderer::DestroyRendererInternal() {
     Ren::ILog *log = ctx_.log();
 
     log->Info("DestroyRendererInternal");
@@ -997,13 +997,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 }
 #endif
 
-uint64_t Renderer::GetGpuTimeBlockingUs() {
+uint64_t Eng::Renderer::GetGpuTimeBlockingUs() {
     GLint64 time = 0;
     glGetInteger64v(GL_TIMESTAMP, &time);
     return (uint64_t)(time / 1000);
 }
 
-void Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
+void Eng::Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 
     if (!temp_tex_ || temp_tex_->params.w != w || temp_tex_->params.h != h || temp_tex_->params.format != format) {
@@ -1042,7 +1042,7 @@ void Renderer::BlitPixels(const void *data, const int w, const int h, const Ren:
     glBindVertexArray(0);
 }
 
-void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, const Ren::eTexFormat format) {
+void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 
     if (!temp_tex_ || temp_tex_->params.w != w || temp_tex_->params.h != h || temp_tex_->params.format != format) {
@@ -1115,14 +1115,14 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
                          (GLuint)unif_shared_data_buf.ref->id());*/
 
         const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *temp_tex_}};
-        const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
+        const Eng::PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
 
         if (!down_tex_4x_fb_.Setup(ctx_.api_ctx(), {}, down_tex_4x_->params.w, down_tex_4x_->params.h, down_tex_4x_, {},
                                    Ren::WeakTex2DRef{}, false, ctx_.log())) {
             ctx_.log()->Error("Failed to init down_tex_4x_fb_");
         }
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&down_tex_4x_fb_, 0}, cur_program, bindings, uniforms);
+        prim_draw_.DrawPrim(Eng::PrimDraw::ePrim::Quad, {&down_tex_4x_fb_, 0}, cur_program, bindings, uniforms);
     }
 
     { // prepare blurred buffer
@@ -1218,7 +1218,7 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
     glBindVertexArray(0);
 }
 
-void Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
+void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
                           const int first_att, const int att_count, const float multiplier) {
     using namespace RendererInternal;
 
@@ -1281,7 +1281,7 @@ void Renderer::BlitBuffer(const float px, const float py, const float sx, const 
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 }
 
-void Renderer::BlitTexture(const float px, const float py, const float sx, const float sy, const Ren::Tex2DRef &tex,
+void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, const float sy, const Ren::Tex2DRef &tex,
                            const float multiplier, const bool is_ms) {
     using namespace RendererInternal;
 
@@ -1344,7 +1344,7 @@ void Renderer::BlitTexture(const float px, const float py, const float sx, const
     glDisableVertexAttribArray(REN_VTX_UV1_LOC);
 }
 
-void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
+void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1445,7 +1445,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStor
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 }
 
-void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
+void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
     using namespace RendererInternal;
 
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(), vtx_buf2 = ctx_.default_vertex_buf2(),
@@ -1527,7 +1527,7 @@ void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const i
     glViewport(viewport_before[0], viewport_before[1], viewport_before[2], viewport_before[3]);
 }
 
-bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
+bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
                              Eng::LightProbe &probe) {
     using namespace RendererInternal;
 

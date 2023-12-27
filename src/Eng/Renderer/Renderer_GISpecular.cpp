@@ -12,13 +12,13 @@
 #include "Shaders/ssr_write_indir_rt_dispatch_interface.h"
 #include "Shaders/ssr_write_indirect_args_interface.h"
 
-void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                                   const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
-                                   const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                   const PersistentGpuData &persistent_data,
-                                   const AccelerationStructureData &acc_struct_data,
-                                   const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                                   RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
+void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
+                                        const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
+                                        const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
+                                        const PersistentGpuData &persistent_data,
+                                        const AccelerationStructureData &acc_struct_data,
+                                        const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
+                                        RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -713,8 +713,8 @@ void Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::
     }
 }
 
-void Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                   const RpResRef depth_down_2x, FrameTextures &frame_textures) {
+void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
+                                        const RpResRef depth_down_2x, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 

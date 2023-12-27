@@ -11,14 +11,14 @@
 
 namespace RpSharedInternal {
 uint32_t _draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
-                         uint32_t mask, const uint32_t materials_per_descriptor,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         uint32_t i, uint32_t mask, const uint32_t materials_per_descriptor,
                          const Ren::SmallVectorImpl<VkDescriptorSet> &descr_sets, int *draws_count);
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
                      uint32_t mask);
 } // namespace RpSharedInternal
 
-void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
+void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
     auto &ctx = builder.ctx();
@@ -466,7 +466,7 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     }
 }
 
-void RpGBufferFill::InitDescrSetLayout() {
+void Eng::RpGBufferFill::InitDescrSetLayout() {
     VkDescriptorSetLayoutBinding bindings[] = {
         // textures (2)
         {REN_DECAL_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
@@ -491,7 +491,7 @@ void RpGBufferFill::InitDescrSetLayout() {
     assert(res == VK_SUCCESS);
 }
 
-RpGBufferFill::~RpGBufferFill() {
+Eng::RpGBufferFill::~RpGBufferFill() {
     if (descr_set_layout_ != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }

@@ -6,9 +6,10 @@
 #include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
-class PrimDraw;
 struct ViewState;
 
+namespace Eng {
+class PrimDraw;
 struct RpDebugRTData {
     RpResRef shared_data;
     RpResRef geo_data_buf;
@@ -62,3 +63,4 @@ class RpDebugRT : public RpExecutor {
     }
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

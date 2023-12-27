@@ -43,7 +43,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 const char SEQ_NAME[] = "test/test_seq.json";
 } // namespace GSPlayTestInternal
 
-GSPlayTest::GSPlayTest(GameBase *game) : GSBaseState(game) {
+GSPlayTest::GSPlayTest(Eng::GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
 
@@ -231,7 +231,7 @@ void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
     scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
                               Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, true, cam_ctrl_->max_exposure);
 
-    const SceneData &scene = scene_manager_->scene_data();
+    const Eng::SceneData &scene = scene_manager_->scene_data();
 
     seq_cap_ui_->Clear();
     if (test_seq_) {
@@ -287,12 +287,12 @@ void GSPlayTest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     seq_cap_ui_->Draw(r);
 }
 
-bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
+bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSPlayTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
+    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ms_ < 400) {
@@ -311,7 +311,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = false;
 
     switch (evt.type) {
-    case RawInputEv::P1Down: {
+    case Eng::RawInputEv::P1Down: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
@@ -322,7 +322,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = true;
         }
     } break;
-    case RawInputEv::P2Down: {
+    case Eng::RawInputEv::P2Down: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0 && seq_edit_ui_->Check(p)) {
@@ -333,7 +333,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = true;
         }
     } break;
-    case RawInputEv::P1Up: {
+    case Eng::RawInputEv::P1Up: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
@@ -344,7 +344,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = dialog_edit_ui_->Check(p);
         }
     } break;
-    case RawInputEv::P2Up: {
+    case Eng::RawInputEv::P2Up: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
@@ -355,7 +355,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             input_processed = dialog_edit_ui_->Check(p);
         }
     } break;
-    case RawInputEv::P1Move: {
+    case Eng::RawInputEv::P1Move: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (dial_edit_mode_ == 0) {
@@ -364,34 +364,34 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             dialog_edit_ui_->Hover(p);
         }
     } break;
-    case RawInputEv::P2Move: {
+    case Eng::RawInputEv::P2Move: {
 
     } break;
-    case RawInputEv::KeyDown: {
+    case Eng::RawInputEv::KeyDown: {
         input_processed = false;
 
-        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
-        } else if (evt.key_code == KeyReturn) {
+        if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
+        } else if (evt.key_code == Eng::KeyReturn) {
 
-        } else if (evt.key_code == KeyLeft) {
+        } else if (evt.key_code == Eng::KeyLeft) {
 
-        } else if (evt.key_code == KeyRight) {
+        } else if (evt.key_code == Eng::KeyRight) {
 
-        } else if (evt.key_code == KeyUp) {
+        } else if (evt.key_code == Eng::KeyUp) {
 
-        } else if (evt.key_code == KeyDown) {
+        } else if (evt.key_code == Eng::KeyDown) {
 
-        } else if (evt.key_code == KeyDelete) {
+        } else if (evt.key_code == Eng::KeyDelete) {
 
-        } else if (evt.key_code == KeyDeleteForward) {
-        } else if (evt.key_code == KeyTab) {
+        } else if (evt.key_code == Eng::KeyDeleteForward) {
+        } else if (evt.key_code == Eng::KeyTab) {
             if (dial_edit_mode_ == 1) {
                 dial_edit_mode_ = 0;
             } else {
                 dial_edit_mode_ = 1;
             }
         } else {
-            char ch = InputManager::CharFromKeycode(evt.key_code);
+            char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
             if (shift_down_) {
                 if (ch == '-') {
                     ch = '_';
@@ -401,20 +401,20 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEv::KeyUp: {
+    case Eng::RawInputEv::KeyUp: {
         input_processed = true;
-        if (evt.key_code == KeySpace) {
+        if (evt.key_code == Eng::KeySpace) {
             play_started_time_s_ = 0.001f * Sys::GetTimeMs() - seq_edit_ui_->GetTime();
             is_playing_ = !is_playing_;
-        } else if (evt.key_code == KeyF5) {
+        } else if (evt.key_code == Eng::KeyF5) {
             LoadSequence(SEQ_NAME);
-        } else if (evt.key_code == KeyF6) {
+        } else if (evt.key_code == Eng::KeyF6) {
             SaveSequence(SEQ_NAME);
         } else {
             input_processed = false;
         }
     } break;
-    case RawInputEv::MouseWheel: {
+    case Eng::RawInputEv::MouseWheel: {
         if (dial_edit_mode_ == 0) {
             if (evt.move.dx > 0.0f) {
                 seq_edit_ui_->ZoomInTime();
@@ -423,7 +423,7 @@ bool GSPlayTest::HandleInput(const InputManager::Event &evt) {
             }
         }
     } break;
-    case RawInputEv::Resize: {
+    case Eng::RawInputEv::Resize: {
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
         dialog_edit_ui_->Resize(ui_root_.get());
         seq_edit_ui_->Resize(ui_root_.get());

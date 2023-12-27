@@ -10,24 +10,24 @@
 namespace RpSharedInternal {
 void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers);
-uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                               const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+uint32_t _draw_list_range_full(Eng::RpBuilder &builder, const Ren::MaterialStorage *materials,
+                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                               BackendInfo &backend_info);
+                               Eng::BackendInfo &backend_info);
 
-uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+uint32_t _draw_list_range_full_rev(Eng::RpBuilder &builder, const Ren::MaterialStorage *materials,
+                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                                   BackendInfo &backend_info);
+                                   Eng::BackendInfo &backend_info);
 } // namespace RpSharedInternal
 
-void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
-                                           RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
-                                           RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
-                                           RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
-                                           RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
+void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
+                                                RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
+                                                RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
+                                                RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
+                                                RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
     using namespace RpSharedInternal;
 
     Ren::RastState rast_state;
@@ -238,7 +238,7 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
 #endif
 }
 
-void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
+void Eng::RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
 #if 0
@@ -410,7 +410,7 @@ void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) {
     Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 8);
 }
 
-void RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) {}
+void Eng::RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder){}
 
 //
 // This is needed for moment-based OIT
@@ -564,4 +564,5 @@ if (list.render_flags & EnableOIT) {
 
 #endif
 
-RpTransparent::~RpTransparent() {}
+Eng::RpTransparent::~RpTransparent() {
+}

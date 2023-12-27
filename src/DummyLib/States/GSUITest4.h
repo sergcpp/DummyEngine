@@ -64,7 +64,7 @@ class GSUITest4 final : public GSBaseState {
     void OnStartPuzzle(const char *puzzle_name);
 
   public:
-    explicit GSUITest4(GameBase *game);
+    explicit GSUITest4(Eng::GameBase *game);
     ~GSUITest4() final;
 
     void Enter() override;
@@ -75,5 +75,5 @@ class GSUITest4 final : public GSBaseState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

@@ -27,7 +27,7 @@ std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int w
 std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, bool flip_y);
 } // namespace SceneManagerInternal
 
-const float *SceneManager::Draw_PT(int *w, int *h) {
+const float *Eng::SceneManager::Draw_PT(int *w, int *h) {
     if (!ray_scene_)
         return nullptr;
 
@@ -80,7 +80,7 @@ const float *SceneManager::Draw_PT(int *w, int *h) {
     return &pixels.ptr[0].v[0];
 }
 
-void SceneManager::ResetLightmaps_PT() {
+void Eng::SceneManager::ResetLightmaps_PT() {
     if (!ray_scene_)
         return;
 
@@ -89,10 +89,10 @@ void SceneManager::ResetLightmaps_PT() {
 
     for (uint32_t i = 0; i < (uint32_t)scene_data_.objects.size(); i++) {
         if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-            const auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(
+            const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
                 scene_data_.objects[i].components[CompTransform]);
             const auto *lm =
-                (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
+                (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(scene_data_.objects[i].components[CompLightmap]);
 
             cur_lm_obj_ = i;
             cam_desc.mi_index = tr->pt_mi;
@@ -108,7 +108,7 @@ void SceneManager::ResetLightmaps_PT() {
     cur_lm_indir_ = false;
 }
 
-bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h) {
+bool Eng::SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h) {
     using namespace SceneManagerConstants;
 
     if (!ray_scene_) {
@@ -132,7 +132,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     const int TileSizeCPU = 64;
 
     const SceneObject &cur_obj = scene_data_.objects[cur_lm_obj_];
-    const auto *lm = (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
+    const auto *lm = (Lightmap *)scene_data_.comp_store[CompLightmap]->Get(cur_obj.components[CompLightmap]);
     const int res = lm->size[0];
 
     if (ray_reg_ctx_.empty()) {
@@ -271,9 +271,9 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
         } else {
             bool found = false;
 
-            for (uint32_t i = cur_lm_obj_ + 1; i < (uint32_t)scene_data_.objects.size(); i++) {
+            for (uint32_t i = cur_lm_obj_ + 1; i < uint32_t(scene_data_.objects.size()); i++) {
                 if (scene_data_.objects[i].comp_mask & CompLightmapBit) {
-                    const auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(
+                    const auto *tr = (Transform *)scene_data_.comp_store[CompTransform]->Get(
                         scene_data_.objects[i].components[CompTransform]);
 
                     cur_lm_obj_ = i;
@@ -417,7 +417,7 @@ bool SceneManager::PrepareLightmaps_PT(const float **preview_pixels, int *w, int
     return true;
 }
 
-void SceneManager::InitScene_PT(bool _override) {
+void Eng::SceneManager::InitScene_PT(bool _override) {
     using namespace SceneManagerConstants;
 
     if (ray_scene_) {
@@ -440,7 +440,7 @@ void SceneManager::InitScene_PT(bool _override) {
             env_map_path += scene_data_.env.env_map_name_pt.c_str();
 
             int w, h;
-            const std::vector<uint8_t> tex_data = Eng::LoadHDR(env_map_path.c_str(), w, h);
+            const std::vector<uint8_t> tex_data = LoadHDR(env_map_path.c_str(), w, h);
 
             Ray::tex_desc_t tex_desc;
             tex_desc.data = tex_data;
@@ -539,9 +539,9 @@ void SceneManager::InitScene_PT(bool _override) {
     for (SceneObject &obj : scene_data_.objects) {
         const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
         if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-            const auto *dr = (Eng::Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
+            const auto *dr = (Drawable *)scene_data_.comp_store[CompDrawable]->Get(obj.components[CompDrawable]);
             const Ren::Mesh *mesh = dr->pt_mesh ? dr->pt_mesh.get() : dr->mesh.get();
-            if (!(dr->vis_mask & uint32_t(Eng::Drawable::eDrVisibility::VisShadow)) ||
+            if (!(dr->vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) ||
                 (mesh->type() != Ren::eMeshType::Simple && mesh->type() != Ren::eMeshType::Colored)) {
                 continue;
             }
@@ -645,7 +645,8 @@ void SceneManager::InitScene_PT(bool _override) {
             }
 
             if (mesh_it != loaded_meshes.end()) {
-                auto *tr = (Eng::Transform *)scene_data_.comp_store[CompTransform]->Get(obj.components[CompTransform]);
+                auto *tr = (Eng::Transform *)scene_data_.comp_store[Eng::CompTransform]->Get(
+                    obj.components[Eng::CompTransform]);
                 tr->pt_mi = ray_scene_->AddMeshInstance(mesh_it->second, ValuePtr(tr->world_from_object))._index;
             }
         }
@@ -670,7 +671,8 @@ void SceneManager::InitScene_PT(bool _override) {
     }
 }
 
-void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov) {
+void Eng::SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
+                                     float fov) {
     if (!ray_scene_) {
         return;
     }
@@ -689,7 +691,7 @@ void SceneManager::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &targ
     ray_scene_->SetCamera(Ray::CameraHandle{0}, cam_desc);
 }
 
-void SceneManager::Clear_PT() {
+void Eng::SceneManager::Clear_PT() {
     if (!ray_scene_) {
         return;
     }

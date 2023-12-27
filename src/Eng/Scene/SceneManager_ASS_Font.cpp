@@ -12,8 +12,8 @@
 #include "../Gui/BitmapFont.h"
 #include "../Gui/Utils.h"
 
-bool SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                  Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                       Ren::SmallVectorImpl<std::string> &) {
     using namespace Ren;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);

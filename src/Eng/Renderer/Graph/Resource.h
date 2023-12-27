@@ -4,6 +4,7 @@
 
 #include <Ren/Resource.h>
 
+namespace Eng {
 enum class eRpResType : uint8_t { Undefined, Buffer, Texture };
 
 struct RpResource {
@@ -63,3 +64,4 @@ struct RpBufDesc {
 inline bool operator==(const RpBufDesc &lhs, const RpBufDesc &rhs) {
     return lhs.size == rhs.size && lhs.type == rhs.type;
 }
+} // namespace Eng

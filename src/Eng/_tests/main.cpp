@@ -34,8 +34,8 @@ bool InitAndDestroyFakeGLContext();
 #endif
 
 int main(int argc, char *argv[]) {
-    LogStdout log;
-    SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
+    Eng::LogStdout log;
+    Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
     puts(" ---------------");
     for (int i = 0; i < argc; ++i) {
         printf("%s ", argv[i]);

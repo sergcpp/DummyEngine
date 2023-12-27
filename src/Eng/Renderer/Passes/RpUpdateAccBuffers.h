@@ -5,6 +5,7 @@
 #include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
+namespace Eng {
 class RpUpdateAccBuffersExecutor : public RpExecutor {
     const DrawList *&p_list_;
     int rt_index_;
@@ -20,3 +21,4 @@ class RpUpdateAccBuffersExecutor : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

@@ -44,14 +44,12 @@ template <typename T> class MonoAlloc;
 class ThreadPool;
 } // namespace Sys
 
-class Random;
 namespace Eng {
+class Random;
 class ShaderLoader;
-}
-
 class Renderer {
   public:
-    Renderer(Ren::Context &ctx, Eng::ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
+    Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
     ~Renderer();
 
     uint64_t render_flags() const { return render_flags_; }
@@ -79,11 +77,11 @@ class Renderer {
 
     void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
     void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
-    bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, Eng::LightProbe &probe);
+    bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
 
   private:
     Ren::Context &ctx_;
-    Eng::ShaderLoader &sh_;
+    ShaderLoader &sh_;
     Random &rand_;
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
@@ -117,10 +115,10 @@ class Renderer {
 
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
-         EnableDOF /*|
-EnableRTShadows*/
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO |
+         EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap |
+         EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers | EnableDOF /*|
+                                                                              EnableRTShadows*/
          //| EnableDeferred | EnableHQ_HDR
         );
 #else
@@ -129,8 +127,8 @@ EnableRTShadows*/
 #endif
     uint64_t render_flags_ = DefaultFlags;
 
-    DynArray<const Eng::LightSource *> litem_to_lsource_;
-    DynArray<const Eng::Decal *> ditem_to_decal_;
+    DynArray<const LightSource *> litem_to_lsource_;
+    DynArray<const Decal *> ditem_to_decal_;
 
     struct ProcessedObjData {
         uint32_t base_vertex;
@@ -286,12 +284,14 @@ EnableRTShadows*/
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, float max_exposure,
                     bool static_accumulation, RpResRef &resolved_color);
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
-    void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
+    void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
+                                RpResRef &out_depth_down_2x);
 
     void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                              const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                              const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                             const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                             const PersistentGpuData &persistent_data,
+                             const AccelerationStructureData &acc_struct_data,
                              const BindlessTextureData &bindless, RpResRef depth_hierarchy,
                              RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
@@ -300,16 +300,18 @@ EnableRTShadows*/
     void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                           const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                          const PersistentGpuData &persistent_data,
+                          const AccelerationStructureData &acc_struct_data,
                           const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                           FrameTextures &frame_textures);
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               RpResRef rt_obj_instances_res, FrameTextures &frame_textures, bool debug_denoise);
+                               const AccelerationStructureData &acc_struct_data,
+                               const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
+                               FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               FrameTextures &frame_textures);
+                               const AccelerationStructureData &acc_struct_data,
+                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
 
     void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 
@@ -327,7 +329,7 @@ EnableRTShadows*/
                                            ProcessedObjData proc_objects[], VisObj out_visible_objects[],
                                            std::atomic_int &inout_count);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
-                                          const Eng::LightSource *const *litem_to_lsource, DrawList &list,
+                                          const LightSource *const *litem_to_lsource, DrawList &list,
                                           std::atomic_int &items_count);
 
     // Generate auxiliary textures
@@ -339,3 +341,4 @@ EnableRTShadows*/
     static std::unique_ptr<uint8_t[]> Generate_ConeTraceLUT(int resx, int resy, const float cone_angles[4],
                                                             std::string &out_c_header);
 };
+} // namespace Eng

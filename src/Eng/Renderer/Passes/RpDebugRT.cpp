@@ -8,7 +8,7 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/rt_debug_interface.h"
 
-void RpDebugRT::Execute(RpBuilder &builder) {
+void Eng::RpDebugRT::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
 #if !defined(USE_GL_RENDER)
@@ -21,7 +21,7 @@ void RpDebugRT::Execute(RpBuilder &builder) {
     }
 }
 
-void RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
 #if defined(USE_VK_RENDER)
         if (ctx.capabilities.raytracing) {

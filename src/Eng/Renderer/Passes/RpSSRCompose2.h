@@ -2,9 +2,9 @@
 
 #include "../Graph/SubPass.h"
 
+namespace Eng {
 class PrimDraw;
 struct ViewState;
-
 struct RpSSRCompose2Data {
     RpResRef shared_data;
     RpResRef depth_tex;
@@ -34,7 +34,8 @@ class RpSSRCompose2 : public RpExecutor {
   public:
     RpSSRCompose2(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(const ViewState *view_state, const Ren::ProbeStorage *probe_storage, const RpSSRCompose2Data *pass_data) {
+    void Setup(const ViewState *view_state, const Ren::ProbeStorage *probe_storage,
+               const RpSSRCompose2Data *pass_data) {
         view_state_ = view_state;
         probe_storage_ = probe_storage;
         pass_data_ = pass_data;
@@ -42,3 +43,4 @@ class RpSSRCompose2 : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

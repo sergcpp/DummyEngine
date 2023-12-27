@@ -13,11 +13,8 @@
 #include <Ren/DescriptorPool.h>
 #endif
 
-class ProbeStorage;
 namespace Eng {
 class ShaderLoader;
-}
-
 class PrimDraw {
   public:
     struct Binding;
@@ -119,3 +116,4 @@ class PrimDraw {
                   Ren::Span<const Ren::Binding> bindings, const void *uniform_data, int uniform_data_len,
                   int uniform_data_offset);
 };
+} // namespace Eng

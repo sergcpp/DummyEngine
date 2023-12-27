@@ -183,11 +183,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
             PostQuitMessage(0);
         } else {
             const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-            if (key_code == Key0) {
+            if (key_code == Eng::Key0) {
                 g_app->view_mode_ = ModlApp::eViewMode(0);
-            } else if (key_code >= Key1 && key_code <= Key9) {
-                g_app->view_mode_ = ModlApp::eViewMode(key_code - Key1 + 1);
-            } else if (key_code == KeyR) {
+            } else if (key_code >= Eng::Key1 && key_code <= Eng::Key9) {
+                g_app->view_mode_ = ModlApp::eViewMode(key_code - Eng::Key1 + 1);
+            } else if (key_code == Eng::KeyR) {
                 g_app->angle_x_ = g_app->angle_y_ = 0.0f;
                 g_app->offset_x_ = g_app->offset_y_ = 0.0f;
             }

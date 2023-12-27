@@ -2,11 +2,11 @@
 
 #include <stdexcept>
 
-GameStateManager::~GameStateManager() {
+Eng::GameStateManager::~GameStateManager() {
     Clear();
 }
 
-std::shared_ptr<GameState> GameStateManager::Peek() {
+std::shared_ptr<Eng::GameState> Eng::GameStateManager::Peek() {
     if (states_.empty()) {
         return {};
     } else {
@@ -14,7 +14,7 @@ std::shared_ptr<GameState> GameStateManager::Peek() {
     }
 }
 
-void GameStateManager::Push(const std::shared_ptr<GameState> &state) {
+void Eng::GameStateManager::Push(const std::shared_ptr<GameState> &state) {
     if (!states_.empty()) {
         states_.back()->Exit();
     }
@@ -22,7 +22,7 @@ void GameStateManager::Push(const std::shared_ptr<GameState> &state) {
     states_.back()->Enter();
 }
 
-std::shared_ptr<GameState> GameStateManager::Pop() {
+std::shared_ptr<Eng::GameState> Eng::GameStateManager::Pop() {
     if (states_.empty()) {
         throw std::runtime_error("Attempted to pop from an empty game state stack");
     }
@@ -37,11 +37,11 @@ std::shared_ptr<GameState> GameStateManager::Pop() {
     return popped;
 }
 
-void GameStateManager::PopLater() {
+void Eng::GameStateManager::PopLater() {
     pop_later_ = true;
 }
 
-std::shared_ptr<GameState> GameStateManager::Switch(const std::shared_ptr<GameState> &state) {
+std::shared_ptr<Eng::GameState> Eng::GameStateManager::Switch(const std::shared_ptr<GameState> &state) {
     std::shared_ptr<GameState> current_state = Peek();
     if (current_state) {
         Pop();
@@ -50,13 +50,13 @@ std::shared_ptr<GameState> GameStateManager::Switch(const std::shared_ptr<GameSt
     return current_state;
 }
 
-void GameStateManager::Clear() {
+void Eng::GameStateManager::Clear() {
     while (!states_.empty()) {
         Pop();
     }
 }
 
-void GameStateManager::UpdateFixed(uint64_t dt_us) {
+void Eng::GameStateManager::UpdateFixed(uint64_t dt_us) {
     if (pop_later_) {
         Pop();
         pop_later_ = false;
@@ -66,17 +66,17 @@ void GameStateManager::UpdateFixed(uint64_t dt_us) {
     st->UpdateFixed(dt_us);
 }
 
-void GameStateManager::UpdateAnim(uint64_t dt_us) {
+void Eng::GameStateManager::UpdateAnim(uint64_t dt_us) {
     std::shared_ptr<GameState> &st = states_.back();
     st->UpdateAnim(dt_us);
 }
 
-void GameStateManager::Draw() {
+void Eng::GameStateManager::Draw() {
     std::shared_ptr<GameState> &st = states_.back();
     st->Draw();
 }
 
-void GameStateManager::HandleInput(InputManager::Event &evt) {
+void Eng::GameStateManager::HandleInput(Eng::InputManager::Event &evt) {
     std::shared_ptr<GameState> &st = states_.back();
     st->HandleInput(evt);
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+namespace Eng {
 const int UPDATE_RATE = 60;
 const int UPDATE_DELTA = 1000000 / UPDATE_RATE;
 const float GRAVITY = -980.0f;
@@ -17,3 +18,4 @@ const char SHADER_LOADER_KEY[] = "shader_loader";
 
 const char UI_RENDERER_KEY[] = "ui_renderer";
 const char UI_ROOT_KEY[] = "ui_root";
+} // namespace Eng

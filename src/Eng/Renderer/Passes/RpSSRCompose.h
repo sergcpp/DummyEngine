@@ -2,9 +2,9 @@
 
 #include "../Graph/SubPass.h"
 
+namespace Eng {
 class PrimDraw;
 struct ViewState;
-
 struct RpSSRComposeData {
     RpResRef shared_data;
     RpResRef cells_buf;
@@ -47,3 +47,4 @@ class RpSSRCompose : public RpExecutor {
     }
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

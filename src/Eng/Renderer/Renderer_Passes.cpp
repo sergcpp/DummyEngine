@@ -22,7 +22,7 @@ namespace RendererInternal {
 extern const int TaaSampleCountStatic;
 }
 
-void Renderer::InitPipelines() {
+void Eng::Renderer::InitPipelines() {
     { // Init skinning pipeline
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "skinning_prog", "internal/skinning.comp.glsl");
         assert(prog->ready());
@@ -315,7 +315,7 @@ void Renderer::InitPipelines() {
     }
 }
 
-void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
+void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
     auto &update_bufs = rp_builder_.AddPass("UPDATE BUFFERS");
 
     { // create skin transforms buffer
@@ -515,7 +515,7 @@ void Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
     });
 }
 
-void Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
+void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
     auto &update_light_bufs = rp_builder_.AddPass("UPDATE LBUFFERS");
 
     { // create cells buffer
@@ -594,7 +594,8 @@ void Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
     });
 }
 
-void Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bool clear, FrameTextures &frame_textures) {
+void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bool clear,
+                                   FrameTextures &frame_textures) {
     if (p_list_->env.env_map) {
         auto &skymap = rp_builder_.AddPass("SKYDOME");
         RpResRef shared_data_buf = skymap.AddUniformBufferInput(
@@ -616,8 +617,8 @@ void Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bool cl
     }
 }
 
-void Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                  const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                       const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
     auto &gbuf_fill = rp_builder_.AddPass("GBUFFER FILL");
@@ -659,8 +660,8 @@ void Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const Per
     gbuf_fill.set_executor(&rp_gbuffer_fill_);
 }
 
-void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                    const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+void Eng::Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                         const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
     auto &opaque = rp_builder_.AddPass("OPAQUE");
@@ -716,8 +717,9 @@ void Renderer::AddForwardOpaquePass(const CommonBuffers &common_buffers, const P
     opaque.set_executor(&rp_opaque_);
 }
 
-void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                         const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers,
+                                              const PersistentGpuData &persistent_data,
+                                              const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
 
     auto &transparent = rp_builder_.AddPass("TRANSPARENT");
@@ -774,8 +776,8 @@ void Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffers, co
     transparent.set_executor(&rp_transparent_);
 }
 
-void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                                      bool enable_gi) {
+void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+                                           bool enable_gi) {
     using Stg = Ren::eStageBits;
 
     auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");
@@ -811,17 +813,17 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     data->normal_tex = gbuf_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
     data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
 
-    data->ltc_diff_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Diffuse)][0], Stg::ComputeShader);
-    data->ltc_diff_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Diffuse)][1], Stg::ComputeShader);
+    data->ltc_diff_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], Stg::ComputeShader);
+    data->ltc_diff_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], Stg::ComputeShader);
 
-    data->ltc_sheen_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Sheen)][0], Stg::ComputeShader);
-    data->ltc_sheen_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Sheen)][1], Stg::ComputeShader);
+    data->ltc_sheen_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], Stg::ComputeShader);
+    data->ltc_sheen_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], Stg::ComputeShader);
 
-    data->ltc_spec_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Specular)][0], Stg::ComputeShader);
-    data->ltc_spec_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Specular)][1], Stg::ComputeShader);
+    data->ltc_spec_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], Stg::ComputeShader);
+    data->ltc_spec_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], Stg::ComputeShader);
 
-    data->ltc_coat_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Clearcoat)][0], Stg::ComputeShader);
-    data->ltc_coat_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[int(eLTCLut::Clearcoat)][1], Stg::ComputeShader);
+    data->ltc_coat_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], Stg::ComputeShader);
+    data->ltc_coat_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
         gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
@@ -894,7 +896,7 @@ void Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, Frame
     });
 }
 
-void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth_tex, RpResRef &out_ssao) {
+void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth_tex, RpResRef &out_ssao) {
     const Ren::Vec4i cur_res =
         Ren::Vec4i{view_state_.act_res[0], view_state_.act_res[1], view_state_.scr_res[0], view_state_.scr_res[1]};
 
@@ -1120,8 +1122,8 @@ void Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _depth
     }
 }
 
-void Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
-                                         RpResRef &inout_velocity_tex) {
+void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
+                                              RpResRef &inout_velocity_tex) {
     assert(!view_state_.is_multisampled);
     auto &static_vel = rp_builder_.AddPass("FILL STATIC VEL");
 
@@ -1171,7 +1173,7 @@ void Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffers, Rp
     });
 }
 
-void Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex) {
+void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex) {
     RpResRef blur_temp;
     { // Blur frame horizontally
         auto &blur_h = rp_builder_.AddPass("BLUR H");
@@ -1265,8 +1267,8 @@ void Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &
     }
 }
 
-void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, const float max_exposure,
-                          const bool static_accumulation, RpResRef &resolved_color) {
+void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
+                               const float max_exposure, const bool static_accumulation, RpResRef &resolved_color) {
     assert(!view_state_.is_multisampled);
     { // TAA
         auto &taa = rp_builder_.AddPass("TAA");
@@ -1358,7 +1360,7 @@ void Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &fr
     }
 }
 
-void Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex) {
+void Eng::Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex) {
     auto &down_color = rp_builder_.AddPass("DOWNSAMPLE COLOR");
 
     struct PassData {
@@ -1394,8 +1396,8 @@ void Renderer::AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex) 
     });
 }
 
-void Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
-                                      RpResRef &out_depth_down_2x) {
+void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
+                                           RpResRef &out_depth_down_2x) {
     auto &downsample_depth = rp_builder_.AddPass("DOWN DEPTH");
 
     struct PassData {
@@ -1444,7 +1446,7 @@ void Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpRes
     });
 }
 
-void Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &output_tex) {
+void Eng::Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &output_tex) {
     auto &debug_motion = rp_builder_.AddPass("DEBUG MOTION");
 
     struct PassData {

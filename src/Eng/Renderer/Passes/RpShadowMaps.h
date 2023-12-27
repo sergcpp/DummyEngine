@@ -5,6 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
+namespace Eng {
 class RpShadowMaps : public RpExecutor {
     bool initialized = false;
     int w_, h_;
@@ -66,3 +67,4 @@ class RpShadowMaps : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

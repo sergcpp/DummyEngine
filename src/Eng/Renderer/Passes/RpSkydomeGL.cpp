@@ -8,8 +8,8 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/skydome_interface.h"
 
-void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                            RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
+void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
+                                 RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
     const int rp_index = clear_ ? 1 : 0;
 
     Ren::RastState rast_state = pipeline_[rp_index].rast_state();
@@ -55,4 +55,4 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     glEnable(GL_MULTISAMPLE);
 }
 
-RpSkydome::~RpSkydome() = default;
+Eng::RpSkydome::~RpSkydome() = default;

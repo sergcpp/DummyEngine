@@ -15,12 +15,12 @@ using Phy::Vec3;
 const auto Gravity = Vec3{real(0.0), real(-9.8), real(0.0)};
 } // namespace PhysicsManagerInternal
 
-void PhysicsManager::Update(SceneData &scene, const float dt_s) {
+void Eng::PhysicsManager::Update(SceneData &scene, const float dt_s) {
     using namespace PhysicsManagerInternal;
 
     // retrieve pointers to components for fast access
-    auto *transforms = (Eng::Transform *)scene.comp_store[CompTransform]->SequentialData();
-    auto *physes = (Eng::Physics *)scene.comp_store[CompPhysics]->SequentialData();
+    auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
+    auto *physes = (Physics *)scene.comp_store[CompPhysics]->SequentialData();
 
     updated_objects_.clear();
     contacts_.clear();
@@ -31,7 +31,7 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
         SceneObject &obj = (*it);
 
         if ((obj.comp_mask & PhysMask) == PhysMask) {
-            Eng::Physics &ph = physes[obj.components[CompPhysics]];
+            Physics &ph = physes[obj.components[CompPhysics]];
 
             // I = dp, F = dp/dt => dp = F * dt => I = F * dt
             const real mass = real(1) / ph.body.inv_mass;
@@ -56,7 +56,7 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
         for (uint32_t i = 0; i < uint32_t(updated_objects_.size()); i++) {
             const uint32_t ndx = updated_objects_[i];
             SceneObject &obj = scene.objects[ndx];
-            Eng::Physics &ph = physes[obj.components[CompPhysics]];
+            Physics &ph = physes[obj.components[CompPhysics]];
             const Phy::Body &b = ph.body;
 
             Phy::Bounds bounds = b.GetBounds();
@@ -89,10 +89,10 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
 
     for (const Phy::collision_pair_t &cp : temp_collision_pairs_) {
         SceneObject &obj1 = scene.objects[cp.b1];
-        Eng::Physics &ph1 = physes[obj1.components[CompPhysics]];
+        Physics &ph1 = physes[obj1.components[CompPhysics]];
 
         SceneObject &obj2 = scene.objects[cp.b2];
-        Eng::Physics &ph2 = physes[obj2.components[CompPhysics]];
+        Physics &ph2 = physes[obj2.components[CompPhysics]];
 
         if (ph1.body.inv_mass == real(0) && ph2.body.inv_mass == real(0)) {
             continue;
@@ -118,7 +118,7 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
         for (uint32_t i = 0; i < uint32_t(updated_objects_.size()); i++) {
             const uint32_t ndx = updated_objects_[i];
             SceneObject &obj = scene.objects[ndx];
-            Eng::Physics &ph = physes[obj.components[CompPhysics]];
+            Physics &ph = physes[obj.components[CompPhysics]];
 
             ph.body.Update(dt);
         }
@@ -132,14 +132,14 @@ void PhysicsManager::Update(SceneData &scene, const float dt_s) {
     for (uint32_t i = 0; i < uint32_t(updated_objects_.size()) && time_remaining > real(0); i++) {
         const uint32_t ndx = updated_objects_[i];
         SceneObject &obj = scene.objects[ndx];
-        Eng::Physics &ph = physes[obj.components[CompPhysics]];
+        Physics &ph = physes[obj.components[CompPhysics]];
 
         ph.body.Update(time_remaining);
     }
 }
 
-void PhysicsManager::SweepAndPrune1D(const Phy::Body bodies[], const int count, const float dt_s,
-                                     std::vector<Phy::collision_pair_t> &collision_pairs) {
+void Eng::PhysicsManager::SweepAndPrune1D(const Phy::Body bodies[], const int count, const float dt_s,
+                                          std::vector<Phy::collision_pair_t> &collision_pairs) {
     temp_sorted_bodies_.clear();
     temp_sorted_bodies_.resize(count * 2ull);
     Phy::SortBodiesBounds(bodies, count, dt_s, temp_sorted_bodies_.data());

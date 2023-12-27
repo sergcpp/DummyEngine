@@ -8,7 +8,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpRTGI::Execute(RpBuilder &builder) {
+void Eng::RpRTGI::Execute(RpBuilder &builder) {
     if (builder.ctx().capabilities.ray_query) {
         ExecuteRTInline(builder);
     } else {

@@ -8,7 +8,7 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/depth_hierarchy_interface.h"
 
-void RpDepthHierarchy::Execute(RpBuilder &builder) {
+void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
     RpAllocTex &depth_tex = builder.GetReadTexture(depth_tex_);
     RpAllocBuf &atomic_buf = builder.GetWriteBuffer(atomic_buf_);
     RpAllocTex &output_tex = builder.GetWriteTexture(output_tex_);

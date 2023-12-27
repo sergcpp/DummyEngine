@@ -9,8 +9,9 @@ DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const Ba
                          std::shared_ptr<Gui::BitmapFont> font)
     : BaseElement(pos, size, parent), parent_(parent), font_(std::move(font)) {}
 
-void DebugInfoUI::UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info,
-                             const ItemsInfo &items_info, const TimeInterval &swap_interval, uint64_t render_flags) {
+void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
+                             const Eng::ItemsInfo &items_info, const Eng::TimeInterval &swap_interval,
+                             uint64_t render_flags) {
     const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 
@@ -153,7 +154,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
-    if (render_flags_ & (DebugLights | DebugDecals)) {
+    if (render_flags_ & (Eng::DebugLights | Eng::DebugDecals)) {
         vertical_offset -= font_height;
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
@@ -163,7 +164,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         sprintf(text_buffer, "      LIGHTS DATA: %.3f kb",
-                items_info_smooth_.lights_count * sizeof(LightItem) / 1024.0f);
+                items_info_smooth_.lights_count * sizeof(Eng::LightItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
@@ -172,19 +173,20 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         sprintf(text_buffer, "      DECALS DATA: %.3f kb",
-                items_info_smooth_.decals_count * sizeof(DecalItem) / 1024.0f);
+                items_info_smooth_.decals_count * sizeof(Eng::DecalItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "       CELLS DATA: %.3f kb", REN_CELLS_COUNT * sizeof(CellData) / 1024.0f);
+        sprintf(text_buffer, "       CELLS DATA: %.3f kb", REN_CELLS_COUNT * sizeof(Eng::CellData) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        sprintf(text_buffer, "       ITEMS DATA: %.3f kb", items_info_smooth_.items_total * sizeof(ItemData) / 1024.0f);
+        sprintf(text_buffer, "       ITEMS DATA: %.3f kb",
+                items_info_smooth_.items_total * sizeof(Eng::ItemData) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
-    if (render_flags_ & DebugTimings) {
+    if (render_flags_ & Eng::DebugTimings) {
         /*if (prev_timing_info_.front_end_timepoint_us) {
             auto prev_front_start = double(prev_timing_info_.front_start_timepoint_us),
                  prev_front_end = double(prev_timing_info_.front_end_timepoint_us),

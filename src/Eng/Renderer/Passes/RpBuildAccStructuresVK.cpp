@@ -2,7 +2,7 @@
 
 #include <Ren/Context.h>
 
-void RpBuildAccStructuresExecutor::Execute_HWRT(RpBuilder &builder) {
+void Eng::RpBuildAccStructuresExecutor::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetReadBuffer(rt_obj_instances_buf_);
     RpAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
     RpAllocBuf &rt_tlas_build_scratch_buf = builder.GetWriteBuffer(rt_tlas_build_scratch_buf_);

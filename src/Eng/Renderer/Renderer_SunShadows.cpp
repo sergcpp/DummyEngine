@@ -10,10 +10,10 @@
 #include "Shaders/rt_shadows_interface.h"
 #include "Shaders/sun_shadows_interface.h"
 
-void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                     const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
-                                     FrameTextures &frame_textures, const bool debug_denoise) {
+void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                          const AccelerationStructureData &acc_struct_data,
+                                          const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
+                                          FrameTextures &frame_textures, const bool debug_denoise) {
     RpResRef indir_args;
 
     { // Prepare atomic counter
@@ -603,9 +603,9 @@ void Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const 
     frame_textures.sun_shadow = output_tex;
 }
 
-void Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                     const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                          const AccelerationStructureData &acc_struct_data,
+                                          const BindlessTextureData &bindless, FrameTextures &frame_textures) {
     auto &sun_shadows = rp_builder_.AddPass("SUN SHADOWS");
 
     struct RpShadowsData {

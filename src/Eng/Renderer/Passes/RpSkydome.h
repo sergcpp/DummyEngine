@@ -8,6 +8,7 @@
 #include <Ren/RenderPass.h>
 #include <Ren/VertexInput.h>
 
+namespace Eng {
 class PrimDraw;
 
 class RpSkydome : public RpExecutor {
@@ -37,8 +38,8 @@ class RpSkydome : public RpExecutor {
     RpResRef spec_tex_;
     RpResRef depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                  RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                  RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
     void DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                      RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
 
@@ -67,3 +68,4 @@ class RpSkydome : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

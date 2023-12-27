@@ -5,6 +5,7 @@
 
 struct DrawList;
 
+namespace Eng {
 class RpSkinningExecutor : public RpExecutor {
     const Ren::Pipeline &pi_skinning_;
     const DrawList *&p_list_;
@@ -27,3 +28,4 @@ class RpSkinningExecutor : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

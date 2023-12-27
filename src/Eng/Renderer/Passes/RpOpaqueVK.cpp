@@ -12,13 +12,13 @@
 namespace RpSharedInternal {
 uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                               const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id, uint32_t &bound_descr_id,
-                               BackendInfo &backend_info) {
+                               Eng::BackendInfo &backend_info) {
     for (; i < main_batch_indices.size(); i++) {
-        const CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
+        const Eng::CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
+        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -56,14 +56,14 @@ uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_desc
 
 uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                    const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id,
-                                   uint32_t &bound_descr_id, BackendInfo &backend_info) {
+                                   uint32_t &bound_descr_id, Eng::BackendInfo &backend_info) {
     int i = int(ndx);
     for (; i >= 0; i--) {
-        const CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
+        const Eng::CustomDrawBatch &batch = main_batches[main_batch_indices[i]];
+        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -100,7 +100,7 @@ uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_
 }
 } // namespace RpSharedInternal
 
-void RpOpaque::DrawOpaque(RpBuilder &builder) {
+void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
     auto &ctx = builder.ctx();
@@ -425,7 +425,7 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     }
 }
 
-void RpOpaque::InitDescrSetLayout() {
+void Eng::RpOpaque::InitDescrSetLayout() {
     VkDescriptorSetLayoutBinding bindings[] = {
         // textures (10)
         {REN_SHAD_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
@@ -457,7 +457,7 @@ void RpOpaque::InitDescrSetLayout() {
     assert(res == VK_SUCCESS);
 }
 
-RpOpaque::~RpOpaque() {
+Eng::RpOpaque::~RpOpaque() {
     if (descr_set_layout_ != VK_NULL_HANDLE) {
         vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }

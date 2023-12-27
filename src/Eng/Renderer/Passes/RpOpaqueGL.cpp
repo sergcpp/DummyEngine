@@ -15,11 +15,11 @@ void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
         glBindSampler(REN_MAT_TEX0_SLOT + j, mat.samplers[j]->id());
     }
 }
-uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage &materials,
-                               const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+uint32_t _draw_list_range_full(Eng::RpBuilder &builder, const Ren::MaterialStorage &materials,
+                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                               BackendInfo &backend_info) {
+                               Eng::BackendInfo &backend_info) {
     auto &ctx = builder.ctx();
 
     GLenum cur_primitive;
@@ -34,7 +34,7 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage &m
 
     for (; i < main_batch_indices.size(); i++) {
         const auto &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -76,17 +76,17 @@ uint32_t _draw_list_range_full(RpBuilder &builder, const Ren::MaterialStorage &m
     return i;
 }
 
-uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorage &materials,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const CustomDrawBatch> main_batches,
+uint32_t _draw_list_range_full_rev(Eng::RpBuilder &builder, const Ren::MaterialStorage &materials,
+                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    uint64_t &cur_mat_id, uint64_t &cur_pipe_id, uint64_t &cur_prog_id,
-                                   BackendInfo &backend_info) {
+                                   Eng::BackendInfo &backend_info) {
     auto &ctx = builder.ctx();
 
     int i = int(ndx);
     for (; i >= 0; i--) {
         const auto &batch = main_batches[main_batch_indices[i]];
-        if ((batch.sort_key & CustomDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::CustomDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -124,7 +124,7 @@ uint32_t _draw_list_range_full_rev(RpBuilder &builder, const Ren::MaterialStorag
 }
 } // namespace RpSharedInternal
 
-void RpOpaque::DrawOpaque(RpBuilder &builder) {
+void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
     Ren::RastState rast_state;
@@ -319,4 +319,4 @@ void RpOpaque::DrawOpaque(RpBuilder &builder) {
     Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 8);
 }
 
-RpOpaque::~RpOpaque() = default;
+Eng::RpOpaque::~RpOpaque() = default;

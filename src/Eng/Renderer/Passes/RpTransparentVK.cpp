@@ -8,7 +8,7 @@
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
+void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
                                            RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
                                            RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
                                            RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
@@ -359,11 +359,13 @@ void RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &insta
     }
 }
 
-void RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpTransparent::DrawTransparent_OIT_MomentBased(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpTransparent::DrawTransparent_OIT_WeightedBlended(RpBuilder &builder) {
+    assert(false && "Not implemented!");
+}
 
-void RpTransparent::InitDescrSetLayout() {
+void Eng::RpTransparent::InitDescrSetLayout() {
     VkDescriptorSetLayoutBinding bindings[] = {
         // textures (10)
         {REN_SHAD_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
@@ -395,7 +397,7 @@ void RpTransparent::InitDescrSetLayout() {
     assert(res == VK_SUCCESS);
 }
 
-RpTransparent::~RpTransparent() {
+Eng::RpTransparent::~RpTransparent() {
     if (descr_set_layout_) {
         vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }

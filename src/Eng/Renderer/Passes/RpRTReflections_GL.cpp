@@ -10,11 +10,11 @@
 
 #include "../Shaders/rt_reflections_interface.h"
 
-void RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
+void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
+void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -127,7 +127,7 @@ void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
                                  bindings, &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
 }
 
-void RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef rt_reflections_swrt_prog =
             sh.LoadProgram(ctx, "rt_reflections_swrt", "internal/rt_reflections_swrt.comp.glsl");

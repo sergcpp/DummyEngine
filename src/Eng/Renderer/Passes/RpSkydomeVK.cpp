@@ -14,8 +14,8 @@ extern const float __skydome_positions[];
 extern const int __skydome_vertices_count;
 } // namespace RpSkydomeInternal
 
-void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                            RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
+void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
+                                 RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
     using namespace RpSkydomeInternal;
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
@@ -105,4 +105,4 @@ void RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf
     vkCmdEndRenderPass(cmd_buf);
 }
 
-RpSkydome::~RpSkydome() {}
+Eng::RpSkydome::~RpSkydome() {}

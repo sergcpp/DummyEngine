@@ -10,7 +10,7 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/blit_ssr_compose2_interface.h"
 
-void RpSSRCompose2::Execute(RpBuilder &builder) {
+void Eng::RpSSRCompose2::Execute(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
     RpAllocTex &depth_tex = builder.GetReadTexture(pass_data_->depth_tex);
     RpAllocTex &normal_tex = builder.GetReadTexture(pass_data_->normal_tex);
@@ -59,7 +59,7 @@ void RpSSRCompose2::Execute(RpBuilder &builder) {
     }
 }
 
-void RpSSRCompose2::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
+void Eng::RpSSRCompose2::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_ssr_compose_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose2", "internal/blit_ssr_compose2.vert.glsl",
                                                 "internal/blit_ssr_compose2.frag.glsl");

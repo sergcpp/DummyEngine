@@ -12,9 +12,8 @@ namespace Snd {
 class Context;
 }
 
-class SceneManager;
-
 namespace Eng {
+class SceneManager;
 class ScriptedSequence;
 class ScriptedDialog {
     Ren::Context &ren_ctx_;

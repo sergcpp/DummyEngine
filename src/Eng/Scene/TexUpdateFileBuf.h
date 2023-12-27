@@ -7,6 +7,7 @@
 #include <Ren/VKCtx.h>
 #endif
 
+namespace Eng {
 class TextureUpdateFileBuf : public Sys::FileReadBufBase {
     Ren::ApiContext *api_ctx_ = nullptr;
     Ren::Buffer stage_buf_;
@@ -64,3 +65,4 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
     Ren::SyncFence fence;
     void *cmd_buf = nullptr;
 };
+} // namespace Eng

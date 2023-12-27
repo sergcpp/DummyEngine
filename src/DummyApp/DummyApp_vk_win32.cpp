@@ -86,27 +86,27 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
     }
     case WM_LBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(RawInputEv::P1Down, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::P1Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONDOWN: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(RawInputEv::P2Down, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::P2Down, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_LBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(RawInputEv::P1Up, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::P1Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_RBUTTONUP: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(RawInputEv::P2Up, 0, px, py, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::P2Up, 0, px, py, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEMOVE: {
         const float px = float(LOWORD(lParam)), py = float(HIWORD(lParam));
-        g_app->AddEvent(RawInputEv::P1Move, 0, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
+        g_app->AddEvent(Eng::RawInputEv::P1Move, 0, px, py, px - last_p1_pos[0], py - last_p1_pos[1]);
 
         last_p1_pos[0] = px;
         last_p1_pos[1] = py;
@@ -117,26 +117,26 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
             PostQuitMessage(0);
         } else {
             const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-            g_app->AddEvent(RawInputEv::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+            g_app->AddEvent(Eng::RawInputEv::KeyDown, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         }
         break;
     }
     case WM_KEYUP: {
         const uint32_t scan_code = ScancodeFromLparam(lParam), key_code = ScancodeToHID(scan_code);
-        g_app->AddEvent(RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::KeyUp, key_code, 0.0f, 0.0f, 0.0f, 0.0f);
         break;
     }
     case WM_MOUSEWHEEL: {
         WORD _delta = HIWORD(wParam);
         const auto delta = reinterpret_cast<const short &>(_delta);
         const float wheel_motion = float(delta / WHEEL_DELTA);
-        g_app->AddEvent(RawInputEv::MouseWheel, 0, 0.0f, 0.0f, wheel_motion, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::MouseWheel, 0, 0.0f, 0.0f, wheel_motion, 0.0f);
         break;
     }
     case WM_SIZE: {
         const int w = LOWORD(lParam), h = HIWORD(lParam);
         g_app->Resize(w, h);
-        g_app->AddEvent(RawInputEv::Resize, 0, float(w), float(h), 0.0f, 0.0f);
+        g_app->AddEvent(Eng::RawInputEv::Resize, 0, float(w), float(h), 0.0f, 0.0f);
     }
     default: {
         break;
@@ -183,7 +183,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
         auto aux_gfx_thread = std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
         viewer_.reset(new Viewer(w, h, nullptr, validation_level, device_name, std::move(aux_gfx_thread)));
 
-        auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
+        auto input_manager = viewer_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
         input_manager_ = input_manager;
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -218,14 +218,15 @@ void DummyApp::Resize(const int w, const int h) {
     }
 }
 
-void DummyApp::AddEvent(const RawInputEv type, const uint32_t key_code, const float x, const float y, const float dx,
+void DummyApp::AddEvent(const Eng::RawInputEv type, const uint32_t key_code, const float x, const float y,
+                        const float dx,
                         const float dy) {
-    std::shared_ptr<InputManager> input_manager = input_manager_.lock();
+    std::shared_ptr<Eng::InputManager> input_manager = input_manager_.lock();
     if (!input_manager) {
         return;
     }
 
-    InputManager::Event evt;
+    Eng::InputManager::Event evt;
     evt.type = type;
     evt.key_code = key_code;
     evt.point.x = x;

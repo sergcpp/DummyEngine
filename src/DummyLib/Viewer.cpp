@@ -42,8 +42,8 @@ extern bool ignore_optick_errors;
 Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const char *device_name,
                std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread)
     : GameBase(w, h, validation_level, device_name) {
-    auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
-    auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
+    auto ren_ctx = GetComponent<Ren::Context>(Eng::REN_CONTEXT_KEY);
+    auto snd_ctx = GetComponent<Snd::Context>(Eng::SND_CONTEXT_KEY);
     JsObject main_config;
 
     {
@@ -95,7 +95,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
 
     { // create UI for performance debugging
         auto font_storage = GetComponent<FontStorage>(UI_FONTS_KEY);
-        auto ui_root = GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
+        auto ui_root = GetComponent<Gui::BaseElement>(Eng::UI_ROOT_KEY);
         auto debug_ui = std::make_shared<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root.get(),
                                                       font_storage->FindFont("main_font"));
         AddComponent(UI_DEBUG_KEY, debug_ui);
@@ -106,9 +106,9 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     {
         using namespace std::placeholders;
 
-        auto sh_loader = GetComponent<Eng::ShaderLoader>(SHADER_LOADER_KEY);
-        auto random = GetComponent<Random>(RANDOM_KEY);
-        auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, *random, *threads_);
+        auto sh_loader = GetComponent<Eng::ShaderLoader>(Eng::SHADER_LOADER_KEY);
+        auto random = GetComponent<Eng::Random>(Eng::RANDOM_KEY);
+        auto renderer = std::make_shared<Eng::Renderer>(*ren_ctx, *sh_loader, *random, *threads_);
         AddComponent(RENDERER_KEY, renderer);
 
         Ray::settings_t s;
@@ -118,17 +118,17 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
         auto ray_renderer = std::shared_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
         AddComponent(RAY_RENDERER_KEY, ray_renderer);
 
-        path_config_t paths;
+        Eng::path_config_t paths;
         auto scene_manager =
-            std::make_shared<SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads_, paths);
+            std::make_shared<Eng::SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads_, paths);
         scene_manager->SetPipelineInitializer(
-            std::bind(&Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
+            std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
 
         AddComponent(SCENE_MANAGER_KEY, scene_manager);
     }
 
     {
-        auto physics_manager = std::make_shared<PhysicsManager>();
+        auto physics_manager = std::make_shared<Eng::PhysicsManager>();
         AddComponent(PHYSICS_MANAGER_KEY, physics_manager);
     }
 
@@ -150,15 +150,15 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
         AddComponent(DICT_KEY, dictionary);
     }
 
-    auto swap_interval = std::make_shared<TimeInterval>();
+    auto swap_interval = std::make_shared<Eng::TimeInterval>();
     AddComponent(SWAP_TIMER_KEY, swap_interval);
 
-    auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
+    auto state_manager = GetComponent<Eng::GameStateManager>(Eng::STATE_MANAGER_KEY);
     state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
 }
 
 void Viewer::Frame() {
-    auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
+    auto ctx = GetComponent<Ren::Context>(Eng::REN_CONTEXT_KEY);
     Ren::ApiContext *api_ctx = ctx->api_ctx();
 
 #if defined(USE_VK_RENDER)
@@ -220,7 +220,7 @@ void Viewer::Frame() {
     Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
 
-        auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
+        auto state_manager = GetComponent<Eng::GameStateManager>(Eng::STATE_MANAGER_KEY);
         state_manager->Draw();
 
 #if defined(USE_VK_RENDER)
@@ -293,28 +293,28 @@ void Viewer::Frame() {
 }
 
 void Viewer::PrepareAssets(const char *platform) {
-    LogStdout log;
+    Eng::LogStdout log;
 
     const double t1 = Sys::GetTimeS();
-    SceneManager::RegisterAsset("tei.json", "dict", HConvTEIToDict);
+    Eng::SceneManager::RegisterAsset("tei.json", "dict", HConvTEIToDict);
 
     Sys::ThreadPool temp_threads(8, Sys::eThreadPriority::Normal, "prepare_assets_thread");
 
 #if !defined(__ANDROID__)
     if (strcmp(platform, "all") == 0) {
-        SceneManager::PrepareAssets("assets", "assets_pc", "pc", &temp_threads, &log);
-        SceneManager::PrepareAssets("assets", "assets_android", "android", &temp_threads, &log);
+        Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", &temp_threads, &log);
+        Eng::SceneManager::PrepareAssets("assets", "assets_android", "android", &temp_threads, &log);
     } else {
         std::string out_folder = "assets_";
         out_folder += platform;
-        SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, &temp_threads, &log);
+        Eng::SceneManager::PrepareAssets("assets", out_folder.c_str(), platform, &temp_threads, &log);
     }
 #endif
     const double t2 = Sys::GetTimeS();
     log.Info("Assets processed in %fs", t2 - t1);
 }
 
-bool Viewer::HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file,
+bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
                             Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 

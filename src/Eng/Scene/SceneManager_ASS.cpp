@@ -68,9 +68,8 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data
 }
 
 std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int width, int height,
-                                           float invalid_threshold, int filter_size) {
-    std::vector<Ray::color_rgba_t> temp_pixels1{pixels, pixels + width * height},
-        temp_pixels2{(size_t)width * height};
+                                          float invalid_threshold, int filter_size) {
+    std::vector<Ray::color_rgba_t> temp_pixels1{pixels, pixels + width * height}, temp_pixels2{(size_t)width * height};
 
     // Avoid bound checks in debug
     Ray::color_rgba_t *_temp_pixels1 = temp_pixels1.data(), *_temp_pixels2 = temp_pixels2.data();
@@ -156,8 +155,8 @@ std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_re
     return tex_data;
 }
 
-void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder,
-                    const std::function<void(assets_context_t &ctx, const char *)> &callback) {
+void ReadAllFiles_r(Eng::assets_context_t &ctx, const char *in_folder,
+                    const std::function<void(Eng::assets_context_t &ctx, const char *)> &callback) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
         ctx.log->Error("Cannot open folder %s", in_folder);
@@ -187,8 +186,8 @@ void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder,
     closedir(in_dir);
 }
 
-void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder,
-                       const std::function<void(assets_context_t &ctx, const char *)> &callback,
+void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const char *in_folder,
+                       const std::function<void(Eng::assets_context_t &ctx, const char *)> &callback,
                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     DIR *in_dir = opendir(in_folder);
     if (!in_dir) {
@@ -252,7 +251,7 @@ uint32_t HashFile(const char *in_file, Ren::ILog *log) {
     return hash;
 }
 
-bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &ctx, bool report_error) {
+bool GetFileModifyTime(const char *in_file, char out_str[32], Eng::assets_context_t &ctx, bool report_error) {
 #ifdef _WIN32
     auto filetime_to_uint64 = [](const FILETIME &ft) -> uint64_t {
         ULARGE_INTEGER ull;
@@ -293,7 +292,7 @@ bool GetFileModifyTime(const char *in_file, char out_str[32], assets_context_t &
     return true;
 }
 
-bool CheckAssetChanged(const char *in_file, const char *out_file, assets_context_t &ctx) {
+bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
     if (strstr(in_file, ".glsl")) {
@@ -528,7 +527,7 @@ bool WriteDB(const JsObjectP &js_db, const char *out_folder) {
     return write_successful;
 }
 
-std::string ExtractHTMLData(assets_context_t &ctx, const char *in_file, std::string &out_caption) {
+std::string ExtractHTMLData(Eng::assets_context_t &ctx, const char *in_file, std::string &out_caption) {
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     const int file_size = int(src_stream.tellg());
     src_stream.seekg(0, std::ios::beg);
@@ -598,14 +597,14 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]);
 bool g_astc_initialized = false;
 } // namespace SceneManagerInternal
 
-Ren::HashMap32<std::string, SceneManager::Handler> SceneManager::g_asset_handlers;
+Ren::HashMap32<std::string, Eng::SceneManager::Handler> Eng::SceneManager::g_asset_handlers;
 
-void SceneManager::RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func) {
+void Eng::SceneManager::RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func) {
     g_asset_handlers[in_ext] = {out_ext, convert_func};
 }
 
-bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
-                                 Sys::ThreadPool *p_threads, Ren::ILog *log) {
+bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
+                                      Sys::ThreadPool *p_threads, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     // for astc codec
@@ -685,7 +684,7 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
             return;
         }
 
-        //std::lock_guard<std::mutex> _(ctx.cache_mtx);
+        // std::lock_guard<std::mutex> _(ctx.cache_mtx);
 
         Ren::SmallVector<std::string, 32> dependencies;
         const bool res = handler->convert(ctx, in_file, out_file.c_str(), dependencies);
@@ -798,20 +797,19 @@ bool SceneManager::PrepareAssets(const char *in_folder, const char *out_folder, 
 
     WriteDB(ctx.cache->js_db, out_folder);
 
-
     glslang_finalize_process();
 
     return true;
 }
 
-bool SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
-                         Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
+                              Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("[PrepareAssets] Skip %s", out_file);
     return true;
 }
 
-bool SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
-                         Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
+                              Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("[PrepareAssets] Copy %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -831,8 +829,8 @@ bool SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char 
     return dst_stream.good();
 }
 
-bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                       Ren::SmallVectorImpl<std::string> &out_dependencies) {
+bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                            Ren::SmallVectorImpl<std::string> &out_dependencies) {
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
@@ -892,8 +890,8 @@ bool SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_fil
     return true;
 }
 
-bool SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                   Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                        Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Prep %s", out_file);

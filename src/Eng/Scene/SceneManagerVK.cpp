@@ -39,7 +39,7 @@ void to_khr_xform(const Ren::Mat4f &xform, float matrix[3][4]) {
 
 } // namespace SceneManagerInternal
 
-void SceneManager::UpdateMaterialsBuffer() {
+void Eng::SceneManager::UpdateMaterialsBuffer() {
     using namespace SceneManagerInternal;
 
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
@@ -288,7 +288,7 @@ void SceneManager::UpdateMaterialsBuffer() {
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 }
 
-void SceneManager::InitHWRTAccStructures() {
+void Eng::SceneManager::InitHWRTAccStructures() {
     using namespace SceneManagerInternal;
 
     const VkDeviceSize AccStructAlignment = 256;
@@ -301,7 +301,7 @@ void SceneManager::InitHWRTAccStructures() {
         Ren::SmallVector<uint32_t, 16> prim_counts;
         VkAccelerationStructureBuildSizesInfoKHR size_info;
         VkAccelerationStructureBuildGeometryInfoKHR build_info;
-        Eng::AccStructure *acc;
+        AccStructure *acc;
     };
     std::vector<Blas> all_blases;
 
@@ -310,7 +310,7 @@ void SceneManager::InitHWRTAccStructures() {
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
     while (acc_index != 0xffffffff) {
-        auto *acc = (Eng::AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
+        auto *acc = (AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
         if (acc->mesh->blas) {
             // already processed
             acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
@@ -528,10 +528,10 @@ void SceneManager::InitHWRTAccStructures() {
     //
 
     // retrieve pointers to components for fast access
-    const auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
-    const auto *acc_structs = (Eng::AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
-    const auto *lightmaps = (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
-    const auto *probes = (Eng::LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
+    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *probes = (LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
     const CompStorage *probe_store = scene_data_.comp_store[CompProbe];
 
     std::vector<RTGeoInstance> geo_instances;
@@ -542,9 +542,9 @@ void SceneManager::InitHWRTAccStructures() {
             continue;
         }
 
-        const Eng::Transform &tr = transforms[obj.components[CompTransform]];
-        const Eng::AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
-        const Eng::Lightmap *lm = nullptr;
+        const Transform &tr = transforms[obj.components[CompTransform]];
+        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+        const Lightmap *lm = nullptr;
         if (obj.comp_mask & CompLightmapBit) {
             lm = &lightmaps[obj.components[CompLightmap]];
         }
@@ -598,8 +598,8 @@ void SceneManager::InitHWRTAccStructures() {
                             continue;
                         }
 
-                        const Eng::Transform &probe_tr = transforms[probe.components[CompTransform]];
-                        const Eng::LightProbe &probe_pr = probes[probe.components[CompProbe]];
+                        const Transform &probe_tr = transforms[probe.components[CompTransform]];
+                        const LightProbe &probe_pr = probes[probe.components[CompProbe]];
 
                         const float dist2 =
                             Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),

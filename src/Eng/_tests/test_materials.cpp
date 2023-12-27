@@ -26,7 +26,8 @@ namespace RendererInternal {
 extern const int TaaSampleCountStatic;
 }
 
-void run_image_test(const char *test_name, const char *device_name, int validation_level, const double min_psnr, const int pix_thres) {
+void run_image_test(const char *test_name, const char *device_name, int validation_level, const double min_psnr,
+                    const int pix_thres) {
     using namespace std::chrono;
 
     const auto start_time = high_resolution_clock::now();
@@ -40,7 +41,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     TestContext ren_ctx(ref_w, ref_h, device_name, validation_level, &log);
 #if defined(USE_VK_RENDER)
     Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
-    require_return(Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, device_name));
+    require_return(!device_name || Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, device_name));
 #endif
     Snd::Context snd_ctx;
     snd_ctx.Init(&log);
@@ -52,18 +53,19 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     SCOPE_EXIT({ delete ray_renderer; })
 
     Eng::ShaderLoader shader_loader;
-    Random rand(0);
+    Eng::Random rand(0);
     Sys::ThreadPool threads(4);
-    Renderer renderer(ren_ctx, shader_loader, rand, threads);
-    renderer.set_render_flags(EnableZFill | EnableCulling | EnableSSAO | EnableLightmap | EnableLights | EnableDecals |
-                              EnableShadows | EnableTaa | EnableTaaStatic | EnableTimers | EnableDOF | EnableDeferred |
-                              EnableHQ_HDR);
+    Eng::Renderer renderer(ren_ctx, shader_loader, rand, threads);
+    renderer.set_render_flags(Eng::EnableZFill | Eng::EnableCulling | Eng::EnableSSAO | Eng::EnableLightmap |
+                              Eng::EnableLights | Eng::EnableDecals | Eng::EnableShadows | Eng::EnableTaa |
+                              Eng::EnableTaaStatic | Eng::EnableTimers | Eng::EnableDOF | Eng::EnableDeferred |
+                              Eng::EnableHQ_HDR);
 
-    path_config_t paths;
-    SceneManager scene_manager(ren_ctx, shader_loader, snd_ctx, *ray_renderer, threads, paths);
+    Eng::path_config_t paths;
+    Eng::SceneManager scene_manager(ren_ctx, shader_loader, snd_ctx, *ray_renderer, threads, paths);
 
     using namespace std::placeholders;
-    scene_manager.SetPipelineInitializer(std::bind(&Renderer::InitPipelinesForProgram, &renderer, _1, _2, _3, _4));
+    scene_manager.SetPipelineInitializer(std::bind(&Eng::Renderer::InitPipelinesForProgram, &renderer, _1, _2, _3, _4));
 
     JsObjectP js_scene(scene_manager.mp_alloc());
 
@@ -120,46 +122,46 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     // Create required staging buffers
     //
     Ren::BufferRef instances_stage_buf = ren_ctx.LoadBuffer("Instances (Stage)", Ren::eBufType::Stage,
-                                                            InstanceDataBufChunkSize * Ren::MaxFramesInFlight);
+                                                            Eng::InstanceDataBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef instance_indices_stage_buf = ren_ctx.LoadBuffer(
-        "Instance Indices (Stage)", Ren::eBufType::Stage, InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef skin_transforms_stage_buf = ren_ctx.LoadBuffer("Skin Transforms (Stage)", Ren::eBufType::Stage,
-                                                                  SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef shape_keys_stage_buf =
-        ren_ctx.LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Stage, ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
+        "Instance Indices (Stage)", Ren::eBufType::Stage, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef skin_transforms_stage_buf = ren_ctx.LoadBuffer(
+        "Skin Transforms (Stage)", Ren::eBufType::Stage, Eng::SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef shape_keys_stage_buf = ren_ctx.LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Stage,
+                                                             Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef cells_stage_buf =
-        ren_ctx.LoadBuffer("Cells (Stage)", Ren::eBufType::Stage, CellsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Cells (Stage)", Ren::eBufType::Stage, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef items_stage_buf =
-        ren_ctx.LoadBuffer("Items (Stage)", Ren::eBufType::Stage, ItemsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Items (Stage)", Ren::eBufType::Stage, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef lights_stage_buf =
-        ren_ctx.LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, LightsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
-        ren_ctx.LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, DecalsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx.LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx.capabilities.raytracing) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                        HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                        Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                           HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                           Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
     } else if (ren_ctx.capabilities.swrt) {
         rt_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                        SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                        Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf = ren_ctx.LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                           SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                           Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT TLAS Nodes (Stage)", Ren::eBufType::Stage,
-                                                     SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+                                                     Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_tlas_nodes_stage_buf = ren_ctx.LoadBuffer("SWRT Shadow TLAS Nodes (Stage)", Ren::eBufType::Stage,
-                                                        SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+                                                        Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
-    Ren::BufferRef shared_data_stage_buf =
-        ren_ctx.LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage, SharedDataBlockSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef shared_data_stage_buf = ren_ctx.LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage,
+                                                              Eng::SharedDataBlockSize * Ren::MaxFramesInFlight);
 
     //
     // Initialize draw list
     //
-    DrawList draw_list;
+    Eng::DrawList draw_list;
     draw_list.Init(shared_data_stage_buf, instances_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf,
                    shape_keys_stage_buf, cells_stage_buf, items_stage_buf, lights_stage_buf, decals_stage_buf,
                    rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,

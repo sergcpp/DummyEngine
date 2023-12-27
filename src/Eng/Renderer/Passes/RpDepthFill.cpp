@@ -7,11 +7,11 @@
 #include "../Renderer_Structs.h"
 
 namespace RpSharedInternal {
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
                      const uint32_t mask) {
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
             break;
         }
     }
@@ -19,7 +19,7 @@ uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Ba
 }
 } // namespace RpSharedInternal
 
-void RpDepthFill::Execute(RpBuilder &builder) {
+void Eng::RpDepthFill::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
@@ -31,8 +31,8 @@ void RpDepthFill::Execute(RpBuilder &builder) {
     DrawDepth(builder, vtx_buf1, vtx_buf2, ndx_buf);
 }
 
-void RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
-                           RpAllocBuf &ndx_buf, RpAllocTex &depth_tex, RpAllocTex &velocity_tex) {
+void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                                RpAllocBuf &ndx_buf, RpAllocTex &depth_tex, RpAllocTex &velocity_tex) {
 
     const Ren::RenderTarget velocity_target = {velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
     const Ren::RenderTarget depth_clear_target = {depth_tex.ref, Ren::eLoadOp::Clear, Ren::eStoreOp::Store,

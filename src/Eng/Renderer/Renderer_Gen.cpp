@@ -95,7 +95,7 @@ int16_t f32_to_s16(float value) { return int16_t(value * 32767); }
 
 } // namespace RendererInternal
 
-std::unique_ptr<uint16_t[]> Renderer::Generate_BRDF_LUT(const int res, std::string &out_c_header) {
+std::unique_ptr<uint16_t[]> Eng::Renderer::Generate_BRDF_LUT(const int res, std::string &out_c_header) {
     std::unique_ptr<uint16_t[]> img_data_rg16(new uint16_t[res * res * 2]);
 
     out_c_header += "static const uint32_t __brdf_lut_res = " + std::to_string(res) + ";\n";
@@ -123,7 +123,7 @@ std::unique_ptr<uint16_t[]> Renderer::Generate_BRDF_LUT(const int res, std::stri
     return img_data_rg16;
 }
 
-std::unique_ptr<int8_t[]> Renderer::Generate_PeriodicPerlin(const int res, std::string &out_c_header) {
+std::unique_ptr<int8_t[]> Eng::Renderer::Generate_PeriodicPerlin(const int res, std::string &out_c_header) {
     std::unique_ptr<int8_t[]> img_data(new int8_t[res * res * 4]);
 
     for (int y = 0; y < res; y++) {
@@ -188,9 +188,9 @@ std::unique_ptr<int8_t[]> Renderer::Generate_PeriodicPerlin(const int res, std::
     return img_data;
 }
 
-std::unique_ptr<uint8_t[]> Renderer::Generate_SSSProfile_LUT(const int res, const int gauss_count,
-                                                             const float gauss_variances[],
-                                                             const Ren::Vec3f diffusion_weights[]) {
+std::unique_ptr<uint8_t[]> Eng::Renderer::Generate_SSSProfile_LUT(const int res, const int gauss_count,
+                                                                  const float gauss_variances[],
+                                                                  const Ren::Vec3f diffusion_weights[]) {
     std::unique_ptr<uint8_t[]> img_data(new uint8_t[res * res * 4]);
 
     auto gauss = [](const float v, const float r) -> float {
@@ -261,7 +261,7 @@ std::unique_ptr<uint8_t[]> Renderer::Generate_SSSProfile_LUT(const int res, cons
     return img_data;
 }
 
-std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(const int res, std::string &out_c_header) {
+std::unique_ptr<int16_t[]> Eng::Renderer::Generate_RandDirs(const int res, std::string &out_c_header) {
     using namespace RendererInternal;
 
     assert(res <= 16);
@@ -293,8 +293,8 @@ std::unique_ptr<int16_t[]> Renderer::Generate_RandDirs(const int res, std::strin
     return out_data_rg16;
 }
 
-std::unique_ptr<uint8_t[]> Renderer::Generate_ConeTraceLUT(const int resx, const int resy, const float cone_angles[4],
-                                                           std::string &out_c_header) {
+std::unique_ptr<uint8_t[]> Eng::Renderer::Generate_ConeTraceLUT(const int resx, const int resy,
+                                                                const float cone_angles[4], std::string &out_c_header) {
     using namespace RendererInternal;
 
     std::unique_ptr<uint8_t[]> out_data(new uint8_t[4 * resx * resy]);

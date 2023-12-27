@@ -3,6 +3,7 @@
 #include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
+namespace Eng {
 struct RpReadBrightnessData {
     RpResRef input_tex;
     RpResRef output_buf;
@@ -28,3 +29,4 @@ class RpReadBrightness : public RpExecutor {
 
     float reduced_average() const { return reduced_average_; }
 };
+} // namespace Eng

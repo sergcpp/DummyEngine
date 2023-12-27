@@ -10,9 +10,9 @@ namespace GraphBuilderInternal {
 const bool EnableTextureAliasing = true;
 }
 
-Ren::ILog *RpBuilder::log() { return ctx_.log(); }
+Ren::ILog *Eng::RpBuilder::log() { return ctx_.log(); }
 
-RpSubpass &RpBuilder::AddPass(const char *name) {
+Eng::RpSubpass &Eng::RpBuilder::AddPass(const char *name) {
     char *mem = alloc_.allocate(sizeof(RpSubpass) + alignof(RpSubpass));
     auto *new_rp = reinterpret_cast<RpSubpass *>(mem + alignof(RpSubpass) - (uintptr_t(mem) % alignof(RpSubpass)));
     alloc_.construct(new_rp, int(subpasses_.size()), name, *this);
@@ -20,7 +20,7 @@ RpSubpass &RpBuilder::AddPass(const char *name) {
     return *subpasses_.back();
 }
 
-RpSubpass *RpBuilder::FindPass(const char *name) {
+Eng::RpSubpass *Eng::RpBuilder::FindPass(const char *name) {
     auto it = std::find_if(begin(subpasses_), end(subpasses_),
                            [name](const RpSubpass *pass) { return strcmp(pass->name(), name) == 0; });
     if (it != end(subpasses_)) {
@@ -29,8 +29,8 @@ RpSubpass *RpBuilder::FindPass(const char *name) {
     return nullptr;
 }
 
-RpResRef RpBuilder::ReadBuffer(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                               RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadBuffer(const RpResRef handle, const Ren::eResState desired_state,
+                                         const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Buffer);
 
     RpAllocBuf &buf = buffers_[handle.index];
@@ -51,8 +51,8 @@ RpResRef RpBuilder::ReadBuffer(const RpResRef handle, const Ren::eResState desir
     return ret;
 }
 
-RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
-                               const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
+                                         const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -92,8 +92,9 @@ RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSta
     return ret;
 }
 
-RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo,
-                               const Ren::eResState desired_state, const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo,
+                                         const Ren::eResState desired_state, const Ren::eStageBits stages,
+                                         RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -134,8 +135,8 @@ RpResRef RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex
     return ret;
 }
 
-RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desired_state,
+                                          const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
@@ -155,8 +156,8 @@ RpResRef RpBuilder::ReadTexture(const RpResRef handle, const Ren::eResState desi
     return ret;
 }
 
-RpResRef RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_state,
+                                          const Ren::eStageBits stages, RpSubpass &pass) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
 
@@ -176,8 +177,8 @@ RpResRef RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_s
     return ret;
 }
 
-RpResRef RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
-                                const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
+                                          const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -218,8 +219,8 @@ RpResRef RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSta
     return ret;
 }
 
-RpResRef RpBuilder::ReadHistoryTexture(const RpResRef handle, const Ren::eResState desired_state,
-                                       const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadHistoryTexture(const RpResRef handle, const Ren::eResState desired_state,
+                                                 const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex *orig_tex = &textures_[handle.index];
@@ -259,8 +260,8 @@ RpResRef RpBuilder::ReadHistoryTexture(const RpResRef handle, const Ren::eResSta
     return ret;
 }
 
-RpResRef RpBuilder::ReadHistoryTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
-                                       RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadHistoryTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
+                                                 RpSubpass &pass) {
     RpResRef ret;
     ret.type = eRpResType::Texture;
 
@@ -282,8 +283,8 @@ RpResRef RpBuilder::ReadHistoryTexture(const char *name, Ren::eResState desired_
     return ReadHistoryTexture(ret, desired_state, stages, pass);
 }
 
-RpResRef RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eResState desired_state,
+                                          const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Buffer);
 
     RpAllocBuf &buf = buffers_[handle.index];
@@ -305,8 +306,8 @@ RpResRef RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eResState desi
     return ret;
 }
 
-RpResRef RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const Ren::eResState desired_state,
-                                const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const Ren::eResState desired_state,
+                                          const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -346,8 +347,8 @@ RpResRef RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const R
     return ret;
 }
 
-RpResRef RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
-                                const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
+                                          const Ren::eStageBits stages, RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -388,8 +389,8 @@ RpResRef RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const Ren::eResSt
     return ret;
 }
 
-RpResRef RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState desired_state,
-                                 const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState desired_state,
+                                           const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);
 
     RpAllocTex &tex = textures_[handle.index];
@@ -411,8 +412,8 @@ RpResRef RpBuilder::WriteTexture(const RpResRef handle, const Ren::eResState des
     return ret;
 }
 
-RpResRef RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_state, const Ren::eStageBits stages,
-                                 RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_state,
+                                           const Ren::eStageBits stages, RpSubpass &pass) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
 
@@ -434,8 +435,9 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_
     return ret;
 }
 
-RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, const Ren::eResState desired_state,
-                                 const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p,
+                                           const Ren::eResState desired_state, const Ren::eStageBits stages,
+                                           RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -477,8 +479,8 @@ RpResRef RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p, co
     return ret;
 }
 
-RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
-                                 const Ren::eStageBits stages, RpSubpass &pass, const int slot_index) {
+Eng::RpResRef Eng::RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResState desired_state,
+                                           const Ren::eStageBits stages, RpSubpass &pass, const int slot_index) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -539,7 +541,7 @@ RpResRef RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const Ren::eResSt
     return ret;
 }
 
-RpResRef RpBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) {
+Eng::RpResRef Eng::RpBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) {
     RpResource ret;
     ret.type = eRpResType::Texture;
 
@@ -566,7 +568,7 @@ RpResRef RpBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) {
     return ret;
 }
 
-RpAllocBuf &RpBuilder::GetReadBuffer(const RpResRef handle) {
+Eng::RpAllocBuf &Eng::RpBuilder::GetReadBuffer(const RpResRef handle) {
     assert(handle.type == eRpResType::Buffer);
     RpAllocBuf &buf = buffers_.at(handle.index);
     assert(buf.write_count == handle.write_count);
@@ -574,7 +576,7 @@ RpAllocBuf &RpBuilder::GetReadBuffer(const RpResRef handle) {
     return buf;
 }
 
-RpAllocTex &RpBuilder::GetReadTexture(const RpResRef handle) {
+Eng::RpAllocTex &Eng::RpBuilder::GetReadTexture(const RpResRef handle) {
     assert(handle.type == eRpResType::Texture);
     RpAllocTex &tex = textures_.at(handle.index);
     assert(tex.write_count == handle.write_count);
@@ -583,7 +585,7 @@ RpAllocTex &RpBuilder::GetReadTexture(const RpResRef handle) {
     return tex;
 }
 
-RpAllocBuf &RpBuilder::GetWriteBuffer(const RpResRef handle) {
+Eng::RpAllocBuf &Eng::RpBuilder::GetWriteBuffer(const RpResRef handle) {
     assert(handle.type == eRpResType::Buffer);
     RpAllocBuf &buf = buffers_.at(handle.index);
     assert(buf.write_count + 1 == handle.write_count);
@@ -592,7 +594,7 @@ RpAllocBuf &RpBuilder::GetWriteBuffer(const RpResRef handle) {
     return buf;
 }
 
-RpAllocTex &RpBuilder::GetWriteTexture(const RpResRef handle) {
+Eng::RpAllocTex &Eng::RpBuilder::GetWriteTexture(const RpResRef handle) {
     assert(handle.type == eRpResType::Texture);
     RpAllocTex &tex = textures_.at(handle.index);
     assert(tex.write_count + 1 == handle.write_count);
@@ -601,7 +603,7 @@ RpAllocTex &RpBuilder::GetWriteTexture(const RpResRef handle) {
     return tex;
 }
 
-void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
+void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
     for (size_t i = 0; i < pass.output_.size(); i++) {
         RpResource res = pass.output_[i];
         if (res.type == eRpResType::Buffer) {
@@ -676,7 +678,7 @@ void RpBuilder::AllocateNeededResources(RpSubpass &pass) {
     }
 }
 
-void RpBuilder::Reset() {
+void Eng::RpBuilder::Reset() {
     for (int i = int(subpasses_.size()) - 1; i >= 0; --i) {
         alloc_.destroy(subpasses_[i]);
     }
@@ -711,7 +713,7 @@ void RpBuilder::Reset() {
     temp_samplers.clear();
 }
 
-int16_t RpBuilder::FindPreviousWrittenInPass(const RpResRef handle) {
+int16_t Eng::RpBuilder::FindPreviousWrittenInPass(const RpResRef handle) {
     Ren::SmallVectorImpl<rp_write_pass_t> *written_in_passes = nullptr;
     if (handle.type == eRpResType::Buffer) {
         written_in_passes = &buffers_[handle.index].written_in_passes;
@@ -729,7 +731,7 @@ int16_t RpBuilder::FindPreviousWrittenInPass(const RpResRef handle) {
     return -1;
 }
 
-bool RpBuilder::DependsOn_r(const int16_t dst_pass, const int16_t src_pass) {
+bool Eng::RpBuilder::DependsOn_r(const int16_t dst_pass, const int16_t src_pass) {
     if (dst_pass == src_pass) {
         return true;
     }
@@ -741,8 +743,8 @@ bool RpBuilder::DependsOn_r(const int16_t dst_pass, const int16_t src_pass) {
     return false;
 }
 
-void RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int recursion_depth,
-                                           std::vector<RpSubpass *> &out_pass_stack) {
+void Eng::RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int recursion_depth,
+                                                std::vector<RpSubpass *> &out_pass_stack) {
     assert(recursion_depth <= subpasses_.size());
     Ren::SmallVector<int16_t, 32> written_in_passes;
     for (size_t i = 0; i < pass->input_.size(); i++) {
@@ -783,7 +785,7 @@ void RpBuilder::TraversePassDependencies_r(const RpSubpass *pass, const int recu
     }
 }
 
-void RpBuilder::PrepareAllocResources() {
+void Eng::RpBuilder::PrepareAllocResources() {
     std::vector<bool> visited_buffers(buffers_.capacity(), false);
     std::vector<bool> visited_textures(textures_.capacity(), false);
 
@@ -824,7 +826,7 @@ void RpBuilder::PrepareAllocResources() {
     }
 }
 
-void RpBuilder::BuildRenderPasses() {
+void Eng::RpBuilder::BuildRenderPasses() {
     auto should_merge = [](const RpSubpass *prev, const RpSubpass *next) {
         // TODO: merge similar renderpasses
         return false;
@@ -854,7 +856,7 @@ void RpBuilder::BuildRenderPasses() {
     }
 }
 
-void RpBuilder::BuildTransientResources() {
+void Eng::RpBuilder::BuildTransientResources() {
     for (RpAllocTex &tex : textures_) {
         tex.transient = (tex.history_index == -1 && tex.history_of == -1);
     }
@@ -874,7 +876,7 @@ void RpBuilder::BuildTransientResources() {
     // TODO: actually use this information
 }
 
-void RpBuilder::BuildAliases() {
+void Eng::RpBuilder::BuildAliases() {
     struct range_t {
         int first_write_pass = std::numeric_limits<int>::max();
         int last_write_pass = -1;
@@ -1012,7 +1014,7 @@ void RpBuilder::BuildAliases() {
     }
 }
 
-void RpBuilder::BuildResourceLinkedLists() {
+void Eng::RpBuilder::BuildResourceLinkedLists() {
     OPTICK_EVENT();
     std::vector<RpResource *> all_resources;
 
@@ -1077,7 +1079,7 @@ void RpBuilder::BuildResourceLinkedLists() {
     }
 }
 
-void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sources_count) {
+void Eng::RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sources_count) {
     OPTICK_EVENT();
 
 #if 0 // reference-counted culling
@@ -1277,7 +1279,7 @@ void RpBuilder::Compile(const RpResRef backbuffer_sources[], int backbuffer_sour
 #endif
 }
 
-void RpBuilder::Execute() {
+void Eng::RpBuilder::Execute() {
     OPTICK_EVENT();
 
     // Swap history images
@@ -1346,7 +1348,7 @@ void RpBuilder::Execute() {
     initial_interval.query_end = ctx_.WriteTimestamp(false);
 }
 
-void RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
+void Eng::RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
     OPTICK_GPU_EVENT("InsertResourceTransitions");
     auto cmd_buf = reinterpret_cast<VkCommandBuffer>(ctx_.current_cmd_buf());
 
@@ -1367,7 +1369,7 @@ void RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
     Ren::TransitionResourceStates(cmd_buf, src_stages, dst_stages, res_transitions);
 }
 
-void RpBuilder::CheckResourceStates(RpSubpass &pass) {
+void Eng::RpBuilder::CheckResourceStates(RpSubpass &pass) {
     for (size_t i = 0; i < pass.input_.size(); i++) {
         const RpResource &res = pass.input_[i];
         if (res.type == eRpResType::Buffer) {
@@ -1390,9 +1392,9 @@ void RpBuilder::CheckResourceStates(RpSubpass &pass) {
     }
 }
 
-void RpBuilder::HandleResourceTransition(const RpResource &res,
-                                         Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
-                                         Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
+void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
+                                              Ren::SmallVectorImpl<Ren::TransitionInfo> &res_transitions,
+                                              Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
     for (const RpResource *next_res = res.next_use; next_res; next_res = next_res->next_use) {
         if (next_res->desired_state != res.desired_state ||
             next_res->desired_state == Ren::eResState::UnorderedAccess) {

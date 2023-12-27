@@ -12,14 +12,14 @@ extern const VkAttachmentLoadOp vk_load_ops[];
 extern const VkAttachmentStoreOp vk_store_ops[];
 } // namespace Ren
 
-PrimDraw::~PrimDraw() {}
+Eng::PrimDraw::~PrimDraw() {}
 
-void PrimDraw::Reset() {}
+void Eng::PrimDraw::Reset() {}
 
-void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
-                        Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
-                        Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
-                        const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
+void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
+                             Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
+                             Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
+                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
 
     VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
@@ -197,8 +197,8 @@ void PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<co
     }
 }
 
-const Ren::RenderPass *PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
-                                                        Ren::RenderTarget depth_target) {
+const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
+                                                             Ren::RenderTarget depth_target) {
     // TODO: binary search
     for (size_t i = 0; i < render_passes_.size(); ++i) {
         if (render_passes_[i].IsCompatibleWith(color_targets, depth_target)) {
@@ -218,9 +218,10 @@ const Ren::RenderPass *PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren::Ren
     return &new_render_pass;
 }
 
-const Ren::Pipeline *PrimDraw::FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp,
-                                                    Ren::Span<const Ren::RenderTarget> color_targets,
-                                                    const Ren::RenderTarget depth_target, const Ren::RastState *rs) {
+const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp,
+                                                         Ren::Span<const Ren::RenderTarget> color_targets,
+                                                         const Ren::RenderTarget depth_target,
+                                                         const Ren::RastState *rs) {
     // TODO: binary search
     for (size_t i = 0; i < pipelines_.size(); ++i) {
         if (pipelines_[i].prog() == p && pipelines_[i].render_pass() == rp && pipelines_[i].rast_state() == *rs) {

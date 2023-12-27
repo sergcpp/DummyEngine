@@ -63,7 +63,7 @@ bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
 }
 
 std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width, int height, int channels,
-                                              assets_context_t &ctx) {
+                                              Eng::assets_context_t &ctx) {
     std::unique_ptr<uint8_t[]> _out_conemap(new uint8_t[width * height * 4]);
     // faster access in debug
     uint8_t *out_conemap = &_out_conemap[0];
@@ -727,8 +727,8 @@ bool CreateFolders(const char *out_file, Ren::ILog *log);
 extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
-bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                              Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                   Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -833,8 +833,8 @@ bool SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const 
     return res;
 }
 
-bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                    Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -922,21 +922,21 @@ bool SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, const
     return res;
 }
 
-bool SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                  Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                       Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
 
     int width, height;
-    const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(in_file, width, height);
+    const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
     const std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
 
     return Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
 }
 
-bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                 Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                      Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -987,8 +987,8 @@ bool SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, con
     return Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
-bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                  Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                       Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("[PrepareAssets] Conv %s", out_file);
@@ -1039,8 +1039,8 @@ bool SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, co
     return Write_KTX_ASTC_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
 }
 
-bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name, const Ren::ProbeStorage &probes,
-                                   const CompStorage *light_probe_storage, Ren::ILog *log) {
+bool Eng::SceneManager::WriteProbeCache(const char *out_folder, const char *scene_name, const Ren::ProbeStorage &probes,
+                                        const CompStorage *light_probe_storage, Ren::ILog *log) {
     using namespace SceneManagerInternal;
 
     const int res = probes.res();
@@ -1064,7 +1064,7 @@ bool SceneManager::WriteProbeCache(const char *out_folder, const char *scene_nam
     // write probes
     uint32_t cur_index = light_probe_storage->First();
     while (cur_index != 0xffffffff) {
-        const auto *lprobe = (const Eng::LightProbe *)light_probe_storage->Get(cur_index);
+        const auto *lprobe = (const LightProbe *)light_probe_storage->Get(cur_index);
         assert(lprobe);
 
         if (lprobe->layer_index != -1) {
@@ -1130,7 +1130,7 @@ void encode_astc_image(const astc_codec_image *input_image, astc_codec_image *ou
                        swizzlepattern swz_encode, swizzlepattern swz_decode, uint8_t *buffer, int pack_and_unpack,
                        int threadcount);
 
-void SceneManager::InitASTCCodec() {
+void Eng::SceneManager::InitASTCCodec() {
     test_inappropriate_extended_precision();
     prepare_angular_tables();
     build_quantization_mode_table();

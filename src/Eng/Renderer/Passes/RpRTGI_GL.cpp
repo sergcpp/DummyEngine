@@ -10,15 +10,15 @@
 
 #include "../Shaders/rt_gi_interface.h"
 
-void RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
+void Eng::RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
     // TODO: software fallback for raytracing
 }
 
-void RpRTGI::ExecuteRTInline(RpBuilder &builder) {
+void Eng::RpRTGI::ExecuteRTInline(RpBuilder &builder) {
     // TODO: software fallback for raytracing
 }
 
-void RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         /*Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(
             ctx, "rt_reflections", "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",

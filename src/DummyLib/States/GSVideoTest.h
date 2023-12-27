@@ -104,7 +104,7 @@ class GSVideoTest final : public GSBaseState {
     void UpdateStageBufWithDecodedFrame_Persistent(int tex_index, int frame_index);
 
   public:
-    explicit GSVideoTest(GameBase *game);
+    explicit GSVideoTest(Eng::GameBase *game);
     ~GSVideoTest() final = default;
 
     void Enter() override;
@@ -115,5 +115,5 @@ class GSVideoTest final : public GSBaseState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

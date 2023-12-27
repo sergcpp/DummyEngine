@@ -16,12 +16,12 @@ extern __itt_domain *__g_itt_domain;
 namespace SceneManagerInternal {
 const float BoundsMargin = 0.2f;
 
-float surface_area(const bvh_node_t &n) {
+float surface_area(const Eng::bvh_node_t &n) {
     const Ren::Vec3f d = n.bbox_max - n.bbox_min;
     return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
 }
 
-float surface_area_of_union(const bvh_node_t &n1, const bvh_node_t &n2) {
+float surface_area_of_union(const Eng::bvh_node_t &n1, const Eng::bvh_node_t &n2) {
     const Ren::Vec3f d = Max(n1.bbox_max, n2.bbox_max) - Min(n1.bbox_min, n2.bbox_max);
     return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
 }
@@ -33,7 +33,7 @@ struct insert_candidate_t {
 
 bool insert_candidate_compare(insert_candidate_t c1, insert_candidate_t c2) { return c1.direct_cost > c2.direct_cost; }
 
-void sort_children(const bvh_node_t *nodes, bvh_node_t &node) {
+void sort_children(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
     const uint32_t ch0 = node.left_child, ch1 = node.right_child;
 
     uint32_t space_axis = 0;
@@ -59,7 +59,7 @@ void sort_children(const bvh_node_t *nodes, bvh_node_t &node) {
     }
 }
 
-void update_bbox(const bvh_node_t *nodes, bvh_node_t &node) {
+void update_bbox(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
     node.bbox_min = Min(nodes[node.left_child].bbox_min, nodes[node.right_child].bbox_min);
     node.bbox_max = Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
@@ -68,19 +68,19 @@ __itt_string_handle *itt_rebuild_bvh_str = __itt_string_handle_create("SceneMana
 __itt_string_handle *itt_update_bvh_str = __itt_string_handle_create("SceneManager::UpdateBVH");
 } // namespace SceneManagerInternal
 
-void SceneManager::RebuildSceneBVH() {
+void Eng::SceneManager::RebuildSceneBVH() {
     using namespace SceneManagerInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_rebuild_bvh_str);
 
-    auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
-    std::vector<Eng::prim_t> primitives;
+    std::vector<prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
     for (const SceneObject &obj : scene_data_.objects) {
         if (obj.comp_mask & CompTransformBit) {
-            const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+            const Transform &tr = transforms[obj.components[CompTransform]];
             const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
             primitives.push_back({0, 0, 0, tr.bbox_min_ws - BoundsMargin * d, tr.bbox_max_ws + BoundsMargin * d});
         }
@@ -114,13 +114,13 @@ void SceneManager::RebuildSceneBVH() {
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
 
-    Eng::split_settings_t s;
+    split_settings_t s;
     s.oversplit_threshold = std::numeric_limits<float>::max();
     s.node_traversal_cost = 0.0f;
 
     while (!prim_lists.empty()) {
-        Eng::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
-                                                           prim_lists.back().min, prim_lists.back().max, s);
+        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices, prim_lists.back().min,
+                                                      prim_lists.back().max, s);
         prim_lists.pop_back();
 
         const uint32_t leaf_index = uint32_t(scene_data_.nodes.size());
@@ -143,7 +143,7 @@ void SceneManager::RebuildSceneBVH() {
             const auto new_node_index = (uint32_t)scene_data_.nodes.size();
 
             for (const uint32_t i : split_data.left_indices) {
-                Eng::Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
+                Transform &tr = transforms[scene_data_.objects[i].components[CompTransform]];
                 tr.node_index = new_node_index;
             }
 
@@ -207,7 +207,7 @@ void SceneManager::RebuildSceneBVH() {
     __itt_task_end(__g_itt_domain);
 }
 
-void SceneManager::RemoveNode(const uint32_t node_index) {
+void Eng::SceneManager::RemoveNode(const uint32_t node_index) {
     using namespace SceneManagerInternal;
 
     bvh_node_t *nodes = scene_data_.nodes.data();
@@ -251,14 +251,14 @@ void SceneManager::RemoveNode(const uint32_t node_index) {
     scene_data_.free_nodes.push_back(node_index);
 }
 
-void SceneManager::UpdateObjects() {
+void Eng::SceneManager::UpdateObjects() {
     using namespace SceneManagerInternal;
 
     OPTICK_EVENT("SceneManager::UpdateObjects");
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_update_bvh_str);
 
-    const auto *physes = (Eng::Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();
-    auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *physes = (Physics *)scene_data_.comp_store[CompPhysics]->SequentialData();
+    auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
     scene_data_.update_counter++;
 
@@ -277,8 +277,8 @@ void SceneManager::UpdateObjects() {
         obj.last_change_mask = obj.change_mask;
 
         if (obj.change_mask & CompPhysicsBit) {
-            const Eng::Physics &ph = physes[obj.components[CompPhysics]];
-            Eng::Transform &tr = transforms[obj.components[CompTransform]];
+            const Physics &ph = physes[obj.components[CompPhysics]];
+            Transform &tr = transforms[obj.components[CompTransform]];
 
             tr.world_from_object_prev = tr.world_from_object;
             tr.world_from_object = Ren::Mat4f{1.0f};
@@ -303,7 +303,7 @@ void SceneManager::UpdateObjects() {
         }
 
         if (obj.change_mask & CompTransformBit) {
-            Eng::Transform &tr = transforms[obj.components[CompTransform]];
+            Transform &tr = transforms[obj.components[CompTransform]];
             tr.UpdateTemporaryData();
             if (tr.node_index != 0xffffffff) {
                 assert(tr.node_index < scene_data_.nodes.size());
@@ -338,7 +338,7 @@ void SceneManager::UpdateObjects() {
         SceneObject &obj = scene_data_.objects[obj_index];
 
         if (obj.change_mask & CompTransformBit) {
-            Eng::Transform &tr = transforms[obj.components[CompTransform]];
+            Transform &tr = transforms[obj.components[CompTransform]];
             tr.node_index = free_nodes[free_nodes_pos++];
 
             bvh_node_t &new_node = nodes[tr.node_index];
@@ -521,7 +521,7 @@ void SceneManager::UpdateObjects() {
     __itt_task_end(__g_itt_domain);
 }
 
-void SceneManager::InitSWRTAccStructures() {
+void Eng::SceneManager::InitSWRTAccStructures() {
     using namespace SceneManagerInternal;
 
     std::vector<gpu_bvh_node_t> nodes;
@@ -529,12 +529,12 @@ void SceneManager::InitSWRTAccStructures() {
     std::vector<gpu_mesh_instance_t> mesh_instances;
     std::vector<uint32_t> prim_indices;
 
-    std::vector<Eng::prim_t> temp_primitives;
+    std::vector<prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
     while (acc_index != 0xffffffff) {
-        auto *acc = (Eng::AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
+        auto *acc = (AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
         if (acc->mesh->blas) {
             // already processed
             acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
@@ -595,7 +595,7 @@ void SceneManager::InitSWRTAccStructures() {
             ++new_mesh.geo_count;
         }
 
-        Eng::split_settings_t s;
+        split_settings_t s;
         new_mesh.node_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
 
         for (int i = new_mesh.tris_index; i < int(prim_indices.size()); ++i) {
@@ -617,10 +617,10 @@ void SceneManager::InitSWRTAccStructures() {
     //
 
     // retrieve pointers to components for fast access
-    const auto *transforms = (Eng::Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
-    const auto *acc_structs = (Eng::AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
-    const auto *lightmaps = (Eng::Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
-    const auto *probes = (Eng::LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
+    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
+    const auto *probes = (LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
     const CompStorage *probe_store = scene_data_.comp_store[CompProbe];
 
     std::vector<RTGeoInstance> geo_instances;
@@ -630,9 +630,9 @@ void SceneManager::InitSWRTAccStructures() {
             continue;
         }
 
-        const Eng::Transform &tr = transforms[obj.components[CompTransform]];
-        const Eng::AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
-        const Eng::Lightmap *lm = nullptr;
+        const Transform &tr = transforms[obj.components[CompTransform]];
+        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
+        const Lightmap *lm = nullptr;
         if (obj.comp_mask & CompLightmapBit) {
             lm = &lightmaps[obj.components[CompLightmap]];
         }
@@ -687,8 +687,8 @@ void SceneManager::InitSWRTAccStructures() {
                             continue;
                         }
 
-                        const Eng::Transform &probe_tr = transforms[probe.components[CompTransform]];
-                        const Eng::LightProbe &probe_pr = probes[probe.components[CompProbe]];
+                        const Transform &probe_tr = transforms[probe.components[CompTransform]];
+                        const LightProbe &probe_pr = probes[probe.components[CompProbe]];
 
                         const float dist2 =
                             Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),
@@ -797,8 +797,9 @@ void SceneManager::InitSWRTAccStructures() {
 #endif
 }
 
-uint32_t SceneManager::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims, const Eng::split_settings_t &s,
-                                           std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices) {
+uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+                                                std::vector<gpu_bvh_node_t> &out_nodes,
+                                                std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
         Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
@@ -821,8 +822,8 @@ uint32_t SceneManager::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims, c
     }
 
     while (!prim_lists.empty()) {
-        Eng::split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices,
-                                                           prim_lists.back().min, prim_lists.back().max, s);
+        split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices, prim_lists.back().min,
+                                                      prim_lists.back().max, s);
         prim_lists.pop_back();
 
         if (split_data.right_indices.empty()) {

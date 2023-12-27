@@ -5,7 +5,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpShadowMaps::Execute(RpBuilder &builder) {
+void Eng::RpShadowMaps::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
@@ -16,8 +16,8 @@ void RpShadowMaps::Execute(RpBuilder &builder) {
     DrawShadowMaps(builder, shadowmap_tex);
 }
 
-void RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
-                            RpAllocBuf &ndx_buf, RpAllocTex &shadowmap_tex) {
+void Eng::RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                                 RpAllocBuf &ndx_buf, RpAllocTex &shadowmap_tex) {
     const Ren::RenderTarget depth_target = {shadowmap_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 
     if (!initialized) {

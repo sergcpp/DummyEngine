@@ -4,8 +4,8 @@
 
 #include "../Graph/SubPass.h"
 
+namespace Eng {
 struct ViewState;
-
 class RpDepthHierarchy : public RpExecutor {
     bool initialized = false;
 
@@ -37,3 +37,4 @@ class RpDepthHierarchy : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

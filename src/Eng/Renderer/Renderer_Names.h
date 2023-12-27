@@ -1,5 +1,6 @@
 #pragma once
 
+namespace Eng {
 const char INSTANCES_BUF[] = "Instances Buffer";
 const char INSTANCE_INDICES_BUF[] = "Instance Indices Buffer";
 const char CELLS_BUF[] = "Cells Buffer";
@@ -38,3 +39,4 @@ const char BLUR_RES_TEX[] = "BLUR RES";
 const char DOF_COLOR_TEX[] = "DOF Color";
 
 const char REDUCED_TEX[] = "REDUCED";
+} // namespace Eng

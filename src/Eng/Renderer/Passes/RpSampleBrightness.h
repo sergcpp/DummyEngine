@@ -3,6 +3,7 @@
 #include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
+namespace Eng {
 class PrimDraw;
 
 struct RpSampleBrightnessData {
@@ -35,3 +36,4 @@ class RpSampleBrightness : public RpExecutor {
 
     Ren::Vec2i res() const { return res_; }
 };
+} // namespace Eng

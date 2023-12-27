@@ -6,6 +6,7 @@
 #include <Ren/Pipeline.h>
 #include <Ren/VertexInput.h>
 
+namespace Eng {
 class RpDepthFill : public RpExecutor {
     bool initialized = false;
 
@@ -86,3 +87,4 @@ class RpDepthFill : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

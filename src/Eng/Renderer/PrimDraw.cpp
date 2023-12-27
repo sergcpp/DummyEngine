@@ -23,7 +23,7 @@ extern const int SphereIndicesCount = __sphere_indices_count;
 const size_t SphereVerticesSize = sizeof(__sphere_positions) + (16 - sizeof(__sphere_positions) % 16);
 } // namespace PrimDrawInternal
 
-bool PrimDraw::LazyInit(Ren::Context &ctx) {
+bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
     using namespace PrimDrawInternal;
 
     Ren::BufferRef vtx_buf1 = ctx.default_vertex_buf1(), vtx_buf2 = ctx.default_vertex_buf2(),
@@ -132,7 +132,7 @@ bool PrimDraw::LazyInit(Ren::Context &ctx) {
     return true;
 }
 
-void PrimDraw::CleanUp() {
+void Eng::PrimDraw::CleanUp() {
     using namespace PrimDrawInternal;
 
     if (quad_vtx1_offset_ != 0xffffffff) {
@@ -172,10 +172,10 @@ void PrimDraw::CleanUp() {
     }
 }
 
-const Ren::Framebuffer *PrimDraw::FindOrCreateFramebuffer(const Ren::RenderPass *rp,
-                                                          Ren::Span<const Ren::RenderTarget> color_targets,
-                                                          Ren::RenderTarget depth_target,
-                                                          Ren::RenderTarget stencil_target) {
+const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::RenderPass *rp,
+                                                               Ren::Span<const Ren::RenderTarget> color_targets,
+                                                               Ren::RenderTarget depth_target,
+                                                               Ren::RenderTarget stencil_target) {
     int w = -1, h = -1;
 
     Ren::SmallVector<Ren::WeakTex2DRef, Ren::MaxRTAttachments> color_refs;

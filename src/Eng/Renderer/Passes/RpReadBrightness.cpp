@@ -9,7 +9,7 @@ const float MaxValue = 64.0f;
 const float AvgAlpha = 1.0f / 64.0f;
 } // namespace RpReadBrightnessInternal
 
-void RpReadBrightness::Execute(RpBuilder &builder) {
+void Eng::RpReadBrightness::Execute(RpBuilder &builder) {
     using namespace RpReadBrightnessInternal;
 
     RpAllocTex &input_tex = builder.GetReadTexture(pass_data_->input_tex);

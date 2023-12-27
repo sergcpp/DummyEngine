@@ -11,10 +11,10 @@
 
 namespace RpSharedInternal {
 uint32_t _draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline, Ren::Span<const uint32_t> batch_indices,
-                     Ren::Span<const BasicDrawBatch> batches, uint32_t i, const uint32_t mask, int *draws_count) {
+                     Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, const uint32_t mask, int *draws_count) {
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -34,13 +34,14 @@ uint32_t _draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline, Ren
 }
 
 uint32_t _draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         uint32_t i,
                          const uint32_t mask, const uint32_t materials_per_descriptor,
                          const Ren::SmallVectorImpl<VkDescriptorSet> &descr_sets, int *draws_count) {
     uint32_t bound_descr_id = 0;
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -67,7 +68,7 @@ uint32_t _draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
 }
 } // namespace RpSharedInternal
 
-void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf) {
+void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf) {
     using namespace RpSharedInternal;
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);

@@ -13,11 +13,11 @@ void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT, mat.textures[3]->id());
     glBindSampler(REN_MAT_TEX3_SLOT, mat.samplers[3]->id());
 }
-uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const BasicDrawBatch> zfill_batches,
+uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
                      uint32_t i, uint32_t mask, int *draws_count) {
     for (; i < zfill_batch_indices.size(); i++) {
         const auto &batch = zfill_batches[zfill_batch_indices[i]];
-        if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -35,14 +35,14 @@ uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<co
     return i;
 }
 
-uint32_t _draw_range_ext(RpBuilder &builder, const Ren::MaterialStorage *materials,
-                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
-                         uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
+uint32_t _draw_range_ext(Eng::RpBuilder &builder, const Ren::MaterialStorage *materials,
+                         Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                         uint32_t i, uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -67,7 +67,7 @@ uint32_t _draw_range_ext(RpBuilder &builder, const Ren::MaterialStorage *materia
 }
 } // namespace RpSharedInternal
 
-void RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf) {
+void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf) {
     using namespace RpSharedInternal;
 
     auto &ctx = builder.ctx();

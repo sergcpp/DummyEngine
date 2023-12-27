@@ -5,6 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
+namespace Eng {
 class RpOpaque : public RpExecutor {
     bool initialized = false;
 
@@ -109,3 +110,4 @@ class RpOpaque : public RpExecutor {
     }
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

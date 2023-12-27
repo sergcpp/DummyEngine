@@ -4,18 +4,19 @@
 
 #pragma warning(disable : 4996)
 
-FlowControl::FlowControl(unsigned int bad_delta, unsigned int good_delta) : bad_delta_(bad_delta), good_delta_(good_delta) {
+Eng::FlowControl::FlowControl(unsigned int bad_delta, unsigned int good_delta)
+    : bad_delta_(bad_delta), good_delta_(good_delta) {
     Reset();
 }
 
-void FlowControl::Reset() {
+void Eng::FlowControl::Reset() {
     mode_ = eMode::Bad;
     penalty_time_ = 4.0f;
     good_conditions_time_ = 0.0f;
     penalty_reduction_acc_ = 0.0f;
 }
 
-void FlowControl::Update(float dt_s, float rtt, Ren::ILog *log) {
+void Eng::FlowControl::Update(float dt_s, float rtt, Ren::ILog *log) {
     const float RTT_threshold = 250.0f;
     if (mode_ == eMode::Good) {
         if (rtt > RTT_threshold) {

@@ -8,7 +8,7 @@
 #include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
-void RpRTShadows::Execute(RpBuilder &builder) {
+void Eng::RpRTShadows::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     if (builder.ctx().capabilities.ray_query) {

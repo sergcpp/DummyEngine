@@ -5,9 +5,11 @@
 #include <Eng/GameBase.h>
 #include <Eng/Gui/BaseElement.h>
 
+namespace Eng {
 struct BackendInfo;
 struct FrontendInfo;
 struct ItemsInfo;
+};
 
 class DebugInfoUI : public Gui::BaseElement {
     const Gui::BaseElement *parent_;
@@ -46,15 +48,15 @@ class DebugInfoUI : public Gui::BaseElement {
         uint64_t back_cpu_start_timepoint_us = 0, back_cpu_end_timepoint_us = 0;
         uint64_t back_gpu_duration = 0;
         int64_t gpu_cpu_time_diff_us = 0;
-        TimeInterval swap_interval;
+        Eng::TimeInterval swap_interval;
     } prev_timing_info_, cur_timing_info_;
 
   public:
     DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const BaseElement *parent,
                 std::shared_ptr<Gui::BitmapFont> font);
 
-    void UpdateInfo(const FrontendInfo &frontend_info, const BackendInfo &backend_info, const ItemsInfo &items_info,
-                    const TimeInterval &swap_interval, uint64_t render_flags);
+    void UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
+                    const Eng::ItemsInfo &items_info, const Eng::TimeInterval &swap_interval, uint64_t render_flags);
 
     void Draw(Gui::Renderer *r) override;
 };

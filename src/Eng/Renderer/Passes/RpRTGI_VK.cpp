@@ -9,7 +9,7 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/rt_gi_interface.h"
 
-void RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
+void Eng::RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
@@ -89,7 +89,7 @@ void RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
                               pi_rt_gi_.call_table(), indir_args_buf.ref->vk_device_address());
 }
 
-void RpRTGI::ExecuteRTInline(RpBuilder &builder) {
+void Eng::RpRTGI::ExecuteRTInline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
@@ -169,7 +169,7 @@ void RpRTGI::ExecuteRTInline(RpBuilder &builder) {
                           VkDeviceSize(sizeof(VkTraceRaysIndirectCommandKHR)));
 }
 
-void RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef rt_gi_prog =
             sh.LoadProgram(ctx, "rt_gi", "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",

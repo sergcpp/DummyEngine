@@ -10,19 +10,20 @@
 #include "Config.h"
 #include "FrameInfo.h"
 
-struct TimeInterval {
-    uint64_t start_timepoint_us = 0, end_timepoint_us = 0;
-};
-
 namespace Sys {
 class ThreadPool;
 }
+
+namespace Eng {
+struct TimeInterval {
+    uint64_t start_timepoint_us = 0, end_timepoint_us = 0;
+};
 
 class GameBase {
   protected:
     std::unique_ptr<Sys::ThreadPool> threads_;
     std::map<std::string, std::shared_ptr<void>> components_;
-    FrameInfo fr_info_;
+    Eng::FrameInfo fr_info_;
 
     void InitOptickGPUProfiler();
 
@@ -53,3 +54,4 @@ class GameBase {
     std::atomic_bool terminated;
     int width, height;
 };
+} // namespace Eng

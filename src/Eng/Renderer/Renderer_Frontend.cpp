@@ -71,11 +71,12 @@ static const bool EnableSunCulling = true;
 static const uint32_t SkipFrustumCheckBit = (1u << 31u);
 static const uint32_t IndexBits = ~SkipFrustumCheckBit;
 
-void __push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, DrawList &list);
+void __push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, Eng::DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const Eng::AnimState &as, const Ren::Mesh *mesh,
-                              DrawList &list);
-uint32_t __record_texture(DynArray<TexEntry> &storage, const Ren::Tex2DRef &tex, int prio, uint16_t distance);
-void __record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat, bool is_animated, uint16_t distance);
+                              Eng::DrawList &list);
+uint32_t __record_texture(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex, int prio, uint16_t distance);
+void __record_textures(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Material *mat, bool is_animated,
+                       uint16_t distance);
 
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
 __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("ProcessOccluders");
@@ -99,7 +100,7 @@ __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("Proces
 #define _CROSS(x, y)                                                                                                   \
     { (x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0] }
 
-void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
+void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -179,7 +180,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         pipeline_index += int(eFwdPipeline::_Count);
     }
 
-    const bool deferred_shading = (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
+    const bool deferred_shading =
+        (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
 
     litem_to_lsource_.count = 0;
     ditem_to_decal_.count = 0;
@@ -198,15 +200,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         -ext_frustum.planes[int(Ren::eCamPlane::Near)].d + (ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
 
     // retrieve pointers to components for fast access
-    const auto *transforms = (Eng::Transform *)scene.comp_store[CompTransform]->SequentialData();
-    const auto *drawables = (Eng::Drawable *)scene.comp_store[CompDrawable]->SequentialData();
-    const auto *occluders = (Eng::Occluder *)scene.comp_store[CompOccluder]->SequentialData();
-    const auto *lightmaps = (Eng::Lightmap *)scene.comp_store[CompLightmap]->SequentialData();
-    const auto *lights_src = (Eng::LightSource *)scene.comp_store[CompLightSource]->SequentialData();
-    const auto *decals = (Eng::Decal *)scene.comp_store[CompDecal]->SequentialData();
-    const auto *probes = (Eng::LightProbe *)scene.comp_store[CompProbe]->SequentialData();
-    const auto *anims = (Eng::AnimState *)scene.comp_store[CompAnimState]->SequentialData();
-    const auto *acc_structs = (Eng::AccStructure *)scene.comp_store[CompAccStructure]->SequentialData();
+    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
+    const auto *drawables = (Drawable *)scene.comp_store[CompDrawable]->SequentialData();
+    const auto *occluders = (Occluder *)scene.comp_store[CompOccluder]->SequentialData();
+    const auto *lightmaps = (Lightmap *)scene.comp_store[CompLightmap]->SequentialData();
+    const auto *lights_src = (LightSource *)scene.comp_store[CompLightSource]->SequentialData();
+    const auto *decals = (Decal *)scene.comp_store[CompDecal]->SequentialData();
+    const auto *probes = (LightProbe *)scene.comp_store[CompProbe]->SequentialData();
+    const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
+    const auto *acc_structs = (AccStructure *)scene.comp_store[CompAccStructure]->SequentialData();
 
     const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16;
 
@@ -259,7 +261,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                 const uint32_t occluder_flags = CompTransformBit | CompOccluderBit;
                 if ((obj.comp_mask & occluder_flags) == occluder_flags) {
-                    const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+                    const Transform &tr = transforms[obj.components[CompTransform]];
 
                     // Node has slightly enlarged bounds, so we need to check object's bounding box here
                     if (!skip_frustum_check &&
@@ -270,7 +272,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Mat4f view_from_object = cull_view_from_world * tr.world_from_object,
                                 clip_from_object = cull_clip_from_view * view_from_object;
 
-                    const Eng::Occluder &occ = occluders[obj.components[CompOccluder]];
+                    const Occluder &occ = occluders[obj.components[CompOccluder]];
                     const Mesh *mesh = occ.mesh.get();
 
                     SWcull_surf surf[64];
@@ -314,7 +316,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
         std::future<void> futures[2 * REN_GRID_RES_Z];
 
-        const uint64_t CompMask = (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
+        const uint64_t CompMask =
+            (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
         for (int i = 0; i < REN_GRID_RES_Z; ++i) {
             futures[i] =
                 threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
@@ -356,10 +359,10 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data, objects_count.load()}) {
             const SceneObject &obj = scene.objects[i.index];
 
-            const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+            const Transform &tr = transforms[obj.components[CompTransform]];
 
             if ((obj.comp_mask & CompDrawableBit)) {
-                const Eng::Drawable &dr = drawables[obj.components[CompDrawable]];
+                const Drawable &dr = drawables[obj.components[CompDrawable]];
                 if (!(dr.vis_mask & render_mask)) {
                     continue;
                 }
@@ -372,7 +375,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                 uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
 
                 if (obj.comp_mask & CompAnimStateBit) {
-                    const Eng::AnimState &as = anims[obj.components[CompAnimState]];
+                    const AnimState &as = anims[obj.components[CompAnimState]];
                     base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                 }
                 proc_objects_[i.index].base_vertex = base_vertex;
@@ -384,7 +387,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     const Material *mat = grp.mat.get();
                     const uint32_t mat_flags = mat->flags();
 
-                    __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
+                    __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
+                                      cam_dist_u16);
 
                     if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
                         (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
@@ -438,7 +442,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
             if (lighting_enabled && (obj.comp_mask & CompLightSourceBit) &&
                 litem_to_lsource_.count < REN_MAX_LIGHTS_TOTAL) {
-                const Eng::LightSource &light = lights_src[obj.components[CompLightSource]];
+                const LightSource &light = lights_src[obj.components[CompLightSource]];
 
                 auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
                 pos = tr.world_from_object * pos;
@@ -467,7 +471,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             if (decals_enabled && (obj.comp_mask & CompDecalBit) && ditem_to_decal_.count < REN_MAX_DECALS_TOTAL) {
-                const Eng::Decal &decal = decals[obj.components[CompDecal]];
+                const Decal &decal = decals[obj.components[CompDecal]];
 
                 const Mat4f &view_from_object = decal.view, &clip_from_view = decal.proj;
 
@@ -501,7 +505,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             }
 
             if ((obj.comp_mask & CompProbeBit) && list.probes.count < REN_MAX_PROBES_TOTAL) {
-                const Eng::LightProbe &probe = probes[obj.components[CompProbe]];
+                const LightProbe &probe = probes[obj.components[CompProbe]];
 
                 auto pos = Vec4f{probe.offset[0], probe.offset[1], probe.offset[2], 1.0f};
                 pos = tr.world_from_object * pos;
@@ -543,7 +547,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         for (const VisObj i : Ren::Span<VisObj>{temp_rt_visible_objects_.data, temp_rt_visible_objects_.count}) {
             const SceneObject &obj = scene.objects[i.index];
 
-            const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+            const Transform &tr = transforms[obj.components[CompTransform]];
             const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
 
             RTObjInstance &new_instance = list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
@@ -892,9 +896,9 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
             for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data, objects_count.load()}) {
                 const SceneObject &obj = scene.objects[i.index];
 
-                const Eng::Transform &tr = transforms[obj.components[CompTransform]];
-                const Eng::Drawable &dr = drawables[obj.components[CompDrawable]];
-                if ((dr.vis_mask & uint32_t(Eng::Drawable::eDrVisibility::VisShadow)) == 0) {
+                const Transform &tr = transforms[obj.components[CompTransform]];
+                const Drawable &dr = drawables[obj.components[CompDrawable]];
+                if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
                     continue;
                 }
 
@@ -910,7 +914,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     proc_objects_[i.index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                     if (obj.comp_mask & CompAnimStateBit) {
-                        const Eng::AnimState &as = anims[obj.components[CompAnimState]];
+                        const AnimState &as = anims[obj.components[CompAnimState]];
                         proc_objects_[i.index].base_vertex =
                             __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                     }
@@ -923,7 +927,8 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                     if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
                         const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
-                        RTObjInstance &new_instance = list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
+                        RTObjInstance &new_instance =
+                            list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
                         memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
                         memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
                         new_instance.geo_index = acc->geo_index;
@@ -978,7 +983,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
     for (int i = 0; i < int(list.lights.count) && shadows_enabled; i++) {
         LightItem &l = list.lights.data[i];
-        const Eng::LightSource *ls = litem_to_lsource_.data[i];
+        const LightSource *ls = litem_to_lsource_.data[i];
 
         if (!ls->cast_shadow) {
             continue;
@@ -1111,15 +1116,15 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
 
                     const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
                     if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                        const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+                        const Transform &tr = transforms[obj.components[CompTransform]];
 
                         if (!skip_check && shadow_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) ==
                                                eVisResult::Invisible) {
                             continue;
                         }
 
-                        const Eng::Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.vis_mask & uint32_t(Eng::Drawable::eDrVisibility::VisShadow)) == 0) {
+                        const Drawable &dr = drawables[obj.components[CompDrawable]];
+                        if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
                             continue;
                         }
 
@@ -1131,7 +1136,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
                             proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
-                                const Eng::AnimState &as = anims[obj.components[CompAnimState]];
+                                const AnimState &as = anims[obj.components[CompAnimState]];
                                 proc_objects_[n->prim_index].base_vertex =
                                     __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                             }
@@ -1232,7 +1237,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
 
         RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count,
-                                  temp_sort_spans_32_[1].data);
+                                       temp_sort_spans_32_[1].data);
 
         // decompress sorted spans
         size_t counter = 0;
@@ -1291,7 +1296,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     }
 
     RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data, temp_sort_spans_64_[0].data + spans_count,
-                              temp_sort_spans_64_[1].data);
+                                   temp_sort_spans_64_[1].data);
 
     // decompress sorted spans
     size_t counter = 0;
@@ -1363,7 +1368,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
         }
 
         RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count,
-                                  temp_sort_spans_32_[1].data);
+                                       temp_sort_spans_32_[1].data);
 
         // decompress sorted spans
         for (uint32_t i = 0; i < spans_count; i++) {
@@ -1512,7 +1517,7 @@ void Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, D
     __itt_task_end(__g_itt_domain);
 }
 
-void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
+void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
                                           const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
                                           const uint64_t comp_mask, SWcull_ctx *cull_ctx, const uint8_t visit_mask,
                                           ProcessedObjData proc_objects[], VisObj out_visible_objects[],
@@ -1523,7 +1528,7 @@ void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const Sce
     OPTICK_EVENT();
 
     // retrieve pointers to components for fast access
-    const auto *transforms = (Eng::Transform *)scene.comp_store[CompTransform]->SequentialData();
+    const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
 
     uint32_t stack[MAX_STACK_SIZE];
     uint32_t stack_size = 0;
@@ -1581,7 +1586,7 @@ void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const Sce
             const SceneObject &obj = scene.objects[n->prim_index];
 
             if (obj.comp_mask & comp_mask) {
-                const Eng::Transform &tr = transforms[obj.components[CompTransform]];
+                const Transform &tr = transforms[obj.components[CompTransform]];
 
                 const float bbox_points[8][3] = {BBOX_POINTS(tr.bbox_min_ws, tr.bbox_max_ws)};
 
@@ -1630,9 +1635,9 @@ void Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const Sce
     }
 }
 
-void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
-                                         const Eng::LightSource *const *litem_to_lsource, DrawList &list,
-                                         std::atomic_int &items_count) {
+void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
+                                         const BBox *decals_boxes, const LightSource *const *litem_to_lsource,
+                                         DrawList &list, std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -2010,13 +2015,15 @@ void Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *su
                 cell.probe_count = _MIN(int(cell.probe_count), free_items_left);
                 cell.ellips_count = _MIN(int(cell.ellips_count), free_items_left);
 
-                memcpy(&list.items.data[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
+                memcpy(&list.items.data[cell.item_offset], &local_items[s][0],
+                       local_items_count * sizeof(ItemData));
             }
         }
     }
 }
 
-void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, DrawList &list) {
+void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object,
+                                         Eng::DrawList &list) {
     if (list.ellipsoids.count + dr.ellipsoids_count > REN_MAX_ELLIPSES_TOTAL) {
         return;
     }
@@ -2025,7 +2032,7 @@ void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat
 
     for (int i = 0; i < dr.ellipsoids_count; i++) {
         const Eng::Drawable::Ellipsoid &e = dr.ellipsoids[i];
-        EllipsItem &ei = list.ellipsoids.data[list.ellipsoids.count++];
+        Eng::EllipsItem &ei = list.ellipsoids.data[list.ellipsoids.count++];
 
         auto pos = Ren::Vec4f{e.offset[0], e.offset[1], e.offset[2], 1.0f},
              axis = Ren::Vec4f{-e.axis[0], -e.axis[1], -e.axis[2], 0.0f};
@@ -2055,11 +2062,11 @@ void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat
 }
 
 uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_offset, const Eng::AnimState &as,
-                                                const Ren::Mesh *mesh, DrawList &list) {
+                                                const Ren::Mesh *mesh, Eng::DrawList &list) {
     const Ren::Skeleton *skel = mesh->skel();
 
     const auto palette_start = uint16_t(list.skin_transforms.count / 2);
-    SkinTransform *out_matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
+    Eng::SkinTransform *out_matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
     list.skin_transforms.count += uint32_t(2 * skel->bones_count);
 
     for (int i = 0; i < skel->bones_count; i++) {
@@ -2078,7 +2085,7 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
 
     const uint32_t curr_out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
 
-    SkinRegion &sr = list.skin_regions.data[list.skin_regions.count++];
+    Eng::SkinRegion &sr = list.skin_regions.data[list.skin_regions.count++];
     sr.in_vtx_offset = vertex_beg;
     sr.out_vtx_offset = curr_out_offset;
     sr.delta_offset = deltas_offset;
@@ -2086,13 +2093,13 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     // shape key data for current frame
     sr.shape_key_offset_curr = list.shape_keys_data.count;
     memcpy(&list.shape_keys_data.data[list.shape_keys_data.count], &as.shape_palette_curr[0],
-           as.shape_palette_count_curr * sizeof(ShapeKeyData));
+           as.shape_palette_count_curr * sizeof(Eng::ShapeKeyData));
     list.shape_keys_data.count += as.shape_palette_count_curr;
     sr.shape_key_count_curr = as.shape_palette_count_curr;
     // shape key data from previous frame
     sr.shape_key_offset_prev = list.shape_keys_data.count;
     memcpy(&list.shape_keys_data.data[list.shape_keys_data.count], &as.shape_palette_prev[0],
-           as.shape_palette_count_prev * sizeof(ShapeKeyData));
+           as.shape_palette_count_prev * sizeof(Eng::ShapeKeyData));
     list.shape_keys_data.count += as.shape_palette_count_prev;
     sr.shape_key_count_prev = as.shape_palette_count_prev;
     sr.vertex_count = vertex_cnt;
@@ -2108,15 +2115,15 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     return curr_out_offset;
 }
 
-uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage, const Ren::Tex2DRef &tex, const int prio,
-                                            const uint16_t distance) {
+uint32_t RendererInternal::__record_texture(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex,
+                                            const int prio, const uint16_t distance) {
     const uint32_t index = tex.index();
 
-    TexEntry *beg = storage.data;
-    TexEntry *end = storage.data + storage.count;
+    Eng::TexEntry *beg = storage.data;
+    Eng::TexEntry *end = storage.data + storage.count;
 
-    TexEntry *entry =
-        std::lower_bound(beg, end, index, [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+    Eng::TexEntry *entry =
+        std::lower_bound(beg, end, index, [](const Eng::TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
     if (entry == end || entry->index != index) {
         ++storage.count;
         std::copy_backward(entry, end, end + 1);
@@ -2129,8 +2136,8 @@ uint32_t RendererInternal::__record_texture(DynArray<TexEntry> &storage, const R
     return uint32_t(entry - beg);
 }
 
-void RendererInternal::__record_textures(DynArray<TexEntry> &storage, const Ren::Material *mat, const bool is_animated,
-                                         const uint16_t distance) {
+void RendererInternal::__record_textures(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Material *mat,
+                                         const bool is_animated, const uint16_t distance) {
     static const int TexPriorities[] = {0, 1, 2, 0, 4, 5, 6, 7};
     for (int i = 0; i < int(mat->textures.size()); ++i) {
         int prio = TexPriorities[i];

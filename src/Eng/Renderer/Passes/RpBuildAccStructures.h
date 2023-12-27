@@ -6,7 +6,6 @@
 namespace Eng {
 struct prim_t;
 struct split_settings_t;
-} // namespace Eng
 
 class RpBuildAccStructuresExecutor : public RpExecutor {
     const DrawList *&p_list_;
@@ -33,3 +32,4 @@ class RpBuildAccStructuresExecutor : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

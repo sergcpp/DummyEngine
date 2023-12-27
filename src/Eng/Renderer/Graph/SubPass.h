@@ -5,8 +5,7 @@
 #include "GraphBuilder.h"
 #include "Resource.h"
 
-// class RpBuilder;
-
+namespace Eng {
 class RpExecutor {
   public:
     virtual ~RpExecutor() {}
@@ -119,3 +118,4 @@ class RpSubpass {
 
     const char *name() const { return name_.c_str(); }
 };
+} // namespace Eng

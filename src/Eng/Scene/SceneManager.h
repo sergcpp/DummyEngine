@@ -72,6 +72,11 @@ struct AssetCache {
 };
 } // namespace SceneManagerInternal
 
+// TODO: remove this!!!
+#include <Ren/RenderPass.h>
+#include <Ren/VertexInput.h>
+
+namespace Eng {
 struct path_config_t {
     const char *models_path = "./assets_pc/models/";
     const char *textures_path = "./assets_pc/textures/";
@@ -88,10 +93,6 @@ struct assets_context_t {
     std::mutex cache_mtx;
 };
 
-// TODO: remove this!!!
-#include <Ren/RenderPass.h>
-#include <Ren/VertexInput.h>
-
 class SceneManager {
   public:
     SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx, Ray::RendererBase &ray_renderer,
@@ -103,15 +104,15 @@ class SceneManager {
     const Ren::Camera &main_cam() const { return cam_; }
     Ren::Camera &main_cam() { return cam_; }
     Ren::Mesh *cam_rig() { return cam_rig_.get(); }
-    SceneData &scene_data() { return scene_data_; }
+    Eng::SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
     Sys::MultiPoolAllocator<char> &mp_alloc() { return mp_alloc_; }
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
-    const PersistentGpuData &persistent_data() const { return scene_data_.persistent_data; }
+    const Eng::PersistentGpuData &persistent_data() const { return scene_data_.persistent_data; }
 
-    SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
+    Eng::SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
     uint32_t FindObject(const char *name) {
         uint32_t *p_ndx = scene_data_.name_to_object.Find(name);
@@ -136,7 +137,7 @@ class SceneManager {
                    bool autoexposure, float max_exposure);
 
     using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
-    void RegisterComponent(uint32_t index, CompStorage *storage, const std::function<PostLoadFunc> &post_init);
+    void RegisterComponent(uint32_t index, Eng::CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
     void SetPipelineInitializer(
         std::function<void(const Ren::ProgramRef &prog, const uint32_t mat_flags, Ren::PipelineStorage &storage,
@@ -154,10 +155,10 @@ class SceneManager {
 
     void UpdateObjects();
 
-    void UpdateTexturePriorities(const TexEntry visible_textures[], int visible_count,
-                                 const TexEntry desired_textures[], int desired_count);
-    void TexturesGCIteration(const TexEntry visible_textures[], int visible_count, const TexEntry desired_textures[],
-                             int desired_count);
+    void UpdateTexturePriorities(const Eng::TexEntry visible_textures[], int visible_count,
+                                 const Eng::TexEntry desired_textures[], int desired_count);
+    void TexturesGCIteration(const Eng::TexEntry visible_textures[], int visible_count,
+                             const Eng::TexEntry desired_textures[], int desired_count);
 
     void StartTextureLoader();
     void StopTextureLoader();
@@ -171,7 +172,7 @@ class SceneManager {
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
                               Sys::ThreadPool *p_threads, Ren::ILog *log);
     static bool WriteProbeCache(const char *out_folder, const char *scene_name, const Ren::ProbeStorage &probes,
-                                const CompStorage *light_probe_storage, Ren::ILog *log);
+                                const Eng::CompStorage *light_probe_storage, Ren::ILog *log);
 
   private:
     void PostloadDrawable(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
@@ -236,13 +237,13 @@ class SceneManager {
     double last_cam_time_s_ = 0.0;
     Snd::Source amb_sound_;
 
-    SceneData scene_data_;
+    Eng::SceneData scene_data_;
     std::vector<uint32_t> changed_objects_, last_changed_objects_;
     std::vector<uint32_t> instance_data_to_update_;
 
     Sys::MultiPoolAllocator<char> mp_alloc_;
-    std::unique_ptr<CompStorage> default_comp_storage_[MAX_COMPONENT_TYPES];
-    std::function<PostLoadFunc> component_post_load_[MAX_COMPONENT_TYPES];
+    std::unique_ptr<Eng::CompStorage> default_comp_storage_[Eng::MAX_COMPONENT_TYPES];
+    std::function<PostLoadFunc> component_post_load_[Eng::MAX_COMPONENT_TYPES];
 
     struct TextureRequest {
         Ren::Tex2DRef ref;
@@ -351,3 +352,4 @@ class SceneManager {
     static bool HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string> &);
 };
+} // namespace Eng

@@ -5,7 +5,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpOpaque::Execute(RpBuilder &builder) {
+void Eng::RpOpaque::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
@@ -19,9 +19,9 @@ void RpOpaque::Execute(RpBuilder &builder) {
     DrawOpaque(builder);
 }
 
-void RpOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
-                        RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
-                        RpAllocTex &depth_tex) {
+void Eng::RpOpaque::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                             RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
+                             RpAllocTex &depth_tex) {
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {normal_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {spec_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};

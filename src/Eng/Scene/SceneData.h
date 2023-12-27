@@ -5,8 +5,8 @@
 #include <atomic>
 
 #include <Ren/HashMap32.h>
-#include <Ren/Mesh.h>
 #include <Ren/MMat.h>
+#include <Ren/Mesh.h>
 #include <Ren/Pipeline.h>
 #include <Ren/ProbeStorage.h>
 #include <Ren/Storage.h>
@@ -16,42 +16,43 @@
 #include "Comp/AnimState.h"
 #include "Comp/Decal.h"
 #include "Comp/Drawable.h"
-#include "Comp/Lightmap.h"
 #include "Comp/LightProbe.h"
 #include "Comp/LightSource.h"
+#include "Comp/Lightmap.h"
 #include "Comp/Occluder.h"
 #include "Comp/Physics.h"
 #include "Comp/SoundSource.h"
 #include "Comp/Transform.h"
 #include "Comp/VegState.h"
 
+namespace Eng {
 enum eObjectComp : uint32_t {
-    CompTransform    = 0,
-    CompDrawable     = 1,
-    CompOccluder     = 2,
-    CompLightmap     = 3,
-    CompLightSource  = 4,
-    CompDecal        = 5,
-    CompProbe        = 6,
-    CompAnimState    = 7,
-    CompVegState     = 8,
-    CompSoundSource  = 9,
-    CompPhysics      = 10,
+    CompTransform = 0,
+    CompDrawable = 1,
+    CompOccluder = 2,
+    CompLightmap = 3,
+    CompLightSource = 4,
+    CompDecal = 5,
+    CompProbe = 6,
+    CompAnimState = 7,
+    CompVegState = 8,
+    CompSoundSource = 9,
+    CompPhysics = 10,
     CompAccStructure = 11,
 };
 
 enum eObjectCompBit : uint32_t {
-    CompTransformBit    = (1u << CompTransform),
-    CompDrawableBit     = (1u << CompDrawable),
-    CompOccluderBit     = (1u << CompOccluder),
-    CompLightmapBit     = (1u << CompLightmap),
-    CompLightSourceBit  = (1u << CompLightSource),
-    CompDecalBit        = (1u << CompDecal),
-    CompProbeBit        = (1u << CompProbe),
-    CompAnimStateBit    = (1u << CompAnimState),
-    CompVegStateBit     = (1u << CompVegState),
-    CompSoundSourceBit  = (1u << CompSoundSource),
-    CompPhysicsBit      = (1u << CompPhysics),
+    CompTransformBit = (1u << CompTransform),
+    CompDrawableBit = (1u << CompDrawable),
+    CompOccluderBit = (1u << CompOccluder),
+    CompLightmapBit = (1u << CompLightmap),
+    CompLightSourceBit = (1u << CompLightSource),
+    CompDecalBit = (1u << CompDecal),
+    CompProbeBit = (1u << CompProbe),
+    CompAnimStateBit = (1u << CompAnimState),
+    CompVegStateBit = (1u << CompVegState),
+    CompSoundSourceBit = (1u << CompSoundSource),
+    CompPhysicsBit = (1u << CompPhysics),
     CompAccStructureBit = (1u << CompAccStructure)
 };
 
@@ -60,18 +61,18 @@ const int MAX_COMPONENT_TYPES = 32;
 const float LIGHT_ATTEN_CUTOFF = 0.004f;
 
 struct SceneObject {
-    uint32_t    comp_mask, change_mask, last_change_mask;
-    uint32_t    components[MAX_COMPONENT_TYPES];
+    uint32_t comp_mask, change_mask, last_change_mask;
+    uint32_t components[MAX_COMPONENT_TYPES];
     Ren::String name;
 
-    SceneObject() : comp_mask(0), change_mask(0), last_change_mask(0) {}    // NOLINT
+    SceneObject() : comp_mask(0), change_mask(0), last_change_mask(0) {} // NOLINT
     SceneObject(const SceneObject &rhs) = delete;
     SceneObject(SceneObject &&rhs) noexcept = default;
 
     SceneObject &operator=(const SceneObject &rhs) = delete;
     SceneObject &operator=(SceneObject &&rhs) = default;
 };
-//static_assert(sizeof(SceneObject) == 156 + 4, "!");
+// static_assert(sizeof(SceneObject) == 156 + 4, "!");
 
 struct bvh_node_t { // NOLINT
     Ren::Vec3f bbox_min;
@@ -103,18 +104,17 @@ static_assert(sizeof(bvh_node_t) == 36, "!");
 const int MAX_STACK_SIZE = 64;
 
 struct Environment {
-    Ren::Vec3f          sun_dir, sun_col;
-    float               sun_softness = 0.0f;
-    Ren::Vec3f          wind_vec;
-    float               wind_turbulence = 0.0f;
-    Ren::Vec2f          prev_wind_scroll_lf, prev_wind_scroll_hf;
-    Ren::Vec2f          curr_wind_scroll_lf, curr_wind_scroll_hf;
-    Ren::Tex2DRef       env_map;
-    Ren::Tex2DRef       lm_direct, lm_indir,
-                        lm_indir_sh[4];
-    float               sun_shadow_bias[2] = { 4.0f, 8.0f };
+    Ren::Vec3f sun_dir, sun_col;
+    float sun_softness = 0.0f;
+    Ren::Vec3f wind_vec;
+    float wind_turbulence = 0.0f;
+    Ren::Vec2f prev_wind_scroll_lf, prev_wind_scroll_hf;
+    Ren::Vec2f curr_wind_scroll_lf, curr_wind_scroll_hf;
+    Ren::Tex2DRef env_map;
+    Ren::Tex2DRef lm_direct, lm_indir, lm_indir_sh[4];
+    float sun_shadow_bias[2] = {4.0f, 8.0f};
 
-    Ren::String         env_map_name, env_map_name_pt;
+    Ren::String env_map_name, env_map_name_pt;
 };
 
 struct BBox {
@@ -135,7 +135,7 @@ struct TexEntry {
 static_assert(sizeof(TexEntry) == 8, "!");
 
 class CompStorage {
-public:
+  public:
     virtual ~CompStorage() = default;
     virtual const char *name() const = 0;
 
@@ -156,37 +156,38 @@ public:
     virtual const void *SequentialData() const { return nullptr; }
     virtual void *SequentialData() { return nullptr; }
 };
+} // namespace Eng
 
 #if defined(USE_VK_RENDER)
 #include <Ren/DescriptorPool.h>
 #endif
 
+namespace Eng {
 struct PersistentGpuData {
-    Ren::BufferRef                          instance_buf;
-    Ren::Tex1DRef                           instance_buf_tbo;
-    Ren::BufferRef                          materials_buf;
+    Ren::BufferRef instance_buf;
+    Ren::Tex1DRef instance_buf_tbo;
+    Ren::BufferRef materials_buf;
 #if defined(USE_VK_RENDER)
-    std::unique_ptr<Ren::DescrPool>         textures_descr_pool;
-    VkDescriptorSetLayout                   textures_descr_layout = VK_NULL_HANDLE;
-    std::unique_ptr<Ren::DescrPool>         rt_textures_descr_pool, rt_inline_textures_descr_pool;
-    VkDescriptorSetLayout                   rt_textures_descr_layout = VK_NULL_HANDLE,
-                                            rt_inline_textures_descr_layout = VK_NULL_HANDLE;
+    std::unique_ptr<Ren::DescrPool> textures_descr_pool;
+    VkDescriptorSetLayout textures_descr_layout = VK_NULL_HANDLE;
+    std::unique_ptr<Ren::DescrPool> rt_textures_descr_pool, rt_inline_textures_descr_pool;
+    VkDescriptorSetLayout rt_textures_descr_layout = VK_NULL_HANDLE, rt_inline_textures_descr_layout = VK_NULL_HANDLE;
     Ren::SmallVector<VkDescriptorSet, 1024> textures_descr_sets[4];
-    VkDescriptorSet                         rt_textures_descr_sets[4], rt_inline_textures_descr_sets[4];
+    VkDescriptorSet rt_textures_descr_sets[4], rt_inline_textures_descr_sets[4];
 #elif defined(USE_GL_RENDER)
-    Ren::BufferRef                          textures_buf;
+    Ren::BufferRef textures_buf;
 #endif
-    Ren::PipelineStorage                    pipelines;
+    Ren::PipelineStorage pipelines;
 
-    Ren::BufferRef                          rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf, rt_blas_buf;
+    Ren::BufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf, rt_blas_buf;
 
     struct {
-        Ren::BufferRef                      rt_prim_indices_buf;
-        uint32_t                            rt_root_node = 0;
-        Ren::BufferRef                      rt_meshes_buf;
+        Ren::BufferRef rt_prim_indices_buf;
+        uint32_t rt_root_node = 0;
+        Ren::BufferRef rt_meshes_buf;
     } swrt;
-    uint32_t                                rt_tlas_build_scratch_size = 0;
-    std::unique_ptr<Ren::IAccStructure>     rt_tlas, rt_sh_tlas;
+    uint32_t rt_tlas_build_scratch_size = 0;
+    std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
 
     PersistentGpuData();
     ~PersistentGpuData();
@@ -197,34 +198,35 @@ struct PersistentGpuData {
 };
 
 struct SceneData {
-    Ren::String                             name;
-    
-    Ren::Texture2DStorage                   textures;
-    Ren::MaterialStorage                    materials;
-    std::vector<uint32_t>                   material_changes;
-    PersistentGpuData                       persistent_data;
-    std::pair<uint32_t, uint32_t>           mat_update_ranges[4];
-    Ren::MeshStorage                        meshes;
+    Ren::String name;
 
-    std::vector<uint32_t>                   texture_mem_buckets;
-    uint32_t                                tex_mem_bucket_index = 0;
-    std::atomic<uint64_t>                   estimated_texture_mem = {};
+    Ren::Texture2DStorage textures;
+    Ren::MaterialStorage materials;
+    std::vector<uint32_t> material_changes;
+    PersistentGpuData persistent_data;
+    std::pair<uint32_t, uint32_t> mat_update_ranges[4];
+    Ren::MeshStorage meshes;
 
-    Environment                             env;
+    std::vector<uint32_t> texture_mem_buckets;
+    uint32_t tex_mem_bucket_index = 0;
+    std::atomic<uint64_t> estimated_texture_mem = {};
+
+    Environment env;
 
     Ren::HashMap32<Ren::String, Ren::Vec4f> decals_textures;
-    Ren::TextureAtlas                       decals_atlas;
-    Ren::TextureSplitter                    lm_splitter;
-    Ren::ProbeStorage                       probe_storage;
+    Ren::TextureAtlas decals_atlas;
+    Ren::TextureSplitter lm_splitter;
+    Ren::ProbeStorage probe_storage;
 
-    CompStorage                             *comp_store[MAX_COMPONENT_TYPES] = {};
+    CompStorage *comp_store[MAX_COMPONENT_TYPES] = {};
 
-    std::vector<SceneObject>                objects;
-    Ren::HashMap32<Ren::String, uint32_t>   name_to_object;
+    std::vector<SceneObject> objects;
+    Ren::HashMap32<Ren::String, uint32_t> name_to_object;
 
-    std::vector<bvh_node_t>                 nodes;
-    std::vector<uint32_t>                   free_nodes;
-    uint32_t                                root_node = 0xffffffff;
+    std::vector<bvh_node_t> nodes;
+    std::vector<uint32_t> free_nodes;
+    uint32_t root_node = 0xffffffff;
 
-    uint32_t                                update_counter = 0;
+    uint32_t update_counter = 0;
 };
+} // namespace Eng

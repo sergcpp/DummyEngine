@@ -32,7 +32,7 @@ const Ren::Vec2f poisson_disk[] = {
     Ren::Vec2f{-0.178564f, -0.596057f}};
 } // namespace RpSampleBrightnessInternal
 
-void RpSampleBrightness::Execute(RpBuilder &builder) {
+void Eng::RpSampleBrightness::Execute(RpBuilder &builder) {
     using namespace RpSampleBrightnessInternal;
 
     RpAllocTex &input_tex = builder.GetReadTexture(pass_data_->input_tex);
@@ -66,7 +66,7 @@ void RpSampleBrightness::Execute(RpBuilder &builder) {
     }
 }
 
-void RpSampleBrightness::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &reduced_tex) {
+void Eng::RpSampleBrightness::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &reduced_tex) {
     if (!initialized_) {
         blit_red_prog_ =
             sh.LoadProgram(ctx, "blit_red2", "internal/blit_reduced.vert.glsl", "internal/blit_reduced.frag.glsl");

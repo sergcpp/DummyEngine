@@ -9,7 +9,7 @@
 #include "../Renderer_Structs.h"
 #include "../Shaders/rt_shadows_interface.h"
 
-void RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
+void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -63,7 +63,7 @@ void RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
     //                           indir_args_buf.ref->vk_device_address());
 }
 
-void RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
+void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -117,7 +117,7 @@ void RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
     vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
 }
 
-void RpRTShadows::Execute_SWRT(RpBuilder &builder) {
+void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
@@ -214,7 +214,7 @@ void RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
 }
 
-void RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         /*Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(
             ctx, "rt_reflections", "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",

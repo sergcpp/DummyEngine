@@ -32,7 +32,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "zenith.json";
 } // namespace GSUITest2Internal
 
-GSUITest2::GSUITest2(GameBase *game) : GSBaseState(game) {
+GSUITest2::GSUITest2(Eng::GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("book_main_font");
     // dialog_font_->set_scale(1.5f);
@@ -147,15 +147,16 @@ void GSUITest2::UpdateAnim(const uint64_t dt_us) {
         test_time_counter_s -= char_period_s;
     }*/
 
-    const SceneData &scene = scene_manager_->scene_data();
+    const Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (zenith_index_ != 0xffffffff) {
-        SceneObject *zenith = scene_manager_->GetObject(zenith_index_);
+        Eng::SceneObject *zenith = scene_manager_->GetObject(zenith_index_);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        uint32_t mask = Eng::CompDrawableBit | Eng::CompAnimStateBit;
         if ((zenith->comp_mask & mask) == mask) {
-            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(zenith->components[CompDrawable]);
-            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(zenith->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[Eng::CompDrawable]->Get(zenith->components[Eng::CompDrawable]);
+            auto *as =
+                (Eng::AnimState *)scene.comp_store[Eng::CompAnimState]->Get(zenith->components[Eng::CompAnimState]);
 
             // keep previous palette for velocity calculation
             std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -325,12 +326,12 @@ void GSUITest2::MutateWord(const char *in_word, const std::function<void(const c
     ctx.mutation_chain[0](ctx, unicode_word, 0);
 }
 
-bool GSUITest2::HandleInput(const InputManager::Event &evt) {
+bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSUITest2Internal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
+    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -350,16 +351,16 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case RawInputEv::P1Down: {
+    case Eng::RawInputEv::P1Down: {
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                              Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         // text_printer_->Press(p, true);
         edit_box_->Press(p, true);
     } break;
-    case RawInputEv::P2Down: {
+    case Eng::RawInputEv::P2Down: {
 
     } break;
-    case RawInputEv::P1Up: {
+    case Eng::RawInputEv::P1Up: {
         // text_printer_->skip();
 
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
@@ -369,30 +370,30 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
         is_visible_ = !is_visible_;
     } break;
-    case RawInputEv::P2Up:
-    case RawInputEv::P2Move: {
+    case Eng::RawInputEv::P2Up:
+    case Eng::RawInputEv::P2Move: {
 
     } break;
-    case RawInputEv::KeyDown: {
+    case Eng::RawInputEv::KeyDown: {
         input_processed = false;
 
-        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
-        } else if (evt.key_code == KeyReturn) {
+        if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
+        } else if (evt.key_code == Eng::KeyReturn) {
             edit_box_->InsertLine({});
-        } else if (evt.key_code == KeyLeft) {
+        } else if (evt.key_code == Eng::KeyLeft) {
             edit_box_->MoveCursorH(-1);
-        } else if (evt.key_code == KeyRight) {
+        } else if (evt.key_code == Eng::KeyRight) {
             edit_box_->MoveCursorH(1);
-        } else if (evt.key_code == KeyUp) {
+        } else if (evt.key_code == Eng::KeyUp) {
             edit_box_->MoveCursorV(-1);
-        } else if (evt.key_code == KeyDown) {
+        } else if (evt.key_code == Eng::KeyDown) {
             edit_box_->MoveCursorV(1);
-        } else if (evt.key_code == KeyDelete) {
+        } else if (evt.key_code == Eng::KeyDelete) {
             edit_box_->DeleteBck();
-        } else if (evt.key_code == KeyDeleteForward) {
+        } else if (evt.key_code == Eng::KeyDeleteForward) {
             edit_box_->DeleteFwd();
         } else {
-            char ch = InputManager::CharFromKeycode(evt.key_code);
+            char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
             if (shift_down_) {
                 if (ch == '-') {
                     ch = '_';
@@ -406,14 +407,14 @@ bool GSUITest2::HandleInput(const InputManager::Event &evt) {
 
         UpdateHint();
     } break;
-    case RawInputEv::KeyUp: {
-        if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
+    case Eng::RawInputEv::KeyUp: {
+        if (evt.key_code == Eng::KeyUp || (evt.key_code == Eng::KeyW && !cmdline_enabled_)) {
             // text_printer_->restart();
         } else {
             input_processed = false;
         }
     } break;
-    case RawInputEv::Resize:
+    case Eng::RawInputEv::Resize:
         edit_box_->Resize(ui_root_.get());
         break;
     default:

@@ -2,6 +2,7 @@
 
 // Taken from https://github.com/depp/keycode
 
+namespace Eng {
 enum {
     KeyNone = 0, // Zero, does not correspond to any key
 
@@ -129,3 +130,4 @@ enum {
     KeyRightAlt = 230,
     KeyRightGUI = 231
 };
+}

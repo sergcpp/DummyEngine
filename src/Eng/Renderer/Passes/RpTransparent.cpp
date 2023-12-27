@@ -5,7 +5,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpTransparent::Execute(RpBuilder &builder) {
+void Eng::RpTransparent::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
@@ -19,7 +19,7 @@ void RpTransparent::Execute(RpBuilder &builder) {
     DrawTransparent(builder, color_tex);
 }
 
-void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
+void Eng::RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
     RpAllocBuf &instances_buf = builder.GetReadBuffer(instances_buf_);
     RpAllocBuf &instance_indices_buf = builder.GetReadBuffer(instance_indices_buf_);
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
@@ -41,9 +41,9 @@ void RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex) {
 #endif
 }
 
-void RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
-                             RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
-                             RpAllocTex &depth_tex) {
+void Eng::RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                                  RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex,
+                                  RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
     const Ren::RenderTarget color_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {normal_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {spec_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -93,8 +93,8 @@ void RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBu
     }
 
 #if !defined(USE_VK_RENDER)
-    if (!color_only_fb_[fb_to_use_].Setup(ctx.api_ctx(), {}, color_tex.desc.w, color_tex.desc.h, color_tex.ref, depth_tex.ref,
-                              depth_tex.ref, view_state_->is_multisampled, ctx.log())) {
+    if (!color_only_fb_[fb_to_use_].Setup(ctx.api_ctx(), {}, color_tex.desc.w, color_tex.desc.h, color_tex.ref,
+                                          depth_tex.ref, depth_tex.ref, view_state_->is_multisampled, ctx.log())) {
         ctx.log()->Error("RpTransparent: color_only_fb_ init failed!");
     }
 

@@ -6,9 +6,10 @@
 #include "../Graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
-class PrimDraw;
 struct ViewState;
 
+namespace Eng {
+class PrimDraw;
 struct RpRTShadowsData {
     RpResRef geo_data;
     RpResRef materials;
@@ -66,3 +67,4 @@ class RpRTShadows : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

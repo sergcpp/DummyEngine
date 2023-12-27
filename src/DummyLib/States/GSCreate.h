@@ -14,7 +14,9 @@ enum class eGameState {
     GS_VIDEO_TEST
 };
 
+namespace Eng {
 class GameBase;
 class GameState;
+} // namespace Eng
 
-std::shared_ptr<GameState> GSCreate(eGameState state, GameBase *game);
+std::shared_ptr<Eng::GameState> GSCreate(eGameState state, Eng::GameBase *game);

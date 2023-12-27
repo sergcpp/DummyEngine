@@ -13,7 +13,7 @@ namespace SceneManagerConstants {} // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {} // namespace SceneManagerInternal
 
-void SceneManager::UpdateMaterialsBuffer() {
+void Eng::SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
@@ -130,6 +130,6 @@ void SceneManager::UpdateMaterialsBuffer() {
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 }
 
-void SceneManager::InitHWRTAccStructures() {
+void Eng::SceneManager::InitHWRTAccStructures() {
     // stub
 }

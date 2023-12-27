@@ -16,13 +16,12 @@
 #include <Ren/Texture.h>
 
 class DebugInfoUI;
-class GameStateManager;
 class FontStorage;
-class SceneManager;
-class PhysicsManager;
-class Random;
 namespace Eng {
 class Cmdline;
+class GameStateManager;
+class PhysicsManager;
+class SceneManager;
 class ShaderLoader;
 } // namespace Eng
 
@@ -37,19 +36,19 @@ namespace Snd {
 class Context;
 }
 
-class GSBaseState : public GameState {
+class GSBaseState : public Eng::GameState {
   protected:
-    GameBase *game_;
-    std::weak_ptr<GameStateManager> state_manager_;
+    Eng::GameBase *game_;
+    std::weak_ptr<Eng::GameStateManager> state_manager_;
     std::shared_ptr<Eng::Cmdline> cmdline_;
     std::shared_ptr<Ren::Context> ren_ctx_;
     std::shared_ptr<Snd::Context> snd_ctx_;
     std::shared_ptr<Ren::ILog> log_;
-    std::shared_ptr<Renderer> renderer_;
-    std::shared_ptr<SceneManager> scene_manager_;
-    std::shared_ptr<PhysicsManager> physics_manager_;
-    std::shared_ptr<TimeInterval> swap_interval_;
-    std::shared_ptr<Random> random_;
+    std::shared_ptr<Eng::Renderer> renderer_;
+    std::shared_ptr<Eng::SceneManager> scene_manager_;
+    std::shared_ptr<Eng::PhysicsManager> physics_manager_;
+    std::shared_ptr<Eng::TimeInterval> swap_interval_;
+    std::shared_ptr<Eng::Random> random_;
     std::shared_ptr<Eng::ShaderLoader> shader_loader_;
 
     std::shared_ptr<Gui::Renderer> ui_renderer_;
@@ -66,11 +65,11 @@ class GSBaseState : public GameState {
     // Enable all flags, Renderer will mask out what is not enabled
     uint64_t render_flags_ = 0xffffffffffffffff;
 
-    FrameInfo fr_info_;
+    Eng::FrameInfo fr_info_;
 
     Ren::Camera temp_probe_cam_;
     FrameBuf temp_probe_buf_;
-    DrawList temp_probe_lists_[6];
+    Eng::DrawList temp_probe_lists_[6];
     Eng::LightProbe *probe_to_render_ = nullptr, *probe_to_update_sh_ = nullptr;
     bool probes_dirty_ = true;
     int probe_sh_update_iteration_ = 0;
@@ -81,17 +80,17 @@ class GSBaseState : public GameState {
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;
 
-    DrawList main_view_lists_[2];
+    Eng::DrawList main_view_lists_[2];
     int front_list_ = 0;
 
-    FrontendInfo prev_front_info_;
-    BackendInfo prev_back_info_;
-    TimeInterval prev_swap_interval_;
+    Eng::FrontendInfo prev_front_info_;
+    Eng::BackendInfo prev_back_info_;
+    Eng::TimeInterval prev_swap_interval_;
 
     uint64_t last_frame_time_ = 0;
     double cur_fps_ = 0.0;
 
-    std::vector<InputManager::Event> cmdline_input_;
+    std::vector<Eng::InputManager::Event> cmdline_input_;
     std::vector<std::string> cmdline_history_;
     int cmdline_history_index_ = -1;
     uint64_t cmdline_cursor_blink_us_ = 0;
@@ -112,7 +111,7 @@ class GSBaseState : public GameState {
     virtual void DrawUI(Gui::Renderer *r, Gui::BaseElement *root);
 
   public:
-    explicit GSBaseState(GameBase *game);
+    explicit GSBaseState(Eng::GameBase *game);
     ~GSBaseState() override;
 
     void Enter() override;
@@ -123,5 +122,5 @@ class GSBaseState : public GameState {
     void UpdateFixed(uint64_t dt_us) override;
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

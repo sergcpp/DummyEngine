@@ -5,11 +5,11 @@
 #include <Ren/VKCtx.h>
 #endif
 
-PersistentGpuData::PersistentGpuData() = default;
+Eng::PersistentGpuData::PersistentGpuData() = default;
 
-PersistentGpuData::~PersistentGpuData() { Clear(); }
+Eng::PersistentGpuData::~PersistentGpuData() { Clear(); }
 
-void PersistentGpuData::Clear() {
+void Eng::PersistentGpuData::Clear() {
 #if defined(USE_VK_RENDER)
     if (textures_descr_pool) {
         vkDestroyDescriptorSetLayout(textures_descr_pool->api_ctx()->device, textures_descr_layout, nullptr);

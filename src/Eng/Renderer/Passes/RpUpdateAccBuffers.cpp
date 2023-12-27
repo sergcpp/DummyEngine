@@ -2,7 +2,7 @@
 
 #include <Ren/Context.h>
 
-void RpUpdateAccBuffersExecutor::Execute(RpBuilder &builder) {
+void Eng::RpUpdateAccBuffersExecutor::Execute(RpBuilder &builder) {
     if (builder.ctx().capabilities.raytracing || builder.ctx().capabilities.ray_query) {
         Execute_HWRT(builder);
     } else {
@@ -10,4 +10,4 @@ void RpUpdateAccBuffersExecutor::Execute(RpBuilder &builder) {
     }
 }
 
-void RpUpdateAccBuffersExecutor::Execute_SWRT(RpBuilder &builder) {}
+void Eng::RpUpdateAccBuffersExecutor::Execute_SWRT(RpBuilder &builder) {}

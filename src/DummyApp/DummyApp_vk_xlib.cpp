@@ -111,7 +111,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
         viewer_.reset(new Viewer(w, h, nullptr, validation_level, nullptr, nullptr));
 
-        auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
+        auto input_manager = viewer_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
         input_manager_ = input_manager;
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -133,13 +133,14 @@ void DummyApp::Frame() { viewer_->Frame(); }
 
 void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
 
-void DummyApp::AddEvent(RawInputEv type, const uint32_t key_code, const float x,
+void DummyApp::AddEvent(Eng::RawInputEv type, const uint32_t key_code, const float x,
                         const float y, const float dx, const float dy) {
-    auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
-    if (!input_manager)
+    auto input_manager = viewer_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
+    if (!input_manager) {
         return;
+    }
 
-    InputManager::Event evt;
+    Eng::InputManager::Event evt;
     evt.type = type;
     evt.key_code = key_code;
     evt.point.x = x;
@@ -218,9 +219,10 @@ int DummyApp::Run(int argc, char *argv[]) {
 #undef None
 
 void DummyApp::PollEvents() {
-    std::shared_ptr<InputManager> input_manager = input_manager_.lock();
-    if (!input_manager)
+    std::shared_ptr<Eng::InputManager> input_manager = input_manager_.lock();
+    if (!input_manager) {
         return;
+    }
 
     static float last_p1_pos[2] = {0.0f, 0.0f};
     static int last_window_size[2] = {0, 0};
@@ -231,32 +233,32 @@ void DummyApp::PollEvents() {
                               KeyReleaseMask | ButtonPressMask | ButtonReleaseMask |
                               PointerMotionMask),
                              &xev)) {
-        InputManager::Event evt;
+        Eng::InputManager::Event evt;
 
         if (xev.type == KeyPress) {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);
 
-            if (key_code == KeyEscape) {
+            if (key_code == Eng::KeyEscape) {
                 quit_ = true;
             } else {
-                evt.type = RawInputEv::KeyDown;
+                evt.type = Eng::RawInputEv::KeyDown;
                 evt.key_code = key_code;
             }
         } else if (xev.type == KeyRelease) {
             const uint32_t scan_code = uint32_t(xev.xkey.keycode - KeycodeOffset),
                            key_code = ScancodeToHID(scan_code);
 
-            evt.type = RawInputEv::KeyUp;
+            evt.type = Eng::RawInputEv::KeyUp;
             evt.key_code = key_code;
         } else if (xev.type == ButtonPress &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
-                evt.type = RawInputEv::P1Down;
+                evt.type = Eng::RawInputEv::P1Down;
             } else if (xev.xbutton.button == Button3) {
-                evt.type = RawInputEv::P2Down;
+                evt.type = Eng::RawInputEv::P2Down;
             } else if (xev.xbutton.button == Button4 || xev.xbutton.button == Button5) {
-                evt.type = RawInputEv::MouseWheel;
+                evt.type = Eng::RawInputEv::MouseWheel;
                 evt.move.dx = (xev.xbutton.button == Button4) ? 1.0f : -1.0f;
             }
             evt.point.x = float(xev.xbutton.x);
@@ -264,14 +266,14 @@ void DummyApp::PollEvents() {
         } else if (xev.type == ButtonRelease &&
                    (xev.xbutton.button >= Button1 && xev.xbutton.button <= Button5)) {
             if (xev.xbutton.button == Button1) {
-                evt.type = RawInputEv::P1Up;
+                evt.type = Eng::RawInputEv::P1Up;
             } else if (xev.xbutton.button == Button3) {
-                evt.type = RawInputEv::P2Up;
+                evt.type = Eng::RawInputEv::P2Up;
             }
             evt.point.x = float(xev.xbutton.x);
             evt.point.y = float(xev.xbutton.y);
         } else if (xev.type == MotionNotify) {
-            evt.type = RawInputEv::P1Move;
+            evt.type = Eng::RawInputEv::P1Move;
             evt.point.x = float(xev.xmotion.x);
             evt.point.y = float(xev.xmotion.y);
             evt.move.dx = evt.point.x - last_p1_pos[0];
@@ -285,7 +287,7 @@ void DummyApp::PollEvents() {
 
                 Resize(xev.xconfigure.width, xev.xconfigure.height);
 
-                evt.type = RawInputEv::Resize;
+                evt.type = Eng::RawInputEv::Resize;
                 evt.point.x = (float)xev.xconfigure.width;
                 evt.point.y = (float)xev.xconfigure.height;
 
@@ -294,7 +296,7 @@ void DummyApp::PollEvents() {
             }
         }
 
-        if (evt.type != RawInputEv::None) {
+        if (evt.type != Eng::RawInputEv::None) {
             evt.time_stamp = Sys::GetTimeUs();
             input_manager->AddRawInputEvent(evt);
         }

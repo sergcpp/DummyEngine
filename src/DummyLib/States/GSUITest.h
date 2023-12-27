@@ -46,11 +46,11 @@ class GSUITest final : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
   public:
-    explicit GSUITest(GameBase *game);
+    explicit GSUITest(Eng::GameBase *game);
     ~GSUITest() final;
 
     void Enter() override;
     void Exit() override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

@@ -2,6 +2,7 @@
 
 #include <Ren/Log.h>
 
+namespace Eng {
 class FlowControl {
     enum class eMode { Good, Bad };
     eMode mode_;
@@ -18,3 +19,4 @@ class FlowControl {
 
     unsigned int send_period() { return mode_ == eMode::Good ? good_delta_ : bad_delta_; }
 };
+} // namespace Eng

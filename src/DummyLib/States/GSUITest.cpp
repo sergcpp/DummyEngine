@@ -32,7 +32,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "corridor.json";
 } // namespace GSUITestInternal
 
-GSUITest::GSUITest(GameBase *game) : GSBaseState(game) {
+GSUITest::GSUITest(Eng::GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     dialog_font_ = fonts->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
@@ -151,7 +151,7 @@ void GSUITest::UpdateAnim(const uint64_t dt_us) {
         test_time_counter_s -= char_period_s;
     }
 
-    const SceneData &scene = scene_manager_->scene_data();
+    const Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (sophia_indices_[0] != 0xffffffff) {
         for (int i = 0; i < 2; i++) { // NOLINT
@@ -159,12 +159,14 @@ void GSUITest::UpdateAnim(const uint64_t dt_us) {
                 break;
             }
 
-            SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
+            Eng::SceneObject *sophia = scene_manager_->GetObject(sophia_indices_[i]);
 
-            uint32_t mask = CompDrawableBit | CompAnimStateBit;
+            uint32_t mask = Eng::CompDrawableBit | Eng::CompAnimStateBit;
             if ((sophia->comp_mask & mask) == mask) {
-                auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(sophia->components[CompDrawable]);
-                auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(sophia->components[CompAnimState]);
+                auto *dr =
+                    (Eng::Drawable *)scene.comp_store[Eng::CompDrawable]->Get(sophia->components[Eng::CompDrawable]);
+                auto *as =
+                    (Eng::AnimState *)scene.comp_store[Eng::CompAnimState]->Get(sophia->components[Eng::CompAnimState]);
 
                 // keep previous palette for velocity calculation
                 std::swap(as->matr_palette_curr, as->matr_palette_prev);
@@ -195,12 +197,12 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     word_puzzle_->Draw(r);
 }
 
-bool GSUITest::HandleInput(const InputManager::Event &evt) {
+bool GSUITest::HandleInput(const Eng::InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSUITestInternal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
+    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -220,41 +222,41 @@ bool GSUITest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case RawInputEv::P1Down: {
+    case Eng::RawInputEv::P1Down: {
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                              Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, true);
     } break;
-    case RawInputEv::P2Down: {
+    case Eng::RawInputEv::P2Down: {
 
     } break;
-    case RawInputEv::P1Up: {
+    case Eng::RawInputEv::P1Up: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Press(p, false);
     } break;
-    case RawInputEv::P2Up: {
+    case Eng::RawInputEv::P2Up: {
 
     } break;
-    case RawInputEv::P1Move: {
+    case Eng::RawInputEv::P1Move: {
         Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                              Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         word_puzzle_->Hover(p);
     } break;
-    case RawInputEv::P2Move: {
+    case Eng::RawInputEv::P2Move: {
 
     } break;
-    case RawInputEv::KeyDown: {
+    case Eng::RawInputEv::KeyDown: {
         input_processed = false;
     } break;
-    case RawInputEv::KeyUp: {
-        if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
+    case Eng::RawInputEv::KeyUp: {
+        if (evt.key_code == Eng::KeyUp || (evt.key_code == Eng::KeyW && !cmdline_enabled_)) {
             // word_puzzle_->restart();
         } else {
             input_processed = false;
         }
     } break;
-    case RawInputEv::Resize:
+    case Eng::RawInputEv::Resize:
         word_puzzle_->Resize(ui_root_.get());
         break;
     default:

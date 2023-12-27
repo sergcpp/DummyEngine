@@ -3,7 +3,7 @@
 #include "../Utils/ShaderLoader.h"
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
-//#include <Ren/GL.h>
+// #include <Ren/GL.h>
 
 namespace PrimDrawInternal {
 extern const float fs_quad_positions[];
@@ -23,7 +23,7 @@ const int U_RES = 15;
 const int TEMP_BUF_SIZE = 256;
 } // namespace RendererInternal
 
-void Renderer::InitRendererInternal() {
+void Eng::Renderer::InitRendererInternal() {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -115,13 +115,13 @@ void Renderer::InitRendererInternal() {
 #endif
 }
 
-void Renderer::DestroyRendererInternal() {
+void Eng::Renderer::DestroyRendererInternal() {
     Ren::ILog *log = ctx_.log();
 
     log->Info("DestroyRendererInternal");
 }
 
-uint64_t Renderer::GetGpuTimeBlockingUs() {
+uint64_t Eng::Renderer::GetGpuTimeBlockingUs() {
 #if 0
     GLint64 time = 0;
     glGetInteger64v(GL_TIMESTAMP, &time);
@@ -130,7 +130,7 @@ uint64_t Renderer::GetGpuTimeBlockingUs() {
     return 0;
 }
 
-void Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
+void Eng::Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 #if 0
     if (!temp_tex_ || temp_tex_->params().w != w || temp_tex_->params().h != h ||
@@ -171,7 +171,7 @@ void Renderer::BlitPixels(const void *data, const int w, const int h, const Ren:
 #endif
 }
 
-void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, const Ren::eTexFormat format) {
+void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 #if 0
     if (!temp_tex_ || temp_tex_->params().w != w || temp_tex_->params().h != h ||
@@ -352,8 +352,8 @@ void Renderer::BlitPixelsTonemap(const void *data, const int w, const int h, con
 #endif
 }
 
-void Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
-                          const int first_att, const int att_count, const float multiplier) {
+void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, const float sy, const FrameBuf &buf,
+                               const int first_att, const int att_count, const float multiplier) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -426,8 +426,8 @@ void Renderer::BlitBuffer(const float px, const float py, const float sx, const 
 #endif
 }
 
-void Renderer::BlitTexture(const float px, const float py, const float sx, const float sy, const Ren::Tex2DRef &tex,
-                           const float multiplier, const bool is_ms) {
+void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, const float sy,
+                                const Ren::Tex2DRef &tex, const float multiplier, const bool is_ms) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -499,7 +499,7 @@ void Renderer::BlitTexture(const float px, const float py, const float sx, const
 #endif
 }
 
-void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
+void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -618,7 +618,7 @@ void Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStor
 #endif
 }
 
-void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
+void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const int probe_index) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),
@@ -707,8 +707,8 @@ void Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, const i
 #endif
 }
 
-bool Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
-                             Eng::LightProbe &probe) {
+bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int probe_index, const int iteration,
+                                  Eng::LightProbe &probe) {
     using namespace RendererInternal;
 #if 0
     Ren::BufferRef vtx_buf1 = ctx_.default_vertex_buf1(),

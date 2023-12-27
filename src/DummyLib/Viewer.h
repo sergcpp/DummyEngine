@@ -22,7 +22,9 @@ const char ASSETS_BASE_PATH[] = "assets";
 const char ASSETS_BASE_PATH[] = "assets_pc";
 #endif
 
+namespace Eng {
 struct assets_context_t;
+}
 
 namespace Ren {
 template <typename T, int AlignmentOfT> class SmallVectorImpl;
@@ -32,7 +34,7 @@ namespace Sys {
 class ThreadWorker;
 }
 
-class Viewer : public GameBase {
+class Viewer : public Eng::GameBase {
   public:
     Viewer(int w, int h, const char *local_dir, int validation_level, const char *device_name,
            std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread);
@@ -40,6 +42,6 @@ class Viewer : public GameBase {
     void Frame() override;
 
     static void PrepareAssets(const char *platform = "all");
-    static bool HConvTEIToDict(assets_context_t &ctx, const char *in_file, const char *out_file,
+    static bool HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string, alignof(std::string)> &);
 };

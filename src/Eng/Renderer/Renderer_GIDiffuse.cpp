@@ -14,12 +14,13 @@
 #include "Shaders/gi_write_indirect_args_interface.h"
 #include "Shaders/reconstruct_normals_interface.h"
 
-void Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                                const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
-                                const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                const PersistentGpuData &persistent_data,
-                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                                const RpResRef depth_hierarchy, FrameTextures &frame_textures) {
+void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
+                                     const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
+                                     const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
+                                     const PersistentGpuData &persistent_data,
+                                     const AccelerationStructureData &acc_struct_data,
+                                     const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
+                                     FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 

@@ -4,11 +4,12 @@
 
 #include <Ren/MVec.h>
 
+namespace Eng {
 class Random_Impl;
-
 class Random {
     std::unique_ptr<Random_Impl> impl_;
-public:
+
+  public:
     explicit Random(uint32_t seed);
     ~Random();
 
@@ -20,3 +21,4 @@ public:
 
     double GetNormalizedDouble();
 };
+} // namespace Eng

@@ -5,6 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
+namespace Eng {
 class PrimDraw;
 
 class RpTransparent : public RpExecutor {
@@ -55,8 +56,9 @@ class RpTransparent : public RpExecutor {
     RpResRef spec_tex_;
     RpResRef depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                  RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                  RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
+                  RpAllocTex &depth_tex);
     void DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex);
 
     void DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf, RpAllocBuf &instance_indices_buf,
@@ -78,11 +80,10 @@ class RpTransparent : public RpExecutor {
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
                const Ren::Pipeline pipelines[], const BindlessTextureData *bindless_tex, const RpResRef brdf_lut,
                const RpResRef noise_tex, const RpResRef cone_rt_lut, const RpResRef dummy_black,
-               const RpResRef instances_buf, const RpResRef instance_indices_buf,
-               const RpResRef shared_data_buf, const RpResRef cells_buf, const RpResRef items_buf,
-               const RpResRef lights_buf, const RpResRef decals_buf, const RpResRef shad_tex, const RpResRef ssao_tex,
-               const RpResRef lm_tex[4], const RpResRef color_tex, const RpResRef normal_tex, const RpResRef spec_tex,
-               const RpResRef depth_tex) {
+               const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
+               const RpResRef cells_buf, const RpResRef items_buf, const RpResRef lights_buf, const RpResRef decals_buf,
+               const RpResRef shad_tex, const RpResRef ssao_tex, const RpResRef lm_tex[4], const RpResRef color_tex,
+               const RpResRef normal_tex, const RpResRef spec_tex, const RpResRef depth_tex) {
         view_state_ = view_state;
         pipelines_ = pipelines;
         bindless_tex_ = bindless_tex;
@@ -122,3 +123,4 @@ class RpTransparent : public RpExecutor {
 
     void Execute(RpBuilder &builder) override;
 };
+} // namespace Eng

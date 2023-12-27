@@ -19,7 +19,7 @@
 #include "Random.h"
 #include "Utils/ShaderLoader.h"
 
-GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)
+Eng::GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)
     : width(w), height(h) {
     terminated = false;
 
@@ -55,7 +55,7 @@ GameBase::GameBase(const int w, const int h, const int validation_level, const c
     auto input_manager = std::make_shared<InputManager>();
     AddComponent(INPUT_MANAGER_KEY, input_manager);
 
-    auto shader_loader = std::make_shared<Eng::ShaderLoader>();
+    auto shader_loader = std::make_shared<ShaderLoader>();
     AddComponent(SHADER_LOADER_KEY, shader_loader);
 
     auto flow_control = std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
@@ -74,7 +74,7 @@ GameBase::GameBase(const int w, const int h, const int validation_level, const c
     AddComponent(UI_ROOT_KEY, ui_root);
 }
 
-GameBase::~GameBase() {
+Eng::GameBase::~GameBase() {
     // keep log alive during destruction
     auto log = GetComponent<Ren::ILog>(LOG_KEY);
     { // contexts should be deleted last
@@ -90,7 +90,7 @@ GameBase::~GameBase() {
     }
 }
 
-void GameBase::Resize(const int w, const int h) {
+void Eng::GameBase::Resize(const int w, const int h) {
     width = w;
     height = h;
 
@@ -102,9 +102,9 @@ void GameBase::Resize(const int w, const int h) {
     ui_root->Resize(nullptr);
 }
 
-void GameBase::Start() {}
+void Eng::GameBase::Start() {}
 
-void GameBase::Frame() {
+void Eng::GameBase::Frame() {
     OPTICK_EVENT("GameBase::Frame");
 
     auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
@@ -149,13 +149,13 @@ void GameBase::Frame() {
     }
 }
 
-void GameBase::Quit() { terminated = true; }
+void Eng::GameBase::Quit() { terminated = true; }
 
 #if defined(USE_VK_RENDER)
 
 #include <Ren/VKCtx.h>
 
-void GameBase::InitOptickGPUProfiler() {
+void Eng::GameBase::InitOptickGPUProfiler() {
     auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
     Ren::ApiContext *api_ctx = ren_ctx->api_ctx();
 
@@ -186,6 +186,6 @@ void GameBase::InitOptickGPUProfiler() {
 
 #else
 
-void GameBase::InitOptickGPUProfiler() {}
+void Eng::GameBase::InitOptickGPUProfiler() {}
 
 #endif

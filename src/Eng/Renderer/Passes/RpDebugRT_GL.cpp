@@ -11,7 +11,7 @@
 
 #include "../Shaders/rt_debug_interface.h"
 
-void RpDebugRT::Execute_SWRT(RpBuilder &builder) {
+void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data_buf);
     RpAllocBuf &materials_buf = builder.GetReadBuffer(pass_data_->materials_buf);
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);

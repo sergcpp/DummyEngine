@@ -44,7 +44,7 @@ const Ren::Vec3f page_corners_pos[] = {
 const int page_order_indices[][4] = {{}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, -2, -1}};
 } // namespace GSUITest3Internal
 
-GSUITest3::GSUITest3(GameBase *game) : GSBaseState(game) {
+GSUITest3::GSUITest3(Eng::GameBase *game) : GSBaseState(game) {
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     book_main_font_ = fonts->FindFont("book_main_font");
     book_emph_font_ = fonts->FindFont("book_emph_font");
@@ -122,7 +122,7 @@ void GSUITest3::Enter() {
 
     InitBookMaterials();
 
-    const SceneData &scene = scene_manager_->scene_data();
+    const Eng::SceneData &scene = scene_manager_->scene_data();
 
     /*if (book_index_ != 0xffffffff) {
         SceneObject *book = scene_manager_->GetObject(book_index_);
@@ -146,8 +146,8 @@ void GSUITest3::Enter() {
     }*/
 
     // disable bloom and fxaa, they make fonts look bad
-    render_flags_ &= ~EnableBloom;
-    render_flags_ &= ~EnableFxaa;
+    render_flags_ &= ~Eng::EnableBloom;
+    render_flags_ &= ~Eng::EnableFxaa;
 }
 
 void GSUITest3::OnPostloadScene(JsObjectP &js_scene) {
@@ -200,15 +200,16 @@ void GSUITest3::UpdateAnim(const uint64_t dt_us) {
 
     const float delta_time_s = fr_info_.delta_time_us * 0.000001f;
 
-    const SceneData &scene = scene_manager_->scene_data();
+    const Eng::SceneData &scene = scene_manager_->scene_data();
 
     if (book_index_ != 0xffffffff) {
-        SceneObject *book = scene_manager_->GetObject(book_index_);
+        Eng::SceneObject *book = scene_manager_->GetObject(book_index_);
 
-        uint32_t mask = CompDrawableBit | CompAnimStateBit;
+        uint32_t mask = Eng::CompDrawableBit | Eng::CompAnimStateBit;
         if ((book->comp_mask & mask) == mask) {
-            auto *dr = (Eng::Drawable *)scene.comp_store[CompDrawable]->Get(book->components[CompDrawable]);
-            auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
+            auto *dr = (Eng::Drawable *)scene.comp_store[Eng::CompDrawable]->Get(book->components[Eng::CompDrawable]);
+            auto *as =
+                (Eng::AnimState *)scene.comp_store[Eng::CompAnimState]->Get(book->components[Eng::CompAnimState]);
 
             const int cur_page = paged_reader_->cur_page(), page_count = paged_reader_->page_count();
 
@@ -304,12 +305,12 @@ void GSUITest3::Draw() {
     GSBaseState::Draw();
 }
 
-bool GSUITest3::HandleInput(const InputManager::Event &evt) {
+bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSUITest3Internal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
+    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -329,16 +330,16 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case RawInputEv::P1Down: {
+    case Eng::RawInputEv::P1Down: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         if (book_state_ == eBookState::BkOpened) {
         }
     } break;
-    case RawInputEv::P2Down: {
+    case Eng::RawInputEv::P2Down: {
 
     } break;
-    case RawInputEv::P1Up: {
+    case Eng::RawInputEv::P1Up: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
 
@@ -383,41 +384,42 @@ bool GSUITest3::HandleInput(const InputManager::Event &evt) {
             }
 
             if (reset_anim_time) {
-                const SceneData &scene = scene_manager_->scene_data();
-                SceneObject *book = scene_manager_->GetObject(book_index_);
+                const Eng::SceneData &scene = scene_manager_->scene_data();
+                Eng::SceneObject *book = scene_manager_->GetObject(book_index_);
 
-                const uint32_t mask = CompDrawableBit | CompAnimStateBit;
+                const uint32_t mask = Eng::CompDrawableBit | Eng::CompAnimStateBit;
                 if ((book->comp_mask & mask) == mask) {
-                    auto *as = (Eng::AnimState *)scene.comp_store[CompAnimState]->Get(book->components[CompAnimState]);
+                    auto *as = (Eng::AnimState *)scene.comp_store[Eng::CompAnimState]->Get(
+                        book->components[Eng::CompAnimState]);
                     as->anim_time_s = 0.0f;
                 }
             }
         }
     } break;
-    case RawInputEv::P2Up: {
+    case Eng::RawInputEv::P2Up: {
     } break;
-    case RawInputEv::P1Move: {
+    case Eng::RawInputEv::P1Move: {
         const Ren::Vec2f p = Gui::MapPointToScreen(Ren::Vec2i{int(evt.point.x), int(evt.point.y)},
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         paged_reader_->Hover(p);
 
         hit_point_screen_.destroy();
     } break;
-    case RawInputEv::P2Move: {
+    case Eng::RawInputEv::P2Move: {
 
     } break;
-    case RawInputEv::KeyDown: {
+    case Eng::RawInputEv::KeyDown: {
         input_processed = false;
     } break;
-    case RawInputEv::KeyUp: {
-        if (evt.key_code == KeyUp || (evt.key_code == KeyW && !cmdline_enabled_)) {
+    case Eng::RawInputEv::KeyUp: {
+        if (evt.key_code == Eng::KeyUp || (evt.key_code == Eng::KeyW && !cmdline_enabled_)) {
             // text_printer_->restart();
             paged_reader_->set_cur_page(0);
         } else {
             input_processed = false;
         }
     } break;
-    case RawInputEv::Resize:
+    case Eng::RawInputEv::Resize:
         // paged_reader_->Resize(ui_root_.get());
         break;
     default:

@@ -9,7 +9,7 @@
 #include "../Shaders/shadow_interface.h"
 
 namespace RpShadowMapsInternal {
-void _adjust_bias_and_viewport(VkCommandBuffer cmd_buf, const ShadowList &sh_list) {
+void _adjust_bias_and_viewport(VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     const VkViewport viewport = {float(sh_list.shadow_map_pos[0]),
                                  float((REN_SHAD_RES / 2) - sh_list.shadow_map_pos[1] - sh_list.shadow_map_size[1]),
                                  float(sh_list.shadow_map_size[0]),
@@ -26,7 +26,7 @@ void _adjust_bias_and_viewport(VkCommandBuffer cmd_buf, const ShadowList &sh_lis
     vkCmdSetDepthBias(cmd_buf, sh_list.bias[1], 0.0f, sh_list.bias[0]);
 }
 
-void _clear_region(VkCommandBuffer cmd_buf, const ShadowList &sh_list) {
+void _clear_region(VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     VkClearAttachment clear_att = {};
     clear_att.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     clear_att.clearValue.depthStencil.depth = 1.0f;
@@ -42,7 +42,7 @@ void _clear_region(VkCommandBuffer cmd_buf, const ShadowList &sh_list) {
 }
 } // namespace RpShadowMapsInternal
 
-void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex) {
+void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex) {
     using namespace RpShadowMapsInternal;
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);

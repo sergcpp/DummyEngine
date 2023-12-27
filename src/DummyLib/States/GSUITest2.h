@@ -47,7 +47,7 @@ class GSUITest2 : public GSBaseState {
     static void MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback);
 
   public:
-    explicit GSUITest2(GameBase *game);
+    explicit GSUITest2(Eng::GameBase *game);
     ~GSUITest2() final;
 
     void Enter() override;
@@ -55,5 +55,5 @@ class GSUITest2 : public GSBaseState {
 
     void UpdateAnim(uint64_t dt_us) override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

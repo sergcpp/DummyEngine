@@ -5,6 +5,7 @@
 
 #include "Keycode.h"
 
+namespace Eng {
 struct InputManagerImp;
 
 enum class RawInputEv : int16_t {
@@ -50,3 +51,4 @@ class InputManager {
 
     static char CharFromKeycode(uint32_t key_code);
 };
+} // namespace Eng

@@ -3,8 +3,9 @@
 #include <Ren/Log.h>
 #include <Snd/Log.h>
 
+namespace Eng {
 class LogStdout : public Ren::ILog, public Snd::ILog {
-public:
+  public:
     void Info(const char *fmt, ...) override;
     void Warning(const char *fmt, ...) override;
     void Error(const char *fmt, ...) override;
@@ -13,7 +14,8 @@ public:
 #ifdef __ANDROID__
 class LogAndroid : public Ren::ILog, public Snd::ILog {
     char log_tag_[32];
-public:
+
+  public:
     LogAndroid(const char *log_tag);
 
     void Info(const char *fmt, ...) override;
@@ -21,3 +23,4 @@ public:
     void Error(const char *fmt, ...) override;
 };
 #endif
+} // namespace Eng

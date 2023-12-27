@@ -5,6 +5,7 @@
 
 #include <Ren/VertexInput.h>
 
+namespace Eng {
 class RpGBufferFill : public RpExecutor {
     bool initialized = false;
 
@@ -100,3 +101,4 @@ class RpGBufferFill : public RpExecutor {
     // TODO: remove this
     int alpha_blend_start_index_ = -1;
 };
+} // namespace Eng

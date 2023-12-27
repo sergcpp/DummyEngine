@@ -74,11 +74,11 @@ class GSUITest3 : public GSBaseState {
     void RedrawPages(Gui::Renderer *r);
 
   public:
-    explicit GSUITest3(GameBase *game);
+    explicit GSUITest3(Eng::GameBase *game);
     ~GSUITest3() final;
 
     void Enter() override;
     void Exit() override;
 
-    bool HandleInput(const InputManager::Event &evt) override;
+    bool HandleInput(const Eng::InputManager::Event &evt) override;
 };

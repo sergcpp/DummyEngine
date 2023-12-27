@@ -14,14 +14,14 @@ template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
 using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
-class SceneManager;
-struct SceneObject;
-
 namespace Gui {
 class Renderer;
 }
 
 namespace Eng {
+class SceneManager;
+struct SceneObject;
+
 enum class eTrackType { Actor, Camera, Invalid };
 
 enum class eActionType { Play, Look, Invalid };

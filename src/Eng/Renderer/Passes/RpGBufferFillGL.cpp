@@ -7,14 +7,14 @@
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
-uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage &materials,
-                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
-                          uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
+uint32_t _draw_range_ext2(Eng::RpBuilder &builder, const Ren::MaterialStorage &materials,
+                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
+                          uint32_t i, uint32_t mask, uint32_t &cur_mat_id, int *draws_count) {
     auto &ctx = builder.ctx();
 
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
-        if ((batch.sort_key & BasicDrawBatch::FlagBits) != mask) {
+        if ((batch.sort_key & Eng::BasicDrawBatch::FlagBits) != mask) {
             break;
         }
 
@@ -43,11 +43,11 @@ uint32_t _draw_range_ext2(RpBuilder &builder, const Ren::MaterialStorage &materi
     return i;
 }
 
-uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const BasicDrawBatch> batches, uint32_t i,
+uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
                      uint32_t mask);
 } // namespace RpSharedInternal
 
-void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
+void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
     Ren::RastState rast_state;
@@ -489,4 +489,4 @@ void RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 8);
 }
 
-RpGBufferFill::~RpGBufferFill() = default;
+Eng::RpGBufferFill::~RpGBufferFill() = default;

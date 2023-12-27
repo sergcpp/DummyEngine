@@ -5,7 +5,7 @@
 #include "../../Utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"
 
-void RpGBufferFill::Execute(RpBuilder &builder) {
+void Eng::RpGBufferFill::Execute(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(vtx_buf1_);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(vtx_buf2_);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(ndx_buf_);
@@ -19,9 +19,9 @@ void RpGBufferFill::Execute(RpBuilder &builder) {
     DrawOpaque(builder);
 }
 
-void RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
-                             RpAllocBuf &ndx_buf, RpAllocTex &albedo_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
-                             RpAllocTex &depth_tex) {
+void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                                  RpAllocBuf &ndx_buf, RpAllocTex &albedo_tex, RpAllocTex &normal_tex,
+                                  RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
     const Ren::RenderTarget color_targets[] = {{albedo_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {normal_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                {spec_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
@@ -36,8 +36,7 @@ void RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBu
             ctx, "gbuffer_fill_vege", "internal/gbuffer_fill.vert.glsl@VEGETATION", "internal/gbuffer_fill.frag.glsl");
         assert(gbuf_vegetation_prog->ready());
 
-        const bool res =
-            rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());
+        const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());
         if (!res) {
             ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize render pass!");
         }

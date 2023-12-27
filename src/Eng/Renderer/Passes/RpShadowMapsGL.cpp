@@ -14,7 +14,7 @@ void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
 namespace RpShadowMapsInternal {
 using namespace RpSharedInternal;
 
-void _adjust_bias_and_viewport(Ren::RastState &rast_state, const ShadowList &sh_list) {
+void _adjust_bias_and_viewport(Ren::RastState &rast_state, const Eng::ShadowList &sh_list) {
     Ren::RastState new_rast_state = rast_state;
 
     new_rast_state.depth_bias.slope_factor = sh_list.bias[0];
@@ -35,7 +35,7 @@ void _adjust_bias_and_viewport(Ren::RastState &rast_state, const ShadowList &sh_
 }
 } // namespace RpShadowMapsInternal
 
-void RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex) {
+void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex) {
     using namespace RpShadowMapsInternal;
 
     Ren::RastState rast_state;

@@ -27,7 +27,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "phy_test.json";
 } // namespace GSPhyTestInternal
 
-GSPhyTest::GSPhyTest(GameBase *game) : GSBaseState(game) {}
+GSPhyTest::GSPhyTest(Eng::GameBase *game) : GSBaseState(game) {}
 
 void GSPhyTest::Enter() {
     using namespace GSPhyTestInternal;
@@ -233,12 +233,12 @@ void GSPhyTest::UpdateFixed(const uint64_t dt_us) {
     }
 }
 
-bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
+bool GSPhyTest::HandleInput(const Eng::InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSPhyTestInternal;
 
     // pt switch for touch controls
-    if (evt.type == RawInputEv::P1Down || evt.type == RawInputEv::P2Down) {
+    if (evt.type == Eng::RawInputEv::P1Down || evt.type == Eng::RawInputEv::P2Down) {
         if (evt.point.x > float(ren_ctx_->w()) * 0.9f && evt.point.y < float(ren_ctx_->h()) * 0.1f) {
             const uint64_t new_time = Sys::GetTimeMs();
             if (new_time - click_time_ < 400) {
@@ -258,21 +258,21 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
     bool input_processed = true;
 
     switch (evt.type) {
-    case RawInputEv::P1Down:
+    case Eng::RawInputEv::P1Down:
         if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 1;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 1;
         }
         break;
-    case RawInputEv::P2Down:
+    case Eng::RawInputEv::P2Down:
         if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
         }
         break;
-    case RawInputEv::P1Up:
+    case Eng::RawInputEv::P1Up:
         if (move_pointer_ == 1) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -281,7 +281,7 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case RawInputEv::P2Up:
+    case Eng::RawInputEv::P2Up:
         if (move_pointer_ == 2) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
@@ -290,7 +290,7 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
             view_pointer_ = 0;
         }
         break;
-    case RawInputEv::P1Move:
+    case Eng::RawInputEv::P1Move:
         if (move_pointer_ == 1) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
@@ -312,7 +312,7 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case RawInputEv::P2Move:
+    case Eng::RawInputEv::P2Move:
         if (move_pointer_ == 2) {
             side_touch_speed_ += evt.move.dx * 0.002f;
             side_touch_speed_ = std::max(std::min(side_touch_speed_, max_fwd_speed_), -max_fwd_speed_);
@@ -334,28 +334,32 @@ bool GSPhyTest::HandleInput(const InputManager::Event &evt) {
             invalidate_view_ = true;
         }
         break;
-    case RawInputEv::KeyDown: {
-        if (evt.key_code == KeyUp || (evt.key_code == KeyW && (!cmdline_enabled_ || view_pointer_))) {
+    case Eng::RawInputEv::KeyDown: {
+        if (evt.key_code == Eng::KeyUp || (evt.key_code == Eng::KeyW && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeyDown || (evt.key_code == KeyS && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == Eng::KeyDown ||
+                   (evt.key_code == Eng::KeyS && (!cmdline_enabled_ || view_pointer_))) {
             fwd_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyLeft || (evt.key_code == KeyA && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == Eng::KeyLeft ||
+                   (evt.key_code == Eng::KeyA && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = -max_fwd_speed_;
-        } else if (evt.key_code == KeyRight || (evt.key_code == KeyD && (!cmdline_enabled_ || view_pointer_))) {
+        } else if (evt.key_code == Eng::KeyRight ||
+                   (evt.key_code == Eng::KeyD && (!cmdline_enabled_ || view_pointer_))) {
             side_press_speed_ = max_fwd_speed_;
-        } else if (evt.key_code == KeySpace) {
-        } else if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
+        } else if (evt.key_code == Eng::KeySpace) {
+        } else if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
             shift_down_ = true;
         } else {
             input_processed = false;
         }
     } break;
-    case RawInputEv::KeyUp: {
+    case Eng::RawInputEv::KeyUp: {
         if (!cmdline_enabled_ || view_pointer_) {
-            if (evt.key_code == KeyUp || evt.key_code == KeyW || evt.key_code == KeyDown || evt.key_code == KeyS) {
+            if (evt.key_code == Eng::KeyUp || evt.key_code == Eng::KeyW || evt.key_code == Eng::KeyDown ||
+                evt.key_code == Eng::KeyS) {
                 fwd_press_speed_ = 0;
-            } else if (evt.key_code == KeyLeft || evt.key_code == KeyA || evt.key_code == KeyRight ||
-                       evt.key_code == KeyD) {
+            } else if (evt.key_code == Eng::KeyLeft || evt.key_code == Eng::KeyA || evt.key_code == Eng::KeyRight ||
+                       evt.key_code == Eng::KeyD) {
                 side_press_speed_ = 0;
             } else {
                 input_processed = false;
@@ -379,8 +383,8 @@ void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
-                              true, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, true,
+                              max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],

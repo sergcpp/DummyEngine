@@ -6,7 +6,7 @@
 
 #include "../../Utils/BVHSplit.h"
 
-void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
+void Eng::RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
     if (builder.ctx().capabilities.raytracing || builder.ctx().capabilities.ray_query) {
 #if !defined(USE_GL_RENDER)
         Execute_HWRT(builder);
@@ -16,7 +16,7 @@ void RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
     }
 }
 
-void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
+void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetWriteBuffer(rt_obj_instances_buf_);
     RpAllocBuf &rt_tlas_buf = builder.GetWriteBuffer(rt_tlas_buf_);
 
@@ -107,10 +107,10 @@ void RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 }
 
 // TODO: avoid duplication with SceneManager::PreprocessPrims_SAH
-uint32_t RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims,
-                                                           const Eng::split_settings_t &s,
-                                                           std::vector<gpu_bvh_node_t> &out_nodes,
-                                                           std::vector<uint32_t> &out_indices) {
+uint32_t Eng::RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims,
+                                                                const Eng::split_settings_t &s,
+                                                                std::vector<gpu_bvh_node_t> &out_nodes,
+                                                                std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
         Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},

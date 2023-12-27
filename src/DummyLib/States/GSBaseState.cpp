@@ -34,23 +34,23 @@ const int MAX_CMD_LINES = 8;
 const bool USE_TWO_THREADS = true;
 } // namespace GSBaseStateInternal
 
-GSBaseState::GSBaseState(GameBase *game) : game_(game) {
+GSBaseState::GSBaseState(Eng::GameBase *game) : game_(game) {
     using namespace GSBaseStateInternal;
 
     cmdline_ = game->GetComponent<Eng::Cmdline>(CMDLINE_KEY);
 
-    state_manager_ = game->GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    ren_ctx_ = game->GetComponent<Ren::Context>(REN_CONTEXT_KEY);
-    snd_ctx_ = game->GetComponent<Snd::Context>(SND_CONTEXT_KEY);
-    log_ = game->GetComponent<Ren::ILog>(LOG_KEY);
+    state_manager_ = game->GetComponent<Eng::GameStateManager>(Eng::STATE_MANAGER_KEY);
+    ren_ctx_ = game->GetComponent<Ren::Context>(Eng::REN_CONTEXT_KEY);
+    snd_ctx_ = game->GetComponent<Snd::Context>(Eng::SND_CONTEXT_KEY);
+    log_ = game->GetComponent<Ren::ILog>(Eng::LOG_KEY);
 
-    renderer_ = game->GetComponent<Renderer>(RENDERER_KEY);
-    scene_manager_ = game->GetComponent<SceneManager>(SCENE_MANAGER_KEY);
-    physics_manager_ = game->GetComponent<PhysicsManager>(PHYSICS_MANAGER_KEY);
-    shader_loader_ = game->GetComponent<Eng::ShaderLoader>(SHADER_LOADER_KEY);
+    renderer_ = game->GetComponent<Eng::Renderer>(RENDERER_KEY);
+    scene_manager_ = game->GetComponent<Eng::SceneManager>(SCENE_MANAGER_KEY);
+    physics_manager_ = game->GetComponent<Eng::PhysicsManager>(PHYSICS_MANAGER_KEY);
+    shader_loader_ = game->GetComponent<Eng::ShaderLoader>(Eng::SHADER_LOADER_KEY);
 
-    ui_renderer_ = game->GetComponent<Gui::Renderer>(UI_RENDERER_KEY);
-    ui_root_ = game->GetComponent<Gui::BaseElement>(UI_ROOT_KEY);
+    ui_renderer_ = game->GetComponent<Gui::Renderer>(Eng::UI_RENDERER_KEY);
+    ui_root_ = game->GetComponent<Gui::BaseElement>(Eng::UI_ROOT_KEY);
 
     const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
     font_ = fonts->FindFont("main_font");
@@ -61,9 +61,9 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
         *ren_ctx_, (std::string(ASSETS_BASE_PATH) + "/textures/editor/dial_edit_back.uncompressed.tga").c_str(),
         Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get()));
 
-    swap_interval_ = game->GetComponent<TimeInterval>(SWAP_TIMER_KEY);
+    swap_interval_ = game->GetComponent<Eng::TimeInterval>(SWAP_TIMER_KEY);
 
-    random_ = game->GetComponent<Random>(RANDOM_KEY);
+    random_ = game->GetComponent<Eng::Random>(Eng::RANDOM_KEY);
 
     // Prepare cam for probes updating
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
@@ -73,41 +73,43 @@ GSBaseState::GSBaseState(GameBase *game) : game_(game) {
     // Create required staging buffers
     //
     Ren::BufferRef instances_stage_buf = ren_ctx_->LoadBuffer("Instances (Stage)", Ren::eBufType::Stage,
-                                                              InstanceDataBufChunkSize * Ren::MaxFramesInFlight);
+                                                              Eng::InstanceDataBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef instance_indices_stage_buf = ren_ctx_->LoadBuffer(
-        "Instance Indices (Stage)", Ren::eBufType::Stage, InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
+        "Instance Indices (Stage)", Ren::eBufType::Stage, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef skin_transforms_stage_buf = ren_ctx_->LoadBuffer(
-        "Skin Transforms (Stage)", Ren::eBufType::Stage, SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
+        "Skin Transforms (Stage)", Ren::eBufType::Stage, Eng::SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef shape_keys_stage_buf = ren_ctx_->LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Stage,
-                                                               ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
+                                                               Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef cells_stage_buf =
-        ren_ctx_->LoadBuffer("Cells (Stage)", Ren::eBufType::Stage, CellsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Cells (Stage)", Ren::eBufType::Stage, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef items_stage_buf =
-        ren_ctx_->LoadBuffer("Items (Stage)", Ren::eBufType::Stage, ItemsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Items (Stage)", Ren::eBufType::Stage, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef lights_stage_buf =
-        ren_ctx_->LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, LightsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
-        ren_ctx_->LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, DecalsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx_->capabilities.raytracing) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                          HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
-        rt_sh_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                             HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                          Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_sh_obj_instances_stage_buf =
+            ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
+                                 Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
     } else if (ren_ctx_->capabilities.swrt) {
         rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                          SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
-        rt_sh_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
-                                                             SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+                                                          Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
+        rt_sh_obj_instances_stage_buf =
+            ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
+                                 Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT TLAS Nodes (Stage)", Ren::eBufType::Stage,
-                                                       SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+                                                       Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT Shadow TLAS Nodes (Stage)", Ren::eBufType::Stage,
-                                                          SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
+                                                          Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
-    Ren::BufferRef shared_data_stage_buf =
-        ren_ctx_->LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage, SharedDataBlockSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef shared_data_stage_buf = ren_ctx_->LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage,
+                                                                Eng::SharedDataBlockSize * Ren::MaxFramesInFlight);
 
     //
     // Initialize draw lists
@@ -141,14 +143,14 @@ void GSBaseState::Enter() {
 
     cmdline_history_.emplace_back();
 
-    std::shared_ptr<GameStateManager> state_manager = state_manager_.lock();
+    std::shared_ptr<Eng::GameStateManager> state_manager = state_manager_.lock();
     std::weak_ptr<GSBaseState> weak_this = std::dynamic_pointer_cast<GSBaseState>(state_manager->Peek());
 
     cmdline_->RegisterCommand("r_wireframe", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugWireframe;
+            flags ^= Eng::DebugWireframe;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -158,7 +160,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableCulling;
+            flags ^= Eng::EnableCulling;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -168,7 +170,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableLightmap;
+            flags ^= Eng::EnableLightmap;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -178,7 +180,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableLights;
+            flags ^= Eng::EnableLights;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -188,7 +190,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableDecals;
+            flags ^= Eng::EnableDecals;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -198,7 +200,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableShadows;
+            flags ^= Eng::EnableShadows;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -208,7 +210,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableMsaa;
+            flags ^= Eng::EnableMsaa;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -218,7 +220,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableFxaa;
+            flags ^= Eng::EnableFxaa;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -228,9 +230,9 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableTaa;
-            if (flags & EnableTaa) {
-                flags &= ~(EnableMsaa | EnableFxaa);
+            flags ^= Eng::EnableTaa;
+            if (flags & Eng::EnableTaa) {
+                flags &= ~(Eng::EnableMsaa | Eng::EnableFxaa);
             }
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -241,7 +243,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableTaaStatic;
+            flags ^= Eng::EnableTaaStatic;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -276,7 +278,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableOIT;
+            flags ^= Eng::EnableOIT;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -286,7 +288,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableZFill;
+            flags ^= Eng::EnableZFill;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -296,7 +298,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableDeferred;
+            flags ^= Eng::EnableDeferred;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -306,7 +308,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableGI;
+            flags ^= Eng::EnableGI;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -316,7 +318,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= EnableRTShadows;
+            flags ^= Eng::EnableRTShadows;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -325,7 +327,7 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_updateProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            SceneData &scene_data = shrd_this->scene_manager_->scene_data();
+            Eng::SceneData &scene_data = shrd_this->scene_manager_->scene_data();
 
             const int res = scene_data.probe_storage.res(), capacity = scene_data.probe_storage.capacity();
             const bool result = scene_data.probe_storage.Resize(
@@ -341,11 +343,11 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_cacheProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            const SceneData &scene_data = shrd_this->scene_manager_->scene_data();
+            const Eng::SceneData &scene_data = shrd_this->scene_manager_->scene_data();
 
-            const CompStorage *lprobes = scene_data.comp_store[CompProbe];
-            SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
-                                          scene_data.probe_storage, lprobes, shrd_this->ren_ctx_->log());
+            const Eng::CompStorage *lprobes = scene_data.comp_store[Eng::CompProbe];
+            Eng::SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
+                                               scene_data.probe_storage, lprobes, shrd_this->ren_ctx_->log());
 
             // probe textures were written, convert them
             Viewer::PrepareAssets("pc");
@@ -378,7 +380,7 @@ void GSBaseState::Enter() {
                 std::string name_str;
 
                 { // get scene file name
-                    const SceneData &scene_data = shrd_this->scene_manager_->scene_data();
+                    const Eng::SceneData &scene_data = shrd_this->scene_manager_->scene_data();
                     name_str = scene_data.name.c_str();
                 }
 
@@ -440,7 +442,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugCulling;
+            flags ^= Eng::DebugCulling;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -450,7 +452,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugShadow;
+            flags ^= Eng::DebugShadow;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -460,7 +462,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugLights;
+            flags ^= Eng::DebugLights;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -470,7 +472,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugDecals;
+            flags ^= Eng::DebugDecals;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -480,7 +482,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugDeferred;
+            flags ^= Eng::DebugDeferred;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -490,7 +492,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugBlur;
+            flags ^= Eng::DebugBlur;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -500,7 +502,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugSSAO;
+            flags ^= Eng::DebugSSAO;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -510,7 +512,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugTimings;
+            flags ^= Eng::DebugTimings;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -520,7 +522,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugBVH;
+            flags ^= Eng::DebugBVH;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -530,7 +532,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugProbes;
+            flags ^= Eng::DebugProbes;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -540,7 +542,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugEllipsoids;
+            flags ^= Eng::DebugEllipsoids;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -552,13 +554,13 @@ void GSBaseState::Enter() {
             uint64_t flags = shrd_this->renderer_->render_flags();
             if (argc > 1) {
                 if (argv[1].val > 0.5) {
-                    flags |= DebugRTShadow;
+                    flags |= Eng::DebugRTShadow;
                 } else {
-                    flags |= DebugRT;
+                    flags |= Eng::DebugRT;
                 }
             } else {
-                flags &= ~DebugRTShadow;
-                flags &= ~DebugRT;
+                flags &= ~Eng::DebugRTShadow;
+                flags &= ~Eng::DebugRT;
             }
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -571,16 +573,16 @@ void GSBaseState::Enter() {
             uint64_t flags = shrd_this->renderer_->render_flags();
             if (argc > 1) {
                 if (argv[1].val < 0.5) {
-                    flags ^= DebugReflDenoise;
+                    flags ^= Eng::DebugReflDenoise;
                 } else if (argv[1].val < 1.5) {
-                    flags ^= DebugGIDenoise;
+                    flags ^= Eng::DebugGIDenoise;
                 } else if (argv[2].val < 2.5) {
-                    flags ^= DebugShadowDenoise;
+                    flags ^= Eng::DebugShadowDenoise;
                 }
             } else {
-                flags &= ~DebugReflDenoise;
-                flags &= ~DebugGIDenoise;
-                flags &= ~DebugShadowDenoise;
+                flags &= ~Eng::DebugReflDenoise;
+                flags &= ~Eng::DebugGIDenoise;
+                flags &= ~Eng::DebugShadowDenoise;
             }
             shrd_this->renderer_->set_render_flags(flags);
         }
@@ -591,7 +593,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugMotionVectors;
+            flags ^= Eng::DebugMotionVectors;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -609,7 +611,7 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             uint64_t flags = shrd_this->renderer_->render_flags();
-            flags ^= DebugFreezeFrontend;
+            flags ^= Eng::DebugFreezeFrontend;
             shrd_this->renderer_->set_render_flags(flags);
         }
         return true;
@@ -735,12 +737,12 @@ void GSBaseState::Draw() {
 
     if (cmdline_enabled_) {
         // Process comandline input
-        for (const InputManager::Event &evt : cmdline_input_) {
-            if (evt.key_code == KeyDelete) {
+        for (const Eng::InputManager::Event &evt : cmdline_input_) {
+            if (evt.key_code == Eng::KeyDelete) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.back().pop_back();
                 }
-            } else if (evt.key_code == KeyReturn) {
+            } else if (evt.key_code == Eng::KeyReturn) {
                 cmdline_->Execute(cmdline_history_.back().c_str());
 
                 cmdline_history_.emplace_back();
@@ -748,13 +750,13 @@ void GSBaseState::Draw() {
                 if (cmdline_history_.size() > MAX_CMD_LINES) {
                     cmdline_history_.erase(cmdline_history_.begin());
                 }
-            } else if (evt.key_code == KeyTab) {
+            } else if (evt.key_code == Eng::KeyTab) {
                 Ren::String hint_str;
                 const int index = cmdline_->NextHint(cmdline_history_.back().c_str(), -1, hint_str);
                 if (!hint_str.empty()) {
                     cmdline_history_.back() = hint_str.c_str();
                 }
-            } else if (evt.key_code == KeyGrave) {
+            } else if (evt.key_code == Eng::KeyGrave) {
                 if (!cmdline_history_.back().empty()) {
                     cmdline_history_.emplace_back();
                     cmdline_history_index_ = -1;
@@ -762,14 +764,14 @@ void GSBaseState::Draw() {
                         cmdline_history_.erase(cmdline_history_.begin());
                     }
                 }
-            } else if (evt.key_code == KeyUp) {
+            } else if (evt.key_code == Eng::KeyUp) {
                 cmdline_history_index_ = std::min(++cmdline_history_index_, int(cmdline_history_.size()) - 2);
                 cmdline_history_.back() = cmdline_history_[cmdline_history_.size() - 2 - cmdline_history_index_];
-            } else if (evt.key_code == KeyDown) {
+            } else if (evt.key_code == Eng::KeyDown) {
                 cmdline_history_index_ = std::max(--cmdline_history_index_, 0);
                 cmdline_history_.back() = cmdline_history_[cmdline_history_.size() - 2 - cmdline_history_index_];
             } else {
-                char ch = InputManager::CharFromKeycode(evt.key_code);
+                char ch = Eng::InputManager::CharFromKeycode(evt.key_code);
                 if (shift_down_) {
                     if (ch == '-') {
                         ch = '_';
@@ -838,7 +840,7 @@ void GSBaseState::Draw() {
                     probes_dirty_ = false;
                 }
 
-                const SceneData &scene_data = scene_manager_->scene_data();
+                const Eng::SceneData &scene_data = scene_manager_->scene_data();
 
                 if (probe_to_update_sh_) {
                     const bool done =
@@ -943,8 +945,8 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         const int back_list = (front_list_ + 1) % 2;
 
         const uint64_t render_flags = renderer_->render_flags();
-        const FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
-        const BackendInfo &back_info = renderer_->backend_info();
+        const Eng::FrontendInfo front_info = main_view_lists_[back_list].frontend_info;
+        const Eng::BackendInfo &back_info = renderer_->backend_info();
 
         /*const uint64_t
             front_dur = front_info.end_timepoint_us - front_info.start_timepoint_us,
@@ -953,7 +955,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         LOGI("Frontend: %04lld\tBackend(cpu): %04lld", (long long)front_dur, (long
         long)back_dur);*/
 
-        ItemsInfo items_info;
+        Eng::ItemsInfo items_info;
         items_info.lights_count = main_view_lists_[back_list].lights.count;
         items_info.decals_count = main_view_lists_[back_list].decals.count;
         items_info.probes_count = main_view_lists_[back_list].probes.count;
@@ -970,30 +972,30 @@ void GSBaseState::UpdateFixed(const uint64_t dt_us) {
     { // invalidate objects updated by physics manager
         uint32_t updated_count = 0;
         const uint32_t *updated_objects = physics_manager_->updated_objects(updated_count);
-        scene_manager_->InvalidateObjects(updated_objects, updated_count, CompPhysicsBit);
+        scene_manager_->InvalidateObjects(updated_objects, updated_count, Eng::CompPhysicsBit);
     }
 }
 
-bool GSBaseState::HandleInput(const InputManager::Event &evt) {
+bool GSBaseState::HandleInput(const Eng::InputManager::Event &evt) {
     using namespace Ren;
     using namespace GSBaseStateInternal;
 
     switch (evt.type) {
-    case RawInputEv::P1Down:
-    case RawInputEv::P2Down:
-    case RawInputEv::P1Up:
-    case RawInputEv::P2Up:
-    case RawInputEv::P1Move:
-    case RawInputEv::P2Move: {
+    case Eng::RawInputEv::P1Down:
+    case Eng::RawInputEv::P2Down:
+    case Eng::RawInputEv::P1Up:
+    case Eng::RawInputEv::P2Up:
+    case Eng::RawInputEv::P1Move:
+    case Eng::RawInputEv::P2Move: {
     } break;
-    case RawInputEv::KeyDown: {
-        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
+    case Eng::RawInputEv::KeyDown: {
+        if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
             shift_down_ = true;
-        } else if (evt.key_code == KeyDelete || evt.key_code == KeyReturn || evt.key_code == KeyTab) {
+        } else if (evt.key_code == Eng::KeyDelete || evt.key_code == Eng::KeyReturn || evt.key_code == Eng::KeyTab) {
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
             }
-        } else if (evt.key_code == KeyGrave) {
+        } else if (evt.key_code == Eng::KeyGrave) {
             cmdline_enabled_ = !cmdline_enabled_;
             if (cmdline_enabled_) {
                 cmdline_input_.push_back(evt);
@@ -1002,12 +1004,12 @@ bool GSBaseState::HandleInput(const InputManager::Event &evt) {
             cmdline_input_.push_back(evt);
         }
     } break;
-    case RawInputEv::KeyUp: {
-        if (evt.key_code == KeyLeftShift || evt.key_code == KeyRightShift) {
+    case Eng::RawInputEv::KeyUp: {
+        if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
             shift_down_ = false;
         }
     }
-    case RawInputEv::Resize:
+    case Eng::RawInputEv::Resize:
     default:
         break;
     }
@@ -1036,9 +1038,9 @@ void GSBaseState::BackgroundProc() {
 void GSBaseState::UpdateFrame(int list_index) {
     { // Update loop using fixed timestep
         OPTICK_EVENT("Update Loop");
-        auto input_manager = game_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
+        auto input_manager = game_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
 
-        FrameInfo &fr = fr_info_;
+        Eng::FrameInfo &fr = fr_info_;
 
         fr.cur_time_us = Sys::GetTimeUs();
         if (fr.cur_time_us < fr.prev_time_us) {
@@ -1053,19 +1055,19 @@ void GSBaseState::UpdateFrame(int list_index) {
 
         uint64_t poll_time_point = fr.cur_time_us - fr.time_acc_us;
 
-        while (fr.time_acc_us >= UPDATE_DELTA) {
-            InputManager::Event evt;
+        while (fr.time_acc_us >= Eng::UPDATE_DELTA) {
+            Eng::InputManager::Event evt;
             while (input_manager->PollEvent(poll_time_point, evt)) {
                 this->HandleInput(evt);
             }
 
-            this->UpdateFixed(UPDATE_DELTA);
-            fr.time_acc_us -= UPDATE_DELTA;
+            this->UpdateFixed(Eng::UPDATE_DELTA);
+            fr.time_acc_us -= Eng::UPDATE_DELTA;
 
-            poll_time_point += UPDATE_DELTA;
+            poll_time_point += Eng::UPDATE_DELTA;
         }
 
-        fr.time_fract = double(fr.time_acc_us) / UPDATE_DELTA;
+        fr.time_fract = double(fr.time_acc_us) / Eng::UPDATE_DELTA;
     }
 
     this->UpdateAnim(fr_info_.delta_time_us);
@@ -1080,8 +1082,8 @@ void GSBaseState::UpdateFrame(int list_index) {
             if (probes_to_update_.empty()) {
                 const int obj_count = (int)scene_manager_->scene_data().objects.size();
                 for (int i = 0; i < obj_count; i++) {
-                    const SceneObject *obj = scene_manager_->GetObject(i);
-                    if (obj->comp_mask & CompProbeBit) {
+                    const Eng::SceneObject *obj = scene_manager_->GetObject(i);
+                    if (obj->comp_mask & Eng::CompProbeBit) {
                         probes_to_update_.push_back(i);
                     }
                 }
@@ -1091,11 +1093,11 @@ void GSBaseState::UpdateFrame(int list_index) {
 
         if (!probes_to_update_.empty() && !probe_to_render_ && !probe_to_update_sh_) {
             log_->Info("Updating probe");
-            SceneObject *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
-            auto *probe = (Eng::LightProbe *)scene_manager_->scene_data().comp_store[CompProbe]->Get(
-                probe_obj->components[CompProbe]);
-            auto *probe_tr = (Eng::Transform *)scene_manager_->scene_data().comp_store[CompTransform]->Get(
-                probe_obj->components[CompTransform]);
+            Eng::SceneObject *probe_obj = scene_manager_->GetObject(probes_to_update_.back());
+            auto *probe = (Eng::LightProbe *)scene_manager_->scene_data().comp_store[Eng::CompProbe]->Get(
+                probe_obj->components[Eng::CompProbe]);
+            auto *probe_tr = (Eng::Transform *)scene_manager_->scene_data().comp_store[Eng::CompTransform]->Get(
+                probe_obj->components[Eng::CompTransform]);
 
             auto pos = Ren::Vec4f{probe->offset[0], probe->offset[1], probe->offset[2], 1.0f};
             pos = probe_tr->world_from_object * pos;
@@ -1116,8 +1118,9 @@ void GSBaseState::UpdateFrame(int list_index) {
                 temp_probe_cam_.SetupView(center, target, ups[i]);
                 temp_probe_cam_.UpdatePlanes();
 
-                temp_probe_lists_[i].render_flags = EnableZFill | EnableCulling | EnableLightmap | EnableLights |
-                                                    EnableDecals | EnableShadows | EnableProbes;
+                temp_probe_lists_[i].render_flags = Eng::EnableZFill | Eng::EnableCulling | Eng::EnableLightmap |
+                                                    Eng::EnableLights | Eng::EnableDecals | Eng::EnableShadows |
+                                                    Eng::EnableProbes;
 
                 renderer_->PrepareDrawList(scene_manager_->scene_data(), temp_probe_cam_, temp_probe_lists_[i]);
             }
