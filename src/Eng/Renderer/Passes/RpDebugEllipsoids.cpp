@@ -28,7 +28,7 @@ void RpDebugEllipsoids::Execute(RpBuilder &builder) {
     DrawProbes(builder);
 }
 
-void RpDebugEllipsoids::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex) {
+void RpDebugEllipsoids::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
         ellipsoid_prog_ =
             sh.LoadProgram(ctx, "ellipsoid_prog", "internal/ellipsoid.vert.glsl", "internal/ellipsoid.frag.glsl");

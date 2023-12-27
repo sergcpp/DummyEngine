@@ -21,7 +21,7 @@ void RpDebugRT::Execute(RpBuilder &builder) {
     }
 }
 
-void RpDebugRT::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
 #if defined(USE_VK_RENDER)
         if (ctx.capabilities.raytracing) {

@@ -51,7 +51,7 @@ void RpCombine::Execute(RpBuilder &builder) {
                         bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
 }
 
-void RpCombine::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex) {
+void RpCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex) {
     if (!initialized) {
         blit_combine_prog_ =
             sh.LoadProgram(ctx, "blit_combine2", "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");

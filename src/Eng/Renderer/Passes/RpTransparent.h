@@ -55,7 +55,7 @@ class RpTransparent : public RpExecutor {
     RpResRef spec_tex_;
     RpResRef depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
                   RpAllocTex &color_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
     void DrawTransparent(RpBuilder &builder, RpAllocTex &color_tex);
 

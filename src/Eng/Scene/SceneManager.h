@@ -32,7 +32,9 @@ namespace Snd {
 class Context;
 }
 
+namespace Eng {
 class ShaderLoader;
+}
 
 struct prim_t;
 struct split_settings_t;
@@ -92,7 +94,7 @@ struct assets_context_t {
 
 class SceneManager {
   public:
-    SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx, Ray::RendererBase &ray_renderer,
+    SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx, Ray::RendererBase &ray_renderer,
                  Sys::ThreadPool &threads, const path_config_t &paths);
     ~SceneManager();
 
@@ -219,7 +221,7 @@ class SceneManager {
     int scene_texture_load_counter_ = 0;
 
     Ren::Context &ren_ctx_;
-    ShaderLoader &sh_;
+    Eng::ShaderLoader &sh_;
     Snd::Context &snd_ctx_;
     Ren::MeshRef cam_rig_;
     Ren::Tex2DRef error_tex_;

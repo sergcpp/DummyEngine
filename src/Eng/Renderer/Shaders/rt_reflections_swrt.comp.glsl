@@ -1,4 +1,7 @@
 #version 310 es
+#if !defined(VULKAN) && !defined(GL_SPIRV)
+#extension GL_ARB_bindless_texture : enable
+#endif
 
 #if defined(GL_ES) || defined(VULKAN)
     precision highp int;

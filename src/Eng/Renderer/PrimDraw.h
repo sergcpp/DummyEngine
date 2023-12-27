@@ -14,7 +14,9 @@
 #endif
 
 class ProbeStorage;
+namespace Eng {
 class ShaderLoader;
+}
 
 class PrimDraw {
   public:

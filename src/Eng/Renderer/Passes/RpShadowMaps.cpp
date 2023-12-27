@@ -16,7 +16,7 @@ void RpShadowMaps::Execute(RpBuilder &builder) {
     DrawShadowMaps(builder, shadowmap_tex);
 }
 
-void RpShadowMaps::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+void RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
                             RpAllocBuf &ndx_buf, RpAllocTex &shadowmap_tex) {
     const Ren::RenderTarget depth_target = {shadowmap_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};
 

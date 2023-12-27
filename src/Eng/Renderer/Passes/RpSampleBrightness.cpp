@@ -66,7 +66,7 @@ void RpSampleBrightness::Execute(RpBuilder &builder) {
     }
 }
 
-void RpSampleBrightness::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &reduced_tex) {
+void RpSampleBrightness::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &reduced_tex) {
     if (!initialized_) {
         blit_red_prog_ =
             sh.LoadProgram(ctx, "blit_red2", "internal/blit_reduced.vert.glsl", "internal/blit_reduced.frag.glsl");

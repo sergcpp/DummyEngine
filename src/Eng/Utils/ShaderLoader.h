@@ -4,6 +4,7 @@
 
 #include <Ren/Fwd.h>
 
+namespace Eng {
 class ShaderLoader {
     std::string temp_param_str_, temp_param_def_;
 
@@ -35,3 +36,4 @@ class ShaderLoader {
                                 const char *intersection_name);
 #endif
 };
+} // namespace Eng

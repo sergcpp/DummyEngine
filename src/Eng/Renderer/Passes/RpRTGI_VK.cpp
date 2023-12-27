@@ -169,7 +169,7 @@ void RpRTGI::ExecuteRTInline(RpBuilder &builder) {
                           VkDeviceSize(sizeof(VkTraceRaysIndirectCommandKHR)));
 }
 
-void RpRTGI::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef rt_gi_prog =
             sh.LoadProgram(ctx, "rt_gi", "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",

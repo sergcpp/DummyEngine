@@ -29,7 +29,7 @@ class RpSSRCompose2 : public RpExecutor {
 
     const RpSSRCompose2Data *pass_data_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex);
 
   public:
     RpSSRCompose2(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}

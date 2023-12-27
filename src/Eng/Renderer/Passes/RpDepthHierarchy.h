@@ -19,7 +19,7 @@ class RpDepthHierarchy : public RpExecutor {
     RpResRef atomic_buf_;
     RpResRef output_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, const RpResRef depth_tex, const RpResRef atomic_counter,

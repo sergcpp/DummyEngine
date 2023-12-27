@@ -51,7 +51,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     Ray::RendererBase *ray_renderer = Ray::CreateRenderer(s);
     SCOPE_EXIT({ delete ray_renderer; })
 
-    ShaderLoader shader_loader;
+    Eng::ShaderLoader shader_loader;
     Random rand(0);
     Sys::ThreadPool threads(4);
     Renderer renderer(ren_ctx, shader_loader, rand, threads);

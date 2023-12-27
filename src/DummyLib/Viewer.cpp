@@ -106,7 +106,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     {
         using namespace std::placeholders;
 
-        auto sh_loader = GetComponent<ShaderLoader>(SHADER_LOADER_KEY);
+        auto sh_loader = GetComponent<Eng::ShaderLoader>(SHADER_LOADER_KEY);
         auto random = GetComponent<Random>(RANDOM_KEY);
         auto renderer = std::make_shared<Renderer>(*ren_ctx, *sh_loader, *random, *threads_);
         AddComponent(RENDERER_KEY, renderer);

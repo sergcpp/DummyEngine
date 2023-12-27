@@ -127,7 +127,7 @@ void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
                                  bindings, &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
 }
 
-void RpRTReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef rt_reflections_swrt_prog =
             sh.LoadProgram(ctx, "rt_reflections_swrt", "internal/rt_reflections_swrt.comp.glsl");

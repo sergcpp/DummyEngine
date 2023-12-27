@@ -14,8 +14,7 @@ extern const char *SHADERS_PATH;
 Ren::eShaderType ShaderTypeFromName(const char *name, int len);
 } // namespace ShaderLoaderInternal
 
-std::string ShaderLoader::ReadGLSLContent(const char *name, int name_len,
-                                          const char *prelude, Ren::ILog *log) {
+std::string Eng::ShaderLoader::ReadGLSLContent(const char *name, int name_len, const char *prelude, Ren::ILog *log) {
     using namespace ShaderLoaderInternal;
 
     std::string file_path = SHADERS_PATH;
@@ -45,8 +44,7 @@ std::string ShaderLoader::ReadGLSLContent(const char *name, int name_len,
             line = line.substr(0, line.size() - 1);
         }
 
-        if (prelude && line.rfind("#version ") == std::string::npos &&
-            line.rfind("#extension ") == std::string::npos) {
+        if (prelude && line.rfind("#version ") == std::string::npos && line.rfind("#extension ") == std::string::npos) {
             dst_buf += prelude;
             dst_buf += line;
             dst_buf += "\r\n";
@@ -79,8 +77,7 @@ std::string ShaderLoader::ReadGLSLContent(const char *name, int name_len,
     return dst_buf;
 }
 
-Ren::ShaderRef ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name,
-                                      const Param *params) {
+Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name, const Param *params) {
     using namespace ShaderLoaderInternal;
 
     temp_param_str_.clear();
@@ -100,12 +97,10 @@ Ren::ShaderRef ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name,
     ParamsToString(params, temp_param_str_, temp_param_def_);
 
     Ren::eShaderLoadStatus status;
-    Ren::ShaderRef ret =
-        ctx.LoadShaderGLSL(temp_param_str_.c_str(), nullptr, type, &status);
+    Ren::ShaderRef ret = ctx.LoadShaderGLSL(temp_param_str_.c_str(), nullptr, type, &status);
     if (!ret->ready()) {
-        const std::string shader_src = ReadGLSLContent(
-            name, name_len, !temp_param_def_.empty() ? temp_param_def_.c_str() : nullptr,
-            ctx.log());
+        const std::string shader_src =
+            ReadGLSLContent(name, name_len, !temp_param_def_.empty() ? temp_param_def_.c_str() : nullptr, ctx.log());
         ret->Init(shader_src.c_str(), type, &status, ctx.log());
         if (status == Ren::eShaderLoadStatus::SetToDefault) {
             ctx.log()->Error("Error loading shader %s", name);

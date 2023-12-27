@@ -11,7 +11,6 @@ const char *SHADERS_PATH = "./assets/shaders/";
 const char *SHADERS_PATH = "./assets_pc/shaders/";
 #endif
 
-
 Ren::eShaderType ShaderTypeFromName(const char *name, const int len) {
     Ren::eShaderType type;
     if (std::strncmp(name + len - 10, ".vert.glsl", 10) == 0) {
@@ -41,13 +40,12 @@ Ren::eShaderType ShaderTypeFromName(const char *name, const int len) {
 }
 } // namespace ShaderLoaderInternal
 
-ShaderLoader::ShaderLoader() {
+Eng::ShaderLoader::ShaderLoader() {
     temp_param_str_.reserve(1024);
     temp_param_def_.reserve(4096);
 }
 
-int ShaderLoader::ParamsToString(const Param *params, std::string &out_str,
-                                 std::string &out_def) {
+int Eng::ShaderLoader::ParamsToString(const Param *params, std::string &out_str, std::string &out_def) {
     const Param *param = params;
     while (param->key) {
         out_str += out_str.empty() ? '@' : ';';
@@ -66,7 +64,7 @@ int ShaderLoader::ParamsToString(const Param *params, std::string &out_str,
     return int(param - params);
 }
 
-int ShaderLoader::ParamsStringToDef(const char *params, std::string &out_def) {
+int Eng::ShaderLoader::ParamsStringToDef(const char *params, std::string &out_def) {
     if (!params || params[0] != '@') {
         return 0;
     }
@@ -116,9 +114,8 @@ int ShaderLoader::ParamsStringToDef(const char *params, std::string &out_def) {
     return count;
 }
 
-Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name,
-                                          const char *vs_name, const char *fs_name,
-                                          const char *tcs_name, const char *tes_name) {
+Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, const char *vs_name,
+                                               const char *fs_name, const char *tcs_name, const char *tes_name) {
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
@@ -147,8 +144,7 @@ Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name,
     return ret;
 }
 
-Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name,
-                                          const char *cs_name) {
+Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, const char *cs_name) {
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
@@ -163,9 +159,9 @@ Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name,
 }
 
 #if defined(USE_VK_RENDER)
-Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, const char *raygen_name,
-                                          const char *closesthit_name, const char *anyhit_name, const char *miss_name,
-                                          const char *intersection_name) {
+Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, const char *raygen_name,
+                                               const char *closesthit_name, const char *anyhit_name,
+                                               const char *miss_name, const char *intersection_name) {
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
@@ -197,7 +193,7 @@ Ren::ProgramRef ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, c
 }
 #endif
 
-Ren::ShaderRef ShaderLoader::LoadShader(Ren::Context &ctx, const char *name) {
+Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, const char *name) {
     using namespace ShaderLoaderInternal;
 
     const char *params = strchr(name, '@');
@@ -247,9 +243,8 @@ Ren::ShaderRef ShaderLoader::LoadShader(Ren::Context &ctx, const char *name) {
         const int params_cnt = ParamsStringToDef(params, temp_param_def_);
         assert(params_cnt != -1);
 
-        const std::string shader_src = ReadGLSLContent(
-            name, name_len, !temp_param_def_.empty() ? temp_param_def_.c_str() : nullptr,
-            ctx.log());
+        const std::string shader_src =
+            ReadGLSLContent(name, name_len, !temp_param_def_.empty() ? temp_param_def_.c_str() : nullptr, ctx.log());
         if (!shader_src.empty()) {
             ret->Init(shader_src.c_str(), type, &status, ctx.log());
             if (status == Ren::eShaderLoadStatus::SetToDefault) {

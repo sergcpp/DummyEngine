@@ -48,7 +48,7 @@ class RpDebugTextures : public RenderPassBase {
     RpResource blur_tex_;
     RpResource reduced_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
 #if defined(USE_GL_RENDER)
     Ren::VertexInput temp_vtx_input_;

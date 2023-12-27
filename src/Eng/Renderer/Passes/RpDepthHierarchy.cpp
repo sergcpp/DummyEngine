@@ -6,7 +6,7 @@
 #include "../Renderer_Structs.h"
 #include "../../Utils/ShaderLoader.h"
 
-void RpDepthHierarchy::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpDepthHierarchy::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef depth_hierarchy_prog =
             sh.LoadProgram(ctx, "depth_hierarchy", "internal/depth_hierarchy.comp.glsl@MIPS_7");

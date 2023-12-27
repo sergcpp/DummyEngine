@@ -45,11 +45,13 @@ class ThreadPool;
 } // namespace Sys
 
 class Random;
+namespace Eng {
 class ShaderLoader;
+}
 
 class Renderer {
   public:
-    Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
+    Renderer(Ren::Context &ctx, Eng::ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
     ~Renderer();
 
     uint64_t render_flags() const { return render_flags_; }
@@ -81,7 +83,7 @@ class Renderer {
 
   private:
     Ren::Context &ctx_;
-    ShaderLoader &sh_;
+    Eng::ShaderLoader &sh_;
     Random &rand_;
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
@@ -120,7 +122,7 @@ class Renderer {
          EnableDOF /*|
 EnableRTShadows*/
          //| EnableDeferred | EnableHQ_HDR
-         );
+        );
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);

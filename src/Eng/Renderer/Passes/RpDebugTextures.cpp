@@ -212,7 +212,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
     }
 }
 
-void RpDebugTextures::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpDebugTextures::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     Ren::BufferRef vtx_buf1 = ctx.default_vertex_buf1(), vtx_buf2 = ctx.default_vertex_buf2(),
                    ndx_buf = ctx.default_indices_buf();
 

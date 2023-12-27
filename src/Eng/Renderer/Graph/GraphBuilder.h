@@ -20,7 +20,9 @@
 
 #include "Resource.h"
 
+namespace Eng {
 class ShaderLoader;
+}
 
 class RpBuilder;
 
@@ -78,7 +80,7 @@ class RpSubpass;
 
 class RpBuilder {
     Ren::Context &ctx_;
-    ShaderLoader &sh_;
+    Eng::ShaderLoader &sh_;
 
     Ren::RastState rast_state_;
 
@@ -125,12 +127,12 @@ class RpBuilder {
     std::vector<std::vector<int>> alias_chains_;
 
   public:
-    RpBuilder(Ren::Context &ctx, ShaderLoader &sh)
+    RpBuilder(Ren::Context &ctx, Eng::ShaderLoader &sh)
         : ctx_(ctx), sh_(sh), alloc_buf_(new char[AllocBufSize]), alloc_(alloc_buf_.get(), AllocBufSize) {}
 
     Ren::Context &ctx() { return ctx_; }
     Ren::ILog *log();
-    ShaderLoader &sh() { return sh_; }
+    Eng::ShaderLoader &sh() { return sh_; }
 
     Ren::RastState &rast_state() { return rast_state_; }
 

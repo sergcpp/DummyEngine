@@ -55,7 +55,7 @@ GameBase::GameBase(const int w, const int h, const int validation_level, const c
     auto input_manager = std::make_shared<InputManager>();
     AddComponent(INPUT_MANAGER_KEY, input_manager);
 
-    auto shader_loader = std::make_shared<ShaderLoader>();
+    auto shader_loader = std::make_shared<Eng::ShaderLoader>();
     AddComponent(SHADER_LOADER_KEY, shader_loader);
 
     auto flow_control = std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);

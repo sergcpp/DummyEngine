@@ -36,8 +36,8 @@ class RpShadowMaps : public RpExecutor {
     // outputs
     RpResRef shadowmap_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                  RpAllocTex &shadowmap_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                  RpAllocBuf &ndx_buf, RpAllocTex &shadowmap_tex);
     void DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap_tex);
 
   public:

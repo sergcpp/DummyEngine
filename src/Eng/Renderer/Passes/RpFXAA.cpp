@@ -55,7 +55,7 @@ void RpFXAA::Execute(RpBuilder &builder) {
     prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&output_fb_, 0}, blit_prog, bindings, 2, uniforms, 2);
 }
 
-void RpFXAA::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex) {
+void RpFXAA::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex) {
     if (!initialized) {
         blit_fxaa_prog_ =
             sh.LoadProgram(ctx, "blit_fxaa_prog", "internal/blit.vert.glsl", "internal/blit_fxaa.frag.glsl");

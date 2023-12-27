@@ -27,7 +27,7 @@ class RpDOF : public RenderPassBase {
     RpResource blur_temp_4x_[2], down_tex_coc_[2];
     RpResource output_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_4x_tex, RpAllocTex &blur1_temp_4x,
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &down_depth_4x_tex, RpAllocTex &blur1_temp_4x,
                   RpAllocTex &blur2_temp_4x, RpAllocTex &coc1_tex, RpAllocTex &coc2_tex, RpAllocTex &output_tex);
 
 #if defined(USE_GL_RENDER)

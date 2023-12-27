@@ -34,7 +34,7 @@ class RpSSRCompose : public RpExecutor {
     const Ren::ProbeStorage *probe_storage_ = nullptr;
     const RpSSRComposeData *pass_data_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex);
 
   public:
     RpSSRCompose(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}

@@ -48,7 +48,7 @@ class RpRTGI : public RpExecutor {
 
     const RpRTGIData *pass_data_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void ExecuteRTPipeline(RpBuilder &builder);
     void ExecuteRTInline(RpBuilder &builder);

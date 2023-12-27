@@ -51,8 +51,9 @@ class RpGBufferFill : public RpExecutor {
     RpResRef out_spec_tex_;
     RpResRef out_depth_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                  RpAllocTex &albedo_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                  RpAllocBuf &ndx_buf, RpAllocTex &albedo_tex, RpAllocTex &normal_tex, RpAllocTex &spec_tex,
+                  RpAllocTex &depth_tex);
     void DrawOpaque(RpBuilder &builder);
 
 #if defined(USE_VK_RENDER)

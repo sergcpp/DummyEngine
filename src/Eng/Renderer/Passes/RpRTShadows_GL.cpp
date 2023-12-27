@@ -100,7 +100,7 @@ void RpRTShadows::Execute_SWRT(RpBuilder &builder) {
                                  sizeof(uniform_params), nullptr, ctx.log());
 }
 
-void RpRTShadows::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         Ren::ProgramRef rt_shadows_swrt_prog =
             sh.LoadProgram(ctx, "rt_shadows_swrt", "internal/rt_shadows_swrt.comp.glsl");

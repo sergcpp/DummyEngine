@@ -31,8 +31,8 @@ class RpDepthFill : public RpExecutor {
     RpResRef depth_tex_;
     RpResRef velocity_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                  RpAllocTex &depth_tex, RpAllocTex &velocity_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+                  RpAllocBuf &ndx_buf, RpAllocTex &depth_tex, RpAllocTex &velocity_tex);
     void DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf);
 
     Ren::RenderPass rp_depth_only_[2], rp_depth_velocity_[2];

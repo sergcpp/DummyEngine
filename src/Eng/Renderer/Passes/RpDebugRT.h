@@ -47,7 +47,7 @@ class RpDebugRT : public RpExecutor {
 
     const RpDebugRTData *pass_data_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void Execute_HWRT(RpBuilder &builder);
     void Execute_SWRT(RpBuilder &builder);

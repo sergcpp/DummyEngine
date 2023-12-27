@@ -290,7 +290,7 @@ void RpRTReflections::Execute_SWRT(RpBuilder &builder) {
                           VkDeviceSize(sizeof(VkTraceRaysIndirectCommandKHR)));
 }
 
-void RpRTReflections::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         if (ctx.capabilities.raytracing) {
             Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(

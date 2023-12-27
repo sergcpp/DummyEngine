@@ -124,7 +124,7 @@ void __init_wind_params(const Eng::VegState &vs, const Environment &env, const R
 // TODO: remove this!
 #include "../Renderer/Shaders/Renderer_GL_Defines.inl"
 
-SceneManager::SceneManager(Ren::Context &ren_ctx, ShaderLoader &sh, Snd::Context &snd_ctx,
+SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx,
                            Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads, const path_config_t &paths)
     : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer), threads_(threads), paths_(paths),
       cam_(Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, 0.0f}, Ren::Vec3f{0.0f, 1.0f, 0.0f}),

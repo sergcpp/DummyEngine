@@ -234,7 +234,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 }
 
-void RpDOF::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &down_depth_4x_tex, RpAllocTex &blur1_temp_4x,
+void RpDOF::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &down_depth_4x_tex, RpAllocTex &blur1_temp_4x,
                      RpAllocTex &blur2_temp_4x, RpAllocTex &coc1_tex, RpAllocTex &coc2_tex, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_dof_init_coc_prog_ =

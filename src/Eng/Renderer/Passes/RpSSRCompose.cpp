@@ -79,7 +79,7 @@ void RpSSRCompose::Execute(RpBuilder &builder) {
     }
 }
 
-void RpSSRCompose::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex) {
+void RpSSRCompose::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_ssr_compose_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose", "internal/blit_ssr_compose.vert.glsl",
                                                 "internal/blit_ssr_compose.frag.glsl@HALFRES");

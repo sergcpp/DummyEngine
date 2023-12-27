@@ -214,7 +214,7 @@ void RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
 }
 
-void RpRTShadows::LazyInit(Ren::Context &ctx, ShaderLoader &sh) {
+void RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         /*Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(
             ctx, "rt_reflections", "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",

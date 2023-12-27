@@ -91,7 +91,7 @@ int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y,
         (max)[2], (min)[0], (max)[1], (min)[2], (max)[0], (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0],  \
         (max)[1], (max)[2]
 
-Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
+Renderer::Renderer(Ren::Context &ctx, Eng::ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads)
     : ctx_(ctx), sh_(sh), rand_(rand), threads_(threads), shadow_splitter_(SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT),
       rp_builder_(ctx_, sh_) {
     using namespace RendererInternal;

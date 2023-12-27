@@ -30,7 +30,7 @@ void RpDebugProbes::Execute(RpBuilder &builder) {
     DrawProbes(builder);
 }
 
-void RpDebugProbes::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex) {
+void RpDebugProbes::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
         probe_prog_ = sh.LoadProgram(ctx, "probe_prog", "internal/probe.vert.glsl", "internal/probe.frag.glsl");
         assert(probe_prog_->ready());

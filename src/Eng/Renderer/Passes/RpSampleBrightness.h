@@ -22,7 +22,7 @@ class RpSampleBrightness : public RpExecutor {
     // temp data (valid only between Setup and Execute calls)
     const RpSampleBrightnessData *pass_data_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &reduced_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &reduced_tex);
 
     Ren::BufferRef readback_buf_;
 

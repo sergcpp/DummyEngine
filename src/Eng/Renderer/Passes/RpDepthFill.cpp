@@ -31,7 +31,7 @@ void RpDepthFill::Execute(RpBuilder &builder) {
     DrawDepth(builder, vtx_buf1, vtx_buf2, ndx_buf);
 }
 
-void RpDepthFill::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+void RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
                            RpAllocBuf &ndx_buf, RpAllocTex &depth_tex, RpAllocTex &velocity_tex) {
 
     const Ren::RenderTarget velocity_target = {velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store};

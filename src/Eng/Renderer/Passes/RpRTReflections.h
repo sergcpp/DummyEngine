@@ -56,7 +56,7 @@ class RpRTReflections : public RpExecutor {
 
     const RpRTReflectionsData *pass_data_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void Execute_HWRT_Pipeline(RpBuilder &builder);
     void Execute_HWRT_Inline(RpBuilder &builder);

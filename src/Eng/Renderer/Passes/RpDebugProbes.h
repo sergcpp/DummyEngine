@@ -19,7 +19,7 @@ class RpDebugProbes : public RenderPassBase {
 
     RpResource output_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex &output_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex);
     void DrawProbes(RpBuilder &builder);
 
     // lazily initialized data

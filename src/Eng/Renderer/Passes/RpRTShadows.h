@@ -50,7 +50,7 @@ class RpRTShadows : public RpExecutor {
 
     const RpRTShadowsData *pass_data_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     void Execute_HWRT_Pipeline(RpBuilder &builder);
     void Execute_HWRT_Inline(RpBuilder &builder);

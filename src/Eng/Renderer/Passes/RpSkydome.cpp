@@ -18,7 +18,7 @@ void RpSkydome::Execute(RpBuilder &builder) {
     DrawSkydome(builder, vtx_buf1, vtx_buf2, ndx_buf, color_tex, spec_tex, depth_tex);
 }
 
-void RpSkydome::LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
+void RpSkydome::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
                          RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
     const Ren::RenderTarget color_load_targets[] = {{color_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
                                                     {} /* normals texture */,

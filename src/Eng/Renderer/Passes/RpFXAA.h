@@ -19,7 +19,7 @@ class RpFXAA : public RenderPassBase {
     RpResource color_tex_;
     RpResource output_tex_;
 
-    void LazyInit(Ren::Context &ctx, ShaderLoader &sh, RpAllocTex *output_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex);
 
 #if defined(USE_GL_RENDER)
     Ren::Framebuffer output_fb_;
