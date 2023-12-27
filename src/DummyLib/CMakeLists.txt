@@ -94,9 +94,7 @@ target_link_libraries(DummyLib Eng Net Phy Ray Ren Snd Sys astc ${LIBS})
 
 add_custom_command(TARGET DummyLib
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/Renderer/Shaders
-                                                              ${WORKING_DIRECTORY}/assets/shaders/internal
-                   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/Renderer/Shaders
-                   COMMENT "Copying shader files...")
+                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/Renderer/Shaders
+                                                              ${WORKING_DIRECTORY}/assets/shaders/internal)
 
 add_subdirectory(tests)

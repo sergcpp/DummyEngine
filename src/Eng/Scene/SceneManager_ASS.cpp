@@ -166,7 +166,7 @@ void ReadAllFiles_r(assets_context_t &ctx, const char *in_folder,
 
     struct dirent *in_ent = nullptr;
     while ((in_ent = readdir(in_dir))) {
-        if (in_ent->d_type == DT_DIR) {
+        if (in_ent->d_type == DT_DIR || in_ent->d_type == DT_LNK) {
             if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
                 continue;
             }
@@ -198,7 +198,7 @@ void ReadAllFiles_MT_r(assets_context_t &ctx, const char *in_folder,
 
     struct dirent *in_ent = nullptr;
     while ((in_ent = readdir(in_dir))) {
-        if (in_ent->d_type == DT_DIR) {
+        if (in_ent->d_type == DT_DIR || in_ent->d_type == DT_LNK) {
             if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
                 continue;
             }
