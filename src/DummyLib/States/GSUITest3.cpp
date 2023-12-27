@@ -44,11 +44,10 @@ const Ren::Vec3f page_corners_pos[] = {
 const int page_order_indices[][4] = {{}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, -2, -1}};
 } // namespace GSUITest3Internal
 
-GSUITest3::GSUITest3(Eng::GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    book_main_font_ = fonts->FindFont("book_main_font");
-    book_emph_font_ = fonts->FindFont("book_emph_font");
-    book_caption_font_ = fonts->FindFont("book_caption_font");
+GSUITest3::GSUITest3(Viewer *viewer) : GSBaseState(viewer) {
+    book_main_font_ = viewer->font_storage()->FindFont("book_main_font");
+    book_emph_font_ = viewer->font_storage()->FindFont("book_emph_font");
+    book_caption_font_ = viewer->font_storage()->FindFont("book_caption_font");
     book_caption_font_->set_scale(1.25f);
 }
 

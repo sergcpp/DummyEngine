@@ -10,8 +10,7 @@ DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const Ba
     : BaseElement(pos, size, parent), parent_(parent), font_(std::move(font)) {}
 
 void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
-                             const Eng::ItemsInfo &items_info, const Eng::TimeInterval &swap_interval,
-                             uint64_t render_flags) {
+                             const Eng::ItemsInfo &items_info, uint64_t render_flags) {
     const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 
@@ -67,7 +66,6 @@ void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::
     cur_timing_info_.back_cpu_end_timepoint_us = backend_info.cpu_end_timepoint_us;
     cur_timing_info_.back_gpu_duration = backend_info.gpu_total_duration;
     cur_timing_info_.gpu_cpu_time_diff_us = backend_info.gpu_cpu_time_diff_us;
-    cur_timing_info_.swap_interval = swap_interval;
 }
 
 void DebugInfoUI::Draw(Gui::Renderer *r) {

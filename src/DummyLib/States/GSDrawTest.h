@@ -65,7 +65,7 @@ class GSDrawTest final : public GSBaseState {
     void TestUpdateAnims(float delta_time_s);
 
   public:
-    explicit GSDrawTest(Eng::GameBase *game);
+    explicit GSDrawTest(Viewer *viewer);
     ~GSDrawTest() final = default;
 
     void Enter() override;

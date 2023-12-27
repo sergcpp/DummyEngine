@@ -27,7 +27,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "phy_test.json";
 } // namespace GSPhyTestInternal
 
-GSPhyTest::GSPhyTest(Eng::GameBase *game) : GSBaseState(game) {}
+GSPhyTest::GSPhyTest(Viewer *viewer) : GSBaseState(viewer) {}
 
 void GSPhyTest::Enter() {
     using namespace GSPhyTestInternal;

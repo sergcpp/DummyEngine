@@ -13,6 +13,7 @@
 #include <Eng/GameStateManager.h>
 #include <Eng/Gui/Image9Patch.h>
 #include <Eng/Gui/Renderer.h>
+#include <Eng/Log.h>
 #include <Eng/Random.h>
 #include <Eng/Renderer/Renderer.h>
 #include <Eng/Scene/PhysicsManager.h>
@@ -34,36 +35,33 @@ const int MAX_CMD_LINES = 8;
 const bool USE_TWO_THREADS = true;
 } // namespace GSBaseStateInternal
 
-GSBaseState::GSBaseState(Eng::GameBase *game) : game_(game) {
+GSBaseState::GSBaseState(Viewer *viewer) : game_(viewer) {
     using namespace GSBaseStateInternal;
 
-    cmdline_ = game->GetComponent<Eng::Cmdline>(CMDLINE_KEY);
+    cmdline_ = viewer->cmdline();
 
-    state_manager_ = game->GetComponent<Eng::GameStateManager>(Eng::STATE_MANAGER_KEY);
-    ren_ctx_ = game->GetComponent<Ren::Context>(Eng::REN_CONTEXT_KEY);
-    snd_ctx_ = game->GetComponent<Snd::Context>(Eng::SND_CONTEXT_KEY);
-    log_ = game->GetComponent<Ren::ILog>(Eng::LOG_KEY);
+    state_manager_ = viewer->state_manager();
+    ren_ctx_ = viewer->ren_ctx();
+    snd_ctx_ = viewer->snd_ctx();
+    log_ = viewer->log();
 
-    renderer_ = game->GetComponent<Eng::Renderer>(RENDERER_KEY);
-    scene_manager_ = game->GetComponent<Eng::SceneManager>(SCENE_MANAGER_KEY);
-    physics_manager_ = game->GetComponent<Eng::PhysicsManager>(PHYSICS_MANAGER_KEY);
-    shader_loader_ = game->GetComponent<Eng::ShaderLoader>(Eng::SHADER_LOADER_KEY);
+    renderer_ = viewer->renderer();
+    scene_manager_ = viewer->scene_manager();
+    physics_manager_ = viewer->physics_manager();
+    shader_loader_ = viewer->shader_loader();
 
-    ui_renderer_ = game->GetComponent<Gui::Renderer>(Eng::UI_RENDERER_KEY);
-    ui_root_ = game->GetComponent<Gui::BaseElement>(Eng::UI_ROOT_KEY);
+    ui_renderer_ = viewer->ui_renderer();
+    ui_root_ = viewer->ui_root();
 
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    font_ = fonts->FindFont("main_font");
+    font_ = viewer->font_storage()->FindFont("main_font");
 
-    debug_ui_ = game->GetComponent<DebugInfoUI>(UI_DEBUG_KEY);
+    debug_ui_ = viewer->debug_ui();
 
     cmdline_back_.reset(new Gui::Image9Patch(
         *ren_ctx_, (std::string(ASSETS_BASE_PATH) + "/textures/editor/dial_edit_back.uncompressed.tga").c_str(),
-        Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get()));
+        Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_));
 
-    swap_interval_ = game->GetComponent<Eng::TimeInterval>(SWAP_TIMER_KEY);
-
-    random_ = game->GetComponent<Eng::Random>(Eng::RANDOM_KEY);
+    random_ = viewer->random();
 
     // Prepare cam for probes updating
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
@@ -143,8 +141,7 @@ void GSBaseState::Enter() {
 
     cmdline_history_.emplace_back();
 
-    std::shared_ptr<Eng::GameStateManager> state_manager = state_manager_.lock();
-    std::weak_ptr<GSBaseState> weak_this = std::dynamic_pointer_cast<GSBaseState>(state_manager->Peek());
+    std::weak_ptr<GSBaseState> weak_this = std::dynamic_pointer_cast<GSBaseState>(state_manager_->Peek());
 
     cmdline_->RegisterCommand("r_wireframe", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
@@ -961,7 +958,7 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         items_info.probes_count = main_view_lists_[back_list].probes.count;
         items_info.items_total = main_view_lists_[back_list].items.count;
 
-        debug_ui_->UpdateInfo(front_info, back_info, items_info, *swap_interval_, render_flags);
+        debug_ui_->UpdateInfo(front_info, back_info, items_info, render_flags);
         debug_ui_->Draw(r);
     }
 }
@@ -1038,7 +1035,7 @@ void GSBaseState::BackgroundProc() {
 void GSBaseState::UpdateFrame(int list_index) {
     { // Update loop using fixed timestep
         OPTICK_EVENT("Update Loop");
-        auto input_manager = game_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
+        Eng::InputManager *input_manager = game_->input_manager();
 
         Eng::FrameInfo &fr = fr_info_;
 
@@ -1140,6 +1137,6 @@ void GSBaseState::UpdateFrame(int list_index) {
     }
 
     if (ui_enabled_) {
-        DrawUI(ui_renderer_.get(), ui_root_.get());
+        DrawUI(ui_renderer_, ui_root_);
     }
 }

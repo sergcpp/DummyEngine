@@ -4,7 +4,13 @@
 #include <Snd/Log.h>
 
 namespace Eng {
-class LogStdout : public Ren::ILog, public Snd::ILog {
+class ILog : public Ren::ILog, public Snd::ILog {
+  public:
+    void Info(const char *fmt, ...) override {}
+    void Warning(const char *fmt, ...) override {}
+    void Error(const char *fmt, ...) override {}
+};
+class LogStdout : public ILog {
   public:
     void Info(const char *fmt, ...) override;
     void Warning(const char *fmt, ...) override;

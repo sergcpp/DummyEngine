@@ -24,9 +24,7 @@ set(GUI_SOURCES Gui/CaptionsUI.h
                 Gui/WordPuzzleUI.h
                 Gui/WordPuzzleUI.cpp)
 
-set(STATES_SOURCES  States/GSCreate.h
-                    States/GSCreate.cpp
-                    States/GSBaseState.h
+set(STATES_SOURCES  States/GSBaseState.h
                     States/GSBaseState.cpp
                     States/GSDrawTest.h
                     States/GSDrawTest.cpp

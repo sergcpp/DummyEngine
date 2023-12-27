@@ -44,12 +44,11 @@ const char SEQ_NAME[] = "test/test_dialog/0_begin.json";
 // const char SEQ_NAME[] = "test/test_seq.json";
 } // namespace GSUITest4Internal
 
-GSUITest4::GSUITest4(Eng::GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    dialog_font_ = fonts->FindFont("book_main_font");
+GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
+    dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
     dialog_font_->set_scale(1.5f);
 
-    const float font_height = dialog_font_->height(ui_root_.get());
+    const float font_height = dialog_font_->height(ui_root_);
 
     cam_ctrl_.reset(new Eng::FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
     dial_ctrl_.reset(new DialogController);
@@ -57,15 +56,15 @@ GSUITest4::GSUITest4(Eng::GameBase *game) : GSBaseState(game) {
     test_dialog_.reset(new Eng::ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
     dialog_ui_.reset(
-        new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get(), *dialog_font_, true /* debug */});
+        new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_, true /* debug */});
     dialog_ui_->make_choice_signal.Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
     seq_edit_ui_.reset(
-        new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
+        new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
     dialog_edit_ui_.reset(
-        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
+        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<DialogController, &DialogController::SetCurSequence>(
@@ -73,14 +72,14 @@ GSUITest4::GSUITest4(Eng::GameBase *game) : GSBaseState(game) {
 
     dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(this);
 
-    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_.get(), *dialog_font_});
+    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_});
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     dial_ctrl_->push_choice_signal.Connect<DialogUI, &DialogUI::OnPushChoice>(dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal.Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
     dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
 
     word_puzzle_.reset(
-        new WordPuzzleUI(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_.get(), *dialog_font_));
+        new WordPuzzleUI(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_));
     word_puzzle_->puzzle_solved_signal.Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
 
@@ -91,8 +90,7 @@ void GSUITest4::Enter() {
 
     GSBaseState::Enter();
 
-    std::shared_ptr<Eng::GameStateManager> state_manager = state_manager_.lock();
-    std::weak_ptr<GSUITest4> weak_this = std::dynamic_pointer_cast<GSUITest4>(state_manager->Peek());
+    std::weak_ptr<GSUITest4> weak_this = std::dynamic_pointer_cast<GSUITest4>(state_manager_->Peek());
 
     cmdline_->RegisterCommand("dialog", [weak_this](int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
@@ -494,11 +492,11 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
     } break;
     case Eng::RawInputEv::Resize:
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
-        dialog_ui_->Resize(ui_root_.get());
-        dialog_edit_ui_->Resize(ui_root_.get());
-        seq_edit_ui_->Resize(ui_root_.get());
-        seq_cap_ui_->Resize(ui_root_.get());
-        word_puzzle_->Resize(ui_root_.get());
+        dialog_ui_->Resize(ui_root_);
+        dialog_edit_ui_->Resize(ui_root_);
+        seq_edit_ui_->Resize(ui_root_);
+        seq_cap_ui_->Resize(ui_root_);
+        word_puzzle_->Resize(ui_root_);
         break;
     default:
         break;

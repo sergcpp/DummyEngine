@@ -10,9 +10,7 @@
 #include <Eng/Log.h>
 #include <Eng/Random.h>
 #include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/PhysicsManager.h>
 #include <Eng/Scene/SceneManager.h>
-#include <Eng/Utils/Cmdline.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
@@ -36,14 +34,11 @@ extern bool ignore_optick_errors;
 
 #include "Gui/DebugInfoUI.h"
 #include "Gui/FontStorage.h"
-#include "States/GSCreate.h"
+#include "States/GSDrawTest.h"
 #include "Utils/Dictionary.h"
 
-Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const char *device_name,
-               std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread)
+Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const char *device_name)
     : GameBase(w, h, validation_level, device_name) {
-    auto ren_ctx = GetComponent<Ren::Context>(Eng::REN_CONTEXT_KEY);
-    auto snd_ctx = GetComponent<Snd::Context>(Eng::SND_CONTEXT_KEY);
     JsObject main_config;
 
     {
@@ -69,8 +64,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     const JsObject &ui_settings = main_config.at("ui_settings").as_obj();
 
     { // load fonts
-        auto font_storage = std::make_shared<FontStorage>();
-        AddComponent(UI_FONTS_KEY, font_storage);
+        font_storage_ = std::make_unique<FontStorage>();
 
         const JsObject &fonts = ui_settings.at("fonts").as_obj();
         for (const auto &el : fonts.elements) {
@@ -83,53 +77,30 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
 #endif
             file_name += el.second.as_str().val;
 
-            std::shared_ptr<Gui::BitmapFont> loaded_font = font_storage->LoadFont(name, file_name, ren_ctx.get());
+            std::shared_ptr<Gui::BitmapFont> loaded_font = font_storage_->LoadFont(name, file_name, ren_ctx_.get());
             (void)loaded_font;
         }
     }
 
-    { // create commnadline
-        auto cmdline = std::make_shared<Eng::Cmdline>();
-        AddComponent(CMDLINE_KEY, cmdline);
-    }
-
-    { // create UI for performance debugging
-        auto font_storage = GetComponent<FontStorage>(UI_FONTS_KEY);
-        auto ui_root = GetComponent<Gui::BaseElement>(Eng::UI_ROOT_KEY);
-        auto debug_ui = std::make_shared<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root.get(),
-                                                      font_storage->FindFont("main_font"));
-        AddComponent(UI_DEBUG_KEY, debug_ui);
-    }
-
-    AddComponent(AUX_GFX_THREAD, std::move(aux_gfx_thread));
+    // create UI for performance debugging
+    debug_ui_ = std::make_unique<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get(),
+                                              font_storage_->FindFont("main_font"));
 
     {
         using namespace std::placeholders;
-
-        auto sh_loader = GetComponent<Eng::ShaderLoader>(Eng::SHADER_LOADER_KEY);
-        auto random = GetComponent<Eng::Random>(Eng::RANDOM_KEY);
-        auto renderer = std::make_shared<Eng::Renderer>(*ren_ctx, *sh_loader, *random, *threads_);
-        AddComponent(RENDERER_KEY, renderer);
 
         Ray::settings_t s;
         s.w = w;
         s.h = h;
 
-        auto ray_renderer = std::shared_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
-        AddComponent(RAY_RENDERER_KEY, ray_renderer);
+        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
 
+        // TODO: Move this to GameBase!
         Eng::path_config_t paths;
-        auto scene_manager =
-            std::make_shared<Eng::SceneManager>(*ren_ctx, *sh_loader, *snd_ctx, *ray_renderer, *threads_, paths);
-        scene_manager->SetPipelineInitializer(
-            std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer.get(), _1, _2, _3, _4));
-
-        AddComponent(SCENE_MANAGER_KEY, scene_manager);
-    }
-
-    {
-        auto physics_manager = std::make_shared<Eng::PhysicsManager>();
-        AddComponent(PHYSICS_MANAGER_KEY, physics_manager);
+        scene_manager_ = std::make_unique<Eng::SceneManager>(*ren_ctx_, *shader_loader_, *snd_ctx_, *ray_renderer_,
+                                                             *threads_, paths);
+        scene_manager_->SetPipelineInitializer(
+            std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
     }
 
 #if defined(__ANDROID__)
@@ -145,21 +116,15 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     });
 #endif
 
-    {
-        auto dictionary = std::make_shared<Dictionary>();
-        AddComponent(DICT_KEY, dictionary);
-    }
+    dictionary_ = std::make_unique<Dictionary>();
 
-    auto swap_interval = std::make_shared<Eng::TimeInterval>();
-    AddComponent(SWAP_TIMER_KEY, swap_interval);
-
-    auto state_manager = GetComponent<Eng::GameStateManager>(Eng::STATE_MANAGER_KEY);
-    state_manager->Push(GSCreate(eGameState::GS_DRAW_TEST, this));
+    state_manager_->Push(std::make_shared<GSDrawTest>(this));
 }
 
+Viewer::~Viewer() { state_manager_.reset(); }
+
 void Viewer::Frame() {
-    auto ctx = GetComponent<Ren::Context>(Eng::REN_CONTEXT_KEY);
-    Ren::ApiContext *api_ctx = ctx->api_ctx();
+    Ren::ApiContext *api_ctx = ren_ctx()->api_ctx();
 
 #if defined(USE_VK_RENDER)
     vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE, UINT64_MAX);
@@ -173,12 +138,12 @@ void Viewer::Frame() {
                                          api_ctx->image_avail_semaphores[api_ctx->backend_frame], VK_NULL_HANDLE,
                                          &next_image_index);
     if (res != VK_SUCCESS) {
-        ctx->log()->Error("Failed to acquire next image!");
+        ren_ctx()->log()->Error("Failed to acquire next image!");
     };
 
     api_ctx->active_present_image = next_image_index;
 
-    const bool reset_result = ctx->default_descr_alloc()->Reset();
+    const bool reset_result = ren_ctx()->default_descr_alloc()->Reset();
     assert(reset_result);
 
     ///////////////////////////////////////////////////////////////
@@ -220,8 +185,7 @@ void Viewer::Frame() {
     Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
 #endif
 
-        auto state_manager = GetComponent<Eng::GameStateManager>(Eng::STATE_MANAGER_KEY);
-        state_manager->Draw();
+        state_manager_->Draw();
 
 #if defined(USE_VK_RENDER)
         { // change layout from  attachment_optimal to present_src
@@ -266,7 +230,7 @@ void Viewer::Frame() {
 
     res = vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, api_ctx->in_flight_fences[api_ctx->backend_frame]);
     if (res != VK_SUCCESS) {
-        ctx->log()->Error("Failed to submit into a queue!");
+        ren_ctx()->log()->Error("Failed to submit into a queue!");
     }
 
     OPTICK_GPU_FLIP(&api_ctx->swapchain);
@@ -284,7 +248,7 @@ void Viewer::Frame() {
 
     res = vkQueuePresentKHR(api_ctx->present_queue, &present_info);
     if (res != VK_SUCCESS) {
-        ctx->log()->Error("Failed to present queue!");
+        ren_ctx()->log()->Error("Failed to present queue!");
     }
 #elif defined(USE_GL_RENDER)
     api_ctx->in_flight_fences[api_ctx->backend_frame] = Ren::MakeFence();

@@ -61,7 +61,7 @@ class GSPlayTest : public GSBaseState {
     bool SaveSequence(const char *seq_name);
 
   public:
-    explicit GSPlayTest(Eng::GameBase *game);
+    explicit GSPlayTest(Viewer *viewer);
     ~GSPlayTest() final;
 
     void Enter() override;

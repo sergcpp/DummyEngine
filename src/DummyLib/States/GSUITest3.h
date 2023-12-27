@@ -73,7 +73,7 @@ class GSUITest3 : public GSBaseState {
     void RedrawPages(Gui::Renderer *r);
 
   public:
-    explicit GSUITest3(Eng::GameBase *game);
+    explicit GSUITest3(Viewer *viewer);
     ~GSUITest3() final;
 
     void Enter() override;

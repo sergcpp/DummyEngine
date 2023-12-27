@@ -31,7 +31,7 @@ void GSVideoTest::InitVideoTextures() {
             for (int j = 0; j < TextureSyncWindow; j++) {
                 sprintf(name_buf, "__video_Y_texture_%i_%i__", tx, j);
                 y_tex_[tx][j] = ren_ctx_->textures().Add(name_buf, ren_ctx_->api_ctx(), params,
-                                                         ren_ctx_->default_mem_allocs(), log_.get());
+                                                         ren_ctx_->default_mem_allocs(), log_);
             }
         }
 
@@ -46,7 +46,7 @@ void GSVideoTest::InitVideoTextures() {
             for (int j = 0; j < TextureSyncWindow; j++) {
                 sprintf(name_buf, "__video_UV_texture_%i_%i__", tx, j);
                 uv_tex_[tx][j] = ren_ctx_->textures().Add(name_buf, ren_ctx_->api_ctx(), params,
-                                                          ren_ctx_->default_mem_allocs(), log_.get());
+                                                          ren_ctx_->default_mem_allocs(), log_);
             }
         }
 

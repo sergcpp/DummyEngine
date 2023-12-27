@@ -63,7 +63,7 @@ class DummyApp {
 #endif
 
     std::unique_ptr<Eng::GameBase> viewer_;
-    std::weak_ptr<Eng::InputManager> input_manager_;
+    Eng::InputManager *input_manager_ = nullptr;
 
   public:
     DummyApp();

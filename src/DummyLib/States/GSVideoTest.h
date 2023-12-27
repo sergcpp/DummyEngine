@@ -104,7 +104,7 @@ class GSVideoTest final : public GSBaseState {
     void UpdateStageBufWithDecodedFrame_Persistent(int tex_index, int frame_index);
 
   public:
-    explicit GSVideoTest(Eng::GameBase *game);
+    explicit GSVideoTest(Viewer *viewer);
     ~GSVideoTest() final = default;
 
     void Enter() override;

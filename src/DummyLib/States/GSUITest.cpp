@@ -32,13 +32,12 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "corridor.json";
 } // namespace GSUITestInternal
 
-GSUITest::GSUITest(Eng::GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    dialog_font_ = fonts->FindFont("dialog_font");
+GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
+    dialog_font_ = viewer->font_storage()->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
 
     word_puzzle_.reset(new WordPuzzleUI{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
-                                        ui_root_.get(), *dialog_font_});
+                                        ui_root_, *dialog_font_});
 }
 
 GSUITest::~GSUITest() = default;
@@ -257,7 +256,7 @@ bool GSUITest::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::Resize:
-        word_puzzle_->Resize(ui_root_.get());
+        word_puzzle_->Resize(ui_root_);
         break;
     default:
         break;

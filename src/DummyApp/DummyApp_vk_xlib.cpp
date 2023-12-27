@@ -108,11 +108,8 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
     try {
         Viewer::PrepareAssets("pc");
-
-        viewer_.reset(new Viewer(w, h, nullptr, validation_level, nullptr, nullptr));
-
-        auto input_manager = viewer_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
-        input_manager_ = input_manager;
+        viewer_.reset(new Viewer(w, h, nullptr, validation_level, nullptr));
+        input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
         return -1;
@@ -135,8 +132,7 @@ void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
 
 void DummyApp::AddEvent(Eng::RawInputEv type, const uint32_t key_code, const float x,
                         const float y, const float dx, const float dy) {
-    auto input_manager = viewer_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
-    if (!input_manager) {
+    if (!input_manager_) {
         return;
     }
 
@@ -149,7 +145,7 @@ void DummyApp::AddEvent(Eng::RawInputEv type, const uint32_t key_code, const flo
     evt.move.dy = dy;
     evt.time_stamp = Sys::GetTimeUs();
 
-    input_manager->AddRawInputEvent(evt);
+    input_manager_->AddRawInputEvent(evt);
 }
 
 #if !defined(__ANDROID__)
@@ -219,8 +215,7 @@ int DummyApp::Run(int argc, char *argv[]) {
 #undef None
 
 void DummyApp::PollEvents() {
-    std::shared_ptr<Eng::InputManager> input_manager = input_manager_.lock();
-    if (!input_manager) {
+    if (!input_manager_) {
         return;
     }
 
@@ -298,7 +293,7 @@ void DummyApp::PollEvents() {
 
         if (evt.type != Eng::RawInputEv::None) {
             evt.time_stamp = Sys::GetTimeUs();
-            input_manager->AddRawInputEvent(evt);
+            input_manager_->AddRawInputEvent(evt);
         }
     }
 

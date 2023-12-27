@@ -32,14 +32,13 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
                           "zenith.json";
 } // namespace GSUITest2Internal
 
-GSUITest2::GSUITest2(Eng::GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    dialog_font_ = fonts->FindFont("book_main_font");
+GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
+    dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
     // dialog_font_->set_scale(1.5f);
 
-    dict_ = game->GetComponent<Dictionary>(DICT_KEY);
+    dict_ = viewer->dictionary();
 
-    const float font_height = dialog_font_->height(ui_root_.get());
+    const float font_height = dialog_font_->height(ui_root_);
 
     Gui::Image9Patch edit_box_frame{*ren_ctx_,
                                     "assets_pc/textures/ui/frame_01.uncompressed.png",
@@ -47,14 +46,14 @@ GSUITest2::GSUITest2(Eng::GameBase *game) : GSBaseState(game) {
                                     1.0f,
                                     Ren::Vec2f{-1.0f, -1.0f},
                                     Ren::Vec2f{2.0f, 2.0f},
-                                    ui_root_.get()};
+                                    ui_root_};
     edit_box_.reset(new Gui::EditBox{edit_box_frame, dialog_font_.get(), Ren::Vec2f{-0.5f, 0.75f},
-                                     Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_.get()});
+                                     Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_});
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 
     results_frame_.reset(new Gui::Image9Patch{*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
                                               Ren::Vec2f{8.0f, 8.0f}, 1.0f, Ren::Vec2f{-0.5f, -0.75f},
-                                              Ren::Vec2f{1.0f, 1.5f}, ui_root_.get()});
+                                              Ren::Vec2f{1.0f, 1.5f}, ui_root_});
 }
 
 GSUITest2::~GSUITest2() = default;
@@ -415,7 +414,7 @@ bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
         }
     } break;
     case Eng::RawInputEv::Resize:
-        edit_box_->Resize(ui_root_.get());
+        edit_box_->Resize(ui_root_);
         break;
     default:
         break;

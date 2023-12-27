@@ -179,12 +179,8 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
     try {
         Viewer::PrepareAssets("pc");
-
-        auto aux_gfx_thread = std::make_shared<AuxGfxThread>(device_context_, gl_ctx_aux_);
-        viewer_.reset(new Viewer(w, h, nullptr, validation_level, device_name, std::move(aux_gfx_thread)));
-
-        auto input_manager = viewer_->GetComponent<Eng::InputManager>(Eng::INPUT_MANAGER_KEY);
-        input_manager_ = input_manager;
+        viewer_.reset(new Viewer(w, h, nullptr, validation_level, device_name));
+        input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
         return -1;
@@ -221,8 +217,7 @@ void DummyApp::Resize(const int w, const int h) {
 void DummyApp::AddEvent(const Eng::RawInputEv type, const uint32_t key_code, const float x, const float y,
                         const float dx,
                         const float dy) {
-    std::shared_ptr<Eng::InputManager> input_manager = input_manager_.lock();
-    if (!input_manager) {
+    if (!input_manager_) {
         return;
     }
 
@@ -235,7 +230,7 @@ void DummyApp::AddEvent(const Eng::RawInputEv type, const uint32_t key_code, con
     evt.move.dy = dy;
     evt.time_stamp = Sys::GetTimeUs();
 
-    input_manager->AddRawInputEvent(evt);
+    input_manager_->AddRawInputEvent(evt);
 }
 
 int DummyApp::Run(int argc, char *argv[]) {

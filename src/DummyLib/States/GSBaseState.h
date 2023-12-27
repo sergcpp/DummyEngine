@@ -17,9 +17,11 @@
 
 class DebugInfoUI;
 class FontStorage;
+class Viewer;
 namespace Eng {
 class Cmdline;
 class GameStateManager;
+class ILog;
 class PhysicsManager;
 class SceneManager;
 class ShaderLoader;
@@ -39,22 +41,21 @@ class Context;
 class GSBaseState : public Eng::GameState {
   protected:
     Eng::GameBase *game_;
-    std::weak_ptr<Eng::GameStateManager> state_manager_;
-    std::shared_ptr<Eng::Cmdline> cmdline_;
-    std::shared_ptr<Ren::Context> ren_ctx_;
-    std::shared_ptr<Snd::Context> snd_ctx_;
-    std::shared_ptr<Ren::ILog> log_;
-    std::shared_ptr<Eng::Renderer> renderer_;
-    std::shared_ptr<Eng::SceneManager> scene_manager_;
-    std::shared_ptr<Eng::PhysicsManager> physics_manager_;
-    std::shared_ptr<Eng::TimeInterval> swap_interval_;
-    std::shared_ptr<Eng::Random> random_;
-    std::shared_ptr<Eng::ShaderLoader> shader_loader_;
+    Eng::GameStateManager *state_manager_ = nullptr;
+    Eng::Cmdline *cmdline_ = nullptr;
+    Ren::Context *ren_ctx_ = nullptr;
+    Snd::Context *snd_ctx_ = nullptr;
+    Eng::ILog *log_ = nullptr;
+    Eng::Renderer *renderer_ = nullptr;
+    Eng::SceneManager *scene_manager_ = nullptr;
+    Eng::PhysicsManager *physics_manager_ = nullptr;
+    Eng::Random *random_ = nullptr;
+    Eng::ShaderLoader *shader_loader_ = nullptr;
 
-    std::shared_ptr<Gui::Renderer> ui_renderer_;
-    std::shared_ptr<Gui::BaseElement> ui_root_;
+    Gui::Renderer *ui_renderer_ = nullptr;
+    Gui::BaseElement *ui_root_ = nullptr;
     std::shared_ptr<Gui::BitmapFont> font_;
-    std::shared_ptr<DebugInfoUI> debug_ui_;
+    DebugInfoUI *debug_ui_ = nullptr;
     std::unique_ptr<Gui::Image9Patch> cmdline_back_;
 
     std::mutex mtx_;
@@ -68,7 +69,7 @@ class GSBaseState : public Eng::GameState {
     Eng::FrameInfo fr_info_;
 
     Ren::Camera temp_probe_cam_;
-    //FrameBuf temp_probe_buf_;
+    // FrameBuf temp_probe_buf_;
     Eng::DrawList temp_probe_lists_[6];
     Eng::LightProbe *probe_to_render_ = nullptr, *probe_to_update_sh_ = nullptr;
     bool probes_dirty_ = true;
@@ -111,7 +112,7 @@ class GSBaseState : public Eng::GameState {
     virtual void DrawUI(Gui::Renderer *r, Gui::BaseElement *root);
 
   public:
-    explicit GSBaseState(Eng::GameBase *game);
+    explicit GSBaseState(Viewer *viewer);
     ~GSBaseState() override;
 
     void Enter() override;

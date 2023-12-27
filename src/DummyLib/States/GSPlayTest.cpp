@@ -43,26 +43,25 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 const char SEQ_NAME[] = "test/test_seq.json";
 } // namespace GSPlayTestInternal
 
-GSPlayTest::GSPlayTest(Eng::GameBase *game) : GSBaseState(game) {
-    const std::shared_ptr<FontStorage> fonts = game->GetComponent<FontStorage>(UI_FONTS_KEY);
-    dialog_font_ = fonts->FindFont("book_main_font");
+GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
+    dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
 
     cam_ctrl_.reset(new Eng::FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
 
     test_dialog_.reset(new Eng::ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
 
-    dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_.get(), *dialog_font_});
+    dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_, *dialog_font_});
 
     seq_edit_ui_.reset(
-        new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
+        new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
 
     dialog_edit_ui_.reset(
-        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_.get()});
+        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
 
-    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_.get(), *dialog_font_});
+    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_});
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
     //    seq_cap_ui_.get());
 
@@ -425,8 +424,8 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
     } break;
     case Eng::RawInputEv::Resize: {
         cam_ctrl_->Resize(ren_ctx_->w(), ren_ctx_->h());
-        dialog_edit_ui_->Resize(ui_root_.get());
-        seq_edit_ui_->Resize(ui_root_.get());
+        dialog_edit_ui_->Resize(ui_root_);
+        seq_edit_ui_->Resize(ui_root_);
     } break;
     default:
         break;

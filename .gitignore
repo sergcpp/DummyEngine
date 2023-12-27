@@ -1,7 +1,7 @@
 .dumps
 .vs
 .idea
-assets/shaders/internal/*
+assets/shaders/internal
 assets_pc
 assets_android
 build-*

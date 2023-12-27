@@ -64,7 +64,7 @@ class GSUITest4 final : public GSBaseState {
     void OnStartPuzzle(const char *puzzle_name);
 
   public:
-    explicit GSUITest4(Eng::GameBase *game);
+    explicit GSUITest4(Viewer *viewer);
     ~GSUITest4() final;
 
     void Enter() override;

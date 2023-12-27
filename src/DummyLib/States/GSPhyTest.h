@@ -49,7 +49,7 @@ class GSPhyTest final : public GSBaseState {
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
   public:
-    explicit GSPhyTest(Eng::GameBase *game);
+    explicit GSPhyTest(Viewer *viewer);
     ~GSPhyTest() final = default;
 
     void Enter() override;

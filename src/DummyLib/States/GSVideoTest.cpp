@@ -48,9 +48,9 @@ extern const bool VerboseLogging;
 #error "!!!!"
 #endif
 
-GSVideoTest::GSVideoTest(Eng::GameBase *game) : GSBaseState(game) {
-    threads_ = game->threads();
-    aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
+GSVideoTest::GSVideoTest(Viewer *viewer) : GSBaseState(viewer) {
+    threads_ = viewer->threads();
+    //aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
     //decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }
 
@@ -107,7 +107,7 @@ bool GSVideoTest::OpenVideoFiles() {
 #undef TEXTURE_PATH
 
     for (int i = 0; i < 5; i++) {
-        if (!vp_[i].OpenAndPreload(file_names[i], log_.get())) {
+        if (!vp_[i].OpenAndPreload(file_names[i], log_)) {
             log_->Error("GSVideoTest: Failed to load video file %s!", file_names[i]);
             return false;
         }

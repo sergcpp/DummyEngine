@@ -2,20 +2,6 @@
 
 #include <Eng/GameBase.h>
 
-const char UI_FONTS_KEY[] = "ui_fonts";
-const char UI_DEBUG_KEY[] = "ui_debug";
-
-const char RENDERER_KEY[] = "renderer";
-const char RAY_RENDERER_KEY[] = "ray_renderer";
-const char SCENE_MANAGER_KEY[] = "scene_manager";
-const char PHYSICS_MANAGER_KEY[] = "physics_manager";
-const char CMDLINE_KEY[] = "cmdline";
-const char DICT_KEY[] = "dictionary";
-
-const char SWAP_TIMER_KEY[] = "swap_timer";
-
-const char AUX_GFX_THREAD[] = "aux_gfx_thread";
-
 #if defined(__ANDROID__)
 const char ASSETS_BASE_PATH[] = "assets";
 #else
@@ -24,6 +10,13 @@ const char ASSETS_BASE_PATH[] = "assets_pc";
 
 namespace Eng {
 struct assets_context_t;
+class Cmdline;
+class SceneManager;
+class PhysicsManager;
+}
+
+namespace Ray {
+class RendererBase;
 }
 
 namespace Ren {
@@ -34,10 +27,24 @@ namespace Sys {
 class ThreadWorker;
 }
 
+class DebugInfoUI;
+class Dictionary;
+class FontStorage;
+
 class Viewer : public Eng::GameBase {
+    std::unique_ptr<FontStorage> font_storage_;
+    std::unique_ptr<DebugInfoUI> debug_ui_;
+    std::unique_ptr<Ray::RendererBase> ray_renderer_;
+    std::unique_ptr<Dictionary> dictionary_;
+
   public:
-    Viewer(int w, int h, const char *local_dir, int validation_level, const char *device_name,
-           std::shared_ptr<Sys::ThreadWorker> aux_gfx_thread);
+    Viewer(int w, int h, const char *local_dir, int validation_level, const char *device_name);
+    ~Viewer();
+
+    FontStorage *font_storage() { return font_storage_.get(); }
+    DebugInfoUI *debug_ui() { return debug_ui_.get(); }
+    Ray::RendererBase *ray_renderer() { return ray_renderer_.get(); }
+    Dictionary *dictionary() { return dictionary_.get(); }
 
     void Frame() override;
 

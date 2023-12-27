@@ -30,7 +30,7 @@ class GSUITest2 : public GSBaseState {
     float test_time_counter_s = 0.0f;
     bool is_visible_ = false;
 
-    std::shared_ptr<Dictionary> dict_;
+    Dictionary *dict_ = nullptr;
 
     std::unique_ptr<Gui::EditBox> edit_box_;
     std::unique_ptr<Gui::Image9Patch> results_frame_;
@@ -47,7 +47,7 @@ class GSUITest2 : public GSBaseState {
     static void MutateWord(const char *in_word, const std::function<void(const char *, int)> &callback);
 
   public:
-    explicit GSUITest2(Eng::GameBase *game);
+    explicit GSUITest2(Viewer *viewer);
     ~GSUITest2() final;
 
     void Enter() override;

@@ -48,15 +48,14 @@ namespace SceneManagerInternal {
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 }
 
-GSDrawTest::GSDrawTest(Eng::GameBase *game) : GSBaseState(game) {}
+GSDrawTest::GSDrawTest(Viewer *viewer) : GSBaseState(viewer) {}
 
 void GSDrawTest::Enter() {
     using namespace GSDrawTestInternal;
 
     GSBaseState::Enter();
 
-    std::shared_ptr<Eng::GameStateManager> state_manager = state_manager_.lock();
-    std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager->Peek());
+    std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager_->Peek());
 
     cmdline_->RegisterCommand("r_printCam", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();

@@ -3,8 +3,6 @@
 #include <random>
 #include <thread>
 
-#include <Eng/Gui/BaseElement.h>
-#include <Eng/Gui/Renderer.h>
 #include <Ren/Context.h>
 #include <Snd/Context.h>
 #include <Sys/AssetFileIO.h>
@@ -15,8 +13,14 @@
 
 #include "FlowControl.h"
 #include "GameStateManager.h"
+#include "Gui/BaseElement.h"
+#include "Gui/Renderer.h"
 #include "Log.h"
 #include "Random.h"
+#include "Renderer/Renderer.h"
+#include "Scene/PhysicsManager.h"
+#include "Scene/SceneManager.h"
+#include "Utils/Cmdline.h"
 #include "Utils/ShaderLoader.h"
 
 Eng::GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)
@@ -25,90 +29,67 @@ Eng::GameBase::GameBase(const int w, const int h, const int validation_level, co
 
     Sys::InitWorker();
 
-    auto log =
+    log_ =
 #if !defined(__ANDROID__)
-        std::make_shared<LogStdout>();
+        std::make_unique<LogStdout>();
 #else
-        std::make_shared<LogAndroid>("APP_JNI");
+        std::make_unique<LogAndroid>("APP_JNI");
 #endif
-    AddComponent(LOG_KEY, log);
 
-    auto ren_ctx = std::make_shared<Ren::Context>();
-    if (!ren_ctx->Init(w, h, log.get(), validation_level, device_name)) {
+    ren_ctx_ = std::make_unique<Ren::Context>();
+    if (!ren_ctx_->Init(w, h, log_.get(), validation_level, device_name)) {
         throw std::runtime_error("Initialization failed!");
     }
-    AddComponent(REN_CONTEXT_KEY, ren_ctx);
     InitOptickGPUProfiler();
 
-    auto snd_ctx = std::make_shared<Snd::Context>();
-    snd_ctx->Init(log.get());
-    AddComponent(SND_CONTEXT_KEY, snd_ctx);
+    snd_ctx_ = std::make_unique<Snd::Context>();
+    snd_ctx_->Init(log_.get());
 
 #if !defined(__EMSCRIPTEN__)
     unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1u);
     threads_ = std::make_unique<Sys::ThreadPool>(num_threads, Sys::eThreadPriority::Normal, "worker");
 #endif
 
-    auto state_manager = std::make_shared<GameStateManager>();
-    AddComponent(STATE_MANAGER_KEY, state_manager);
+    input_manager_ = std::make_unique<InputManager>();
 
-    auto input_manager = std::make_shared<InputManager>();
-    AddComponent(INPUT_MANAGER_KEY, input_manager);
+    shader_loader_ = std::make_unique<ShaderLoader>();
 
-    auto shader_loader = std::make_shared<ShaderLoader>();
-    AddComponent(SHADER_LOADER_KEY, shader_loader);
+    flow_control_ = std::make_unique<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
 
-    auto flow_control = std::make_shared<FlowControl>(2 * NET_UPDATE_DELTA, NET_UPDATE_DELTA);
-    AddComponent(FLOW_CONTROL_KEY, flow_control);
+    random_ = std::make_unique<Random>(std::random_device{}());
 
-    auto random_engine = std::make_shared<Random>(std::random_device{}());
-    AddComponent(RANDOM_KEY, random_engine);
+    renderer_ = std::make_unique<Eng::Renderer>(*ren_ctx_, *shader_loader_, *random_, *threads_);
 
-    auto ui_renderer = std::make_shared<Gui::Renderer>(*ren_ctx);
-    if (!ui_renderer->Init()) {
+    cmdline_ = std::make_unique<Eng::Cmdline>();
+
+    physics_manager_ = std::make_unique<Eng::PhysicsManager>();
+
+    state_manager_ = std::make_unique<GameStateManager>();
+
+    ui_renderer_ = std::make_unique<Gui::Renderer>(*ren_ctx_);
+    if (!ui_renderer_->Init()) {
         throw std::runtime_error("Couldn't initialize UI renderer!");
     }
-    AddComponent(UI_RENDERER_KEY, ui_renderer);
 
-    auto ui_root = std::make_shared<Gui::RootElement>(Gui::Vec2i(w, h));
-    AddComponent(UI_ROOT_KEY, ui_root);
+    ui_root_ = std::make_unique<Gui::RootElement>(Gui::Vec2i(w, h));
 }
 
-Eng::GameBase::~GameBase() {
-    // keep log alive during destruction
-    auto log = GetComponent<Ren::ILog>(LOG_KEY);
-    { // contexts should be deleted last
-        auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
-        auto snd_ctx = GetComponent<Snd::Context>(SND_CONTEXT_KEY);
-        // finish file IO tasks
-        while (!Sys::StopWorker())
-            ren_ctx->ProcessTasks();
-        // finish remaining tasks in queue
-        while (ren_ctx->ProcessTasks())
-            ;
-        components_.clear();
-    }
-}
+Eng::GameBase::~GameBase() = default;
 
 void Eng::GameBase::Resize(const int w, const int h) {
     width = w;
     height = h;
 
-    auto ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
-    ctx->Resize(width, height);
+    ren_ctx_->Resize(width, height);
 
-    auto ui_root = GetComponent<Gui::RootElement>(UI_ROOT_KEY);
-    ui_root->set_zone(Ren::Vec2i{width, height});
-    ui_root->Resize(nullptr);
+    ui_root_->set_zone(Ren::Vec2i{width, height});
+    ui_root_->Resize(nullptr);
 }
 
 void Eng::GameBase::Start() {}
 
 void Eng::GameBase::Frame() {
     OPTICK_EVENT("GameBase::Frame");
-
-    auto state_manager = GetComponent<GameStateManager>(STATE_MANAGER_KEY);
-    auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
 
     FrameInfo &fr = fr_info_;
 
@@ -127,11 +108,11 @@ void Eng::GameBase::Frame() {
 
     while (fr.time_acc_us >= UPDATE_DELTA) {
         InputManager::Event evt;
-        while (input_manager->PollEvent(poll_time_point, evt)) {
-            state_manager->HandleInput(evt);
+        while (input_manager_->PollEvent(poll_time_point, evt)) {
+            state_manager_->HandleInput(evt);
         }
 
-        state_manager->UpdateFixed(UPDATE_DELTA);
+        state_manager_->UpdateFixed(UPDATE_DELTA);
         fr.time_acc_us -= UPDATE_DELTA;
 
         poll_time_point += UPDATE_DELTA;
@@ -141,11 +122,11 @@ void Eng::GameBase::Frame() {
 
     {
         OPTICK_EVENT("state_manager->UpdateAnim");
-        state_manager->UpdateAnim(fr_info_.delta_time_us);
+        state_manager_->UpdateAnim(fr_info_.delta_time_us);
     }
     {
         OPTICK_EVENT("state_manager->Draw");
-        state_manager->Draw();
+        state_manager_->Draw();
     }
 }
 
@@ -156,8 +137,7 @@ void Eng::GameBase::Quit() { terminated = true; }
 #include <Ren/VKCtx.h>
 
 void Eng::GameBase::InitOptickGPUProfiler() {
-    auto ren_ctx = GetComponent<Ren::Context>(REN_CONTEXT_KEY);
-    Ren::ApiContext *api_ctx = ren_ctx->api_ctx();
+    Ren::ApiContext *api_ctx = ren_ctx_->api_ctx();
 
     Optick::VulkanFunctions functions = {
         vkGetPhysicalDeviceProperties,
