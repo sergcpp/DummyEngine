@@ -17,7 +17,7 @@ runs:
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{ inputs.config }} ${{ inputs.cmake-args }}
         cd ..
-        cmake --build build --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net --parallel 16
+        cmake --build build --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_Phy --parallel 16
         if [ -n "${{ inputs.bin-dir }}" ]; then
           mkdir $WORK_DIR/${{ inputs.bin-dir }}
           mkdir $WORK_DIR/${{ inputs.bin-dir }}/test_data
@@ -27,6 +27,7 @@ runs:
           cp build/src/Ren/tests/test_Ren $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Ren/SW/tests/test_SW $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Sys/tests/test_Sys $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Phy/tests/test_Phy $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Eng/first-party/Net/tests/test_Net $WORK_DIR/${{ inputs.bin-dir }}
           cp DummyApp* $WORK_DIR/${{ inputs.bin-dir }}
         fi

@@ -33,9 +33,10 @@ set(SOURCE_FILES    Body.h
                     Utils.h
                     Utils.cpp)
 
-list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+list(APPEND PHY_SOURCE_FILES ${SOURCE_FILES})
+source_group("src" FILES ${SOURCE_FILES})
 
-add_library(Phy STATIC ${ALL_SOURCE_FILES})
+add_library(Phy STATIC ${PHY_SOURCE_FILES})
 target_link_libraries(Phy ${LIBS})
 
 add_subdirectory(tests)
