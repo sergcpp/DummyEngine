@@ -40,8 +40,8 @@ runs:
           copy build/src/Eng/_tests/test_Eng.exe $WORK_DIR/${{ inputs.bin-dir }}
           xcopy src\Eng\_tests\test_data\assets\* $WORK_DIR\${{ inputs.bin-dir }}\test_data\assets\* /s
           copy build/src/Ray/tests/test_Ray.exe $WORK_DIR/${{ inputs.bin-dir }}
-          copy build/src/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
-          copy build/src/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}
+          copy build/src/Eng/first-party/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
+          copy build/src/Eng/first-party/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Sys/tests/test_Sys.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Phy/tests/test_Phy.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Net/tests/test_Net.exe $WORK_DIR/${{ inputs.bin-dir }}

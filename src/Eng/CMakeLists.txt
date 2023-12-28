@@ -329,4 +329,5 @@ target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${GLSLANG_LIBS} ${
 add_subdirectory(_tests)
 add_subdirectory(first-party/Net)
 add_subdirectory(first-party/Phy)
+add_subdirectory(first-party/Ren)
 add_subdirectory(first-party/Sys)

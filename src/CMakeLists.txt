@@ -100,7 +100,6 @@ add_subdirectory(DummyLib)
 add_subdirectory(Eng)
 add_subdirectory(Modl)
 add_subdirectory(Ray)
-add_subdirectory(Ren)
 add_subdirectory(Snd)
 
 add_subdirectory(libs/astc)

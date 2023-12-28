@@ -4,9 +4,9 @@
 #include <istream>
 
 #if defined(USE_VK_RENDER)
-#include <Ren/VKCtx.h>
+#include "VKCtx.h"
 #elif defined(USE_GL_RENDER)
-#include <Ren/GLCtx.h>
+#include "GLCtx.h"
 #endif
 
 Ren::MeshRef Ren::Context::LoadMesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,

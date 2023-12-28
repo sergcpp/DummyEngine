@@ -43,11 +43,11 @@ set(SOURCE_FILES    SW.h
                     SWcompress.h
                     SWcompress.c)
 
-list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+list(APPEND SW_SOURCE_FILES ${SOURCE_FILES})
 set_source_files_properties(${SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY 1)
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c _SW_NEON.c)
+list(APPEND SW_SOURCE_FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c _SW_NEON.c)
 source_group("src" FILES _SW.c _SW_SSE2.c _SW_AVX2.c _SW_AVX512.c _SW_NEON.c)
 
 STRING (REGEX REPLACE "/RTC(su|[1su])" "" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
@@ -70,7 +70,7 @@ else(MSVC)
     set_source_files_properties(_SW_AVX512.c PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mavx512dq -O2")
 endif(MSVC)
 
-add_library(SW STATIC ${ALL_SOURCE_FILES})
+add_library(SW STATIC ${SW_SOURCE_FILES})
 set_target_properties(SW PROPERTIES UNITY_BUILD OFF)
 
 add_subdirectory(tests)

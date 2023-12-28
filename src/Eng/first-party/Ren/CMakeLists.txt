@@ -175,7 +175,7 @@ elseif(${RENDERER} STREQUAL "VK")
                        ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan.h
                        ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan_core.h)
 
-    list(APPEND ALL_SOURCE_FILES ${VULKAN_HEADERS})
+    list(APPEND REN_SOURCE_FILES ${VULKAN_HEADERS})
     source_group("src/vulkan" FILES ${VULKAN_HEADERS})
 
     set(LIBS ${LIBS} stb SPIRV-Reflect)
@@ -185,7 +185,7 @@ add_subdirectory(SW)
 add_subdirectory(stb)
 add_subdirectory(SPIRV-Reflect)
 
-list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+list(APPEND REN_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 if(MSVC)
@@ -194,7 +194,7 @@ if(MSVC)
     endif()
     set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
 
-    list(APPEND ALL_SOURCE_FILES _CustomTypes.natvis)
+    list(APPEND REN_SOURCE_FILES _CustomTypes.natvis)
 else(MSVC)
     set_source_files_properties(Utils_SSE2.cpp PROPERTIES COMPILE_FLAGS -msse2)
     set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS "-mavx2 -mfma")
@@ -203,7 +203,7 @@ endif(MSVC)
 set_source_files_properties(GLExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
-add_library(Ren STATIC ${ALL_SOURCE_FILES})
+add_library(Ren STATIC ${REN_SOURCE_FILES})
 target_link_libraries(Ren SW ${LIBS})
 
 add_subdirectory(tests)
