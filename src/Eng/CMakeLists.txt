@@ -326,7 +326,7 @@ add_library(Eng STATIC ${ALL_SOURCE_FILES})
 target_include_directories(Eng PUBLIC first-party)
 target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})
 
-add_subdirectory(_tests)
+add_subdirectory(tests)
 add_subdirectory(first-party/Net)
 add_subdirectory(first-party/Phy)
 add_subdirectory(first-party/Ren)

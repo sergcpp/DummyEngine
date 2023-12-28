@@ -144,7 +144,7 @@ set_target_properties(astc
                       optick PROPERTIES FOLDER _)
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
-add_test(EngTest        Eng/_tests/test_Eng)
+add_test(EngTest        Eng/tests/test_Eng)
 add_test(NetTest        Net/tests/test_Net)
 add_test(PhyTest        Phy/tests/test_Phy)
 add_test(RayTest        Ray/tests/test_Ray)

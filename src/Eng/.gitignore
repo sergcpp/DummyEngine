@@ -2,4 +2,4 @@ errors.txt
 out.png
 diff.png
 mask.png
-_tests/test_data/assets/shaders/internal
+tests/test_data/assets/shaders/internal
