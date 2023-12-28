@@ -45,12 +45,6 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 #endif
     Snd::Context snd_ctx;
     snd_ctx.Init(&log);
-    // TODO: Remove this!
-    Ray::settings_t s;
-    s.w = ref_w;
-    s.h = ref_h;
-    Ray::RendererBase *ray_renderer = Ray::CreateRenderer(s);
-    SCOPE_EXIT({ delete ray_renderer; })
 
     Eng::ShaderLoader shader_loader;
     Eng::Random rand(0);
@@ -62,7 +56,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
                               Eng::EnableHQ_HDR);
 
     Eng::path_config_t paths;
-    Eng::SceneManager scene_manager(ren_ctx, shader_loader, snd_ctx, *ray_renderer, threads, paths);
+    Eng::SceneManager scene_manager(ren_ctx, shader_loader, snd_ctx, threads, paths);
 
     using namespace std::placeholders;
     scene_manager.SetPipelineInitializer(std::bind(&Eng::Renderer::InitPipelinesForProgram, &renderer, _1, _2, _3, _4));

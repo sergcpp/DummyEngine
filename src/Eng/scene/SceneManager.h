@@ -6,7 +6,7 @@
 #include <mutex>
 #include <thread>
 
-#include <Ray/RendererBase.h>
+//#include <Ray/RendererBase.h>
 #include <Ren/Camera.h>
 #include <Ren/RingBuffer.h>
 #include <Ren/Span.h>
@@ -95,7 +95,7 @@ struct assets_context_t {
 
 class SceneManager {
   public:
-    SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx, Ray::RendererBase &ray_renderer,
+    SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx,
                  Sys::ThreadPool &threads, const path_config_t &paths);
     ~SceneManager();
 
@@ -145,13 +145,13 @@ class SceneManager {
         init_pipelines_ = std::move(f);
     }
 
-    void InitScene_PT(bool _override = false);
-    void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
-    const float *Draw_PT(int *w, int *h);
-    void Clear_PT();
+    //void InitScene_PT(bool _override = false);
+    //void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
+    //const float *Draw_PT(int *w, int *h);
+    //void Clear_PT();
 
-    void ResetLightmaps_PT();
-    bool PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h);
+    //void ResetLightmaps_PT();
+    //bool PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h);
 
     void UpdateObjects();
 
@@ -226,10 +226,10 @@ class SceneManager {
     Snd::Context &snd_ctx_;
     Ren::MeshRef cam_rig_;
     Ren::Tex2DRef error_tex_;
-    Ray::RendererBase &ray_renderer_;
+    //Ray::RendererBase &ray_renderer_;
     Sys::ThreadPool &threads_;
-    std::vector<Ray::RegionContext> ray_reg_ctx_;
-    std::unique_ptr<Ray::SceneBase> ray_scene_;
+    //std::vector<Ray::RegionContext> ray_reg_ctx_;
+    //std::unique_ptr<Ray::SceneBase> ray_scene_;
     path_config_t paths_;
 
     Ren::Camera cam_;
@@ -297,8 +297,8 @@ class SceneManager {
     uint32_t cur_lm_obj_ = 0;
 
     // PT temp data
-    std::vector<Ray::color_rgba_t> pt_lm_direct_, pt_lm_indir_, pt_lm_indir_sh_[4];
-    double pt_lm_started_time_s_ = 0.0;
+    //std::vector<Ray::color_rgba_t> pt_lm_direct_, pt_lm_indir_, pt_lm_indir_sh_[4];
+    //double pt_lm_started_time_s_ = 0.0;
 
     // static data for assets conversion
     struct Handler {

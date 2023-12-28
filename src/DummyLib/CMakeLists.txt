@@ -78,7 +78,7 @@ set_source_files_properties(${UTILS_SOURCES} PROPERTIES UNITY_GROUP "utils")
 source_group("src\\Utils" FILES ${UTILS_SOURCES})
 
 add_library(DummyLib STATIC ${ALL_SOURCE_FILES})
-target_link_libraries(DummyLib Eng Net Phy Ray Ren Snd Sys astc ${LIBS})
+target_link_libraries(DummyLib Eng Ray ${LIBS})
 
 set_target_properties(DummyLib PROPERTIES UNITY_BUILD_MODE GROUP)
 

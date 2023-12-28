@@ -15,18 +15,19 @@ extern const int LIGHTMAP_ATLAS_RESX, LIGHTMAP_ATLAS_RESY;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
-bool Write_RGB(const Ray::color_rgba_t *out_data, int w, int h, const char *name);
+//bool Write_RGB(const Ray::color_rgba_t *out_data, int w, int h, const char *name);
 bool Write_RGBM(const float *out_data, int w, int h, int channels, bool flip_y, const char *name);
-bool Write_RGBE(const Ray::color_rgba_t *out_data, int w, int h, const char *name);
+//bool Write_RGBE(const Ray::color_rgba_t *out_data, int w, int h, const char *name);
 
-void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data);
+//void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data);
 
-std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int width, int height,
-                                          float invalid_threshold, int filter_size);
+//std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int width, int height,
+//                                          float invalid_threshold, int filter_size);
 
-std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, bool flip_y);
+//std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, bool flip_y);
 } // namespace SceneManagerInternal
 
+#if 0
 const float *Eng::SceneManager::Draw_PT(int *w, int *h) {
     if (!ray_scene_)
         return nullptr;
@@ -701,3 +702,4 @@ void Eng::SceneManager::Clear_PT() {
     }
     ray_renderer_.Clear({});
 }
+#endif

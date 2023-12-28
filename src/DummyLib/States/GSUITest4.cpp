@@ -341,7 +341,7 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    scene_manager_->InitScene_PT();
+                    //scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 

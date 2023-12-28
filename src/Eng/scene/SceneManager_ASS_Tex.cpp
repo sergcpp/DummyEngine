@@ -304,6 +304,7 @@ int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log, s
 
 int WriteImage(const uint8_t *out_data, int w, int h, int channels, bool flip_y, bool is_rgbm, const char *name);
 
+#if 0
 bool Write_RGBE(const Ray::color_rgba_t *out_data, int w, int h, const char *name) {
     std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBE(&out_data[0].v[0], w, h, 4);
     return WriteImage(&u8_data[0], w, h, 4, false /* flip_y */, false /* is_rgbm */, name) == 1;
@@ -324,6 +325,7 @@ bool Write_RGB(const Ray::color_rgba_t *out_data, int w, int h, const char *name
 
     return WriteImage(&u8_data[0], w, h, 3, false /* flip_y */, false /* is_rgbm */, name) == 1;
 }
+#endif
 
 bool Write_RGBM(const float *out_data, const int w, const int h, const int channels, const bool flip_y,
                 const char *name) {

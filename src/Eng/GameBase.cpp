@@ -64,6 +64,15 @@ Eng::GameBase::GameBase(const int w, const int h, const int validation_level, co
 
     physics_manager_ = std::make_unique<Eng::PhysicsManager>();
 
+    {
+        using namespace std::placeholders;
+
+        Eng::path_config_t paths;
+        scene_manager_ = std::make_unique<Eng::SceneManager>(*ren_ctx_, *shader_loader_, *snd_ctx_, *threads_, paths);
+        scene_manager_->SetPipelineInitializer(
+            std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
+    }
+
     state_manager_ = std::make_unique<GameStateManager>();
 
     ui_renderer_ = std::make_unique<Gui::Renderer>(*ren_ctx_);

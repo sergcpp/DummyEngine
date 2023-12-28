@@ -251,7 +251,7 @@ void GSBaseState::Enter() {
         if (shrd_this) {
             shrd_this->use_pt_ = !shrd_this->use_pt_;
             if (shrd_this->use_pt_) {
-                shrd_this->scene_manager_->InitScene_PT();
+                //shrd_this->scene_manager_->InitScene_PT();
                 shrd_this->invalidate_view_ = true;
             }
         }
@@ -263,8 +263,8 @@ void GSBaseState::Enter() {
         if (shrd_this) {
             shrd_this->use_lm_ = !shrd_this->use_lm_;
             if (shrd_this->use_lm_) {
-                shrd_this->scene_manager_->InitScene_PT();
-                shrd_this->scene_manager_->ResetLightmaps_PT();
+                //shrd_this->scene_manager_->InitScene_PT();
+                //shrd_this->scene_manager_->ResetLightmaps_PT();
                 shrd_this->invalidate_view_ = true;
             }
         }
@@ -796,7 +796,7 @@ void GSBaseState::Draw() {
             renderer_->InitBackendInfo();
 
             if (use_lm_) {
-                int w, h;
+                /*int w, h;
                 const float *preview_pixels = nullptr;
                 if (scene_manager_->PrepareLightmaps_PT(&preview_pixels, &w, &h)) {
                     if (preview_pixels) {
@@ -811,9 +811,9 @@ void GSBaseState::Draw() {
                     use_lm_ = false;
                 }
 
-                back_list = -1;
+                back_list = -1;*/
             } else if (use_pt_) {
-                const Ren::Camera &cam = scene_manager_->main_cam();
+                /*const Ren::Camera &cam = scene_manager_->main_cam();
                 scene_manager_->SetupView_PT(cam.world_position(), (cam.world_position() - cam.view_dir()),
                                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle());
                 if (invalidate_view_) {
@@ -826,7 +826,7 @@ void GSBaseState::Draw() {
                     renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::eTexFormat::RawRGBA32F);
                 }
 
-                back_list = -1;
+                back_list = -1;*/
             } else {
                 back_list = front_list_;
                 front_list_ = (front_list_ + 1) % 2;

@@ -33,7 +33,7 @@
 #include "../renderer/shaders/Renderer_GL_Defines.inl"
 
 namespace SceneManagerInternal {
-void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data) {
+void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
 
     std::vector<char> in_file_data(in_file_size);
@@ -50,16 +50,20 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = {pixels[3ull * (y * w + x)], pixels[3ull * (y * w + x) + 1],
-                                 pixels[3ull * (y * w + x) + 2], 255};
+                out_data[i++] = pixels[3ull * (y * w + x)];
+                out_data[i++] = pixels[3ull * (y * w + x) + 1];
+                out_data[i++] = pixels[3ull * (y * w + x) + 2];
+                out_data[i++] = 255;
             }
         }
     } else if (format == Ren::eTexFormat::RawRGBA8888) {
         int i = 0;
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
-                out_data[i++] = {pixels[4ull * (y * w + x)], pixels[4ull * (y * w + x) + 1],
-                                 pixels[4ull * (y * w + x) + 2], pixels[4ull * (y * w + x) + 3]};
+                out_data[i++] = pixels[4ull * (y * w + x)];
+                out_data[i++] = pixels[4ull * (y * w + x) + 1];
+                out_data[i++] = pixels[4ull * (y * w + x) + 2];
+                out_data[i++] = pixels[4ull * (y * w + x) + 3];
             }
         }
     } else {
@@ -67,12 +71,11 @@ void LoadTGA(Sys::AssetFile &in_file, int w, int h, Ray::color_rgba8_t *out_data
     }
 }
 
-std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int width, int height,
-                                          float invalid_threshold, int filter_size) {
-    std::vector<Ray::color_rgba_t> temp_pixels1{pixels, pixels + width * height}, temp_pixels2{(size_t)width * height};
+std::vector<float> FlushSeams(const float *pixels, int width, int height, float invalid_threshold, int filter_size) {
+    std::vector<float> temp_pixels1(pixels, pixels + 4 * width * height), temp_pixels2(4 * width * height);
 
     // Avoid bound checks in debug
-    Ray::color_rgba_t *_temp_pixels1 = temp_pixels1.data(), *_temp_pixels2 = temp_pixels2.data();
+    float *_temp_pixels1 = temp_pixels1.data(), *_temp_pixels2 = temp_pixels2.data();
 
     // apply dilation filter
     for (int i = 0; i < filter_size; i++) {
@@ -80,38 +83,40 @@ std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int w
 
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                const Ray::color_rgba_t &in_p = _temp_pixels1[y * width + x];
-                Ray::color_rgba_t &out_p = _temp_pixels2[y * width + x];
+                const float *in_p = &_temp_pixels1[4 * (y * width + x)];
+                float *out_p = &_temp_pixels2[4 * (y * width + x)];
 
-                if (in_p.v[3] >= invalid_threshold) {
-                    const float mul = 1.0f / in_p.v[3];
+                if (in_p[3] >= invalid_threshold) {
+                    const float mul = 1.0f / in_p[3];
 
-                    out_p.v[0] = in_p.v[0] * mul;
-                    out_p.v[1] = in_p.v[1] * mul;
-                    out_p.v[2] = in_p.v[2] * mul;
-                    out_p.v[3] = in_p.v[3] * mul;
+                    out_p[0] = in_p[0] * mul;
+                    out_p[1] = in_p[1] * mul;
+                    out_p[2] = in_p[2] * mul;
+                    out_p[3] = in_p[3] * mul;
                 } else {
                     has_invalid = true;
 
-                    Ray::color_rgba_t new_p = {0};
+                    float new_p[4] = {};
                     int count = 0;
 
                     const int _ys[] = {y - 1, y, y + 1};
                     const int _xs[] = {x - 1, x, x + 1};
                     for (const int _y : _ys) {
-                        if (_y < 0 || _y > height - 1)
+                        if (_y < 0 || _y > height - 1) {
                             continue;
+                        }
 
                         for (const int _x : _xs) {
-                            if ((_x == x && _y == y) || _x < 0 || _x > width - 1)
+                            if ((_x == x && _y == y) || _x < 0 || _x > width - 1) {
                                 continue;
+                            }
 
-                            const Ray::color_rgba_t &p = _temp_pixels1[_y * width + _x];
-                            if (p.v[3] >= invalid_threshold) {
-                                new_p.v[0] += p.v[0];
-                                new_p.v[1] += p.v[1];
-                                new_p.v[2] += p.v[2];
-                                new_p.v[3] += p.v[3];
+                            const float *p = &_temp_pixels1[4 * (_y * width + _x)];
+                            if (p[3] >= invalid_threshold) {
+                                new_p[0] += p[0];
+                                new_p[1] += p[1];
+                                new_p[2] += p[2];
+                                new_p[3] += p[3];
                                 ++count;
                             }
                         }
@@ -119,10 +124,10 @@ std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int w
 
                     const float mul = count ? (1.0f / float(count)) : 1.0f;
 
-                    out_p.v[0] = new_p.v[0] * mul;
-                    out_p.v[1] = new_p.v[1] * mul;
-                    out_p.v[2] = new_p.v[2] * mul;
-                    out_p.v[3] = new_p.v[3] * mul;
+                    out_p[0] = new_p[0] * mul;
+                    out_p[1] = new_p[1] * mul;
+                    out_p[2] = new_p[2] * mul;
+                    out_p[3] = new_p[3] * mul;
                 }
             }
         }
@@ -136,10 +141,10 @@ std::vector<Ray::color_rgba_t> FlushSeams(const Ray::color_rgba_t *pixels, int w
     return temp_pixels1;
 }
 
-std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bool flip_y) {
+std::unique_ptr<uint8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bool flip_y) {
     const Ren::Tex2DParams &params = tex_ref->params;
 
-    std::unique_ptr<Ray::color_rgba8_t[]> tex_data(new Ray::color_rgba8_t[params.w * params.h]);
+    std::unique_ptr<uint8_t[]> tex_data(new uint8_t[4 * params.w * params.h]);
 #if defined(__ANDROID__)
     Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
     SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
@@ -148,8 +153,8 @@ std::unique_ptr<Ray::color_rgba8_t[]> GetTextureData(const Ren::Tex2DRef &tex_re
 #endif
 
     for (int y = 0; y < params.h / 2 && flip_y; y++) {
-        std::swap_ranges(&tex_data[y * params.w], &tex_data[(y + 1) * params.w],
-                         &tex_data[(params.h - y - 1) * params.w]);
+        std::swap_ranges(&tex_data[4 * y * params.w], &tex_data[4 * (y + 1) * params.w],
+                         &tex_data[4 * (params.h - y - 1) * params.w]);
     }
 
     return tex_data;

@@ -353,7 +353,7 @@ else(WIN32)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/linux/x64)
     endif(APPLE)
 endif(WIN32)
-target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})
+target_link_libraries(Eng Net Phy Ren Snd Sys astc optick ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})
 
 add_subdirectory(tests)
 add_subdirectory(first-party/Net)

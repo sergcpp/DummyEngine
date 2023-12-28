@@ -125,8 +125,8 @@ void __init_wind_params(const Eng::VegState &vs, const Eng::Environment &env, co
 #include "../renderer/shaders/Renderer_GL_Defines.inl"
 
 Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx,
-                                Ray::RendererBase &ray_renderer, Sys::ThreadPool &threads, const path_config_t &paths)
-    : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), ray_renderer_(ray_renderer), threads_(threads), paths_(paths),
+                                Sys::ThreadPool &threads, const path_config_t &paths)
+    : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), threads_(threads), paths_(paths),
       cam_(Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, 0.0f}, Ren::Vec3f{0.0f, 1.0f, 0.0f}),
       mp_alloc_(32, 512) {
     using namespace SceneManagerConstants;
@@ -621,7 +621,7 @@ void Eng::SceneManager::ClearScene() {
     // ren_ctx_.default_vertex_buf1()->Print(ren_ctx_.log());
     ren_ctx_.default_mem_allocs()->Print(ren_ctx_.log());
 
-    ray_scene_ = {};
+    //ray_scene_ = {};
 }
 
 void Eng::SceneManager::LoadProbeCache() {

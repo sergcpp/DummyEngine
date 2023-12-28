@@ -7,7 +7,7 @@
 #define STBTT_STATIC
 #include <stb/stb_truetype.h>
 
-#include <Ray/internal/TextureSplitter.h>
+#include <Ren/TextureSplitter.h>
 
 #include "../gui/BitmapFont.h"
 #include "../gui/Utils.h"
@@ -90,7 +90,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
     int out_glyph_count = 0;
 
     std::unique_ptr<uint8_t[]> temp_bitmap(new uint8_t[temp_bitmap_res[0] * temp_bitmap_res[1] * 4]);
-    Ray::TextureSplitter temp_bitmap_splitter(temp_bitmap_res);
+    Ren::TextureSplitter temp_bitmap_splitter(temp_bitmap_res[0], temp_bitmap_res[1]);
 
     std::fill(&temp_bitmap[0], &temp_bitmap[0] + 4 * temp_bitmap_res[0] * temp_bitmap_res[1], 0);
 

@@ -86,22 +86,11 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     debug_ui_ = std::make_unique<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get(),
                                               font_storage_->FindFont("main_font"));
 
-    {
-        using namespace std::placeholders;
+    Ray::settings_t s;
+    s.w = w;
+    s.h = h;
 
-        Ray::settings_t s;
-        s.w = w;
-        s.h = h;
-
-        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
-
-        // TODO: Move this to GameBase!
-        Eng::path_config_t paths;
-        scene_manager_ = std::make_unique<Eng::SceneManager>(*ren_ctx_, *shader_loader_, *snd_ctx_, *ray_renderer_,
-                                                             *threads_, paths);
-        scene_manager_->SetPipelineInitializer(
-            std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
-    }
+    ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
