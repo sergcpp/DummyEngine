@@ -59,10 +59,10 @@ if(${SOUND} STREQUAL "AL")
 					 SourceAL.cpp)
 endif()
 
-list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+list(APPEND SND_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-add_library(Snd STATIC ${ALL_SOURCE_FILES})
+add_library(Snd STATIC ${SND_SOURCE_FILES})
 target_link_libraries(Snd ${LIBS})
 target_include_directories(Snd PRIVATE ${OPENAL_INCLUDE_DIRS})
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")

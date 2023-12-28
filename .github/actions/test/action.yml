@@ -16,6 +16,7 @@ runs:
         chmod +x ./${{ inputs.bin-dir }}/test_Sys
         chmod +x ./${{ inputs.bin-dir }}/test_Net
         chmod +x ./${{ inputs.bin-dir }}/test_Phy
+        chmod +x ./${{ inputs.bin-dir }}/test_Snd
         chmod +x ./${{ inputs.bin-dir }}/test_Eng
         chmod +x ./${{ inputs.bin-dir }}/test_Ren
         chmod +x ./${{ inputs.bin-dir }}/test_Ray
@@ -25,6 +26,7 @@ runs:
         $WORK_DIR/${{ inputs.bin-dir }}/test_Sys
         $WORK_DIR/${{ inputs.bin-dir }}/test_Net
         $WORK_DIR/${{ inputs.bin-dir }}/test_Phy
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Snd
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
         cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }}
