@@ -76,14 +76,14 @@ ELSE(APPLE)
 ENDIF(APPLE)
 ENDIF(WIN32)
 
-list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+list(APPEND SYS_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 if(MSVC)
-    list(APPEND ALL_SOURCE_FILES _CustomTypes.natvis)
+    list(APPEND SYS_SOURCE_FILES _CustomTypes.natvis)
 endif(MSVC)
 
-add_library(Sys STATIC ${ALL_SOURCE_FILES})
+add_library(Sys STATIC ${SYS_SOURCE_FILES})
 target_link_libraries(Sys ${LIBS})
 
 add_subdirectory(tests)
