@@ -1,7 +1,7 @@
 #include "DialogUI.h"
 
-#include <Eng/Gui/BitmapFont.h>
-#include <Eng/Gui/Renderer.h>
+#include <Eng/gui/BitmapFont.h>
+#include <Eng/gui/Renderer.h>
 
 DialogUI::DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, Gui::BitmapFont &font,
                    const bool debug)

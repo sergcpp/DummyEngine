@@ -1,6 +1,6 @@
 #include "test_common.h"
 
-#include "../Gui/BaseElement.h"
+#include "../gui/BaseElement.h"
 
 void test_widgets() {
     printf("Test widgets            | ");

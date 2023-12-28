@@ -1,7 +1,7 @@
 #include "DialogController.h"
 
-#include <Eng/Utils/ScriptedDialog.h>
-#include <Eng/Utils/ScriptedSequence.h>
+#include <Eng/utils/ScriptedDialog.h>
+#include <Eng/utils/ScriptedSequence.h>
 
 DialogController::DialogController() = default;
 

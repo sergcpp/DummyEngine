@@ -6,8 +6,8 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
-#include <Eng/Gui/BaseElement.h>
-#include <Eng/Gui/BitmapFont.h>
+#include <Eng/gui/BaseElement.h>
+#include <Eng/gui/BitmapFont.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eng/Gui/BaseElement.h>
+#include <Eng/gui/BaseElement.h>
 
 #include "SeqCanvasUI.h"
 #include "TimelineUI.h"

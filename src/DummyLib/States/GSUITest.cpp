@@ -4,14 +4,14 @@
 #include <memory>
 
 #include <Eng/GameStateManager.h>
-#include <Eng/Gui/Image.h>
-#include <Eng/Gui/Image9Patch.h>
-#include <Eng/Gui/Renderer.h>
-#include <Eng/Gui/Utils.h>
+#include <Eng/gui/Image.h>
+#include <Eng/gui/Image9Patch.h>
+#include <Eng/gui/Renderer.h>
+#include <Eng/gui/Utils.h>
 #include <Eng/Log.h>
-#include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/SceneManager.h>
-#include <Eng/Utils/Cmdline.h>
+#include <Eng/renderer/Renderer.h>
+#include <Eng/scene/SceneManager.h>
+#include <Eng/utils/Cmdline.h>
 #include <Ren/Context.h>
 #include <Ren/GL.h>
 #include <Ren/Utils.h>

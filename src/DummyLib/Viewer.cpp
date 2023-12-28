@@ -9,8 +9,8 @@
 #include <Eng/GameStateManager.h>
 #include <Eng/Log.h>
 #include <Eng/Random.h>
-#include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/SceneManager.h>
+#include <Eng/renderer/Renderer.h>
+#include <Eng/scene/SceneManager.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>

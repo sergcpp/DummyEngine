@@ -6,12 +6,12 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-#include <Eng/Gui/Renderer.h>
+#include <Eng/gui/Renderer.h>
 #include <Eng/Log.h>
-#include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/SceneManager.h>
-#include <Eng/Utils/Cmdline.h>
-#include <Eng/Utils/ShaderLoader.h>
+#include <Eng/renderer/Renderer.h>
+#include <Eng/scene/SceneManager.h>
+#include <Eng/utils/Cmdline.h>
+#include <Eng/utils/ShaderLoader.h>
 #include <Ren/CPUFeatures.h>
 #include <Ren/Context.h>
 #include <Ren/Utils.h>

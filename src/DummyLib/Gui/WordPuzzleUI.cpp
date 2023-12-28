@@ -2,8 +2,8 @@
 
 #include <random>
 
-#include <Eng/Gui/BitmapFont.h>
-#include <Eng/Gui/Utils.h>
+#include <Eng/gui/BitmapFont.h>
+#include <Eng/gui/Utils.h>
 #include <Ren/Context.h>
 #include <Sys/Json.h>
 #include <Sys/Time_.h>

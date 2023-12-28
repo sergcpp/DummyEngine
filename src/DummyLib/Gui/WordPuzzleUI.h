@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eng/Gui/Image9Patch.h>
+#include <Eng/gui/Image9Patch.h>
 #include <Sys/Signal_.h>
 
 template <typename Alloc> struct JsObjectT;

@@ -1,0 +1,261 @@
+#include "PrimDraw.h"
+
+#include <Ren/Context.h>
+#include <Ren/Framebuffer.h>
+#include <Ren/ProbeStorage.h>
+#include <Ren/VKCtx.h>
+
+#include "shaders/Renderer_GL_Defines.inl"
+
+namespace Ren {
+extern const VkAttachmentLoadOp vk_load_ops[];
+extern const VkAttachmentStoreOp vk_store_ops[];
+} // namespace Ren
+
+Eng::PrimDraw::~PrimDraw() {}
+
+void Eng::PrimDraw::Reset() {}
+
+void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
+                             Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
+                             Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
+                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+
+    VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
+    VkDescriptorSet descr_set =
+        Ren::PrepareDescriptorSet(api_ctx, descr_set_layout, bindings, ctx_->default_descr_alloc(), ctx_->log());
+
+    VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
+
+    { // transition targets if needed
+        VkPipelineStageFlags src_stages = 0, dst_stages = 0;
+
+        Ren::SmallVector<VkImageMemoryBarrier, 16> img_barriers;
+
+        for (const auto &b : bindings) {
+            if (b.trg == Ren::eBindTarget::Tex2D) {
+                assert(b.handle.tex->resource_state == Ren::eResState::ShaderResource ||
+                       b.handle.tex->resource_state == Ren::eResState::DepthRead ||
+                       b.handle.tex->resource_state == Ren::eResState::StencilTestDepthFetch);
+            }
+        }
+
+        for (const auto &rt : color_rts) {
+            if (rt.ref->resource_state != Ren::eResState::RenderTarget) {
+                auto &new_barrier = img_barriers.emplace_back();
+                new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+                new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(rt.ref->resource_state);
+                new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::RenderTarget);
+                new_barrier.oldLayout = Ren::VKImageLayoutForState(rt.ref->resource_state);
+                new_barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                new_barrier.image = rt.ref->handle().img;
+                new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                new_barrier.subresourceRange.baseMipLevel = 0;
+                new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+                new_barrier.subresourceRange.baseArrayLayer = 0;
+                new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+                src_stages |= Ren::VKPipelineStagesForState(rt.ref->resource_state);
+                dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::RenderTarget);
+
+                rt.ref->resource_state = Ren::eResState::RenderTarget;
+            }
+        }
+
+        if (depth_rt.ref && depth_rt.ref->resource_state != Ren::eResState::DepthWrite &&
+            depth_rt.ref->resource_state != Ren::eResState::DepthRead &&
+            depth_rt.ref->resource_state != Ren::eResState::StencilTestDepthFetch) {
+            auto &new_barrier = img_barriers.emplace_back();
+            new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(depth_rt.ref->resource_state);
+            new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::DepthWrite);
+            new_barrier.oldLayout = Ren::VKImageLayoutForState(depth_rt.ref->resource_state);
+            new_barrier.newLayout = Ren::VKImageLayoutForState(Ren::eResState::DepthWrite);
+            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.image = depth_rt.ref->handle().img;
+            new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+            new_barrier.subresourceRange.baseMipLevel = 0;
+            new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+            new_barrier.subresourceRange.baseArrayLayer = 0;
+            new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+            src_stages |= Ren::VKPipelineStagesForState(depth_rt.ref->resource_state);
+            dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::DepthWrite);
+
+            depth_rt.ref->resource_state = Ren::eResState::DepthWrite;
+        }
+
+        if (!img_barriers.empty()) {
+            vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
+                                 nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.data());
+        }
+    }
+
+    if (ctx_->capabilities.dynamic_rendering) {
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(p, nullptr, color_rts, depth_rt, &new_rast_state);
+        assert(pipeline);
+
+        Ren::SmallVector<VkRenderingAttachmentInfoKHR, Ren::MaxRTAttachments> color_attachments;
+        for (const auto &rt : color_rts) {
+            auto &col_att = color_attachments.emplace_back();
+            col_att = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+            col_att.imageView = rt.ref->handle().views[0];
+            col_att.imageLayout = VKImageLayoutForState(rt.ref->resource_state);
+            col_att.loadOp = Ren::vk_load_ops[int(rt.load)];
+            col_att.storeOp = Ren::vk_store_ops[int(rt.store)];
+        }
+
+        VkRenderingAttachmentInfoKHR depth_attachment = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
+        if (depth_rt) {
+            depth_attachment.imageView = depth_rt.ref->handle().views[0];
+            depth_attachment.imageLayout = VKImageLayoutForState(depth_rt.ref->resource_state);
+            depth_attachment.loadOp = Ren::vk_load_ops[int(depth_rt.load)];
+            depth_attachment.storeOp = Ren::vk_store_ops[int(depth_rt.store)];
+        }
+
+        VkRenderingInfoKHR render_info = {VK_STRUCTURE_TYPE_RENDERING_INFO_KHR};
+        render_info.renderArea.offset.x = new_rast_state.viewport[0];
+        render_info.renderArea.offset.y = new_rast_state.viewport[1];
+        render_info.renderArea.extent.width = new_rast_state.viewport[2];
+        render_info.renderArea.extent.height = new_rast_state.viewport[3];
+        render_info.layerCount = 1;
+        render_info.colorAttachmentCount = uint32_t(color_attachments.size());
+        render_info.pColorAttachments = color_attachments.data();
+        render_info.pDepthAttachment = depth_rt ? &depth_attachment : nullptr;
+        render_info.pStencilAttachment = new_rast_state.stencil.enabled ? &depth_attachment : nullptr;
+
+        vkCmdBeginRenderingKHR(cmd_buf, &render_info);
+
+        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+
+        const VkViewport viewport = {0.0f, 0.0f, float(new_rast_state.viewport[2]), float(new_rast_state.viewport[3]),
+                                     0.0f, 1.0f};
+        vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+
+        const VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
+        vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+
+        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set, 0,
+                                nullptr);
+
+        vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags, uniform_data_offset,
+                           uniform_data_len, uniform_data);
+
+        if (prim == ePrim::Quad) {
+            pipeline->vtx_input()->BindBuffers(cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
+
+            vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
+                             1,                    // instance count
+                             0,                    // first index
+                             0,                    // vertex offset
+                             0);                   // first instance
+        }
+
+        vkCmdEndRenderingKHR(cmd_buf);
+    } else {
+        const Ren::RenderPass *rp = FindOrCreateRenderPass(color_rts, depth_rt);
+        const Ren::Framebuffer *fb =
+            FindOrCreateFramebuffer(rp, color_rts, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
+                                    new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{});
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(p, rp, {}, {}, &new_rast_state);
+
+        VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
+        render_pass_begin_info.renderPass = rp->handle();
+        render_pass_begin_info.framebuffer = fb->handle();
+        render_pass_begin_info.renderArea = {0, 0, uint32_t(fb->w), uint32_t(fb->h)};
+
+        vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+
+        const VkViewport viewport = {0.0f, 0.0f, float(fb->w), float(fb->h), 0.0f, 1.0f};
+        vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+
+        const VkRect2D scissor = {0, 0, uint32_t(fb->w), uint32_t(fb->h)};
+        vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+
+        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set, 0,
+                                nullptr);
+
+        vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags, uniform_data_offset,
+                           uniform_data_len, uniform_data);
+
+        if (prim == ePrim::Quad) {
+            pipeline->vtx_input()->BindBuffers(cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
+
+            vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
+                             1,                    // instance count
+                             0,                    // first index
+                             0,                    // vertex offset
+                             0);                   // first instance
+        }
+
+        vkCmdEndRenderPass(cmd_buf);
+    }
+}
+
+const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren::RenderTarget> color_targets,
+                                                             Ren::RenderTarget depth_target) {
+    // TODO: binary search
+    for (size_t i = 0; i < render_passes_.size(); ++i) {
+        if (render_passes_[i].IsCompatibleWith(color_targets, depth_target)) {
+            return &render_passes_[i];
+        }
+    }
+
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+    Ren::RenderPass &new_render_pass = render_passes_.emplace_back();
+
+    if (!new_render_pass.Setup(api_ctx, color_targets, depth_target, ctx_->log())) {
+        ctx_->log()->Error("Failed to setup renderpass!");
+        render_passes_.pop_back();
+        return nullptr;
+    }
+
+    return &new_render_pass;
+}
+
+const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp,
+                                                         Ren::Span<const Ren::RenderTarget> color_targets,
+                                                         const Ren::RenderTarget depth_target,
+                                                         const Ren::RastState *rs) {
+    // TODO: binary search
+    for (size_t i = 0; i < pipelines_.size(); ++i) {
+        if (pipelines_[i].prog() == p && pipelines_[i].render_pass() == rp && pipelines_[i].rast_state() == *rs) {
+
+            bool formats_match = (color_targets.size() == pipelines_[i].color_formats().size());
+            for (int j = 0; j < color_targets.size() && formats_match; ++j) {
+                formats_match &= color_targets[j].ref->params.format == pipelines_[i].color_formats()[j];
+            }
+
+            if (depth_target) {
+                formats_match &= (depth_target.ref->params.format == pipelines_[i].depth_format());
+            }
+
+            return &pipelines_[i];
+        }
+    }
+
+    Ren::ApiContext *api_ctx = ctx_->api_ctx();
+    Ren::Pipeline &new_pipeline = pipelines_.emplace_back();
+
+    if (rp) {
+        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, rp, 0, ctx_->log())) {
+            ctx_->log()->Error("Failed to initialize pipeline!");
+            pipelines_.pop_back();
+            return nullptr;
+        }
+    } else {
+        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, color_targets, depth_target, 0,
+                               ctx_->log())) {
+            ctx_->log()->Error("Failed to initialize pipeline!");
+            pipelines_.pop_back();
+            return nullptr;
+        }
+    }
+
+    return &new_pipeline;
+}

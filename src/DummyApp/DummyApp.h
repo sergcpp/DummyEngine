@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include <Eng/Input/InputManager.h>
+#include <Eng/input/InputManager.h>
 
 #if !defined(__ANDROID__)
 #if defined(_WIN32)

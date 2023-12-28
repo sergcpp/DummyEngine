@@ -2,7 +2,7 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
-#include <Eng/Gui/BaseElement.h>
+#include <Eng/gui/BaseElement.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>

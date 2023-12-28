@@ -1,8 +1,8 @@
 #include "DialogEditUI.h"
 
-#include <Eng/Gui/BitmapFont.h>
-#include <Eng/Utils/ScriptedDialog.h>
-#include <Eng/Utils/ScriptedSequence.h>
+#include <Eng/gui/BitmapFont.h>
+#include <Eng/utils/ScriptedDialog.h>
+#include <Eng/utils/ScriptedSequence.h>
 #include <Sys/Time_.h>
 
 namespace DialogEditUIInternal {

@@ -21,7 +21,7 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 #include <Windows.h>
 
 #include <Eng/GameBase.h>
-#include <Eng/Input/InputManager.h>
+#include <Eng/input/InputManager.h>
 #include <Sys/DynLib.h>
 #include <Sys/ThreadWorker.h>
 #include <Sys/Time_.h>

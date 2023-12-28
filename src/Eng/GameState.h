@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Input/InputManager.h"
+#include "input/InputManager.h"
 
 namespace Eng {
 class GameState {

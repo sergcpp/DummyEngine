@@ -1,6 +1,6 @@
 #include "test_common.h"
 
-#include "../Gui/Utils.h"
+#include "../gui/Utils.h"
 
 void test_unicode() {
     printf("Test unicode            | ");

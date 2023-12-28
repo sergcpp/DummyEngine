@@ -18,9 +18,9 @@
 #include <Sys/ThreadPool.h>
 
 #include "../Random.h"
-#include "../Renderer/Renderer.h"
-#include "../Scene/SceneManager.h"
-#include "../Utils/ShaderLoader.h"
+#include "../renderer/Renderer.h"
+#include "../scene/SceneManager.h"
+#include "../utils/ShaderLoader.h"
 
 namespace RendererInternal {
 extern const int TaaSampleCountStatic;

@@ -8,7 +8,7 @@
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
-#include "../Scene/SceneManager.h"
+#include "../scene/SceneManager.h"
 #include "test_common.h"
 
 // void test_object_pool();

@@ -33,5 +33,5 @@ set_target_properties(test_Eng PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE
 
 add_custom_command(TARGET test_Eng
                    POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Renderer/Shaders
+                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../renderer/shaders
                                                               ${CMAKE_CURRENT_SOURCE_DIR}/test_data/assets/shaders/internal)

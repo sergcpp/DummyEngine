@@ -1,7 +1,7 @@
 #include "SeqEditUI.h"
 
-#include <Eng/Gui/BitmapFont.h>
-#include <Eng/Gui/Image.h>
+#include <Eng/gui/BitmapFont.h>
+#include <Eng/gui/Image.h>
 
 namespace SeqEditUIInternal {
 // const char RULER_TEXTURE[] = "assets_pc/textures/ruler_small.uncompressed.tga";

@@ -6,8 +6,8 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
-#include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/SceneData.h>
+#include <Eng/renderer/Renderer.h>
+#include <Eng/scene/SceneData.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>

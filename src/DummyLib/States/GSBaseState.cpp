@@ -11,14 +11,14 @@
 #endif
 
 #include <Eng/GameStateManager.h>
-#include <Eng/Gui/Image9Patch.h>
-#include <Eng/Gui/Renderer.h>
+#include <Eng/gui/Image9Patch.h>
+#include <Eng/gui/Renderer.h>
 #include <Eng/Log.h>
 #include <Eng/Random.h>
-#include <Eng/Renderer/Renderer.h>
-#include <Eng/Scene/PhysicsManager.h>
-#include <Eng/Scene/SceneManager.h>
-#include <Eng/Utils/Cmdline.h>
+#include <Eng/renderer/Renderer.h>
+#include <Eng/scene/PhysicsManager.h>
+#include <Eng/scene/SceneManager.h>
+#include <Eng/utils/Cmdline.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>

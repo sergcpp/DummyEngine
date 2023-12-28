@@ -5,7 +5,7 @@
 #include <utility>
 #include <vector>
 
-#include <Eng/Gui/BitmapFont.h>
+#include <Eng/gui/BitmapFont.h>
 
 class FontStorage {
     std::vector<std::pair<std::string, std::shared_ptr<Gui::BitmapFont>>> fonts_;

@@ -3,7 +3,7 @@
 #include <memory>
 
 #include <Eng/GameBase.h>
-#include <Eng/Gui/BaseElement.h>
+#include <Eng/gui/BaseElement.h>
 
 namespace Eng {
 struct BackendInfo;

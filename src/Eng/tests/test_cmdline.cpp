@@ -1,6 +1,6 @@
 #include "test_common.h"
 
-#include "../Utils/Cmdline.h"
+#include "../utils/Cmdline.h"
 
 void test_cmdline() {
     printf("Test cmdline            | ");

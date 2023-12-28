@@ -7,7 +7,7 @@
 
 #include <Eng/GameBase.h>
 #include <Eng/GameState.h>
-#include <Eng/Utils/VideoPlayer.h>
+#include <Eng/utils/VideoPlayer.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Eng/Gui/BaseElement.h>
-#include <Eng/Utils/ScriptedSequence.h>
+#include <Eng/gui/BaseElement.h>
+#include <Eng/utils/ScriptedSequence.h>
 
 #include "TimelineUI.h"
 

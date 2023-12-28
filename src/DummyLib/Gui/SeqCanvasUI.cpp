@@ -1,7 +1,7 @@
 #include "SeqCanvasUI.h"
 
-#include <Eng/Gui/BitmapFont.h>
-#include <Eng/Gui/Image.h>
+#include <Eng/gui/BitmapFont.h>
+#include <Eng/gui/Image.h>
 
 namespace SeqCanvasUIInternal {
 const int TrackCount = 8;

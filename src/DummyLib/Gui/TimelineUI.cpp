@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include <Eng/Gui/BitmapFont.h>
+#include <Eng/gui/BitmapFont.h>
 
 namespace TimelineUIConstants {
 const float TimeScales[] = {0.5f, 0.625f, 0.75f, 0.875f, 1.0f, 1.25f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f};

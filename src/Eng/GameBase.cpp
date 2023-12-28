@@ -13,15 +13,15 @@
 
 #include "FlowControl.h"
 #include "GameStateManager.h"
-#include "Gui/BaseElement.h"
-#include "Gui/Renderer.h"
+#include "gui/BaseElement.h"
+#include "gui/Renderer.h"
 #include "Log.h"
 #include "Random.h"
-#include "Renderer/Renderer.h"
-#include "Scene/PhysicsManager.h"
-#include "Scene/SceneManager.h"
-#include "Utils/Cmdline.h"
-#include "Utils/ShaderLoader.h"
+#include "renderer/Renderer.h"
+#include "scene/PhysicsManager.h"
+#include "scene/SceneManager.h"
+#include "utils/Cmdline.h"
+#include "utils/ShaderLoader.h"
 
 Eng::GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)
     : width(w), height(h) {

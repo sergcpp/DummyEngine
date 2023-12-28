@@ -1,8 +1,8 @@
 #include "PagedReader.h"
 
-#include <Eng/Gui/BitmapFont.h>
-#include <Eng/Gui/Image9Patch.h>
-#include <Eng/Gui/Utils.h>
+#include <Eng/gui/BitmapFont.h>
+#include <Eng/gui/Image9Patch.h>
+#include <Eng/gui/Utils.h>
 #include <Ren/Context.h>
 #include <Sys/Json.h>
 
