@@ -27,7 +27,7 @@ runs:
           cp build/src/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}
           cp build/src/Sys/tests/test_Sys.exe $WORK_DIR/${{ inputs.bin-dir }}
-          cp build/src/Net/tests/test_Net.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Net/tests/test_Net.exe $WORK_DIR/${{ inputs.bin-dir }}
           cp DummyApp*.exe $WORK_DIR/${{ inputs.bin-dir }}
         fi
       shell: bash

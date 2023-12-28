@@ -65,16 +65,16 @@ set(LZO_SOURCE_FILES    minilzo/lzoconf.h
                         minilzo/minilzo.h
                         minilzo/minilzo.c)
 
-list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
+list(APPEND NET_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES ${HASH_SOURCE_FILES})
+list(APPEND NET_SOURCE_FILES ${HASH_SOURCE_FILES})
 source_group("src\\hash" FILES ${HASH_SOURCE_FILES})
 
-list(APPEND ALL_SOURCE_FILES ${LZO_SOURCE_FILES})
+list(APPEND NET_SOURCE_FILES ${LZO_SOURCE_FILES})
 source_group("src\\minilzo" FILES ${LZO_SOURCE_FILES})
 
-add_library(Net STATIC ${ALL_SOURCE_FILES})
+add_library(Net STATIC ${NET_SOURCE_FILES})
 if(WIN32)
     target_link_libraries(Net ws2_32)
 else()

@@ -325,4 +325,7 @@ source_group("src\\Utils" FILES ${UTILS_SOURCES})
 add_library(Eng STATIC ${ALL_SOURCE_FILES})
 target_link_libraries(Eng Net Phy Ray Ren Snd Sys astc optick ${GLSLANG_LIBS} ${ITT_LIB} ${VPX_LIB})
 
+include_directories(first-party/)
+
 add_subdirectory(_tests)
+add_subdirectory(first-party/Net)
