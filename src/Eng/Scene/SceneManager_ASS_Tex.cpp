@@ -9,8 +9,8 @@
 #include <Sys/Json.h>
 #include <Sys/ThreadPool.h>
 
-#include <Ren/stb/stb_image.h>
-#include <Ren/stb/stb_image_write.h>
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 
 // faster than std::min/max in debug
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))

@@ -5,7 +5,7 @@
 
 #define STB_TRUETYPE_IMPLEMENTATION
 #define STBTT_STATIC
-#include <stb/stb_truetype.h>
+#include "../third-party/stb/stb_truetype.h"
 
 #include <Ray/internal/TextureSplitter.h>
 

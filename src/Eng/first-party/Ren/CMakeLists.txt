@@ -169,11 +169,11 @@ elseif(${RENDERER} STREQUAL "VK")
                      VKCtx.cpp
                      VKExt.cpp)
 
-    set(VULKAN_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_layer.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_platform.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vk_sdk_platform.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan.h
-                       ${CMAKE_CURRENT_SOURCE_DIR}/vulkan/vulkan_core.h)
+    set(VULKAN_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_layer.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_platform.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_sdk_platform.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vulkan.h
+                       ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vulkan_core.h)
 
     list(APPEND REN_SOURCE_FILES ${VULKAN_HEADERS})
     source_group("src/vulkan" FILES ${VULKAN_HEADERS})
@@ -182,8 +182,8 @@ elseif(${RENDERER} STREQUAL "VK")
 endif()
 
 add_subdirectory(SW)
-add_subdirectory(stb)
-add_subdirectory(SPIRV-Reflect)
+add_subdirectory(third-party/stb)
+add_subdirectory(third-party/SPIRV-Reflect)
 
 list(APPEND REN_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
@@ -205,5 +205,6 @@ set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${REN_SOURCE_FILES})
 target_link_libraries(Ren SW ${LIBS})
+target_include_directories(Ren PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 add_subdirectory(tests)

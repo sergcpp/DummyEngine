@@ -13,14 +13,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-small-functions ")
         elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x64)
-                set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x64)
-                set(GLSLANG_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/glslang/win)
-            else(CMAKE_SIZEOF_VOID_P EQUAL 8)
-                set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/win/x86)
-                set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/win/Release/x86)
-            endif()
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1 /fp:except")
@@ -31,20 +23,6 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
         # allow to inline some functions in debug mode
         #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-functions-called-once -finline-functions")
         #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-limit=10")
-
-        if(APPLE)
-            set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/osx/x64)
-            if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
-                set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/osx/arm64)
-            else()
-                set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/osx/x64)
-                set(GLSLANG_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/glslang/macos)
-            endif()
-        else(APPLE)
-            set(ITT_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vtune/linux/x64)
-            set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/linux/x64)
-            set(GLSLANG_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/glslang/linux)
-        endif(APPLE)
     endif(WIN32)
 
     link_directories(${ITT_LIBRARIES})
@@ -77,16 +55,6 @@ endif()
 
 include_directories(.)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    include_directories(libs/dirent)
-endif()
-
-include_directories(libs/vpx/include)
-link_directories(${VPX_LIBRARIES})
-
-include_directories(libs/glslang/include)
-link_directories(${GLSLANG_LIBRARIES})
-
 include_directories(libs)
 
 enable_testing()
@@ -100,10 +68,6 @@ add_subdirectory(DummyLib)
 add_subdirectory(Eng)
 add_subdirectory(Modl)
 add_subdirectory(Ray)
-
-add_subdirectory(libs/astc)
-add_subdirectory(libs/ltc_fit)
-add_subdirectory(libs/optick)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

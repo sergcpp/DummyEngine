@@ -19,7 +19,7 @@
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 
-#include <Ren/stb/stb_image.h>
+#include <stb/stb_image.h>
 #include <optick/optick.h>
 
 namespace GSDrawTestInternal {

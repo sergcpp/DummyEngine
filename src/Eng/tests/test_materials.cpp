@@ -5,8 +5,8 @@
 #include <istream>
 
 #include <Ray/Ray.h>
-#include <Ren/stb/stb_image.h>
-#include <Ren/stb/stb_image_write.h>
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
 #if defined(USE_GL_RENDER)
 #include <Ren/GLCtx.h>
 #endif
