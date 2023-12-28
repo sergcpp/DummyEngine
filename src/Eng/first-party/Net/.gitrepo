@@ -4,9 +4,9 @@
 ; git-subrepo command. See https://github.com/ingydotnet/git-subrepo#readme
 ;
 [subrepo]
-	remote = Net-gitlab
-	branch = master
-	commit = 6c9af71889058aa9434a8ad2ece7b78390664049
-	parent = f58187f2b755e9cd4ff27678745d6cda74c175ee
+	remote = Net
+	branch = refactor_28_12
+	commit = 482cbc1676c6e73c1dc4b3c62426dfce9ba101e3
+	parent = 06e8a5cb3690968007c228cfafbc273fb3fec982
 	method = merge
 	cmdver = 0.4.6
