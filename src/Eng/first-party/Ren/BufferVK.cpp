@@ -255,7 +255,7 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
     name_info.objectType = VK_OBJECT_TYPE_BUFFER;
     name_info.objectHandle = uint64_t(new_buf);
     name_info.pObjectName = name_.c_str();
-    vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+    api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 
     VkMemoryRequirements memory_requirements = {};

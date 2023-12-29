@@ -357,7 +357,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(new_image);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 
         VkMemoryRequirements tex_mem_req;
@@ -403,7 +403,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(new_image_view);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
     }
 
@@ -588,7 +588,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 
         VkMemoryRequirements tex_mem_req;
@@ -653,7 +653,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
             name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
             name_info.objectHandle = uint64_t(view);
             name_info.pObjectName = name_.c_str();
-            vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
         }
 #endif
     }
@@ -1142,7 +1142,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 
         VkMemoryRequirements tex_mem_req;
@@ -1188,7 +1188,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(handle_.views[0]);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
     }
 
@@ -1473,7 +1473,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 
         VkMemoryRequirements tex_mem_req;
@@ -1519,7 +1519,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(handle_.views[0]);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
     }
 
@@ -1701,7 +1701,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 
         VkMemoryRequirements tex_mem_req;
@@ -1747,7 +1747,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
         name_info.objectHandle = uint64_t(handle_.views[0]);
         name_info.pObjectName = name_.c_str();
-        vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
     }
 

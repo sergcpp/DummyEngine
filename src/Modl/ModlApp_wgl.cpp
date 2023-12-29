@@ -23,8 +23,8 @@
 #include <Ren/SW/SW.h>
 #endif
 #include <Eng/Input/Keycode.h>
+#include <Ren/GL.h>
 #include <Ren/Mesh.h>
-#include <Ren/TaskExecutor.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/AssetFileIO.h>
@@ -638,8 +638,6 @@ void ModlApp::Frame() {
         float dt_s = 0.001f * dt_ms;
         DrawMeshSkeletal(view_mesh_, dt_s);
     }
-
-    ctx_->ProcessTasks();
 }
 
 void ModlApp::PrintUsage() {
@@ -1911,20 +1909,17 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
     Ren::Tex2DRef ret =
         ctx_->LoadTexture2D(name, nullptr, 0, {}, ctx_->default_stage_bufs(), ctx_->default_mem_allocs(), &status);
     if (!ret->ready()) {
-        std::string tex_name = name;
-        Sys::LoadAssetComplete((std::string("assets_pc/textures/") + tex_name).c_str(),
-                               [this, tex_name](void *data, int size) {
-                                   ctx_->ProcessSingleTask([this, tex_name, data, size]() {
-                                       Ren::Tex2DParams p;
-                                       p.sampling.filter = Ren::eTexFilter::Trilinear;
+        Sys::AssetFile in_file(std::string("assets_pc/textures/") + name);
+        std::vector<uint8_t[]> in_file_data(in_file.size());
+        in_file.Read((char *)in_file_data.data(), in_file.size());
 
-                                       Ren::eTexLoadStatus status;
-                                       ctx_->LoadTexture2D(tex_name.c_str(), data, size, p, ctx_->default_stage_bufs(),
-                                                           ctx_->default_mem_allocs(), &status);
-                                       printf("Texture %s loaded", tex_name.c_str());
-                                   });
-                               },
-                               [tex_name]() { printf("Error loading %s", tex_name.c_str()); });
+        Ren::Tex2DParams p;
+        p.sampling.filter = Ren::eTexFilter::Trilinear;
+
+        Ren::eTexLoadStatus status;
+        ctx_->LoadTexture2D(name, in_file_data.data(), in_file_data.size(), p, ctx_->default_stage_bufs(),
+                            ctx_->default_mem_allocs(), &status);
+        printf("Texture %s loaded", name);
     }
 
     return ret;

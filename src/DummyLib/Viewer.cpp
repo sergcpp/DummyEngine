@@ -116,16 +116,17 @@ void Viewer::Frame() {
     Ren::ApiContext *api_ctx = ren_ctx()->api_ctx();
 
 #if defined(USE_VK_RENDER)
-    vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE, UINT64_MAX);
-    vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
+    api_ctx->vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE,
+                             UINT64_MAX);
+    api_ctx->vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
     Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
     Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
 
     uint32_t next_image_index = 0;
-    VkResult res = vkAcquireNextImageKHR(api_ctx->device, api_ctx->swapchain, UINT64_MAX,
-                                         api_ctx->image_avail_semaphores[api_ctx->backend_frame], VK_NULL_HANDLE,
-                                         &next_image_index);
+    VkResult res = api_ctx->vkAcquireNextImageKHR(api_ctx->device, api_ctx->swapchain, UINT64_MAX,
+                                                  api_ctx->image_avail_semaphores[api_ctx->backend_frame],
+                                                  VK_NULL_HANDLE, &next_image_index);
     if (res != VK_SUCCESS) {
         ren_ctx()->log()->Error("Failed to acquire next image!");
     };
@@ -140,14 +141,14 @@ void Viewer::Frame() {
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+    api_ctx->vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 
     { // command buffer scope
         OPTICK_GPU_CONTEXT(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
         OPTICK_GPU_EVENT("Frame");
 
-        vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame], api_ctx->query_pools[api_ctx->backend_frame],
-                            0, Ren::MaxTimestampQueries);
+        api_ctx->vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame],
+                                     api_ctx->query_pools[api_ctx->backend_frame], 0, Ren::MaxTimestampQueries);
 
         { // change layout from present_src to attachment_optimal
             VkImageMemoryBarrier layout_transition_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
@@ -162,9 +163,10 @@ void Viewer::Frame() {
             VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
             layout_transition_barrier.subresourceRange = resource_range;
 
-            vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
-                                 &layout_transition_barrier);
+            api_ctx->vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame],
+                                          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                                          &layout_transition_barrier);
         }
 #elif defined(USE_GL_RENDER)
     // Make sure all operations have finished
@@ -190,13 +192,13 @@ void Viewer::Frame() {
             VkImageSubresourceRange resource_range = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1};
             layout_transition_barrier.subresourceRange = resource_range;
 
-            vkCmdPipelineBarrier(api_ctx->draw_cmd_buf[api_ctx->backend_frame],
-                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0,
-                                 0, nullptr, 0, nullptr, 1, &layout_transition_barrier);
+            api_ctx->vkCmdPipelineBarrier(
+                api_ctx->draw_cmd_buf[api_ctx->backend_frame], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0, nullptr, 1, &layout_transition_barrier);
         }
     }
 
-    vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
+    api_ctx->vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -217,7 +219,8 @@ void Viewer::Frame() {
     submit_info.signalSemaphoreCount = 1;
     submit_info.pSignalSemaphores = &api_ctx->render_finished_semaphores[api_ctx->backend_frame];
 
-    res = vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, api_ctx->in_flight_fences[api_ctx->backend_frame]);
+    res = api_ctx->vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info,
+                                 api_ctx->in_flight_fences[api_ctx->backend_frame]);
     if (res != VK_SUCCESS) {
         ren_ctx()->log()->Error("Failed to submit into a queue!");
     }
@@ -235,7 +238,7 @@ void Viewer::Frame() {
 
     present_info.pImageIndices = &next_image_index;
 
-    res = vkQueuePresentKHR(api_ctx->present_queue, &present_info);
+    res = api_ctx->vkQueuePresentKHR(api_ctx->present_queue, &present_info);
     if (res != VK_SUCCESS) {
         ren_ctx()->log()->Error("Failed to present queue!");
     }

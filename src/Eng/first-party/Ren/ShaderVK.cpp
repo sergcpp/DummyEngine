@@ -83,7 +83,7 @@ void Ren::Shader::Init(const uint8_t *shader_code, const int code_size, const eS
     name_info.objectType = VK_OBJECT_TYPE_SHADER_MODULE;
     name_info.objectHandle = uint64_t(module_);
     name_info.pObjectName = name_.c_str();
-    vkSetDebugUtilsObjectNameEXT(device_, &name_info);
+    api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
 #endif
 }
 

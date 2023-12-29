@@ -197,6 +197,7 @@ set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 #set_source_files_properties(VKCtx.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${REN_SOURCE_FILES})
+target_compile_definitions(Ren PUBLIC ENABLE_OBJ_LABELS)
 if(${RENDERER} STREQUAL "GL")
     target_compile_definitions(Ren PUBLIC USE_GL_RENDER)
 elseif(${RENDERER} STREQUAL "VK")

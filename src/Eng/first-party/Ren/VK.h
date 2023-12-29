@@ -12,6 +12,7 @@
 #undef None
 #undef Success
 #undef True
+#undef GetObject
 
 #define VK_API_VERSION_MAJOR(version) (((uint32_t)(version) >> 22) & 0x7FU)
 #define VK_API_VERSION_MINOR(version) (((uint32_t)(version) >> 12) & 0x3FFU)

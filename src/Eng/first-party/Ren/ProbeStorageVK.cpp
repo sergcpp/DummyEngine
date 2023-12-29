@@ -51,7 +51,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(handle_.img);
         name_info.pObjectName = "Probe Storage";
-        vkSetDebugUtilsObjectNameEXT(api_ctx->device, &name_info);
+        api_ctx->vkSetDebugUtilsObjectNameEXT(api_ctx->device, &name_info);
 #endif
 
         VkMemoryRequirements tex_mem_req;

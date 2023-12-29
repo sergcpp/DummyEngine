@@ -16,7 +16,7 @@ list(APPEND ALL_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 add_executable(ModlApp ${ALL_SOURCE_FILES})
-target_link_libraries(ModlApp ${LIBS} Eng)
+target_link_libraries(ModlApp Eng ${LIBS})
 
 add_custom_command(TARGET ModlApp
                    POST_BUILD
