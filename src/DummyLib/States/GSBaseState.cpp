@@ -895,8 +895,6 @@ void GSBaseState::Draw() {
     }
 
     ui_renderer_->Draw(ren_ctx_->w(), ren_ctx_->h());
-
-    ren_ctx_->ProcessTasks();
 }
 
 void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
