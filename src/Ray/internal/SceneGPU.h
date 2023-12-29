@@ -112,6 +112,9 @@ class Scene : public SceneCommon {
     TextureHandle AddAtlasTexture_nolock(const tex_desc_t &t);
     TextureHandle AddBindlessTexture_nolock(const tex_desc_t &t);
 
+    // Workaround for an Intel Arc issues
+    void _insert_mem_barrier(void *cmdbuf);
+
     template <typename T, int N>
     static void WriteTextureMips(const color_t<T, N> data[], const int _res[2], int mip_count, bool compress,
                                  uint8_t out_data[], uint32_t out_size[16]);
@@ -648,7 +651,6 @@ inline Ray::TextureHandle Ray::NS::Scene::AddBindlessTexture_nolock(const tex_de
         }
     }
 
-    temp_stage_buf.FlushMappedRange(0, temp_stage_buf.size(), true);
     temp_stage_buf.Unmap();
 
     Tex2DParams p = {};
@@ -1098,6 +1100,7 @@ inline void Ray::NS::Scene::RemoveMesh_nolock(const MeshHandle i) {
             ++it;
         }
     }
+    (void)rebuild_required;
 
     if (use_hwrt_) {
         { // release struct memory
@@ -1113,14 +1116,6 @@ inline void Ray::NS::Scene::RemoveMesh_nolock(const MeshHandle i) {
     tri_materials_.Erase(tris_block);
     vertices_.Erase(vert_data_block);
     vtx_indices_.Erase(vert_block);
-
-    if (rebuild_required) {
-        if (use_hwrt_) {
-            Rebuild_HWRT_TLAS_nolock();
-        } else {
-            Rebuild_SWRT_TLAS_nolock();
-        }
-    }
 }
 
 inline Ray::LightHandle Ray::NS::Scene::AddLight(const directional_light_desc_t &_l) {
@@ -1394,12 +1389,6 @@ inline void Ray::NS::Scene::SetMeshInstanceTransform_nolock(const MeshInstanceHa
     TransformBoundingBox(m.bbox_min, m.bbox_max, xform, mi.bbox_min, mi.bbox_max);
 
     mesh_instances_.Set(mi_handle._index, mi);
-
-    if (use_hwrt_) {
-        Rebuild_HWRT_TLAS_nolock();
-    } else {
-        Rebuild_SWRT_TLAS_nolock();
-    }
 }
 
 inline void Ray::NS::Scene::RemoveMeshInstance_nolock(const MeshInstanceHandle i) {
@@ -1410,12 +1399,6 @@ inline void Ray::NS::Scene::RemoveMeshInstance_nolock(const MeshInstanceHandle i
         lights_.Erase(light_block);
     }
     mesh_instances_.Erase(i._block);
-
-    if (use_hwrt_) {
-        Rebuild_HWRT_TLAS_nolock();
-    } else {
-        Rebuild_SWRT_TLAS_nolock();
-    }
 }
 
 inline void Ray::NS::Scene::Finalize(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for) {
@@ -1485,6 +1468,11 @@ inline void Ray::NS::Scene::Finalize(const std::function<void(int, int, Parallel
 
     GenerateTextureMips_nolock();
     PrepareBindlessTextures_nolock();
+    if (use_hwrt_) {
+        Rebuild_HWRT_TLAS_nolock();
+    } else {
+        Rebuild_SWRT_TLAS_nolock();
+    }
     RebuildLightTree_nolock();
 }
 
@@ -1607,6 +1595,7 @@ inline void Ray::NS::Scene::PrepareEnvMapQTree_nolock() {
         temp_stage_buf = Buffer("Temp stage buf", ctx_, eBufType::Readback, data_size);
 
         CommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
+        _insert_mem_barrier(cmd_buf);
 
         CopyImageToBuffer(t, 0, 0, 0, t.params.w, t.params.h, temp_stage_buf, cmd_buf, 0);
 
@@ -1625,6 +1614,7 @@ inline void Ray::NS::Scene::PrepareEnvMapQTree_nolock() {
         temp_stage_buf = Buffer("Temp stage buf", ctx_, eBufType::Readback, data_size);
 
         CommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
+        _insert_mem_barrier(cmd_buf);
 
         atlas.CopyRegionTo(t.page[0], t.pos[0][0], t.pos[0][1], (t.width & ATLAS_TEX_WIDTH_BITS),
                            (t.height & ATLAS_TEX_HEIGHT_BITS), temp_stage_buf, cmd_buf, 0);
@@ -1792,6 +1782,7 @@ inline void Ray::NS::Scene::PrepareEnvMapQTree_nolock() {
             j += round_up(res * sizeof(simd_fvec4), TextureDataPitchAlignment);
         }
     }
+    temp_stage_buf.Unmap();
 
     Tex2DParams p;
     p.w = p.h = (env_map_qtree_.res / 2);
@@ -1811,7 +1802,6 @@ inline void Ray::NS::Scene::PrepareEnvMapQTree_nolock() {
 
     EndSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
 
-    temp_stage_buf.Unmap();
     temp_stage_buf.FreeImmediate();
 
     log_->Info("Env map qtree res is %i", env_map_qtree_.res);
