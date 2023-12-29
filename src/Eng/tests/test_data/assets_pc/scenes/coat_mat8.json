@@ -1,0 +1,298 @@
+{
+    "name" : "mat_test", 
+    "environment" : {
+        "sun_dir" : [
+            0.57735, 
+            -0.57735, 
+            -0.57735
+        ], 
+        "sun_col" : [
+            0, 
+            0, 
+            0
+        ], 
+        "sun_softness" : 0.1, 
+        "env_map" : "env/black", 
+        "env_map_pt" : "env/noon_grass_2k.hdr"
+    }, 
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "rot" : [
+                    0, 
+                    0, 
+                    0
+                ]
+            }, 
+            "drawable" : {
+                "mesh_file" : "mat_test/env.mesh", 
+                "visible_to_probes" : false
+            }, 
+            "acc_structure" : {
+                "mesh_file" : "mat_test/env.mesh"
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    0, 
+                    0.010504, 
+                    0
+                ], 
+                "rot" : [
+                    0, 
+                    0, 
+                    0
+                ]
+            }, 
+            "drawable" : {
+                "mesh_file" : "mat_test/base.mesh", 
+                "visible_to_probes" : false
+            }, 
+            "acc_structure" : {
+                "mesh_file" : "mat_test/base.mesh"
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    -8e-06, 
+                    0.062213, 
+                    -1.7e-05
+                ], 
+                "rot" : [
+                    -9.00745, 
+                    0.343707, 
+                    4.36152
+                ]
+            }, 
+            "drawable" : {
+                "mesh_file" : "mat_test/core.mesh", 
+                "visible_to_probes" : false
+            }, 
+            "acc_structure" : {
+                "mesh_file" : "mat_test/core.mesh"
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    0, 
+                    0.062, 
+                    0
+                ], 
+                "rot" : [
+                    0, 
+                    0, 
+                    0
+                ]
+            }, 
+            "drawable" : {
+                "mesh_file" : "mat_test/model.mesh", 
+                "visible_to_probes" : false, 
+                "material_override" : [
+                    "mat_test/coat_mat3.txt"
+                ]
+            }, 
+            "acc_structure" : {
+                "mesh_file" : "mat_test/model.mesh"
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    0.001112, 
+                    0.012253, 
+                    0.001037
+                ], 
+                "rot" : [
+                    0, 
+                    0, 
+                    0
+                ]
+            }, 
+            "drawable" : {
+                "mesh_file" : "mat_test/text.mesh", 
+                "visible_to_probes" : false
+            }, 
+            "acc_structure" : {
+                "mesh_file" : "mat_test/text.mesh"
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    -0.015304, 
+                    0.054259, 
+                    0.043533
+                ], 
+                "rot" : [
+                    75.1643, 
+                    23.9076, 
+                    24.3674
+                ]
+            }, 
+            "drawable" : {
+                "mesh_file" : "mat_test/subsurf_bar.mesh", 
+                "visible_to_probes" : false
+            }, 
+            "acc_structure" : {
+                "mesh_file" : "mat_test/subsurf_bar.mesh"
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    0.360501, 
+                    0.461762, 
+                    0.431781
+                ], 
+                "rot" : [
+                    39.8041, 
+                    17.0063, 
+                    -44.4769
+                ]
+            }, 
+            "light" : {
+                "type" : "line", 
+                "color" : [
+                    200, 
+                    200, 
+                    200
+                ], 
+                "color1" : [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "offset" : [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "radius" : 0.01, 
+                "width" : 0.1296, 
+                "height" : 0.1296, 
+                "direction1" : [
+                    -0.7, 
+                    -0.54, 
+                    -0.54
+                ], 
+                "angle1" : 0, 
+                "cast_shadow" : false
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    -0.436484, 
+                    0.187179, 
+                    0.204932
+                ], 
+                "rot" : [
+                    24.2956, 
+                    96.7184, 
+                    -285.977
+                ]
+            }, 
+            "light" : {
+                "type" : "sphere", 
+                "color" : [
+                    10, 
+                    10, 
+                    10
+                ], 
+                "color1" : [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "offset" : [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "radius" : 0.05, 
+                "width" : 0.1296, 
+                "height" : 0.1296, 
+                "direction1" : [
+                    -0.7, 
+                    -0.54, 
+                    -0.54
+                ], 
+                "angle1" : 0, 
+                "cast_shadow" : false
+            }
+        }, 
+        {
+            "transform" : {
+                "pos" : [
+                    0, 
+                    1, 
+                    0
+                ], 
+                "rot" : [
+                    0, 
+                    0, 
+                    0
+                ]
+            }, 
+            "probe" : {
+                "offset" : [
+                    0, 
+                    0, 
+                    0
+                ], 
+                "radius" : 150, 
+                "sh_coeffs" : [
+                    [
+                        0, 
+                        0, 
+                        0
+                    ], 
+                    [
+                        0, 
+                        0, 
+                        0
+                    ], 
+                    [
+                        0, 
+                        0, 
+                        0
+                    ], 
+                    [
+                        0, 
+                        0, 
+                        0
+                    ]
+                ]
+            }
+        }
+    ], 
+    "camera" : {
+        "view_origin" : [
+            0.16149, 
+            0.294997, 
+            0.332965
+        ], 
+        "view_dir" : [
+            -0.364129, 
+            -0.555622, 
+            -0.747459
+        ], 
+        "view_target" : [
+            -0.000594, 
+            0.047674, 
+            0.00025
+        ], 
+        "fwd_speed" : 0.005, 
+        "fov" : 18.1806, 
+        "autoexposure" : false, 
+        "max_exposure" : 1
+    }
+}

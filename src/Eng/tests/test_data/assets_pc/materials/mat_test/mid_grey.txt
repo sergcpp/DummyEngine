@@ -1,0 +1,9 @@
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+sw_program: main
+flag: two_sided
+texture: default_basecolor.dds #00FFFFFF
+texture: default_normalmap.dds #00000000
+texture: default_specular.dds #000000FF
+param: 0.16 0.16 0.16 0.0
+param: 0.0 0.0 0.0 0.0

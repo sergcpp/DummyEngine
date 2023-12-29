@@ -1,0 +1,5911 @@
+{
+	"files" : {
+		"assets/materials/mat_test/dark_grey.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "2936677395", 
+			"out_hash" : "3718344123", 
+			"out_time" : "133482687204496514", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3718344123"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3718344123"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3718344123"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/floor.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "1352260277", 
+			"out_hash" : "554254255", 
+			"out_time" : "133482687204782234", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "554254255"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "554254255"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "554254255"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/light_grey.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "2387687056", 
+			"out_hash" : "835073702", 
+			"out_time" : "133482687204822225", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "835073702"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "835073702"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "835073702"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/main.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "3096202892", 
+			"out_hash" : "827547453", 
+			"out_time" : "133482687204872230", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "827547453"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "827547453"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "827547453"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/mid_grey.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "1621428162", 
+			"out_hash" : "803736290", 
+			"out_time" : "133482687205112482", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "803736290"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "803736290"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "803736290"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/walls.txt" : {
+			"in_time" : "133482673924068282", 
+			"in_hash" : "1380926355", 
+			"out_hash" : "2860751308", 
+			"out_time" : "133482687206437693", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2860751308"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2860751308"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2860751308"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/white.txt" : {
+			"in_time" : "133482673924068282", 
+			"in_hash" : "2738877352", 
+			"out_hash" : "2515098345", 
+			"out_time" : "133482687206477630", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2515098345"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2515098345"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2515098345"
+				}
+			}
+		}, 
+		"assets/models/mat_test/base.mesh" : {
+			"in_time" : "133482673924078286", 
+			"in_hash" : "2546574087", 
+			"out_hash" : "2546574087", 
+			"out_time" : "133476239362622706"
+		}, 
+		"assets/models/mat_test/core.mesh" : {
+			"in_time" : "133482673924178277", 
+			"in_hash" : "864950355", 
+			"out_hash" : "864950355", 
+			"out_time" : "133476239362672699"
+		}, 
+		"assets/models/mat_test/env.mesh" : {
+			"in_time" : "133482673924478612", 
+			"in_hash" : "769553418", 
+			"out_hash" : "769553418", 
+			"out_time" : "133476239362892697"
+		}, 
+		"assets/models/mat_test/model.mesh" : {
+			"in_time" : "133482673924728607", 
+			"in_hash" : "3446175386", 
+			"out_hash" : "3446175386", 
+			"out_time" : "133476239363142704"
+		}, 
+		"assets/models/mat_test/subsurf_bar.mesh" : {
+			"in_time" : "133482673924748605", 
+			"in_hash" : "3927694033", 
+			"out_hash" : "3927694033", 
+			"out_time" : "133476239363242700"
+		}, 
+		"assets/models/mat_test/text.mesh" : {
+			"in_time" : "133482673924768602", 
+			"in_hash" : "4195308209", 
+			"out_hash" : "4195308209", 
+			"out_time" : "133476239363262702"
+		}, 
+		"assets/shaders/internal/blit.frag.glsl" : {
+			"in_time" : "133482673923508285", 
+			"in_hash" : "3964889456", 
+			"out_hash" : "2017611816", 
+			"out_time" : "133482687212442833", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2017611816"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2017611816"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2017611816"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit.vert.glsl" : {
+			"in_time" : "133482673923508285", 
+			"in_hash" : "2299253232", 
+			"out_hash" : "4170226648", 
+			"out_time" : "133482687214771384", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "4170226648"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4170226648"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4170226648"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_bilateral.frag.glsl" : {
+			"in_time" : "133482673923508285", 
+			"in_hash" : "3924522043", 
+			"out_hash" : "3646981281", 
+			"out_time" : "133482687214997617", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3646981281"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3646981281"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3646981281"
+				}, 
+				"assets/shaders/internal/blit_bilateral_interface.h" : {
+					"in_time" : "133482673923508285", 
+					"in_hash" : "3646981281"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3646981281"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_bilateral.vert.glsl" : {
+			"in_time" : "133482673923508285", 
+			"in_hash" : "2762747850", 
+			"out_hash" : "1423163436", 
+			"out_time" : "133482687215525750", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "1423163436"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1423163436"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1423163436"
+				}, 
+				"assets/shaders/internal/blit_bilateral_interface.h" : {
+					"in_time" : "133482673923508285", 
+					"in_hash" : "1423163436"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1423163436"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_combine.frag.glsl" : {
+			"in_time" : "133482673923518299", 
+			"in_hash" : "1097443014", 
+			"out_hash" : "4263858147", 
+			"out_time" : "133482687215755745", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "4263858147"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4263858147"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4263858147"
+				}, 
+				"assets/shaders/internal/blit_combine_interface.h" : {
+					"in_time" : "133482673923518299", 
+					"in_hash" : "4263858147"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "4263858147"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_combine.vert.glsl" : {
+			"in_time" : "133482673923518299", 
+			"in_hash" : "1266793793", 
+			"out_hash" : "757173604", 
+			"out_time" : "133482687216535746", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "757173604"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "757173604"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "757173604"
+				}, 
+				"assets/shaders/internal/blit_combine_interface.h" : {
+					"in_time" : "133482673923518299", 
+					"in_hash" : "757173604"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "757173604"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_debug.frag.glsl" : {
+			"in_time" : "133482673923518299", 
+			"in_hash" : "2373685385", 
+			"out_hash" : "1102278881", 
+			"out_time" : "133482687216755745", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1102278881"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1102278881"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1102278881"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_debug_bvh.frag.glsl" : {
+			"in_time" : "133482673923518299", 
+			"in_hash" : "609027606", 
+			"out_hash" : "625278270", 
+			"out_time" : "133482687217555747", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "625278270"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "625278270"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "625278270"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_depth.frag.glsl" : {
+			"in_time" : "133482673923518299", 
+			"in_hash" : "3763569152", 
+			"out_hash" : "2739202604", 
+			"out_time" : "133482687218420592", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2739202604"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2739202604"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2739202604"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_dof_bilateral.frag.glsl" : {
+			"in_time" : "133482673923528301", 
+			"in_hash" : "3636622720", 
+			"out_hash" : "3963599750", 
+			"out_time" : "133476239370092702"
+		}, 
+		"assets/shaders/internal/blit_dof_calc_near.frag.glsl" : {
+			"in_time" : "133482673923528301", 
+			"in_hash" : "837970462", 
+			"out_hash" : "3308374613", 
+			"out_time" : "133482687218750024", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3308374613"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3308374613"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3308374613"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_dof_combine.frag.glsl" : {
+			"in_time" : "133482673923528301", 
+			"in_hash" : "62054396", 
+			"out_hash" : "2636495270", 
+			"out_time" : "133482687219081374", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2636495270"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2636495270"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2636495270"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_dof_init_coc.frag.glsl" : {
+			"in_time" : "133482673923528301", 
+			"in_hash" : "1408051585", 
+			"out_hash" : "1024467418", 
+			"out_time" : "133482687219967480", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1024467418"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1024467418"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1024467418"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_dof_small_blur.frag.glsl" : {
+			"in_time" : "133482673923538291", 
+			"in_hash" : "2355592291", 
+			"out_hash" : "786942675", 
+			"out_time" : "133482687220324587", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "786942675"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "786942675"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "786942675"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_down.frag.glsl" : {
+			"in_time" : "133482673923538291", 
+			"in_hash" : "240413883", 
+			"out_hash" : "1227453256", 
+			"out_time" : "133482687220660572", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1227453256"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1227453256"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1227453256"
+				}, 
+				"assets/shaders/internal/blit_down_interface.h" : {
+					"in_time" : "133482673923548289", 
+					"in_hash" : "1227453256"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1227453256"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_down.vert.glsl" : {
+			"in_time" : "133482673923538291", 
+			"in_hash" : "2188745146", 
+			"out_hash" : "3664773253", 
+			"out_time" : "133482687221023469", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "3664773253"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3664773253"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3664773253"
+				}, 
+				"assets/shaders/internal/blit_down_interface.h" : {
+					"in_time" : "133482673923548289", 
+					"in_hash" : "3664773253"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3664773253"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_down_depth.frag.glsl" : {
+			"in_time" : "133482673923538291", 
+			"in_hash" : "1848395868", 
+			"out_hash" : "2360309090", 
+			"out_time" : "133482687221233612", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2360309090"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2360309090"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2360309090"
+				}, 
+				"assets/shaders/internal/blit_down_depth_interface.h" : {
+					"in_time" : "133482673923548289", 
+					"in_hash" : "2360309090"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2360309090"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_down_depth.vert.glsl" : {
+			"in_time" : "133482673923548289", 
+			"in_hash" : "1238681562", 
+			"out_hash" : "330381102", 
+			"out_time" : "133482687221866170", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "330381102"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "330381102"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "330381102"
+				}, 
+				"assets/shaders/internal/blit_down_depth_interface.h" : {
+					"in_time" : "133482673923548289", 
+					"in_hash" : "330381102"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "330381102"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_down_ms.frag.glsl" : {
+			"in_time" : "133482673923548289", 
+			"in_hash" : "651776261", 
+			"out_hash" : "436407760", 
+			"out_time" : "133476239373782697"
+		}, 
+		"assets/shaders/internal/blit_fxaa.frag.glsl" : {
+			"in_time" : "133482673923548289", 
+			"in_hash" : "1299721051", 
+			"out_hash" : "1182498907", 
+			"out_time" : "133482687222112747", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1182498907"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1182498907"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1182498907"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_gauss.frag.glsl" : {
+			"in_time" : "133482673923558296", 
+			"in_hash" : "3948318232", 
+			"out_hash" : "1522554472", 
+			"out_time" : "133482687222864593", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1522554472"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1522554472"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1522554472"
+				}, 
+				"assets/shaders/internal/blit_gauss_interface.h" : {
+					"in_time" : "133482673923558296", 
+					"in_hash" : "1522554472"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1522554472"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_gauss.vert.glsl" : {
+			"in_time" : "133482673923558296", 
+			"in_hash" : "2060928490", 
+			"out_hash" : "2947416349", 
+			"out_time" : "133482687223253386", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2947416349"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2947416349"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2947416349"
+				}, 
+				"assets/shaders/internal/blit_gauss_interface.h" : {
+					"in_time" : "133482673923558296", 
+					"in_hash" : "2947416349"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2947416349"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_gauss_sep.frag.glsl" : {
+			"in_time" : "133482673923558296", 
+			"in_hash" : "79282317", 
+			"out_hash" : "4260735309", 
+			"out_time" : "133476239375262701"
+		}, 
+		"assets/shaders/internal/blit_mipmap.frag.glsl" : {
+			"in_time" : "133482673923558296", 
+			"in_hash" : "3885245551", 
+			"out_hash" : "4051486662", 
+			"out_time" : "133476239375472695"
+		}, 
+		"assets/shaders/internal/blit_ms.frag.glsl" : {
+			"in_time" : "133482673923568287", 
+			"in_hash" : "1980650667", 
+			"out_hash" : "3041357449", 
+			"out_time" : "133482687223493507", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3041357449"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3041357449"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3041357449"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ms_resolve.frag.glsl" : {
+			"in_time" : "133482673923568287", 
+			"in_hash" : "3951551152", 
+			"out_hash" : "4189701390", 
+			"out_time" : "133482687223803578", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "4189701390"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4189701390"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4189701390"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_multiply.frag.glsl" : {
+			"in_time" : "133482673923568287", 
+			"in_hash" : "1813469604", 
+			"out_hash" : "2727841306", 
+			"out_time" : "133482687224140547", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2727841306"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2727841306"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2727841306"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_prefilter.frag.glsl" : {
+			"in_time" : "133482673923568287", 
+			"in_hash" : "1653428470", 
+			"out_hash" : "3064560266", 
+			"out_time" : "133476239377392703"
+		}, 
+		"assets/shaders/internal/blit_project_sh.frag.glsl" : {
+			"in_time" : "133482673923578285", 
+			"in_hash" : "2398059784", 
+			"out_hash" : "1352725055", 
+			"out_time" : "133476239377652703"
+		}, 
+		"assets/shaders/internal/blit_reduced.frag.glsl" : {
+			"in_time" : "133482673923578285", 
+			"in_hash" : "2268082558", 
+			"out_hash" : "869632768", 
+			"out_time" : "133482687225303197", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "869632768"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "869632768"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "869632768"
+				}, 
+				"assets/shaders/internal/blit_reduced_interface.h" : {
+					"in_time" : "133482673923578285", 
+					"in_hash" : "869632768"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "869632768"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_reduced.vert.glsl" : {
+			"in_time" : "133482673923578285", 
+			"in_hash" : "2264475853", 
+			"out_hash" : "3508525830", 
+			"out_time" : "133482687225623504", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "3508525830"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3508525830"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3508525830"
+				}, 
+				"assets/shaders/internal/blit_reduced_interface.h" : {
+					"in_time" : "133482673923578285", 
+					"in_hash" : "3508525830"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3508525830"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_rgbm.frag.glsl" : {
+			"in_time" : "133482673923578285", 
+			"in_hash" : "1166950986", 
+			"out_hash" : "1040055374", 
+			"out_time" : "133476239378302701"
+		}, 
+		"assets/shaders/internal/blit_ssao.frag.glsl" : {
+			"in_time" : "133482673923588295", 
+			"in_hash" : "173419404", 
+			"out_hash" : "4127207362", 
+			"out_time" : "133482687225862720", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "4127207362"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4127207362"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "4127207362"
+				}, 
+				"assets/shaders/internal/blit_ssao_interface.h" : {
+					"in_time" : "133482673923588295", 
+					"in_hash" : "4127207362"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "4127207362"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssao.vert.glsl" : {
+			"in_time" : "133482673923588295", 
+			"in_hash" : "69644658", 
+			"out_hash" : "604371854", 
+			"out_time" : "133482687226243369", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "604371854"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "604371854"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "604371854"
+				}, 
+				"assets/shaders/internal/blit_ssao_interface.h" : {
+					"in_time" : "133482673923588295", 
+					"in_hash" : "604371854"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "604371854"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr.frag.glsl" : {
+			"in_time" : "133482673923588295", 
+			"in_hash" : "2299876752", 
+			"out_hash" : "2439125475", 
+			"out_time" : "133482687226463515", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2439125475"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2439125475"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2439125475"
+				}, 
+				"assets/shaders/internal/blit_ssr_interface.h" : {
+					"in_time" : "133482673923608285", 
+					"in_hash" : "2439125475"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2439125475"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr.vert.glsl" : {
+			"in_time" : "133482673923588295", 
+			"in_hash" : "3425845581", 
+			"out_hash" : "2541294510", 
+			"out_time" : "133482687227654786", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2541294510"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2541294510"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2541294510"
+				}, 
+				"assets/shaders/internal/blit_ssr_interface.h" : {
+					"in_time" : "133482673923608285", 
+					"in_hash" : "2541294510"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2541294510"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr_compose.frag.glsl" : {
+			"in_time" : "133482673923598278", 
+			"in_hash" : "1193542380", 
+			"out_hash" : "1013559829", 
+			"out_time" : "133482687227862409", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1013559829"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1013559829"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1013559829"
+				}, 
+				"assets/shaders/internal/blit_ssr_compose_interface.h" : {
+					"in_time" : "133482673923598278", 
+					"in_hash" : "1013559829"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1013559829"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr_compose.vert.glsl" : {
+			"in_time" : "133482673923598278", 
+			"in_hash" : "1542769438", 
+			"out_hash" : "2354186672", 
+			"out_time" : "133482687229871987", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/blit_ssr_compose_interface.h" : {
+					"in_time" : "133482673923598278", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2354186672"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr_compose2.frag.glsl" : {
+			"in_time" : "133482673923598278", 
+			"in_hash" : "1862703769", 
+			"out_hash" : "2343581027", 
+			"out_time" : "133482687230080749", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2343581027"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2343581027"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2343581027"
+				}, 
+				"assets/shaders/internal/blit_ssr_compose2_interface.h" : {
+					"in_time" : "133482673923598278", 
+					"in_hash" : "2343581027"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2343581027"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr_compose2.vert.glsl" : {
+			"in_time" : "133482673923598278", 
+			"in_hash" : "1542769438", 
+			"out_hash" : "2354186672", 
+			"out_time" : "133482687230515755", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/blit_ssr_compose_interface.h" : {
+					"in_time" : "133482673923598278", 
+					"in_hash" : "2354186672"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2354186672"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr_dilate.frag.glsl" : {
+			"in_time" : "133482673923608285", 
+			"in_hash" : "1050801652", 
+			"out_hash" : "959415448", 
+			"out_time" : "133482687230744447", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "959415448"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "959415448"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "959415448"
+				}, 
+				"assets/shaders/internal/blit_ssr_dilate_interface.h" : {
+					"in_time" : "133482673923608285", 
+					"in_hash" : "959415448"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "959415448"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_ssr_dilate.vert.glsl" : {
+			"in_time" : "133482673923608285", 
+			"in_hash" : "195198630", 
+			"out_hash" : "2809096320", 
+			"out_time" : "133482687231102638", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2809096320"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2809096320"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2809096320"
+				}, 
+				"assets/shaders/internal/blit_ssr_dilate_interface.h" : {
+					"in_time" : "133482673923608285", 
+					"in_hash" : "2809096320"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2809096320"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_static_vel.frag.glsl" : {
+			"in_time" : "133482673923618283", 
+			"in_hash" : "720702109", 
+			"out_hash" : "362819493", 
+			"out_time" : "133482687231310824", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "362819493"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "362819493"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "362819493"
+				}, 
+				"assets/shaders/internal/blit_static_vel_interface.h" : {
+					"in_time" : "133482673923618283", 
+					"in_hash" : "362819493"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "362819493"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_static_vel.vert.glsl" : {
+			"in_time" : "133482673923618283", 
+			"in_hash" : "2789588765", 
+			"out_hash" : "2445573385", 
+			"out_time" : "133482687231734634", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2445573385"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2445573385"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2445573385"
+				}, 
+				"assets/shaders/internal/blit_static_vel_interface.h" : {
+					"in_time" : "133482673923618283", 
+					"in_hash" : "2445573385"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2445573385"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_taa.frag.glsl" : {
+			"in_time" : "133482673923618283", 
+			"in_hash" : "1949642730", 
+			"out_hash" : "1881767051", 
+			"out_time" : "133482687231954467", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1881767051"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1881767051"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1881767051"
+				}, 
+				"assets/shaders/internal/taa_common.glsl" : {
+					"in_time" : "133482673923848276", 
+					"in_hash" : "1881767051"
+				}, 
+				"assets/shaders/internal/blit_taa_interface.h" : {
+					"in_time" : "133482673923618283", 
+					"in_hash" : "1881767051"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1881767051"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_taa.vert.glsl" : {
+			"in_time" : "133482673923618283", 
+			"in_hash" : "3291003138", 
+			"out_hash" : "656929760", 
+			"out_time" : "133482687236710396", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "656929760"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "656929760"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "656929760"
+				}, 
+				"assets/shaders/internal/blit_taa_interface.h" : {
+					"in_time" : "133482673923618283", 
+					"in_hash" : "656929760"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "656929760"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_transparent_compose.frag.glsl" : {
+			"in_time" : "133482673923628285", 
+			"in_hash" : "1254520984", 
+			"out_hash" : "2654218609", 
+			"out_time" : "133482687236930002", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2654218609"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2654218609"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2654218609"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_transparent_init.frag.glsl" : {
+			"in_time" : "133482673923628285", 
+			"in_hash" : "3555964703", 
+			"out_hash" : "383115126", 
+			"out_time" : "133476239389633222"
+		}, 
+		"assets/shaders/internal/blit_upscale.frag.glsl" : {
+			"in_time" : "133482673923628285", 
+			"in_hash" : "579783805", 
+			"out_hash" : "3187452504", 
+			"out_time" : "133482687237531376", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3187452504"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3187452504"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3187452504"
+				}, 
+				"assets/shaders/internal/blit_upscale_interface.h" : {
+					"in_time" : "133482673923628285", 
+					"in_hash" : "3187452504"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "3187452504"
+				}
+			}
+		}, 
+		"assets/shaders/internal/blit_upscale.vert.glsl" : {
+			"in_time" : "133482673923628285", 
+			"in_hash" : "3994365313", 
+			"out_hash" : "1029432000", 
+			"out_time" : "133482687237909863", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "1029432000"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1029432000"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1029432000"
+				}, 
+				"assets/shaders/internal/blit_upscale_interface.h" : {
+					"in_time" : "133482673923628285", 
+					"in_hash" : "1029432000"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1029432000"
+				}
+			}
+		}, 
+		"assets/shaders/internal/debug_velocity.comp.glsl" : {
+			"in_time" : "133482673923638286", 
+			"in_hash" : "748316932", 
+			"out_hash" : "2129364244", 
+			"out_time" : "133482687238130063", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2129364244"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2129364244"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2129364244"
+				}, 
+				"assets/shaders/internal/debug_velocity_interface.h" : {
+					"in_time" : "133482673923638286", 
+					"in_hash" : "2129364244"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2129364244"
+				}
+			}
+		}, 
+		"assets/shaders/internal/depth_hierarchy.comp.glsl" : {
+			"in_time" : "133482673923638286", 
+			"in_hash" : "375718305", 
+			"out_hash" : "1678244972", 
+			"out_time" : "133482687238482256", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1678244972"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1678244972"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1678244972"
+				}, 
+				"assets/shaders/internal/depth_hierarchy_interface.h" : {
+					"in_time" : "133482673923638286", 
+					"in_hash" : "1678244972"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1678244972"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ellipsoid.frag.glsl" : {
+			"in_time" : "133482673923648285", 
+			"in_hash" : "2815940132", 
+			"out_hash" : "570552698", 
+			"out_time" : "133482687240704370", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "570552698"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "570552698"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "570552698"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ellipsoid.vert.glsl" : {
+			"in_time" : "133482673923648285", 
+			"in_hash" : "3503933375", 
+			"out_hash" : "2102874116", 
+			"out_time" : "133482687241004469", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2102874116"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2102874116"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2102874116"
+				}, 
+				"assets/shaders/internal/ellipsoid_interface.h" : {
+					"in_time" : "133482673923648285", 
+					"in_hash" : "2102874116"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2102874116"
+				}
+			}
+		}, 
+		"assets/shaders/internal/fillz.frag.glsl" : {
+			"in_time" : "133482673923648285", 
+			"in_hash" : "2976965861", 
+			"out_hash" : "1611548255", 
+			"out_time" : "133482687241254754", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1611548255"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1611548255"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1611548255"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "1611548255"
+				}
+			}
+		}, 
+		"assets/shaders/internal/fillz.vert.glsl" : {
+			"in_time" : "133482673923648285", 
+			"in_hash" : "2676528318", 
+			"out_hash" : "87250332", 
+			"out_time" : "133482687242509825", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "87250332"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "87250332"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "87250332"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133482673923508285", 
+					"in_hash" : "87250332"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "87250332"
+				}
+			}
+		}, 
+		"assets/shaders/internal/fillz_skin.vert.glsl" : {
+			"in_time" : "133482673923658283", 
+			"in_hash" : "4094424921", 
+			"out_hash" : "1779516650", 
+			"out_time" : "133482687243504947", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "1779516650"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1779516650"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1779516650"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133482673923508285", 
+					"in_hash" : "1779516650"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "1779516650"
+				}
+			}
+		}, 
+		"assets/shaders/internal/fillz_vege.vert.glsl" : {
+			"in_time" : "133482673923658283", 
+			"in_hash" : "3996251276", 
+			"out_hash" : "3342102021", 
+			"out_time" : "133482687244906153", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "3342102021"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3342102021"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "3342102021"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133482673923508285", 
+					"in_hash" : "3342102021"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "3342102021"
+				}, 
+				"assets/shaders/internal/_vegetation.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "3342102021"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gbuffer_fill.frag.glsl" : {
+			"in_time" : "133482673923658283", 
+			"in_hash" : "569727177", 
+			"out_hash" : "2744268796", 
+			"out_time" : "133482687248282292", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "2744268796"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2744268796"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "2744268796"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "2744268796"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gbuffer_fill.vert.glsl" : {
+			"in_time" : "133482673923658283", 
+			"in_hash" : "4012515974", 
+			"out_hash" : "450904395", 
+			"out_time" : "133482687248870566", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "450904395"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "450904395"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "450904395"
+				}, 
+				"assets/shaders/internal/_vegetation.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "450904395"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133482673923508285", 
+					"in_hash" : "450904395"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133482673923498293", 
+					"in_hash" : "450904395"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gbuffer_shade.comp.glsl" : {
+			"in_time" : "133482673923668286", 
+			"in_hash" : "3282400042", 
+			"out_hash" : "1817079872", 
+			"out_time" : "133482687249755570", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1817079872"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1817079872"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1817079872"
+				}, 
+				"assets/shaders/internal/_ltc.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1817079872"
+				}, 
+				"assets/shaders/internal/_principled.glsl" : {
+					"in_time" : "133482673923488283", 
+					"in_hash" : "1817079872"
+				}, 
+				"assets/shaders/internal/gbuffer_shade_interface.h" : {
+					"in_time" : "133482673923668286", 
+					"in_hash" : "1817079872"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1817079872"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_blur.comp.glsl" : {
+			"in_time" : "133482673923668286", 
+			"in_hash" : "1296392181", 
+			"out_hash" : "1126000596", 
+			"out_time" : "133482687252966321", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1126000596"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1126000596"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133482673923468288", 
+					"in_hash" : "1126000596"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133482673923688295", 
+					"in_hash" : "1126000596"
+				}, 
+				"assets/shaders/internal/gi_blur_interface.h" : {
+					"in_time" : "133482673923678283", 
+					"in_hash" : "1126000596"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133482673923478305", 
+					"in_hash" : "1126000596"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_classify_tiles.comp.glsl" : {
+			"in_time" : "133481093422636265", 
+			"in_hash" : "2923787336", 
+			"out_hash" : "855534607", 
+			"out_time" : "133481145161382609", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "855534607"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "855534607"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "855534607"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "855534607"
+				}, 
+				"assets/shaders/internal/gi_classify_tiles_interface.h" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "855534607"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "855534607"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_common.glsl" : {
+			"in_time" : "133481093422636265", 
+			"in_hash" : "3505837027", 
+			"out_hash" : "3505837027", 
+			"out_time" : "133476239405588383"
+		}, 
+		"assets/shaders/internal/gi_prefilter.comp.glsl" : {
+			"in_time" : "133481093422636265", 
+			"in_hash" : "951461149", 
+			"out_hash" : "934267176", 
+			"out_time" : "133481145162423116", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "934267176"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "934267176"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "934267176"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "934267176"
+				}, 
+				"assets/shaders/internal/gi_prefilter_interface.h" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "934267176"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "934267176"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_reproject.comp.glsl" : {
+			"in_time" : "133481093422646245", 
+			"in_hash" : "811010029", 
+			"out_hash" : "1103407629", 
+			"out_time" : "133481145163105653", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1103407629"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1103407629"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1103407629"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "1103407629"
+				}, 
+				"assets/shaders/internal/gi_reproject_interface.h" : {
+					"in_time" : "133481093422646245", 
+					"in_hash" : "1103407629"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1103407629"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_resolve_temporal.comp.glsl" : {
+			"in_time" : "133481093422646245", 
+			"in_hash" : "1637933614", 
+			"out_hash" : "2239390828", 
+			"out_time" : "133481145164105424", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2239390828"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2239390828"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2239390828"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "2239390828"
+				}, 
+				"assets/shaders/internal/taa_common.glsl" : {
+					"in_time" : "133481093422796250", 
+					"in_hash" : "2239390828"
+				}, 
+				"assets/shaders/internal/gi_resolve_temporal_interface.h" : {
+					"in_time" : "133481093422646245", 
+					"in_hash" : "2239390828"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2239390828"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_trace_ss.comp.glsl" : {
+			"in_time" : "133481093422656261", 
+			"in_hash" : "2893557040", 
+			"out_hash" : "2270152272", 
+			"out_time" : "133481145165352311", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2270152272"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2270152272"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2270152272"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "2270152272"
+				}, 
+				"assets/shaders/internal/gi_trace_ss_interface.h" : {
+					"in_time" : "133481093422656261", 
+					"in_hash" : "2270152272"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2270152272"
+				}, 
+				"assets/shaders/internal/ss_trace_common.glsl.inl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "2270152272"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_write_indirect_args.comp.glsl" : {
+			"in_time" : "133481093422656261", 
+			"in_hash" : "1251149828", 
+			"out_hash" : "114718448", 
+			"out_time" : "133481145166808227", 
+			"deps" : {
+				"assets/shaders/internal/gi_write_indirect_args_interface.h" : {
+					"in_time" : "133481093422656261", 
+					"in_hash" : "114718448"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "114718448"
+				}
+			}
+		}, 
+		"assets/shaders/internal/gi_write_indir_rt_dispatch.comp.glsl" : {
+			"in_time" : "133481093422656261", 
+			"in_hash" : "2363894540", 
+			"out_hash" : "2390219154", 
+			"out_time" : "133481145166928269", 
+			"deps" : {
+				"assets/shaders/internal/gi_write_indir_rt_dispatch_interface.h" : {
+					"in_time" : "133481093422656261", 
+					"in_hash" : "2390219154"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2390219154"
+				}
+			}
+		}, 
+		"assets/shaders/internal/probe.frag.glsl" : {
+			"in_time" : "133481093422666266", 
+			"in_hash" : "3790359798", 
+			"out_hash" : "664502628", 
+			"out_time" : "133481145167067693", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "664502628"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "664502628"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "664502628"
+				}
+			}
+		}, 
+		"assets/shaders/internal/probe.vert.glsl" : {
+			"in_time" : "133481093422666266", 
+			"in_hash" : "904827548", 
+			"out_hash" : "2913411173", 
+			"out_time" : "133481145167453073", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2913411173"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2913411173"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2913411173"
+				}, 
+				"assets/shaders/internal/probe_interface.h" : {
+					"in_time" : "133481093422666266", 
+					"in_hash" : "2913411173"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2913411173"
+				}
+			}
+		}, 
+		"assets/shaders/internal/reconstruct_normals.comp.glsl" : {
+			"in_time" : "133481093422666266", 
+			"in_hash" : "2751954454", 
+			"out_hash" : "1657014400", 
+			"out_time" : "133481145167703008", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1657014400"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1657014400"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1657014400"
+				}, 
+				"assets/shaders/internal/reconstruct_normals_interface.h" : {
+					"in_time" : "133481093422666266", 
+					"in_hash" : "1657014400"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1657014400"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_debug.rahit.glsl" : {
+			"in_time" : "133481093422676257", 
+			"in_hash" : "1196203348", 
+			"out_hash" : "4254655041", 
+			"out_time" : "133481145168052183", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "4254655041"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "4254655041"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "4254655041"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "4254655041"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "4254655041"
+				}, 
+				"assets/shaders/internal/rt_debug_interface.h" : {
+					"in_time" : "133481093422676257", 
+					"in_hash" : "4254655041"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "4254655041"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_debug.rchit.glsl" : {
+			"in_time" : "133481093422676257", 
+			"in_hash" : "966445449", 
+			"out_hash" : "4290967203", 
+			"out_time" : "133481145170374398", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "4290967203"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "4290967203"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "4290967203"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "4290967203"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "4290967203"
+				}, 
+				"assets/shaders/internal/rt_debug_interface.h" : {
+					"in_time" : "133481093422676257", 
+					"in_hash" : "4290967203"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "4290967203"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_debug.rgen.glsl" : {
+			"in_time" : "133481093422676257", 
+			"in_hash" : "4179398170", 
+			"out_hash" : "144687037", 
+			"out_time" : "133481145170652222", 
+			"deps" : {
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "144687037"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "144687037"
+				}, 
+				"assets/shaders/internal/rt_debug_interface.h" : {
+					"in_time" : "133481093422676257", 
+					"in_hash" : "144687037"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "144687037"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_debug.rmiss.glsl" : {
+			"in_time" : "133481093422676257", 
+			"in_hash" : "4231277221", 
+			"out_hash" : "287076425", 
+			"out_time" : "133481145170812981", 
+			"deps" : {
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "287076425"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "287076425"
+				}, 
+				"assets/shaders/internal/rt_debug_interface.h" : {
+					"in_time" : "133481093422676257", 
+					"in_hash" : "287076425"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "287076425"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_debug_swrt.comp.glsl" : {
+			"in_time" : "133481093422686255", 
+			"in_hash" : "798693952", 
+			"out_hash" : "655935575", 
+			"out_time" : "133481145170962942", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/_swrt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/rt_debug_interface.h" : {
+					"in_time" : "133481093422676257", 
+					"in_hash" : "655935575"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "655935575"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_gi.rahit.glsl" : {
+			"in_time" : "133481093422686255", 
+			"in_hash" : "3568695882", 
+			"out_hash" : "2339859173", 
+			"out_time" : "133481145171906489", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2339859173"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2339859173"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2339859173"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2339859173"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2339859173"
+				}, 
+				"assets/shaders/internal/rt_gi_interface.h" : {
+					"in_time" : "133481093422686255", 
+					"in_hash" : "2339859173"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2339859173"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_gi.rchit.glsl" : {
+			"in_time" : "133481093422686255", 
+			"in_hash" : "324882755", 
+			"out_hash" : "1456270087", 
+			"out_time" : "133481145172122241", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "1456270087"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1456270087"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1456270087"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1456270087"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "1456270087"
+				}, 
+				"assets/shaders/internal/rt_gi_interface.h" : {
+					"in_time" : "133481093422686255", 
+					"in_hash" : "1456270087"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1456270087"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_gi.rgen.glsl" : {
+			"in_time" : "133481093422686255", 
+			"in_hash" : "803572921", 
+			"out_hash" : "699261470", 
+			"out_time" : "133481145172400888", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "699261470"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "699261470"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "699261470"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "699261470"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "699261470"
+				}, 
+				"assets/shaders/internal/rt_gi_interface.h" : {
+					"in_time" : "133481093422686255", 
+					"in_hash" : "699261470"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "699261470"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_gi.rmiss.glsl" : {
+			"in_time" : "133481093422686255", 
+			"in_hash" : "2559970811", 
+			"out_hash" : "628909430", 
+			"out_time" : "133481145172715481", 
+			"deps" : {
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "628909430"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "628909430"
+				}, 
+				"assets/shaders/internal/rt_gi_interface.h" : {
+					"in_time" : "133481093422686255", 
+					"in_hash" : "628909430"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "628909430"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_gi_spirv14.comp.glsl" : {
+			"in_time" : "133481093422696257", 
+			"in_hash" : "2299882946", 
+			"out_hash" : "2574909878", 
+			"out_time" : "133481145172864254", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/gi_common.glsl" : {
+					"in_time" : "133481093422636265", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/rt_gi_interface.h" : {
+					"in_time" : "133481093422686255", 
+					"in_hash" : "2574909878"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2574909878"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_reflections.rahit.glsl" : {
+			"in_time" : "133481093422696257", 
+			"in_hash" : "1166769623", 
+			"out_hash" : "2567468478", 
+			"out_time" : "133481145173747805", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2567468478"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2567468478"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2567468478"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2567468478"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2567468478"
+				}, 
+				"assets/shaders/internal/rt_reflections_interface.h" : {
+					"in_time" : "133481093422706249", 
+					"in_hash" : "2567468478"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2567468478"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_reflections.rchit.glsl" : {
+			"in_time" : "133481093422696257", 
+			"in_hash" : "89559483", 
+			"out_hash" : "663205940", 
+			"out_time" : "133481145173948633", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "663205940"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "663205940"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "663205940"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "663205940"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "663205940"
+				}, 
+				"assets/shaders/internal/rt_reflections_interface.h" : {
+					"in_time" : "133481093422706249", 
+					"in_hash" : "663205940"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "663205940"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_reflections.rgen.glsl" : {
+			"in_time" : "133481093422696257", 
+			"in_hash" : "4129432625", 
+			"out_hash" : "1588006455", 
+			"out_time" : "133481145174253702", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "1588006455"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1588006455"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1588006455"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1588006455"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "1588006455"
+				}, 
+				"assets/shaders/internal/rt_reflections_interface.h" : {
+					"in_time" : "133481093422706249", 
+					"in_hash" : "1588006455"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1588006455"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_reflections.rmiss.glsl" : {
+			"in_time" : "133481093422706249", 
+			"in_hash" : "3199655379", 
+			"out_hash" : "1185256113", 
+			"out_time" : "133481145174577448", 
+			"deps" : {
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1185256113"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1185256113"
+				}, 
+				"assets/shaders/internal/rt_reflections_interface.h" : {
+					"in_time" : "133481093422706249", 
+					"in_hash" : "1185256113"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1185256113"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_reflections_spirv14.comp.glsl" : {
+			"in_time" : "133481093422706249", 
+			"in_hash" : "1772555325", 
+			"out_hash" : "2022982340", 
+			"out_time" : "133481145174736104", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/rt_reflections_interface.h" : {
+					"in_time" : "133481093422706249", 
+					"in_hash" : "2022982340"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2022982340"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_reflections_swrt.comp.glsl" : {
+			"in_time" : "133481831806178551", 
+			"in_hash" : "125829778", 
+			"out_hash" : "1180199796", 
+			"out_time" : "133481145175233602", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/_swrt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/rt_reflections_interface.h" : {
+					"in_time" : "133481093422706249", 
+					"in_hash" : "1180199796"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1180199796"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadows_spirv14.comp.glsl" : {
+			"in_time" : "133481093422736242", 
+			"in_hash" : "3531461121", 
+			"out_hash" : "562379348", 
+			"out_time" : "133481145176434478", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/rt_shadows_interface.h" : {
+					"in_time" : "133481093422736242", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "562379348"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "562379348"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadows_swrt.comp.glsl" : {
+			"in_time" : "133481093422736242", 
+			"in_hash" : "689465163", 
+			"out_hash" : "3327162801", 
+			"out_time" : "133481145176783416", 
+			"deps" : {
+				"assets/shaders/internal/_rt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/_swrt_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/rt_shadows_interface.h" : {
+					"in_time" : "133481093422736242", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3327162801"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "3327162801"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadow_classify.comp.glsl" : {
+			"in_time" : "133481093422716254", 
+			"in_hash" : "2738640698", 
+			"out_hash" : "3652776544", 
+			"out_time" : "133481145177670119", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3652776544"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3652776544"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3652776544"
+				}, 
+				"assets/shaders/internal/rt_shadow_classify_interface.h" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "3652776544"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3652776544"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "3652776544"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadow_classify_tiles.comp.glsl" : {
+			"in_time" : "133481093422716254", 
+			"in_hash" : "267388324", 
+			"out_hash" : "307866133", 
+			"out_time" : "133481145178536019", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "307866133"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "307866133"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "307866133"
+				}, 
+				"assets/shaders/internal/rt_shadow_classify_tiles_interface.h" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "307866133"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "307866133"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "307866133"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadow_debug.comp.glsl" : {
+			"in_time" : "133481093422726253", 
+			"in_hash" : "1349752611", 
+			"out_hash" : "2174757094", 
+			"out_time" : "133481145180230979", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2174757094"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2174757094"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2174757094"
+				}, 
+				"assets/shaders/internal/rt_shadow_debug_interface.h" : {
+					"in_time" : "133481093422726253", 
+					"in_hash" : "2174757094"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2174757094"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "2174757094"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadow_filter.comp.glsl" : {
+			"in_time" : "133481093422726253", 
+			"in_hash" : "16466233", 
+			"out_hash" : "704169467", 
+			"out_time" : "133481145180786744", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "704169467"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "704169467"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "704169467"
+				}, 
+				"assets/shaders/internal/rt_shadow_filter_interface.h" : {
+					"in_time" : "133481093422726253", 
+					"in_hash" : "704169467"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "704169467"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "704169467"
+				}
+			}
+		}, 
+		"assets/shaders/internal/rt_shadow_prepare_mask.comp.glsl" : {
+			"in_time" : "133481093422736242", 
+			"in_hash" : "2486970055", 
+			"out_hash" : "2632355349", 
+			"out_time" : "133481145182664085", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2632355349"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2632355349"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2632355349"
+				}, 
+				"assets/shaders/internal/rt_shadow_prepare_mask_interface.h" : {
+					"in_time" : "133481093422736242", 
+					"in_hash" : "2632355349"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2632355349"
+				}, 
+				"assets/shaders/internal/rt_shadow_common.glsl.inl" : {
+					"in_time" : "133481093422716254", 
+					"in_hash" : "2632355349"
+				}
+			}
+		}, 
+		"assets/shaders/internal/shadow.frag.glsl" : {
+			"in_time" : "133481093422746252", 
+			"in_hash" : "1479249616", 
+			"out_hash" : "3369969395", 
+			"out_time" : "133481145183302191", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3369969395"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3369969395"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3369969395"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3369969395"
+				}
+			}
+		}, 
+		"assets/shaders/internal/shadow.vert.glsl" : {
+			"in_time" : "133481093422746252", 
+			"in_hash" : "3806021972", 
+			"out_hash" : "3134715960", 
+			"out_time" : "133481145183841828", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3134715960"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3134715960"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3134715960"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3134715960"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3134715960"
+				}, 
+				"assets/shaders/internal/shadow_interface.h" : {
+					"in_time" : "133481093422746252", 
+					"in_hash" : "3134715960"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3134715960"
+				}
+			}
+		}, 
+		"assets/shaders/internal/shadow_vege.vert.glsl" : {
+			"in_time" : "133481093422746252", 
+			"in_hash" : "1429432529", 
+			"out_hash" : "2739297377", 
+			"out_time" : "133481145184266157", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/_vegetation.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/shadow_interface.h" : {
+					"in_time" : "133481093422746252", 
+					"in_hash" : "2739297377"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2739297377"
+				}
+			}
+		}, 
+		"assets/shaders/internal/skinning.comp.glsl" : {
+			"in_time" : "133481093422756255", 
+			"in_hash" : "2682123121", 
+			"out_hash" : "2999347615", 
+			"out_time" : "133481145185203634", 
+			"deps" : {
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2999347615"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2999347615"
+				}, 
+				"assets/shaders/internal/skinning_interface.h" : {
+					"in_time" : "133481093422756255", 
+					"in_hash" : "2999347615"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2999347615"
+				}
+			}
+		}, 
+		"assets/shaders/internal/skydome.frag.glsl" : {
+			"in_time" : "133481093422756255", 
+			"in_hash" : "3048658623", 
+			"out_hash" : "2779448339", 
+			"out_time" : "133481145185592948", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2779448339"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2779448339"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2779448339"
+				}, 
+				"assets/shaders/internal/skydome_interface.h" : {
+					"in_time" : "133481093422756255", 
+					"in_hash" : "2779448339"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2779448339"
+				}
+			}
+		}, 
+		"assets/shaders/internal/skydome.vert.glsl" : {
+			"in_time" : "133481093422756255", 
+			"in_hash" : "2511086227", 
+			"out_hash" : "829648037", 
+			"out_time" : "133481145186215985", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "829648037"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "829648037"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "829648037"
+				}, 
+				"assets/shaders/internal/skydome_interface.h" : {
+					"in_time" : "133481093422756255", 
+					"in_hash" : "829648037"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "829648037"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_classify_tiles.comp.glsl" : {
+			"in_time" : "133481093422766252", 
+			"in_hash" : "4073463640", 
+			"out_hash" : "1880009235", 
+			"out_time" : "133481145186466433", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1880009235"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1880009235"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1880009235"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "1880009235"
+				}, 
+				"assets/shaders/internal/ssr_classify_tiles_interface.h" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "1880009235"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1880009235"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_common.glsl" : {
+			"in_time" : "133481093422766252", 
+			"in_hash" : "530120281", 
+			"out_hash" : "530120281", 
+			"out_time" : "133476239429341979"
+		}, 
+		"assets/shaders/internal/ssr_prefilter.comp.glsl" : {
+			"in_time" : "133481093422776251", 
+			"in_hash" : "897496979", 
+			"out_hash" : "1364844619", 
+			"out_time" : "133481145187534188", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1364844619"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1364844619"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "1364844619"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "1364844619"
+				}, 
+				"assets/shaders/internal/ssr_prefilter_interface.h" : {
+					"in_time" : "133481093422776251", 
+					"in_hash" : "1364844619"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "1364844619"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_reproject.comp.glsl" : {
+			"in_time" : "133481093422776251", 
+			"in_hash" : "3369085835", 
+			"out_hash" : "3184289625", 
+			"out_time" : "133481145188162369", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3184289625"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3184289625"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3184289625"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "3184289625"
+				}, 
+				"assets/shaders/internal/ssr_reproject_interface.h" : {
+					"in_time" : "133481093422776251", 
+					"in_hash" : "3184289625"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3184289625"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_resolve_temporal.comp.glsl" : {
+			"in_time" : "133481093422776251", 
+			"in_hash" : "928588375", 
+			"out_hash" : "3983344784", 
+			"out_time" : "133481145189264103", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3983344784"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3983344784"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3983344784"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "3983344784"
+				}, 
+				"assets/shaders/internal/taa_common.glsl" : {
+					"in_time" : "133481093422796250", 
+					"in_hash" : "3983344784"
+				}, 
+				"assets/shaders/internal/ssr_resolve_temporal_interface.h" : {
+					"in_time" : "133481093422786248", 
+					"in_hash" : "3983344784"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3983344784"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_trace_hq.comp.glsl" : {
+			"in_time" : "133481093422786248", 
+			"in_hash" : "1398871085", 
+			"out_hash" : "2014923438", 
+			"out_time" : "133481145190472187", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2014923438"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2014923438"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2014923438"
+				}, 
+				"assets/shaders/internal/ssr_common.glsl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "2014923438"
+				}, 
+				"assets/shaders/internal/ssr_trace_hq_interface.h" : {
+					"in_time" : "133481093422786248", 
+					"in_hash" : "2014923438"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2014923438"
+				}, 
+				"assets/shaders/internal/ss_trace_common.glsl.inl" : {
+					"in_time" : "133481093422766252", 
+					"in_hash" : "2014923438"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_vs_depth.comp.glsl" : {
+			"in_time" : "133481093422786248", 
+			"in_hash" : "1233295501", 
+			"out_hash" : "938345638", 
+			"out_time" : "133481145191943517", 
+			"deps" : {
+				"assets/shaders/internal/_cs_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "938345638"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "938345638"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "938345638"
+				}, 
+				"assets/shaders/internal/ssr_vs_depth_interface.h" : {
+					"in_time" : "133481093422786248", 
+					"in_hash" : "938345638"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "938345638"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_write_indirect_args.comp.glsl" : {
+			"in_time" : "133481093422796250", 
+			"in_hash" : "3260083248", 
+			"out_hash" : "2741896855", 
+			"out_time" : "133481145192213083", 
+			"deps" : {
+				"assets/shaders/internal/ssr_write_indirect_args_interface.h" : {
+					"in_time" : "133481093422796250", 
+					"in_hash" : "2741896855"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2741896855"
+				}
+			}
+		}, 
+		"assets/shaders/internal/ssr_write_indir_rt_dispatch.comp.glsl" : {
+			"in_time" : "133481093422786248", 
+			"in_hash" : "1044033142", 
+			"out_hash" : "146072072", 
+			"out_time" : "133481145192342222", 
+			"deps" : {
+				"assets/shaders/internal/ssr_write_indir_rt_dispatch_interface.h" : {
+					"in_time" : "133481093422796250", 
+					"in_hash" : "146072072"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "146072072"
+				}
+			}
+		}, 
+		"assets/shaders/internal/sun_shadows.comp.glsl" : {
+			"in_time" : "133481093422796250", 
+			"in_hash" : "2208888208", 
+			"out_hash" : "2305123613", 
+			"out_time" : "133481145192481464", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2305123613"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2305123613"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2305123613"
+				}, 
+				"assets/shaders/internal/sun_shadows_interface.h" : {
+					"in_time" : "133481093422796250", 
+					"in_hash" : "2305123613"
+				}, 
+				"assets/shaders/internal/_interface_common.h" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "2305123613"
+				}
+			}
+		}, 
+		"assets/shaders/internal/taa_common.glsl" : {
+			"in_time" : "133481093422796250", 
+			"in_hash" : "3070436074", 
+			"out_hash" : "3070436074", 
+			"out_time" : "133476239434481972"
+		}, 
+		"assets/shaders/internal/_common.glsl" : {
+			"in_time" : "133481093422446243", 
+			"in_hash" : "1727016431", 
+			"out_hash" : "1727016431", 
+			"out_time" : "133476239434491978"
+		}, 
+		"assets/shaders/internal/_cs_common.glsl" : {
+			"in_time" : "133481093422446243", 
+			"in_hash" : "3349598976", 
+			"out_hash" : "3349598976", 
+			"out_time" : "133476239434501976"
+		}, 
+		"assets/shaders/internal/_fs_common.glsl" : {
+			"in_time" : "133481093422456255", 
+			"in_hash" : "3598456239", 
+			"out_hash" : "3598456239", 
+			"out_time" : "133476239434511974"
+		}, 
+		"assets/shaders/internal/_ltc.glsl" : {
+			"in_time" : "133481093422456255", 
+			"in_hash" : "4278221124", 
+			"out_hash" : "4278221124", 
+			"out_time" : "133479923605205352"
+		}, 
+		"assets/shaders/internal/_principled.glsl" : {
+			"in_time" : "133481093422456255", 
+			"in_hash" : "2312835136", 
+			"out_hash" : "2312835136", 
+			"out_time" : "133476239434541974"
+		}, 
+		"assets/shaders/internal/_rt_common.glsl" : {
+			"in_time" : "133481093422466257", 
+			"in_hash" : "3371905019", 
+			"out_hash" : "3371905019", 
+			"out_time" : "133476239434551981"
+		}, 
+		"assets/shaders/internal/_swrt_common.glsl" : {
+			"in_time" : "133481093422466257", 
+			"in_hash" : "1819199795", 
+			"out_hash" : "1819199795", 
+			"out_time" : "133476239434571977"
+		}, 
+		"assets/shaders/internal/_texturing.glsl" : {
+			"in_time" : "133481093422466257", 
+			"in_hash" : "2408510339", 
+			"out_hash" : "2408510339", 
+			"out_time" : "133480966659646066"
+		}, 
+		"assets/shaders/internal/_vegetation.glsl" : {
+			"in_time" : "133481093422466257", 
+			"in_hash" : "717419217", 
+			"out_hash" : "717419217", 
+			"out_time" : "133476239434601982"
+		}, 
+		"assets/shaders/internal/_vs_common.glsl" : {
+			"in_time" : "133481093422466257", 
+			"in_hash" : "197444914", 
+			"out_hash" : "197444914", 
+			"out_time" : "133476239434611992"
+		}, 
+		"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+			"in_time" : "133481093422466257", 
+			"in_hash" : "1979597068", 
+			"out_hash" : "1979597068", 
+			"out_time" : "133476239434621979"
+		}, 
+		"assets/shaders/main_probelit.vert.glsl" : {
+			"in_time" : "133481093425762119", 
+			"in_hash" : "888246646", 
+			"out_hash" : "2321353328", 
+			"out_time" : "133481145193117659", 
+			"deps" : {
+				"assets/shaders/internal/_vs_common.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2321353328"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2321353328"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "2321353328"
+				}, 
+				"assets/shaders/internal/_vs_instance_index_emu.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2321353328"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "2321353328"
+				}
+			}
+		}, 
+		"assets/shaders/main_probelit_nossr.frag.glsl" : {
+			"in_time" : "133481093425762119", 
+			"in_hash" : "2062895731", 
+			"out_hash" : "3581263289", 
+			"out_time" : "133481145193446505", 
+			"deps" : {
+				"assets/shaders/internal/_fs_common.glsl" : {
+					"in_time" : "133481093422456255", 
+					"in_hash" : "3581263289"
+				}, 
+				"assets/shaders/internal/_common.glsl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3581263289"
+				}, 
+				"assets/shaders/internal/Renderer_GL_Defines.inl" : {
+					"in_time" : "133481093422446243", 
+					"in_hash" : "3581263289"
+				}, 
+				"assets/shaders/internal/_texturing.glsl" : {
+					"in_time" : "133481093422466257", 
+					"in_hash" : "3581263289"
+				}
+			}
+		}, 
+		"assets/textures/default_basecolor.png" : {
+			"in_time" : "133481093425772111", 
+			"in_hash" : "3152099505", 
+			"color" : 4294967295, 
+			"out_hash" : "2832902623", 
+			"out_time" : "133476239435761976"
+		}, 
+		"assets/textures/default_mask.png" : {
+			"in_time" : "133481093425772111", 
+			"in_hash" : "324893454", 
+			"color" : 4294967295, 
+			"out_hash" : "588141138", 
+			"out_time" : "133476239435771977"
+		}, 
+		"assets/textures/default_normalmap.dds" : {
+			"in_time" : "133481093425782166", 
+			"in_hash" : "1927534768", 
+			"out_hash" : "1927534768", 
+			"out_time" : "133476239435781973"
+		}, 
+		"assets/textures/default_specular.png" : {
+			"in_time" : "133481093425782166", 
+			"in_hash" : "1596242891", 
+			"color" : 4278190080, 
+			"out_hash" : "3468244109", 
+			"out_time" : "133476239435791976"
+		}, 
+		"assets/textures/env/black_NX.hdr" : {
+			"in_time" : "133481093425782166", 
+			"in_hash" : "1996610939", 
+			"out_hash" : "3427855205", 
+			"out_time" : "133476239435801972"
+		}, 
+		"assets/textures/env/black_NY.hdr" : {
+			"in_time" : "133481093425802120", 
+			"in_hash" : "1996610939", 
+			"out_hash" : "3427855205", 
+			"out_time" : "133476239435811986"
+		}, 
+		"assets/textures/env/black_NZ.hdr" : {
+			"in_time" : "133481093425802120", 
+			"in_hash" : "879803068", 
+			"out_hash" : "3427855205", 
+			"out_time" : "133476239435841986"
+		}, 
+		"assets/textures/env/black_PX.hdr" : {
+			"in_time" : "133481093425812181", 
+			"in_hash" : "1996610939", 
+			"out_hash" : "3427855205", 
+			"out_time" : "133476239435851981"
+		}, 
+		"assets/textures/env/black_PY.hdr" : {
+			"in_time" : "133481093425812181", 
+			"in_hash" : "1996610939", 
+			"out_hash" : "3427855205", 
+			"out_time" : "133476239435861978"
+		}, 
+		"assets/textures/env/black_PZ.hdr" : {
+			"in_time" : "133481093425812181", 
+			"in_hash" : "1996610939", 
+			"out_hash" : "3427855205", 
+			"out_time" : "133476239435871992"
+		}, 
+		"assets/textures/env/clear_NX.hdr" : {
+			"in_time" : "133153697588482729", 
+			"in_hash" : "3117002834", 
+			"out_hash" : "347442713", 
+			"out_time" : "133476239436021968"
+		}, 
+		"assets/textures/env/clear_NY.hdr" : {
+			"in_time" : "133153697588694926", 
+			"in_hash" : "3064992361", 
+			"out_hash" : "4088453934", 
+			"out_time" : "133476239436171964"
+		}, 
+		"assets/textures/env/clear_NZ.hdr" : {
+			"in_time" : "133153697588875597", 
+			"in_hash" : "1360893633", 
+			"out_hash" : "2051339665", 
+			"out_time" : "133476239436341967"
+		}, 
+		"assets/textures/env/clear_PX.hdr" : {
+			"in_time" : "133153697589093755", 
+			"in_hash" : "529885827", 
+			"out_hash" : "2740459643", 
+			"out_time" : "133476239436691968"
+		}, 
+		"assets/textures/env/clear_PY.hdr" : {
+			"in_time" : "133153697589364856", 
+			"in_hash" : "1987398645", 
+			"out_hash" : "816953192", 
+			"out_time" : "133476239437011962"
+		}, 
+		"assets/textures/env/clear_PZ.hdr" : {
+			"in_time" : "133153697589829726", 
+			"in_hash" : "3107156298", 
+			"out_hash" : "969668213", 
+			"out_time" : "133476239437631964"
+		}, 
+		"assets/textures/error.uncompressed.png" : {
+			"in_time" : "133481093425822201", 
+			"in_hash" : "3981376347", 
+			"out_hash" : "3981376347", 
+			"out_time" : "133476955506558309"
+		}, 
+		"assets/scenes/mat_test.json" : {
+			"in_time" : "133476289988690690", 
+			"in_hash" : "3712189729", 
+			"out_hash" : "2250855774", 
+			"out_time" : "133477452121426326"
+		}, 
+		"assets/scenes/diff_mat0.json" : {
+			"in_time" : "133482673926279893", 
+			"in_hash" : "4014135424", 
+			"out_hash" : "1303127145", 
+			"out_time" : "133479891449813148"
+		}, 
+		"assets/scenes/diff_mat5.json" : {
+			"in_time" : "133482673926289897", 
+			"in_hash" : "4200913992", 
+			"out_hash" : "1432143582", 
+			"out_time" : "133479891953784832"
+		}, 
+		"assets/materials/mat_test/diff_mat0.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "3096202892", 
+			"out_hash" : "827547453", 
+			"out_time" : "133482687204562223", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "827547453"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "827547453"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "827547453"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/diff_mat1.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "3029134195", 
+			"out_hash" : "3555501039", 
+			"out_time" : "133482687204602227", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3555501039"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3555501039"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3555501039"
+				}
+			}
+		}, 
+		"assets/scenes/diff_mat6.json" : {
+			"in_time" : "133482673926299897", 
+			"in_hash" : "484609946", 
+			"out_hash" : "1294824689", 
+			"out_time" : "133479892588122702"
+		}, 
+		"assets/materials/mat_test/diff_mat2.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "2338133830", 
+			"out_hash" : "4113828441", 
+			"out_time" : "133482687204642226", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "4113828441"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "4113828441"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "4113828441"
+				}
+			}
+		}, 
+		"assets/scenes/diff_mat7.json" : {
+			"in_time" : "133482673926299897", 
+			"in_hash" : "615203843", 
+			"out_hash" : "1459327487", 
+			"out_time" : "133479892588172703"
+		}, 
+		"assets/materials/mat_test/diff_mat3.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "2279145890", 
+			"out_hash" : "2173986818", 
+			"out_time" : "133482687204702214", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2173986818"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2173986818"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2173986818"
+				}
+			}
+		}, 
+		"assets/scenes/diff_mat8.json" : {
+			"in_time" : "133482673926299897", 
+			"in_hash" : "3161163963", 
+			"out_hash" : "3390801033", 
+			"out_time" : "133479893059475286"
+		}, 
+		"assets/materials/mat_test/diff_mat4.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "1079436576", 
+			"out_hash" : "2760899424", 
+			"out_time" : "133482687204752228", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2760899424"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2760899424"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2760899424"
+				}
+			}
+		}, 
+		"assets/scenes/diff_mat9.json" : {
+			"in_time" : "133482673926299897", 
+			"in_hash" : "1345681120", 
+			"out_hash" : "2311555873", 
+			"out_time" : "133479893059505275"
+		}, 
+		"assets/references/diff_mat0/ref.png" : {
+			"in_time" : "133475480104819684", 
+			"in_hash" : "1105762940", 
+			"color" : 4283782566, 
+			"out_hash" : "2623418372", 
+			"out_time" : "133479172461405343"
+		}, 
+		"assets/references/diff_mat0/ref_nogi.png" : {
+			"in_time" : "133475480104829681", 
+			"in_hash" : "4181870931", 
+			"color" : 4282927238, 
+			"out_hash" : "3704331785", 
+			"out_time" : "133479172461630453"
+		}, 
+		"assets/references/diff_mat0/ref_noshadow.png" : {
+			"in_time" : "133475480104839680", 
+			"in_hash" : "715309361", 
+			"color" : 4283321999, 
+			"out_hash" : "3133325761", 
+			"out_time" : "133479172461840448"
+		}, 
+		"assets/references/diff_mat1/ref.png" : {
+			"in_time" : "133475480104849683", 
+			"in_hash" : "2748081085", 
+			"color" : 4283803733, 
+			"out_hash" : "702383783", 
+			"out_time" : "133479172462080445"
+		}, 
+		"assets/references/diff_mat1/ref_nogi.png" : {
+			"in_time" : "133475480104859684", 
+			"in_hash" : "686320701", 
+			"color" : 4282943304, 
+			"out_hash" : "1953892353", 
+			"out_time" : "133479172462300445"
+		}, 
+		"assets/references/diff_mat1/ref_noshadow.png" : {
+			"in_time" : "133475480104869679", 
+			"in_hash" : "2582484934", 
+			"color" : 4283339086, 
+			"out_hash" : "1121295013", 
+			"out_time" : "133479172462510453"
+		}, 
+		"assets/references/diff_mat2/ref.png" : {
+			"in_time" : "133475480104879683", 
+			"in_hash" : "2250538876", 
+			"color" : 4289309013, 
+			"out_hash" : "127256535", 
+			"out_time" : "133479172462745546"
+		}, 
+		"assets/references/diff_mat2/ref_nogi.png" : {
+			"in_time" : "133475480104889682", 
+			"in_hash" : "3409513487", 
+			"color" : 4287203656, 
+			"out_hash" : "1979034806", 
+			"out_time" : "133479172462965607"
+		}, 
+		"assets/references/diff_mat2/ref_noshadow.png" : {
+			"in_time" : "133475480104889682", 
+			"in_hash" : "4280506994", 
+			"color" : 4287795790, 
+			"out_hash" : "3031360934", 
+			"out_time" : "133479172463176741"
+		}, 
+		"assets/references/diff_mat3/ref.png" : {
+			"in_time" : "133475480104909682", 
+			"in_hash" : "3759812364", 
+			"color" : 4283804330, 
+			"out_hash" : "615146297", 
+			"out_time" : "133479172463426729"
+		}, 
+		"assets/references/diff_mat3/ref_nogi.png" : {
+			"in_time" : "133475480104919680", 
+			"in_hash" : "3281524651", 
+			"color" : 4282944138, 
+			"out_hash" : "2256082740", 
+			"out_time" : "133479172463646732"
+		}, 
+		"assets/references/diff_mat3/ref_noshadow.png" : {
+			"in_time" : "133475480104919680", 
+			"in_hash" : "2565602804", 
+			"color" : 4283339667, 
+			"out_hash" : "3332830745", 
+			"out_time" : "133479172463876735"
+		}, 
+		"assets/references/diff_mat4/ref.png" : {
+			"in_time" : "133475480104939679", 
+			"in_hash" : "3276098651", 
+			"color" : 4289484117, 
+			"out_hash" : "3868999770", 
+			"out_time" : "133479172464106750"
+		}, 
+		"assets/references/diff_mat4/ref_nogi.png" : {
+			"in_time" : "133475480104949681", 
+			"in_hash" : "4271197305", 
+			"color" : 4287318088, 
+			"out_hash" : "3279370312", 
+			"out_time" : "133479172464336745"
+		}, 
+		"assets/references/diff_mat4/ref_noshadow.png" : {
+			"in_time" : "133475480104949681", 
+			"in_hash" : "2023870223", 
+			"color" : 4287909454, 
+			"out_hash" : "3172059229", 
+			"out_time" : "133479172464586744"
+		}, 
+		"assets/references/diff_mat5/diff.png" : {
+			"in_time" : "133479168702877389", 
+			"in_hash" : "2899991435", 
+			"color" : 4278190080, 
+			"out_hash" : "725194652", 
+			"out_time" : "133479172464766747"
+		}, 
+		"assets/references/diff_mat5/mask.png" : {
+			"in_time" : "133479168703445755", 
+			"in_hash" : "3564917419", 
+			"color" : 4278190080, 
+			"out_hash" : "523733414", 
+			"out_time" : "133479172464886724"
+		}, 
+		"assets/references/diff_mat5/out.png" : {
+			"in_time" : "133479168702116823", 
+			"in_hash" : "558202261", 
+			"color" : 4282927234, 
+			"out_hash" : "1335261672", 
+			"out_time" : "133479172465196754"
+		}, 
+		"assets/references/diff_mat5/ref.png" : {
+			"in_time" : "133475480104969683", 
+			"in_hash" : "3894691304", 
+			"color" : 4284637883, 
+			"out_hash" : "3603682386", 
+			"out_time" : "133479172465427088"
+		}, 
+		"assets/references/diff_mat5/ref_nogi.png" : {
+			"in_time" : "133475480104979692", 
+			"in_hash" : "964290584", 
+			"color" : 4282532470, 
+			"out_hash" : "1842719611", 
+			"out_time" : "133479172465657023"
+		}, 
+		"assets/references/diff_mat5/ref_noshadow.png" : {
+			"in_time" : "133479148624336815", 
+			"in_hash" : "3141232321", 
+			"color" : 4282993026, 
+			"out_hash" : "173297058", 
+			"out_time" : "133479172465877035"
+		}, 
+		"assets/references/diff_mat6/diff.png" : {
+			"in_time" : "133479168732196868", 
+			"in_hash" : "2598832579", 
+			"color" : 4278190080, 
+			"out_hash" : "2489108320", 
+			"out_time" : "133479172466077032"
+		}, 
+		"assets/references/diff_mat6/mask.png" : {
+			"in_time" : "133479168732778181", 
+			"in_hash" : "3564917419", 
+			"color" : 4278190080, 
+			"out_hash" : "523733414", 
+			"out_time" : "133479172466257032"
+		}, 
+		"assets/references/diff_mat6/out.png" : {
+			"in_time" : "133479168731439454", 
+			"in_hash" : "2120459841", 
+			"color" : 4282942280, 
+			"out_hash" : "3585099080", 
+			"out_time" : "133479172466647025"
+		}, 
+		"assets/references/diff_mat6/ref.png" : {
+			"in_time" : "133475480105009675", 
+			"in_hash" : "1448752674", 
+			"color" : 4284660834, 
+			"out_hash" : "82056017", 
+			"out_time" : "133479172466927027"
+		}, 
+		"assets/references/diff_mat6/ref_nogi.png" : {
+			"in_time" : "133475480105019678", 
+			"in_hash" : "2985132405", 
+			"color" : 4282545986, 
+			"out_hash" : "3128231531", 
+			"out_time" : "133479172467257025"
+		}, 
+		"assets/references/diff_mat6/ref_noshadow.png" : {
+			"in_time" : "133475480105029677", 
+			"in_hash" : "2490389472", 
+			"color" : 4283007817, 
+			"out_hash" : "576776126", 
+			"out_time" : "133479172467477029"
+		}, 
+		"assets/references/diff_mat7/diff.png" : {
+			"in_time" : "133479168761334884", 
+			"in_hash" : "700521753", 
+			"color" : 4278190080, 
+			"out_hash" : "3318334689", 
+			"out_time" : "133479172467707029"
+		}, 
+		"assets/references/diff_mat7/mask.png" : {
+			"in_time" : "133479168761910722", 
+			"in_hash" : "3564917419", 
+			"color" : 4278190080, 
+			"out_hash" : "523733414", 
+			"out_time" : "133479172467837029"
+		}, 
+		"assets/references/diff_mat7/out.png" : {
+			"in_time" : "133479168760487129", 
+			"in_hash" : "3330943019", 
+			"color" : 4286809160, 
+			"out_hash" : "1418518044", 
+			"out_time" : "133479172468147038"
+		}, 
+		"assets/references/diff_mat7/ref.png" : {
+			"in_time" : "133475480105039676", 
+			"in_hash" : "1277512988", 
+			"color" : 4290690658, 
+			"out_hash" : "2989704644", 
+			"out_time" : "133479172468417036"
+		}, 
+		"assets/references/diff_mat7/ref_nogi.png" : {
+			"in_time" : "133475480105049677", 
+			"in_hash" : "3017016295", 
+			"color" : 4286085186, 
+			"out_hash" : "1363626988", 
+			"out_time" : "133479172468627046"
+		}, 
+		"assets/references/diff_mat7/ref_noshadow.png" : {
+			"in_time" : "133475480105059677", 
+			"in_hash" : "2052897453", 
+			"color" : 4286874697, 
+			"out_hash" : "2760172439", 
+			"out_time" : "133479172468847041"
+		}, 
+		"assets/references/diff_mat8/diff.png" : {
+			"in_time" : "133479168790053476", 
+			"in_hash" : "2944380075", 
+			"color" : 4278190080, 
+			"out_hash" : "1124904904", 
+			"out_time" : "133479172469047020"
+		}, 
+		"assets/references/diff_mat8/mask.png" : {
+			"in_time" : "133479168790617286", 
+			"in_hash" : "3564917419", 
+			"color" : 4278190080, 
+			"out_hash" : "523733414", 
+			"out_time" : "133479172469197028"
+		}, 
+		"assets/references/diff_mat8/out.png" : {
+			"in_time" : "133479168789297375", 
+			"in_hash" : "34759241", 
+			"color" : 4282943110, 
+			"out_hash" : "49059701", 
+			"out_time" : "133479172469477292"
+		}, 
+		"assets/references/diff_mat8/ref.png" : {
+			"in_time" : "133475480105079683", 
+			"in_hash" : "3406569375", 
+			"color" : 4284661695, 
+			"out_hash" : "433784188", 
+			"out_time" : "133479172469707307"
+		}, 
+		"assets/references/diff_mat8/ref_nogi.png" : {
+			"in_time" : "133475480105089687", 
+			"in_hash" : "3466571567", 
+			"color" : 4282546553, 
+			"out_hash" : "1076327525", 
+			"out_time" : "133479172469937302"
+		}, 
+		"assets/references/diff_mat8/ref_noshadow.png" : {
+			"in_time" : "133479155002596971", 
+			"in_hash" : "631870404", 
+			"color" : 4283008389, 
+			"out_hash" : "3292122400", 
+			"out_time" : "133479172470147293"
+		}, 
+		"assets/references/diff_mat9/diff.png" : {
+			"in_time" : "133479168818967416", 
+			"in_hash" : "107847426", 
+			"color" : 4278190080, 
+			"out_hash" : "1733863019", 
+			"out_time" : "133479172470317438"
+		}, 
+		"assets/references/diff_mat9/mask.png" : {
+			"in_time" : "133479168819537730", 
+			"in_hash" : "3564917419", 
+			"color" : 4278190080, 
+			"out_hash" : "523733414", 
+			"out_time" : "133479172470435187"
+		}, 
+		"assets/references/diff_mat9/out.png" : {
+			"in_time" : "133479168818198491", 
+			"in_hash" : "3046565263", 
+			"color" : 4286990408, 
+			"out_hash" : "193561655", 
+			"out_time" : "133479172470708938"
+		}, 
+		"assets/references/diff_mat9/ref.png" : {
+			"in_time" : "133475480105119679", 
+			"in_hash" : "2207992883", 
+			"color" : 4290798178, 
+			"out_hash" : "4132963748", 
+			"out_time" : "133479172470946647"
+		}, 
+		"assets/references/diff_mat9/ref_nogi.png" : {
+			"in_time" : "133475480105129681", 
+			"in_hash" : "3161638145", 
+			"color" : 4286202434, 
+			"out_hash" : "2953280647", 
+			"out_time" : "133479172471176647"
+		}, 
+		"assets/references/diff_mat9/ref_noshadow.png" : {
+			"in_time" : "133475480105139681", 
+			"in_hash" : "70159907", 
+			"color" : 4286990665, 
+			"out_hash" : "295289294", 
+			"out_time" : "133479172471410779"
+		}, 
+		"assets/references/diff_mat0/ref.uncompressed.png" : {
+			"in_time" : "133482673924868608", 
+			"in_hash" : "1105762940", 
+			"out_hash" : "1105762940", 
+			"out_time" : "133479924618626220"
+		}, 
+		"assets/references/diff_mat0/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673924878607", 
+			"in_hash" : "4181870931", 
+			"out_hash" : "4181870931", 
+			"out_time" : "133479924618676219"
+		}, 
+		"assets/references/diff_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924888605", 
+			"in_hash" : "715309361", 
+			"out_hash" : "715309361", 
+			"out_time" : "133479924618696219"
+		}, 
+		"assets/references/diff_mat1/ref.uncompressed.png" : {
+			"in_time" : "133482673924898614", 
+			"in_hash" : "2748081085", 
+			"out_hash" : "2748081085", 
+			"out_time" : "133479924618716218"
+		}, 
+		"assets/references/diff_mat1/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673924908611", 
+			"in_hash" : "686320701", 
+			"out_hash" : "686320701", 
+			"out_time" : "133479924618736224"
+		}, 
+		"assets/references/diff_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924918611", 
+			"in_hash" : "2582484934", 
+			"out_hash" : "2582484934", 
+			"out_time" : "133479924618756221"
+		}, 
+		"assets/references/diff_mat2/ref.uncompressed.png" : {
+			"in_time" : "133482673924928615", 
+			"in_hash" : "2250538876", 
+			"out_hash" : "2250538876", 
+			"out_time" : "133479924618766221"
+		}, 
+		"assets/references/diff_mat2/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673924938613", 
+			"in_hash" : "3409513487", 
+			"out_hash" : "3409513487", 
+			"out_time" : "133479924618786218"
+		}, 
+		"assets/references/diff_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924948612", 
+			"in_hash" : "4280506994", 
+			"out_hash" : "4280506994", 
+			"out_time" : "133479924618826215"
+		}, 
+		"assets/references/diff_mat3/ref.uncompressed.png" : {
+			"in_time" : "133482673924958614", 
+			"in_hash" : "3759812364", 
+			"out_hash" : "3759812364", 
+			"out_time" : "133479924618846219"
+		}, 
+		"assets/references/diff_mat3/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673924968613", 
+			"in_hash" : "3281524651", 
+			"out_hash" : "3281524651", 
+			"out_time" : "133479924618866225"
+		}, 
+		"assets/references/diff_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924978612", 
+			"in_hash" : "2565602804", 
+			"out_hash" : "2565602804", 
+			"out_time" : "133479924618876217"
+		}, 
+		"assets/references/diff_mat4/ref.uncompressed.png" : {
+			"in_time" : "133482673924988608", 
+			"in_hash" : "3276098651", 
+			"out_hash" : "3276098651", 
+			"out_time" : "133479924618906223"
+		}, 
+		"assets/references/diff_mat4/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673924998605", 
+			"in_hash" : "4271197305", 
+			"out_hash" : "4271197305", 
+			"out_time" : "133479924618916222"
+		}, 
+		"assets/references/diff_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925008606", 
+			"in_hash" : "2023870223", 
+			"out_hash" : "2023870223", 
+			"out_time" : "133479924618926228"
+		}, 
+		"assets/references/diff_mat5/ref.uncompressed.png" : {
+			"in_time" : "133482673925018604", 
+			"in_hash" : "3894691304", 
+			"out_hash" : "3894691304", 
+			"out_time" : "133479924618946217"
+		}, 
+		"assets/references/diff_mat5/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925028627", 
+			"in_hash" : "964290584", 
+			"out_hash" : "964290584", 
+			"out_time" : "133479924619006221"
+		}, 
+		"assets/references/diff_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925038612", 
+			"in_hash" : "3141232321", 
+			"out_hash" : "3141232321", 
+			"out_time" : "133479924619016218"
+		}, 
+		"assets/references/diff_mat6/ref.uncompressed.png" : {
+			"in_time" : "133482673925048611", 
+			"in_hash" : "1448752674", 
+			"out_hash" : "1448752674", 
+			"out_time" : "133479924619036233"
+		}, 
+		"assets/references/diff_mat6/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925058611", 
+			"in_hash" : "2985132405", 
+			"out_hash" : "2985132405", 
+			"out_time" : "133479924619056220"
+		}, 
+		"assets/references/diff_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925068610", 
+			"in_hash" : "2490389472", 
+			"out_hash" : "2490389472", 
+			"out_time" : "133479924619076224"
+		}, 
+		"assets/references/diff_mat7/ref.uncompressed.png" : {
+			"in_time" : "133482673925078606", 
+			"in_hash" : "1277512988", 
+			"out_hash" : "1277512988", 
+			"out_time" : "133479924619096223"
+		}, 
+		"assets/references/diff_mat7/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925088600", 
+			"in_hash" : "3017016295", 
+			"out_hash" : "3017016295", 
+			"out_time" : "133479924619106235"
+		}, 
+		"assets/references/diff_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925098598", 
+			"in_hash" : "2052897453", 
+			"out_hash" : "2052897453", 
+			"out_time" : "133479924619156254"
+		}, 
+		"assets/references/diff_mat8/ref.uncompressed.png" : {
+			"in_time" : "133482673925118601", 
+			"in_hash" : "3406569375", 
+			"out_hash" : "3406569375", 
+			"out_time" : "133479924619186239"
+		}, 
+		"assets/references/diff_mat8/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925128609", 
+			"in_hash" : "3466571567", 
+			"out_hash" : "3466571567", 
+			"out_time" : "133479924619196251"
+		}, 
+		"assets/references/diff_mat8/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925138614", 
+			"in_hash" : "631870404", 
+			"out_hash" : "631870404", 
+			"out_time" : "133479924619216234"
+		}, 
+		"assets/references/diff_mat9/ref.uncompressed.png" : {
+			"in_time" : "133482673925148615", 
+			"in_hash" : "2207992883", 
+			"out_hash" : "2207992883", 
+			"out_time" : "133479924619236217"
+		}, 
+		"assets/references/diff_mat9/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925158612", 
+			"in_hash" : "3161638145", 
+			"out_hash" : "3161638145", 
+			"out_time" : "133479924619256220"
+		}, 
+		"assets/references/diff_mat9/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925168609", 
+			"in_hash" : "70159907", 
+			"out_hash" : "70159907", 
+			"out_time" : "133479924619266217"
+		}, 
+		"assets/materials/mat_test/spec_mat0.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "2348138571", 
+			"out_hash" : "2263034275", 
+			"out_time" : "133482687205872488", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2263034275"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2263034275"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2263034275"
+				}
+			}
+		}, 
+		"assets/references/spec_mat0/ref.png" : {
+			"in_time" : "133479827364201548", 
+			"in_hash" : "4117462972", 
+			"color" : 4289045925, 
+			"out_hash" : "2932203054", 
+			"out_time" : "133479835985879006"
+		}, 
+		"assets/references/spec_mat0/ref_nogi.png" : {
+			"in_time" : "133479827364221687", 
+			"in_hash" : "1618876432", 
+			"color" : 4282992969, 
+			"out_hash" : "2180585535", 
+			"out_time" : "133479835985938877"
+		}, 
+		"assets/references/spec_mat0/ref_noshadow.png" : {
+			"in_time" : "133479827364251676", 
+			"in_hash" : "374760879", 
+			"color" : 4283387727, 
+			"out_hash" : "1397324380", 
+			"out_time" : "133479835985998882"
+		}, 
+		"assets/references/spec_mat1/ref.png" : {
+			"in_time" : "133479827364301667", 
+			"in_hash" : "3098961821", 
+			"color" : 4289440683, 
+			"out_hash" : "2908493735", 
+			"out_time" : "133479835986079583"
+		}, 
+		"assets/references/spec_mat1/ref_nogi.png" : {
+			"in_time" : "133479827364311689", 
+			"in_hash" : "1736836545", 
+			"color" : 4284045657, 
+			"out_hash" : "3983007843", 
+			"out_time" : "133479835986138890"
+		}, 
+		"assets/references/spec_mat1/ref_noshadow.png" : {
+			"in_time" : "133479827364321546", 
+			"in_hash" : "2193125334", 
+			"color" : 4284572001, 
+			"out_hash" : "2611962183", 
+			"out_time" : "133479835986208896"
+		}, 
+		"assets/references/spec_mat2/ref.png" : {
+			"in_time" : "133479827364341525", 
+			"in_hash" : "1791250501", 
+			"color" : 4289769648, 
+			"out_hash" : "3728531361", 
+			"out_time" : "133479835986288874"
+		}, 
+		"assets/references/spec_mat2/ref_nogi.png" : {
+			"in_time" : "133479827364351535", 
+			"in_hash" : "1385662944", 
+			"color" : 4286019447, 
+			"out_hash" : "3448679425", 
+			"out_time" : "133479835986388877"
+		}, 
+		"assets/references/spec_mat2/ref_noshadow.png" : {
+			"in_time" : "133479827364361527", 
+			"in_hash" : "961245507", 
+			"color" : 4286611584, 
+			"out_hash" : "3198097721", 
+			"out_time" : "133479835986458874"
+		}, 
+		"assets/references/spec_mat3/ref.png" : {
+			"in_time" : "133479827364371533", 
+			"in_hash" : "966731632", 
+			"color" : 4289572269, 
+			"out_hash" : "2165297804", 
+			"out_time" : "133479835986538879"
+		}, 
+		"assets/references/spec_mat3/ref_nogi.png" : {
+			"in_time" : "133479827364391526", 
+			"in_hash" : "1209815965", 
+			"color" : 4286940549, 
+			"out_hash" : "1814230916", 
+			"out_time" : "133479835986608874"
+		}, 
+		"assets/references/spec_mat3/ref_noshadow.png" : {
+			"in_time" : "133479827364401525", 
+			"in_hash" : "2318150352", 
+			"color" : 4287598479, 
+			"out_hash" : "649669606", 
+			"out_time" : "133479835986688883"
+		}, 
+		"assets/references/spec_mat4/ref.png" : {
+			"in_time" : "133479827364411543", 
+			"in_hash" : "3440469489", 
+			"color" : 4288651167, 
+			"out_hash" : "796113024", 
+			"out_time" : "133479835986758881"
+		}, 
+		"assets/references/spec_mat4/ref_nogi.png" : {
+			"in_time" : "133479827364421557", 
+			"in_hash" : "534305474", 
+			"color" : 4286677377, 
+			"out_hash" : "1654939961", 
+			"out_time" : "133479835986828877"
+		}, 
+		"assets/references/spec_mat4/ref_noshadow.png" : {
+			"in_time" : "133479827364431564", 
+			"in_hash" : "3369829814", 
+			"color" : 4287269514, 
+			"out_hash" : "236993811", 
+			"out_time" : "133479835986928889"
+		}, 
+		"assets/references/spec_mat5/ref_noshadow.png" : {
+			"in_time" : "133479827364431564", 
+			"in_hash" : "1013912287", 
+			"color" : 4282203453, 
+			"out_hash" : "4200265244", 
+			"out_time" : "133479835987018875"
+		}, 
+		"assets/references/spec_mat6/ref_noshadow.png" : {
+			"in_time" : "133479827364451545", 
+			"in_hash" : "1576461148", 
+			"color" : 4283190348, 
+			"out_hash" : "4112426978", 
+			"out_time" : "133479835987148880"
+		}, 
+		"assets/references/spec_mat7/ref_noshadow.png" : {
+			"in_time" : "133479827364461542", 
+			"in_hash" : "483993057", 
+			"color" : 4284769380, 
+			"out_hash" : "3107564188", 
+			"out_time" : "133479835987218869"
+		}, 
+		"assets/references/spec_mat8/ref_noshadow.png" : {
+			"in_time" : "133479827364471545", 
+			"in_hash" : "1067437763", 
+			"color" : 4285361517, 
+			"out_hash" : "1143127478", 
+			"out_time" : "133479835987298882"
+		}, 
+		"assets/references/spec_mat9/ref_noshadow.png" : {
+			"in_time" : "133479827364481544", 
+			"in_hash" : "1941799207", 
+			"color" : 4284835173, 
+			"out_hash" : "3579032849", 
+			"out_time" : "133479835987368900"
+		}, 
+		"assets/references/spec_mat0/ref.uncompressed.png" : {
+			"in_time" : "133482673925868603", 
+			"in_hash" : "4117462972", 
+			"out_hash" : "4117462972", 
+			"out_time" : "133479924619956231"
+		}, 
+		"assets/references/spec_mat0/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925878608", 
+			"in_hash" : "1618876432", 
+			"out_hash" : "1618876432", 
+			"out_time" : "133479924619976266"
+		}, 
+		"assets/references/spec_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925888608", 
+			"in_hash" : "374760879", 
+			"out_hash" : "374760879", 
+			"out_time" : "133479924619986219"
+		}, 
+		"assets/references/spec_mat1/ref.uncompressed.png" : {
+			"in_time" : "133482673925898612", 
+			"in_hash" : "3098961821", 
+			"out_hash" : "3098961821", 
+			"out_time" : "133479924619996218"
+		}, 
+		"assets/references/spec_mat1/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925908621", 
+			"in_hash" : "1736836545", 
+			"out_hash" : "1736836545", 
+			"out_time" : "133479924620026223"
+		}, 
+		"assets/references/spec_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925918608", 
+			"in_hash" : "2193125334", 
+			"out_hash" : "2193125334", 
+			"out_time" : "133479924620036231"
+		}, 
+		"assets/references/spec_mat2/ref.uncompressed.png" : {
+			"in_time" : "133482673925928607", 
+			"in_hash" : "1791250501", 
+			"out_hash" : "1791250501", 
+			"out_time" : "133479924620046218"
+		}, 
+		"assets/references/spec_mat2/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925938604", 
+			"in_hash" : "1385662944", 
+			"out_hash" : "1385662944", 
+			"out_time" : "133479924620066216"
+		}, 
+		"assets/references/spec_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925948618", 
+			"in_hash" : "961245507", 
+			"out_hash" : "961245507", 
+			"out_time" : "133479924620076216"
+		}, 
+		"assets/references/spec_mat3/ref.uncompressed.png" : {
+			"in_time" : "133482673925958611", 
+			"in_hash" : "966731632", 
+			"out_hash" : "966731632", 
+			"out_time" : "133479924620116233"
+		}, 
+		"assets/references/spec_mat3/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925968609", 
+			"in_hash" : "1209815965", 
+			"out_hash" : "1209815965", 
+			"out_time" : "133479924620126230"
+		}, 
+		"assets/references/spec_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925978606", 
+			"in_hash" : "2318150352", 
+			"out_hash" : "2318150352", 
+			"out_time" : "133479924620166218"
+		}, 
+		"assets/references/spec_mat4/ref.uncompressed.png" : {
+			"in_time" : "133482673925988608", 
+			"in_hash" : "3440469489", 
+			"out_hash" : "3440469489", 
+			"out_time" : "133479924620216218"
+		}, 
+		"assets/references/spec_mat4/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673926000001", 
+			"in_hash" : "534305474", 
+			"out_hash" : "534305474", 
+			"out_time" : "133479924620266217"
+		}, 
+		"assets/references/spec_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926009907", 
+			"in_hash" : "3369829814", 
+			"out_hash" : "3369829814", 
+			"out_time" : "133479924620276219"
+		}, 
+		"assets/references/spec_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926009907", 
+			"in_hash" : "251712359", 
+			"out_hash" : "251712359", 
+			"out_time" : "133479924620296231"
+		}, 
+		"assets/references/spec_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926019911", 
+			"in_hash" : "2998355698", 
+			"out_hash" : "2998355698", 
+			"out_time" : "133479924620306236"
+		}, 
+		"assets/references/spec_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926029890", 
+			"in_hash" : "275204404", 
+			"out_hash" : "275204404", 
+			"out_time" : "133479924620356221"
+		}, 
+		"assets/references/spec_mat8/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926039907", 
+			"in_hash" : "4198535727", 
+			"out_hash" : "4198535727", 
+			"out_time" : "133479924620376232"
+		}, 
+		"assets/references/spec_mat9/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926049890", 
+			"in_hash" : "132198906", 
+			"out_hash" : "132198906", 
+			"out_time" : "133479924620416223"
+		}, 
+		"assets/scenes/spec_mat5.json" : {
+			"in_time" : "133482673926359894", 
+			"in_hash" : "1654362686", 
+			"out_hash" : "3877491841", 
+			"out_time" : "133479893942040865"
+		}, 
+		"assets/materials/mat_test/spec_mat1.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "2995922971", 
+			"out_hash" : "2379689687", 
+			"out_time" : "133482687205912490", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2379689687"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2379689687"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2379689687"
+				}
+			}
+		}, 
+		"assets/scenes/spec_mat6.json" : {
+			"in_time" : "133482673926369896", 
+			"in_hash" : "2674161921", 
+			"out_hash" : "3326816289", 
+			"out_time" : "133479893942090851"
+		}, 
+		"assets/materials/mat_test/spec_mat2.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "3383584480", 
+			"out_hash" : "528392899", 
+			"out_time" : "133482687205992478", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "528392899"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "528392899"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "528392899"
+				}
+			}
+		}, 
+		"assets/scenes/spec_mat7.json" : {
+			"in_time" : "133482673926369896", 
+			"in_hash" : "1083013705", 
+			"out_hash" : "1320154309", 
+			"out_time" : "133479893942130838"
+		}, 
+		"assets/materials/mat_test/spec_mat3.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "1118682109", 
+			"out_hash" : "1817633517", 
+			"out_time" : "133482687206132484", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "1817633517"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1817633517"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1817633517"
+				}
+			}
+		}, 
+		"assets/scenes/spec_mat8.json" : {
+			"in_time" : "133482673926369896", 
+			"in_hash" : "44919888", 
+			"out_hash" : "890118376", 
+			"out_time" : "133479893942170831"
+		}, 
+		"assets/materials/mat_test/spec_mat4.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "1676800566", 
+			"out_hash" : "231628283", 
+			"out_time" : "133482687206172490", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "231628283"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "231628283"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "231628283"
+				}
+			}
+		}, 
+		"assets/scenes/spec_mat9.json" : {
+			"in_time" : "133482673926369896", 
+			"in_hash" : "599277166", 
+			"out_hash" : "3187351108", 
+			"out_time" : "133479893942220833"
+		}, 
+		"assets/scenes/diff_mat1.json" : {
+			"in_time" : "133482673926289897", 
+			"in_hash" : "530896108", 
+			"out_hash" : "2643631078", 
+			"out_time" : "133479895218914922"
+		}, 
+		"assets/scenes/diff_mat2.json" : {
+			"in_time" : "133482673926289897", 
+			"in_hash" : "3492013263", 
+			"out_hash" : "1984893270", 
+			"out_time" : "133479895218955969"
+		}, 
+		"assets/scenes/diff_mat3.json" : {
+			"in_time" : "133482673926289897", 
+			"in_hash" : "3338801866", 
+			"out_hash" : "3289971772", 
+			"out_time" : "133479895219004874"
+		}, 
+		"assets/scenes/diff_mat4.json" : {
+			"in_time" : "133482673926289897", 
+			"in_hash" : "2322043408", 
+			"out_hash" : "2601999694", 
+			"out_time" : "133479895219054875"
+		}, 
+		"assets/scenes/spec_mat0.json" : {
+			"in_time" : "133482673926349897", 
+			"in_hash" : "3189752468", 
+			"out_hash" : "2481655715", 
+			"out_time" : "133479901447661345"
+		}, 
+		"assets/scenes/spec_mat1.json" : {
+			"in_time" : "133482673926359894", 
+			"in_hash" : "3067117246", 
+			"out_hash" : "1420578717", 
+			"out_time" : "133479916651644416"
+		}, 
+		"assets/scenes/spec_mat2.json" : {
+			"in_time" : "133482673926359894", 
+			"in_hash" : "2137675219", 
+			"out_hash" : "110786455", 
+			"out_time" : "133479916651684426"
+		}, 
+		"assets/scenes/spec_mat3.json" : {
+			"in_time" : "133482673926359894", 
+			"in_hash" : "3168873448", 
+			"out_hash" : "14535428", 
+			"out_time" : "133479916651724510"
+		}, 
+		"assets/scenes/spec_mat4.json" : {
+			"in_time" : "133482673926359894", 
+			"in_hash" : "3360200991", 
+			"out_hash" : "1586451160", 
+			"out_time" : "133479916651764413"
+		}, 
+		"assets/materials/mat_test/metal_mat0.txt" : {
+			"in_time" : "133482673924028281", 
+			"in_hash" : "952954200", 
+			"out_hash" : "3934459975", 
+			"out_time" : "133482687204912216", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3934459975"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3934459975"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3934459975"
+				}
+			}
+		}, 
+		"assets/references/metal_mat0/ref.png" : {
+			"in_time" : "133479827363491539", 
+			"in_hash" : "3151321762", 
+			"color" : 4287269461, 
+			"out_hash" : "1125970877", 
+			"out_time" : "133479923527896786"
+		}, 
+		"assets/references/metal_mat0/ref_nogi.png" : {
+			"in_time" : "133479827363501538", 
+			"in_hash" : "3383493348", 
+			"color" : 4282992968, 
+			"out_hash" : "2527255608", 
+			"out_time" : "133479923528106791"
+		}, 
+		"assets/references/metal_mat0/ref_noshadow.png" : {
+			"in_time" : "133479827363511549", 
+			"in_hash" : "1830369699", 
+			"color" : 4283387726, 
+			"out_hash" : "158541023", 
+			"out_time" : "133479923528296801"
+		}, 
+		"assets/references/metal_mat1/ref.png" : {
+			"in_time" : "133479827363531546", 
+			"in_hash" : "1011198569", 
+			"color" : 4283797134, 
+			"out_hash" : "3867709779", 
+			"out_time" : "133479923528576799"
+		}, 
+		"assets/references/metal_mat1/ref_nogi.png" : {
+			"in_time" : "133479827363541538", 
+			"in_hash" : "623371742", 
+			"color" : 4282930260, 
+			"out_hash" : "250351786", 
+			"out_time" : "133479923528786787"
+		}, 
+		"assets/references/metal_mat1/ref_noshadow.png" : {
+			"in_time" : "133479827363551537", 
+			"in_hash" : "4244967954", 
+			"color" : 4283325275, 
+			"out_hash" : "2670015998", 
+			"out_time" : "133479923528986803"
+		}, 
+		"assets/references/metal_mat2/ref.png" : {
+			"in_time" : "133479827363571538", 
+			"in_hash" : "2150032682", 
+			"color" : 4287911316, 
+			"out_hash" : "3620866212", 
+			"out_time" : "133479923529226814"
+		}, 
+		"assets/references/metal_mat2/ref_nogi.png" : {
+			"in_time" : "133479827363581544", 
+			"in_hash" : "3512970853", 
+			"color" : 4285220971, 
+			"out_hash" : "1850930219", 
+			"out_time" : "133479923529437710"
+		}, 
+		"assets/references/metal_mat2/ref_noshadow.png" : {
+			"in_time" : "133479827363591542", 
+			"in_hash" : "2367690132", 
+			"color" : 4285746803, 
+			"out_hash" : "2869219249", 
+			"out_time" : "133479923529646832"
+		}, 
+		"assets/references/metal_mat3/ref.png" : {
+			"in_time" : "133479827363611538", 
+			"in_hash" : "145340823", 
+			"color" : 4283798357, 
+			"out_hash" : "677658385", 
+			"out_time" : "133479923529896811"
+		}, 
+		"assets/references/metal_mat3/ref_nogi.png" : {
+			"in_time" : "133479827363621542", 
+			"in_hash" : "874581972", 
+			"color" : 4282938440, 
+			"out_hash" : "3714969587", 
+			"out_time" : "133479923530216802"
+		}, 
+		"assets/references/metal_mat3/ref_noshadow.png" : {
+			"in_time" : "133479827363631539", 
+			"in_hash" : "197815760", 
+			"color" : 4283333966, 
+			"out_hash" : "1478264926", 
+			"out_time" : "133479923530426800"
+		}, 
+		"assets/references/metal_mat4/ref.png" : {
+			"in_time" : "133479827363651537", 
+			"in_hash" : "1471175910", 
+			"color" : 4283782538, 
+			"out_hash" : "888294877", 
+			"out_time" : "133479923530636789"
+		}, 
+		"assets/references/metal_mat4/ref_nogi.png" : {
+			"in_time" : "133479827363661541", 
+			"in_hash" : "96733259", 
+			"color" : 4282927217, 
+			"out_hash" : "4049154500", 
+			"out_time" : "133479923530836810"
+		}, 
+		"assets/references/metal_mat4/ref_noshadow.png" : {
+			"in_time" : "133479827363671545", 
+			"in_hash" : "524762065", 
+			"color" : 4283321977, 
+			"out_hash" : "213139306", 
+			"out_time" : "133479923531026801"
+		}, 
+		"assets/scenes/metal_mat0.json" : {
+			"in_time" : "133482673926299897", 
+			"in_hash" : "2130074432", 
+			"out_hash" : "1708940077", 
+			"out_time" : "133479923531876793"
+		}, 
+		"assets/references/metal_mat0/ref.uncompressed.png" : {
+			"in_time" : "133482673925178616", 
+			"in_hash" : "3151321762", 
+			"out_hash" : "3151321762", 
+			"out_time" : "133479924619336262"
+		}, 
+		"assets/references/metal_mat0/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925188608", 
+			"in_hash" : "3383493348", 
+			"out_hash" : "3383493348", 
+			"out_time" : "133479924619366219"
+		}, 
+		"assets/references/metal_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925198611", 
+			"in_hash" : "1830369699", 
+			"out_hash" : "1830369699", 
+			"out_time" : "133479924619416217"
+		}, 
+		"assets/references/metal_mat1/ref.uncompressed.png" : {
+			"in_time" : "133482673925208617", 
+			"in_hash" : "1011198569", 
+			"out_hash" : "1011198569", 
+			"out_time" : "133479924619456223"
+		}, 
+		"assets/references/metal_mat1/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925218613", 
+			"in_hash" : "623371742", 
+			"out_hash" : "623371742", 
+			"out_time" : "133479924619516243"
+		}, 
+		"assets/references/metal_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925228613", 
+			"in_hash" : "4244967954", 
+			"out_hash" : "4244967954", 
+			"out_time" : "133479924619556219"
+		}, 
+		"assets/references/metal_mat2/ref.uncompressed.png" : {
+			"in_time" : "133482673925238614", 
+			"in_hash" : "2150032682", 
+			"out_hash" : "2150032682", 
+			"out_time" : "133479924619586218"
+		}, 
+		"assets/references/metal_mat2/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925248612", 
+			"in_hash" : "3512970853", 
+			"out_hash" : "3512970853", 
+			"out_time" : "133479924619656216"
+		}, 
+		"assets/references/metal_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925258618", 
+			"in_hash" : "2367690132", 
+			"out_hash" : "2367690132", 
+			"out_time" : "133479924619716225"
+		}, 
+		"assets/references/metal_mat3/ref.uncompressed.png" : {
+			"in_time" : "133482673925268606", 
+			"in_hash" : "145340823", 
+			"out_hash" : "145340823", 
+			"out_time" : "133479924619756222"
+		}, 
+		"assets/references/metal_mat3/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925278612", 
+			"in_hash" : "874581972", 
+			"out_hash" : "874581972", 
+			"out_time" : "133479924619826217"
+		}, 
+		"assets/references/metal_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925288626", 
+			"in_hash" : "197815760", 
+			"out_hash" : "197815760", 
+			"out_time" : "133479924619866232"
+		}, 
+		"assets/references/metal_mat4/ref.uncompressed.png" : {
+			"in_time" : "133482673925308627", 
+			"in_hash" : "1471175910", 
+			"out_hash" : "1471175910", 
+			"out_time" : "133479924619886225"
+		}, 
+		"assets/references/metal_mat4/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925308627", 
+			"in_hash" : "96733259", 
+			"out_hash" : "96733259", 
+			"out_time" : "133479924619906221"
+		}, 
+		"assets/references/metal_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925318610", 
+			"in_hash" : "524762065", 
+			"out_hash" : "524762065", 
+			"out_time" : "133479924619916225"
+		}, 
+		"assets/materials/mat_test/metal_mat1.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "2445314681", 
+			"out_hash" : "952882158", 
+			"out_time" : "133482687204952513", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "952882158"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "952882158"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "952882158"
+				}
+			}
+		}, 
+		"assets/scenes/metal_mat1.json" : {
+			"in_time" : "133482673926299897", 
+			"in_hash" : "303867750", 
+			"out_hash" : "2463897967", 
+			"out_time" : "133479929126817471"
+		}, 
+		"assets/materials/mat_test/metal_mat2.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "1426354609", 
+			"out_hash" : "2027780343", 
+			"out_time" : "133482687205012494", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2027780343"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2027780343"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2027780343"
+				}
+			}
+		}, 
+		"assets/scenes/metal_mat2.json" : {
+			"in_time" : "133482673926309897", 
+			"in_hash" : "4008632149", 
+			"out_hash" : "3816952318", 
+			"out_time" : "133479930248006841"
+		}, 
+		"assets/materials/mat_test/metal_mat3.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "1892270117", 
+			"out_hash" : "2881770919", 
+			"out_time" : "133482687205042489", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2881770919"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2881770919"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2881770919"
+				}
+			}
+		}, 
+		"assets/scenes/metal_mat3.json" : {
+			"in_time" : "133482673926309897", 
+			"in_hash" : "2514110340", 
+			"out_hash" : "2190782153", 
+			"out_time" : "133479931496819256"
+		}, 
+		"assets/materials/mat_test/metal_mat4.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "2944175822", 
+			"out_hash" : "330992977", 
+			"out_time" : "133482687205082487", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "330992977"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "330992977"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "330992977"
+				}
+			}
+		}, 
+		"assets/scenes/metal_mat4.json" : {
+			"in_time" : "133482673926309897", 
+			"in_hash" : "2181703871", 
+			"out_hash" : "2159555253", 
+			"out_time" : "133479932545852506"
+		}, 
+		"assets/references/metal_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925328611", 
+			"in_hash" : "3138356288", 
+			"out_hash" : "3138356288", 
+			"out_time" : "133479940288409708"
+		}, 
+		"assets/scenes/metal_mat5.json" : {
+			"in_time" : "133482673926309897", 
+			"in_hash" : "3293633519", 
+			"out_hash" : "2216439964", 
+			"out_time" : "133479940288459691"
+		}, 
+		"assets/scenes/metal_mat6.json" : {
+			"in_time" : "133482673926309897", 
+			"in_hash" : "4106170639", 
+			"out_hash" : "2767805488", 
+			"out_time" : "133479940288499692"
+		}, 
+		"assets/scenes/metal_mat7.json" : {
+			"in_time" : "133482673926319897", 
+			"in_hash" : "1036819178", 
+			"out_hash" : "1276252685", 
+			"out_time" : "133479940288539706"
+		}, 
+		"assets/scenes/metal_mat8.json" : {
+			"in_time" : "133482673926319897", 
+			"in_hash" : "3646203561", 
+			"out_hash" : "849888147", 
+			"out_time" : "133479940288609700"
+		}, 
+		"assets/scenes/metal_mat9.json" : {
+			"in_time" : "133482673926319897", 
+			"in_hash" : "1987766901", 
+			"out_hash" : "3834480692", 
+			"out_time" : "133479940288659693"
+		}, 
+		"assets/references/metal_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925338608", 
+			"in_hash" : "4124821823", 
+			"out_hash" : "4124821823", 
+			"out_time" : "133479949082348536"
+		}, 
+		"assets/references/metal_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925348608", 
+			"in_hash" : "863785194", 
+			"out_hash" : "863785194", 
+			"out_time" : "133479949082378529"
+		}, 
+		"assets/references/metal_mat8/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925358606", 
+			"in_hash" : "3589237890", 
+			"out_hash" : "3589237890", 
+			"out_time" : "133479949082438515"
+		}, 
+		"assets/references/metal_mat9/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925358606", 
+			"in_hash" : "4016849058", 
+			"out_hash" : "4016849058", 
+			"out_time" : "133479949082519063"
+		}, 
+		"assets/materials/mat_test/plastic_mat0.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "1510100187", 
+			"out_hash" : "1977387569", 
+			"out_time" : "133482687205192481", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "1977387569"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1977387569"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1977387569"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/plastic_mat1.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "3004787443", 
+			"out_hash" : "557538419", 
+			"out_time" : "133482687205292494", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "557538419"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "557538419"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "557538419"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/plastic_mat2.txt" : {
+			"in_time" : "133482673924038285", 
+			"in_hash" : "3049775106", 
+			"out_hash" : "3458002906", 
+			"out_time" : "133482687205362482", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3458002906"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3458002906"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3458002906"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/plastic_mat3.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "2184092097", 
+			"out_hash" : "2214587611", 
+			"out_time" : "133482687205402486", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2214587611"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2214587611"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2214587611"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/plastic_mat4.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "503454986", 
+			"out_hash" : "302442481", 
+			"out_time" : "133482687205492498", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "302442481"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "302442481"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "302442481"
+				}
+			}
+		}, 
+		"assets/references/plastic_mat0/ref.uncompressed.png" : {
+			"in_time" : "133482673925378607", 
+			"in_hash" : "4225223230", 
+			"out_hash" : "4225223230", 
+			"out_time" : "133480053803847961"
+		}, 
+		"assets/references/plastic_mat0/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925388605", 
+			"in_hash" : "2866264103", 
+			"out_hash" : "2866264103", 
+			"out_time" : "133480053803857954"
+		}, 
+		"assets/references/plastic_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925398626", 
+			"in_hash" : "1263840942", 
+			"out_hash" : "1263840942", 
+			"out_time" : "133480053803877944"
+		}, 
+		"assets/references/plastic_mat1/ref.uncompressed.png" : {
+			"in_time" : "133482673925408631", 
+			"in_hash" : "2129985592", 
+			"out_hash" : "2129985592", 
+			"out_time" : "133480053803897953"
+		}, 
+		"assets/references/plastic_mat1/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925418617", 
+			"in_hash" : "183952126", 
+			"out_hash" : "183952126", 
+			"out_time" : "133480053803907959"
+		}, 
+		"assets/references/plastic_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925428630", 
+			"in_hash" : "668831836", 
+			"out_hash" : "668831836", 
+			"out_time" : "133480053803927965"
+		}, 
+		"assets/references/plastic_mat2/ref.uncompressed.png" : {
+			"in_time" : "133482673925448611", 
+			"in_hash" : "2802552303", 
+			"out_hash" : "2802552303", 
+			"out_time" : "133480053803947950"
+		}, 
+		"assets/references/plastic_mat2/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925458607", 
+			"in_hash" : "3283345928", 
+			"out_hash" : "3283345928", 
+			"out_time" : "133480053803957956"
+		}, 
+		"assets/references/plastic_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925468606", 
+			"in_hash" : "607196630", 
+			"out_hash" : "607196630", 
+			"out_time" : "133480053803997957"
+		}, 
+		"assets/references/plastic_mat3/ref.uncompressed.png" : {
+			"in_time" : "133482673925478604", 
+			"in_hash" : "531572085", 
+			"out_hash" : "531572085", 
+			"out_time" : "133480053804017955"
+		}, 
+		"assets/references/plastic_mat3/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925488614", 
+			"in_hash" : "102383579", 
+			"out_hash" : "102383579", 
+			"out_time" : "133480053804037978"
+		}, 
+		"assets/references/plastic_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925498616", 
+			"in_hash" : "3589002232", 
+			"out_hash" : "3589002232", 
+			"out_time" : "133480053804057957"
+		}, 
+		"assets/references/plastic_mat4/ref.uncompressed.png" : {
+			"in_time" : "133482673925508612", 
+			"in_hash" : "3622919189", 
+			"out_hash" : "3622919189", 
+			"out_time" : "133480053804077946"
+		}, 
+		"assets/references/plastic_mat4/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925518615", 
+			"in_hash" : "3627170235", 
+			"out_hash" : "3627170235", 
+			"out_time" : "133480053804097948"
+		}, 
+		"assets/references/plastic_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925528610", 
+			"in_hash" : "2989162318", 
+			"out_hash" : "2989162318", 
+			"out_time" : "133480053804117965"
+		}, 
+		"assets/references/plastic_mat5/ref.uncompressed.png" : {
+			"in_time" : "133482673925548602", 
+			"in_hash" : "3349534429", 
+			"out_hash" : "3349534429", 
+			"out_time" : "133480053804227952"
+		}, 
+		"assets/references/plastic_mat5/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925558611", 
+			"in_hash" : "1300439590", 
+			"out_hash" : "1300439590", 
+			"out_time" : "133480053804317969"
+		}, 
+		"assets/references/plastic_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925568612", 
+			"in_hash" : "1685784557", 
+			"out_hash" : "1685784557", 
+			"out_time" : "133480053804397955"
+		}, 
+		"assets/references/plastic_mat6/ref.uncompressed.png" : {
+			"in_time" : "133482673925578612", 
+			"in_hash" : "2145676720", 
+			"out_hash" : "2145676720", 
+			"out_time" : "133480053804437974"
+		}, 
+		"assets/references/plastic_mat6/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925588612", 
+			"in_hash" : "3397321621", 
+			"out_hash" : "3397321621", 
+			"out_time" : "133480053804507964"
+		}, 
+		"assets/references/plastic_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925598608", 
+			"in_hash" : "2882103220", 
+			"out_hash" : "2882103220", 
+			"out_time" : "133480053804557985"
+		}, 
+		"assets/references/plastic_mat7/ref.uncompressed.png" : {
+			"in_time" : "133482673925608610", 
+			"in_hash" : "361206036", 
+			"out_hash" : "361206036", 
+			"out_time" : "133480053804617957"
+		}, 
+		"assets/references/plastic_mat7/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925628607", 
+			"in_hash" : "2538379928", 
+			"out_hash" : "2538379928", 
+			"out_time" : "133480053804667963"
+		}, 
+		"assets/references/plastic_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925638610", 
+			"in_hash" : "1245364864", 
+			"out_hash" : "1245364864", 
+			"out_time" : "133480053804687959"
+		}, 
+		"assets/references/plastic_mat8/ref.uncompressed.png" : {
+			"in_time" : "133482673925648608", 
+			"in_hash" : "3841175573", 
+			"out_hash" : "3841175573", 
+			"out_time" : "133480053804707953"
+		}, 
+		"assets/references/plastic_mat8/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925658605", 
+			"in_hash" : "1723012933", 
+			"out_hash" : "1723012933", 
+			"out_time" : "133480053804727951"
+		}, 
+		"assets/references/plastic_mat8/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925668614", 
+			"in_hash" : "3080241817", 
+			"out_hash" : "3080241817", 
+			"out_time" : "133480053804747954"
+		}, 
+		"assets/references/plastic_mat9/ref.uncompressed.png" : {
+			"in_time" : "133482673925688611", 
+			"in_hash" : "2521912070", 
+			"out_hash" : "2521912070", 
+			"out_time" : "133480053804787983"
+		}, 
+		"assets/references/plastic_mat9/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925698613", 
+			"in_hash" : "1525972400", 
+			"out_hash" : "1525972400", 
+			"out_time" : "133480053804807956"
+		}, 
+		"assets/references/plastic_mat9/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925708614", 
+			"in_hash" : "3464553894", 
+			"out_hash" : "3464553894", 
+			"out_time" : "133480053804827971"
+		}, 
+		"assets/scenes/plastic_mat0.json" : {
+			"in_time" : "133482673926319897", 
+			"in_hash" : "3903862015", 
+			"out_hash" : "4011683517", 
+			"out_time" : "133480053804887942"
+		}, 
+		"assets/scenes/plastic_mat1.json" : {
+			"in_time" : "133482673926319897", 
+			"in_hash" : "7007524", 
+			"out_hash" : "2950944226", 
+			"out_time" : "133480053804927982"
+		}, 
+		"assets/scenes/plastic_mat2.json" : {
+			"in_time" : "133482673926319897", 
+			"in_hash" : "2617005186", 
+			"out_hash" : "2451099118", 
+			"out_time" : "133480053804967940"
+		}, 
+		"assets/scenes/plastic_mat3.json" : {
+			"in_time" : "133482673926329896", 
+			"in_hash" : "961770841", 
+			"out_hash" : "1828642328", 
+			"out_time" : "133480053804997941"
+		}, 
+		"assets/scenes/plastic_mat4.json" : {
+			"in_time" : "133482673926329896", 
+			"in_hash" : "3166984248", 
+			"out_hash" : "2259968210", 
+			"out_time" : "133480053805037942"
+		}, 
+		"assets/scenes/plastic_mat5.json" : {
+			"in_time" : "133482673926329896", 
+			"in_hash" : "2735976464", 
+			"out_hash" : "1674116297", 
+			"out_time" : "133480053805077940"
+		}, 
+		"assets/scenes/plastic_mat6.json" : {
+			"in_time" : "133482673926329896", 
+			"in_hash" : "1129125030", 
+			"out_hash" : "3247688939", 
+			"out_time" : "133480053805127937"
+		}, 
+		"assets/scenes/plastic_mat7.json" : {
+			"in_time" : "133482673926329896", 
+			"in_hash" : "1132599343", 
+			"out_hash" : "3145813421", 
+			"out_time" : "133480053805157947"
+		}, 
+		"assets/scenes/plastic_mat8.json" : {
+			"in_time" : "133482673926339896", 
+			"in_hash" : "770958617", 
+			"out_hash" : "1807865399", 
+			"out_time" : "133480053805197952"
+		}, 
+		"assets/scenes/plastic_mat9.json" : {
+			"in_time" : "133482673926339896", 
+			"in_hash" : "1422635618", 
+			"out_hash" : "155649213", 
+			"out_time" : "133480053805237980"
+		}, 
+		"assets/materials/mat_test/tint_mat0.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "2577672571", 
+			"out_hash" : "4222680534", 
+			"out_time" : "133482687206217651", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "4222680534"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "4222680534"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "4222680534"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/tint_mat1.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "1773879692", 
+			"out_hash" : "896605553", 
+			"out_time" : "133482687206277630", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "896605553"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "896605553"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "896605553"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/tint_mat2.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "1629984241", 
+			"out_hash" : "3128764494", 
+			"out_time" : "133482687206307632", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3128764494"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3128764494"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3128764494"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/tint_mat3.txt" : {
+			"in_time" : "133482673924058280", 
+			"in_hash" : "589169387", 
+			"out_hash" : "3680242360", 
+			"out_time" : "133482687206347633", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3680242360"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3680242360"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3680242360"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/tint_mat4.txt" : {
+			"in_time" : "133482673924068282", 
+			"in_hash" : "4036808031", 
+			"out_hash" : "523275978", 
+			"out_time" : "133482687206377640", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "523275978"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "523275978"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "523275978"
+				}
+			}
+		}, 
+		"assets/references/tint_mat0/ref.uncompressed.png" : {
+			"in_time" : "133482673926069887", 
+			"in_hash" : "3969557390", 
+			"out_hash" : "3969557390", 
+			"out_time" : "133480085622910483"
+		}, 
+		"assets/references/tint_mat0/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673926079895", 
+			"in_hash" : "3387862396", 
+			"out_hash" : "3387862396", 
+			"out_time" : "133480085622940476"
+		}, 
+		"assets/references/tint_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926089900", 
+			"in_hash" : "2126151718", 
+			"out_hash" : "2126151718", 
+			"out_time" : "133480085622960500"
+		}, 
+		"assets/references/tint_mat1/ref.uncompressed.png" : {
+			"in_time" : "133482673926099898", 
+			"in_hash" : "44865794", 
+			"out_hash" : "44865794", 
+			"out_time" : "133480085623000522"
+		}, 
+		"assets/references/tint_mat1/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673926109902", 
+			"in_hash" : "3760688016", 
+			"out_hash" : "3760688016", 
+			"out_time" : "133480085623020483"
+		}, 
+		"assets/references/tint_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926119896", 
+			"in_hash" : "3999789768", 
+			"out_hash" : "3999789768", 
+			"out_time" : "133480085623110474"
+		}, 
+		"assets/references/tint_mat2/ref.uncompressed.png" : {
+			"in_time" : "133482673926129892", 
+			"in_hash" : "3552885224", 
+			"out_hash" : "3552885224", 
+			"out_time" : "133480085623230491"
+		}, 
+		"assets/references/tint_mat2/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673926139897", 
+			"in_hash" : "931731342", 
+			"out_hash" : "931731342", 
+			"out_time" : "133480085623290480"
+		}, 
+		"assets/references/tint_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926149886", 
+			"in_hash" : "2602720684", 
+			"out_hash" : "2602720684", 
+			"out_time" : "133480085623400475"
+		}, 
+		"assets/references/tint_mat3/ref.uncompressed.png" : {
+			"in_time" : "133482673926169896", 
+			"in_hash" : "1185466390", 
+			"out_hash" : "1185466390", 
+			"out_time" : "133480085623440476"
+		}, 
+		"assets/references/tint_mat3/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673926179895", 
+			"in_hash" : "1990948745", 
+			"out_hash" : "1990948745", 
+			"out_time" : "133480085623470484"
+		}, 
+		"assets/references/tint_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926189887", 
+			"in_hash" : "3597765652", 
+			"out_hash" : "3597765652", 
+			"out_time" : "133480085623550478"
+		}, 
+		"assets/references/tint_mat4/ref.uncompressed.png" : {
+			"in_time" : "133482673926199896", 
+			"in_hash" : "1687680480", 
+			"out_hash" : "1687680480", 
+			"out_time" : "133480085623580479"
+		}, 
+		"assets/references/tint_mat4/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673926209897", 
+			"in_hash" : "3442706445", 
+			"out_hash" : "3442706445", 
+			"out_time" : "133480085623600479"
+		}, 
+		"assets/references/tint_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926219896", 
+			"in_hash" : "148884650", 
+			"out_hash" : "148884650", 
+			"out_time" : "133480085623620480"
+		}, 
+		"assets/references/tint_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926219896", 
+			"in_hash" : "1098200529", 
+			"out_hash" : "1098200529", 
+			"out_time" : "133480093100974566"
+		}, 
+		"assets/references/tint_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926229905", 
+			"in_hash" : "496930808", 
+			"out_hash" : "496930808", 
+			"out_time" : "133480095412826572"
+		}, 
+		"assets/references/tint_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926239899", 
+			"in_hash" : "2857039408", 
+			"out_hash" : "2857039408", 
+			"out_time" : "133480100203348944"
+		}, 
+		"assets/references/tint_mat8/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926249896", 
+			"in_hash" : "2952465542", 
+			"out_hash" : "2952465542", 
+			"out_time" : "133480104194335997"
+		}, 
+		"assets/references/tint_mat9/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673926259914", 
+			"in_hash" : "3544789137", 
+			"out_hash" : "3544789137", 
+			"out_time" : "133480106805217693"
+		}, 
+		"assets/scenes/tint_mat0.json" : {
+			"in_time" : "133482673926369896", 
+			"in_hash" : "472135583", 
+			"out_hash" : "3655574396", 
+			"out_time" : "133480085623780470"
+		}, 
+		"assets/scenes/tint_mat1.json" : {
+			"in_time" : "133482673926369896", 
+			"in_hash" : "2045139414", 
+			"out_hash" : "1765960445", 
+			"out_time" : "133480085623820467"
+		}, 
+		"assets/scenes/tint_mat2.json" : {
+			"in_time" : "133482673926379896", 
+			"in_hash" : "1894244307", 
+			"out_hash" : "1120580008", 
+			"out_time" : "133480085623940467"
+		}, 
+		"assets/scenes/tint_mat3.json" : {
+			"in_time" : "133482673926379896", 
+			"in_hash" : "3473001827", 
+			"out_hash" : "1633999697", 
+			"out_time" : "133480085624000467"
+		}, 
+		"assets/scenes/tint_mat4.json" : {
+			"in_time" : "133482673926379896", 
+			"in_hash" : "2757610255", 
+			"out_hash" : "574739037", 
+			"out_time" : "133480085624090472"
+		}, 
+		"assets/scenes/tint_mat5.json" : {
+			"in_time" : "133482673926379896", 
+			"in_hash" : "751403576", 
+			"out_hash" : "1872644645", 
+			"out_time" : "133480085624190491"
+		}, 
+		"assets/scenes/tint_mat6.json" : {
+			"in_time" : "133482673926379896", 
+			"in_hash" : "2614113846", 
+			"out_hash" : "1867836607", 
+			"out_time" : "133480085624301465"
+		}, 
+		"assets/scenes/tint_mat7.json" : {
+			"in_time" : "133482673926389895", 
+			"in_hash" : "1355240703", 
+			"out_hash" : "1567180831", 
+			"out_time" : "133480085624360495"
+		}, 
+		"assets/scenes/tint_mat8.json" : {
+			"in_time" : "133482673926389895", 
+			"in_hash" : "2226066171", 
+			"out_hash" : "2507455704", 
+			"out_time" : "133480085624510478"
+		}, 
+		"assets/scenes/tint_mat9.json" : {
+			"in_time" : "133482673926389895", 
+			"in_hash" : "1234435182", 
+			"out_hash" : "2085024355", 
+			"out_time" : "133480085624630488"
+		}, 
+		"assets/materials/mat_test/coat_mat0.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "2125836489", 
+			"out_hash" : "2598178796", 
+			"out_time" : "133482687204310678", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2598178796"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2598178796"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2598178796"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/coat_mat1.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "3303357966", 
+			"out_hash" : "2309042760", 
+			"out_time" : "133482687204330670", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2309042760"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2309042760"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2309042760"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/coat_mat2.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "2806138196", 
+			"out_hash" : "1233636584", 
+			"out_time" : "133482687204350678", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "1233636584"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1233636584"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1233636584"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/coat_mat3.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "310674535", 
+			"out_hash" : "2480567736", 
+			"out_time" : "133482687204390028", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "2480567736"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2480567736"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "2480567736"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/coat_mat4.txt" : {
+			"in_time" : "133482673924018283", 
+			"in_hash" : "3298216705", 
+			"out_hash" : "4196753343", 
+			"out_time" : "133482687204456571", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "4196753343"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "4196753343"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "4196753343"
+				}
+			}
+		}, 
+		"assets/references/coat_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924778615", 
+			"in_hash" : "1247030241", 
+			"out_hash" : "1247030241", 
+			"out_time" : "133480111845199345"
+		}, 
+		"assets/references/coat_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924788614", 
+			"in_hash" : "3878484980", 
+			"out_hash" : "3878484980", 
+			"out_time" : "133480111845239336"
+		}, 
+		"assets/references/coat_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924798614", 
+			"in_hash" : "52933525", 
+			"out_hash" : "52933525", 
+			"out_time" : "133480111845259343"
+		}, 
+		"assets/references/coat_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924808616", 
+			"in_hash" : "1326168609", 
+			"out_hash" : "1326168609", 
+			"out_time" : "133480111845279343"
+		}, 
+		"assets/references/coat_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924808616", 
+			"in_hash" : "3704057651", 
+			"out_hash" : "3704057651", 
+			"out_time" : "133480111845309340"
+		}, 
+		"assets/scenes/coat_mat0.json" : {
+			"in_time" : "133482673926259914", 
+			"in_hash" : "1590186174", 
+			"out_hash" : "2000938456", 
+			"out_time" : "133480111845459346"
+		}, 
+		"assets/scenes/coat_mat1.json" : {
+			"in_time" : "133482673926259914", 
+			"in_hash" : "2746617219", 
+			"out_hash" : "4195417180", 
+			"out_time" : "133480111845539338"
+		}, 
+		"assets/scenes/coat_mat2.json" : {
+			"in_time" : "133482673926269901", 
+			"in_hash" : "2585053406", 
+			"out_hash" : "3069351274", 
+			"out_time" : "133480111845629335"
+		}, 
+		"assets/scenes/coat_mat3.json" : {
+			"in_time" : "133482673926269901", 
+			"in_hash" : "4222484741", 
+			"out_hash" : "1939498239", 
+			"out_time" : "133480111845679347"
+		}, 
+		"assets/scenes/coat_mat4.json" : {
+			"in_time" : "133482673926269901", 
+			"in_hash" : "3095801939", 
+			"out_hash" : "4259296559", 
+			"out_time" : "133480111845719339"
+		}, 
+		"assets/scenes/coat_mat5.json" : {
+			"in_time" : "133482673926269901", 
+			"in_hash" : "693454040", 
+			"out_hash" : "303271500", 
+			"out_time" : "133480111845769339"
+		}, 
+		"assets/scenes/coat_mat6.json" : {
+			"in_time" : "133482673926279893", 
+			"in_hash" : "1282265934", 
+			"out_hash" : "3452068527", 
+			"out_time" : "133480111845879338"
+		}, 
+		"assets/scenes/coat_mat7.json" : {
+			"in_time" : "133482673926279893", 
+			"in_hash" : "3226219767", 
+			"out_hash" : "3168840474", 
+			"out_time" : "133480111845969354"
+		}, 
+		"assets/scenes/coat_mat8.json" : {
+			"in_time" : "133482673926279893", 
+			"in_hash" : "308729231", 
+			"out_hash" : "2040374831", 
+			"out_time" : "133480111846039357"
+		}, 
+		"assets/scenes/coat_mat9.json" : {
+			"in_time" : "133482673926279893", 
+			"in_hash" : "1133088826", 
+			"out_hash" : "765000619", 
+			"out_time" : "133480111846079347"
+		}, 
+		"assets/references/coat_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924818608", 
+			"in_hash" : "2944027049", 
+			"out_hash" : "2944027049", 
+			"out_time" : "133480154931498253"
+		}, 
+		"assets/references/coat_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924828609", 
+			"in_hash" : "1417958132", 
+			"out_hash" : "1417958132", 
+			"out_time" : "133480160885401966"
+		}, 
+		"assets/references/coat_mat8/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924848609", 
+			"in_hash" : "3787051399", 
+			"out_hash" : "3787051399", 
+			"out_time" : "133480174269080686"
+		}, 
+		"assets/references/coat_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924838612", 
+			"in_hash" : "1118448233", 
+			"out_hash" : "1118448233", 
+			"out_time" : "133480167400534559"
+		}, 
+		"assets/references/coat_mat9/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673924858613", 
+			"in_hash" : "885249406", 
+			"out_hash" : "885249406", 
+			"out_time" : "133480174269090695"
+		}, 
+		"assets/materials/mat_test/sheen_mat0.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "212962729", 
+			"out_hash" : "3753327633", 
+			"out_time" : "133482687205532485", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3753327633"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3753327633"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3753327633"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/sheen_mat1.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "2649870200", 
+			"out_hash" : "1168348527", 
+			"out_time" : "133482687205592482", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "1168348527"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1168348527"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "1168348527"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/sheen_mat2.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "100802902", 
+			"out_hash" : "3951822122", 
+			"out_time" : "133482687205712491", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3951822122"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3951822122"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3951822122"
+				}
+			}
+		}, 
+		"assets/materials/mat_test/sheen_mat3.txt" : {
+			"in_time" : "133482673924048282", 
+			"in_hash" : "3025968883", 
+			"out_hash" : "3040798122", 
+			"out_time" : "133482687205822480", 
+			"deps" : {
+				"assets/textures/default_basecolor.dds" : {
+					"in_time" : "лллллллллллллллллллллллллллллллллллллллллллл", 
+					"in_hash" : "3040798122"
+				}, 
+				"assets/textures/default_normalmap.dds" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3040798122"
+				}, 
+				"assets/textures/default_specular.png" : {
+					"in_time" : "133482673926419898", 
+					"in_hash" : "3040798122"
+				}
+			}
+		}, 
+		"assets/references/sheen_mat0/ref.uncompressed.png" : {
+			"in_time" : "133482673925718611", 
+			"in_hash" : "1118216153", 
+			"out_hash" : "1118216153", 
+			"out_time" : "133480184514983652"
+		}, 
+		"assets/references/sheen_mat0/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925718611", 
+			"in_hash" : "3430775608", 
+			"out_hash" : "3430775608", 
+			"out_time" : "133480184515013656"
+		}, 
+		"assets/references/sheen_mat0/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925728612", 
+			"in_hash" : "59214819", 
+			"out_hash" : "59214819", 
+			"out_time" : "133480184515073651"
+		}, 
+		"assets/references/sheen_mat1/ref.uncompressed.png" : {
+			"in_time" : "133482673925738614", 
+			"in_hash" : "3536229656", 
+			"out_hash" : "3536229656", 
+			"out_time" : "133480184515103663"
+		}, 
+		"assets/references/sheen_mat1/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925748613", 
+			"in_hash" : "3695419512", 
+			"out_hash" : "3695419512", 
+			"out_time" : "133480184515113640"
+		}, 
+		"assets/references/sheen_mat1/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925758612", 
+			"in_hash" : "3532433580", 
+			"out_hash" : "3532433580", 
+			"out_time" : "133480184515133633"
+		}, 
+		"assets/references/sheen_mat2/ref.uncompressed.png" : {
+			"in_time" : "133482673925768615", 
+			"in_hash" : "1841320006", 
+			"out_hash" : "1841320006", 
+			"out_time" : "133480184515193722"
+		}, 
+		"assets/references/sheen_mat2/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925778605", 
+			"in_hash" : "1934737341", 
+			"out_hash" : "1934737341", 
+			"out_time" : "133480184515223643"
+		}, 
+		"assets/references/sheen_mat2/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925788612", 
+			"in_hash" : "3431361158", 
+			"out_hash" : "3431361158", 
+			"out_time" : "133480184515243642"
+		}, 
+		"assets/references/sheen_mat3/ref.uncompressed.png" : {
+			"in_time" : "133482673925798613", 
+			"in_hash" : "3570008256", 
+			"out_hash" : "3570008256", 
+			"out_time" : "133480184515273650"
+		}, 
+		"assets/references/sheen_mat3/ref_nogi.uncompressed.png" : {
+			"in_time" : "133482673925808612", 
+			"in_hash" : "3676780763", 
+			"out_hash" : "3676780763", 
+			"out_time" : "133480184515293639"
+		}, 
+		"assets/references/sheen_mat3/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925818608", 
+			"in_hash" : "2044467429", 
+			"out_hash" : "2044467429", 
+			"out_time" : "133480184515343642"
+		}, 
+		"assets/scenes/sheen_mat0.json" : {
+			"in_time" : "133482673926339896", 
+			"in_hash" : "3404248616", 
+			"out_hash" : "2489744420", 
+			"out_time" : "133480184517439237"
+		}, 
+		"assets/scenes/sheen_mat1.json" : {
+			"in_time" : "133482673926339896", 
+			"in_hash" : "2432655134", 
+			"out_hash" : "1027030118", 
+			"out_time" : "133480184517539232"
+		}, 
+		"assets/scenes/sheen_mat2.json" : {
+			"in_time" : "133482673926339896", 
+			"in_hash" : "2728796454", 
+			"out_hash" : "1464128329", 
+			"out_time" : "133480184517649240"
+		}, 
+		"assets/scenes/sheen_mat3.json" : {
+			"in_time" : "133482673926349897", 
+			"in_hash" : "2066543298", 
+			"out_hash" : "1389645474", 
+			"out_time" : "133480184517739258"
+		}, 
+		"assets/references/sheen_mat4/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925828612", 
+			"in_hash" : "789627149", 
+			"out_hash" : "789627149", 
+			"out_time" : "133480208996124293"
+		}, 
+		"assets/references/sheen_mat5/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925838610", 
+			"in_hash" : "3232733543", 
+			"out_hash" : "3232733543", 
+			"out_time" : "133480208996154296"
+		}, 
+		"assets/references/sheen_mat6/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925838610", 
+			"in_hash" : "1632698578", 
+			"out_hash" : "1632698578", 
+			"out_time" : "133480208996174297"
+		}, 
+		"assets/references/sheen_mat7/ref_noshadow.uncompressed.png" : {
+			"in_time" : "133482673925848612", 
+			"in_hash" : "1774090792", 
+			"out_hash" : "1774090792", 
+			"out_time" : "133480208996214299"
+		}, 
+		"assets/scenes/sheen_mat4.json" : {
+			"in_time" : "133482673926349897", 
+			"in_hash" : "3846862886", 
+			"out_hash" : "4059370993", 
+			"out_time" : "133480211218902079"
+		}, 
+		"assets/scenes/sheen_mat5.json" : {
+			"in_time" : "133482673926349897", 
+			"in_hash" : "1001158661", 
+			"out_hash" : "77787891", 
+			"out_time" : "133480211218962072"
+		}, 
+		"assets/scenes/sheen_mat6.json" : {
+			"in_time" : "133482673926349897", 
+			"in_hash" : "1026545500", 
+			"out_hash" : "2661533637", 
+			"out_time" : "133480211219002075"
+		}, 
+		"assets/scenes/sheen_mat7.json" : {
+			"in_time" : "133482673926349897", 
+			"in_hash" : "800398048", 
+			"out_hash" : "4001632694", 
+			"out_time" : "133480211219042078"
+		}
+	}
+}
