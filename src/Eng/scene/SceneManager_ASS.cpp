@@ -15,17 +15,18 @@
 #undef max
 #undef min
 
-#include <Eng/gui/Renderer.h>
-#include <Eng/gui/Utils.h>
 #include <Net/hash/Crc32.h>
 #include <Net/hash/murmur.h>
-#include <Ray/internal/TextureSplitter.h>
+//#include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/MonoAlloc.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
+
+#include "../gui/Renderer.h"
+#include "../gui/Utils.h"
 
 #include <glslang/Include/glslang_c_interface.h>
 

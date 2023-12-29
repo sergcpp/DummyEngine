@@ -3,7 +3,6 @@
 #include <fstream>
 #include <future>
 
-#include <Eng/utils/Load.h>
 #include <Net/Compress.h>
 #include <Ren/Utils.h>
 #include <Sys/Json.h>
@@ -11,6 +10,8 @@
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
+
+#include "../utils/Load.h"
 
 // faster than std::min/max in debug
 #define _MIN(x, y) ((x) < (y) ? (x) : (y))
