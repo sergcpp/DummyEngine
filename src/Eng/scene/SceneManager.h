@@ -95,7 +95,7 @@ struct assets_context_t {
 
 class SceneManager {
   public:
-    SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context &snd_ctx,
+    SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context *snd_ctx,
                  Sys::ThreadPool &threads, const path_config_t &paths);
     ~SceneManager();
 
@@ -223,7 +223,7 @@ class SceneManager {
 
     Ren::Context &ren_ctx_;
     Eng::ShaderLoader &sh_;
-    Snd::Context &snd_ctx_;
+    Snd::Context *snd_ctx_ = nullptr;
     Ren::MeshRef cam_rig_;
     Ren::Tex2DRef error_tex_;
     //Ray::RendererBase &ray_renderer_;

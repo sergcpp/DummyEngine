@@ -77,8 +77,6 @@ set(SOURCE_FILES Anim.h
                  SparseArray.h
                  Storage.h
                  String.h
-                 TaskExecutor.h
-                 TaskExecutor.cpp
                  Texture.h
                  Texture.cpp
                  TextureAtlas.h
@@ -95,7 +93,6 @@ set(SOURCE_FILES Anim.h
                  VertexInput.h)
 
 if(${RENDERER} STREQUAL "GL")
-    add_definitions(-DUSE_GL_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferGL.cpp
                      ContextGL.cpp
@@ -131,7 +128,6 @@ if(${RENDERER} STREQUAL "GL")
         set(LIBS ${LIBS} stb SPIRV-Reflect)
     ENDIF(WIN32)
 elseif(${RENDERER} STREQUAL "SW")
-    add_definitions(-DUSE_SW_RENDER)
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferSW.cpp
                      ContextSW.cpp
@@ -204,6 +200,13 @@ set_source_files_properties(GLExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${REN_SOURCE_FILES})
+if(${RENDERER} STREQUAL "GL")
+    target_compile_definitions(Ren PUBLIC USE_GL_RENDER)
+elseif(${RENDERER} STREQUAL "VK")
+    target_compile_definitions(Ren PUBLIC USE_VK_RENDER)
+elseif(${RENDERER} STREQUAL "SW")
+    target_compile_definitions(Ren PUBLIC USE_SW_RENDER)
+endif()
 target_link_libraries(Ren SW ${LIBS})
 target_include_directories(Ren PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 

@@ -11,8 +11,6 @@
 
 namespace Ren {
 extern const VkShaderStageFlagBits g_shader_stages_vk[];
-
-bool IsMainThread();
 } // namespace Ren
 
 Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
@@ -67,8 +65,6 @@ void Ren::Program::Destroy() {
 
 void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
                         eProgLoadStatus *status, ILog *log) {
-    assert(IsMainThread());
-
     if (!vs_ref || !fs_ref) {
         (*status) = eProgLoadStatus::SetToDefault;
         return;
@@ -89,8 +85,6 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
 }
 
 void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
-    assert(IsMainThread());
-
     if (!cs_ref) {
         (*status) = eProgLoadStatus::SetToDefault;
         return;
@@ -109,8 +103,6 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
 
 void Ren::Program::Init(ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref, ShaderRef miss_ref,
                         ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log) {
-    assert(IsMainThread());
-
     if (!raygen_ref || (!closesthit_ref && !anyhit_ref) || !miss_ref) {
         (*status) = eProgLoadStatus::SetToDefault;
         return;

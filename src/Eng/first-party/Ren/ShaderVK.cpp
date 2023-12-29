@@ -11,7 +11,6 @@
 namespace Ren {
 void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
                        SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
-bool IsMainThread();
 
 extern const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_VERTEX_BIT,                  // Vert
@@ -50,7 +49,6 @@ Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const uint8_t *shader
 
 Ren::Shader::~Shader() {
     if (module_) {
-        assert(IsMainThread());
         vkDestroyShaderModule(device_, module_, nullptr);
     }
 }
@@ -59,7 +57,6 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     RefCounter::operator=(static_cast<RefCounter &&>(rhs));
 
     if (module_) {
-        assert(IsMainThread());
         vkDestroyShaderModule(device_, module_, nullptr);
     }
 
@@ -79,7 +76,6 @@ void Ren::Shader::Init(const char *shader_src, eShaderType type, eShaderLoadStat
 
 void Ren::Shader::Init(const uint8_t *shader_code, const int code_size, const eShaderType type,
                        eShaderLoadStatus *status, ILog *log) {
-    assert(IsMainThread());
     InitFromSPIRV(shader_code, code_size, type, status, log);
 
 #ifdef ENABLE_OBJ_LABELS

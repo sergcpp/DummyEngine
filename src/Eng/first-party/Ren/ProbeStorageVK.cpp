@@ -340,8 +340,6 @@ bool Ren::ProbeStorage::GetPixelData(const int level, const int layer, const int
 
 void Ren::ProbeStorage::Destroy() {
     if (format_ != eTexFormat::Undefined) {
-        assert(IsMainThread());
-
         for (VkImageView view : handle_.views) {
             if (view) {
                 api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(view);

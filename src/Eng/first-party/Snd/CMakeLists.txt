@@ -55,7 +55,6 @@ set(SOURCE_FILES Buffer.h
 				 Utils.cpp)
 
 if(${SOUND_BACKEND} STREQUAL "AL")
-	add_definitions(-DUSE_AL_SOUND)
     set(SOURCE_FILES ${SOURCE_FILES}
 					 BufferAL.cpp
                      ContextAL.cpp
@@ -66,6 +65,7 @@ list(APPEND SND_SOURCE_FILES ${SOURCE_FILES})
 source_group("src" FILES ${SOURCE_FILES})
 
 add_library(Snd STATIC ${SND_SOURCE_FILES})
+target_compile_definitions(Snd PUBLIC USE_AL_SOUND)
 target_link_libraries(Snd ${LIBS})
 target_include_directories(Snd PRIVATE ${OPENAL_INCLUDE_DIRS})
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")

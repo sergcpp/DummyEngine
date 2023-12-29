@@ -10,8 +10,6 @@
 #endif
 
 namespace Ren {
-bool IsMainThread();
-
 uint8_t from_hex_char(const char c) { return (c >= 'A') ? (c >= 'a') ? (c - 'a' + 10) : (c - 'A' + 10) : (c - '0'); }
 
 const SamplingParams g_default_mat_sampler = {eTexFilter::Trilinear, eTexWrap::Repeat, eTexCompare::None, Fixed8{},
@@ -35,7 +33,6 @@ Ren::Material::Material(const char *name, uint32_t flags, const PipelineRef _pip
 void Ren::Material::Init(uint32_t flags, const PipelineRef _pipelines[], const int pipelines_count,
                          const Tex2DRef _textures[], const SamplerRef _samplers[], const int textures_count,
                          const Vec4f _params[], int params_count, ILog *log) {
-    assert(IsMainThread());
     flags_ = flags;
     ready_ = true;
 

@@ -62,8 +62,6 @@ uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, 
 
 uint32_t TextureHandleCounter = 0;
 
-bool IsMainThread();
-
 // make sure we can simply cast these
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT == 1, "!");
 static_assert(VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT == 2, "!");
@@ -196,14 +194,12 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 }
 
 void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *mem_allocs, ILog *log) {
-    assert(IsMainThread());
     InitFromRAWData(nullptr, 0, nullptr, mem_allocs, p, log);
     ready_ = true;
 }
 
 void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
-    assert(IsMainThread());
     if (!data) {
         uint8_t *stage_data = sbuf.Map(BufMapWrite);
         memcpy(stage_data, p.fallback_color, 4);
@@ -246,7 +242,6 @@ void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DPara
 
 void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
-    assert(IsMainThread());
     if (!data) {
         uint8_t *stage_data = sbuf.Map(BufMapWrite);
         memcpy(stage_data, p.fallback_color, 4);
@@ -306,8 +301,6 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
 
 void Ren::Texture2D::Free() {
     if (params.format != eTexFormat::Undefined && !bool(params.flags & eTexFlagBits::NoOwnership)) {
-        assert(IsMainThread());
-
         for (VkImageView view : handle_.views) {
             if (view) {
                 api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(view);

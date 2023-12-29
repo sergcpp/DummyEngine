@@ -6,6 +6,8 @@
 #include "GL.h"
 #include "Log.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const uint32_t g_gl_buf_targets[] = {
     0xffffffff,               // Undefined
@@ -278,3 +280,5 @@ void Ren::GLUnbindBufferUnits(const int start, const int count) {
         glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, 0);
     }
 }
+
+#undef COUNT_OF

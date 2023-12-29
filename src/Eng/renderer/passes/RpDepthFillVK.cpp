@@ -9,6 +9,8 @@
 #include <Ren/Span.h>
 #include <Ren/VKCtx.h>
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace RpSharedInternal {
 uint32_t _draw_range(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline, Ren::Span<const uint32_t> batch_indices,
                      Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i, const uint32_t mask, int *draws_count) {
@@ -904,3 +906,5 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         vkCmdEndRenderPass(cmd_buf);
     }
 }
+
+#undef COUNT_OF

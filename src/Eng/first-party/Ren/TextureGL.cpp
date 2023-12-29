@@ -19,6 +19,8 @@
 //#define TEX_VERBOSE_LOGGING
 #endif
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const uint32_t g_gl_formats[] = {
     0xffffffff,                  // Undefined
@@ -149,8 +151,6 @@ static_assert(COUNT_OF(g_gl_compare_func) == size_t(eTexCompare::_Count), "!");
 
 uint32_t TextureHandleCounter = 0;
 
-bool IsMainThread();
-
 GLenum ToSRGBFormat(const GLenum internal_format) {
     switch (internal_format) {
     case GL_RGB8:
@@ -249,14 +249,12 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 uint64_t Ren::Texture2D::GetBindlessHandle() const { return glGetTextureHandleARB(GLuint(handle_.id)); }
 
 void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *, ILog *log) {
-    assert(IsMainThread());
     InitFromRAWData(nullptr, 0, p, log);
     ready_ = true;
 }
 
 void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
-    assert(IsMainThread());
     if (!data) {
         uint8_t *stage_data = sbuf.Map(BufMapWrite);
         memcpy(stage_data, p.fallback_color, 4);
@@ -297,7 +295,6 @@ void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DPara
 
 void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
-    assert(IsMainThread());
     if (!data) {
         uint8_t *stage_data = sbuf.Map(BufMapWrite);
         memcpy(stage_data, p.fallback_color, 4);
@@ -355,7 +352,6 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
 
 void Ren::Texture2D::Free() {
     if (params.format != eTexFormat::Undefined && !bool(params.flags & eTexFlagBits::NoOwnership)) {
-        assert(IsMainThread());
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
         handle_ = {};
@@ -1310,7 +1306,6 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
 
 void Ren::Texture1D::Free() {
     if (params_.format != eTexFormat::Undefined) {
-        assert(IsMainThread());
         auto tex_id = GLuint(handle_.id);
         glDeleteTextures(1, &tex_id);
         handle_ = {};
@@ -1340,3 +1335,5 @@ void Ren::GLUnbindTextureUnits(const int start, const int count) {
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
+
+#undef COUNT_OF

@@ -34,7 +34,6 @@ Ren::Context::~Context() {
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *) {
     InitGLExtentions();
-    RegisterAsMainThread();
 
     w_ = w;
     h_ = h;

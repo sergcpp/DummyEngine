@@ -9,6 +9,8 @@
 
 #include "../Renderer_Structs.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace RpSharedInternal {
 uint32_t _draw_range_ext(VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
@@ -496,3 +498,5 @@ Eng::RpGBufferFill::~RpGBufferFill() {
         vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }
 }
+
+#undef COUNT_OF

@@ -9,6 +9,8 @@
 
 #include "../Renderer_Structs.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace RpSharedInternal {
 uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
@@ -462,3 +464,5 @@ Eng::RpOpaque::~RpOpaque() {
         vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }
 }
+
+#undef COUNT_OF

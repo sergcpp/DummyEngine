@@ -15,7 +15,6 @@ GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *
 #endif
 
 void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count, ILog *log);
-bool IsMainThread();
 } // namespace Ren
 
 Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
@@ -31,7 +30,6 @@ Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, e
 
 Ren::Program::~Program() {
     if (id_) {
-        assert(IsMainThread());
         auto prog = GLuint(id_);
         glDeleteProgram(prog);
     }
@@ -45,7 +43,6 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     RefCounter::operator=(static_cast<RefCounter &&>(rhs));
 
     if (id_) {
-        assert(IsMainThread());
         auto prog = GLuint(id_);
         glDeleteProgram(prog);
     }
@@ -63,7 +60,6 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
 void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
                         eProgLoadStatus *status, ILog *log) {
     assert(id_ == 0);
-    assert(IsMainThread());
 
     if (!vs_ref || !fs_ref) {
         (*status) = eProgLoadStatus::SetToDefault;
@@ -116,7 +112,6 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
 
 void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
     assert(id_ == 0);
-    assert(IsMainThread());
 
     if (!cs_ref) {
         (*status) = eProgLoadStatus::SetToDefault;

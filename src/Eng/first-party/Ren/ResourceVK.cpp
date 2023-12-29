@@ -3,6 +3,8 @@
 #include "Texture.h"
 #include "VK.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const VkPipelineStageFlags g_stage_flags_vk[] = {
     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,                                                     // VertexInput
@@ -213,3 +215,5 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
                              uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 }
+
+#undef COUNT_OF

@@ -42,8 +42,6 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
     require_return(!device_name || Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, device_name));
 #endif
-    Snd::Context snd_ctx;
-    snd_ctx.Init(&log);
 
     Eng::ShaderLoader shader_loader;
     Eng::Random rand(0);
@@ -55,7 +53,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
                               Eng::EnableHQ_HDR);
 
     Eng::path_config_t paths;
-    Eng::SceneManager scene_manager(ren_ctx, shader_loader, snd_ctx, threads, paths);
+    Eng::SceneManager scene_manager(ren_ctx, shader_loader, nullptr, threads, paths);
 
     using namespace std::placeholders;
     scene_manager.SetPipelineInitializer(std::bind(&Eng::Renderer::InitPipelinesForProgram, &renderer, _1, _2, _3, _4));

@@ -8,6 +8,8 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/shadow_interface.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace RpShadowMapsInternal {
 void _adjust_bias_and_viewport(VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     const VkViewport viewport = {float(sh_list.shadow_map_pos[0]),
@@ -374,3 +376,5 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
     (void)draw_calls_count;
 }
+
+#undef COUNT_OF

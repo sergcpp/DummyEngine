@@ -10,7 +10,6 @@
 #include "Program.h"
 #include "Sampler.h"
 #include "Shader.h"
-#include "TaskExecutor.h"
 #include "Texture.h"
 #include "TextureAtlas.h"
 #include "TextureRegion.h"
@@ -61,7 +60,7 @@ struct StageBufs {
     }
 };
 
-class Context : public TaskExecutor {
+class Context {
   protected:
     int w_ = 0, h_ = 0;
     ILog *log_ = nullptr;

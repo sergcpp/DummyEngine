@@ -5,6 +5,8 @@
 #include "VertexInput.h"
 #include "VKCtx.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 extern const VkShaderStageFlagBits g_shader_stages_vk[];
 
@@ -548,3 +550,5 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
 
     return true;
 }
+
+#undef COUNT_OF

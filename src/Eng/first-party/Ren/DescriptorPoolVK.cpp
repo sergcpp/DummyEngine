@@ -3,6 +3,8 @@
 #include "SmallVector.h"
 #include "VKCtx.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const VkDescriptorType g_descr_types_vk[] = {
     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
@@ -195,3 +197,5 @@ bool Ren::DescrMultiPoolAlloc::Reset() {
     }
     return result;
 }
+
+#undef COUNT_OF

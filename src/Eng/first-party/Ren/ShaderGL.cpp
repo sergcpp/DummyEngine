@@ -15,7 +15,6 @@ GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *
 
 void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
                        SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
-bool IsMainThread();
 
 const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER,
                                 GL_FRAGMENT_SHADER,
@@ -46,7 +45,6 @@ Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const uint8_t *shader
 
 Ren::Shader::~Shader() {
     if (id_) {
-        assert(IsMainThread());
         auto id = GLuint(id_);
         glDeleteShader(id);
     }
@@ -60,7 +58,6 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     RefCounter::operator=(static_cast<RefCounter &&>(rhs));
 
     if (id_) {
-        assert(IsMainThread());
         auto id = GLuint(id_);
         glDeleteShader(id);
     }
@@ -78,14 +75,12 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
 }
 
 void Ren::Shader::Init(const char *shader_src, const eShaderType type, eShaderLoadStatus *status, ILog *log) {
-    assert(IsMainThread());
     InitFromGLSL(shader_src, type, status, log);
 }
 
 #ifndef __ANDROID__
 void Ren::Shader::Init(const uint8_t *shader_code, const int code_size, const eShaderType type,
                        eShaderLoadStatus *status, ILog *log) {
-    assert(IsMainThread());
     InitFromSPIRV(shader_code, code_size, type, status, log);
 }
 #endif

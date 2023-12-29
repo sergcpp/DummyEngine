@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdlib>
 
+#include <stdexcept>
 #include <string>
 
 static void handle_assert(bool passed, const char* assert, const char* file, long line) {

@@ -8,6 +8,8 @@
 #include "ProbeStorage.h"
 #include "Texture.h"
 
+#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
+
 namespace Ren {
 const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D,             // Tex2D
@@ -116,3 +118,5 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     glDispatchComputeIndirect(GLintptr(indir_buf_offset));
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, 0);
 }
+
+#undef COUNT_OF
