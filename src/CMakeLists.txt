@@ -36,17 +36,6 @@ else()
     set(VPX_LIBRARIES ${CMAKE_CURRENT_SOURCE_DIR}/libs/vpx/arm64-v8a)
 endif()
 
-if(${RENDERER} STREQUAL "GL")
-  add_definitions(-DUSE_GL_RENDER)
-  set(BIN_NAME "DummyAppGL")
-elseif(${RENDERER} STREQUAL "VK")
-  add_definitions(-DUSE_VK_RENDER)
-  set(BIN_NAME "DummyAppVK")
-elseif(${RENDERER} STREQUAL "SW")
-  add_definitions(-DUSE_SW_RENDER)
-  set(BIN_NAME "DummyAppSW")
-endif()
-
 include_directories(.)
 
 include_directories(libs)

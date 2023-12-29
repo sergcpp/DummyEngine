@@ -1,6 +1,14 @@
 cmake_minimum_required(VERSION 3.1)
 project(DummyApp)
 
+if(${RENDERER} STREQUAL "GL")
+  set(BIN_NAME "DummyAppGL")
+elseif(${RENDERER} STREQUAL "VK")
+  set(BIN_NAME "DummyAppVK")
+elseif(${RENDERER} STREQUAL "SW")
+  set(BIN_NAME "DummyAppSW")
+endif()
+
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
         set(LIBS winmm imm32 version)
@@ -56,7 +64,7 @@ target_link_libraries(DummyApp DummyLib ${LIBS})
 add_custom_command(TARGET DummyApp
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DummyApp> ${WORKING_DIRECTORY})
-                   
+
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_DEBUG ${BIN_NAME}-dbg)
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_RELWITHDEBINFO ${BIN_NAME}-dev)
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_RELEASE ${BIN_NAME})
