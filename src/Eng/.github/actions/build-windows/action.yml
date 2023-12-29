@@ -1,0 +1,35 @@
+name: 'Build Repo'
+inputs:
+  cmake-args:
+    required: true
+  config:
+    required: true
+  bin-dir:
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        WORK_DIR=`pwd`
+        cd ../../builds/DummyEngine
+#        python src/Ray/scripts/update_version_string.py src/DemoApp/DemoApp.cpp
+        mkdir build
+        cd build
+        cmake .. -G "Visual Studio 17 2022" ${{ inputs.cmake-args }}
+        cd ..
+        cmake --build build --target DummyApp test_Eng test_Ray test_Ren test_SW test_Sys test_Net test_Phy test_Snd --config ${{ inputs.config }} --parallel 16
+        if [ -n "${{ inputs.bin-dir }}" ]; then
+          mkdir $WORK_DIR/${{ inputs.bin-dir }}
+          mkdir $WORK_DIR/${{ inputs.bin-dir }}/test_data
+          cp build/src/Eng/tests/test_Eng.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp -ru src/Eng/tests/test_data/assets $WORK_DIR/${{ inputs.bin-dir }}/test_data/assets
+          cp build/src/Ray/tests/test_Ray.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Sys/tests/test_Sys.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Phy/tests/test_Phy.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Snd/tests/test_Snd.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Net/tests/test_Net.exe $WORK_DIR/${{ inputs.bin-dir }}
+          cp DummyApp*.exe $WORK_DIR/${{ inputs.bin-dir }}
+        fi
+      shell: bash

@@ -3,7 +3,7 @@
 
 #include "MVec.h"
 
-#include "Cimg.h"
+#include "CImg.h"
 using namespace cimg_library;
 
 CImg<float> colorMap(33,1,1,3);

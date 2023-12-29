@@ -1,0 +1,33 @@
+name: 'Test'
+inputs:
+  bin-dir:
+    required: true
+  test-args:
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.bin-dir }}
+        path: ${{ inputs.bin-dir }}/
+    - run: |
+        chmod +x ./${{ inputs.bin-dir }}/test_SW
+        chmod +x ./${{ inputs.bin-dir }}/test_Sys
+        chmod +x ./${{ inputs.bin-dir }}/test_Net
+        chmod +x ./${{ inputs.bin-dir }}/test_Phy
+        chmod +x ./${{ inputs.bin-dir }}/test_Snd
+        chmod +x ./${{ inputs.bin-dir }}/test_Eng
+        chmod +x ./${{ inputs.bin-dir }}/test_Ren
+        WORK_DIR=`pwd`
+        cd ../../builds/Eng
+        $WORK_DIR/${{ inputs.bin-dir }}/test_SW
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Sys
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Net
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Phy
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Snd
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
+        cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }}
+        cd ../../..
+      shell: bash

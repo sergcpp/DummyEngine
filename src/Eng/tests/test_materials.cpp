@@ -4,7 +4,6 @@
 #include <future>
 #include <istream>
 
-#include <Ray/Ray.h>
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 #if defined(USE_GL_RENDER)

@@ -1,9 +1,17 @@
 cmake_minimum_required(VERSION 3.1)
 project(ltc_fit)
 
-set(SOURCE_FILES _ltc_fit.cpp)
 
-set(ORIG_SOURCE_FILES brdf.h
+if(WIN32)
+    set(LIBS )
+elseif(APPLE)
+    set(LIBS )
+else()
+    set(LIBS X11)
+endif()
+
+
+set(SOURCE_FILES      brdf.h
                       brdf_beckmann.h
 											brdf_principledClearcoat.h
                       brdf_disneyDiffuse.h
@@ -22,12 +30,7 @@ set(ORIG_SOURCE_FILES brdf.h
                       nelder_mead.h
                       plot.h)
 
-list(APPEND LTC_SOURCE_FILES ${ORIG_SOURCE_FILES})
-set_source_files_properties(${ORIG_SOURCE_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
-
-list(APPEND LTC_SOURCE_FILES ${SOURCE_FILES})
-list(APPEND LTC_SOURCE_FILES ${ORIG_SOURCE_FILES})
-
-add_executable(ltc_fit ${LTC_SOURCE_FILES})
+add_executable(ltc_fit ${SOURCE_FILES})
+target_link_libraries(ltc_fit ${LIBS})
 
 set_target_properties(ltc_fit PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}")
