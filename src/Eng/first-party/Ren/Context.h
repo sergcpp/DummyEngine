@@ -18,7 +18,7 @@ struct SWcontext;
 
 namespace Ren {
 const int TextureAtlasWidth = 1024, TextureAtlasHeight = 512, TextureAtlasLayers = 4;
-const int StageBufferCount = 16;
+const int StageBufferCount = 4;
 
 const uint32_t DefaultSubAllocAlign = 768;
 
