@@ -25,4 +25,3 @@ test.mesh
 *.json8
 cmake-build*
 .DS_Store
-src/Eng/tests/test_data/assets/shaders/internal/*
