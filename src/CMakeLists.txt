@@ -47,12 +47,6 @@ elseif(${RENDERER} STREQUAL "SW")
   set(BIN_NAME "DummyAppSW")
 endif()
 
-set(SOUND AL)
-
-if(${SOUND} STREQUAL "AL")
-  add_definitions(-DUSE_AL_SOUND)
-endif()
-
 include_directories(.)
 
 include_directories(libs)

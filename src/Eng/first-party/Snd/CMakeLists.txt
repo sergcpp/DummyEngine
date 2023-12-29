@@ -1,12 +1,15 @@
 cmake_minimum_required(VERSION 3.1)
 project(Snd)
 
+# Only one backend for now
+set(SOUND_BACKEND AL)
+
 find_library(COREAUDIO_LIB CoreAudio)
 find_library(AUDIO_TOOLBOX AudioToolbox)
 find_library(CORE_FOUNDATION CoreFoundation)
 
 if(WIN32)
-	if(${SOUND} STREQUAL "AL")
+	if(${SOUND_BACKEND} STREQUAL "AL")
 		add_definitions(-DAL_LIBTYPE_STATIC=1)
 		if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 			set(OPENAL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/OpenAL/include")
@@ -18,7 +21,7 @@ if(WIN32)
 		set(LIBS debug OpenAL32d optimized OpenAL32)
 	endif()
 else(WIN32)
-    if(${SOUND} STREQUAL "AL")
+    if(${SOUND_BACKEND} STREQUAL "AL")
 		set(OPENAL_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/OpenAL/include")
 		if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             if(APPLE)
@@ -51,7 +54,7 @@ set(SOURCE_FILES Buffer.h
 				 Utils.h
 				 Utils.cpp)
 
-if(${SOUND} STREQUAL "AL")
+if(${SOUND_BACKEND} STREQUAL "AL")
 	add_definitions(-DUSE_AL_SOUND)
     set(SOURCE_FILES ${SOURCE_FILES}
 					 BufferAL.cpp
