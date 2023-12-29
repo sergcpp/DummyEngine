@@ -25,6 +25,10 @@ namespace RendererInternal {
 extern const int TaaSampleCountStatic;
 }
 
+namespace {
+std::mutex g_stbi_mutex;
+}
+
 void run_image_test(const char *test_name, const char *device_name, int validation_level, const double min_psnr,
                     const int pix_thres) {
     using namespace std::chrono;
@@ -185,8 +189,9 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
 
 #if defined(USE_VK_RENDER)
-        vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE, UINT64_MAX);
-        vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
+        api_ctx->vkWaitForFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame], VK_TRUE,
+                                 UINT64_MAX);
+        api_ctx->vkResetFences(api_ctx->device, 1, &api_ctx->in_flight_fences[api_ctx->backend_frame]);
 
         Ren::ReadbackTimestampQueries(api_ctx, api_ctx->backend_frame);
         Ren::DestroyDeferredResources(api_ctx, api_ctx->backend_frame);
@@ -199,10 +204,10 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
         begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+        api_ctx->vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 
-        vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame], api_ctx->query_pools[api_ctx->backend_frame],
-                            0, Ren::MaxTimestampQueries);
+        api_ctx->vkCmdResetQueryPool(api_ctx->draw_cmd_buf[api_ctx->backend_frame],
+                                     api_ctx->query_pools[api_ctx->backend_frame], 0, Ren::MaxTimestampQueries);
 #elif defined(USE_GL_RENDER)
         // Make sure all operations have finished
         api_ctx->in_flight_fences[api_ctx->backend_frame].ClientWaitSync();
@@ -216,7 +221,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
 
 #if defined(USE_VK_RENDER)
-        vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
+        api_ctx->vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
 
         const int prev_frame = (api_ctx->backend_frame + Ren::MaxFramesInFlight - 1) % Ren::MaxFramesInFlight;
 
@@ -239,8 +244,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         submit_info.signalSemaphoreCount = 1;
         submit_info.pSignalSemaphores = &api_ctx->render_finished_semaphores[api_ctx->backend_frame];
 
-        VkResult res =
-            vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, api_ctx->in_flight_fences[api_ctx->backend_frame]);
+        VkResult res = api_ctx->vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info,
+                                              api_ctx->in_flight_fences[api_ctx->backend_frame]);
         require_fatal(res == VK_SUCCESS);
 
         api_ctx->render_finished_semaphore_is_set[api_ctx->backend_frame] = true;
@@ -331,6 +336,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     printf("Test %s (PSNR: %.2f/%.2f dB, Fireflies: %i/%i, Time: %.2fms)\n", test_name, psnr, min_psnr, error_pixels,
            pix_thres, test_duration_ms);
     require(psnr >= min_psnr && error_pixels <= pix_thres);
+
+    std::lock_guard<std::mutex> _(g_stbi_mutex);
 
     stbi_flip_vertically_on_write(flip_y);
 

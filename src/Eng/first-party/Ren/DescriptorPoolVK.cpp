@@ -55,7 +55,7 @@ bool Ren::DescrPool::Init(const DescrSizes &sizes, const uint32_t sets_count) {
 
     sets_count_ = sets_count;
 
-    const VkResult res = vkCreateDescriptorPool(api_ctx_->device, &pool_info, nullptr, &handle_);
+    const VkResult res = api_ctx_->vkCreateDescriptorPool(api_ctx_->device, &pool_info, nullptr, &handle_);
     return res == VK_SUCCESS;
 }
 
@@ -77,7 +77,7 @@ VkDescriptorSet Ren::DescrPool::Alloc(const VkDescriptorSetLayout layout) {
     alloc_info.pSetLayouts = &layout;
 
     VkDescriptorSet descr_set = VK_NULL_HANDLE;
-    const VkResult res = vkAllocateDescriptorSets(api_ctx_->device, &alloc_info, &descr_set);
+    const VkResult res = api_ctx_->vkAllocateDescriptorSets(api_ctx_->device, &alloc_info, &descr_set);
     assert(res == VK_SUCCESS);
 
     ++next_free_;
@@ -87,7 +87,7 @@ VkDescriptorSet Ren::DescrPool::Alloc(const VkDescriptorSetLayout layout) {
 
 bool Ren::DescrPool::Reset() {
     next_free_ = 0;
-    const VkResult res = vkResetDescriptorPool(api_ctx_->device, handle_, 0);
+    const VkResult res = api_ctx_->vkResetDescriptorPool(api_ctx_->device, handle_, 0);
     return res == VK_SUCCESS;
 }
 
@@ -180,8 +180,8 @@ VkDescriptorSet Ren::DescrMultiPoolAlloc::Alloc(const DescrSizes &sizes, const V
     const uint32_t tbuf_based_index = sizes.tbuf_count ? ((sizes.tbuf_count + pool_step_ - 1) / pool_step_ - 1) : 0;
     const uint32_t acc_based_index = sizes.acc_count ? ((sizes.acc_count + pool_step_ - 1) / pool_step_ - 1) : 0;
 
-    uint32_t pool_index =
-        img_sampler_based_index * store_img_based_count_ * ubuf_based_count_ * sbuf_based_count_ * tbuf_based_count_ * acc_based_count_;
+    uint32_t pool_index = img_sampler_based_index * store_img_based_count_ * ubuf_based_count_ * sbuf_based_count_ *
+                          tbuf_based_count_ * acc_based_count_;
     pool_index += store_img_based_index * ubuf_based_count_ * sbuf_based_count_ * tbuf_based_count_ * acc_based_count_;
     pool_index += ubuf_based_index * sbuf_based_count_ * tbuf_based_count_ * acc_based_count_;
     pool_index += sbuf_based_index * tbuf_based_count_ * acc_based_count_;

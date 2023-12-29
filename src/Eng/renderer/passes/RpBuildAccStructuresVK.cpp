@@ -58,5 +58,5 @@ void Eng::RpBuildAccStructuresExecutor::Execute_HWRT(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const VkAccelerationStructureBuildRangeInfoKHR *build_range = &range_info;
-    vkCmdBuildAccelerationStructuresKHR(cmd_buf, 1, &tlas_build_info, &build_range);
+    api_ctx->vkCmdBuildAccelerationStructuresKHR(cmd_buf, 1, &tlas_build_info, &build_range);
 }

@@ -11,7 +11,7 @@ VkDeviceAddress Ren::AccStructureVK::vk_device_address() const {
     VkAccelerationStructureDeviceAddressInfoKHR info = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR};
     info.accelerationStructure = handle_;
-    return vkGetAccelerationStructureDeviceAddressKHR(api_ctx_->device, &info);
+    return api_ctx_->vkGetAccelerationStructureDeviceAddressKHR(api_ctx_->device, &info);
 }
 
 bool Ren::AccStructureVK::Init(ApiContext *api_ctx, VkAccelerationStructureKHR handle) {

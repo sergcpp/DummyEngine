@@ -8,6 +8,7 @@
 #include "Span.h"
 
 namespace Ren {
+struct ApiContext;
 enum class eStageBits : uint16_t {
     None = 0,
     VertexInput = (1u << 0u),
@@ -91,6 +92,6 @@ struct TransitionInfo {
         : p_tex(_p_tex), new_state(_new_state), update_internal_state(true) {}
 };
 
-void TransitionResourceStates(void *_cmd_buf, eStageBits src_stages_mask, eStageBits dst_stages_mask,
-                              Span<const TransitionInfo> transitions);
+void TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, eStageBits src_stages_mask,
+                              eStageBits dst_stages_mask, Span<const TransitionInfo> transitions);
 } // namespace Ren

@@ -21,10 +21,10 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
-        VkResult res = vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
+        VkResult res = api_ctx->vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
         assert(res == VK_SUCCESS);
 
-        fence = Ren::SyncFence{api_ctx->device, new_fence};
+        fence = Ren::SyncFence{api_ctx, new_fence};
 
         VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
         alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -32,7 +32,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
         alloc_info.commandBufferCount = 1;
 
         VkCommandBuffer command_buf = {};
-        res = vkAllocateCommandBuffers(api_ctx->device, &alloc_info, &command_buf);
+        res = api_ctx->vkAllocateCommandBuffers(api_ctx->device, &alloc_info, &command_buf);
         assert(res == VK_SUCCESS);
 
         cmd_buf = command_buf;
@@ -43,7 +43,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
 
 #if defined(USE_VK_RENDER)
         VkCommandBuffer _cmd_buf = reinterpret_cast<VkCommandBuffer>(cmd_buf);
-        vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &_cmd_buf);
+        api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &_cmd_buf);
 #endif
     }
 

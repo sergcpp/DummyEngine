@@ -28,12 +28,12 @@ Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
-        const VkResult res = vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
+        const VkResult res = api_ctx->vkCreateFence(api_ctx->device, &fence_info, nullptr, &new_fence);
         if (res != VK_SUCCESS) {
             ctx_.log()->Error("Failed to create fence!");
         }
 
-        buf_range_fences_[i] = Ren::SyncFence{api_ctx->device, new_fence};
+        buf_range_fences_[i] = Ren::SyncFence{api_ctx, new_fence};
     }
 #endif
 }
@@ -41,7 +41,7 @@ Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
 Gui::Renderer::~Renderer() {
     Ren::ApiContext *api_ctx = ctx_.api_ctx();
 
-    vkDeviceWaitIdle(api_ctx->device);
+    api_ctx->vkDeviceWaitIdle(api_ctx->device);
 
     vertex_stage_buf_->Unmap();
     index_stage_buf_->Unmap();
@@ -58,7 +58,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         return;
     }
 
-    Ren::DebugMarker _(cmd_buf, name_);
+    Ren::DebugMarker _(api_ctx, cmd_buf, name_);
 
     //
     // Update buffers
@@ -112,8 +112,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
         }
 
         if (!buf_barriers.empty()) {
-            vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
-                                 buf_barriers.cdata(), 0, nullptr);
+            ctx_.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
+                                                 uint32_t(buf_barriers.size()), buf_barriers.cdata(), 0, nullptr);
         }
 
         vertex_buf_->resource_state = Ren::eResState::CopyDst;
@@ -129,7 +129,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         region_to_copy.dstOffset = 0;
         region_to_copy.size = vtx_data_size;
 
-        vkCmdCopyBuffer(cmd_buf, vertex_stage_buf_->vk_handle(), vertex_buf_->vk_handle(), 1, &region_to_copy);
+        api_ctx->vkCmdCopyBuffer(cmd_buf, vertex_stage_buf_->vk_handle(), vertex_buf_->vk_handle(), 1, &region_to_copy);
     }
 
     { // copy index data
@@ -141,7 +141,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
         region_to_copy.dstOffset = 0;
         region_to_copy.size = ndx_data_size;
 
-        vkCmdCopyBuffer(cmd_buf, index_stage_buf_->vk_handle(), index_buf_->vk_handle(), 1, &region_to_copy);
+        api_ctx->vkCmdCopyBuffer(cmd_buf, index_stage_buf_->vk_handle(), index_buf_->vk_handle(), 1, &region_to_copy);
     }
 
     auto &atlas = ctx_.texture_atlas();
@@ -205,8 +205,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
-                             buf_barriers.cdata(), uint32_t(img_barriers.size()), img_barriers.cdata());
+        ctx_.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
+                                             uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                             uint32_t(img_barriers.size()), img_barriers.cdata());
 
         vertex_buf_->resource_state = Ren::eResState::VertexBuffer;
         index_buf_->resource_state = Ren::eResState::IndexBuffer;
@@ -249,7 +250,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     descr_write.pTexelBufferView = nullptr;
     descr_write.pNext = nullptr;
 
-    vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
+    api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
 
     //
     // Submit draw call
@@ -263,32 +264,33 @@ void Gui::Renderer::Draw(const int w, const int h) {
     render_pass_begin_info.framebuffer = framebuffers_[api_ctx->active_present_image].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(w), uint32_t(h)};
 
-    vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.handle());
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.handle());
 
     const VkViewport viewport = {0.0f, 0.0f, float(w), float(h), 0.0f, 1.0f};
-    vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
     const VkRect2D scissor = {0, 0, uint32_t(w), uint32_t(h)};
-    vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout(), 0, 1, &descr_set, 0, nullptr);
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_.layout(), 0, 1, &descr_set, 0,
+                                     nullptr);
 
     VkBuffer vtx_buf = vertex_buf_->vk_handle();
 
     VkDeviceSize offset = {};
-    vkCmdBindVertexBuffers(cmd_buf, 0, 1, &vtx_buf, &offset);
-    vkCmdBindIndexBuffer(cmd_buf, index_buf_->vk_handle(), 0, VK_INDEX_TYPE_UINT16);
+    api_ctx->vkCmdBindVertexBuffers(cmd_buf, 0, 1, &vtx_buf, &offset);
+    api_ctx->vkCmdBindIndexBuffer(cmd_buf, index_buf_->vk_handle(), 0, VK_INDEX_TYPE_UINT16);
 
-    vkCmdDrawIndexed(cmd_buf,
-                     ndx_count_[api_ctx->backend_frame], // index count
-                     1,                                  // instance count
-                     0,                                  // first index
-                     0,                                  // vertex offset
-                     0);                                 // first instance
+    api_ctx->vkCmdDrawIndexed(cmd_buf,
+                              ndx_count_[api_ctx->backend_frame], // index count
+                              1,                                  // instance count
+                              0,                                  // first index
+                              0,                                  // vertex offset
+                              0);                                 // first instance
 
-    vkCmdEndRenderPass(cmd_buf);
+    api_ctx->vkCmdEndRenderPass(cmd_buf);
 
     vtx_count_[api_ctx->backend_frame] = 0;
     ndx_count_[api_ctx->backend_frame] = 0;

@@ -24,7 +24,7 @@ Gui::Renderer::~Renderer() {
 }
 
 void Gui::Renderer::Draw(const int w, const int h) {
-    Ren::DebugMarker _(ctx_.current_cmd_buf(), name_);
+    Ren::DebugMarker _(ctx_.api_ctx(), ctx_.current_cmd_buf(), name_);
 
 #ifndef NDEBUG
     if (buf_range_fences_[ctx_.backend_frame()]) {

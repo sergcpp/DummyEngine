@@ -7,11 +7,11 @@
 #endif
 
 namespace Ren {
+struct ApiContext;
 enum class WaitResult { Success, Timeout, Fail };
-
 class SyncFence {
 #if defined(USE_VK_RENDER)
-    VkDevice device_ = VK_NULL_HANDLE;
+    ApiContext *api_ctx_ = nullptr;
     VkFence fence_ = VK_NULL_HANDLE;
 #elif defined(USE_GL_RENDER)
     void *sync_ = nullptr;
@@ -20,7 +20,7 @@ class SyncFence {
   public:
     SyncFence() = default;
 #if defined(USE_VK_RENDER)
-    SyncFence(VkDevice device, VkFence fence) : device_(device), fence_(fence) {}
+    SyncFence(ApiContext *api_ctx, VkFence fence) : api_ctx_(api_ctx), fence_(fence) {}
 #elif defined(USE_GL_RENDER)
     SyncFence(void *sync) : sync_(sync) {}
 #endif
@@ -35,7 +35,7 @@ class SyncFence {
     operator bool() const { return fence_ != VK_NULL_HANDLE; }
     VkFence fence() { return fence_; }
 
-    bool signaled() const { return vkGetFenceStatus(device_, fence_) == VK_SUCCESS; }
+    bool signaled() const;
 
     bool Reset();
 #elif defined(USE_GL_RENDER)

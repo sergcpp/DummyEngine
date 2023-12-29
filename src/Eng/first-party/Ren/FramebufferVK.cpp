@@ -102,7 +102,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     framebuf_create_info.height = _h;
     framebuf_create_info.layers = 1;
 
-    const VkResult res = vkCreateFramebuffer(api_ctx->device, &framebuf_create_info, nullptr, &handle_);
+    const VkResult res = api_ctx->vkCreateFramebuffer(api_ctx->device, &framebuf_create_info, nullptr, &handle_);
     if (res != VK_SUCCESS) {
         log->Error("Framebuffer creation failed (error %i)", int(res));
 #ifdef VERBOSE_LOGGING
@@ -172,7 +172,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
     framebuf_create_info.height = _h;
     framebuf_create_info.layers = 1;
 
-    const VkResult res = vkCreateFramebuffer(api_ctx->device, &framebuf_create_info, nullptr, &handle_);
+    const VkResult res = api_ctx->vkCreateFramebuffer(api_ctx->device, &framebuf_create_info, nullptr, &handle_);
     if (res != VK_SUCCESS) {
         log->Error("Framebuffer creation failed (error %i)", int(res));
 #ifdef VERBOSE_LOGGING

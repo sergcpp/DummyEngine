@@ -2,8 +2,8 @@
 
 #include "Program.h"
 #include "RastState.h"
-#include "VertexInput.h"
 #include "VKCtx.h"
+#include "VertexInput.h"
 
 #define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
@@ -146,7 +146,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         layout_create_info.pushConstantRangeCount = prog->pc_range_count();
         layout_create_info.pPushConstantRanges = prog->pc_ranges();
 
-        const VkResult res = vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
+        const VkResult res = api_ctx->vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create pipeline layout!");
             return false;
@@ -305,8 +305,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
             pipeline_create_info.pNext = &pipeline_rendering_create_info;
         }
 
-        const VkResult res =
-            vkCreateGraphicsPipelines(api_ctx->device, VK_NULL_HANDLE, 1, &pipeline_create_info, nullptr, &handle_);
+        const VkResult res = api_ctx->vkCreateGraphicsPipelines(api_ctx->device, VK_NULL_HANDLE, 1,
+                                                                &pipeline_create_info, nullptr, &handle_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create graphics pipeline!");
             return false;
@@ -429,7 +429,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
         layout_create_info.pushConstantRangeCount = prog->pc_range_count();
         layout_create_info.pPushConstantRanges = prog->pc_ranges();
 
-        const VkResult res = vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
+        const VkResult res = api_ctx->vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create pipeline layout!");
             return false;
@@ -441,7 +441,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
         info.stage = shader_stage_create_info[0];
         info.layout = layout_;
 
-        const VkResult res = vkCreateComputePipelines(api_ctx->device, VK_NULL_HANDLE, 1, &info, nullptr, &handle_);
+        const VkResult res =
+            api_ctx->vkCreateComputePipelines(api_ctx->device, VK_NULL_HANDLE, 1, &info, nullptr, &handle_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create pipeline!");
             return false;
@@ -455,8 +456,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
         info.groupCount = uint32_t(rt_shader_groups_.size());
         info.pGroups = rt_shader_groups_.cdata();
 
-        const VkResult res = vkCreateRayTracingPipelinesKHR(api_ctx->device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &info,
-                                                            nullptr, &handle_);
+        const VkResult res = api_ctx->vkCreateRayTracingPipelinesKHR(api_ctx->device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1,
+                                                                     &info, nullptr, &handle_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create pipeline!");
             return false;
@@ -482,8 +483,8 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
             const uint32_t data_size = HandleCount * handle_size;
             SmallVector<uint8_t, 128> handles_data(data_size);
 
-            const VkResult res = vkGetRayTracingShaderGroupHandlesKHR(api_ctx->device, handle_, 0, HandleCount,
-                                                                      data_size, &handles_data[0]);
+            const VkResult res = api_ctx->vkGetRayTracingShaderGroupHandlesKHR(api_ctx->device, handle_, 0, HandleCount,
+                                                                               data_size, &handles_data[0]);
             if (res != VK_SUCCESS) {
                 log->Error("Failed to get shader group handles!");
                 return false;
@@ -526,20 +527,19 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
             }
 
             { // Copy data
-                VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+                VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
                 VkBufferCopy region_to_copy = {};
                 region_to_copy.srcOffset = VkDeviceSize{0};
                 region_to_copy.dstOffset = VkDeviceSize{0};
                 region_to_copy.size = VkDeviceSize{sbt_stage_buf.size()};
 
-                vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.vk_handle(), rt_sbt_buf_.vk_handle(), 1, &region_to_copy);
+                api_ctx->vkCmdCopyBuffer(cmd_buf, sbt_stage_buf.vk_handle(), rt_sbt_buf_.vk_handle(), 1, &region_to_copy);
 
                 sbt_stage_buf.resource_state = eResState::CopySrc;
                 rt_sbt_buf_.resource_state = eResState::CopyDst;
 
-                Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf,
-                                           api_ctx->temp_command_pool);
+                api_ctx->EndSingleTimeCommands(cmd_buf);
             }
         }
     }

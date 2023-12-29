@@ -63,6 +63,12 @@ inline bool operator==(float val, const Approx &app) {
 #include "../Log.h"
 
 #if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 #undef min
 #undef max
@@ -247,7 +253,7 @@ class TestContext : public Ren::Context {
                              InputOutput, visual,
                              CWBorderPixel | CWColormap | CWEventMask, &swa);
 
-        Atom wm_delete = XInternAtom(dpy_, "WM_DELETE_WINDOW", False);
+        Atom wm_delete = XInternAtom(dpy_, "WM_DELETE_WINDOW", 0);
         XSetWMProtocols(dpy_, win_, &wm_delete, 1);
 
         XMapWindow(dpy_, win_);

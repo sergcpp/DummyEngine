@@ -12,6 +12,7 @@ class Texture2D;
 using Tex2DRef = StrongRef<Texture2D>;
 
 struct ApiContext {
+    void *vulkan_module = {};
     VkInstance instance = {};
     VkDebugReportCallbackEXT debug_callback = {};
     VkSurfaceKHR surface = {};
@@ -70,6 +71,205 @@ struct ApiContext {
     SmallVector<VkPipelineLayout, 128> pipeline_layouts_to_destroy[MaxFramesInFlight];
     SmallVector<VkPipeline, 128> pipelines_to_destroy[MaxFramesInFlight];
     SmallVector<VkAccelerationStructureKHR, 128> acc_structs_to_destroy[MaxFramesInFlight];
+
+    // main functions
+    PFN_vkCreateInstance vkCreateInstance = {};
+    PFN_vkDestroyInstance vkDestroyInstance = {};
+    PFN_vkEnumerateInstanceLayerProperties vkEnumerateInstanceLayerProperties = {};
+    PFN_vkEnumerateInstanceExtensionProperties vkEnumerateInstanceExtensionProperties = {};
+    PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = {};
+    PFN_vkGetDeviceProcAddr vkGetDeviceProcAddr = {};
+
+    PFN_vkEnumeratePhysicalDevices vkEnumeratePhysicalDevices = {};
+    PFN_vkGetPhysicalDeviceProperties vkGetPhysicalDeviceProperties = {};
+    PFN_vkGetPhysicalDeviceFeatures vkGetPhysicalDeviceFeatures = {};
+    PFN_vkGetPhysicalDeviceQueueFamilyProperties vkGetPhysicalDeviceQueueFamilyProperties = {};
+
+    PFN_vkCreateDevice vkCreateDevice = {};
+    PFN_vkDestroyDevice vkDestroyDevice = {};
+
+    PFN_vkEnumerateDeviceExtensionProperties vkEnumerateDeviceExtensionProperties = {};
+
+    PFN_vkBeginCommandBuffer vkBeginCommandBuffer = {};
+    PFN_vkEndCommandBuffer vkEndCommandBuffer = {};
+
+    PFN_vkQueueSubmit vkQueueSubmit = {};
+    PFN_vkQueueWaitIdle vkQueueWaitIdle = {};
+    PFN_vkResetCommandBuffer vkResetCommandBuffer = {};
+    PFN_vkCreateImageView vkCreateImageView = {};
+    PFN_vkDestroyImageView vkDestroyImageView = {};
+
+    PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR = {};
+    PFN_vkQueuePresentKHR vkQueuePresentKHR = {};
+
+    PFN_vkCmdPipelineBarrier vkCmdPipelineBarrier = {};
+    PFN_vkCmdBeginRenderPass vkCmdBeginRenderPass = {};
+    PFN_vkCmdBindPipeline vkCmdBindPipeline = {};
+    PFN_vkCmdSetViewport vkCmdSetViewport = {};
+    PFN_vkCmdSetScissor vkCmdSetScissor = {};
+    PFN_vkCmdBindDescriptorSets vkCmdBindDescriptorSets = {};
+    PFN_vkCmdBindVertexBuffers vkCmdBindVertexBuffers = {};
+    PFN_vkCmdBindIndexBuffer vkCmdBindIndexBuffer = {};
+    PFN_vkCmdDraw vkCmdDraw = {};
+    PFN_vkCmdDrawIndexed vkCmdDrawIndexed = {};
+    PFN_vkCmdEndRenderPass vkCmdEndRenderPass = {};
+    PFN_vkCmdCopyBufferToImage vkCmdCopyBufferToImage = {};
+    PFN_vkCmdCopyImageToBuffer vkCmdCopyImageToBuffer = {};
+    PFN_vkCmdCopyBuffer vkCmdCopyBuffer = {};
+    PFN_vkCmdFillBuffer vkCmdFillBuffer = {};
+    PFN_vkCmdUpdateBuffer vkCmdUpdateBuffer = {};
+    PFN_vkCmdPushConstants vkCmdPushConstants = {};
+    PFN_vkCmdBlitImage vkCmdBlitImage = {};
+    PFN_vkCmdClearColorImage vkCmdClearColorImage = {};
+    PFN_vkCmdClearAttachments vkCmdClearAttachments = {};
+    PFN_vkCmdCopyImage vkCmdCopyImage = {};
+    PFN_vkCmdDispatch vkCmdDispatch = {};
+    PFN_vkCmdDispatchIndirect vkCmdDispatchIndirect = {};
+    PFN_vkCmdResetQueryPool vkCmdResetQueryPool = {};
+    PFN_vkCmdWriteTimestamp vkCmdWriteTimestamp = {};
+
+    bool Load(ILog *log);
+
+    // instance functions
+    PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = {};
+    PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = {};
+    PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT = {};
+
+    PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = {};
+    PFN_vkDestroyAccelerationStructureKHR vkDestroyAccelerationStructureKHR = {};
+    PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = {};
+    PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = {};
+
+    PFN_vkCmdBeginDebugUtilsLabelEXT vkCmdBeginDebugUtilsLabelEXT = {};
+    PFN_vkCmdEndDebugUtilsLabelEXT vkCmdEndDebugUtilsLabelEXT = {};
+    PFN_vkSetDebugUtilsObjectNameEXT vkSetDebugUtilsObjectNameEXT = {};
+
+    PFN_vkCmdSetDepthBias vkCmdSetDepthBias = {};
+
+    PFN_vkCmdBuildAccelerationStructuresKHR vkCmdBuildAccelerationStructuresKHR = {};
+    PFN_vkCmdWriteAccelerationStructuresPropertiesKHR vkCmdWriteAccelerationStructuresPropertiesKHR = {};
+    PFN_vkCmdCopyAccelerationStructureKHR vkCmdCopyAccelerationStructureKHR = {};
+    PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = {};
+    PFN_vkCmdTraceRaysIndirectKHR vkCmdTraceRaysIndirectKHR = {};
+
+    PFN_vkDeviceWaitIdle vkDeviceWaitIdle = {};
+
+    PFN_vkGetPhysicalDeviceProperties2KHR vkGetPhysicalDeviceProperties2KHR = {};
+    PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = {};
+
+    PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = {};
+    PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = {};
+
+    PFN_vkGetPhysicalDeviceMemoryProperties vkGetPhysicalDeviceMemoryProperties = {};
+    PFN_vkGetPhysicalDeviceFormatProperties vkGetPhysicalDeviceFormatProperties = {};
+    PFN_vkGetPhysicalDeviceImageFormatProperties vkGetPhysicalDeviceImageFormatProperties = {};
+
+    PFN_vkCreateImage vkCreateImage = {};
+    PFN_vkDestroyImage vkDestroyImage = {};
+
+    PFN_vkGetImageMemoryRequirements vkGetImageMemoryRequirements = {};
+    PFN_vkAllocateMemory vkAllocateMemory = {};
+    PFN_vkFreeMemory vkFreeMemory = {};
+    PFN_vkBindImageMemory vkBindImageMemory = {};
+
+    PFN_vkCreateRenderPass vkCreateRenderPass = {};
+    PFN_vkDestroyRenderPass vkDestroyRenderPass = {};
+
+    PFN_vkCreateFramebuffer vkCreateFramebuffer = {};
+    PFN_vkDestroyFramebuffer vkDestroyFramebuffer = {};
+
+    PFN_vkCreateBuffer vkCreateBuffer = {};
+    PFN_vkBindBufferMemory vkBindBufferMemory = {};
+    PFN_vkDestroyBuffer vkDestroyBuffer = {};
+    PFN_vkGetBufferMemoryRequirements vkGetBufferMemoryRequirements = {};
+
+    PFN_vkCreateBufferView vkCreateBufferView = {};
+    PFN_vkDestroyBufferView vkDestroyBufferView = {};
+
+    PFN_vkMapMemory vkMapMemory = {};
+    PFN_vkUnmapMemory vkUnmapMemory = {};
+    PFN_vkFlushMappedMemoryRanges vkFlushMappedMemoryRanges = {};
+    PFN_vkInvalidateMappedMemoryRanges vkInvalidateMappedMemoryRanges = {};
+
+    PFN_vkCreateShaderModule vkCreateShaderModule = {};
+    PFN_vkDestroyShaderModule vkDestroyShaderModule = {};
+
+    PFN_vkCreateDescriptorSetLayout vkCreateDescriptorSetLayout = {};
+    PFN_vkDestroyDescriptorSetLayout vkDestroyDescriptorSetLayout = {};
+
+    PFN_vkCreatePipelineLayout vkCreatePipelineLayout = {};
+    PFN_vkDestroyPipelineLayout vkDestroyPipelineLayout = {};
+
+    PFN_vkCreateGraphicsPipelines vkCreateGraphicsPipelines = {};
+    PFN_vkCreateComputePipelines vkCreateComputePipelines = {};
+    PFN_vkDestroyPipeline vkDestroyPipeline = {};
+
+    PFN_vkCreateSemaphore vkCreateSemaphore = {};
+    PFN_vkDestroySemaphore vkDestroySemaphore = {};
+    PFN_vkCreateSampler vkCreateSampler = {};
+    PFN_vkDestroySampler vkDestroySampler = {};
+
+    PFN_vkCreateDescriptorPool vkCreateDescriptorPool = {};
+    PFN_vkDestroyDescriptorPool vkDestroyDescriptorPool = {};
+    PFN_vkResetDescriptorPool vkResetDescriptorPool = {};
+
+    PFN_vkAllocateDescriptorSets vkAllocateDescriptorSets = {};
+    PFN_vkFreeDescriptorSets vkFreeDescriptorSets = {};
+    PFN_vkUpdateDescriptorSets vkUpdateDescriptorSets = {};
+
+    PFN_vkCreateQueryPool vkCreateQueryPool = {};
+    PFN_vkDestroyQueryPool vkDestroyQueryPool = {};
+    PFN_vkGetQueryPoolResults vkGetQueryPoolResults = {};
+
+    PFN_vkCmdBeginRenderingKHR vkCmdBeginRenderingKHR = {};
+    PFN_vkCmdEndRenderingKHR vkCmdEndRenderingKHR = {};
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    PFN_vkCreateWin32SurfaceKHR vkCreateWin32SurfaceKHR = {};
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    PFN_vkCreateXlibSurfaceKHR vkCreateXlibSurfaceKHR = {};
+#elif defined(VK_USE_PLATFORM_IOS_MVK)
+    PFN_vkCreateIOSSurfaceMVK vkCreateIOSSurfaceMVK = {};
+#elif defined(VK_USE_PLATFORM_MACOS_MVK)
+    PFN_vkCreateMacOSSurfaceMVK vkCreateMacOSSurfaceMVK = {};
+#endif
+    PFN_vkDestroySurfaceKHR vkDestroySurfaceKHR = {};
+    PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR = {};
+    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR = {};
+    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR = {};
+    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR = {};
+
+    PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR = {};
+    PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR = {};
+    PFN_vkGetDeviceQueue vkGetDeviceQueue = {};
+    PFN_vkCreateCommandPool vkCreateCommandPool = {};
+    PFN_vkDestroyCommandPool vkDestroyCommandPool = {};
+    PFN_vkAllocateCommandBuffers vkAllocateCommandBuffers = {};
+    PFN_vkFreeCommandBuffers vkFreeCommandBuffers = {};
+
+    PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR = {};
+
+    PFN_vkCreateFence vkCreateFence = {};
+    PFN_vkWaitForFences vkWaitForFences = {};
+    PFN_vkResetFences vkResetFences = {};
+    PFN_vkDestroyFence vkDestroyFence = {};
+    PFN_vkGetFenceStatus vkGetFenceStatus = {};
+
+    bool LoadInstanceFunctions(ILog *log);
+
+    bool InitVkInstance(const char *enabled_layers[], int enabled_layers_count, int validation_level, ILog *log);
+    bool InitVkSurface(ILog *log);
+    bool ChooseVkPhysicalDevice(const char *preferred_device, ILog *log);
+    bool InitVkDevice(const char *enabled_layers[], int enabled_layers_count, ILog *log);
+    bool InitSwapChain(int w, int h, ILog *log);
+    bool InitCommandBuffers(uint32_t family_index, ILog *log);
+    bool InitPresentImageViews(ILog *log);
+
+    VkCommandBuffer BegSingleTimeCommands();
+    void EndSingleTimeCommands(VkCommandBuffer command_buf);
+    void EndSingleTimeCommands(VkCommandBuffer command_buf, VkFence fence_to_insert);
+
+    ~ApiContext();
 };
 
 inline VkDeviceSize AlignTo(VkDeviceSize size, VkDeviceSize alignment) {
@@ -79,37 +279,6 @@ inline VkDeviceSize AlignTo(VkDeviceSize size, VkDeviceSize alignment) {
 bool MatchDeviceNames(const char *name, const char *pattern);
 
 class ILog;
-
-bool InitVkInstance(VkInstance &instance, const char *enabled_layers[], int enabled_layers_count, int validation_level,
-                    ILog *log);
-bool InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log);
-bool ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &device_properties,
-                            VkPhysicalDeviceMemoryProperties &mem_properties, uint32_t &present_family_index,
-                            uint32_t &graphics_family_index, bool &out_raytracing_supported,
-                            bool &out_ray_query_supported, bool &out_dynamic_rendering_supported,
-                            const char *preferred_device, VkInstance instance, VkSurfaceKHR surface, ILog *log);
-bool InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint32_t present_family_index,
-                  uint32_t graphics_family_index, bool enable_raytracing, bool enable_ray_query,
-                  bool enable_dynamic_rendering, const char *enabled_layers[], int enabled_layers_count, ILog *log);
-bool InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_format, VkExtent2D &extent,
-                   VkPresentModeKHR &present_mode, int w, int h, VkDevice device, VkPhysicalDevice physical_device,
-                   uint32_t present_family_index, uint32_t graphics_family_index, VkSurfaceKHR surface, ILog *log);
-bool InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_command_pool, VkCommandBuffer &setup_cmd_buf,
-                        VkCommandBuffer draw_cmd_bufs[MaxFramesInFlight],
-                        VkSemaphore image_avail_semaphores[MaxFramesInFlight],
-                        VkSemaphore render_finished_semaphores[MaxFramesInFlight],
-                        VkFence in_flight_fences[MaxFramesInFlight], VkQueryPool query_pools[MaxFramesInFlight],
-                        VkDevice device, uint32_t family_index, ILog *log);
-bool InitPresentImageViews(SmallVectorImpl<VkImage> &present_images, SmallVectorImpl<VkImageView> &present_image_views,
-                           VkDevice device, VkSwapchainKHR swapchain, VkSurfaceFormatKHR surface_format,
-                           VkCommandBuffer setup_cmd_buf, VkQueue present_queue, ILog *log);
-
-VkCommandBuffer BegSingleTimeCommands(VkDevice device, VkCommandPool temp_command_pool);
-void EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuffer command_buf,
-                           VkCommandPool temp_command_pool);
-void EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuffer command_buf,
-                           VkCommandPool temp_command_pool, VkFence fence_to_insert);
-void FreeSingleTimeCommandBuffer(VkDevice device, VkCommandPool temp_command_pool, VkCommandBuffer command_buf);
 
 bool ReadbackTimestampQueries(ApiContext *api_ctx, int i);
 

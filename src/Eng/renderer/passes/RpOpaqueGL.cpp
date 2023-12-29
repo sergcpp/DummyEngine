@@ -246,7 +246,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         uint32_t i = 0;
 
         { // one-sided1
-            Ren::DebugMarker _m(ctx.current_cmd_buf(), "ONE-SIDED-1");
+            Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED-1");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
             rast_state.ApplyChanged(builder.rast_state());
@@ -257,7 +257,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
 
         { // two-sided1
-            Ren::DebugMarker _m(ctx.current_cmd_buf(), "TWO-SIDED-1");
+            Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED-1");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
             rast_state.ApplyChanged(builder.rast_state());
@@ -268,7 +268,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
 
         { // one-sided2
-            Ren::DebugMarker _m(ctx.current_cmd_buf(), "ONE-SIDED-2");
+            Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED-2");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
             rast_state.ApplyChanged(builder.rast_state());
@@ -279,7 +279,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
 
         { // two-sided2
-            Ren::DebugMarker _m(ctx.current_cmd_buf(), "TWO-SIDED-2");
+            Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED-2");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
             rast_state.ApplyChanged(builder.rast_state());
@@ -291,7 +291,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
 
         { // two-sided-tested-blended
-            Ren::DebugMarker _m(ctx.current_cmd_buf(), "TWO-SIDED-TESTED-BLENDED");
+            Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "TWO-SIDED-TESTED-BLENDED");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
             rast_state.ApplyChanged(builder.rast_state());
@@ -304,7 +304,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
 
         { // one-sided-tested-blended
-            Ren::DebugMarker _m(ctx.current_cmd_buf(), "ONE-SIDED-TESTED-BLENDED");
+            Ren::DebugMarker _m(ctx.api_ctx(), ctx.current_cmd_buf(), "ONE-SIDED-TESTED-BLENDED");
 
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
             rast_state.ApplyChanged(builder.rast_state());

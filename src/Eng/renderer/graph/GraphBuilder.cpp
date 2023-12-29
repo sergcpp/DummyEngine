@@ -1325,7 +1325,7 @@ void Eng::RpBuilder::Execute() {
             Ren::ResetGLState();
 #endif
 
-            Ren::DebugMarker _(ctx_.current_cmd_buf(), cur_pass.name());
+            Ren::DebugMarker _(ctx_.api_ctx(), ctx_.current_cmd_buf(), cur_pass.name());
 
             // Start timestamp
             pass_timing_t &pass_interval = pass_timings_[ctx_.backend_frame()].emplace_back();
@@ -1366,7 +1366,7 @@ void Eng::RpBuilder::InsertResourceTransitions(RpSubpass &pass) {
         HandleResourceTransition(res, res_transitions, src_stages, dst_stages);
     }
 
-    Ren::TransitionResourceStates(cmd_buf, src_stages, dst_stages, res_transitions);
+    Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, src_stages, dst_stages, res_transitions);
 }
 
 void Eng::RpBuilder::CheckResourceStates(RpSubpass &pass) {

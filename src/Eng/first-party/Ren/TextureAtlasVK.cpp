@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-//#include "GL.h"
+// #include "GL.h"
 #include "Utils.h"
 #include "VKCtx.h"
 
@@ -44,13 +44,13 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             img_info.samples = VK_SAMPLE_COUNT_1_BIT;
             img_info.flags = 0;
 
-            VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &img_[i]);
+            VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &img_[i]);
             if (res != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create image!");
             }
 
             VkMemoryRequirements img_tex_mem_req = {};
-            vkGetImageMemoryRequirements(api_ctx_->device, img_[i], &img_tex_mem_req);
+            api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, img_[i], &img_tex_mem_req);
 
             VkMemoryAllocateInfo img_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
             img_alloc_info.allocationSize = img_tex_mem_req.size;
@@ -69,12 +69,12 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             }
 
             // TODO: avoid dedicated allocation
-            res = vkAllocateMemory(api_ctx_->device, &img_alloc_info, nullptr, &mem_[i]);
+            res = api_ctx_->vkAllocateMemory(api_ctx_->device, &img_alloc_info, nullptr, &mem_[i]);
             if (res != VK_SUCCESS) {
                 throw std::runtime_error("Failed to allocate memory!");
             }
 
-            res = vkBindImageMemory(api_ctx_->device, img_[i], mem_[i], 0);
+            res = api_ctx_->vkBindImageMemory(api_ctx_->device, img_[i], mem_[i], 0);
             if (res != VK_SUCCESS) {
                 throw std::runtime_error("Failed to bind memory!");
             }
@@ -91,7 +91,7 @@ Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, c
             view_info.subresourceRange.baseArrayLayer = 0;
             view_info.subresourceRange.layerCount = 1;
 
-            const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &img_view_[i]);
+            const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &img_view_[i]);
             if (res != VK_SUCCESS) {
                 throw std::runtime_error("Failed to create image view!");
             }
@@ -212,9 +212,9 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -233,8 +233,8 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
     region.imageOffset = {int32_t(pos[0]), int32_t(pos[1]), 0};
     region.imageExtent = {uint32_t(res[0]), uint32_t(res[1]), 1};
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_[layer], VKImageLayoutForState(eResState::CopyDst), 1,
-                           &region);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_[layer], VKImageLayoutForState(eResState::CopyDst),
+                                     1, &region);
 }
 
 bool Ren::TextureAtlas::Free(const int pos[2]) {
@@ -273,8 +273,8 @@ void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
     }
 
     if (!img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     resource_state = eResState::ShaderResource;
@@ -304,13 +304,13 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
         img_info.samples = VK_SAMPLE_COUNT_1_BIT;
         img_info.flags = 0;
 
-        VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &img_);
+        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &img_);
         if (res != VK_SUCCESS) {
             throw std::runtime_error("Failed to create image!");
         }
 
         VkMemoryRequirements img_tex_mem_req = {};
-        vkGetImageMemoryRequirements(api_ctx_->device, img_, &img_tex_mem_req);
+        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, img_, &img_tex_mem_req);
 
         VkMemoryAllocateInfo img_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
         img_alloc_info.allocationSize = img_tex_mem_req.size;
@@ -329,12 +329,12 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
         }
 
         // TODO: avoid dedicated allocation
-        res = vkAllocateMemory(api_ctx_->device, &img_alloc_info, nullptr, &mem_);
+        res = api_ctx_->vkAllocateMemory(api_ctx_->device, &img_alloc_info, nullptr, &mem_);
         if (res != VK_SUCCESS) {
             throw std::runtime_error("Failed to allocate memory!");
         }
 
-        res = vkBindImageMemory(api_ctx_->device, img_, mem_, 0);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, img_, mem_, 0);
         if (res != VK_SUCCESS) {
             throw std::runtime_error("Failed to bind memory!");
         }
@@ -351,7 +351,7 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = layer_count_;
 
-        const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &img_view_);
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &img_view_);
         if (res != VK_SUCCESS) {
             throw std::runtime_error("Failed to create image view!");
         }
@@ -476,9 +476,10 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
             }
 
             if (!buf_barriers.empty() || !img_barriers.empty()) {
-                vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                     0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                     uint32_t(img_barriers.size()), img_barriers.cdata());
+                api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                               dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
+                                               buf_barriers.cdata(), uint32_t(img_barriers.size()),
+                                               img_barriers.cdata());
             }
 
             sbuf.resource_state = eResState::CopySrc;
@@ -497,8 +498,8 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
             region.imageOffset = {int32_t(out_pos[0]), int32_t(out_pos[1]), 0};
             region.imageExtent = {uint32_t(res[0]), uint32_t(res[1]), 1};
 
-            vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_, VKImageLayoutForState(eResState::CopyDst), 1,
-                                   &region);
+            api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_, VKImageLayoutForState(eResState::CopyDst),
+                                             1, &region);
 
             return index;
         }

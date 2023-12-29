@@ -15,7 +15,7 @@
 #endif
 
 #ifndef NDEBUG
-//#define TEX_VERBOSE_LOGGING
+// #define TEX_VERBOSE_LOGGING
 #endif
 
 namespace Ren {
@@ -316,8 +316,8 @@ void Ren::Texture2D::Free() {
 }
 
 bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const eTexFormat format,
-                             const eTexBlock block, const bool is_srgb, void *_cmd_buf,
-                             MemoryAllocators *mem_allocs, ILog *log) {
+                             const eTexBlock block, const bool is_srgb, void *_cmd_buf, MemoryAllocators *mem_allocs,
+                             ILog *log) {
     VkImage new_image = VK_NULL_HANDLE;
     VkImageView new_image_view = VK_NULL_HANDLE;
     MemAllocation new_alloc = {};
@@ -346,7 +346,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         img_info.samples = VkSampleCountFlagBits(samples);
         img_info.flags = 0;
 
-        VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &new_image);
+        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &new_image);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image!");
             return false;
@@ -361,7 +361,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
 #endif
 
         VkMemoryRequirements tex_mem_req;
-        vkGetImageMemoryRequirements(api_ctx_->device, new_image, &tex_mem_req);
+        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, new_image, &tex_mem_req);
 
         new_alloc = mem_allocs->Allocate(
             uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
@@ -370,7 +370,8 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
 
         const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(new_alloc.alloc_off), tex_mem_req.alignment);
 
-        res = vkBindImageMemory(api_ctx_->device, new_image, new_alloc.owner->mem(new_alloc.block_ndx), aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, new_image, new_alloc.owner->mem(new_alloc.block_ndx),
+                                          aligned_offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return false;
@@ -391,7 +392,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = 1;
 
-        const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &new_image_view);
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &new_image_view);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image view!");
             return false;
@@ -508,15 +509,16 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             }
 
             if (!barriers.empty()) {
-                vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
-                                     0, 0, nullptr, 0, nullptr, uint32_t(barriers.size()), barriers.cdata());
+                api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                               dst_stages, 0, 0, nullptr, 0, nullptr, uint32_t(barriers.size()),
+                                               barriers.cdata());
             }
 
             this->resource_state = eResState::CopySrc;
             new_resource_state = eResState::CopyDst;
 
-            vkCmdCopyImage(cmd_buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, new_image,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy_regions_count, copy_regions);
+            api_ctx_->vkCmdCopyImage(cmd_buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, new_image,
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copy_regions_count, copy_regions);
         }
     }
     Free();
@@ -575,7 +577,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         img_info.samples = VkSampleCountFlagBits(p.samples);
         img_info.flags = 0;
 
-        VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
+        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image!");
             return;
@@ -590,7 +592,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
 #endif
 
         VkMemoryRequirements tex_mem_req;
-        vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
+        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
 
         alloc_ = mem_allocs->Allocate(
             uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
@@ -599,7 +601,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
 
         const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
 
-        res = vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx), aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
+                                          aligned_offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -626,7 +629,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = 1;
 
-        const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image view!");
             return;
@@ -636,7 +639,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
             // create additional depth-only image view
             view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
             VkImageView depth_only_view;
-            const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &depth_only_view);
+            const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &depth_only_view);
             if (res != VK_SUCCESS) {
                 log->Error("Failed to create image view!");
                 return;
@@ -702,9 +705,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         }
 
         if (!buf_barriers.empty() || !img_barriers.empty()) {
-            vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                                 nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                                 uint32_t(img_barriers.size()), img_barriers.cdata());
+            api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                           dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
+                                           buf_barriers.cdata(), uint32_t(img_barriers.size()), img_barriers.cdata());
         }
 
         sbuf->resource_state = eResState::CopySrc;
@@ -723,8 +726,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         region.imageOffset = {0, 0, 0};
         region.imageExtent = {uint32_t(p.w), uint32_t(p.h), 1};
 
-        vkCmdCopyBufferToImage(cmd_buf, sbuf->vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                               &region);
+        api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf->vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                         1, &region);
 
         initialized_mips_ |= (1u << 0);
     }
@@ -747,7 +750,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         sampler_info.minLod = p.sampling.min_lod.to_float();
         sampler_info.maxLod = p.sampling.max_lod.to_float();
 
-        const VkResult res = vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
+        const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create sampler!");
         }
@@ -888,9 +891,9 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -929,8 +932,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
         h = std::max(h / 2, 1);
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
-                           regions);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     regions_count, regions);
 
     ApplySampling(p.sampling, log);
 }
@@ -1041,9 +1044,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1091,8 +1094,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
         data_offset += pad;
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
-                           regions);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     regions_count, regions);
 
     ApplySampling(p.sampling, log);
 }
@@ -1128,7 +1131,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         img_info.samples = VkSampleCountFlagBits(p.samples);
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-        VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
+        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image!");
             return;
@@ -1143,7 +1146,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
 #endif
 
         VkMemoryRequirements tex_mem_req;
-        vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
+        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
 
         alloc_ = mem_allocs->Allocate(
             uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
@@ -1152,7 +1155,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
 
         const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
 
-        res = vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx), aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
+                                          aligned_offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -1173,7 +1177,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = 1;
 
-        const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image view!");
             return;
@@ -1232,9 +1236,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1255,7 +1259,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         regions[i].imageExtent = {uint32_t(p.w), uint32_t(p.h), 1};
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6, regions);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6,
+                                     regions);
 
     initialized_mips_ |= (1u << 0);
 
@@ -1457,7 +1462,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         img_info.samples = VK_SAMPLE_COUNT_1_BIT;
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-        VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
+        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image!");
             return;
@@ -1472,7 +1477,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 #endif
 
         VkMemoryRequirements tex_mem_req;
-        vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
+        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
 
         alloc_ = mem_allocs->Allocate(
             uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
@@ -1481,7 +1486,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
 
         const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
 
-        res = vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx), aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
+                                          aligned_offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -1502,7 +1508,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = 6;
 
-        const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image view!");
             return;
@@ -1561,9 +1567,9 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1606,8 +1612,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         }
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
-                           regions);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     regions_count, regions);
 
     ApplySampling(p.sampling, log);
 }
@@ -1684,7 +1690,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         img_info.samples = VK_SAMPLE_COUNT_1_BIT;
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-        VkResult res = vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
+        VkResult res = api_ctx_->vkCreateImage(api_ctx_->device, &img_info, nullptr, &handle_.img);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image!");
             return;
@@ -1699,7 +1705,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 #endif
 
         VkMemoryRequirements tex_mem_req;
-        vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
+        api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, handle_.img, &tex_mem_req);
 
         alloc_ = mem_allocs->Allocate(
             uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
@@ -1708,7 +1714,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 
         const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
 
-        res = vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx), aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
+                                          aligned_offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -1729,7 +1736,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = 6;
 
-        const VkResult res = vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
+        const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image view!");
             return;
@@ -1788,9 +1795,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1854,8 +1861,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         }
     }
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, regions_count,
-                           regions);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     regions_count, regions);
 
     ApplySampling(p.sampling, log);
 }
@@ -1939,9 +1946,9 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     sbuf.resource_state = eResState::CopySrc;
@@ -1961,7 +1968,8 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
     region.imageOffset = {int32_t(offsetx), int32_t(offsety), 0};
     region.imageExtent = {uint32_t(sizex), uint32_t(sizey), 1};
 
-    vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
+                                     &region);
 
     if (offsetx == 0 && offsety == 0 && sizex == std::max(params.w >> level, 1) &&
         sizey == std::max(params.h >> level, 1)) {
@@ -1992,7 +2000,7 @@ void Ren::Texture2D::SetSampling(const SamplingParams s) {
     sampler_info.minLod = s.min_lod.to_float();
     sampler_info.maxLod = s.max_lod.to_float();
 
-    const VkResult res = vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
+    const VkResult res = api_ctx_->vkCreateSampler(api_ctx_->device, &sampler_info, nullptr, &handle_.sampler);
     assert(res == VK_SUCCESS && "Failed to create sampler!");
 
     params.sampling = s;
@@ -2057,9 +2065,9 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
     }
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 
     this->resource_state = eResState::CopySrc;
@@ -2079,7 +2087,8 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
     region.imageOffset = {int32_t(0), int32_t(0), 0};
     region.imageExtent = {uint32_t(params.w), uint32_t(params.h), 1};
 
-    vkCmdCopyImageToBuffer(cmd_buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, sbuf.vk_handle(), 1, &region);
+    api_ctx_->vkCmdCopyImageToBuffer(cmd_buf, handle_.img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, sbuf.vk_handle(), 1,
+                                     &region);
 }
 
 void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
@@ -2111,8 +2120,8 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
     reg.dstOffset = {int32_t(dst_x), int32_t(dst_y), 0};
     reg.extent = {width, height, 1};
 
-    vkCmdCopyImage(cmd_buf, src_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst_tex.handle().img,
-                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
+    src_tex.api_ctx()->vkCmdCopyImage(cmd_buf, src_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                      dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
 }
 
 void Ren::ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
@@ -2127,8 +2136,8 @@ void Ren::ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
     clear_range.layerCount = 1;
     clear_range.levelCount = 1;
 
-    vkCmdClearColorImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val, 1,
-                         &clear_range);
+    tex.api_ctx()->vkCmdClearColorImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val, 1,
+                                        &clear_range);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -2168,7 +2177,7 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
     view_info.offset = VkDeviceSize(offset);
     view_info.range = VkDeviceSize(size);
 
-    const VkResult res = vkCreateBufferView(buf->api_ctx()->device, &view_info, nullptr, &buf_view_);
+    const VkResult res = buf->api_ctx()->vkCreateBufferView(buf->api_ctx()->device, &view_info, nullptr, &buf_view_);
     assert(res == VK_SUCCESS);
 
     buf_ = std::move(buf);

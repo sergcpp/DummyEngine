@@ -174,12 +174,13 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             descr_write.pImageInfo = &output_img_info;
         }
 
-        vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0,
+                                        nullptr);
     }
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.layout(), 0, 2, descr_sets,
-                            0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_debug_hwrt_.layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
     RTDebug::Params uniform_params;
     uniform_params.img_size[0] = view_state_->scr_res[0];
@@ -187,12 +188,12 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    vkCmdPushConstants(cmd_buf, pi_debug_hwrt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(uniform_params),
-                       &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_hwrt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
+                                sizeof(uniform_params), &uniform_params);
 
-    vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_.rgen_table(), pi_debug_hwrt_.miss_table(), pi_debug_hwrt_.hit_table(),
-                      pi_debug_hwrt_.call_table(), uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]),
-                      1);
+    api_ctx->vkCmdTraceRaysKHR(cmd_buf, pi_debug_hwrt_.rgen_table(), pi_debug_hwrt_.miss_table(),
+                               pi_debug_hwrt_.hit_table(), pi_debug_hwrt_.call_table(),
+                               uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1]), 1);
 }
 
 void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
@@ -301,12 +302,12 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.layout(), 0, 2, descr_sets, 0,
-                            nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_debug_swrt_.layout(), 0, 2, descr_sets,
+                                     0, nullptr);
 
-    vkCmdPushConstants(cmd_buf, pi_debug_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
-                       &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                sizeof(uniform_params), &uniform_params);
 
-    vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);
+    api_ctx->vkCmdDispatch(cmd_buf, grp_count[0], grp_count[1], grp_count[2]);
 }

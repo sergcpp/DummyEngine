@@ -126,8 +126,8 @@ uint32_t Ren::VKAccessFlagsForState(const eResState state) { return g_access_fla
 
 uint32_t Ren::VKPipelineStagesForState(const eResState state) { return g_pipeline_stages_per_state_vk[int(state)]; }
 
-void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_mask, const eStageBits dst_stages_mask,
-                                   Span<const TransitionInfo> transitions) {
+void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, const eStageBits src_stages_mask,
+                                   const eStageBits dst_stages_mask, Span<const TransitionInfo> transitions) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
@@ -210,9 +210,9 @@ void Ren::TransitionResourceStates(void *_cmd_buf, const eStageBits src_stages_m
     dst_stages &= to_pipeline_stage_flags_vk(dst_stages_mask);
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
-                             uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                      0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                      uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 }
 

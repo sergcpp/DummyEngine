@@ -45,18 +45,18 @@ void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_shadows_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_shadows_.layout(), 0, 2, descr_sets,
-                            0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_shadows_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pi_rt_shadows_.layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
     RTShadows::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    vkCmdPushConstants(cmd_buf, pi_rt_shadows_.layout(),
-                       VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0, sizeof(uniform_params),
-                       &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_.layout(),
+                                VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
+                                sizeof(uniform_params), &uniform_params);
 
     // vkCmdTraceRaysIndirectKHR(cmd_buf, pi_rt_shadows_.rgen_table(), pi_rt_shadows_.miss_table(),
     //                           pi_rt_shadows_.hit_table(), pi_rt_shadows_.call_table(),
@@ -102,19 +102,19 @@ void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_inline_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_inline_.layout(), 0, 2, descr_sets,
-                            0, nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_inline_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_inline_.layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
     RTShadows::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    vkCmdPushConstants(cmd_buf, pi_rt_shadows_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
-                       &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_inline_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                sizeof(uniform_params), &uniform_params);
 
-    vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
+    api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
 }
 
 void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
@@ -199,19 +199,19 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
                                               ctx.default_descr_alloc(), ctx.log());
     descr_sets[1] = bindless_tex_->rt_inline_textures_descr_set;
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_swrt_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_swrt_.layout(), 0, 2, descr_sets, 0,
-                            nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_swrt_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_rt_shadows_swrt_.layout(), 0, 2,
+                                     descr_sets, 0, nullptr);
 
     RTShadows::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    vkCmdPushConstants(cmd_buf, pi_rt_shadows_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
-                       &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_shadows_swrt_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                sizeof(uniform_params), &uniform_params);
 
-    vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
+    api_ctx->vkCmdDispatchIndirect(cmd_buf, indir_args_buf.ref->vk_handle(), 0);
 }
 
 void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {

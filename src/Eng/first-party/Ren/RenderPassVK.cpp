@@ -134,7 +134,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
     render_pass_create_info.subpassCount = 1;
     render_pass_create_info.pSubpasses = &subpass;
 
-    const VkResult res = vkCreateRenderPass(api_ctx->device, &render_pass_create_info, nullptr, &handle_);
+    const VkResult res = api_ctx->vkCreateRenderPass(api_ctx->device, &render_pass_create_info, nullptr, &handle_);
     if (res != VK_SUCCESS) {
         log->Error("Failed to create render pass!");
         return false;

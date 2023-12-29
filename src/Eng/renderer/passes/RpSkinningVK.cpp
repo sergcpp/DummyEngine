@@ -45,12 +45,12 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
             descr_write.descriptorCount = 6;
             descr_write.pBufferInfo = buf_infos;
 
-            vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
+            api_ctx->vkUpdateDescriptorSets(api_ctx->device, 1, &descr_write, 0, nullptr);
         }
 
-        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.handle());
-        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.layout(), 0, 1, &descr_set, 0,
-                                nullptr);
+        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.handle());
+        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_skinning_.layout(), 0, 1,
+                                         &descr_set, 0, nullptr);
 
         for (uint32_t i = 0; i < p_list_->skin_regions.count; i++) {
             const SkinRegion &sr = p_list_->skin_regions.data[i];
@@ -64,11 +64,11 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                 uniform_params.uShapeParamsCurr = Ren::Vec4u{0, 0, 0, 0};
                 uniform_params.uShapeParamsPrev = Ren::Vec4u{0, 0, 0, 0};
 
-                vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                                   sizeof(Skinning::Params), &uniform_params);
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                            sizeof(Skinning::Params), &uniform_params);
 
-                vkCmdDispatch(cmd_buf, (sr.vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE,
-                              1, 1);
+                api_ctx->vkCmdDispatch(
+                    cmd_buf, (sr.vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
             }
 
             if (sr.shape_keyed_vertex_count) {
@@ -81,10 +81,10 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                 uniform_params.uShapeParamsPrev =
                     Ren::Vec4u{sr.shape_key_offset_prev, sr.shape_key_count_prev, sr.delta_offset, 0};
 
-                vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                                   sizeof(Skinning::Params), &uniform_params);
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_skinning_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                            sizeof(Skinning::Params), &uniform_params);
 
-                vkCmdDispatch(
+                api_ctx->vkCmdDispatch(
                     cmd_buf,
                     (sr.shape_keyed_vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);
             }

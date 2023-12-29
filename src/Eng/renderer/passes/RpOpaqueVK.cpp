@@ -12,7 +12,7 @@
 #define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
 namespace RpSharedInternal {
-uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
+uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
                                const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
@@ -29,25 +29,26 @@ uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_desc
         }
 
         if (cur_pipe_id != batch.pipe_id) {
-            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 0, 1,
-                                    &res_descr_set, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pipelines[batch.pipe_id].layout(), 0, 1, &res_descr_set, 0, nullptr);
             cur_pipe_id = batch.pipe_id;
             bound_descr_id = 0xffffffff;
         }
 
         const uint32_t descr_id = batch.material_index / materials_per_descriptor;
         if (descr_id != bound_descr_id) {
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 1, 1,
-                                    &texture_descr_sets[descr_id], 0, nullptr);
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pipelines[batch.pipe_id].layout(), 1, 1, &texture_descr_sets[descr_id], 0,
+                                             nullptr);
             bound_descr_id = descr_id;
         }
 
-        vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                         batch.instance_count,         // instance count
-                         batch.indices_offset,         // first index
-                         batch.base_vertex,            // vertex offset
-                         batch.instance_start);        // first instance
+        api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                  batch.instance_count,         // instance count
+                                  batch.indices_offset,         // first index
+                                  batch.base_vertex,            // vertex offset
+                                  batch.instance_start);        // first instance
 
         backend_info.opaque_draw_calls_count++;
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
@@ -56,7 +57,7 @@ uint32_t _draw_list_range_full(VkCommandBuffer cmd_buf, VkDescriptorSet res_desc
     return i;
 }
 
-uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
+uint32_t _draw_list_range_full_rev(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                    const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
                                    const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
@@ -74,25 +75,26 @@ uint32_t _draw_list_range_full_rev(VkCommandBuffer cmd_buf, VkDescriptorSet res_
         }
 
         if (cur_pipe_id != batch.pipe_id) {
-            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 0, 1,
-                                    &res_descr_set, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pipelines[batch.pipe_id].layout(), 0, 1, &res_descr_set, 0, nullptr);
             cur_pipe_id = batch.pipe_id;
             bound_descr_id = 0xffffffff;
         }
 
         const uint32_t descr_id = batch.material_index / materials_per_descriptor;
         if (descr_id != bound_descr_id) {
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[batch.pipe_id].layout(), 1, 1,
-                                    &texture_descr_sets[descr_id], 0, nullptr);
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                             pipelines[batch.pipe_id].layout(), 1, 1, &texture_descr_sets[descr_id], 0,
+                                             nullptr);
             bound_descr_id = descr_id;
         }
 
-        vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                         batch.instance_count,         // instance count
-                         batch.indices_offset,         // first index
-                         batch.base_vertex,            // vertex offset
-                         batch.instance_start);        // first instance
+        api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                  batch.instance_count,         // instance count
+                                  batch.indices_offset,         // first index
+                                  batch.base_vertex,            // vertex offset
+                                  batch.instance_start);        // first instance
 
         backend_info.opaque_draw_calls_count++;
         backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
@@ -342,7 +344,8 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             descr_write.pBufferInfo = &mat_buf_info;
         }
 
-        vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0,
+                                        nullptr);
     }
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
@@ -352,9 +355,9 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
     //
     const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
                                  0.0f, 1.0f};
-    vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
     const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
@@ -376,54 +379,54 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         rp_begin_info.renderPass = rp_opaque_.handle();
         rp_begin_info.framebuffer = opaque_draw_fb_[ctx.backend_frame()][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
-        vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+        api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        draw_pass_vi_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        draw_pass_vi_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         { // one-sided1
-            Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-1");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
-                                      batch_indices, i, 0ull, materials_per_descriptor, cur_pipe_id, bound_descr_id,
-                                      _dummy);
+            Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-1");
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      batches, batch_indices, i, 0ull, materials_per_descriptor, cur_pipe_id,
+                                      bound_descr_id, _dummy);
         }
 
         { // two-sided1
-            Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-1");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
-                                      batch_indices, i, CDB::BitTwoSided, materials_per_descriptor, cur_pipe_id,
-                                      bound_descr_id, _dummy);
-        }
-
-        { // one-sided2
-            Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-2");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
-                                      batch_indices, i, CDB::BitAlphaTest, materials_per_descriptor, cur_pipe_id,
-                                      bound_descr_id, _dummy);
-        }
-
-        { // two-sided2
-            Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-2");
-            i = _draw_list_range_full(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
-                                      batch_indices, i, CDB::BitAlphaTest | CDB::BitTwoSided, materials_per_descriptor,
+            Ren::DebugMarker _m(api_ctx, cmd_buf, "TWO-SIDED-1");
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      batches, batch_indices, i, CDB::BitTwoSided, materials_per_descriptor,
                                       cur_pipe_id, bound_descr_id, _dummy);
         }
 
+        { // one-sided2
+            Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-2");
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      batches, batch_indices, i, CDB::BitAlphaTest, materials_per_descriptor,
+                                      cur_pipe_id, bound_descr_id, _dummy);
+        }
+
+        { // two-sided2
+            Ren::DebugMarker _m(api_ctx, cmd_buf, "TWO-SIDED-2");
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      batches, batch_indices, i, CDB::BitAlphaTest | CDB::BitTwoSided,
+                                      materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
+        }
+
         { // two-sided-tested-blended
-            Ren::DebugMarker _m(cmd_buf, "TWO-SIDED-TESTED-BLENDED");
-            i = _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
-                                          batches, batch_indices, uint32_t(batch_indices.size() - 1),
+            Ren::DebugMarker _m(api_ctx, cmd_buf, "TWO-SIDED-TESTED-BLENDED");
+            i = _draw_list_range_full_rev(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets,
+                                          pipelines_, batches, batch_indices, uint32_t(batch_indices.size() - 1),
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided,
                                           materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }
 
         { // one-sided-tested-blended
-            Ren::DebugMarker _m(cmd_buf, "ONE-SIDED-TESTED-BLENDED");
-            _draw_list_range_full_rev(cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_, batches,
-                                      batch_indices, i, CDB::BitAlphaBlend | CDB::BitAlphaTest,
+            Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-TESTED-BLENDED");
+            _draw_list_range_full_rev(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+                                      batches, batch_indices, i, CDB::BitAlphaBlend | CDB::BitAlphaTest,
                                       materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }
 
-        vkCmdEndRenderPass(cmd_buf);
+        api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
 }
 
@@ -455,13 +458,14 @@ void Eng::RpOpaque::InitDescrSetLayout() {
     layout_info.bindingCount = COUNT_OF(bindings);
     layout_info.pBindings = bindings;
 
-    const VkResult res = vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layout_);
+    const VkResult res =
+        api_ctx_->vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layout_);
     assert(res == VK_SUCCESS);
 }
 
 Eng::RpOpaque::~RpOpaque() {
     if (descr_set_layout_ != VK_NULL_HANDLE) {
-        vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
+        api_ctx_->vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }
 }
 

@@ -90,8 +90,9 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         }
 
         if (!img_barriers.empty()) {
-            vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                                 nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.data());
+            ctx_->api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                                  dst_stages, 0, 0, nullptr, 0, nullptr, uint32_t(img_barriers.size()),
+                                                  img_barriers.data());
         }
     }
 
@@ -128,34 +129,34 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         render_info.pDepthAttachment = depth_rt ? &depth_attachment : nullptr;
         render_info.pStencilAttachment = new_rast_state.stencil.enabled ? &depth_attachment : nullptr;
 
-        vkCmdBeginRenderingKHR(cmd_buf, &render_info);
+        api_ctx->vkCmdBeginRenderingKHR(cmd_buf, &render_info);
 
-        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
         const VkViewport viewport = {0.0f, 0.0f, float(new_rast_state.viewport[2]), float(new_rast_state.viewport[3]),
                                      0.0f, 1.0f};
-        vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+        api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
         const VkRect2D scissor = {0, 0, uint32_t(new_rast_state.viewport[2]), uint32_t(new_rast_state.viewport[3])};
-        vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+        api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set, 0,
-                                nullptr);
+        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
+                                         0, nullptr);
 
-        vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags, uniform_data_offset,
-                           uniform_data_len, uniform_data);
+        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags,
+                                    uniform_data_offset, uniform_data_len, uniform_data);
 
         if (prim == ePrim::Quad) {
-            pipeline->vtx_input()->BindBuffers(cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
+            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                             1,                    // instance count
-                             0,                    // first index
-                             0,                    // vertex offset
-                             0);                   // first instance
+            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
+                                      1,                    // instance count
+                                      0,                    // first index
+                                      0,                    // vertex offset
+                                      0);                   // first instance
         }
 
-        vkCmdEndRenderingKHR(cmd_buf);
+        api_ctx->vkCmdEndRenderingKHR(cmd_buf);
     } else {
         const Ren::RenderPass *rp = FindOrCreateRenderPass(color_rts, depth_rt);
         const Ren::Framebuffer *fb =
@@ -168,32 +169,32 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         render_pass_begin_info.framebuffer = fb->handle();
         render_pass_begin_info.renderArea = {0, 0, uint32_t(fb->w), uint32_t(fb->h)};
 
-        vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-        vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+        api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+        api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
         const VkViewport viewport = {0.0f, 0.0f, float(fb->w), float(fb->h), 0.0f, 1.0f};
-        vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+        api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
         const VkRect2D scissor = {0, 0, uint32_t(fb->w), uint32_t(fb->h)};
-        vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+        api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set, 0,
-                                nullptr);
+        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
+                                         0, nullptr);
 
-        vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags, uniform_data_offset,
-                           uniform_data_len, uniform_data);
+        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags,
+                                    uniform_data_offset, uniform_data_len, uniform_data);
 
         if (prim == ePrim::Quad) {
-            pipeline->vtx_input()->BindBuffers(cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
+            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
 
-            vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                             1,                    // instance count
-                             0,                    // first index
-                             0,                    // vertex offset
-                             0);                   // first instance
+            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
+                                      1,                    // instance count
+                                      0,                    // first index
+                                      0,                    // vertex offset
+                                      0);                   // first instance
         }
 
-        vkCmdEndRenderPass(cmd_buf);
+        api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
 }
 

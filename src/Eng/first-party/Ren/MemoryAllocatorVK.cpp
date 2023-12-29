@@ -36,7 +36,7 @@ Ren::MemoryAllocator::MemoryAllocator(const char name[32], ApiContext *api_ctx, 
 
 Ren::MemoryAllocator::~MemoryAllocator() {
     for (MemBlock &blk : blocks_) {
-        vkFreeMemory(api_ctx_->device, blk.mem, nullptr);
+        api_ctx_->vkFreeMemory(api_ctx_->device, blk.mem, nullptr);
     }
 }
 
@@ -53,7 +53,7 @@ bool Ren::MemoryAllocator::AllocateNewBlock(const uint32_t size) {
     buf_alloc_info.allocationSize = VkDeviceSize(size);
     buf_alloc_info.memoryTypeIndex = mem_type_index_;
 
-    const VkResult res = vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &new_block.mem);
+    const VkResult res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &new_block.mem);
     return res == VK_SUCCESS;
 }
 

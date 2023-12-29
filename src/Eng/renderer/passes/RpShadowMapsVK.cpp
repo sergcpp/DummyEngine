@@ -11,24 +11,24 @@
 #define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
 namespace RpShadowMapsInternal {
-void _adjust_bias_and_viewport(VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
+void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     const VkViewport viewport = {float(sh_list.shadow_map_pos[0]),
                                  float((REN_SHAD_RES / 2) - sh_list.shadow_map_pos[1] - sh_list.shadow_map_size[1]),
                                  float(sh_list.shadow_map_size[0]),
                                  float(sh_list.shadow_map_size[1]),
                                  0.0f,
                                  1.0f};
-    vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
     const VkRect2D scissor = {sh_list.scissor_test_pos[0],
                               (REN_SHAD_RES / 2) - sh_list.scissor_test_pos[1] - sh_list.scissor_test_size[1],
                               uint32_t(sh_list.scissor_test_size[0]), uint32_t(sh_list.scissor_test_size[1])};
-    vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    vkCmdSetDepthBias(cmd_buf, sh_list.bias[1], 0.0f, sh_list.bias[0]);
+    api_ctx->vkCmdSetDepthBias(cmd_buf, sh_list.bias[1], 0.0f, sh_list.bias[0]);
 }
 
-void _clear_region(VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
+void _clear_region(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     VkClearAttachment clear_att = {};
     clear_att.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
     clear_att.clearValue.depthStencil.depth = 1.0f;
@@ -40,7 +40,7 @@ void _clear_region(VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     clear_rect.baseArrayLayer = 0;
     clear_rect.layerCount = 1;
 
-    vkCmdClearAttachments(cmd_buf, 1, &clear_att, 1, &clear_rect);
+    api_ctx->vkCmdClearAttachments(cmd_buf, 1, &clear_att, 1, &clear_rect);
 }
 } // namespace RpShadowMapsInternal
 
@@ -100,7 +100,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pBufferInfo = &mat_buf_info;
 
-        vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
@@ -164,7 +164,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_writes[4].descriptorCount = 1;
         descr_writes[4].pBufferInfo = &mat_buf_info;
 
-        vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
     }
 
     bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
@@ -177,14 +177,14 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         rp_begin_info.renderPass = rp_depth_only_.handle();
         rp_begin_info.framebuffer = shadow_fb_.handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(shadowmap_tex.ref->params.w), uint32_t(shadowmap_tex.ref->params.h)};
-        vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+        api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
         { // opaque objects
-            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_.handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_.layout(), 0, 1,
-                                    simple_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_.handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_solid_.layout(), 0, 1,
+                                             simple_descr_sets, 0, nullptr);
 
-            vi_depth_pass_solid_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+            vi_depth_pass_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -192,17 +192,17 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     continue;
                 }
 
-                _adjust_bias_and_viewport(cmd_buf, sh_list);
+                _adjust_bias_and_viewport(api_ctx, cmd_buf, sh_list);
 
                 if (!region_cleared[i]) {
-                    _clear_region(cmd_buf, sh_list);
+                    _clear_region(api_ctx, cmd_buf, sh_list);
                     region_cleared[i] = true;
                 }
 
                 Shadow::Params uniform_params = {};
                 uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
-                vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
-                                   &uniform_params);
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                            sizeof(Shadow::Params), &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
@@ -211,23 +211,23 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                         continue;
                     }
 
-                    vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                                     batch.instance_count,         // instance count
-                                     batch.indices_offset,         // first index
-                                     batch.base_vertex,            // vertex offset
-                                     batch.instance_start);        // first instance
+                    api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                              batch.instance_count,         // instance count
+                                              batch.indices_offset,         // first index
+                                              batch.base_vertex,            // vertex offset
+                                              batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
         }
 
         { // draw opaque vegetation
-            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 0, 2,
-                                    vege_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 0, 2,
+                                             vege_descr_sets, 0, nullptr);
             uint32_t bound_descr_id = 0;
 
-            vi_depth_pass_vege_solid_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+            vi_depth_pass_vege_solid_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -235,17 +235,17 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     continue;
                 }
 
-                _adjust_bias_and_viewport(cmd_buf, sh_list);
+                _adjust_bias_and_viewport(api_ctx, cmd_buf, sh_list);
 
                 if (!region_cleared[i]) {
-                    _clear_region(cmd_buf, sh_list);
+                    _clear_region(api_ctx, cmd_buf, sh_list);
                     region_cleared[i] = true;
                 }
 
                 Shadow::Params uniform_params = {};
                 uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
-                vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
-                                   &uniform_params);
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                            sizeof(Shadow::Params), &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
@@ -256,28 +256,29 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
                     const uint32_t descr_id = batch.material_index / materials_per_descriptor;
                     if (descr_id != bound_descr_id) {
-                        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_solid_.layout(), 1, 1,
-                                                &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
+                        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                         pi_vege_solid_.layout(), 1, 1,
+                                                         &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
                         bound_descr_id = descr_id;
                     }
 
-                    vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                                     batch.instance_count,         // instance count
-                                     batch.indices_offset,         // first index
-                                     batch.base_vertex,            // vertex offset
-                                     batch.instance_start);        // first instance
+                    api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                              batch.instance_count,         // instance count
+                                              batch.indices_offset,         // first index
+                                              batch.base_vertex,            // vertex offset
+                                              batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
         }
 
         { // transparent (alpha-tested) objects
-            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.layout(), 0, 2,
-                                    simple_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.layout(), 0, 2,
+                                             simple_descr_sets, 0, nullptr);
             uint32_t bound_descr_id = 0;
 
-            vi_depth_pass_transp_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+            vi_depth_pass_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -285,17 +286,17 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     continue;
                 }
 
-                _adjust_bias_and_viewport(cmd_buf, sh_list);
+                _adjust_bias_and_viewport(api_ctx, cmd_buf, sh_list);
 
                 if (!region_cleared[i]) {
-                    _clear_region(cmd_buf, sh_list);
+                    _clear_region(api_ctx, cmd_buf, sh_list);
                     region_cleared[i] = true;
                 }
 
                 Shadow::Params uniform_params = {};
                 uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
-                vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
-                                   &uniform_params);
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                            sizeof(Shadow::Params), &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
@@ -306,28 +307,29 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
                     const uint32_t descr_id = batch.material_index / materials_per_descriptor;
                     if (descr_id != bound_descr_id) {
-                        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.layout(), 1, 1,
-                                                &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
+                        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.layout(),
+                                                         1, 1, &(*bindless_tex_->textures_descr_sets)[descr_id], 0,
+                                                         nullptr);
                         bound_descr_id = descr_id;
                     }
 
-                    vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                                     batch.instance_count,         // instance count
-                                     batch.indices_offset,         // first index
-                                     batch.base_vertex,            // vertex offset
-                                     batch.instance_start);        // first instance
+                    api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                              batch.instance_count,         // instance count
+                                              batch.indices_offset,         // first index
+                                              batch.base_vertex,            // vertex offset
+                                              batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
         }
 
         { // transparent (alpha-tested) vegetation
-            vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_transp_.handle());
-            vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_transp_.layout(), 0, 2,
-                                    vege_descr_sets, 0, nullptr);
+            api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_transp_.handle());
+            api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_transp_.layout(), 0, 2,
+                                             vege_descr_sets, 0, nullptr);
             uint32_t bound_descr_id = 0;
 
-            vi_depth_pass_transp_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+            vi_depth_pass_transp_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
             for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
                 const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -335,17 +337,17 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     continue;
                 }
 
-                _adjust_bias_and_viewport(cmd_buf, sh_list);
+                _adjust_bias_and_viewport(api_ctx, cmd_buf, sh_list);
 
                 if (!region_cleared[i]) {
-                    _clear_region(cmd_buf, sh_list);
+                    _clear_region(api_ctx, cmd_buf, sh_list);
                     region_cleared[i] = true;
                 }
 
                 Shadow::Params uniform_params = {};
                 uniform_params.g_shadow_view_proj_mat = (*p_list_)->shadow_regions.data[i].clip_from_world;
-                vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Shadow::Params),
-                                   &uniform_params);
+                api_ctx->vkCmdPushConstants(cmd_buf, pi_solid_.layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                            sizeof(Shadow::Params), &uniform_params);
 
                 for (uint32_t j = sh_list.shadow_batch_start;
                      j < sh_list.shadow_batch_start + sh_list.shadow_batch_count; j++) {
@@ -356,22 +358,23 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
                     const uint32_t descr_id = batch.material_index / materials_per_descriptor;
                     if (descr_id != bound_descr_id) {
-                        vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_vege_transp_.layout(), 1,
-                                                1, &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
+                        api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                         pi_vege_transp_.layout(), 1, 1,
+                                                         &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
                         bound_descr_id = descr_id;
                     }
 
-                    vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                                     batch.instance_count,         // instance count
-                                     batch.indices_offset,         // first index
-                                     batch.base_vertex,            // vertex offset
-                                     batch.instance_start);        // first instance
+                    api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                              batch.instance_count,         // instance count
+                                              batch.indices_offset,         // first index
+                                              batch.base_vertex,            // vertex offset
+                                              batch.instance_start);        // first instance
                     ++draw_calls_count;
                 }
             }
         }
 
-        vkCmdEndRenderPass(cmd_buf);
+        api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
 
     (void)draw_calls_count;

@@ -8,6 +8,8 @@
 #include "Renderer.h"
 #include <Ren/MVec.h>
 
+#undef DrawText
+
 namespace Gui {
 class BaseElement;
 class Renderer;

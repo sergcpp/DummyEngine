@@ -89,7 +89,7 @@ void Ren::Sampler::Init(ApiContext *api_ctx, const SamplingParams params) {
     sampler_info.minLod = params.min_lod.to_float();
     sampler_info.maxLod = params.max_lod.to_float();
 
-    const VkResult res = vkCreateSampler(api_ctx->device, &sampler_info, nullptr, &handle_);
+    const VkResult res = api_ctx->vkCreateSampler(api_ctx->device, &sampler_info, nullptr, &handle_);
     assert(res == VK_SUCCESS && "Failed to create sampler!");
 
     api_ctx_ = api_ctx;

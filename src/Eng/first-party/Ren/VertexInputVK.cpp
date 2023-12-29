@@ -1,5 +1,7 @@
 #include "VertexInput.h"
 
+#include "VKCtx.h"
+
 #define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
 namespace Ren {
@@ -42,7 +44,7 @@ Ren::VertexInput::~VertexInput() = default;
 
 Ren::VertexInput &Ren::VertexInput::operator=(VertexInput &&rhs) noexcept = default;
 
-void Ren::VertexInput::BindBuffers(VkCommandBuffer cmd_buf, const uint32_t index_offset,
+void Ren::VertexInput::BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf, const uint32_t index_offset,
                                    const VkIndexType index_type) const {
     SmallVector<VkBuffer, 8> buffers_to_bind;
     SmallVector<VkDeviceSize, 8> buffer_offsets;
@@ -66,10 +68,10 @@ void Ren::VertexInput::BindBuffers(VkCommandBuffer cmd_buf, const uint32_t index
         }
     }
 
-    vkCmdBindVertexBuffers(cmd_buf, 0, uint32_t(buffers_to_bind.size()), buffers_to_bind.cdata(),
+    api_ctx->vkCmdBindVertexBuffers(cmd_buf, 0, uint32_t(buffers_to_bind.size()), buffers_to_bind.cdata(),
                            buffer_offsets.cdata());
     if (elem_buf) {
-        vkCmdBindIndexBuffer(cmd_buf, elem_buf.buf, VkDeviceSize(index_offset), index_type);
+        api_ctx->vkCmdBindIndexBuffer(cmd_buf, elem_buf.buf, VkDeviceSize(index_offset), index_type);
     }
 }
 

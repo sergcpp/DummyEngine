@@ -217,7 +217,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
 #if !defined(REN_DIRECT_DRAWING)
     if (view_state_->is_multisampled) {
-        Ren::DebugMarker _resolve_ms(ctx.current_cmd_buf(), "RESOLVE MS BUFFER");
+        Ren::DebugMarker _resolve_ms(ctx.api_ctx(), ctx.current_cmd_buf(), "RESOLVE MS BUFFER");
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);

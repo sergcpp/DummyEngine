@@ -1,6 +1,6 @@
 #include "ShaderVK.h"
 
-//#include "GL.h"
+// #include "GL.h"
 #include "Log.h"
 #include "VKCtx.h"
 
@@ -36,20 +36,20 @@ static_assert(int(eShaderType::AnyHit) < int(eShaderType::Intersection), "!");
 Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const char *shader_src, eShaderType type,
                     eShaderLoadStatus *status, ILog *log) {
     name_ = String{name};
-    device_ = api_ctx->device;
+    api_ctx_ = api_ctx;
     Init(shader_src, type, status, log);
 }
 
 Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const uint8_t *shader_code, const int code_size,
                     const eShaderType type, eShaderLoadStatus *status, ILog *log) {
     name_ = String{name};
-    device_ = api_ctx->device;
+    api_ctx_ = api_ctx;
     Init(shader_code, code_size, type, status, log);
 }
 
 Ren::Shader::~Shader() {
     if (module_) {
-        vkDestroyShaderModule(device_, module_, nullptr);
+        api_ctx_->vkDestroyShaderModule(api_ctx_->device, module_, nullptr);
     }
 }
 
@@ -57,10 +57,10 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
     RefCounter::operator=(static_cast<RefCounter &&>(rhs));
 
     if (module_) {
-        vkDestroyShaderModule(device_, module_, nullptr);
+        api_ctx_->vkDestroyShaderModule(api_ctx_->device, module_, nullptr);
     }
 
-    device_ = exchange(rhs.device_, VkDevice(VK_NULL_HANDLE));
+    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
     module_ = exchange(rhs.module_, VkShaderModule(VK_NULL_HANDLE));
     type_ = rhs.type_;
     name_ = std::move(rhs.name_);
@@ -101,7 +101,7 @@ void Ren::Shader::InitFromSPIRV(const uint8_t *shader_code, const int code_size,
         create_info.codeSize = static_cast<size_t>(code_size);
         create_info.pCode = reinterpret_cast<const uint32_t *>(shader_code);
 
-        const VkResult res = vkCreateShaderModule(device_, &create_info, nullptr, &module_);
+        const VkResult res = api_ctx_->vkCreateShaderModule(api_ctx_->device, &create_info, nullptr, &module_);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create shader module!");
             (*status) = eShaderLoadStatus::Error;

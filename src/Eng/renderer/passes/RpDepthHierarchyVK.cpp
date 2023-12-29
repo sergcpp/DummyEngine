@@ -31,7 +31,7 @@ void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
         for (int i = 0; i < output_tex.ref->params.mip_count; ++i) {
             view_info.subresourceRange.baseMipLevel = i;
             VkImageView new_image_view = VK_NULL_HANDLE;
-            const VkResult res = vkCreateImageView(api_ctx->device, &view_info, nullptr, &new_image_view);
+            const VkResult res = api_ctx->vkCreateImageView(api_ctx->device, &view_info, nullptr, &new_image_view);
             if (res != VK_SUCCESS) {
                 ctx.log()->Error("Failed to create image view!");
             }
@@ -81,12 +81,12 @@ void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
         descr_writes[2].descriptorCount = uint32_t(depth_img_infos.size());
         descr_writes[2].pImageInfo = depth_img_infos.cdata();
 
-        vkUpdateDescriptorSets(api_ctx->device, 3, descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, 3, descr_writes, 0, nullptr);
     }
 
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.handle());
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.layout(), 0, 1, &descr_set, 0,
-                            nullptr);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.handle());
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_COMPUTE, pi_depth_hierarchy_.layout(), 0, 1,
+                                     &descr_set, 0, nullptr);
 
     const int grp_x =
         (output_tex.ref->params.w + DepthHierarchy::LOCAL_GROUP_SIZE_X - 1) / DepthHierarchy::LOCAL_GROUP_SIZE_X;
@@ -98,8 +98,8 @@ void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
         Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1], output_tex.ref->params.mip_count, grp_x * grp_y};
     uniform_params.clip_info = view_state_->clip_info;
 
-    vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
-                       &uniform_params);
+    api_ctx->vkCmdPushConstants(cmd_buf, pi_depth_hierarchy_.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                sizeof(uniform_params), &uniform_params);
 
-    vkCmdDispatch(cmd_buf, grp_x, grp_y, 1);
+    api_ctx->vkCmdDispatch(cmd_buf, grp_x, grp_y, 1);
 }

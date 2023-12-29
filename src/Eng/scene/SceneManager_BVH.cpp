@@ -776,7 +776,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         "TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
 
 #if defined(USE_VK_RENDER)
-    VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+    VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 #else
     void *cmd_buf = nullptr;
 #endif
@@ -793,7 +793,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
                             total_geo_instances_size, cmd_buf);
 
 #if defined(USE_VK_RENDER)
-    Ren::EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+    api_ctx->EndSingleTimeCommands(cmd_buf);
 #endif
 }
 

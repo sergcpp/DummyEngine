@@ -7,18 +7,25 @@
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #else
 #if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 #elif defined(__linux__)
 #include <GL/glx.h>
 #undef Success
 #elif defined(__APPLE__)
-//#include <OpenGL/OpenGL.h>
+// #include <OpenGL/OpenGL.h>
 #endif
 #endif
 
 #include "GLExtDSAEmu.h"
+#include "Log.h"
 
-//#define GL_DISABLE_DSA
+// #define GL_DISABLE_DSA
 
 #undef None // defined in X.h
 #undef near // defined in minwindef.h
@@ -26,15 +33,19 @@
 #undef min
 #undef max
 
-bool Ren::InitGLExtentions() {
+bool Ren::InitGLExtentions(ILog *log) {
 #if defined(__ANDROID__) || defined(__native_client__) || defined(EMSCRIPTEN)
 #define GetProcAddress(name) eglGetProcAddress(#name);
+#define LOAD_GL_FUN(x)                                                                                                 \
+    ren_##x = (decltype(ren_##x))eglGetProcAddress(#x);                                                                \
+    if (!(ren_##x)) {                                                                                                  \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
 
     glQueryCounterEXT = (PFNGLQUERYCOUNTEREXTPROC)GetProcAddress(glQueryCounterEXT);
-    glGetQueryObjecti64vEXT =
-        (PFNGLGETQUERYOBJECTI64VEXTPROC)GetProcAddress(glGetQueryObjecti64vEXT);
-    glGetQueryObjectui64vEXT =
-        (PFNGLGETQUERYOBJECTUI64VEXTPROC)GetProcAddress(glGetQueryObjectui64vEXT);
+    glGetQueryObjecti64vEXT = (PFNGLGETQUERYOBJECTI64VEXTPROC)GetProcAddress(glGetQueryObjecti64vEXT);
+    glGetQueryObjectui64vEXT = (PFNGLGETQUERYOBJECTUI64VEXTPROC)GetProcAddress(glGetQueryObjectui64vEXT);
 
     //
     // direct state access emulation
@@ -64,250 +75,206 @@ bool Ren::InitGLExtentions() {
 
 #if defined(_WIN32)
 #define GetProcAddress(name) wglGetProcAddress(#name);
+#define LOAD_GL_FUN(x)                                                                                                 \
+    ren_##x = (decltype(ren_##x))wglGetProcAddress(#x);                                                                \
+    if (!(ren_##x)) {                                                                                                  \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
 
     if (wglGetCurrentContext() == NULL) {
         return false;
     }
 #elif defined(__linux__)
 #define GetProcAddress(name) glXGetProcAddress((const GLubyte *)#name);
+#define LOAD_GL_FUN(x)                                                                                                 \
+    ren_##x = (decltype(ren_##x))glXGetProcAddress((const GLubyte *)#x);                                               \
+    if (!(ren_##x)) {                                                                                                  \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
 #elif defined(__APPLE__)
 #define GetProcAddress(name) nullptr;
 #endif
 
 #if !defined(__APPLE__)
-    ren_glCreateProgram = (PFNGLCREATEPROGRAMPROC)GetProcAddress(glCreateProgram);
-    ren_glDeleteProgram = (PFNGLDELETEPROGRAMPROC)GetProcAddress(glDeleteProgram);
-    ren_glUseProgram = (PFNGLUSEPROGRAMPROC)GetProcAddress(glUseProgram);
-    ren_glAttachShader = (PFNGLATTACHSHADERPROC)GetProcAddress(glAttachShader);
-    ren_glLinkProgram = (PFNGLLINKPROGRAMPROC)GetProcAddress(glLinkProgram);
-    ren_glGetProgramiv = (PFNGLGETPROGRAMIVPROC)GetProcAddress(glGetProgramiv);
-    ren_glGetProgramInfoLog =
-        (PFNGLGETPROGRAMINFOLOGPROC)GetProcAddress(glGetProgramInfoLog);
-    ren_glGetAttribLocation =
-        (PFNGLGETATTRIBLOCATIONPROC)GetProcAddress(glGetAttribLocation);
-    ren_glGetUniformLocation =
-        (PFNGLGETUNIFORMLOCATIONPROC)GetProcAddress(glGetUniformLocation);
-    ren_glGetActiveAttrib = (PFNGLGETACTIVEATTRIBPROC)GetProcAddress(glGetActiveAttrib);
-    ren_glGetActiveUniform =
-        (PFNGLGETACTIVEUNIFORMPROC)GetProcAddress(glGetActiveUniform);
-    ren_glGetUniformBlockIndex =
-        (PFNGLGETUNIFORMBLOCKINDEXPROC)GetProcAddress(glGetUniformBlockIndex);
-    ren_glUniformBlockBinding =
-        (PFNGLUNIFORMBLOCKBINDINGPROC)GetProcAddress(glUniformBlockBinding);
-    ren_glVertexAttribPointer =
-        (PFNGLVERTEXATTRIBPOINTERPROC)GetProcAddress(glVertexAttribPointer);
-    ren_glVertexAttribIPointer =
-        (PFNGLVERTEXATTRIBIPOINTERPROC)GetProcAddress(glVertexAttribIPointer);
-    ren_glEnableVertexAttribArray =
-        (PFNGLENABLEVERTEXATTRIBARRAYPROC)GetProcAddress(glEnableVertexAttribArray);
-    ren_glDisableVertexAttribArray =
-        (PFNGLDISABLEVERTEXATTRIBARRAYPROC)GetProcAddress(glDisableVertexAttribArray);
+    LOAD_GL_FUN(glCreateProgram)
+    LOAD_GL_FUN(glDeleteProgram)
+    LOAD_GL_FUN(glUseProgram)
+    LOAD_GL_FUN(glAttachShader)
+    LOAD_GL_FUN(glLinkProgram)
+    LOAD_GL_FUN(glGetProgramiv)
+    LOAD_GL_FUN(glGetProgramInfoLog)
+    LOAD_GL_FUN(glGetAttribLocation)
+    LOAD_GL_FUN(glGetUniformLocation)
+    LOAD_GL_FUN(glGetActiveAttrib)
+    LOAD_GL_FUN(glGetActiveUniform)
+    LOAD_GL_FUN(glGetUniformBlockIndex)
+    LOAD_GL_FUN(glUniformBlockBinding)
+    LOAD_GL_FUN(glVertexAttribPointer)
+    LOAD_GL_FUN(glVertexAttribIPointer)
+    LOAD_GL_FUN(glEnableVertexAttribArray)
+    LOAD_GL_FUN(glDisableVertexAttribArray)
 
-    ren_glCreateShader = (PFNGLCREATESHADERPROC)GetProcAddress(glCreateShader);
-    ren_glDeleteShader = (PFNGLDELETESHADERPROC)GetProcAddress(glDeleteShader);
-    ren_glShaderSource = (PFNGLSHADERSOURCEPROC)GetProcAddress(glShaderSource);
-    ren_glShaderBinary = (PFNGLSHADERBINARYPROC)GetProcAddress(glShaderBinary);
-    ren_glCompileShader = (PFNGLCOMPILESHADERPROC)GetProcAddress(glCompileShader);
-    ren_glSpecializeShader =
-        (PFNGLSPECIALIZESHADERPROC)GetProcAddress(glSpecializeShader);
-    ren_glGetShaderiv = (PFNGLGETSHADERIVPROC)GetProcAddress(glGetShaderiv);
-    ren_glGetShaderInfoLog =
-        (PFNGLGETSHADERINFOLOGPROC)GetProcAddress(glGetShaderInfoLog);
+    LOAD_GL_FUN(glCreateShader)
+    LOAD_GL_FUN(glDeleteShader)
+    LOAD_GL_FUN(glShaderSource)
+    LOAD_GL_FUN(glShaderBinary)
+    LOAD_GL_FUN(glCompileShader)
+    LOAD_GL_FUN(glSpecializeShader)
+    LOAD_GL_FUN(glGetShaderiv)
+    LOAD_GL_FUN(glGetShaderInfoLog)
 
 #if !defined(__linux__)
-    ren_glActiveTexture = (PFNGLACTIVETEXTUREPROC)GetProcAddress(glActiveTexture);
+    LOAD_GL_FUN(glActiveTexture)
 #endif
-    ren_glGenerateMipmap = (PFNGLGENERATEMIPMAPPROC)GetProcAddress(glGenerateMipmap);
+    LOAD_GL_FUN(glGenerateMipmap)
 
-    ren_glGenBuffers = (PFNGLGENBUFFERSPROC)GetProcAddress(glGenBuffers);
-    ren_glDeleteBuffers = (PFNGLDELETEBUFFERSPROC)GetProcAddress(glDeleteBuffers);
-    ren_glBindBuffer = (PFNGLBINDBUFFERPROC)GetProcAddress(glBindBuffer);
-    ren_glBufferData = (PFNGLBUFFERDATAPROC)GetProcAddress(glBufferData);
-    ren_glBufferSubData = (PFNGLBUFFERSUBDATAPROC)GetProcAddress(glBufferSubData);
-    ren_glBindBufferBase = (PFNGLBINDBUFFERBASEPROC)GetProcAddress(glBindBufferBase);
-    ren_glBindBufferRange = (PFNGLBINDBUFFERRANGEPROC)GetProcAddress(glBindBufferRange);
-    ren_glBindVertexBuffer =
-        (PFNGLBINDVERTEXBUFFERPROC)GetProcAddress(glBindVertexBuffer);
-    ren_glCopyBufferSubData =
-        (PFNGLCOPYBUFFERSUBDATAPROC)GetProcAddress(glCopyBufferSubData);
-    ren_glBufferStorage = (PFNGLBUFFERSTORAGEPROC)GetProcAddress(glBufferStorage);
+    LOAD_GL_FUN(glGenBuffers)
+    LOAD_GL_FUN(glDeleteBuffers)
+    LOAD_GL_FUN(glBindBuffer)
+    LOAD_GL_FUN(glBufferData)
+    LOAD_GL_FUN(glBufferSubData)
+    LOAD_GL_FUN(glBindBufferBase)
+    LOAD_GL_FUN(glBindBufferRange)
+    LOAD_GL_FUN(glBindVertexBuffer)
+    LOAD_GL_FUN(glCopyBufferSubData)
+    LOAD_GL_FUN(glBufferStorage)
 
-    ren_glMapBuffer = (PFNGLMAPBUFFERPROC)GetProcAddress(glMapBuffer);
-    ren_glMapBufferRange = (PFNGLMAPBUFFERRANGEPROC)GetProcAddress(glMapBufferRange);
-    ren_glFlushMappedBufferRange =
-        (PFNGLFLUSHMAPPEDBUFFERRANGEPROC)GetProcAddress(glFlushMappedBufferRange);
-    ren_glUnmapBuffer = (PFNGLUNMAPBUFFERPROC)GetProcAddress(glUnmapBuffer);
+    LOAD_GL_FUN(glMapBuffer)
+    LOAD_GL_FUN(glMapBufferRange)
+    LOAD_GL_FUN(glFlushMappedBufferRange)
+    LOAD_GL_FUN(glUnmapBuffer)
 
-    ren_glGenFramebuffers = (PFNGLGENFRAMEBUFFERSPROC)GetProcAddress(glGenFramebuffers);
-    ren_glDeleteFramebuffers =
-        (PFNGLDELETEFRAMEBUFFERSPROC)GetProcAddress(glDeleteFramebuffers);
-    ren_glBindFramebuffer = (PFNGLBINDFRAMEBUFFERPROC)GetProcAddress(glBindFramebuffer);
-    ren_glFramebufferTexture2D =
-        (PFNGLFRAMEBUFFERTEXTURE2DPROC)GetProcAddress(glFramebufferTexture2D);
-    ren_glFramebufferTexture3D =
-        (PFNGLFRAMEBUFFERTEXTURE3DPROC)GetProcAddress(glFramebufferTexture3D);
-    ren_glFramebufferTextureLayer =
-        (PFNGLFRAMEBUFFERTEXTURELAYERPROC)GetProcAddress(glFramebufferTextureLayer);
+    LOAD_GL_FUN(glGenFramebuffers)
+    LOAD_GL_FUN(glDeleteFramebuffers)
+    LOAD_GL_FUN(glBindFramebuffer)
+    LOAD_GL_FUN(glFramebufferTexture2D)
+    LOAD_GL_FUN(glFramebufferTexture3D)
+    LOAD_GL_FUN(glFramebufferTextureLayer)
 
-    ren_glGenRenderbuffers =
-        (PFNGLGENRENDERBUFFERSPROC)GetProcAddress(glGenRenderbuffers);
-    ren_glDeleteRenderbuffers =
-        (PFNGLDELETERENDERBUFFERSPROC)GetProcAddress(glDeleteRenderbuffers);
-    ren_glBindRenderbuffer =
-        (PFNGLBINDRENDERBUFFERPROC)GetProcAddress(glBindRenderbuffer);
-    ren_glRenderbufferStorage =
-        (PFNGLRENDERBUFFERSTORAGEPROC)GetProcAddress(glRenderbufferStorage);
+    LOAD_GL_FUN(glGenRenderbuffers)
+    LOAD_GL_FUN(glDeleteRenderbuffers)
+    LOAD_GL_FUN(glBindRenderbuffer)
+    LOAD_GL_FUN(glRenderbufferStorage)
 
-    ren_glFramebufferRenderbuffer =
-        (PFNGLFRAMEBUFFERRENDERBUFFERPROC)GetProcAddress(glFramebufferRenderbuffer);
-    ren_glCheckFramebufferStatus =
-        (PFNGLCHECKFRAMEBUFFERSTATUSPROC)GetProcAddress(glCheckFramebufferStatus);
+    LOAD_GL_FUN(glFramebufferRenderbuffer)
+    LOAD_GL_FUN(glCheckFramebufferStatus)
 
-    ren_glDrawBuffers = (PFNGLDRAWBUFFERSPROC)GetProcAddress(glDrawBuffers);
-    ren_glBindFragDataLocation =
-        (PFNGLBINDFRAGDATALOCATIONPROC)GetProcAddress(glBindFragDataLocation);
+    LOAD_GL_FUN(glDrawBuffers)
+    LOAD_GL_FUN(glBindFragDataLocation)
 
-    ren_glGenVertexArrays = (PFNGLGENVERTEXARRAYSPROC)GetProcAddress(glGenVertexArrays);
-    ren_glBindVertexArray = (PFNGLBINDVERTEXARRAYPROC)GetProcAddress(glBindVertexArray);
-    ren_glDeleteVertexArrays =
-        (PFNGLDELETEVERTEXARRAYSPROC)GetProcAddress(glDeleteVertexArrays);
+    LOAD_GL_FUN(glGenVertexArrays)
+    LOAD_GL_FUN(glBindVertexArray)
+    LOAD_GL_FUN(glDeleteVertexArrays)
 
-    ren_glUniform1f = (PFNGLUNIFORM1FPROC)GetProcAddress(glUniform1f);
-    ren_glUniform2f = (PFNGLUNIFORM2FPROC)GetProcAddress(glUniform2f);
-    ren_glUniform3f = (PFNGLUNIFORM3FPROC)GetProcAddress(glUniform3f);
-    ren_glUniform4f = (PFNGLUNIFORM4FPROC)GetProcAddress(glUniform4f);
+    LOAD_GL_FUN(glUniform1f)
+    LOAD_GL_FUN(glUniform2f)
+    LOAD_GL_FUN(glUniform3f)
+    LOAD_GL_FUN(glUniform4f)
 
-    ren_glUniform1i = (PFNGLUNIFORM1IPROC)GetProcAddress(glUniform1i);
-    ren_glUniform2i = (PFNGLUNIFORM2IPROC)GetProcAddress(glUniform2i);
-    ren_glUniform3i = (PFNGLUNIFORM3IPROC)GetProcAddress(glUniform3i);
-    ren_glUniform4i = (PFNGLUNIFORM4IPROC)GetProcAddress(glUniform4i);
+    LOAD_GL_FUN(glUniform1i)
+    LOAD_GL_FUN(glUniform2i)
+    LOAD_GL_FUN(glUniform3i)
+    LOAD_GL_FUN(glUniform4i)
 
-    ren_glUniform1iv = (PFNGLUNIFORM1IVPROC)GetProcAddress(glUniform1iv);
-    ren_glUniform2iv = (PFNGLUNIFORM2IVPROC)GetProcAddress(glUniform2iv);
-    ren_glUniform3iv = (PFNGLUNIFORM3IVPROC)GetProcAddress(glUniform3iv);
-    ren_glUniform4iv = (PFNGLUNIFORM4IVPROC)GetProcAddress(glUniform4iv);
+    LOAD_GL_FUN(glUniform1iv)
+    LOAD_GL_FUN(glUniform2iv)
+    LOAD_GL_FUN(glUniform3iv)
+    LOAD_GL_FUN(glUniform4iv)
 
-    ren_glUniform1ui = (PFNGLUNIFORM1UIPROC)GetProcAddress(glUniform1ui);
-    ren_glUniform2ui = (PFNGLUNIFORM2UIPROC)GetProcAddress(glUniform2ui);
-    ren_glUniform3ui = (PFNGLUNIFORM3UIPROC)GetProcAddress(glUniform3ui);
-    ren_glUniform4ui = (PFNGLUNIFORM4UIPROC)GetProcAddress(glUniform4ui);
+    LOAD_GL_FUN(glUniform1ui)
+    LOAD_GL_FUN(glUniform2ui)
+    LOAD_GL_FUN(glUniform3ui)
+    LOAD_GL_FUN(glUniform4ui)
 
-    ren_glUniform1uiv = (PFNGLUNIFORM1UIVPROC)GetProcAddress(glUniform1uiv);
-    ren_glUniform2uiv = (PFNGLUNIFORM2UIVPROC)GetProcAddress(glUniform2uiv);
-    ren_glUniform3uiv = (PFNGLUNIFORM3UIVPROC)GetProcAddress(glUniform3uiv);
-    ren_glUniform4uiv = (PFNGLUNIFORM4UIVPROC)GetProcAddress(glUniform4uiv);
+    LOAD_GL_FUN(glUniform1uiv)
+    LOAD_GL_FUN(glUniform2uiv)
+    LOAD_GL_FUN(glUniform3uiv)
+    LOAD_GL_FUN(glUniform4uiv)
 
-    ren_glUniform3fv = (PFNGLUNIFORM3FVPROC)GetProcAddress(glUniform3fv);
-    ren_glUniform4fv = (PFNGLUNIFORM4FVPROC)GetProcAddress(glUniform4fv);
+    LOAD_GL_FUN(glUniform3fv)
+    LOAD_GL_FUN(glUniform4fv)
 
-    ren_glUniformMatrix4fv =
-        (PFNGLUNIFORMMATRIX4FVPROC)GetProcAddress(glUniformMatrix4fv);
-    ren_glUniformMatrix3x4fv =
-        (PFNGLUNIFORMMATRIX3X4FVPROC)GetProcAddress(glUniformMatrix3x4fv);
+    LOAD_GL_FUN(glUniformMatrix4fv)
+    LOAD_GL_FUN(glUniformMatrix3x4fv)
 
-    ren_glCompressedTexImage2D =
-        (PFNGLCOMPRESSEDTEXIMAGE2DPROC)GetProcAddress(glCompressedTexImage2D);
-    ren_glCompressedTexImage3D =
-        (PFNGLCOMPRESSEDTEXIMAGE3DPROC)GetProcAddress(glCompressedTexImage3D);
+    LOAD_GL_FUN(glCompressedTexImage2D)
+    LOAD_GL_FUN(glCompressedTexImage3D)
 
-    ren_glCompressedTexSubImage2D =
-        (PFNGLCOMPRESSEDTEXSUBIMAGE2DPROC)GetProcAddress(glCompressedTexSubImage2D);
-    ren_glCompressedTexSubImage3D =
-        (PFNGLCOMPRESSEDTEXSUBIMAGE3DPROC)GetProcAddress(glCompressedTexSubImage3D);
+    LOAD_GL_FUN(glCompressedTexSubImage2D)
+    LOAD_GL_FUN(glCompressedTexSubImage3D)
 
-    ren_glTexStorage2D = (PFNGLTEXSTORAGE2DPROC)GetProcAddress(glTexStorage2D);
-    ren_glTexStorage2DMultisample =
-        (PFNGLTEXSTORAGE2DMULTISAMPLEPROC)GetProcAddress(glTexStorage2DMultisample);
-    ren_glTexImage2DMultisample =
-        (PFNGLTEXIMAGE2DMULTISAMPLEPROC)GetProcAddress(glTexImage2DMultisample);
-    ren_glRenderbufferStorageMultisample =
-        (PFNGLRENDERBUFFERSTORAGEMULTISAMPLEPROC)GetProcAddress(
-            glRenderbufferStorageMultisample);
+    LOAD_GL_FUN(glTexStorage2D)
+    LOAD_GL_FUN(glTexStorage2DMultisample)
+    LOAD_GL_FUN(glTexImage2DMultisample)
+    LOAD_GL_FUN(glRenderbufferStorageMultisample)
 
-    ren_glTexStorage3D = (PFNGLTEXSTORAGE3DPROC)GetProcAddress(glTexStorage3D);
-
-    ren_glTexSubImage3D = (PFNGLTEXSUBIMAGE3DPROC)GetProcAddress(glTexSubImage3D);
-
-    ren_glCopyImageSubData = (PFNGLCOPYIMAGESUBDATA)GetProcAddress(glCopyImageSubData);
+    LOAD_GL_FUN(glTexStorage3D)
+    LOAD_GL_FUN(glTexSubImage3D)
+    LOAD_GL_FUN(glCopyImageSubData)
 
 #if !defined(__linux__)
-    ren_glTexImage3D = (PFNGLTEXIMAGE3DPROC)GetProcAddress(glTexImage3D);
+    LOAD_GL_FUN(glTexImage3D)
 #endif
 
-    ren_glDrawElementsBaseVertex =
-        (PFNGLDRAWELEMENTSBASEVERTEXPROC)GetProcAddress(glDrawElementsBaseVertex);
-    ren_glDrawElementsInstanced =
-        (PFNGLDRAWELEMENTSINSTANCEDPROC)GetProcAddress(glDrawElementsInstanced);
-    ren_glDrawElementsInstancedBaseVertex =
-        (PFNGLDRAWELEMENTSINSTANCEDBASEVERTEXPROC)GetProcAddress(
-            glDrawElementsInstancedBaseVertex);
+    LOAD_GL_FUN(glDrawElementsBaseVertex)
+    LOAD_GL_FUN(glDrawElementsInstanced)
+    LOAD_GL_FUN(glDrawElementsInstancedBaseVertex)
 
-    ren_glDispatchCompute = (PFNGLDISPATCHCOMPUTEPROC)GetProcAddress(glDispatchCompute);
-    ren_glDispatchComputeIndirect = (PFNGLDISPATCHCOMPUTEINDIRECTPROC)GetProcAddress(glDispatchComputeIndirect);
-    ren_glMemoryBarrier = (PFNGLMEMORYBARRIERPROC)GetProcAddress(glMemoryBarrier);
-    ren_glGetBufferSubData =
-        (PFNGLGETBUFFERSUBDATAPROC)GetProcAddress(glGetBufferSubData);
+    LOAD_GL_FUN(glDispatchCompute)
+    LOAD_GL_FUN(glDispatchComputeIndirect)
+    LOAD_GL_FUN(glMemoryBarrier)
+    LOAD_GL_FUN(glGetBufferSubData)
 
-    ren_glTexBuffer = (PFNGLTEXBUFFERPROC)GetProcAddress(glTexBuffer);
-    ren_glTexBufferRange = (PFNGLTEXBUFFERRANGEPROC)GetProcAddress(glTexBufferRange);
+    LOAD_GL_FUN(glTexBuffer)
+    LOAD_GL_FUN(glTexBufferRange)
 
-    ren_glGenQueries = (PFNGLGENQUERIESPROC)GetProcAddress(glGenQueries);
-    ren_glDeleteQueries = (PFNGLDELETEQUERIESPROC)GetProcAddress(glDeleteQueries);
-    ren_glQueryCounter = (PFNGLQUERYCOUNTERPROC)GetProcAddress(glQueryCounter);
+    LOAD_GL_FUN(glGenQueries)
+    LOAD_GL_FUN(glDeleteQueries)
+    LOAD_GL_FUN(glQueryCounter)
 
-    ren_glGetQueryObjectiv =
-        (PFNGLGETQUERYOBJECTIVPROC)GetProcAddress(glGetQueryObjectiv);
-    ren_glGetQueryObjectuiv =
-        (PFNGLGETQUERYOBJECTUIVPROC)GetProcAddress(glGetQueryObjectuiv);
-    ren_glGetQueryObjecti64v =
-        (PFNGLGETQUERYOBJECTI64VPROC)GetProcAddress(glGetQueryObjecti64v);
-    ren_glGetQueryObjectui64v =
-        (PFNGLGETQUERYOBJECTUI64V)GetProcAddress(glGetQueryObjectui64v);
+    LOAD_GL_FUN(glGetQueryObjectiv)
+    LOAD_GL_FUN(glGetQueryObjectuiv)
+    LOAD_GL_FUN(glGetQueryObjecti64v)
+    LOAD_GL_FUN(glGetQueryObjectui64v)
 
-    ren_glGetStringi = (PFNGLGETSTRINGIPROC)GetProcAddress(glGetStringi);
+    LOAD_GL_FUN(glGetStringi)
 
-    ren_glGetInteger64v = (PFNGLGETINTEGER64VPROC)GetProcAddress(glGetInteger64v);
-    ren_glGetBooleani_v = (PFNGLGETBOOLEANI_VPROC)GetProcAddress(glGetBooleani_v);
-    ren_glGetIntegeri_v = (PFNGLGETINTEGERI_VPROC)GetProcAddress(glGetIntegeri_v);
-    ren_glGetFloati_v = (PFNGLGETFLOATI_VPROC)GetProcAddress(glGetFloati_v);
-    ren_glGetDoublei_v = (PFNGLGETDOUBLEI_VPROC)GetProcAddress(glGetDoublei_v);
-    ren_glGetInteger64i_v = (PFNGLGETINTEGER64I_VPROC)GetProcAddress(glGetInteger64i_v);
+    LOAD_GL_FUN(glGetInteger64v)
+    LOAD_GL_FUN(glGetBooleani_v)
+    LOAD_GL_FUN(glGetIntegeri_v)
+    LOAD_GL_FUN(glGetFloati_v)
+    LOAD_GL_FUN(glGetDoublei_v)
+    LOAD_GL_FUN(glGetInteger64i_v)
 
-    ren_glGetTextureLevelParameterfv =
-        (PFNGLGETTEXTURELEVELPARAMETERFVPROC)GetProcAddress(glGetTextureLevelParameterfv);
-    ren_glGetTextureLevelParameteriv =
-        (PFNGLGETTEXTURELEVELPARAMETERIVPROC)GetProcAddress(glGetTextureLevelParameteriv);
+    LOAD_GL_FUN(glGetTextureLevelParameterfv)
+    LOAD_GL_FUN(glGetTextureLevelParameteriv)
 
-    ren_glGetTextureImage = (PFNGLGETTEXTUREIMAGEPROC)GetProcAddress(glGetTextureImage);
-    ren_glGetTextureSubImage =
-        (PFNGLGETTEXTURESUBIMAGEPROC)GetProcAddress(glGetTextureSubImage);
+    LOAD_GL_FUN(glGetTextureImage)
+    LOAD_GL_FUN(glGetTextureSubImage)
 
-    ren_glGetCompressedTextureSubImage =
-        (PFNGLGETCOMPRESSEDTEXTURESUBIMAGEPROC)GetProcAddress(
-            glGetCompressedTextureSubImage);
+    LOAD_GL_FUN(glGetCompressedTextureSubImage)
 
-    ren_glDebugMessageCallback =
-        (PFNGLDEBUGMESSAGECALLBACKPROC)GetProcAddress(glDebugMessageCallback);
-    ren_glDebugMessageInsert =
-        (PFNGLDEBUGMESSAGEINSERTPROC)GetProcAddress(glDebugMessageInsert);
-    ren_glPushDebugGroup = (PFNGLPUSHDEBUGGROUPPROC)GetProcAddress(glPushDebugGroup);
-    ren_glPopDebugGroup = (PFNGLPOPDEBUGGROUPPROC)GetProcAddress(glPopDebugGroup);
+    LOAD_GL_FUN(glDebugMessageCallback)
+    LOAD_GL_FUN(glDebugMessageInsert)
+    LOAD_GL_FUN(glPushDebugGroup)
+    LOAD_GL_FUN(glPopDebugGroup)
 
-    ren_glObjectLabel = (PFNGLOBJECTLABELPROC)GetProcAddress(glObjectLabel);
+    LOAD_GL_FUN(glObjectLabel)
 
-    ren_glFenceSync = (PFNGLFENCESYNCPROC)GetProcAddress(glFenceSync);
-    ren_glWaitSync = (PFNGLWAITSYNCPROC)GetProcAddress(glWaitSync);
-    ren_glClientWaitSync = (PFNGLCLIENTWAITSYNCPROC)GetProcAddress(glClientWaitSync);
-    ren_glDeleteSync = (PFNGLDELETESYNCPROC)GetProcAddress(glDeleteSync);
+    LOAD_GL_FUN(glFenceSync)
+    LOAD_GL_FUN(glWaitSync)
+    LOAD_GL_FUN(glClientWaitSync)
+    LOAD_GL_FUN(glDeleteSync)
 
-    ren_glBlendFunci = (PFNGLBLENDFUNCIPROC)GetProcAddress(glBlendFunci);
-    ren_glClearBufferfv = (PFNGLCLEARBUFFERFVPROC)GetProcAddress(glClearBufferfv);
+    LOAD_GL_FUN(glBlendFunci)
+    LOAD_GL_FUN(glClearBufferfv)
 
-    ren_glClearBufferSubData = (PFNGLCLEARBUFFERSUBDATAPROC)GetProcAddress(glClearBufferSubData);
-    ren_glClearTexImage = (PFNGLCLEARTEXIMAGEPROC)GetProcAddress(glClearTexImage);
+    LOAD_GL_FUN(glClearBufferSubData)
+    LOAD_GL_FUN(glClearTexImage)
 
-    ren_glBindImageTexture =
-        (PFNGLBINDIMAGETEXTUREPROC)GetProcAddress(glBindImageTexture);
+    LOAD_GL_FUN(glBindImageTexture)
 #endif
 
     //
@@ -315,15 +282,14 @@ bool Ren::InitGLExtentions() {
     //
 
 #if !defined(GL_DISABLE_DSA) && !defined(__APPLE__)
-    ren_glCreateTextures = (PFNGLCREATETEXTURESPROC)GetProcAddress(glCreateTextures);
-    if (!ren_glCreateTextures)
+    LOAD_GL_FUN(glCreateTextures)
+    if (!ren_glCreateTextures) {
         ren_glCreateTextures = ren_glCreateTextures_emu;
+    }
 
-    ren_glTextureStorage2D =
-        (PFNGLTEXTURESTORAGE2DPROC)GetProcAddress(glTextureStorage2D);
+    LOAD_GL_FUN(glTextureStorage2D)
     if (ren_glTextureStorage2D) {
-        ren_glTextureStorage2D_Comp = [](GLenum /*target*/, GLuint texture,
-                                         GLsizei levels, GLenum internalformat,
+        ren_glTextureStorage2D_Comp = [](GLenum /*target*/, GLuint texture, GLsizei levels, GLenum internalformat,
                                          GLsizei width, GLsizei height) {
             ren_glTextureStorage2D(texture, levels, internalformat, width, height);
         };
@@ -331,11 +297,9 @@ bool Ren::InitGLExtentions() {
         ren_glTextureStorage2D_Comp = ren_glTextureStorage2D_Comp_emu;
     }
 
-    ren_glTextureStorage3D =
-        (PFNGLTEXTURESTORAGE3DPROC)GetProcAddress(glTextureStorage3D);
+    LOAD_GL_FUN(glTextureStorage3D)
     if (ren_glTextureStorage3D) {
-        ren_glTextureStorage3D_Comp = [](GLenum /*target*/, GLuint texture,
-                                         GLsizei levels, GLenum internalformat,
+        ren_glTextureStorage3D_Comp = [](GLenum /*target*/, GLuint texture, GLsizei levels, GLenum internalformat,
                                          GLsizei width, GLsizei height, GLsizei depth) {
             ren_glTextureStorage3D(texture, levels, internalformat, width, height, depth);
         };
@@ -343,111 +307,87 @@ bool Ren::InitGLExtentions() {
         ren_glTextureStorage3D_Comp = ren_glTextureStorage3D_Comp_emu;
     }
 
-    ren_glTextureSubImage2D =
-        (PFNGLTEXTURESUBIMAGE2DPROC)GetProcAddress(glTextureSubImage2D);
+    LOAD_GL_FUN(glTextureSubImage2D)
     if (ren_glTextureSubImage2D) {
-        ren_glTextureSubImage2D_Comp = [](GLenum /*target*/, GLuint texture, GLint level,
-                                          GLint xoffset, GLint yoffset, GLsizei width,
-                                          GLsizei height, GLenum format, GLenum type,
+        ren_glTextureSubImage2D_Comp = [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+                                          GLsizei width, GLsizei height, GLenum format, GLenum type,
                                           const void *pixels) {
-            ren_glTextureSubImage2D(texture, level, xoffset, yoffset, width, height,
-                                    format, type, pixels);
+            ren_glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, pixels);
         };
     } else {
         ren_glTextureSubImage2D_Comp = ren_glTextureSubImage2D_Comp_emu;
     }
 
-    ren_glTextureSubImage3D =
-        (PFNGLTEXTURESUBIMAGE3DPROC)GetProcAddress(glTextureSubImage3D);
+    LOAD_GL_FUN(glTextureSubImage3D)
     if (ren_glTextureSubImage3D) {
-        ren_glTextureSubImage3D_Comp =
-            [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset,
-               GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth,
-               GLenum format, GLenum type, const void *pixels) {
-                ren_glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width,
-                                        height, depth, format, type, pixels);
-            };
+        ren_glTextureSubImage3D_Comp = [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset, GLint yoffset,
+                                          GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format,
+                                          GLenum type, const void *pixels) {
+            ren_glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type,
+                                    pixels);
+        };
     } else {
         ren_glTextureSubImage3D_Comp = ren_glTextureSubImage3D_Comp_emu;
     }
 
-    ren_glCompressedTextureSubImage2D =
-        (PFNGLCOMPRESSEDTEXTURESUBIMAGE2DPROC)GetProcAddress(
-            glCompressedTextureSubImage2D);
+    LOAD_GL_FUN(glCompressedTextureSubImage2D)
     if (ren_glCompressedTextureSubImage2D) {
-        ren_glCompressedTextureSubImage2D_Comp =
-            [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset,
-               GLint yoffset, GLsizei width, GLsizei height, GLenum format,
-               GLsizei imageSize, const void *data) {
-                ren_glCompressedTextureSubImage2D(texture, level, xoffset, yoffset, width,
-                                                  height, format, imageSize, data);
-            };
+        ren_glCompressedTextureSubImage2D_Comp = [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset,
+                                                    GLint yoffset, GLsizei width, GLsizei height, GLenum format,
+                                                    GLsizei imageSize, const void *data) {
+            ren_glCompressedTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, imageSize, data);
+        };
     } else {
-        ren_glCompressedTextureSubImage2D_Comp =
-            ren_glCompressedTextureSubImage2D_Comp_emu;
+        ren_glCompressedTextureSubImage2D_Comp = ren_glCompressedTextureSubImage2D_Comp_emu;
     }
 
-    ren_glCompressedTextureSubImage3D =
-        (PFNGLCOMPRESSEDTEXTURESUBIMAGE3DPROC)GetProcAddress(
-            glCompressedTextureSubImage3D);
+    LOAD_GL_FUN(glCompressedTextureSubImage3D)
     if (ren_glCompressedTextureSubImage3D) {
-        ren_glCompressedTextureSubImage3D_Comp =
-            [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset,
-               GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth,
-               GLenum format, GLsizei imageSize, const void *data) {
-                ren_glCompressedTextureSubImage3D(texture, level, xoffset, yoffset,
-                                                  zoffset, width, height, depth, format,
-                                                  imageSize, data);
-            };
+        ren_glCompressedTextureSubImage3D_Comp = [](GLenum /*target*/, GLuint texture, GLint level, GLint xoffset,
+                                                    GLint yoffset, GLint zoffset, GLsizei width, GLsizei height,
+                                                    GLsizei depth, GLenum format, GLsizei imageSize, const void *data) {
+            ren_glCompressedTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format,
+                                              imageSize, data);
+        };
     } else {
-        ren_glCompressedTextureSubImage3D_Comp =
-            ren_glCompressedTextureSubImage3D_Comp_emu;
+        ren_glCompressedTextureSubImage3D_Comp = ren_glCompressedTextureSubImage3D_Comp_emu;
     }
 
-    ren_glTextureParameterf =
-        (PFNGLTEXTUREPARAMETERFPROC)GetProcAddress(glTextureParameterf);
+    LOAD_GL_FUN(glTextureParameterf)
     if (ren_glTextureParameterf) {
-        ren_glTextureParameterf_Comp = [](GLenum /*target*/, GLuint texture, GLenum pname,
-                                          GLfloat param) {
+        ren_glTextureParameterf_Comp = [](GLenum /*target*/, GLuint texture, GLenum pname, GLfloat param) {
             ren_glTextureParameterf(texture, pname, param);
         };
     } else {
         ren_glTextureParameterf_Comp = ren_glTextureParameterf_Comp_emu;
     }
-    ren_glTextureParameteri =
-        (PFNGLTEXTUREPARAMETERIPROC)GetProcAddress(glTextureParameteri);
+    LOAD_GL_FUN(glTextureParameteri)
     if (ren_glTextureParameteri) {
-        ren_glTextureParameteri_Comp = [](GLenum /*target*/, GLuint texture, GLenum pname,
-                                          GLint param) {
+        ren_glTextureParameteri_Comp = [](GLenum /*target*/, GLuint texture, GLenum pname, GLint param) {
             ren_glTextureParameteri(texture, pname, param);
         };
     } else {
         ren_glTextureParameteri_Comp = ren_glTextureParameteri_Comp_emu;
     }
 
-    ren_glTextureParameterfv =
-        (PFNGLTEXTUREPARAMETERFVPROC)GetProcAddress(glTextureParameterfv);
+    LOAD_GL_FUN(glTextureParameterfv)
     if (ren_glTextureParameterfv) {
-        ren_glTextureParameterfv_Comp = [](GLenum /*target*/, GLuint texture,
-                                           GLenum pname, const GLfloat *params) {
+        ren_glTextureParameterfv_Comp = [](GLenum /*target*/, GLuint texture, GLenum pname, const GLfloat *params) {
             ren_glTextureParameterfv(texture, pname, params);
         };
     } else {
         ren_glTextureParameterfv_Comp = ren_glTextureParameterfv_Comp_emu;
     }
-    ren_glTextureParameteriv =
-        (PFNGLTEXTUREPARAMETERIVPROC)GetProcAddress(glTextureParameteriv);
+    LOAD_GL_FUN(glTextureParameteriv)
     if (ren_glTextureParameteriv) {
-        ren_glTextureParameteriv_Comp = [](GLenum /*target*/, GLuint texture,
-                                           GLenum pname, const GLint *params) {
+        ren_glTextureParameteriv_Comp = [](GLenum /*target*/, GLuint texture, GLenum pname, const GLint *params) {
             ren_glTextureParameteriv(texture, pname, params);
         };
     } else {
         ren_glTextureParameteriv_Comp = ren_glTextureParameteriv_Comp_emu;
     }
 
-    ren_glGenerateTextureMipmap =
-        (PFNGLGENERATETEXTUREMIPMAPPROC)GetProcAddress(glGenerateTextureMipmap);
+    LOAD_GL_FUN(glGenerateTextureMipmap)
     if (ren_glGenerateTextureMipmap) {
         ren_glGenerateTextureMipmap_Comp = [](GLenum /*target*/, GLuint texture) {
             ren_glGenerateTextureMipmap(texture);
@@ -456,7 +396,7 @@ bool Ren::InitGLExtentions() {
         ren_glGenerateTextureMipmap_Comp = ren_glGenerateTextureMipmap_Comp_emu;
     }
 
-    ren_glBindTextureUnit = (PFNGLBINDTEXTUREUNITPROC)GetProcAddress(glBindTextureUnit);
+    LOAD_GL_FUN(glBindTextureUnit)
     if (ren_glBindTextureUnit) {
         ren_glBindTextureUnit_Comp = [](GLenum /*target*/, GLuint unit, GLuint texture) {
             ren_glBindTextureUnit(unit, texture);
@@ -465,12 +405,10 @@ bool Ren::InitGLExtentions() {
         ren_glBindTextureUnit_Comp = ren_glBindTextureUnit_Comp_emu;
     }
 
-    ren_glNamedBufferStorage =
-        (PFNGLNAMEDBUFFERSTORAGEPROC)GetProcAddress(glNamedBufferStorage);
+    LOAD_GL_FUN(glNamedBufferStorage)
     if (ren_glNamedBufferStorage) {
-        ren_glNamedBufferStorage_Comp =
-            [](GLenum /*target*/, GLuint buffer, GLsizeiptr size, const void *data,
-               GLbitfield flags) { ren_glNamedBufferStorage(buffer, size, data, flags); };
+        ren_glNamedBufferStorage_Comp = [](GLenum /*target*/, GLuint buffer, GLsizeiptr size, const void *data,
+                                           GLbitfield flags) { ren_glNamedBufferStorage(buffer, size, data, flags); };
     } else {
         ren_glNamedBufferStorage_Comp = ren_glNamedBufferStorage_Comp_emu;
     }
@@ -500,108 +438,79 @@ bool Ren::InitGLExtentions() {
     //
     // Bindless texture
     //
-    ren_glGetTextureHandleARB =
-        (PFNGLGETTEXTUREHANDLEARB)GetProcAddress(glGetTextureHandleARB);
+    LOAD_GL_FUN(glGetTextureHandleARB)
     if (!ren_glGetTextureHandleARB) {
-        ren_glGetTextureHandleARB =
-            (PFNGLGETTEXTUREHANDLEARB)GetProcAddress(glGetTextureHandleNV);
+        ren_glGetTextureHandleARB = (PFNGLGETTEXTUREHANDLEARB)GetProcAddress(glGetTextureHandleNV);
     }
-    ren_glGetTextureSamplerHandleARB =
-        (PFNGLGETTEXTURESAMPLERHANDLEARB)GetProcAddress(glGetTextureSamplerHandleARB);
+    LOAD_GL_FUN(glGetTextureSamplerHandleARB)
     if (!ren_glGetTextureSamplerHandleARB) {
-        ren_glGetTextureSamplerHandleARB =
-            (PFNGLGETTEXTURESAMPLERHANDLEARB)GetProcAddress(glGetTextureSamplerHandleNV);
+        ren_glGetTextureSamplerHandleARB = (PFNGLGETTEXTURESAMPLERHANDLEARB)GetProcAddress(glGetTextureSamplerHandleNV);
     }
 
-    ren_glMakeTextureHandleResidentARB =
-        (PFNGLMAKETEXTUREHANDLERESIDENTARB)GetProcAddress(glMakeTextureHandleResidentARB);
+    LOAD_GL_FUN(glMakeTextureHandleResidentARB)
     if (!ren_glMakeTextureHandleResidentARB) {
         ren_glMakeTextureHandleResidentARB =
-            (PFNGLMAKETEXTUREHANDLERESIDENTARB)GetProcAddress(
-                glMakeTextureHandleResidentNV);
+            (PFNGLMAKETEXTUREHANDLERESIDENTARB)GetProcAddress(glMakeTextureHandleResidentNV);
     }
-    ren_glMakeTextureHandleNonResidentARB =
-        (PFNGLMAKETEXTUREHANDLENONRESIDENTARB)GetProcAddress(
-            glMakeTextureHandleNonResidentARB);
+    LOAD_GL_FUN(glMakeTextureHandleNonResidentARB)
     if (!ren_glMakeTextureHandleNonResidentARB) {
         ren_glMakeTextureHandleNonResidentARB =
-            (PFNGLMAKETEXTUREHANDLENONRESIDENTARB)GetProcAddress(
-                glMakeTextureHandleNonResidentNV);
+            (PFNGLMAKETEXTUREHANDLENONRESIDENTARB)GetProcAddress(glMakeTextureHandleNonResidentNV);
     }
 
-    ren_glGetImageHandleARB = (PFNGLGETIMAGEHANDLEARB)GetProcAddress(glGetImageHandleARB);
+    LOAD_GL_FUN(glGetImageHandleARB)
     if (!ren_glGetImageHandleARB) {
-        ren_glGetImageHandleARB =
-            (PFNGLGETIMAGEHANDLEARB)GetProcAddress(glGetImageHandleNV);
+        ren_glGetImageHandleARB = (PFNGLGETIMAGEHANDLEARB)GetProcAddress(glGetImageHandleNV);
     }
 
-    ren_glMakeImageHandleResidentARB =
-        (PFNGLMAKEIMAGEHANDLERESIDENTARB)GetProcAddress(glMakeImageHandleResidentARB);
+    LOAD_GL_FUN(glMakeImageHandleResidentARB)
     if (!ren_glMakeImageHandleResidentARB) {
-        ren_glMakeImageHandleResidentARB =
-            (PFNGLMAKEIMAGEHANDLERESIDENTARB)GetProcAddress(glMakeImageHandleResidentNV);
+        ren_glMakeImageHandleResidentARB = (PFNGLMAKEIMAGEHANDLERESIDENTARB)GetProcAddress(glMakeImageHandleResidentNV);
     }
-    ren_glMakeImageHandleNonResidentARB =
-        (PFNGLMAKEIMAGEHANDLENONRESIDENTARB)GetProcAddress(
-            glMakeImageHandleNonResidentARB);
+    LOAD_GL_FUN(glMakeImageHandleNonResidentARB)
     if (!ren_glMakeImageHandleNonResidentARB) {
         ren_glMakeImageHandleNonResidentARB =
-            (PFNGLMAKEIMAGEHANDLENONRESIDENTARB)GetProcAddress(
-                glMakeImageHandleNonResidentNV);
+            (PFNGLMAKEIMAGEHANDLENONRESIDENTARB)GetProcAddress(glMakeImageHandleNonResidentNV);
     }
 
-    ren_glUniformHandleui64ARB =
-        (PFNGLUNIFORMHANDLEUI64ARB)GetProcAddress(glUniformHandleui64ARB);
+    LOAD_GL_FUN(glUniformHandleui64ARB)
     if (!ren_glUniformHandleui64ARB) {
-        ren_glUniformHandleui64ARB =
-            (PFNGLUNIFORMHANDLEUI64ARB)GetProcAddress(glUniformHandleui64NV);
+        ren_glUniformHandleui64ARB = (PFNGLUNIFORMHANDLEUI64ARB)GetProcAddress(glUniformHandleui64NV);
     }
-    ren_glUniformHandleui64vARB =
-        (PFNGLUNIFORMHANDLEUI64VARB)GetProcAddress(glUniformHandleui64vARB);
+    LOAD_GL_FUN(glUniformHandleui64vARB)
     if (!ren_glUniformHandleui64vARB) {
-        ren_glUniformHandleui64vARB =
-            (PFNGLUNIFORMHANDLEUI64VARB)GetProcAddress(glUniformHandleui64vNV);
+        ren_glUniformHandleui64vARB = (PFNGLUNIFORMHANDLEUI64VARB)GetProcAddress(glUniformHandleui64vNV);
     }
-    ren_glProgramUniformHandleui64ARB =
-        (PFNGLPROGRAMUNIFORMHANDLEUI64ARB)GetProcAddress(glProgramUniformHandleui64ARB);
+    LOAD_GL_FUN(glProgramUniformHandleui64ARB)
     if (!ren_glProgramUniformHandleui64ARB) {
         ren_glProgramUniformHandleui64ARB =
-            (PFNGLPROGRAMUNIFORMHANDLEUI64ARB)GetProcAddress(
-                glProgramUniformHandleui64NV);
+            (PFNGLPROGRAMUNIFORMHANDLEUI64ARB)GetProcAddress(glProgramUniformHandleui64NV);
     }
-    ren_glProgramUniformHandleui64vARB =
-        (PFNGLPROGRAMUNIFORMHANDLEUI64VARB)GetProcAddress(glProgramUniformHandleui64vARB);
+    LOAD_GL_FUN(glProgramUniformHandleui64vARB)
     if (!ren_glProgramUniformHandleui64vARB) {
         ren_glProgramUniformHandleui64vARB =
-            (PFNGLPROGRAMUNIFORMHANDLEUI64VARB)GetProcAddress(
-                glProgramUniformHandleui64vNV);
+            (PFNGLPROGRAMUNIFORMHANDLEUI64VARB)GetProcAddress(glProgramUniformHandleui64vNV);
     }
 
-    ren_glIsTextureHandleResidentARB =
-        (PFNGLISTEXTUREHANDLERESIDENTARB)GetProcAddress(glIsTextureHandleResidentARB);
+    LOAD_GL_FUN(glIsTextureHandleResidentARB)
     if (!ren_glIsTextureHandleResidentARB) {
-        ren_glIsTextureHandleResidentARB =
-            (PFNGLISTEXTUREHANDLERESIDENTARB)GetProcAddress(glIsTextureHandleResidentNV);
+        ren_glIsTextureHandleResidentARB = (PFNGLISTEXTUREHANDLERESIDENTARB)GetProcAddress(glIsTextureHandleResidentNV);
     }
-    ren_glIsImageHandleResidentARB =
-        (PFNGLISIMAGEHANDLERESIDENTARB)GetProcAddress(glIsImageHandleResidentARB);
+    LOAD_GL_FUN(glIsImageHandleResidentARB)
     if (!ren_glIsImageHandleResidentARB) {
-        ren_glIsImageHandleResidentARB =
-            (PFNGLISIMAGEHANDLERESIDENTARB)GetProcAddress(glIsImageHandleResidentNV);
+        ren_glIsImageHandleResidentARB = (PFNGLISIMAGEHANDLERESIDENTARB)GetProcAddress(glIsImageHandleResidentNV);
     }
 
     //
     // Sampler objects
     //
 
-    ren_glGenSamplers = (PFNGLGENSAMPLERS)GetProcAddress(glGenSamplers);
-    ren_glDeleteSamplers = (PFNGLDELETESAMPLERS)GetProcAddress(glDeleteSamplers);
-    ren_glIsSampler = (PFNGLISSAMPLER)GetProcAddress(glIsSampler);
-    ren_glBindSampler = (PFNGLBINDSAMPLER)GetProcAddress(glBindSampler);
-    ren_glSamplerParameteri = (PFNGLSAMPLERPARAMETERI)GetProcAddress(glSamplerParameteri);
-    ren_glSamplerParameterf = (PFNGLSAMPLERPARAMETERF)GetProcAddress(glSamplerParameterf);
-
-    volatile int ii = 0;
+    LOAD_GL_FUN(glGenSamplers)
+    LOAD_GL_FUN(glDeleteSamplers)
+    LOAD_GL_FUN(glIsSampler)
+    LOAD_GL_FUN(glBindSampler)
+    LOAD_GL_FUN(glSamplerParameteri)
+    LOAD_GL_FUN(glSamplerParameterf)
 #endif
 
     return true;

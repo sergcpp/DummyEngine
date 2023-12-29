@@ -2,6 +2,10 @@
 
 #include <regex>
 
+#if defined(__linux__) || defined(__APPLE__)
+#include <dlfcn.h>
+#endif
+
 #include "Log.h"
 #include "SmallVector.h"
 
@@ -16,13 +20,259 @@ void *g_metal_layer = nullptr;
 #endif
 } // namespace Ren
 
-bool Ren::MatchDeviceNames(const char *name, const char *pattern) {
-    std::regex match_name(pattern);
-    return std::regex_search(name, match_name) || strcmp(name, pattern) == 0;
+bool Ren::ApiContext::Load(ILog *log) {
+#if defined(_WIN32)
+    static_assert(sizeof(void *) == sizeof(HMODULE), "!");
+    vulkan_module = LoadLibrary("vulkan-1.dll");
+    if (!vulkan_module) {
+        log->Error("Failed to load vulkan-1.dll");
+        return false;
+    }
+#define LOAD_VK_FUN(x)                                                                                                 \
+    x = (PFN_##x)GetProcAddress((HMODULE)vulkan_module, #x);                                                           \
+    if (!(x)) {                                                                                                        \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
+#elif defined(__linux__)
+    vulkan_module = dlopen("libvulkan.so.1", RTLD_LAZY);
+    if (!vulkan_module) {
+        log->Error("Failed to load libvulkan.so");
+        return false;
+    }
+
+#define LOAD_VK_FUN(x)                                                                                                 \
+    x = (PFN_##x)dlsym(vulkan_module, #x);                                                                             \
+    if (!(x)) {                                                                                                        \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
+#else
+
+#if defined(VK_USE_PLATFORM_IOS_MVK)
+    vulkan_module = dlopen("libMoltenVK.dylib", RTLD_LAZY);
+    if (!vulkan_module) {
+        log->Error("Failed to load libMoltenVK.dylib");
+        return false;
+    }
+#else
+    vulkan_module = dlopen("libvulkan.dylib", RTLD_LAZY);
+    if (!vulkan_module) {
+        log->Error("Failed to load libvulkan.dylib");
+        return false;
+    }
+#endif
+
+#define LOAD_VK_FUN(x)                                                                                                 \
+    x = (PFN_##x)dlsym(vulkan_module, #x);                                                                             \
+    if (!(x)) {                                                                                                        \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
+#endif
+
+    LOAD_VK_FUN(vkCreateInstance)
+    LOAD_VK_FUN(vkDestroyInstance)
+
+    LOAD_VK_FUN(vkEnumerateInstanceLayerProperties)
+    LOAD_VK_FUN(vkEnumerateInstanceExtensionProperties)
+
+    LOAD_VK_FUN(vkGetInstanceProcAddr)
+    LOAD_VK_FUN(vkGetDeviceProcAddr)
+
+    LOAD_VK_FUN(vkEnumeratePhysicalDevices);
+    LOAD_VK_FUN(vkGetPhysicalDeviceProperties);
+    LOAD_VK_FUN(vkGetPhysicalDeviceFeatures);
+    LOAD_VK_FUN(vkGetPhysicalDeviceQueueFamilyProperties);
+
+    LOAD_VK_FUN(vkCreateDevice)
+    LOAD_VK_FUN(vkDestroyDevice)
+
+    LOAD_VK_FUN(vkEnumerateDeviceExtensionProperties)
+
+#if defined(VK_USE_PLATFORM_WIN32_KHR)
+    LOAD_VK_FUN(vkCreateWin32SurfaceKHR)
+#elif defined(VK_USE_PLATFORM_XLIB_KHR)
+    LOAD_VK_FUN(vkCreateXlibSurfaceKHR)
+#elif defined(VK_USE_PLATFORM_IOS_MVK)
+    LOAD_VK_FUN(vkCreateIOSSurfaceMVK)
+#elif defined(VK_USE_PLATFORM_MACOS_MVK)
+    LOAD_VK_FUN(vkCreateMacOSSurfaceMVK)
+#endif
+    LOAD_VK_FUN(vkDestroySurfaceKHR)
+
+    LOAD_VK_FUN(vkGetPhysicalDeviceSurfaceSupportKHR)
+    LOAD_VK_FUN(vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+    LOAD_VK_FUN(vkGetPhysicalDeviceSurfaceFormatsKHR)
+    LOAD_VK_FUN(vkGetPhysicalDeviceSurfacePresentModesKHR)
+
+    LOAD_VK_FUN(vkCreateSwapchainKHR)
+    LOAD_VK_FUN(vkDestroySwapchainKHR)
+    LOAD_VK_FUN(vkGetDeviceQueue)
+    LOAD_VK_FUN(vkCreateCommandPool)
+    LOAD_VK_FUN(vkDestroyCommandPool)
+    LOAD_VK_FUN(vkAllocateCommandBuffers)
+    LOAD_VK_FUN(vkFreeCommandBuffers)
+
+    LOAD_VK_FUN(vkGetSwapchainImagesKHR)
+
+    LOAD_VK_FUN(vkCreateFence)
+    LOAD_VK_FUN(vkWaitForFences)
+    LOAD_VK_FUN(vkResetFences)
+    LOAD_VK_FUN(vkDestroyFence)
+    LOAD_VK_FUN(vkGetFenceStatus)
+
+    LOAD_VK_FUN(vkBeginCommandBuffer)
+    LOAD_VK_FUN(vkEndCommandBuffer)
+
+    LOAD_VK_FUN(vkQueueSubmit)
+    LOAD_VK_FUN(vkQueueWaitIdle)
+    LOAD_VK_FUN(vkResetCommandBuffer)
+    LOAD_VK_FUN(vkCreateImageView)
+    LOAD_VK_FUN(vkDestroyImageView)
+
+    LOAD_VK_FUN(vkAcquireNextImageKHR)
+    LOAD_VK_FUN(vkQueuePresentKHR)
+
+    LOAD_VK_FUN(vkGetPhysicalDeviceMemoryProperties)
+    LOAD_VK_FUN(vkGetPhysicalDeviceFormatProperties)
+    LOAD_VK_FUN(vkGetPhysicalDeviceImageFormatProperties)
+
+    LOAD_VK_FUN(vkCreateImage)
+    LOAD_VK_FUN(vkDestroyImage)
+
+    LOAD_VK_FUN(vkGetImageMemoryRequirements)
+    LOAD_VK_FUN(vkAllocateMemory)
+    LOAD_VK_FUN(vkFreeMemory)
+    LOAD_VK_FUN(vkBindImageMemory)
+
+    LOAD_VK_FUN(vkCreateRenderPass)
+    LOAD_VK_FUN(vkDestroyRenderPass)
+
+    LOAD_VK_FUN(vkCreateFramebuffer)
+    LOAD_VK_FUN(vkDestroyFramebuffer)
+
+    LOAD_VK_FUN(vkCreateBuffer)
+    LOAD_VK_FUN(vkGetBufferMemoryRequirements)
+    LOAD_VK_FUN(vkBindBufferMemory)
+    LOAD_VK_FUN(vkDestroyBuffer)
+    LOAD_VK_FUN(vkGetBufferMemoryRequirements)
+
+    LOAD_VK_FUN(vkCreateBufferView)
+    LOAD_VK_FUN(vkDestroyBufferView)
+
+    LOAD_VK_FUN(vkMapMemory)
+    LOAD_VK_FUN(vkUnmapMemory)
+    LOAD_VK_FUN(vkFlushMappedMemoryRanges)
+    LOAD_VK_FUN(vkInvalidateMappedMemoryRanges)
+
+    LOAD_VK_FUN(vkCreateShaderModule)
+    LOAD_VK_FUN(vkDestroyShaderModule)
+    LOAD_VK_FUN(vkCreateDescriptorSetLayout)
+    LOAD_VK_FUN(vkDestroyDescriptorSetLayout)
+
+    LOAD_VK_FUN(vkCreatePipelineLayout)
+    LOAD_VK_FUN(vkDestroyPipelineLayout)
+
+    LOAD_VK_FUN(vkCreateGraphicsPipelines)
+    LOAD_VK_FUN(vkCreateComputePipelines)
+    LOAD_VK_FUN(vkDestroyPipeline)
+
+    LOAD_VK_FUN(vkCreateSemaphore)
+    LOAD_VK_FUN(vkDestroySemaphore)
+    LOAD_VK_FUN(vkCreateSampler)
+    LOAD_VK_FUN(vkDestroySampler)
+
+    LOAD_VK_FUN(vkCreateDescriptorPool)
+    LOAD_VK_FUN(vkDestroyDescriptorPool)
+    LOAD_VK_FUN(vkResetDescriptorPool)
+
+    LOAD_VK_FUN(vkAllocateDescriptorSets)
+    LOAD_VK_FUN(vkFreeDescriptorSets)
+    LOAD_VK_FUN(vkUpdateDescriptorSets)
+
+    LOAD_VK_FUN(vkCreateQueryPool)
+    LOAD_VK_FUN(vkDestroyQueryPool)
+    LOAD_VK_FUN(vkGetQueryPoolResults)
+
+    LOAD_VK_FUN(vkCmdPipelineBarrier)
+    LOAD_VK_FUN(vkCmdBeginRenderPass)
+    LOAD_VK_FUN(vkCmdBindPipeline)
+    LOAD_VK_FUN(vkCmdSetViewport)
+    LOAD_VK_FUN(vkCmdSetScissor)
+    LOAD_VK_FUN(vkCmdBindDescriptorSets)
+    LOAD_VK_FUN(vkCmdBindVertexBuffers)
+    LOAD_VK_FUN(vkCmdBindIndexBuffer)
+    LOAD_VK_FUN(vkCmdDraw)
+    LOAD_VK_FUN(vkCmdDrawIndexed)
+    LOAD_VK_FUN(vkCmdEndRenderPass)
+    LOAD_VK_FUN(vkCmdCopyBufferToImage)
+    LOAD_VK_FUN(vkCmdCopyImageToBuffer)
+    LOAD_VK_FUN(vkCmdCopyBuffer)
+    LOAD_VK_FUN(vkCmdFillBuffer)
+    LOAD_VK_FUN(vkCmdUpdateBuffer)
+    LOAD_VK_FUN(vkCmdPushConstants)
+    LOAD_VK_FUN(vkCmdBlitImage)
+    LOAD_VK_FUN(vkCmdClearColorImage)
+    LOAD_VK_FUN(vkCmdClearAttachments)
+    LOAD_VK_FUN(vkCmdCopyImage)
+    LOAD_VK_FUN(vkCmdDispatch)
+    LOAD_VK_FUN(vkCmdDispatchIndirect)
+    LOAD_VK_FUN(vkCmdResetQueryPool)
+    LOAD_VK_FUN(vkCmdWriteTimestamp)
+
+#undef LOAD_VK_FUN
+
+    return true;
 }
 
-bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], const int enabled_layers_count,
-                         int validation_level, ILog *log) {
+bool Ren::ApiContext::LoadInstanceFunctions(ILog *log) {
+#define LOAD_INSTANCE_FUN(x)                                                                                           \
+    x = (PFN_##x)vkGetInstanceProcAddr(instance, #x);                                                                  \
+    if (!(x)) {                                                                                                        \
+        log->Error("Failed to load %s", #x);                                                                           \
+        return false;                                                                                                  \
+    }
+
+    LOAD_INSTANCE_FUN(vkCreateDebugReportCallbackEXT)
+    LOAD_INSTANCE_FUN(vkDestroyDebugReportCallbackEXT)
+    LOAD_INSTANCE_FUN(vkDebugReportMessageEXT)
+
+    LOAD_INSTANCE_FUN(vkCreateAccelerationStructureKHR)
+    LOAD_INSTANCE_FUN(vkDestroyAccelerationStructureKHR)
+    LOAD_INSTANCE_FUN(vkGetAccelerationStructureBuildSizesKHR)
+    LOAD_INSTANCE_FUN(vkGetAccelerationStructureDeviceAddressKHR)
+
+    LOAD_INSTANCE_FUN(vkCmdBeginDebugUtilsLabelEXT)
+    LOAD_INSTANCE_FUN(vkCmdEndDebugUtilsLabelEXT)
+    LOAD_INSTANCE_FUN(vkSetDebugUtilsObjectNameEXT)
+
+    LOAD_INSTANCE_FUN(vkCmdSetDepthBias)
+
+    LOAD_INSTANCE_FUN(vkCmdBuildAccelerationStructuresKHR)
+    LOAD_INSTANCE_FUN(vkCmdWriteAccelerationStructuresPropertiesKHR)
+    LOAD_INSTANCE_FUN(vkCmdCopyAccelerationStructureKHR)
+    LOAD_INSTANCE_FUN(vkCmdTraceRaysKHR)
+    LOAD_INSTANCE_FUN(vkCmdTraceRaysIndirectKHR)
+
+    LOAD_INSTANCE_FUN(vkDeviceWaitIdle)
+
+    LOAD_INSTANCE_FUN(vkGetPhysicalDeviceProperties2KHR)
+    LOAD_INSTANCE_FUN(vkGetBufferDeviceAddressKHR)
+
+    LOAD_INSTANCE_FUN(vkCreateRayTracingPipelinesKHR)
+    LOAD_INSTANCE_FUN(vkGetRayTracingShaderGroupHandlesKHR)
+
+    LOAD_INSTANCE_FUN(vkCmdBeginRenderingKHR)
+    LOAD_INSTANCE_FUN(vkCmdEndRenderingKHR)
+
+#undef LOAD_INSTANCE_FUN
+
+    return true;
+}
+
+bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int enabled_layers_count, int validation_level,
+                                     ILog *log) {
     if (validation_level) { // Find validation layer
         uint32_t layers_count = 0;
         vkEnumerateInstanceLayerProperties(&layers_count, nullptr);
@@ -139,12 +389,10 @@ bool Ren::InitVkInstance(VkInstance &instance, const char *enabled_layers[], con
         return false;
     }
 
-    LoadVulkanExtensions(instance, log);
-
     return true;
 }
 
-bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
+bool Ren::ApiContext::InitVkSurface(ILog *log) {
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
     HWND window = GetActiveWindow();
     if (!window) {
@@ -197,12 +445,149 @@ bool Ren::InitVkSurface(VkSurfaceKHR &surface, VkInstance instance, ILog *log) {
     return true;
 }
 
-bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDeviceProperties &out_device_properties,
-                                 VkPhysicalDeviceMemoryProperties &out_mem_properties,
-                                 uint32_t &out_present_family_index, uint32_t &out_graphics_family_index,
-                                 bool &out_raytracing_supported, bool &out_ray_query_supported,
-                                 bool &out_dynamic_rendering_supported, const char *preferred_device,
-                                 VkInstance instance, VkSurfaceKHR surface, ILog *log) {
+bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_layers_count, ILog *log) {
+    VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
+    int infos_count = 0;
+    const float queue_priorities[] = {1.0f};
+
+    if (present_family_index != 0xffffffff) {
+        // present queue
+        queue_create_infos[infos_count] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+        queue_create_infos[infos_count].queueFamilyIndex = present_family_index;
+        queue_create_infos[infos_count].queueCount = 1;
+        queue_create_infos[infos_count].pQueuePriorities = queue_priorities;
+        ++infos_count;
+    }
+
+    if (graphics_family_index != present_family_index) {
+        // graphics queue
+        queue_create_infos[infos_count] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
+        queue_create_infos[infos_count].queueFamilyIndex = graphics_family_index;
+        queue_create_infos[infos_count].queueCount = 1;
+        queue_create_infos[infos_count].pQueuePriorities = queue_priorities;
+        ++infos_count;
+    }
+
+    VkDeviceCreateInfo device_info = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+    device_info.queueCreateInfoCount = infos_count;
+    device_info.pQueueCreateInfos = queue_create_infos;
+    device_info.enabledLayerCount = enabled_layers_count;
+    device_info.ppEnabledLayerNames = enabled_layers;
+
+    SmallVector<const char *, 16> device_extensions;
+
+    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
+    // device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
+
+#if defined(VK_USE_PLATFORM_MACOS_MVK)
+    device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+#endif
+
+    if (this->raytracing_supported) {
+        device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
+        if (this->ray_query_supported) {
+            device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+        }
+    }
+
+    if (this->dynamic_rendering_supported) {
+        device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        device_extensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME); // required for dynamic rendering
+        device_extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);   // required for depth stencil resolve
+    }
+
+    device_info.enabledExtensionCount = uint32_t(device_extensions.size());
+    device_info.ppEnabledExtensionNames = device_extensions.cdata();
+
+    VkPhysicalDeviceFeatures features = {};
+    features.shaderClipDistance = VK_TRUE;
+    features.samplerAnisotropy = VK_TRUE;
+    features.imageCubeArray = VK_TRUE;
+    features.fillModeNonSolid = VK_TRUE;
+    device_info.pEnabledFeatures = &features;
+    void **pp_next = const_cast<void **>(&device_info.pNext);
+
+    /*VkPhysicalDeviceFeatures2KHR feat2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
+    feat2.features.shaderClipDistance = VK_TRUE;
+    feat2.features.samplerAnisotropy = VK_TRUE;
+    feat2.features.imageCubeArray = VK_TRUE;
+    device_info.pNext = &feat2;
+    void **pp_next = const_cast<void **>(&feat2.pNext);*/
+
+    VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexing_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
+    indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+    indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
+    indexing_features.runtimeDescriptorArray = VK_TRUE;
+    (*pp_next) = &indexing_features;
+    pp_next = &indexing_features.pNext;
+
+    VkPhysicalDeviceBufferDeviceAddressFeaturesKHR device_address_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR};
+    device_address_features.bufferDeviceAddress = VK_TRUE;
+
+    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rt_pipeline_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+    rt_pipeline_features.rayTracingPipeline = VK_TRUE;
+    rt_pipeline_features.rayTracingPipelineTraceRaysIndirect = VK_TRUE;
+
+    VkPhysicalDeviceRayQueryFeaturesKHR rt_query_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+    rt_query_features.rayQuery = VK_TRUE;
+
+    VkPhysicalDeviceAccelerationStructureFeaturesKHR acc_struct_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+    acc_struct_features.accelerationStructure = VK_TRUE;
+
+    if (this->raytracing_supported) {
+        (*pp_next) = &device_address_features;
+        pp_next = &device_address_features.pNext;
+
+        (*pp_next) = &rt_pipeline_features;
+        pp_next = &rt_pipeline_features.pNext;
+
+        (*pp_next) = &acc_struct_features;
+        pp_next = &acc_struct_features.pNext;
+
+        if (this->ray_query_supported) {
+            (*pp_next) = &rt_query_features;
+            pp_next = &rt_query_features.pNext;
+        }
+    }
+
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR};
+    dynamic_rendering_features.dynamicRendering = VK_TRUE;
+
+    if (this->dynamic_rendering_supported) {
+        (*pp_next) = &dynamic_rendering_features;
+        pp_next = &dynamic_rendering_features.pNext;
+    }
+
+#if defined(VK_USE_PLATFORM_MACOS_MVK)
+    VkPhysicalDevicePortabilitySubsetFeaturesKHR subset_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
+    subset_features.mutableComparisonSamplers = VK_TRUE;
+    (*pp_next) = &subset_features;
+    pp_next = &subset_features.pNext;
+#endif
+
+    const VkResult res = vkCreateDevice(physical_device, &device_info, nullptr, &device);
+    if (res != VK_SUCCESS) {
+        log->Error("Failed to create logical device!");
+        return false;
+    }
+
+    return true;
+}
+
+bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog *log) {
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
 
@@ -315,12 +700,12 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
                 best_score = score;
 
                 physical_device = physical_devices[i];
-                out_device_properties = device_properties;
-                out_present_family_index = present_family_index;
-                out_graphics_family_index = graphics_family_index;
-                out_raytracing_supported = (acc_struct_supported && raytracing_supported);
-                out_ray_query_supported = ray_query_supported;
-                out_dynamic_rendering_supported = dynamic_rendering_supported;
+                this->device_properties = device_properties;
+                this->present_family_index = present_family_index;
+                this->graphics_family_index = graphics_family_index;
+                this->raytracing_supported = (acc_struct_supported && raytracing_supported);
+                this->ray_query_supported = ray_query_supported;
+                this->dynamic_rendering_supported = dynamic_rendering_supported;
             }
         }
     }
@@ -330,160 +715,12 @@ bool Ren::ChooseVkPhysicalDevice(VkPhysicalDevice &physical_device, VkPhysicalDe
         return false;
     }
 
-    vkGetPhysicalDeviceMemoryProperties(physical_device, &out_mem_properties);
+    vkGetPhysicalDeviceMemoryProperties(physical_device, &mem_properties);
 
     return true;
 }
 
-bool Ren::InitVkDevice(VkDevice &device, VkPhysicalDevice physical_device, uint32_t present_family_index,
-                       uint32_t graphics_family_index, bool enable_raytracing, bool enable_ray_query,
-                       bool enable_dynamic_rendering, const char *enabled_layers[], int enabled_layers_count,
-                       ILog *log) {
-    VkDeviceQueueCreateInfo queue_create_infos[2] = {{}, {}};
-    int infos_count = 0;
-    const float queue_priorities[] = {1.0f};
-
-    if (present_family_index != 0xffffffff) {
-        // present queue
-        queue_create_infos[infos_count] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        queue_create_infos[infos_count].queueFamilyIndex = present_family_index;
-        queue_create_infos[infos_count].queueCount = 1;
-        queue_create_infos[infos_count].pQueuePriorities = queue_priorities;
-        ++infos_count;
-    }
-
-    if (graphics_family_index != present_family_index) {
-        // graphics queue
-        queue_create_infos[infos_count] = {VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO};
-        queue_create_infos[infos_count].queueFamilyIndex = graphics_family_index;
-        queue_create_infos[infos_count].queueCount = 1;
-        queue_create_infos[infos_count].pQueuePriorities = queue_priorities;
-        ++infos_count;
-    }
-
-    VkDeviceCreateInfo device_info = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
-    device_info.queueCreateInfoCount = infos_count;
-    device_info.pQueueCreateInfos = queue_create_infos;
-    device_info.enabledLayerCount = enabled_layers_count;
-    device_info.ppEnabledLayerNames = enabled_layers;
-
-    SmallVector<const char *, 16> device_extensions;
-
-    device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-    device_extensions.push_back(VK_KHR_MAINTENANCE3_EXTENSION_NAME);
-    // device_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
-    device_extensions.push_back(VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME);
-
-#if defined(VK_USE_PLATFORM_MACOS_MVK)
-    device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-#endif
-
-    if (enable_raytracing) {
-        device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_SPIRV_1_4_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME);
-        if (enable_ray_query) {
-            device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
-        }
-    }
-
-    if (enable_dynamic_rendering) {
-        device_extensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
-        device_extensions.push_back(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME); // required for dynamic rendering
-        device_extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);   // required for depth stencil resolve
-    }
-
-    device_info.enabledExtensionCount = uint32_t(device_extensions.size());
-    device_info.ppEnabledExtensionNames = device_extensions.cdata();
-
-    VkPhysicalDeviceFeatures features = {};
-    features.shaderClipDistance = VK_TRUE;
-    features.samplerAnisotropy = VK_TRUE;
-    features.imageCubeArray = VK_TRUE;
-    features.fillModeNonSolid = VK_TRUE;
-    device_info.pEnabledFeatures = &features;
-    void **pp_next = const_cast<void **>(&device_info.pNext);
-
-    /*VkPhysicalDeviceFeatures2KHR feat2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2_KHR};
-    feat2.features.shaderClipDistance = VK_TRUE;
-    feat2.features.samplerAnisotropy = VK_TRUE;
-    feat2.features.imageCubeArray = VK_TRUE;
-    device_info.pNext = &feat2;
-    void **pp_next = const_cast<void **>(&feat2.pNext);*/
-
-    VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexing_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT};
-    indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-    indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
-    indexing_features.runtimeDescriptorArray = VK_TRUE;
-    (*pp_next) = &indexing_features;
-    pp_next = &indexing_features.pNext;
-
-    VkPhysicalDeviceBufferDeviceAddressFeaturesKHR device_address_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR};
-    device_address_features.bufferDeviceAddress = VK_TRUE;
-
-    VkPhysicalDeviceRayTracingPipelineFeaturesKHR rt_pipeline_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
-    rt_pipeline_features.rayTracingPipeline = VK_TRUE;
-    rt_pipeline_features.rayTracingPipelineTraceRaysIndirect = VK_TRUE;
-
-    VkPhysicalDeviceRayQueryFeaturesKHR rt_query_features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
-    rt_query_features.rayQuery = VK_TRUE;
-
-    VkPhysicalDeviceAccelerationStructureFeaturesKHR acc_struct_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
-    acc_struct_features.accelerationStructure = VK_TRUE;
-
-    if (enable_raytracing) {
-        (*pp_next) = &device_address_features;
-        pp_next = &device_address_features.pNext;
-
-        (*pp_next) = &rt_pipeline_features;
-        pp_next = &rt_pipeline_features.pNext;
-
-        (*pp_next) = &acc_struct_features;
-        pp_next = &acc_struct_features.pNext;
-
-        if (enable_ray_query) {
-            (*pp_next) = &rt_query_features;
-            pp_next = &rt_query_features.pNext;
-        }
-    }
-
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR};
-    dynamic_rendering_features.dynamicRendering = VK_TRUE;
-
-    if (enable_dynamic_rendering) {
-        (*pp_next) = &dynamic_rendering_features;
-        pp_next = &dynamic_rendering_features.pNext;
-    }
-
-#if defined(VK_USE_PLATFORM_MACOS_MVK)
-    VkPhysicalDevicePortabilitySubsetFeaturesKHR subset_features = {
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PORTABILITY_SUBSET_FEATURES_KHR};
-    subset_features.mutableComparisonSamplers = VK_TRUE;
-    (*pp_next) = &subset_features;
-    pp_next = &subset_features.pNext;
-#endif
-
-    const VkResult res = vkCreateDevice(physical_device, &device_info, nullptr, &device);
-    if (res != VK_SUCCESS) {
-        log->Error("Failed to create logical device!");
-        return false;
-    }
-
-    return true;
-}
-
-bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_format, VkExtent2D &extent,
-                        VkPresentModeKHR &present_mode, int w, int h, VkDevice device, VkPhysicalDevice physical_device,
-                        uint32_t present_family_index, uint32_t graphics_family_index, VkSurfaceKHR surface,
-                        ILog *log) {
+bool Ren::ApiContext::InitSwapChain(int w, int h, ILog *log) {
     { // choose surface format
         uint32_t format_count = 0;
         vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
@@ -535,7 +772,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
         VkExtent2D surface_resolution = surface_capabilities.currentExtent;
         if (surface_resolution.width == 0xffffffff) {
             // can use any value, use native window resolution
-            extent = VkExtent2D{uint32_t(w), uint32_t(h)};
+            res = VkExtent2D{uint32_t(w), uint32_t(h)};
         } else {
             VkExtent2D actual_extent = VkExtent2D{uint32_t(w), uint32_t(h)};
 
@@ -544,7 +781,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
             actual_extent.height = std::min(std::max(actual_extent.height, surface_capabilities.minImageExtent.height),
                                             surface_capabilities.maxImageExtent.height);
 
-            extent = actual_extent;
+            res = actual_extent;
         }
     }
 
@@ -571,7 +808,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
     swap_chain_create_info.minImageCount = desired_image_count;
     swap_chain_create_info.imageFormat = surface_format.format;
     swap_chain_create_info.imageColorSpace = surface_format.colorSpace;
-    swap_chain_create_info.imageExtent = extent;
+    swap_chain_create_info.imageExtent = res;
     swap_chain_create_info.imageArrayLayers = 1;
     swap_chain_create_info.imageUsage =
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT /*| VK_IMAGE_USAGE_STORAGE_BIT*/;
@@ -601,12 +838,7 @@ bool Ren::InitSwapChain(VkSwapchainKHR &swapchain, VkSurfaceFormatKHR &surface_f
     return true;
 }
 
-bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_command_pool,
-                             VkCommandBuffer &setup_cmd_buf, VkCommandBuffer draw_cmd_bufs[MaxFramesInFlight],
-                             VkSemaphore image_avail_semaphores[MaxFramesInFlight],
-                             VkSemaphore render_finished_semaphores[MaxFramesInFlight],
-                             VkFence in_flight_fences[MaxFramesInFlight], VkQueryPool query_pools[MaxFramesInFlight],
-                             VkDevice device, uint32_t family_index, ILog *log) {
+bool Ren::ApiContext::InitCommandBuffers(uint32_t family_index, ILog *log) {
     VkCommandPoolCreateInfo cmd_pool_create_info = {VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO};
     cmd_pool_create_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     cmd_pool_create_info.queueFamilyIndex = family_index;
@@ -641,7 +873,7 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
     }
 
     cmd_buf_alloc_info.commandBufferCount = MaxFramesInFlight;
-    res = vkAllocateCommandBuffers(device, &cmd_buf_alloc_info, draw_cmd_bufs);
+    res = vkAllocateCommandBuffers(device, &cmd_buf_alloc_info, draw_cmd_buf);
     if (res != VK_SUCCESS) {
         log->Error("Failed to create command buffer!");
         return false;
@@ -689,10 +921,7 @@ bool Ren::InitCommandBuffers(VkCommandPool &command_pool, VkCommandPool &temp_co
     return true;
 }
 
-bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
-                                SmallVectorImpl<VkImageView> &present_image_views, VkDevice device,
-                                VkSwapchainKHR swapchain, VkSurfaceFormatKHR surface_format,
-                                VkCommandBuffer setup_cmd_buf, VkQueue present_queue, ILog *log) {
+bool Ren::ApiContext::InitPresentImageViews(ILog *log) {
     uint32_t image_count;
     vkGetSwapchainImagesKHR(device, swapchain, &image_count, nullptr);
 
@@ -787,7 +1016,7 @@ bool Ren::InitPresentImageViews(SmallVectorImpl<VkImage> &present_images,
     return true;
 }
 
-VkCommandBuffer Ren::BegSingleTimeCommands(VkDevice device, VkCommandPool temp_command_pool) {
+VkCommandBuffer Ren::ApiContext::BegSingleTimeCommands() {
     VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
     alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     alloc_info.commandPool = temp_command_pool;
@@ -803,33 +1032,43 @@ VkCommandBuffer Ren::BegSingleTimeCommands(VkDevice device, VkCommandPool temp_c
     return command_buf;
 }
 
-void Ren::EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuffer command_buf,
-                                VkCommandPool temp_command_pool) {
+void Ren::ApiContext::EndSingleTimeCommands(VkCommandBuffer command_buf) {
     vkEndCommandBuffer(command_buf);
 
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buf;
 
-    vkQueueSubmit(cmd_queue, 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(cmd_queue);
+    vkQueueSubmit(graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+    vkQueueWaitIdle(graphics_queue);
 
     vkFreeCommandBuffers(device, temp_command_pool, 1, &command_buf);
 }
 
-void Ren::EndSingleTimeCommands(VkDevice device, VkQueue cmd_queue, VkCommandBuffer command_buf,
-                                VkCommandPool temp_command_pool, VkFence fence_to_insert) {
+void Ren::ApiContext::EndSingleTimeCommands(VkCommandBuffer command_buf, VkFence fence_to_insert) {
     vkEndCommandBuffer(command_buf);
 
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
     submit_info.commandBufferCount = 1;
     submit_info.pCommandBuffers = &command_buf;
 
-    vkQueueSubmit(cmd_queue, 1, &submit_info, fence_to_insert);
+    vkQueueSubmit(graphics_queue, 1, &submit_info, fence_to_insert);
 }
 
-void Ren::FreeSingleTimeCommandBuffer(VkDevice device, VkCommandPool temp_command_pool, VkCommandBuffer command_buf) {
-    vkFreeCommandBuffers(device, temp_command_pool, 1, &command_buf);
+Ren::ApiContext::~ApiContext() {
+    if (vulkan_module) {
+#if defined(_WIN32)
+        FreeLibrary((HMODULE)vulkan_module);
+#else
+        dlclose(vulkan_module);
+#endif
+        vulkan_module = {};
+    }
+}
+
+bool Ren::MatchDeviceNames(const char *name, const char *pattern) {
+    std::regex match_name(pattern);
+    return std::regex_search(name, match_name) || strcmp(name, pattern) == 0;
 }
 
 bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {
@@ -840,9 +1079,9 @@ bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {
         return true;
     }
 
-    const VkResult res = vkGetQueryPoolResults(api_ctx->device, query_pool, 0, query_count,
-                                               query_count * sizeof(uint64_t), api_ctx->query_results[i],
-                                               sizeof(uint64_t), VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_64_BIT);
+    const VkResult res = api_ctx->vkGetQueryPoolResults(
+        api_ctx->device, query_pool, 0, query_count, query_count * sizeof(uint64_t), api_ctx->query_results[i],
+        sizeof(uint64_t), VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_64_BIT);
     api_ctx->query_counts[api_ctx->backend_frame] = 0;
 
     return (res == VK_SUCCESS);
@@ -850,68 +1089,68 @@ bool Ren::ReadbackTimestampQueries(ApiContext *api_ctx, int i) {
 
 void Ren::DestroyDeferredResources(ApiContext *api_ctx, int i) {
     for (VkImageView view : api_ctx->image_views_to_destroy[i]) {
-        vkDestroyImageView(api_ctx->device, view, nullptr);
+        api_ctx->vkDestroyImageView(api_ctx->device, view, nullptr);
     }
     api_ctx->image_views_to_destroy[i].clear();
     for (VkImage img : api_ctx->images_to_destroy[i]) {
-        vkDestroyImage(api_ctx->device, img, nullptr);
+        api_ctx->vkDestroyImage(api_ctx->device, img, nullptr);
     }
     api_ctx->images_to_destroy[i].clear();
     for (VkSampler sampler : api_ctx->samplers_to_destroy[i]) {
-        vkDestroySampler(api_ctx->device, sampler, nullptr);
+        api_ctx->vkDestroySampler(api_ctx->device, sampler, nullptr);
     }
     api_ctx->samplers_to_destroy[i].clear();
 
     api_ctx->allocs_to_free[i].clear();
 
     for (VkBufferView view : api_ctx->buf_views_to_destroy[i]) {
-        vkDestroyBufferView(api_ctx->device, view, nullptr);
+        api_ctx->vkDestroyBufferView(api_ctx->device, view, nullptr);
     }
     api_ctx->buf_views_to_destroy[i].clear();
     for (VkBuffer buf : api_ctx->bufs_to_destroy[i]) {
-        vkDestroyBuffer(api_ctx->device, buf, nullptr);
+        api_ctx->vkDestroyBuffer(api_ctx->device, buf, nullptr);
     }
     api_ctx->bufs_to_destroy[i].clear();
 
     for (VkDeviceMemory mem : api_ctx->mem_to_free[i]) {
-        vkFreeMemory(api_ctx->device, mem, nullptr);
+        api_ctx->vkFreeMemory(api_ctx->device, mem, nullptr);
     }
     api_ctx->mem_to_free[i].clear();
 
     for (VkRenderPass rp : api_ctx->render_passes_to_destroy[i]) {
-        vkDestroyRenderPass(api_ctx->device, rp, nullptr);
+        api_ctx->vkDestroyRenderPass(api_ctx->device, rp, nullptr);
     }
     api_ctx->render_passes_to_destroy[i].clear();
 
     for (VkFramebuffer fb : api_ctx->framebuffers_to_destroy[i]) {
-        vkDestroyFramebuffer(api_ctx->device, fb, nullptr);
+        api_ctx->vkDestroyFramebuffer(api_ctx->device, fb, nullptr);
     }
     api_ctx->framebuffers_to_destroy[i].clear();
 
     for (VkDescriptorPool pool : api_ctx->descriptor_pools_to_destroy[i]) {
-        vkDestroyDescriptorPool(api_ctx->device, pool, nullptr);
+        api_ctx->vkDestroyDescriptorPool(api_ctx->device, pool, nullptr);
     }
     api_ctx->descriptor_pools_to_destroy[i].clear();
 
     for (VkPipelineLayout pipe_layout : api_ctx->pipeline_layouts_to_destroy[i]) {
-        vkDestroyPipelineLayout(api_ctx->device, pipe_layout, nullptr);
+        api_ctx->vkDestroyPipelineLayout(api_ctx->device, pipe_layout, nullptr);
     }
     api_ctx->pipeline_layouts_to_destroy[i].clear();
 
     for (VkPipeline pipe : api_ctx->pipelines_to_destroy[i]) {
-        vkDestroyPipeline(api_ctx->device, pipe, nullptr);
+        api_ctx->vkDestroyPipeline(api_ctx->device, pipe, nullptr);
     }
     api_ctx->pipelines_to_destroy[i].clear();
 
     for (VkAccelerationStructureKHR acc_struct : api_ctx->acc_structs_to_destroy[i]) {
-        vkDestroyAccelerationStructureKHR(api_ctx->device, acc_struct, nullptr);
+        api_ctx->vkDestroyAccelerationStructureKHR(api_ctx->device, acc_struct, nullptr);
     }
     api_ctx->acc_structs_to_destroy[i].clear();
 }
 
 void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(Ren::ApiContext *api_ctx) {
     // Finish command buffer
-    vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
+    api_ctx->vkEndCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame]);
 
     { // Submit commands
         VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
@@ -919,18 +1158,18 @@ void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(Ren::ApiContext *api_
         submit_info.commandBufferCount = 1;
         submit_info.pCommandBuffers = &api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-        VkResult res = vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
+        VkResult res = api_ctx->vkQueueSubmit(api_ctx->graphics_queue, 1, &submit_info, VK_NULL_HANDLE);
         assert(res == VK_SUCCESS);
     }
 
     // Wait for completion
-    vkDeviceWaitIdle(api_ctx->device);
+    api_ctx->vkDeviceWaitIdle(api_ctx->device);
 
     // Restart command buffer
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
+    api_ctx->vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 }
 
 #undef COUNT_OF

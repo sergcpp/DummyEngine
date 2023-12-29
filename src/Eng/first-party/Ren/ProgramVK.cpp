@@ -1,6 +1,6 @@
 #include "ProgramVK.h"
 
-//#include "GL.h"
+// #include "GL.h"
 #include "Log.h"
 #include "VKCtx.h"
 
@@ -57,7 +57,7 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
 void Ren::Program::Destroy() {
     for (VkDescriptorSetLayout &l : descr_set_layouts_) {
         if (l) {
-            vkDestroyDescriptorSetLayout(api_ctx_->device, l, nullptr);
+            api_ctx_->vkDestroyDescriptorSetLayout(api_ctx_->device, l, nullptr);
         }
     }
     descr_set_layouts_.clear();
@@ -182,7 +182,7 @@ bool Ren::Program::InitDescrSetLayouts(ILog *log) {
 
         descr_set_layouts_.emplace_back();
         const VkResult res =
-            vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layouts_.back());
+            api_ctx_->vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layouts_.back());
 
         if (res != VK_SUCCESS) {
             log->Error("Failed to create descriptor set layout!");

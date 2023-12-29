@@ -1,9 +1,17 @@
 #include "Context.h"
 
+#include <mutex>
+
 #include "DescriptorPool.h"
 #include "VKCtx.h"
 
 #if defined(VK_USE_PLATFORM_WIN32_KHR)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <Windows.h>
 #endif
 
@@ -45,7 +53,7 @@ Ren::Context::~Context() {
     ReleaseAll();
 
     if (api_ctx_ && api_ctx_->device) {
-        vkDeviceWaitIdle(api_ctx_->device);
+        api_ctx_->vkDeviceWaitIdle(api_ctx_->device);
 
         for (int i = 0; i < MaxFramesInFlight; ++i) {
             api_ctx_->backend_frame = i; // default_descr_alloc_'s destructors rely on this
@@ -53,17 +61,18 @@ Ren::Context::~Context() {
             default_descr_alloc_[i].reset();
             DestroyDeferredResources(api_ctx_.get(), i);
 
-            vkDestroyFence(api_ctx_->device, api_ctx_->in_flight_fences[i], nullptr);
-            vkDestroySemaphore(api_ctx_->device, api_ctx_->render_finished_semaphores[i], nullptr);
-            vkDestroySemaphore(api_ctx_->device, api_ctx_->image_avail_semaphores[i], nullptr);
+            api_ctx_->vkDestroyFence(api_ctx_->device, api_ctx_->in_flight_fences[i], nullptr);
+            api_ctx_->vkDestroySemaphore(api_ctx_->device, api_ctx_->render_finished_semaphores[i], nullptr);
+            api_ctx_->vkDestroySemaphore(api_ctx_->device, api_ctx_->image_avail_semaphores[i], nullptr);
 
-            vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[i], nullptr);
+            api_ctx_->vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[i], nullptr);
         }
 
         default_memory_allocs_.reset();
 
-        vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &api_ctx_->setup_cmd_buf);
-        vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight, &api_ctx_->draw_cmd_buf[0]);
+        api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &api_ctx_->setup_cmd_buf);
+        api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight,
+                                       &api_ctx_->draw_cmd_buf[0]);
 
         for (int i = 0; i < StageBufferCount; ++i) {
             default_stage_bufs_.fences[i].ClientWaitSync();
@@ -71,20 +80,20 @@ Ren::Context::~Context() {
             default_stage_bufs_.bufs[i] = {};
         }
 
-        vkDestroyCommandPool(api_ctx_->device, api_ctx_->command_pool, nullptr);
-        vkDestroyCommandPool(api_ctx_->device, api_ctx_->temp_command_pool, nullptr);
+        api_ctx_->vkDestroyCommandPool(api_ctx_->device, api_ctx_->command_pool, nullptr);
+        api_ctx_->vkDestroyCommandPool(api_ctx_->device, api_ctx_->temp_command_pool, nullptr);
 
         for (size_t i = 0; i < api_ctx_->present_image_views.size(); ++i) {
-            vkDestroyImageView(api_ctx_->device, api_ctx_->present_image_views[i], nullptr);
+            api_ctx_->vkDestroyImageView(api_ctx_->device, api_ctx_->present_image_views[i], nullptr);
             // vkDestroyImage(api_ctx_->device, api_ctx_->present_images[i], nullptr);
         }
 
-        vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
+        api_ctx_->vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
 
-        vkDestroyDevice(api_ctx_->device, nullptr);
-        vkDestroySurfaceKHR(api_ctx_->instance, api_ctx_->surface, nullptr);
+        api_ctx_->vkDestroyDevice(api_ctx_->device, nullptr);
+        api_ctx_->vkDestroySurfaceKHR(api_ctx_->instance, api_ctx_->surface, nullptr);
         if (api_ctx_->debug_callback) {
-            vkDestroyDebugReportCallbackEXT(api_ctx_->instance, api_ctx_->debug_callback, nullptr);
+            api_ctx_->vkDestroyDebugReportCallbackEXT(api_ctx_->instance, api_ctx_->debug_callback, nullptr);
         }
 
 #if defined(VK_USE_PLATFORM_XLIB_KHR)
@@ -93,7 +102,7 @@ Ren::Context::~Context() {
                                   // (https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/1894)
         }
 #endif
-        vkDestroyInstance(api_ctx_->instance, nullptr);
+        api_ctx_->vkDestroyInstance(api_ctx_->instance, nullptr);
     }
 }
 
@@ -102,7 +111,8 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *preferred_device) {
-    if (!LoadVulkan(log)) {
+    api_ctx_.reset(new ApiContext);
+    if (!api_ctx_->Load(log)) {
         return false;
     }
 
@@ -110,12 +120,13 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     h_ = h;
     log_ = log;
 
-    api_ctx_.reset(new ApiContext);
-
     const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     const int enabled_layers_count = validation_level ? COUNT_OF(enabled_layers) : 0;
 
-    if (!InitVkInstance(api_ctx_->instance, enabled_layers, enabled_layers_count, validation_level, log)) {
+    if (!api_ctx_->InitVkInstance(enabled_layers, enabled_layers_count, validation_level, log)) {
+        return false;
+    }
+    if (!api_ctx_->LoadInstanceFunctions(log)) {
         return false;
     }
 
@@ -126,8 +137,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         callback_create_info.pfnCallback = DebugReportCallback;
         callback_create_info.pUserData = this;
 
-        const VkResult res = vkCreateDebugReportCallbackEXT(api_ctx_->instance, &callback_create_info, nullptr,
-                                                            &api_ctx_->debug_callback);
+        const VkResult res = api_ctx_->vkCreateDebugReportCallbackEXT(api_ctx_->instance, &callback_create_info,
+                                                                      nullptr, &api_ctx_->debug_callback);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create debug report callback");
             return false;
@@ -135,56 +146,41 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     }
 
     // Create platform-specific surface
-    if (!InitVkSurface(api_ctx_->surface, api_ctx_->instance, log)) {
+    if (!api_ctx_->InitVkSurface(log)) {
         return false;
     }
 
-    if (!ChooseVkPhysicalDevice(api_ctx_->physical_device, api_ctx_->device_properties, api_ctx_->mem_properties,
-                                api_ctx_->present_family_index, api_ctx_->graphics_family_index,
-                                api_ctx_->raytracing_supported, api_ctx_->ray_query_supported,
-                                api_ctx_->dynamic_rendering_supported, preferred_device, api_ctx_->instance,
-                                api_ctx_->surface, log)) {
+    if (!api_ctx_->ChooseVkPhysicalDevice(preferred_device, log)) {
         return false;
     }
 
-    if (!InitVkDevice(api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
-                      api_ctx_->graphics_family_index, api_ctx_->raytracing_supported, api_ctx_->ray_query_supported,
-                      api_ctx_->dynamic_rendering_supported, enabled_layers, enabled_layers_count, log)) {
+    if (!api_ctx_->InitVkDevice(enabled_layers, enabled_layers_count, log)) {
         return false;
     }
 
     // Workaround for a buggy linux AMD driver, make sure vkGetBufferDeviceAddressKHR is not NULL
     auto dev_vkGetBufferDeviceAddressKHR =
-        (PFN_vkGetBufferDeviceAddressKHR)vkGetDeviceProcAddr(api_ctx_->device, "vkGetBufferDeviceAddressKHR");
+        (PFN_vkGetBufferDeviceAddressKHR)api_ctx_->vkGetDeviceProcAddr(api_ctx_->device, "vkGetBufferDeviceAddressKHR");
     if (!dev_vkGetBufferDeviceAddressKHR) {
         api_ctx_->raytracing_supported = api_ctx_->ray_query_supported = false;
     }
 
-    if (api_ctx_->present_family_index != 0xffffffff &&
-        !InitSwapChain(api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->res, api_ctx_->present_mode, w, h,
-                       api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
-                       api_ctx_->graphics_family_index, api_ctx_->surface, log)) {
+    if (api_ctx_->present_family_index != 0xffffffff && !api_ctx_->InitSwapChain(w, h, log)) {
         return false;
     }
 
     const uint32_t family_index =
         api_ctx_->present_family_index != 0xffffffff ? api_ctx_->present_family_index : api_ctx_->graphics_family_index;
-    if (!InitCommandBuffers(api_ctx_->command_pool, api_ctx_->temp_command_pool, api_ctx_->setup_cmd_buf,
-                            api_ctx_->draw_cmd_buf, api_ctx_->image_avail_semaphores,
-                            api_ctx_->render_finished_semaphores, api_ctx_->in_flight_fences, api_ctx_->query_pools,
-                            api_ctx_->device, family_index, log)) {
+    if (!api_ctx_->InitCommandBuffers(family_index, log)) {
         return false;
     }
 
     if (api_ctx_->present_family_index != 0xffffffff) {
-        vkGetDeviceQueue(api_ctx_->device, api_ctx_->present_family_index, 0, &api_ctx_->present_queue);
+        api_ctx_->vkGetDeviceQueue(api_ctx_->device, api_ctx_->present_family_index, 0, &api_ctx_->present_queue);
     }
-    vkGetDeviceQueue(api_ctx_->device, api_ctx_->graphics_family_index, 0, &api_ctx_->graphics_queue);
+    api_ctx_->vkGetDeviceQueue(api_ctx_->device, api_ctx_->graphics_family_index, 0, &api_ctx_->graphics_queue);
 
-    if (api_ctx_->present_family_index != 0xffffffff &&
-        !InitPresentImageViews(api_ctx_->present_images, api_ctx_->present_image_views, api_ctx_->device,
-                               api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->setup_cmd_buf,
-                               api_ctx_->present_queue, log)) {
+    if (api_ctx_->present_family_index != 0xffffffff && !api_ctx_->InitPresentImageViews(log)) {
         return false;
     }
 
@@ -259,7 +255,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     }
 
     VkPhysicalDeviceProperties device_properties = {};
-    vkGetPhysicalDeviceProperties(api_ctx_->physical_device, &device_properties);
+    api_ctx_->vkGetPhysicalDeviceProperties(api_ctx_->physical_device, &device_properties);
 
     api_ctx_->phys_device_limits = device_properties.limits;
     api_ctx_->max_combined_image_samplers =
@@ -279,25 +275,21 @@ void Ren::Context::Resize(const int w, const int h) {
     w_ = w;
     h_ = h;
 
-    vkDeviceWaitIdle(api_ctx_->device);
+    api_ctx_->vkDeviceWaitIdle(api_ctx_->device);
     api_ctx_->present_image_refs.clear();
 
     for (size_t i = 0; i < api_ctx_->present_image_views.size(); ++i) {
-        vkDestroyImageView(api_ctx_->device, api_ctx_->present_image_views[i], nullptr);
+        api_ctx_->vkDestroyImageView(api_ctx_->device, api_ctx_->present_image_views[i], nullptr);
         // vkDestroyImage(api_ctx_->device, api_ctx_->present_images[i], nullptr);
     }
 
-    vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
+    api_ctx_->vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
 
-    if (!InitSwapChain(api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->res, api_ctx_->present_mode, w, h,
-                       api_ctx_->device, api_ctx_->physical_device, api_ctx_->present_family_index,
-                       api_ctx_->graphics_family_index, api_ctx_->surface, log_)) {
+    if (!api_ctx_->InitSwapChain(w, h, log_)) {
         log_->Error("Swapchain initialization failed");
     }
 
-    if (!InitPresentImageViews(api_ctx_->present_images, api_ctx_->present_image_views, api_ctx_->device,
-                               api_ctx_->swapchain, api_ctx_->surface_format, api_ctx_->setup_cmd_buf,
-                               api_ctx_->present_queue, log_)) {
+    if (!api_ctx_->InitPresentImageViews(log_)) {
         log_->Error("Image views initialization failed");
     }
 
@@ -333,7 +325,7 @@ void Ren::Context::Resize(const int w, const int h) {
 
 void Ren::Context::CheckDeviceCapabilities() {
     VkImageFormatProperties props;
-    const VkResult res = vkGetPhysicalDeviceImageFormatProperties(
+    const VkResult res = api_ctx_->vkGetPhysicalDeviceImageFormatProperties(
         api_ctx_->physical_device, VK_FORMAT_D24_UNORM_S8_UINT, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0, &props);
 
@@ -343,7 +335,7 @@ void Ren::Context::CheckDeviceCapabilities() {
         VkPhysicalDeviceProperties2 prop2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
         prop2.pNext = &api_ctx_->rt_props;
 
-        vkGetPhysicalDeviceProperties2KHR(api_ctx_->physical_device, &prop2);
+        api_ctx_->vkGetPhysicalDeviceProperties2KHR(api_ctx_->physical_device, &prop2);
     }
 }
 
@@ -353,32 +345,28 @@ void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-    VkResult res = vkBeginCommandBuffer(cmd_buf, &begin_info);
+    VkResult res = api_ctx_->vkBeginCommandBuffer(cmd_buf, &begin_info);
     assert(res == VK_SUCCESS);
 }
 
-void *Ren::Context::BegTempSingleTimeCommands() {
-    return Ren::BegSingleTimeCommands(api_ctx_->device, api_ctx_->temp_command_pool);
-}
+void *Ren::Context::BegTempSingleTimeCommands() { return api_ctx_->BegSingleTimeCommands(); }
 
 Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
     VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     VkFence new_fence;
-    const VkResult res = vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
+    const VkResult res = api_ctx_->vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
     if (res != VK_SUCCESS) {
         log_->Error("Failed to create fence!");
         return {};
     }
 
-    Ren::EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, reinterpret_cast<VkCommandBuffer>(cmd_buf),
-                               api_ctx_->temp_command_pool, new_fence);
+    api_ctx_->EndSingleTimeCommands(reinterpret_cast<VkCommandBuffer>(cmd_buf), new_fence);
 
-    return SyncFence{api_ctx_->device, new_fence};
+    return SyncFence{api_ctx_.get(), new_fence};
 }
 
 void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
-    Ren::EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, reinterpret_cast<VkCommandBuffer>(cmd_buf),
-                               api_ctx_->temp_command_pool);
+    api_ctx_->EndSingleTimeCommands(reinterpret_cast<VkCommandBuffer>(cmd_buf));
 }
 
 void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
@@ -386,9 +374,9 @@ void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->
 int Ren::Context::WriteTimestamp(const bool start) {
     VkCommandBuffer cmd_buf = api_ctx_->draw_cmd_buf[api_ctx_->backend_frame];
 
-    vkCmdWriteTimestamp(cmd_buf, start ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                        api_ctx_->query_pools[api_ctx_->backend_frame],
-                        api_ctx_->query_counts[api_ctx_->backend_frame]);
+    api_ctx_->vkCmdWriteTimestamp(
+        cmd_buf, start ? VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT : VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+        api_ctx_->query_pools[api_ctx_->backend_frame], api_ctx_->query_counts[api_ctx_->backend_frame]);
 
     const uint32_t query_index = api_ctx_->query_counts[api_ctx_->backend_frame]++;
     assert(api_ctx_->query_counts[api_ctx_->backend_frame] < Ren::MaxTimestampQueries);

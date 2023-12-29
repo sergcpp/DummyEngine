@@ -57,7 +57,7 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_writes[1].descriptorCount = 1;
         descr_writes[1].pImageInfo = img_infos;
 
-        vkUpdateDescriptorSets(api_ctx->device, 2, descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, 2, descr_writes, 0, nullptr);
     }
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
@@ -70,18 +70,18 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     render_pass_begin_info.pClearValues = clear_values;
     render_pass_begin_info.clearValueCount = 3;
 
-    vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
-    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_[rp_index].handle());
+    api_ctx->vkCmdBeginRenderPass(cmd_buf, &render_pass_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_[rp_index].handle());
 
     const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
                                  0.0f, 1.0f};
-    vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
 
     const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_[rp_index].layout(), 0, 1, &descr_set, 0,
-                            nullptr);
+    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_[rp_index].layout(), 0, 1,
+                                     &descr_set, 0, nullptr);
 
     Ren::Mat4f translate_matrix;
     translate_matrix = Translate(translate_matrix, draw_cam_pos_);
@@ -90,19 +90,19 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     scale_matrix = Scale(scale_matrix, Ren::Vec3f{5000.0f, 5000.0f, 5000.0f});
 
     const Ren::Mat4f push_constant_data = translate_matrix * scale_matrix;
-    vkCmdPushConstants(cmd_buf, pipeline_[rp_index].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(Ren::Mat4f),
-                       &push_constant_data);
+    api_ctx->vkCmdPushConstants(cmd_buf, pipeline_[rp_index].layout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                sizeof(Ren::Mat4f), &push_constant_data);
 
-    vtx_input_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+    vtx_input_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
     const Ren::Mesh *skydome_mesh = prim_draw_.skydome_mesh();
-    vkCmdDrawIndexed(cmd_buf, uint32_t(skydome_mesh->indices_buf().size / sizeof(uint32_t)), // index count
-                     1,                                                                      // instance count
-                     uint32_t(skydome_mesh->indices_buf().offset / sizeof(uint32_t)),        // first index
-                     int32_t(skydome_mesh->attribs_buf1().offset / 16),                      // vertex offset
-                     0);                                                                     // first instance
+    api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(skydome_mesh->indices_buf().size / sizeof(uint32_t)), // index count
+                              1,                                                                      // instance count
+                              uint32_t(skydome_mesh->indices_buf().offset / sizeof(uint32_t)),        // first index
+                              int32_t(skydome_mesh->attribs_buf1().offset / 16),                      // vertex offset
+                              0);                                                                     // first instance
 
-    vkCmdEndRenderPass(cmd_buf);
+    api_ctx->vkCmdEndRenderPass(cmd_buf);
 }
 
 Eng::RpSkydome::~RpSkydome() {}

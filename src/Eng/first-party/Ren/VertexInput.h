@@ -38,7 +38,7 @@ class VertexInput {
     VertexInput &operator=(VertexInput &&rhs) noexcept;
 
 #if defined(USE_VK_RENDER)
-    void BindBuffers(VkCommandBuffer cmd_buf, uint32_t index_offset, VkIndexType index_type) const;
+    void BindBuffers(ApiContext *api_ctx, VkCommandBuffer cmd_buf, uint32_t index_offset, VkIndexType index_type) const;
     void FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDescription> &out_bindings,
                             SmallVectorImpl<VkVertexInputAttributeDescription> &out_attribs) const;
 #elif defined(USE_GL_RENDER)

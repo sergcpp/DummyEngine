@@ -141,6 +141,8 @@ class Texture2D : public RefCounter {
         return ret;
     }
 
+    ApiContext *api_ctx() { return api_ctx_; }
+
     const SamplingParams &sampling() const { return params.sampling; }
 
     bool ready() const { return ready_; }

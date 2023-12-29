@@ -40,7 +40,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         img_info.samples = VkSampleCountFlagBits(1);
         img_info.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
-        VkResult res = vkCreateImage(api_ctx->device, &img_info, nullptr, &handle_.img);
+        VkResult res = api_ctx->vkCreateImage(api_ctx->device, &img_info, nullptr, &handle_.img);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image!");
             return false;
@@ -55,7 +55,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
 #endif
 
         VkMemoryRequirements tex_mem_req;
-        vkGetImageMemoryRequirements(api_ctx->device, handle_.img, &tex_mem_req);
+        api_ctx->vkGetImageMemoryRequirements(api_ctx->device, handle_.img, &tex_mem_req);
 
         alloc_ = mem_allocs->Allocate(
             uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
@@ -64,7 +64,8 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
 
         const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
 
-        res = vkBindImageMemory(api_ctx->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx), aligned_offset);
+        res = api_ctx->vkBindImageMemory(api_ctx->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
+                                         aligned_offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return false;
@@ -82,7 +83,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         view_info.subresourceRange.baseArrayLayer = 0;
         view_info.subresourceRange.layerCount = capacity * 6;
 
-        const VkResult res = vkCreateImageView(api_ctx->device, &view_info, nullptr, &handle_.views[0]);
+        const VkResult res = api_ctx->vkCreateImageView(api_ctx->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create image view!");
             return false;
@@ -149,16 +150,16 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
-    VkCommandBuffer cmd_buf = BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
+    VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
-    vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                         nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(), uint32_t(img_barriers.size()),
-                         img_barriers.cdata());
+    api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0,
+                                  0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                  uint32_t(img_barriers.size()), img_barriers.cdata());
 
     temp_stage_buf.resource_state = eResState::CopySrc;
     this->resource_state = eResState::CopyDst;
 
-	std::vector<VkBufferImageCopy> all_regions;
+    std::vector<VkBufferImageCopy> all_regions;
 
     VkBufferImageCopy proto_region = {};
     proto_region.bufferOffset = VkDeviceSize(0);
@@ -168,7 +169,6 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
     proto_region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     proto_region.imageSubresource.layerCount = 1;
 
-	
     // set texture color to black
     for (int level = 0; level < mip_count; level++) {
         proto_region.imageSubresource.mipLevel = uint32_t(level);
@@ -198,10 +198,11 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         }
     }
 
-	vkCmdCopyBufferToImage(cmd_buf, temp_stage_buf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                           uint32_t(all_regions.size()), all_regions.data());
+    api_ctx->vkCmdCopyBufferToImage(cmd_buf, temp_stage_buf.vk_handle(), handle_.img,
+                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, uint32_t(all_regions.size()),
+                                    all_regions.data());
 
-    EndSingleTimeCommands(api_ctx->device, api_ctx->graphics_queue, cmd_buf, api_ctx->temp_command_pool);
+    api_ctx->EndSingleTimeCommands(cmd_buf);
 
     { // create new sampler
         VkSamplerCreateInfo sampler_info = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
@@ -219,7 +220,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         sampler_info.minLod = -16.0f;
         sampler_info.maxLod = +16.0f;
 
-        const VkResult res = vkCreateSampler(api_ctx->device, &sampler_info, nullptr, &handle_.sampler);
+        const VkResult res = api_ctx->vkCreateSampler(api_ctx->device, &sampler_info, nullptr, &handle_.sampler);
         if (res != VK_SUCCESS) {
             log->Error("Failed to create sampler!");
         }
@@ -289,11 +290,11 @@ bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
-    VkCommandBuffer cmd_buf = BegSingleTimeCommands(api_ctx_->device, api_ctx_->temp_command_pool);
+    VkCommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
 
-    vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                         nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(), uint32_t(img_barriers.size()),
-                         img_barriers.cdata());
+    api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0,
+                                   0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
+                                   uint32_t(img_barriers.size()), img_barriers.cdata());
 
     temp_stage_buf.resource_state = eResState::CopySrc;
     this->resource_state = eResState::CopyDst;
@@ -312,10 +313,10 @@ bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {_res, _res, 1};
 
-    vkCmdCopyBufferToImage(cmd_buf, temp_stage_buf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1,
-                           &region);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, temp_stage_buf.vk_handle(), handle_.img,
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-    EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, cmd_buf, api_ctx_->temp_command_pool);
+    api_ctx_->EndSingleTimeCommands(cmd_buf);
 
     return true;
 }
@@ -380,12 +381,12 @@ void Ren::ProbeStorage::Finalize() {
     }
 
     if (!img_barriers.empty()) {
-        VkCommandBuffer cmd_buf = BegSingleTimeCommands(api_ctx_->device, api_ctx_->temp_command_pool);
+        VkCommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
 
-        vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0, 0,
-                             nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.cdata());
+        api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
+                                       0, 0, nullptr, 0, nullptr, uint32_t(img_barriers.size()), img_barriers.cdata());
         this->resource_state = eResState::ShaderResource;
 
-        EndSingleTimeCommands(api_ctx_->device, api_ctx_->graphics_queue, cmd_buf, api_ctx_->temp_command_pool);
+        api_ctx_->EndSingleTimeCommands(cmd_buf);
     }
 }

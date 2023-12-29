@@ -1,5 +1,7 @@
 #include "Context.h"
 
+#include <mutex>
+
 #include "GL.h"
 #include "GLCtx.h"
 
@@ -20,6 +22,8 @@ void APIENTRY DebugCallback(const GLenum source, const GLenum type, const GLuint
         self->log()->Warning("%s", message);
     }
 }
+std::once_flag gl_initialize_once;
+bool gl_initialized = false;
 } // namespace Ren
 
 Ren::Context::Context() = default;
@@ -33,7 +37,10 @@ Ren::Context::~Context() {
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *) {
-    InitGLExtentions();
+    std::call_once(gl_initialize_once, [&]() { gl_initialized = InitGLExtentions(log); });
+    if (!gl_initialized) {
+        return false;
+    }
 
     w_ = w;
     h_ = h;

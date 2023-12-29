@@ -718,7 +718,8 @@ void Eng::SceneManager::ForceTextureReload() {
     }
 
     if (!img_transitions.empty()) {
-        Ren::TransitionResourceStates(ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages, img_transitions);
+        Ren::TransitionResourceStates(ren_ctx_.api_ctx(), ren_ctx_.current_cmd_buf(), Ren::AllStages, Ren::AllStages,
+                                      img_transitions);
     }
 
     fill(begin(scene_data_.texture_mem_buckets), end(scene_data_.texture_mem_buckets), 0);

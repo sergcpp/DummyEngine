@@ -3,6 +3,8 @@
 #include <cassert>
 #include <utility>
 
+#include "VKCtx.h"
+
 namespace Ren {
 #ifndef REN_EXCHANGE_DEFINED
 template <class T, class U = T> T exchange(T &obj, U &&new_value) {
@@ -16,26 +18,28 @@ template <class T, class U = T> T exchange(T &obj, U &&new_value) {
 
 Ren::SyncFence::~SyncFence() {
     if (fence_) {
-        vkDestroyFence(device_, fence_, nullptr);
+        api_ctx_->vkDestroyFence(api_ctx_->device, fence_, nullptr);
     }
 }
 
 Ren::SyncFence::SyncFence(SyncFence &&rhs) {
-    device_ = exchange(rhs.device_, VkDevice{VK_NULL_HANDLE});
+    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
     fence_ = exchange(rhs.fence_, VkFence{VK_NULL_HANDLE});
 }
 
+bool Ren::SyncFence::signaled() const { return api_ctx_->vkGetFenceStatus(api_ctx_->device, fence_) == VK_SUCCESS; }
+
 Ren::SyncFence &Ren::SyncFence::operator=(SyncFence &&rhs) {
     if (fence_) {
-        vkDestroyFence(device_, fence_, nullptr);
+        api_ctx_->vkDestroyFence(api_ctx_->device, fence_, nullptr);
     }
-    device_ = exchange(rhs.device_, VkDevice{VK_NULL_HANDLE});
+    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
     fence_ = exchange(rhs.fence_, VkFence{VK_NULL_HANDLE});
     return (*this);
 }
 
 bool Ren::SyncFence::Reset() {
-    const VkResult res = vkResetFences(device_, 1, &fence_);
+    const VkResult res = api_ctx_->vkResetFences(api_ctx_->device, 1, &fence_);
     return res == VK_SUCCESS;
 }
 
@@ -46,7 +50,7 @@ void Ren::SyncFence::WaitSync() {
 
 Ren::WaitResult Ren::SyncFence::ClientWaitSync(const uint64_t timeout_us) {
     assert(fence_ != VK_NULL_HANDLE);
-    const VkResult res = vkWaitForFences(device_, 1, &fence_, VK_TRUE, timeout_us * 1000);
+    const VkResult res = api_ctx_->vkWaitForFences(api_ctx_->device, 1, &fence_, VK_TRUE, timeout_us * 1000);
 
     WaitResult ret = WaitResult::Fail;
     if (res == VK_TIMEOUT) {

@@ -1359,5 +1359,6 @@ EXTERN_FUNC PFNGLSAMPLERPARAMETERF              ren_glSamplerParameterf;
 #endif
 
 namespace Ren {
-    bool InitGLExtentions();
+    class ILog;
+    bool InitGLExtentions(ILog *log);
 }

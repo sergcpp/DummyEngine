@@ -100,7 +100,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
             for (; k < mat->params.size(); ++k) {
                 material_data[rel_i].params[k] = mat->params[k];
             }
-            for (; k < 2; ++k) {
+            for (; k < MAX_MATERIAL_PARAMS; ++k) {
                 material_data[rel_i].params[k] = Ren::Vec4f{0.0f};
             }
         } else {

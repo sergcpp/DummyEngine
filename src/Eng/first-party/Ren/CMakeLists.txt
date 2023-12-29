@@ -4,7 +4,6 @@ project(Ren)
 find_library(METAL_LIB Metal)
 
 if(WIN32)
-    add_definitions(-DVK_USE_PLATFORM_WIN32_KHR)
 else(WIN32)
     set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
@@ -17,10 +16,8 @@ if(${RENDERER} STREQUAL "GL")
 elseif(${RENDERER} STREQUAL "VK")
     if(APPLE)
         set(LIBS ${METAL_LIB})
-        add_definitions(-DVK_PROTOTYPES -DVK_USE_PLATFORM_MACOS_MVK)
     else(APPLE)
         set(LIBS X11)
-        add_definitions(-DVK_PROTOTYPES -DVK_USE_PLATFORM_XLIB_KHR)
     endif(APPLE)
 endif()
 ENDIF(WIN32)
@@ -162,8 +159,7 @@ elseif(${RENDERER} STREQUAL "VK")
                      VertexInputVK.cpp
                      VK.h
                      VKCtx.h
-                     VKCtx.cpp
-                     VKExt.cpp)
+                     VKCtx.cpp)
 
     set(VULKAN_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_layer.h
                        ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vulkan/vk_platform.h
@@ -198,12 +194,22 @@ endif(MSVC)
 
 set_source_files_properties(GLExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 set_source_files_properties(VKExt.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
+#set_source_files_properties(VKCtx.cpp PROPERTIES SKIP_UNITY_BUILD_INCLUSION ON)
 
 add_library(Ren STATIC ${REN_SOURCE_FILES})
 if(${RENDERER} STREQUAL "GL")
     target_compile_definitions(Ren PUBLIC USE_GL_RENDER)
 elseif(${RENDERER} STREQUAL "VK")
     target_compile_definitions(Ren PUBLIC USE_VK_RENDER)
+    if(WIN32)
+        target_compile_definitions(Ren PUBLIC VK_USE_PLATFORM_WIN32_KHR)
+    else(WIN32)
+        if(APPLE)
+            target_compile_definitions(Ren PUBLIC VK_USE_PLATFORM_MACOS_MVK)
+        else(APPLE)
+            target_compile_definitions(Ren PUBLIC VK_USE_PLATFORM_XLIB_KHR)
+        endif(APPLE)
+    endif(WIN32)
 elseif(${RENDERER} STREQUAL "SW")
     target_compile_definitions(Ren PUBLIC USE_SW_RENDER)
 endif()

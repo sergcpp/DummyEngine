@@ -468,10 +468,10 @@ void Ren::Context::InitDefaultBuffers() {
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;
         VkFence new_fence;
-        VkResult res = vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
+        VkResult res = api_ctx_->vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
         assert(res == VK_SUCCESS);
 
-        default_stage_bufs_.fences[i] = SyncFence{api_ctx_->device, new_fence};
+        default_stage_bufs_.fences[i] = SyncFence{api_ctx_.get(), new_fence};
 
         VkCommandBufferAllocateInfo alloc_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO};
         alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -479,7 +479,7 @@ void Ren::Context::InitDefaultBuffers() {
         alloc_info.commandBufferCount = 1;
 
         VkCommandBuffer command_buf = {};
-        res = vkAllocateCommandBuffers(api_ctx_->device, &alloc_info, &command_buf);
+        res = api_ctx_->vkAllocateCommandBuffers(api_ctx_->device, &alloc_info, &command_buf);
         assert(res == VK_SUCCESS);
 
         default_stage_bufs_.cmd_bufs[i] = command_buf;

@@ -72,8 +72,7 @@ int main(int argc, char *argv[]) {
     InitAndDestroyFakeGLContext();
 #endif
 
-    multithreaded = false;
-    Sys::ThreadPool mt_run_pool(multithreaded ? 4 : 1);
+    Sys::ThreadPool mt_run_pool(multithreaded ? 2 : 1);
 
     puts(" ---------------");
 

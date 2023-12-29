@@ -11,10 +11,10 @@
 #define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
 void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
-                                           RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
-                                           RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
-                                           RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
-                                           RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
+                                                RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
+                                                RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
+                                                RpAllocBuf &lights_buf, RpAllocBuf &decals_buf, RpAllocTex &shad_tex,
+                                                RpAllocTex &color_tex, RpAllocTex &ssao_tex) {
     auto &ctx = builder.ctx();
     auto *api_ctx = ctx.api_ctx();
 
@@ -242,7 +242,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
             descr_write.pBufferInfo = &mat_buf_info;
         }
 
-        vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(descr_writes.size()), descr_writes.cdata(), 0,
+                                        nullptr);
     }
 
     const auto &texture_descr_sets = *bindless_tex_->textures_descr_sets;
@@ -254,9 +255,9 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     //
     const VkViewport viewport = {0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1]),
                                  0.0f, 1.0f};
-    vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
+    api_ctx->vkCmdSetViewport(cmd_buf, 0, 1, &viewport);
     const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
+    api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
@@ -271,9 +272,9 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
         rp_begin_info.renderPass = rp_transparent_.handle();
         rp_begin_info.framebuffer = transparent_draw_fb_[ctx.backend_frame()][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->scr_res[0]), uint32_t(view_state_->scr_res[1])};
-        vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
+        api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
-        draw_pass_vi_.BindBuffers(cmd_buf, 0, VK_INDEX_TYPE_UINT32);
+        draw_pass_vi_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
         for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
             const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
@@ -290,9 +291,9 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
                     (*(*p_list_)->materials)[batch.mat_id].pipelines[int(eFwdPipeline::BackfaceDraw)].index();
 
                 if (cur_pipe_id != pipe_id) {
-                    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());
-                    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].layout(), 0,
-                                            1, &res_descr_set, 0, nullptr);
+                    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());
+                    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                     pipelines_[pipe_id].layout(), 0, 1, &res_descr_set, 0, nullptr);
                     cur_pipe_id = pipe_id;
                     bound_descr_id = 0xffffffff;
                 }
@@ -302,16 +303,17 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
             const uint32_t descr_id = batch.material_index / materials_per_descriptor;
             if (descr_id != bound_descr_id) {
-                vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[batch.pipe_id].layout(), 1,
-                                        1, &texture_descr_sets[descr_id], 0, nullptr);
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pipelines_[batch.pipe_id].layout(), 1, 1,
+                                                 &texture_descr_sets[descr_id], 0, nullptr);
                 bound_descr_id = descr_id;
             }
 
-            vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                             batch.instance_count,         // instance count
-                             batch.indices_offset,         // first index
-                             batch.base_vertex,            // vertex offset
-                             batch.instance_start);        // first instance
+            api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                      batch.instance_count,         // instance count
+                                      batch.indices_offset,         // first index
+                                      batch.base_vertex,            // vertex offset
+                                      batch.instance_start);        // first instance
 
             backend_info.opaque_draw_calls_count += 2;
             backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
@@ -330,9 +332,9 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
                     (*(*p_list_)->materials)[batch.mat_id].pipelines[int(eFwdPipeline::FrontfaceDraw)].index();
 
                 if (cur_pipe_id != pipe_id) {
-                    vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());
-                    vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].layout(), 0,
-                                            1, &res_descr_set, 0, nullptr);
+                    api_ctx->vkCmdBindPipeline(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[pipe_id].handle());
+                    api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                     pipelines_[pipe_id].layout(), 0, 1, &res_descr_set, 0, nullptr);
                     cur_pipe_id = pipe_id;
                     bound_descr_id = 0xffffffff;
                 }
@@ -342,22 +344,23 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
             const uint32_t descr_id = batch.material_index / materials_per_descriptor;
             if (descr_id != bound_descr_id) {
-                vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines_[batch.pipe_id].layout(), 1,
-                                        1, &texture_descr_sets[descr_id], 0, nullptr);
+                api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                                 pipelines_[batch.pipe_id].layout(), 1, 1,
+                                                 &texture_descr_sets[descr_id], 0, nullptr);
                 bound_descr_id = descr_id;
             }
 
-            vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
-                             batch.instance_count,         // instance count
-                             batch.indices_offset,         // first index
-                             batch.base_vertex,            // vertex offset
-                             batch.instance_start);        // first instance
+            api_ctx->vkCmdDrawIndexed(cmd_buf, batch.indices_count, // index count
+                                      batch.instance_count,         // instance count
+                                      batch.indices_offset,         // first index
+                                      batch.base_vertex,            // vertex offset
+                                      batch.instance_start);        // first instance
 
             backend_info.opaque_draw_calls_count += 2;
             backend_info.tris_rendered += (batch.indices_count / 3) * batch.instance_count;
         }
 
-        vkCmdEndRenderPass(cmd_buf);
+        api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
 }
 
@@ -395,13 +398,14 @@ void Eng::RpTransparent::InitDescrSetLayout() {
     layout_info.bindingCount = COUNT_OF(bindings);
     layout_info.pBindings = bindings;
 
-    const VkResult res = vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layout_);
+    const VkResult res =
+        api_ctx_->vkCreateDescriptorSetLayout(api_ctx_->device, &layout_info, nullptr, &descr_set_layout_);
     assert(res == VK_SUCCESS);
 }
 
 Eng::RpTransparent::~RpTransparent() {
     if (descr_set_layout_) {
-        vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
+        api_ctx_->vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }
 }
 

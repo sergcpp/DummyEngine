@@ -17,7 +17,7 @@ struct Range {
 };
 
 class Shader : public RefCounter {
-    VkDevice device_ = VK_NULL_HANDLE;
+    ApiContext *api_ctx_ = nullptr;
     VkShaderModule module_ = VK_NULL_HANDLE;
     eShaderType type_ = eShaderType::_Count;
     String name_;
