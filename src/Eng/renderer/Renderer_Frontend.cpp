@@ -180,14 +180,23 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         pipeline_index += int(eFwdPipeline::_Count);
     }
 
-    const bool deferred_shading =
-        (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
+    const bool deferred_shading = (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
 
     litem_to_lsource_.count = 0;
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
+    if (proc_objects_capacity_ < scene.objects.size()) {
+        proc_objects_capacity_ = 1;
+        while (proc_objects_capacity_ < scene.objects.size()) {
+            proc_objects_capacity_ *= 2;
+        }
+        proc_objects_.reset(new ProcessedObjData[scene.objects.size()]);
+    }
     memset(proc_objects_.get(), 0xff, sizeof(ProcessedObjData) * scene.objects.size());
+
+    temp_visible_objects_.resize(scene.objects.size());
+    temp_rt_visible_objects_.resize(scene.objects.size());
 
     const float ExtendedFrustumOffset = 100.0f;
     const float ExtendedFrustumFrontOffset = 200.0f;
@@ -316,13 +325,12 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         std::future<void> futures[2 * REN_GRID_RES_Z];
 
-        const uint64_t CompMask =
-            (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
+        const uint64_t CompMask = (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
         for (int i = 0; i < REN_GRID_RES_Z; ++i) {
             futures[i] =
                 threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
                                  list.draw_cam.world_position(), clip_from_identity, CompMask, &cull_ctx_, 0b00000001,
-                                 proc_objects_.get(), temp_visible_objects_.data, std::ref(objects_count));
+                                 proc_objects_.get(), temp_visible_objects_.data(), std::ref(objects_count));
         }
 
         Ren::Frustum rt_z_frustums[REN_GRID_RES_Z];
@@ -347,7 +355,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             futures[REN_GRID_RES_Z + i] =
                 threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(rt_z_frustums[i]), std::ref(scene),
                                  list.draw_cam.world_position(), Ren::Mat4f{}, RTCompMask, nullptr, 0b00000010,
-                                 proc_objects_.get(), temp_rt_visible_objects_.data, std::ref(rt_objects_count));
+                                 proc_objects_.get(), temp_rt_visible_objects_.data(), std::ref(rt_objects_count));
         }
 
         /////
@@ -356,7 +364,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             futures[i].wait();
         }
 
-        for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data, objects_count.load()}) {
+        for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data(), objects_count.load()}) {
             const SceneObject &obj = scene.objects[i.index];
 
             const Transform &tr = transforms[obj.components[CompTransform]];
@@ -387,8 +395,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const Material *mat = grp.mat.get();
                     const uint32_t mat_flags = mat->flags();
 
-                    __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit),
-                                      cam_dist_u16);
+                    __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
 
                     if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
                         (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
@@ -531,8 +538,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             OPTICK_EVENT("SORT RT INSTANCES");
 
             const Vec3f &cam_pos = list.draw_cam.world_position();
-            std::partial_sort(temp_rt_visible_objects_.data, temp_rt_visible_objects_.data + REN_MAX_RT_OBJ_INSTANCES,
-                              temp_rt_visible_objects_.data + rt_objects_count.load(),
+            std::partial_sort(temp_rt_visible_objects_.data(), temp_rt_visible_objects_.data() + REN_MAX_RT_OBJ_INSTANCES,
+                              temp_rt_visible_objects_.data() + rt_objects_count.load(),
                               [&](const VisObj lhs, const VisObj rhs) {
                                   const SceneObject &lhs_obj = scene.objects[lhs.index];
                                   const SceneObject &rhs_obj = scene.objects[rhs.index];
@@ -542,9 +549,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                               });
         }
 
-        temp_rt_visible_objects_.count = _MIN(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES);
+        temp_rt_visible_objects_.resize(_MIN(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES));
 
-        for (const VisObj i : Ren::Span<VisObj>{temp_rt_visible_objects_.data, temp_rt_visible_objects_.count}) {
+        for (const VisObj i : temp_rt_visible_objects_) {
             const SceneObject &obj = scene.objects[i.index];
 
             const Transform &tr = transforms[obj.components[CompTransform]];
@@ -884,7 +891,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 futures[i] =
                     threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
                                      shadow_cam.world_position(), Ren::Mat4f{}, CompMask, nullptr, (0b00000100 << casc),
-                                     proc_objects_.get(), temp_visible_objects_.data, std::ref(objects_count));
+                                     proc_objects_.get(), temp_visible_objects_.data(), std::ref(objects_count));
             }
 
             for (int i = 0; i < ZSliceCount; ++i) {
@@ -893,7 +900,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             /////
 
-            for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data, objects_count.load()}) {
+            for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data(), objects_count.load()}) {
                 const SceneObject &obj = scene.objects[i.index];
 
                 const Transform &tr = transforms[obj.components[CompTransform]];
@@ -927,8 +934,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
                         const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
-                        RTObjInstance &new_instance =
-                            list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
+                        RTObjInstance &new_instance = list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
                         memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
                         memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
                         new_instance.geo_index = acc->geo_index;
@@ -1237,7 +1243,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
 
         RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count,
-                                       temp_sort_spans_32_[1].data);
+                                  temp_sort_spans_32_[1].data);
 
         // decompress sorted spans
         size_t counter = 0;
@@ -1296,7 +1302,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     }
 
     RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data, temp_sort_spans_64_[0].data + spans_count,
-                                   temp_sort_spans_64_[1].data);
+                              temp_sort_spans_64_[1].data);
 
     // decompress sorted spans
     size_t counter = 0;
@@ -1368,7 +1374,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
 
         RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count,
-                                       temp_sort_spans_32_[1].data);
+                                  temp_sort_spans_32_[1].data);
 
         // decompress sorted spans
         for (uint32_t i = 0; i < spans_count; i++) {
@@ -1518,10 +1524,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 }
 
 void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
-                                          const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
-                                          const uint64_t comp_mask, SWcull_ctx *cull_ctx, const uint8_t visit_mask,
-                                          ProcessedObjData proc_objects[], VisObj out_visible_objects[],
-                                          std::atomic_int &inout_count) {
+                                               const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
+                                               const uint64_t comp_mask, SWcull_ctx *cull_ctx, const uint8_t visit_mask,
+                                               ProcessedObjData proc_objects[], VisObj out_visible_objects[],
+                                               std::atomic_int &inout_count) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -1636,8 +1642,8 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
 }
 
 void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
-                                         const BBox *decals_boxes, const LightSource *const *litem_to_lsource,
-                                         DrawList &list, std::atomic_int &items_count) {
+                                              const BBox *decals_boxes, const LightSource *const *litem_to_lsource,
+                                              DrawList &list, std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -2015,8 +2021,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
                 cell.probe_count = _MIN(int(cell.probe_count), free_items_left);
                 cell.ellips_count = _MIN(int(cell.ellips_count), free_items_left);
 
-                memcpy(&list.items.data[cell.item_offset], &local_items[s][0],
-                       local_items_count * sizeof(ItemData));
+                memcpy(&list.items.data[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
             }
         }
     }

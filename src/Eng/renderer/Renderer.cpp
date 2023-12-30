@@ -503,10 +503,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         temp_sort_spans_64_[i].realloc(REN_MAX_MAIN_BATCHES);
     }
 
-    proc_objects_.reset(new ProcessedObjData[REN_MAX_OBJ_COUNT]);
-    temp_visible_objects_.realloc(REN_MAX_OBJ_COUNT);
-    temp_rt_visible_objects_.realloc(REN_MAX_OBJ_COUNT);
-
 #if defined(USE_GL_RENDER)
     Ren::g_param_buf_binding = REN_UB_UNIF_PARAM_LOC;
 #endif

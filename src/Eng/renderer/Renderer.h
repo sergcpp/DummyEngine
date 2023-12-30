@@ -135,11 +135,12 @@ class Renderer {
         std::atomic_uint8_t visited_mask;
     };
     std::unique_ptr<ProcessedObjData[]> proc_objects_;
+    int proc_objects_capacity_ = 0;
     struct VisObj {
         uint32_t index;
         float dist2;
     };
-    DynArray<VisObj> temp_visible_objects_, temp_rt_visible_objects_;
+    std::vector<VisObj> temp_visible_objects_, temp_rt_visible_objects_;
     DynArray<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
