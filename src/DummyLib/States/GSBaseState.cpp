@@ -10,8 +10,8 @@
 #include <vtune/ittnotify.h>
 #endif
 
-#include <Eng/GameStateManager.h>
 #include <Eng/Log.h>
+#include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/renderer/Renderer.h>
@@ -35,7 +35,7 @@ const int MAX_CMD_LINES = 8;
 const bool USE_TWO_THREADS = true;
 } // namespace GSBaseStateInternal
 
-GSBaseState::GSBaseState(Viewer *viewer) : game_(viewer) {
+GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     using namespace GSBaseStateInternal;
 
     cmdline_ = viewer->cmdline();
@@ -1035,7 +1035,7 @@ void GSBaseState::BackgroundProc() {
 void GSBaseState::UpdateFrame(int list_index) {
     { // Update loop using fixed timestep
         OPTICK_EVENT("Update Loop");
-        Eng::InputManager *input_manager = game_->input_manager();
+        Eng::InputManager *input_manager = viewer_->input_manager();
 
         Eng::FrameInfo &fr = fr_info_;
 

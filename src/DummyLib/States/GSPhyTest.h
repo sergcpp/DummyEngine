@@ -4,8 +4,8 @@
 #include <mutex>
 #include <thread>
 
-#include <Eng/GameBase.h>
-#include <Eng/GameState.h>
+#include <Eng/ViewerBase.h>
+#include <Eng/ViewerState.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
@@ -17,7 +17,7 @@
 
 class Cmdline;
 class DebugInfoUI;
-class GameStateManager;
+class ViewerStateManager;
 class FontStorage;
 class SceneManager;
 

@@ -20,7 +20,7 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
 #include <GL/glx.h>
 #endif
 
-#include <Eng/GameBase.h>
+#include <Eng/ViewerBase.h>
 #include <Eng/input/InputManager.h>
 #include <Sys/DynLib.h>
 #include <Sys/ThreadWorker.h>

@@ -31,7 +31,7 @@ struct SDL_Window;
 #endif
 
 namespace Eng {
-class GameBase;
+class ViewerBase;
 }
 
 class DummyApp {
@@ -62,7 +62,7 @@ class DummyApp {
     void PollEvents();
 #endif
 
-    std::unique_ptr<Eng::GameBase> viewer_;
+    std::unique_ptr<Eng::ViewerBase> viewer_;
     Eng::InputManager *input_manager_ = nullptr;
 
   public:

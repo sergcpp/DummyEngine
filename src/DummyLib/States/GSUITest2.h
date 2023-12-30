@@ -1,7 +1,7 @@
 #pragma once
 
-#include <Eng/GameBase.h>
-#include <Eng/GameState.h>
+#include <Eng/ViewerBase.h>
+#include <Eng/ViewerState.h>
 #include <Eng/gui/BaseElement.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
@@ -15,7 +15,7 @@
 class Cmdline;
 class DebugInfoUI;
 class Dictionary;
-class GameStateManager;
+class ViewerStateManager;
 class FontStorage;
 class SceneManager;
 class WordPuzzleUI;

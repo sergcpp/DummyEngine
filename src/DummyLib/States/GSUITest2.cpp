@@ -3,7 +3,7 @@
 #include <fstream>
 #include <memory>
 
-#include <Eng/GameStateManager.h>
+#include <Eng/ViewerStateManager.h>
 #include <Eng/gui/EditBox.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>

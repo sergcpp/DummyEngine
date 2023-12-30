@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <Eng/GameBase.h>
+#include <Eng/ViewerBase.h>
 #include <Eng/gui/BaseElement.h>
 
 namespace Eng {

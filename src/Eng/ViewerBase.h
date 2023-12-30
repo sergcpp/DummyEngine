@@ -28,7 +28,7 @@ class ThreadPool;
 namespace Eng {
 class Cmdline;
 class FlowControl;
-class GameStateManager;
+class ViewerStateManager;
 class ILog;
 class InputManager;
 class PhysicsManager;
@@ -39,7 +39,7 @@ class ShaderLoader;
 struct TimeInterval {
     uint64_t start_timepoint_us = 0, end_timepoint_us = 0;
 };
-class GameBase {
+class ViewerBase {
   protected:
     std::unique_ptr<ILog> log_;
     std::unique_ptr<Ren::Context> ren_ctx_;
@@ -53,7 +53,7 @@ class GameBase {
     std::unique_ptr<Cmdline> cmdline_;
     std::unique_ptr<PhysicsManager> physics_manager_;
     std::unique_ptr<SceneManager> scene_manager_;
-    std::unique_ptr<GameStateManager> state_manager_;
+    std::unique_ptr<ViewerStateManager> state_manager_;
     std::unique_ptr<Gui::Renderer> ui_renderer_;
     std::unique_ptr<Gui::RootElement> ui_root_;
     Eng::FrameInfo fr_info_;
@@ -61,8 +61,8 @@ class GameBase {
     void InitOptickGPUProfiler();
 
   public:
-    GameBase(int w, int h, int validation_level, const char *device_name);
-    virtual ~GameBase();
+    ViewerBase(int w, int h, int validation_level, const char *device_name);
+    virtual ~ViewerBase();
 
     ILog *log() { return log_.get(); }
     Ren::Context *ren_ctx() { return ren_ctx_.get(); }
@@ -76,7 +76,7 @@ class GameBase {
     Cmdline *cmdline() { return cmdline_.get(); }
     PhysicsManager *physics_manager() { return physics_manager_.get(); }
     SceneManager *scene_manager() { return scene_manager_.get(); }
-    GameStateManager *state_manager() { return state_manager_.get(); }
+    ViewerStateManager *state_manager() { return state_manager_.get(); }
     Gui::Renderer *ui_renderer() { return ui_renderer_.get(); }
     Gui::RootElement *ui_root() { return ui_root_.get(); }
 

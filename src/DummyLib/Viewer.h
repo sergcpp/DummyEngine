@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Eng/GameBase.h>
+#include <Eng/ViewerBase.h>
 
 #if defined(__ANDROID__)
 const char ASSETS_BASE_PATH[] = "assets";
@@ -31,7 +31,7 @@ class DebugInfoUI;
 class Dictionary;
 class FontStorage;
 
-class Viewer : public Eng::GameBase {
+class Viewer : public Eng::ViewerBase {
     std::unique_ptr<FontStorage> font_storage_;
     std::unique_ptr<DebugInfoUI> debug_ui_;
     std::unique_ptr<Ray::RendererBase> ray_renderer_;

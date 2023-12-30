@@ -41,13 +41,13 @@ set(SOURCE_FILES Config.h
                  FlowControl.h
                  FlowControl.cpp
                  FrameInfo.h
-                 GameBase.h
-                 GameBase.cpp
-                 GameState.h
-                 GameStateManager.h
-                 GameStateManager.cpp
                  Log.h
-                 Log.cpp)
+                 Log.cpp
+                 ViewerBase.h
+                 ViewerBase.cpp
+                 ViewerState.h
+                 ViewerStateManager.h
+                 ViewerStateManager.cpp)
 
 set(GUI_SOURCE_FILES    gui/BaseElement.h
                         gui/BaseElement.cpp

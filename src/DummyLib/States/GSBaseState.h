@@ -4,8 +4,8 @@
 #include <mutex>
 #include <thread>
 
-#include <Eng/GameBase.h>
-#include <Eng/GameState.h>
+#include <Eng/ViewerBase.h>
+#include <Eng/ViewerState.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneData.h>
 #include <Ren/Camera.h>
@@ -20,7 +20,7 @@ class FontStorage;
 class Viewer;
 namespace Eng {
 class Cmdline;
-class GameStateManager;
+class ViewerStateManager;
 class ILog;
 class PhysicsManager;
 class SceneManager;
@@ -38,10 +38,10 @@ namespace Snd {
 class Context;
 }
 
-class GSBaseState : public Eng::GameState {
+class GSBaseState : public Eng::ViewerState {
   protected:
-    Eng::GameBase *game_;
-    Eng::GameStateManager *state_manager_ = nullptr;
+    Eng::ViewerBase *viewer_;
+    Eng::ViewerStateManager *state_manager_ = nullptr;
     Eng::Cmdline *cmdline_ = nullptr;
     Ren::Context *ren_ctx_ = nullptr;
     Snd::Context *snd_ctx_ = nullptr;

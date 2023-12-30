@@ -1,4 +1,4 @@
-#include "GameBase.h"
+#include "ViewerBase.h"
 
 #include <random>
 #include <thread>
@@ -12,7 +12,7 @@
 #include <optick/optick.h>
 
 #include "FlowControl.h"
-#include "GameStateManager.h"
+#include "ViewerStateManager.h"
 #include "Log.h"
 #include "gui/BaseElement.h"
 #include "gui/Renderer.h"
@@ -23,7 +23,7 @@
 #include "utils/Random.h"
 #include "utils/ShaderLoader.h"
 
-Eng::GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)
+Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const char *device_name)
     : width(w), height(h) {
     terminated = false;
 
@@ -74,7 +74,7 @@ Eng::GameBase::GameBase(const int w, const int h, const int validation_level, co
             std::bind(&Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
     }
 
-    state_manager_ = std::make_unique<GameStateManager>();
+    state_manager_ = std::make_unique<ViewerStateManager>();
 
     ui_renderer_ = std::make_unique<Gui::Renderer>(*ren_ctx_);
     if (!ui_renderer_->Init()) {
@@ -84,9 +84,9 @@ Eng::GameBase::GameBase(const int w, const int h, const int validation_level, co
     ui_root_ = std::make_unique<Gui::RootElement>(Gui::Vec2i(w, h));
 }
 
-Eng::GameBase::~GameBase() = default;
+Eng::ViewerBase::~ViewerBase() = default;
 
-void Eng::GameBase::Resize(const int w, const int h) {
+void Eng::ViewerBase::Resize(const int w, const int h) {
     width = w;
     height = h;
 
@@ -96,10 +96,10 @@ void Eng::GameBase::Resize(const int w, const int h) {
     ui_root_->Resize(nullptr);
 }
 
-void Eng::GameBase::Start() {}
+void Eng::ViewerBase::Start() {}
 
-void Eng::GameBase::Frame() {
-    OPTICK_EVENT("GameBase::Frame");
+void Eng::ViewerBase::Frame() {
+    OPTICK_EVENT("ViewerBase::Frame");
 
     FrameInfo &fr = fr_info_;
 
@@ -140,13 +140,13 @@ void Eng::GameBase::Frame() {
     }
 }
 
-void Eng::GameBase::Quit() { terminated = true; }
+void Eng::ViewerBase::Quit() { terminated = true; }
 
 #if defined(USE_VK_RENDER)
 
 #include <Ren/VKCtx.h>
 
-void Eng::GameBase::InitOptickGPUProfiler() {
+void Eng::ViewerBase::InitOptickGPUProfiler() {
     Ren::ApiContext *api_ctx = ren_ctx_->api_ctx();
 
     Optick::VulkanFunctions functions = {
@@ -176,6 +176,6 @@ void Eng::GameBase::InitOptickGPUProfiler() {
 
 #else
 
-void Eng::GameBase::InitOptickGPUProfiler() {}
+void Eng::ViewerBase::InitOptickGPUProfiler() {}
 
 #endif

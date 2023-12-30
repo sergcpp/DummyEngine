@@ -73,7 +73,7 @@ static void init_delegate_class()
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global"); // NOLINT
 
-#include <Eng/GameBase.h>
+#include <Eng/ViewerBase.h>
 #include <Eng/input/InputManager.h>
 #include <Sys/DynLib.h>
 #include <Sys/ThreadWorker.h>

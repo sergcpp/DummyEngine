@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include <Eng/GameStateManager.h>
+#include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>

@@ -6,7 +6,7 @@
 #include <fstream>
 #include <sstream>
 
-#include <Eng/GameStateManager.h>
+#include <Eng/ViewerStateManager.h>
 #include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
@@ -38,7 +38,7 @@ extern bool ignore_optick_errors;
 #include "Utils/Dictionary.h"
 
 Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const char *device_name)
-    : GameBase(w, h, validation_level, device_name) {
+    : ViewerBase(w, h, validation_level, device_name) {
     JsObject main_config;
 
     {

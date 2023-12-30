@@ -3,9 +3,9 @@
 #include "input/InputManager.h"
 
 namespace Eng {
-class GameState {
+class ViewerState {
   public:
-    virtual ~GameState() {}
+    virtual ~ViewerState() {}
 
     // Call every time we enter this state
     virtual void Enter(){};

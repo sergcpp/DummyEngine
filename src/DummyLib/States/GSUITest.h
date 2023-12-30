@@ -4,8 +4,8 @@
 #include <mutex>
 #include <thread>
 
-#include <Eng/GameBase.h>
-#include <Eng/GameState.h>
+#include <Eng/ViewerBase.h>
+#include <Eng/ViewerState.h>
 #include <Eng/gui/BaseElement.h>
 #include <Eng/gui/BitmapFont.h>
 #include <Ren/Camera.h>
@@ -19,7 +19,7 @@
 
 class Cmdline;
 class DebugInfoUI;
-class GameStateManager;
+class ViewerStateManager;
 class FontStorage;
 class SceneManager;
 class WordPuzzleUI;
