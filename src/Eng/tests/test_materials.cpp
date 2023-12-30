@@ -16,9 +16,9 @@
 #include <Sys/ScopeExit.h>
 #include <Sys/ThreadPool.h>
 
-#include "../Random.h"
 #include "../renderer/Renderer.h"
 #include "../scene/SceneManager.h"
+#include "../utils/Random.h"
 #include "../utils/ShaderLoader.h"
 
 namespace RendererInternal {

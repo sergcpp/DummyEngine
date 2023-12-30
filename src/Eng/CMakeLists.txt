@@ -47,9 +47,7 @@ set(SOURCE_FILES Config.h
                  GameStateManager.h
                  GameStateManager.cpp
                  Log.h
-                 Log.cpp
-                 Random.h
-                 Random.cpp)
+                 Log.cpp)
 
 set(GUI_SOURCE_FILES    gui/BaseElement.h
                         gui/BaseElement.cpp
@@ -280,6 +278,8 @@ set(UTILS_SOURCES utils/BVHSplit.h
                   utils/FreeCamController.cpp
                   utils/Load.h
                   utils/Load.cpp
+                  utils/Random.h
+                  utils/Random.cpp
                   utils/ScriptedDialog.h
                   utils/ScriptedDialog.cpp
 				  utils/ScriptedSequence.h

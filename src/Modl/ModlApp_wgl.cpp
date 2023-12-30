@@ -1910,7 +1910,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
         ctx_->LoadTexture2D(name, nullptr, 0, {}, ctx_->default_stage_bufs(), ctx_->default_mem_allocs(), &status);
     if (!ret->ready()) {
         Sys::AssetFile in_file(std::string("assets_pc/textures/") + name);
-        std::vector<uint8_t[]> in_file_data(in_file.size());
+        std::vector<uint8_t> in_file_data(in_file.size());
         in_file.Read((char *)in_file_data.data(), in_file.size());
 
         Ren::Tex2DParams p;

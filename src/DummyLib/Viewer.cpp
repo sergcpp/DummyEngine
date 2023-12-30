@@ -8,9 +8,9 @@
 
 #include <Eng/GameStateManager.h>
 #include <Eng/Log.h>
-#include <Eng/Random.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
+#include <Eng/utils/Random.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Ren/MVec.h>
@@ -86,10 +86,10 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     debug_ui_ = std::make_unique<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get(),
                                               font_storage_->FindFont("main_font"));
 
-    //Ray::settings_t s;
-    //s.w = w;
-    //s.h = h;
-    //ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
+    // Ray::settings_t s;
+    // s.w = w;
+    // s.h = h;
+    // ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
 
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);

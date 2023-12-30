@@ -14,13 +14,13 @@
 #include "FlowControl.h"
 #include "GameStateManager.h"
 #include "Log.h"
-#include "Random.h"
 #include "gui/BaseElement.h"
 #include "gui/Renderer.h"
 #include "renderer/Renderer.h"
 #include "scene/PhysicsManager.h"
 #include "scene/SceneManager.h"
 #include "utils/Cmdline.h"
+#include "utils/Random.h"
 #include "utils/ShaderLoader.h"
 
 Eng::GameBase::GameBase(const int w, const int h, const int validation_level, const char *device_name)

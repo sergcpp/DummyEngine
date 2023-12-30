@@ -11,14 +11,14 @@
 #endif
 
 #include <Eng/GameStateManager.h>
+#include <Eng/Log.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Renderer.h>
-#include <Eng/Log.h>
-#include <Eng/Random.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/PhysicsManager.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
+#include <Eng/utils/Random.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -251,7 +251,7 @@ void GSBaseState::Enter() {
         if (shrd_this) {
             shrd_this->use_pt_ = !shrd_this->use_pt_;
             if (shrd_this->use_pt_) {
-                //shrd_this->scene_manager_->InitScene_PT();
+                // shrd_this->scene_manager_->InitScene_PT();
                 shrd_this->invalidate_view_ = true;
             }
         }
@@ -263,8 +263,8 @@ void GSBaseState::Enter() {
         if (shrd_this) {
             shrd_this->use_lm_ = !shrd_this->use_lm_;
             if (shrd_this->use_lm_) {
-                //shrd_this->scene_manager_->InitScene_PT();
-                //shrd_this->scene_manager_->ResetLightmaps_PT();
+                // shrd_this->scene_manager_->InitScene_PT();
+                // shrd_this->scene_manager_->ResetLightmaps_PT();
                 shrd_this->invalidate_view_ = true;
             }
         }
