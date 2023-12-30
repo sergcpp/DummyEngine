@@ -80,6 +80,8 @@ template <typename Alloc> struct JsStringT {
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
 
+    Alloc get_allocator() { return val.get_allocator(); }
+
     static const JsType type = JsType::String;
 };
 extern template struct JsStringT<std::allocator<char>>;
@@ -110,6 +112,8 @@ template <typename Alloc> struct JsArrayT {
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
+
+    Alloc get_allocator() { return elements.get_allocator(); }
 
     static const JsType type = JsType::Array;
 };
@@ -154,6 +158,8 @@ template <typename Alloc> struct JsObjectT {
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
+
+    Alloc get_allocator() { return elements.get_allocator(); }
 
     static const JsType type = JsType::Object;
 };
