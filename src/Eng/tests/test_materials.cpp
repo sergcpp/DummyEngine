@@ -62,7 +62,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     using namespace std::placeholders;
     scene_manager.SetPipelineInitializer(std::bind(&Eng::Renderer::InitPipelinesForProgram, &renderer, _1, _2, _3, _4));
 
-    JsObjectP js_scene(scene_manager.mp_alloc());
+    Sys::MultiPoolAllocator<char> alloc(32, 512);
+    JsObjectP js_scene(alloc);
 
     { // Load scene data from file
         const std::string scene_name = std::string("assets/scenes/") + test_name + ".json";

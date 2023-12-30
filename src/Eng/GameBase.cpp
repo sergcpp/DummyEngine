@@ -58,20 +58,20 @@ Eng::GameBase::GameBase(const int w, const int h, const int validation_level, co
 
     random_ = std::make_unique<Random>(std::random_device{}());
 
-    renderer_ = std::make_unique<Eng::Renderer>(*ren_ctx_, *shader_loader_, *random_, *threads_);
+    renderer_ = std::make_unique<Renderer>(*ren_ctx_, *shader_loader_, *random_, *threads_);
 
-    cmdline_ = std::make_unique<Eng::Cmdline>();
+    cmdline_ = std::make_unique<Cmdline>();
 
-    physics_manager_ = std::make_unique<Eng::PhysicsManager>();
+    physics_manager_ = std::make_unique<PhysicsManager>();
 
     {
         using namespace std::placeholders;
 
-        Eng::path_config_t paths;
+        path_config_t paths;
         scene_manager_ =
-            std::make_unique<Eng::SceneManager>(*ren_ctx_, *shader_loader_, snd_ctx_.get(), *threads_, paths);
+            std::make_unique<SceneManager>(*ren_ctx_, *shader_loader_, snd_ctx_.get(), *threads_, paths);
         scene_manager_->SetPipelineInitializer(
-            std::bind(&Eng::Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
+            std::bind(&Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
     }
 
     state_manager_ = std::make_unique<GameStateManager>();

@@ -369,7 +369,8 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("save", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            JsObjectP out_scene(shrd_this->scene_manager_->mp_alloc());
+            Sys::MultiPoolAllocator<char> alloc(32, 512);
+            JsObjectP out_scene(alloc);
 
             shrd_this->SaveScene(out_scene);
 
@@ -633,7 +634,8 @@ bool GSBaseState::LoadScene(const char *name) {
     main_view_lists_[0].Clear();
     main_view_lists_[1].Clear();
 
-    JsObjectP js_scene(scene_manager_->mp_alloc()), js_probe_cache(scene_manager_->mp_alloc());
+    Sys::MultiPoolAllocator<char> alloc(32, 512);
+    JsObjectP js_scene(alloc), js_probe_cache(alloc);
 
     { // Load scene data from file
         Sys::AssetFile in_scene(name);

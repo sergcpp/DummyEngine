@@ -106,7 +106,6 @@ class SceneManager {
     Ren::Mesh *cam_rig() { return cam_rig_.get(); }
     Eng::SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
-    Sys::MultiPoolAllocator<char> &mp_alloc() { return mp_alloc_; }
 
     Snd::Source &ambient_sound() { return amb_sound_; }
 
@@ -241,7 +240,6 @@ class SceneManager {
     std::vector<uint32_t> changed_objects_, last_changed_objects_;
     std::vector<uint32_t> instance_data_to_update_;
 
-    Sys::MultiPoolAllocator<char> mp_alloc_;
     std::unique_ptr<Eng::CompStorage> default_comp_storage_[Eng::MAX_COMPONENT_TYPES];
     std::function<PostLoadFunc> component_post_load_[Eng::MAX_COMPONENT_TYPES];
 
