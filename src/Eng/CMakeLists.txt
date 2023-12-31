@@ -184,25 +184,25 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
                         renderer/PrimDrawGL.cpp
-                        renderer/RendererGL.cpp
-                        renderer/passes/RpDOF.h
-                        renderer/passes/RpDOF.cpp
-                        renderer/passes/RpFXAA.h
-                        renderer/passes/RpFXAA.cpp
-                        renderer/passes/RpDebugEllipsoids.h
-                        renderer/passes/RpDebugEllipsoids.cpp
-                        renderer/passes/RpDebugProbes.h
-                        renderer/passes/RpDebugProbes.cpp
-                        renderer/passes/RpDebugTextures.h
-                        renderer/passes/RpDebugTextures.cpp)
+                        renderer/RendererGL.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         scene/SceneManagerGL.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} renderer/graph/GraphBuilderGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
                         renderer/passes/RpDebugRT_GL.cpp
+                        renderer/passes/RpDebugProbes.h         # GL-only for now
+                        renderer/passes/RpDebugProbes.cpp       # GL-only for now
+                        renderer/passes/RpDebugTextures.h       # GL-only for now
+                        renderer/passes/RpDebugTextures.cpp     # GL-only for now
                         renderer/passes/RpDebugTexturesGL.cpp
+                        renderer/passes/RpDebugEllipsoids.h     # GL-only for now
+                        renderer/passes/RpDebugEllipsoids.cpp   # GL-only for now
                         renderer/passes/RpDepthFillGL.cpp
                         renderer/passes/RpDepthHierarchyGL.cpp
+                        renderer/passes/RpDOF.h                 # GL-only for now
+                        renderer/passes/RpDOF.cpp               # GL-only for now
+                        renderer/passes/RpFXAA.h                # GL-only for now
+                        renderer/passes/RpFXAA.cpp              # GL-only for now
                         renderer/passes/RpGBufferFillGL.cpp
                         renderer/passes/RpOpaqueGL.cpp
                         renderer/passes/RpRTGI_GL.cpp

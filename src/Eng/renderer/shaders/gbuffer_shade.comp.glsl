@@ -70,6 +70,25 @@ vec3 EvaluateLightSource() {
     return vec3(0.0);
 }
 
+int cubemap_face(vec3 dir) {
+    if (abs(dir.x) >= abs(dir.y) && abs(dir.x) >= abs(dir.z)) {
+        return dir.x > 0.0 ? 0 : 1;
+    } else if (abs(dir.y) >= abs(dir.z)) {
+        return dir.y > 0.0 ? 2 : 3;
+    }
+    return dir.z > 0.0 ? 4 : 5;
+}
+
+int cubemap_face(vec3 _dir, vec3 f, vec3 u, vec3 v) {
+    vec3 dir = vec3(-dot(_dir, f), dot(_dir, u), dot(_dir, v));
+    if (abs(dir.x) >= abs(dir.y) && abs(dir.x) >= abs(dir.z)) {
+        return dir.x > 0.0 ? 0 : 1;
+    } else if (abs(dir.y) >= abs(dir.z)) {
+        return dir.y > 0.0 ? 2 : 3;
+    }
+    return dir.z > 0.0 ? 4 : 5;
+}
+
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
@@ -199,7 +218,31 @@ void main() {
         vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
         vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
 
+        vec4 u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
+        vec4 v_and_unused = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
+
         const bool TwoSided = false;
+
+        int shadowreg_index = floatBitsToInt(u_and_reg.w);
+        if (shadowreg_index != -1) {
+            shadowreg_index += cubemap_face(normalize(pos_ws.xyz - pos_and_radius.xyz), dir_and_spot.xyz, normalize(u_and_reg.xyz), normalize(v_and_unused.xyz));
+            vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+            vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(pos_ws.xyz, 1.0);
+            pp /= pp.w;
+
+            #if defined(VULKAN)
+                pp.xy = pp.xy * 0.5 + vec2(0.5);
+            #else // VULKAN
+                pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+            #endif // VULKAN
+            pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+            #if defined(VULKAN)
+                pp.y = 1.0 - pp.y;
+            #endif // VULKAN
+
+            col_and_type.xyz *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+        }
 
         int type = floatBitsToInt(col_and_type.w);
         if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
@@ -253,14 +296,11 @@ void main() {
         } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
             vec3 lp = pos_and_radius.xyz;
 
-            vec3 u = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3).xyz;
-            vec3 v = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4).xyz;
-
             vec3 points[4];
-            points[0] = lp + u + v;
-            points[1] = lp + u - v;
-            points[2] = lp - u - v;
-            points[3] = lp - u + v;
+            points[0] = lp + u_and_reg.xyz + v_and_unused.xyz;
+            points[1] = lp + u_and_reg.xyz - v_and_unused.xyz;
+            points[2] = lp - u_and_reg.xyz - v_and_unused.xyz;
+            points[3] = lp - u_and_reg.xyz + v_and_unused.xyz;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;
@@ -296,14 +336,11 @@ void main() {
         } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
             vec3 lp = pos_and_radius.xyz;
 
-            vec3 u = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3).xyz;
-            vec3 v = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4).xyz;
-
             vec3 points[4];
-            points[0] = lp + u + v;
-            points[1] = lp + u - v;
-            points[2] = lp - u - v;
-            points[3] = lp - u + v;
+            points[0] = lp + u_and_reg.xyz + v_and_unused.xyz;
+            points[1] = lp + u_and_reg.xyz - v_and_unused.xyz;
+            points[2] = lp - u_and_reg.xyz - v_and_unused.xyz;
+            points[3] = lp - u_and_reg.xyz + v_and_unused.xyz;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;
@@ -339,12 +376,9 @@ void main() {
         } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
             vec3 lp = pos_and_radius.xyz;
 
-            vec3 u = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3).xyz;
-            vec3 v = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4).xyz;
-
             vec3 points[2];
-            points[0] = lp + v;
-            points[1] = lp - v;
+            points[0] = lp + v_and_unused.xyz;
+            points[1] = lp - v_and_unused.xyz;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;

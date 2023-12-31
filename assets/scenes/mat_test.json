@@ -177,7 +177,7 @@
                     -0.54
                 ],
                 "angle1" : 0,
-                "cast_shadow" : false
+                "cast_shadow" : true
             }
         },
         {
@@ -191,12 +191,12 @@
             },
             "light" : {
                 "type" : "disk",
-                "color1" : [
+                "color" : [
                     4.2998,
                     4.2998,
                     4.2998
                 ],
-                "color" : [
+                "color1" : [
                     0.0,
                     0.0,
                     0.0
@@ -215,7 +215,7 @@
                     -0.54
                 ],
                 "angle1" : 0,
-                "cast_shadow" : false
+                "cast_shadow" : true
             }
         },
         {
@@ -229,12 +229,12 @@
             },
             "light" : {
                 "type" : "line",
-                "color" : [
+                "color0" : [
                     200,
                     200,
                     200
                 ],
-                "color1" : [
+                "color" : [
                     0.0,
                     0.0,
                     0.0
@@ -253,7 +253,7 @@
                     -0.54
                 ],
                 "angle1" : 0,
-                "cast_shadow" : false
+                "cast_shadow" : true
             }
         },
         {
@@ -267,12 +267,12 @@
             },
             "light" : {
                 "type" : "sphere",
-                "color" : [
+                "color0" : [
                     10,
                     10,
                     10
                 ],
-                "color1" : [
+                "color" : [
                     0.0,
                     0.0,
                     0.0
@@ -291,7 +291,7 @@
                     -0.54
                 ],
                 "angle1" : 0,
-                "cast_shadow" : false
+                "cast_shadow" : true
             }
         },
         {

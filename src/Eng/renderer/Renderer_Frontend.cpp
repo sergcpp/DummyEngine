@@ -92,11 +92,6 @@ __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("Proces
         (max)[2], (min)[0], (max)[1], (min)[2], (max)[0], (max)[1], (min)[2], (min)[0], (max)[1], (max)[2], (max)[0],  \
         (max)[1], (max)[2]
 
-// faster than std::min/max/abs in debug
-#define _MIN(x, y) ((x) < (y) ? (x) : (y))
-#define _MAX(x, y) ((x) < (y) ? (y) : (x))
-#define _ABS(x) ((x) < 0 ? -(x) : (x))
-
 #define _CROSS(x, y)                                                                                                   \
     { (x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0] }
 
@@ -377,7 +372,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 const Mesh *mesh = dr.mesh.get();
 
                 const float cam_dist = Distance(cam.world_position(), 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws));
-                const auto cam_dist_u8 = (uint8_t)_MIN(255 * cam_dist / 500.0f, 255);
+                const auto cam_dist_u8 = (uint8_t)std::min(255 * cam_dist / 500.0f, 255.0f);
                 const uint16_t cam_dist_u16 = uint16_t(0xffffu * (cam_dist / 500.0f));
 
                 uint32_t base_vertex = mesh->attribs_buf1().sub.offset / 16;
@@ -549,7 +544,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 });
         }
 
-        temp_rt_visible_objects_.resize(_MIN(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES));
+        temp_rt_visible_objects_.resize(std::min(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES));
 
         for (const VisObj i : temp_rt_visible_objects_) {
             const SceneObject &obj = scene.objects[i.index];
@@ -606,9 +601,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         // Choose up vector for shadow camera
         const Vec3f &light_dir = list.env.sun_dir;
         auto cam_up = Vec3f{0.0f, 0.0, 1.0f};
-        if (_ABS(light_dir[0]) <= _ABS(light_dir[1]) && _ABS(light_dir[0]) <= _ABS(light_dir[2])) {
+        if (std::abs(light_dir[0]) <= std::abs(light_dir[1]) && std::abs(light_dir[0]) <= std::abs(light_dir[2])) {
             cam_up = Vec3f{1.0f, 0.0, 0.0f};
-        } else if (_ABS(light_dir[1]) <= _ABS(light_dir[0]) && _ABS(light_dir[1]) <= _ABS(light_dir[2])) {
+        } else if (std::abs(light_dir[1]) <= std::abs(light_dir[0]) &&
+                   std::abs(light_dir[1]) <= std::abs(light_dir[2])) {
             cam_up = Vec3f{0.0f, 1.0, 0.0f};
         }
         // Calculate side vector of shadow camera
@@ -738,7 +734,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
 
                         const float x_diff0 = (fr_points_proj[k1][0] - fr_points_proj[k2][0]);
-                        const bool is_vertical0 = _ABS(x_diff0) < std::numeric_limits<float>::epsilon();
+                        const bool is_vertical0 = std::abs(x_diff0) < std::numeric_limits<float>::epsilon();
                         const float slope0 =
                                         is_vertical0 ? 0.0f : (fr_points_proj[k1][1] - fr_points_proj[k2][1]) / x_diff0,
                                     b0 = is_vertical0 ? fr_points_proj[k1][0]
@@ -750,7 +746,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                             const float x_diff1 =
                                 (fr_points_proj[frustum_edges[j][0]][0] - fr_points_proj[frustum_edges[j][1]][0]);
-                            const bool is_vertical1 = _ABS(x_diff1) < std::numeric_limits<float>::epsilon();
+                            const bool is_vertical1 = std::abs(x_diff1) < std::numeric_limits<float>::epsilon();
                             const float slope1 = is_vertical1 ? 0.0f
                                                               : (fr_points_proj[frustum_edges[j][0]][1] -
                                                                  fr_points_proj[frustum_edges[j][1]][1]) /
@@ -759,8 +755,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                                           : fr_points_proj[frustum_edges[j][0]][1] -
                                                                 slope1 * fr_points_proj[frustum_edges[j][0]][0];
 
-                            if (is_vertical1 == is_vertical0 && _ABS(slope1 - slope0) < 0.001f &&
-                                _ABS(b1 - b0) < 0.001f) {
+                            if (is_vertical1 == is_vertical0 && std::abs(slope1 - slope0) < 0.001f &&
+                                std::abs(b1 - b0) < 0.001f) {
                                 silhouette_edges_count--;
                                 break;
                             }
@@ -1000,209 +996,241 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         const int ShadowResolutions[][2] = {{512, 512}, {256, 256}, {128, 128}, {64, 64}};
 
-        // choose resolution based on distance
-        int res_index = _MIN(int(distance * 0.02f), 4);
-
-        ShadReg *region = nullptr;
-
-        for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
-            ShadReg &reg = allocated_shadow_regions_.data[j];
-
-            if (reg.ls == ls) {
-                if (reg.size[0] != ShadowResolutions[res_index][0] || reg.size[1] != ShadowResolutions[res_index][1]) {
-                    // free and reallocate region
-                    shadow_splitter_.Free(reg.pos);
-                    reg = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
-                } else {
-                    region = &reg;
-                }
-                break;
-            }
+        SmallVector<ShadReg *, 6> regions;
+        if (ls->type == eLightType::Sphere || ls->type == eLightType::Rect || ls->type == eLightType::Disk ||
+            ls->type == eLightType::Line) {
+            regions.resize(6, nullptr);
+        } else {
+            regions.resize(1, nullptr);
         }
+        bool all_initialized = true;
 
-        // try to allocate best resolution possible
-        for (; res_index < 4 && !region; res_index++) {
-            int pos[2];
-            int node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
-            if (node == -1 && allocated_shadow_regions_.count) {
-                ShadReg *oldest = &allocated_shadow_regions_.data[0];
-                for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
-                    if (allocated_shadow_regions_.data[j].last_visible < oldest->last_visible) {
-                        oldest = &allocated_shadow_regions_.data[j];
+        // Find already allocated regions
+        for (int r = 0; r < int(regions.size()); ++r) {
+            // choose resolution based on distance
+            int res_index = std::min(int(distance * 0.02f), 4);
+
+            for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
+                ShadReg &reg = allocated_shadow_regions_.data[j];
+                if (reg.ls_index == i && reg.reg_index == r) {
+                    if (reg.size[0] != ShadowResolutions[res_index][0] ||
+                        reg.size[1] != ShadowResolutions[res_index][1]) {
+                        // free and reallocate region
+                        shadow_splitter_.Free(reg.pos);
+                        reg = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
+                    } else {
+                        regions[r] = &reg;
+                    }
+                    break;
+                }
+            }
+
+            // Try to allocate best resolution possible
+            // TODO: make all regions use the same resolution
+            for (; res_index < 4 && !regions[r]; res_index++) {
+                int pos[2];
+                int node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
+                if (node == -1 && allocated_shadow_regions_.count) {
+                    ShadReg *oldest = &allocated_shadow_regions_.data[0];
+                    for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
+                        if (allocated_shadow_regions_.data[j].last_visible < oldest->last_visible) {
+                            oldest = &allocated_shadow_regions_.data[j];
+                        }
+                    }
+                    if ((scene.update_counter - oldest->last_visible) > 10) {
+                        // kick out one of old cached region
+                        shadow_splitter_.Free(oldest->pos);
+                        *oldest = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
+                        // try again to insert
+                        node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
                     }
                 }
-                if ((scene.update_counter - oldest->last_visible) > 10) {
-                    // kick out one of old cached region
-                    shadow_splitter_.Free(oldest->pos);
-                    *oldest = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
-                    // try again to insert
-                    node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
+                if (node != -1) {
+                    regions[r] = &allocated_shadow_regions_.data[allocated_shadow_regions_.count++];
+                    regions[r]->ls_index = i;
+                    regions[r]->reg_index = r;
+                    regions[r]->pos[0] = pos[0];
+                    regions[r]->pos[1] = pos[1];
+                    regions[r]->size[0] = ShadowResolutions[res_index][0];
+                    regions[r]->size[1] = ShadowResolutions[res_index][1];
+                    regions[r]->last_update = regions[r]->last_visible = 0xffffffff;
                 }
             }
-            if (node != -1) {
-                region = &allocated_shadow_regions_.data[allocated_shadow_regions_.count++];
-                region->ls = ls;
-                region->pos[0] = pos[0];
-                region->pos[1] = pos[1];
-                region->size[0] = ShadowResolutions[res_index][0];
-                region->size[1] = ShadowResolutions[res_index][1];
-                region->last_update = region->last_visible = 0xffffffff;
-            }
+
+            all_initialized &= (regions[r] != nullptr);
         }
 
-        if (region) {
+        if (all_initialized) {
             const auto light_dir = Vec3f{-l.dir[0], -l.dir[1], -l.dir[2]};
+            const auto light_side = Vec3f{l.u[0], l.u[1], l.u[2]};
+            const auto light_up = Vec3f{l.v[0], l.v[1], l.v[2]};
 
-            auto light_up = Vec3f{0.0f, 0.0, 1.0f};
-            if (_ABS(light_dir[0]) <= _ABS(light_dir[1]) && _ABS(light_dir[0]) <= _ABS(light_dir[2])) {
-                light_up = Vec3f{1.0f, 0.0, 0.0f};
-            } else if (_ABS(light_dir[1]) <= _ABS(light_dir[0]) && _ABS(light_dir[1]) <= _ABS(light_dir[2])) {
-                light_up = Vec3f{0.0f, 1.0, 0.0f};
+            float light_angle = 91.0f;
+            if (ls->type == eLightType::Point) {
+                light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
             }
-
-            float light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
-
-            Camera shadow_cam;
-            shadow_cam.SetupView(light_center, light_center + light_dir, light_up);
-            shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->cull_radius);
-            shadow_cam.UpdatePlanes();
-
-            // TODO: Check visibility of shadow frustum
-
-            const Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
-
-            ShadowList &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
-
-            sh_list.shadow_map_pos[0] = sh_list.scissor_test_pos[0] = region->pos[0];
-            sh_list.shadow_map_pos[1] = sh_list.scissor_test_pos[1] = region->pos[1];
-            sh_list.shadow_map_size[0] = sh_list.scissor_test_size[0] = region->size[0];
-            sh_list.shadow_map_size[1] = sh_list.scissor_test_size[1] = region->size[1];
-            sh_list.shadow_batch_start = list.shadow_batches.count;
-            sh_list.shadow_batch_count = 0;
-            sh_list.cam_near = region->cam_near = shadow_cam.near();
-            sh_list.cam_far = region->cam_far = shadow_cam.far();
-            sh_list.view_frustum_outline_count = 0;
-            sh_list.bias[0] = ls->shadow_bias[0];
-            sh_list.bias[1] = ls->shadow_bias[1];
 
             l.shadowreg_index = int(list.shadow_regions.count);
-            ShadowMapRegion &reg = list.shadow_regions.data[list.shadow_regions.count++];
 
-            reg.transform = Vec4f{float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH,
-                                  float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
-                                  float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH,
-                                  float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT};
-            reg.clip_from_world = clip_from_world;
+            for (int i = 0; i < int(regions.size()); ++i) {
+                ShadReg *region = regions[i];
 
-            bool light_sees_dynamic_objects = false;
-
-            const uint32_t skip_check_bit = (1u << 31u);
-            const uint32_t index_bits = ~skip_check_bit;
-
-            stack_size = 0;
-            stack[stack_size++] = scene.root_node;
-
-            while (stack_size) {
-                const uint32_t cur = stack[--stack_size] & index_bits;
-                uint32_t skip_check = stack[stack_size] & skip_check_bit;
-                const bvh_node_t *n = &scene.nodes[cur];
-
-                const eVisResult res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
-                if (res == eVisResult::Invisible) {
-                    continue;
-                } else if (res == eVisResult::FullyVisible) {
-                    skip_check = skip_check_bit;
+                Vec3f _light_dir = light_dir, _light_up = light_up;
+                if (i == 1) {
+                    _light_dir = -light_dir;
+                } else if (i == 2) {
+                    _light_dir = light_side;
+                } else if (i == 3) {
+                    _light_dir = -light_side;
+                } else if (i == 4) {
+                    _light_dir = light_up;
+                    _light_up = light_side;
+                } else if (i == 5) {
+                    _light_dir = -light_up;
+                    _light_up = light_side;
                 }
 
-                if (!n->leaf_node) {
-                    stack[stack_size++] = skip_check | n->left_child;
-                    stack[stack_size++] = skip_check | n->right_child;
-                } else {
-                    const auto &obj = scene.objects[n->prim_index];
+                Camera shadow_cam;
+                shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
+                shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->cull_radius);
+                shadow_cam.UpdatePlanes();
 
-                    const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
-                    if ((obj.comp_mask & drawable_flags) == drawable_flags) {
-                        const Transform &tr = transforms[obj.components[CompTransform]];
+                // TODO: Check visibility of shadow frustum itself
 
-                        if (!skip_check && shadow_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) ==
-                                               eVisResult::Invisible) {
-                            continue;
-                        }
+                const Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
-                        const Drawable &dr = drawables[obj.components[CompDrawable]];
-                        if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
-                            continue;
-                        }
+                ShadowList &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
 
-                        const Mesh *mesh = dr.mesh.get();
-
-                        Mat4f world_from_object_trans = Transpose(tr.world_from_object);
-
-                        if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
-
-                            if (obj.comp_mask & CompAnimStateBit) {
-                                const AnimState &as = anims[obj.components[CompAnimState]];
-                                proc_objects_[n->prim_index].base_vertex =
-                                    __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
-                            }
-                        }
-
-                        for (const auto &grp : mesh->groups()) {
-                            const Material *mat = grp.mat.get();
-                            const uint32_t mat_flags = mat->flags();
-
-                            if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                                if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
-                                    mat->textures[3]) {
-                                    // assume only the third texture gives transparency
-                                    __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
-                                }
-
-                                BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
-
-                                batch.type_bits = BasicDrawBatch::TypeSimple;
-
-                                // we do not care if it is skinned
-                                if (obj.comp_mask & CompVegStateBit) {
-                                    batch.type_bits = BasicDrawBatch::TypeVege;
-                                }
-
-                                batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                                batch.moving_bit = 0;
-                                batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
-                                batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
-                                batch.indices_count = grp.num_indices;
-                                batch.instance_index = n->prim_index;
-                                batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
-                                                        (batch.type_bits == BasicDrawBatch::TypeVege))
-                                                           ? uint32_t(grp.mat.index())
-                                                           : 0;
-                                batch.instance_count = 1;
-                            }
-                        }
-                    }
-
-                    if ((obj.last_change_mask & CompTransformBit) || (obj.comp_mask & CompVegStateBit)) {
-                        light_sees_dynamic_objects = true;
-                    }
-                }
-            }
-
-            if (!light_sees_dynamic_objects && region->last_update != 0xffffffff &&
-                (scene.update_counter - region->last_update > 2)) {
-                // nothing was changed within the last two frames, discard added batches
-                list.shadow_batches.count = sh_list.shadow_batch_start;
+                sh_list.shadow_map_pos[0] = sh_list.scissor_test_pos[0] = region->pos[0];
+                sh_list.shadow_map_pos[1] = sh_list.scissor_test_pos[1] = region->pos[1];
+                sh_list.shadow_map_size[0] = sh_list.scissor_test_size[0] = region->size[0];
+                sh_list.shadow_map_size[1] = sh_list.scissor_test_size[1] = region->size[1];
+                sh_list.shadow_batch_start = list.shadow_batches.count;
                 sh_list.shadow_batch_count = 0;
-            } else {
-                if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
-                    region->last_update = scene.update_counter;
-                }
-                sh_list.shadow_batch_count = list.shadow_batches.count - sh_list.shadow_batch_start;
-            }
+                sh_list.cam_near = region->cam_near = shadow_cam.near();
+                sh_list.cam_far = region->cam_far = shadow_cam.far();
+                sh_list.view_frustum_outline_count = 0;
+                sh_list.bias[0] = ls->shadow_bias[0];
+                sh_list.bias[1] = ls->shadow_bias[1];
 
-            region->last_visible = scene.update_counter;
+                ShadowMapRegion &reg = list.shadow_regions.data[list.shadow_regions.count++];
+                reg.transform = Vec4f{float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH,
+                                      float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
+                                      float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH,
+                                      float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT};
+                reg.clip_from_world = clip_from_world;
+
+                bool light_sees_dynamic_objects = false;
+
+                const uint32_t skip_check_bit = (1u << 31u);
+                const uint32_t index_bits = ~skip_check_bit;
+
+                stack_size = 0;
+                stack[stack_size++] = scene.root_node;
+
+                while (stack_size) {
+                    const uint32_t cur = stack[--stack_size] & index_bits;
+                    uint32_t skip_check = stack[stack_size] & skip_check_bit;
+                    const bvh_node_t *n = &scene.nodes[cur];
+
+                    const eVisResult res = shadow_cam.CheckFrustumVisibility(n->bbox_min, n->bbox_max);
+                    if (res == eVisResult::Invisible) {
+                        continue;
+                    } else if (res == eVisResult::FullyVisible) {
+                        skip_check = skip_check_bit;
+                    }
+
+                    if (!n->leaf_node) {
+                        stack[stack_size++] = skip_check | n->left_child;
+                        stack[stack_size++] = skip_check | n->right_child;
+                    } else {
+                        const auto &obj = scene.objects[n->prim_index];
+
+                        const uint32_t drawable_flags = CompDrawableBit | CompTransformBit;
+                        if ((obj.comp_mask & drawable_flags) == drawable_flags) {
+                            const Transform &tr = transforms[obj.components[CompTransform]];
+
+                            if (!skip_check && shadow_cam.CheckFrustumVisibility(tr.bbox_min_ws, tr.bbox_max_ws) ==
+                                                   eVisResult::Invisible) {
+                                continue;
+                            }
+
+                            const Drawable &dr = drawables[obj.components[CompDrawable]];
+                            if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
+                                continue;
+                            }
+
+                            const Mesh *mesh = dr.mesh.get();
+
+                            Mat4f world_from_object_trans = Transpose(tr.world_from_object);
+
+                            if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
+                                proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
+
+                                if (obj.comp_mask & CompAnimStateBit) {
+                                    const AnimState &as = anims[obj.components[CompAnimState]];
+                                    proc_objects_[n->prim_index].base_vertex =
+                                        __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
+                                }
+                            }
+
+                            for (const auto &grp : mesh->groups()) {
+                                const Material *mat = grp.mat.get();
+                                const uint32_t mat_flags = mat->flags();
+
+                                if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
+                                    if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
+                                        mat->textures[3]) {
+                                        // assume only the third texture gives transparency
+                                        __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
+                                    }
+
+                                    BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+
+                                    batch.type_bits = BasicDrawBatch::TypeSimple;
+
+                                    // we do not care if it is skinned
+                                    if (obj.comp_mask & CompVegStateBit) {
+                                        batch.type_bits = BasicDrawBatch::TypeVege;
+                                    }
+
+                                    batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                    batch.moving_bit = 0;
+                                    batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                    batch.indices_offset =
+                                        (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
+                                    batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
+                                    batch.indices_count = grp.num_indices;
+                                    batch.instance_index = n->prim_index;
+                                    batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
+                                                            (batch.type_bits == BasicDrawBatch::TypeVege))
+                                                               ? uint32_t(grp.mat.index())
+                                                               : 0;
+                                    batch.instance_count = 1;
+                                }
+                            }
+                        }
+
+                        if ((obj.last_change_mask & CompTransformBit) || (obj.comp_mask & CompVegStateBit)) {
+                            light_sees_dynamic_objects = true;
+                        }
+                    }
+                }
+
+                if (!light_sees_dynamic_objects && region->last_update != 0xffffffff &&
+                    (scene.update_counter - region->last_update > 2)) {
+                    // nothing was changed within the last two frames, discard added batches
+                    list.shadow_batches.count = sh_list.shadow_batch_start;
+                    sh_list.shadow_batch_count = 0;
+                } else {
+                    if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
+                        region->last_update = scene.update_counter;
+                    }
+                    sh_list.shadow_batch_count = list.shadow_batches.count - sh_list.shadow_batch_start;
+                }
+
+                region->last_visible = scene.update_counter;
+            }
         }
     }
 
@@ -2006,7 +2034,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
         CellData &cell = list.cells.data[base_index + s];
 
         int local_items_count =
-            int(_MAX(cell.light_count, _MAX(cell.decal_count, _MAX(cell.probe_count, cell.ellips_count))));
+            int(std::max(cell.light_count, std::max(cell.decal_count, std::max(cell.probe_count, cell.ellips_count))));
 
         if (local_items_count) {
             cell.item_offset = items_count.fetch_add(local_items_count);
@@ -2016,10 +2044,10 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
             } else {
                 const int free_items_left = REN_MAX_ITEMS_TOTAL - cell.item_offset;
 
-                cell.light_count = _MIN(int(cell.light_count), free_items_left);
-                cell.decal_count = _MIN(int(cell.decal_count), free_items_left);
-                cell.probe_count = _MIN(int(cell.probe_count), free_items_left);
-                cell.ellips_count = _MIN(int(cell.ellips_count), free_items_left);
+                cell.light_count = std::min(int(cell.light_count), free_items_left);
+                cell.decal_count = std::min(int(cell.decal_count), free_items_left);
+                cell.probe_count = std::min(int(cell.probe_count), free_items_left);
+                cell.ellips_count = std::min(int(cell.ellips_count), free_items_left);
 
                 memcpy(&list.items.data[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
             }
@@ -2053,9 +2081,9 @@ void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat
         }
 
         int perp = 0;
-        if (_ABS(axis[1]) <= _ABS(axis[0]) && _ABS(axis[1]) <= _ABS(axis[2])) {
+        if (std::abs(axis[1]) <= std::abs(axis[0]) && std::abs(axis[1]) <= std::abs(axis[2])) {
             perp = 1;
-        } else if (_ABS(axis[2]) <= _ABS(axis[0]) && _ABS(axis[2]) <= _ABS(axis[1])) {
+        } else if (std::abs(axis[2]) <= std::abs(axis[0]) && std::abs(axis[2]) <= std::abs(axis[1])) {
             perp = 2;
         }
 
@@ -2136,7 +2164,7 @@ uint32_t RendererInternal::__record_texture(Eng::DynArray<Eng::TexEntry> &storag
     }
 
     entry->prio = prio;
-    entry->cam_dist = _MIN(entry->cam_dist, distance);
+    entry->cam_dist = std::min(entry->cam_dist, uint32_t(distance));
 
     return uint32_t(entry - beg);
 }
@@ -2149,7 +2177,7 @@ void RendererInternal::__record_textures(Eng::DynArray<Eng::TexEntry> &storage, 
         if (!is_animated) {
             prio += 8;
         }
-        prio = _MIN(prio, 15);
+        prio = std::min(prio, 15);
         __record_texture(storage, mat->textures[i], prio, distance);
     }
 }

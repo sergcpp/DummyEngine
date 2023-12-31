@@ -178,7 +178,7 @@
                     -0.54
                 ],
                 "angle1" : 0,
-                "cast_shadow" : false
+                "cast_shadow" : true
             }
         },
         {
@@ -216,7 +216,7 @@
                     -0.54
                 ],
                 "angle1" : 0,
-                "cast_shadow" : false
+                "cast_shadow" : true
             }
         },
         {

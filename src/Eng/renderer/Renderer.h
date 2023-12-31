@@ -116,10 +116,9 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
-         EnableDOF /*|
-               EnableRTShadows*/
-                   //| EnableDeferred | EnableHQ_HDR
-        );
+         EnableDOF // | EnableRTShadows
+         // | EnableDeferred | EnableHQ_HDR
+            );
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);

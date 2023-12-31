@@ -35,7 +35,7 @@ template <typename T> struct DynArray {
 };
 
 struct ShadReg {
-    const LightSource *ls;
+    int ls_index = -1, reg_index = -1;
     int pos[2], size[2];
     float cam_near, cam_far; // for debugging
     uint32_t last_update, last_visible;
