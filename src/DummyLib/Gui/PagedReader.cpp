@@ -24,8 +24,8 @@ PagedReader::PagedReader(Ren::Context &ctx, const Gui::Vec2f &pos, const Gui::Ve
     : BaseElement(pos, size, parent), parent_(parent), log_(ctx.log()), main_font_(std::move(main_font)),
       emph_font_(std::move(emph_font)), caption_font_(std::move(caption_font)), cur_chapter_(0), cur_page_(0) {
     using namespace PagedReaderInternal;
-    background_small_.reset(new Gui::Image9Patch{ctx, Frame01, Ren::Vec2f{3.0f, 3.0f}, 1.0f, Ren::Vec2f{0.0f, 0.0f},
-                                                 Ren::Vec2f{1.0f, 1.0f}, parent});
+    background_small_ = std::make_unique<Gui::Image9Patch>(ctx, Frame01, Ren::Vec2f{3.0f, 3.0f}, 1.0f,
+                                                           Ren::Vec2f{0.0f, 0.0f}, Ren::Vec2f{1.0f, 1.0f}, parent);
 }
 
 void PagedReader::Clear() {

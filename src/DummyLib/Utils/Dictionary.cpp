@@ -67,7 +67,7 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
                 return false;
             }
             const uint32_t links_count = chunk_size / sizeof(dict_link_compact_t);
-            temp_links.reset(new dict_link_compact_t[links_count]);
+            temp_links = std::make_unique<dict_link_compact_t[]>(links_count);
             in_data.read((char *)temp_links.get(), chunk_size);
         } else if (chunk_id == uint32_t(eDictChunks::DictChEntries)) {
             if ((chunk_size % sizeof(dict_entry_compact_t)) != 0) {
@@ -75,10 +75,10 @@ bool Dictionary::Load(std::istream &in_data, Ren::ILog *log) {
                 return false;
             }
             const uint32_t entries_count = chunk_size / sizeof(dict_entry_compact_t);
-            entries_.reset(new dict_entry_compact_t[entries_count]);
+            entries_ = std::make_unique<dict_entry_compact_t[]>(entries_count);
             in_data.read((char *)entries_.get(), chunk_size);
         } else if (chunk_id == uint32_t(eDictChunks::DictChStrings)) {
-            comb_str_buf_.reset(new char[chunk_size]);
+            comb_str_buf_ = std::make_unique<char[]>(chunk_size);
             in_data.read(comb_str_buf_.get(), chunk_size);
         }
 

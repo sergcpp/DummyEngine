@@ -570,7 +570,7 @@ int ModlApp::Init(const int w, const int h) {
         wglSwapIntervalEXT(0);
     }
 
-    ctx_.reset(new Ren::Context);
+    ctx_ = std::make_unique<Ren::Context>();
     ctx_->Init(w, h, &log_, 2 /* validation_level */, nullptr);
     InitInternal();
 
@@ -657,7 +657,7 @@ void ModlApp::Destroy() {
     diag_skinned_prog_.Release();
     skinning_prog_.Release();
     checker_tex_.Release();
-    ctx_.reset();
+    ctx_ = {};
 
     Sys::StopWorker();
 

@@ -3,13 +3,13 @@
 #include <fstream>
 #include <memory>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/EditBox.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/gui/Utils.h>
-#include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
@@ -47,21 +47,23 @@ const char SEQ_NAME[] = "test/test_seq.json";
 GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
 
-    cam_ctrl_.reset(new Eng::FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
+    cam_ctrl_ = std::make_unique<Eng::FreeCamController>(ren_ctx_->w(), ren_ctx_->h(), 0.3f);
 
-    test_dialog_.reset(new Eng::ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
+    test_dialog_ = std::make_unique<Eng::ScriptedDialog>(*ren_ctx_, *snd_ctx_, *scene_manager_);
 
-    dialog_ui_.reset(new DialogUI{Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_, *dialog_font_});
+    dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 2.0f}, ui_root_, *dialog_font_);
 
-    seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
+    seq_edit_ui_ =
+        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
 
-    dialog_edit_ui_.reset(
-        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
+    dialog_edit_ui_ =
+        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<GSPlayTest, &GSPlayTest::OnSetCurSequence>(this);
 
-    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_});
+    seq_cap_ui_ =
+        std::make_unique<CaptionsUI>(Ren::Vec2f{-1.0f, 0.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
     // test_seq_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(
     //    seq_cap_ui_.get());
 
@@ -70,16 +72,16 @@ GSPlayTest::GSPlayTest(Viewer *viewer) : GSBaseState(viewer) {
     Ren::Vec2f{ 8.0f, 8.0f }, 1.0f, Ren::Vec2f{ -1.0f, -1.0f }, Ren::Vec2f{ 2.0f, 2.0f
     }, ui_root_.get()
     };
-    edit_box_.reset(new Gui::EditBox{
+    edit_box_ = std::make_unique<Gui::EditBox>(
         edit_box_frame, dialog_font_.get(), Ren::Vec2f{ -0.5f, 0.75f },
-        Ren::Vec2f{ 1.0f, 0.75f * font_height },ui_root_.get() });
+        Ren::Vec2f{ 1.0f, 0.75f * font_height },ui_root_.get());
     edit_box_->set_flag(Gui::Multiline, false);
 
-    results_frame_.reset(new Gui::Image9Patch{
+    results_frame_ = std::make_unique<Gui::Image9Patch>(
         *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
     Ren::Vec2f{ 8.0f, 8.0f
     }, 1.0f, Ren::Vec2f{ -0.5f, -0.75f }, Ren::Vec2f{ 1.0f, 1.5f }, ui_root_.get()
-        });*/
+        );*/
 }
 
 GSPlayTest::~GSPlayTest() = default;
@@ -297,7 +299,7 @@ bool GSPlayTest::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ms_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
                 click_time_ms_ = 0;

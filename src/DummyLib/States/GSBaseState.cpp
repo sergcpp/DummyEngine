@@ -57,9 +57,9 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
 
     debug_ui_ = viewer->debug_ui();
 
-    cmdline_back_.reset(new Gui::Image9Patch(
+    cmdline_back_ = std::make_unique<Gui::Image9Patch>(
         *ren_ctx_, (std::string(ASSETS_BASE_PATH) + "/textures/editor/dial_edit_back.uncompressed.tga").c_str(),
-        Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_));
+        Ren::Vec2f{1.5f, 1.5f}, 1.0f, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_);
 
     random_ = viewer->random();
 

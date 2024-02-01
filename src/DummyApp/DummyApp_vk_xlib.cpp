@@ -108,7 +108,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
     try {
         Viewer::PrepareAssets("pc");
-        viewer_.reset(new Viewer(w, h, nullptr, validation_level, nullptr));
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nullptr);
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -119,7 +119,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 }
 
 void DummyApp::Destroy() {
-    viewer_.reset();
+    viewer_ = {};
 #if !defined(__ANDROID__)
     XDestroyWindow(dpy_, win_);
     //XCloseDisplay(dpy_); // this is done in ContextVK.cpp (https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/1894)

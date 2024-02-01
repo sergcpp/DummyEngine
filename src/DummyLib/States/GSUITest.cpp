@@ -3,12 +3,12 @@
 #include <fstream>
 #include <memory>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/gui/Utils.h>
-#include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
@@ -37,8 +37,8 @@ GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("dialog_font");
     dialog_font_->set_scale(1.5f);
 
-    word_puzzle_.reset(new WordPuzzleUI{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
-                                        ui_root_, *dialog_font_});
+    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
+                                                  ui_root_, *dialog_font_);
 }
 
 GSUITest::~GSUITest() = default;
@@ -121,8 +121,8 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
-                              true, max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, true,
+                              max_exposure);
 
     {
         char sophia_name[] = "sophia_00";
@@ -208,7 +208,7 @@ bool GSUITest::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 

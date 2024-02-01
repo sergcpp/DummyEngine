@@ -179,7 +179,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
     try {
         Viewer::PrepareAssets("pc");
-        viewer_.reset(new Viewer(w, h, nullptr, validation_level, device_name));
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, device_name);
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -191,7 +191,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
 void DummyApp::Destroy() {
     OPTICK_SHUTDOWN();
-    viewer_.reset();
+    viewer_ = {};
 
     ReleaseDC(window_handle_, device_context_);
     device_context_ = nullptr;

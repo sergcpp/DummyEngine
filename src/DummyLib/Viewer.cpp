@@ -109,7 +109,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     state_manager_->Push(std::make_shared<GSDrawTest>(this));
 }
 
-Viewer::~Viewer() { state_manager_.reset(); }
+Viewer::~Viewer() { state_manager_ = {}; }
 
 void Viewer::Frame() {
     Ren::ApiContext *api_ctx = ren_ctx()->api_ctx();

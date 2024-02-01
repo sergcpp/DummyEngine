@@ -105,15 +105,15 @@ DummyApp::~DummyApp() = default;
 
 int DummyApp::Init(const int w, const int h, const char *) {
     init_delegate_class();
-    
+
     // id app = [NSApplication sharedApplication];
     id app = cls_msg(cls("NSApplication"), sel("sharedApplication"));
-    
+
     // [app setActivationPolicy:NSApplicationActivationPolicyRegular];
     msg(app, sel("setActivationPolicy:"), NSApplicationActivationPolicyRegular);
-    
+
     struct CGRect frame_rect = { { 0.0, 0.0 }, { double(w), double(h) } };
-    
+
     // id window = [[NSWindow alloc] initWithContentRect:frameRect styleMask:NSWindowStyleMaskTitled|NSWindowStyleMaskClosable|NSWindowStyleMaskResizable backing:NSBackingStoreBuffered defer:NO];
     id window = msg(cls_msg(cls("NSWindow"), sel("alloc")),
                     sel("initWithContentRect:styleMask:backing:defer:"),
@@ -124,31 +124,31 @@ int DummyApp::Init(const int w, const int h, const char *) {
     msg(window, sel("setTitle:"), nsstring("View (VK)"));
 
     id metal_device = MTLCreateSystemDefaultDevice();
-    
+
     Class CAMetalLayer = cls("CAMetalLayer");
     id metal_layer = cls_msg(CAMetalLayer, sel("layer"));
-    
+
     msg(metal_layer, sel("setDevice:"), metal_device);
     msg(metal_layer, sel("setPixelFormat:"), MTLPixelFormatBGRA8Unorm);
     msg(metal_layer, sel("setFrame:"), frame_rect);
     //msg(metal_layer, sel("contentsScale:"), 1.0f);
-    
+
     Ren::g_metal_layer = metal_layer;
 
     try {
         Viewer::PrepareAssets("pc");
 
-        viewer_.reset(new Viewer(w, h, nullptr, nullptr, nullptr));
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, nullptr, nullptr);
 
         auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
         input_manager_ = input_manager;
-        
+
         // [window makeKeyAndOrderFront:nil];
         msg(window, sel("makeKeyAndOrderFront:"), nil);
-        
+
         // [app activateIgnoringOtherApps:YES];
         msg(app, sel("activateIgnoringOtherApps:"), true);
-        
+
         // id delegate = [[AppDelegate alloc] init]
         // [app setDelegate:delegate]
         id delegate = msg(cls_msg(AppDelegate, sel("alloc")), sel("init"));
@@ -156,16 +156,16 @@ int DummyApp::Init(const int w, const int h, const char *) {
 
         // delegate.app_data = &appData;
         //object_setIvar(delegate, AppDelegate_AppData, (id) &g_context);
-        
+
         id view = msg(window, sel("contentView"));
         printf("view: %lx\n", (uintptr_t)view);
         msg(view, sel("setFrame:"), frame_rect);
-        
+
         msg(view, sel("setWantsLayer:"), YES); // otherwise there will be no layer!
         id viewLayer = msg(view, sel("layer"));
-        
+
         msg(viewLayer, sel("addSublayer:"), metal_layer);
-        
+
         app_ = app;
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -176,7 +176,7 @@ int DummyApp::Init(const int w, const int h, const char *) {
 }
 
 void DummyApp::Destroy() {
-    viewer_.reset();
+    viewer_ = {};
 #if !defined(__ANDROID__)
     //XDestroyWindow(dpy_, win_);
     //XCloseDisplay(dpy_); // this is done in ContextVK.cpp (https://github.com/KhronosGroup/Vulkan-LoaderAndValidationLayers/issues/1894)
@@ -233,14 +233,14 @@ int DummyApp::Run(int argc, char *argv[]) {
     }
 
     __itt_thread_set_name("Main Thread");
-    
+
     while (!terminated()) {
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
 
         this->PollEvents();
-            
+
         this->Frame();
-        
+
         __itt_frame_end_v3(__g_itt_domain, nullptr);
     }
 
@@ -261,12 +261,12 @@ void DummyApp::PollEvents() {
     id event = method(cls("NSApplication"), sel("nextEventMatchingMask:untilDate:inMode:dequeue:"))(reinterpret_cast<id>(app_), sel("nextEventMatchingMask:untilDate:inMode:dequeue:"), INT_MAX, 0, nsstring("kCFRunLoopDefaultMode"), 1);
     if (event) {
         //printf("event: %lx\n", (uintptr_t) event);
-        
+
         id type = msg(event, sel("type"));
-        
+
         msg(reinterpret_cast<id>(app_), sel("sendEvent:"), event);
     }
-    
+
 #if 0
     static float last_p1_pos[2] = {0.0f, 0.0f};
     static int last_window_size[2] = {0, 0};

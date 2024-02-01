@@ -3,13 +3,13 @@
 #include <fstream>
 #include <memory>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/EditBox.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/gui/Utils.h>
-#include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
@@ -48,13 +48,13 @@ GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
                                     Ren::Vec2f{-1.0f, -1.0f},
                                     Ren::Vec2f{2.0f, 2.0f},
                                     ui_root_};
-    edit_box_.reset(new Gui::EditBox{edit_box_frame, dialog_font_.get(), Ren::Vec2f{-0.5f, 0.75f},
-                                     Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_});
+    edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_.get(), Ren::Vec2f{-0.5f, 0.75f},
+                                               Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 
-    results_frame_.reset(new Gui::Image9Patch{*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
-                                              Ren::Vec2f{8.0f, 8.0f}, 1.0f, Ren::Vec2f{-0.5f, -0.75f},
-                                              Ren::Vec2f{1.0f, 1.5f}, ui_root_});
+    results_frame_ = std::make_unique<Gui::Image9Patch>(*ren_ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png",
+                                                        Ren::Vec2f{8.0f, 8.0f}, 1.0f, Ren::Vec2f{-0.5f, -0.75f},
+                                                        Ren::Vec2f{1.0f, 1.5f}, ui_root_);
 }
 
 GSUITest2::~GSUITest2() = default;
@@ -128,8 +128,8 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov,
-                              true, max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, true,
+                              max_exposure);
 }
 
 void GSUITest2::UpdateAnim(const uint64_t dt_us) {
@@ -337,7 +337,7 @@ bool GSUITest2::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 

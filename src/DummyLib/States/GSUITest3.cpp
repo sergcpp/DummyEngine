@@ -62,15 +62,15 @@ void GSUITest3::Enter() {
     log_->Info("GSUITest: Loading scene!");
     GSBaseState::LoadScene(SCENE_NAME);
 
-    /*test_image_.reset(new Gui::Image{
+    /*test_image_ = std::make_unique<Gui::Image>(
         *ctx_, "assets_pc/textures/test_image.uncompressed.png", Ren::Vec2f{ -0.5f, -0.5f
     }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
-    });
+    );
 
-    test_frame_.reset(new Gui::Image9Patch{
+    test_frame_ = std::make_unique<Gui::Image9Patch>(
         *ctx_, "assets_pc/textures/ui/frame_01.uncompressed.png", Ren::Vec2f{ 2.0f, 2.0f
     }, 1.0f, Ren::Vec2f{ 0.0f, 0.1f }, Ren::Vec2f{ 0.5f, 0.5f }, ui_root_.get()
-    });*/
+    );*/
 
 #if defined(__ANDROID__)
     const char *book_name = "assets/scenes/test/test_book/test_book.json";
@@ -102,14 +102,14 @@ void GSUITest3::Enter() {
 
         /*{
             const auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
-            paged_reader_.reset(new PagedReader{*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
-                                                &page_root, book_main_font_, book_emph_font_, book_caption_font_});
+            paged_reader_ = std::make_unique<PagedReader>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
+                                                &page_root, book_main_font_, book_emph_font_, book_caption_font_);
 
             paged_reader_->LoadBook(js_book, "en", "de");
         }*/
     }
 
-    page_renderer_.reset(new Gui::Renderer{*ren_ctx_});
+    page_renderer_ = std::make_unique<Gui::Renderer>(*ren_ctx_);
 
     /*{ // init page framebuffer
         FrameBuf::ColorAttachmentDesc attachment;
@@ -403,7 +403,7 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         paged_reader_->Hover(p);
 
-        hit_point_screen_.reset();
+        hit_point_screen_ = {};
     } break;
     case Eng::RawInputEv::P2Move: {
 

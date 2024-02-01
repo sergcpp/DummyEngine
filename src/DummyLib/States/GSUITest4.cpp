@@ -51,20 +51,20 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
 
     const float font_height = dialog_font_->height(ui_root_);
 
-    cam_ctrl_.reset(new Eng::FreeCamController(ren_ctx_->w(), ren_ctx_->h(), 0.3f));
-    dial_ctrl_.reset(new DialogController);
+    cam_ctrl_ = std::make_unique<Eng::FreeCamController>(ren_ctx_->w(), ren_ctx_->h(), 0.3f);
+    dial_ctrl_ = std::make_unique<DialogController>();
 
-    test_dialog_.reset(new Eng::ScriptedDialog{*ren_ctx_, *snd_ctx_, *scene_manager_});
+    test_dialog_ = std::make_unique<Eng::ScriptedDialog>(*ren_ctx_, *snd_ctx_, *scene_manager_);
 
-    dialog_ui_.reset(
-        new DialogUI{Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_, true /* debug */});
+    dialog_ui_ = std::make_unique<
+        DialogUI>(Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_, true /* debug */);
     dialog_ui_->make_choice_signal.Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
-    seq_edit_ui_.reset(new SeqEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
+    seq_edit_ui_ = std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
-    dialog_edit_ui_.reset(
-        new DialogEditUI{*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_});
+    dialog_edit_ui_ = std::make_unique<
+        DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<DialogController, &DialogController::SetCurSequence>(
@@ -72,14 +72,14 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
 
     dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(this);
 
-    seq_cap_ui_.reset(new CaptionsUI{Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_});
+    seq_cap_ui_ = std::make_unique<CaptionsUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     dial_ctrl_->push_choice_signal.Connect<DialogUI, &DialogUI::OnPushChoice>(dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal.Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
     dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
 
-    word_puzzle_.reset(
-        new WordPuzzleUI(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_));
+    word_puzzle_ = std::make_unique<
+        WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
     word_puzzle_->puzzle_solved_signal.Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
 

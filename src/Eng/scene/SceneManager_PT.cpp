@@ -625,7 +625,7 @@ void Eng::SceneManager::InitScene_PT(bool _override) {
                 /*if (!mesh_desc.groups.empty()) {
                     std::unique_ptr<uint32_t[]> compacted_indices;
                     if (is_sparse) {
-                        compacted_indices.reset(new uint32_t[mesh_desc.vtx_indices_count]);
+                        compacted_indices = std::make_unique<uint32_t[]>(mesh_desc.vtx_indices_count);
 
                         mesh_desc.vtx_indices_count = 0;
                         for (Ray::shape_desc_t &s : mesh_desc.shapes) {
