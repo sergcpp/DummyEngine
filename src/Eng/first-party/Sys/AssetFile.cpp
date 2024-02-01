@@ -15,12 +15,12 @@
 #include "Pack.h"
 
 namespace Sys {
-struct Package {
-    std::string name;
-    std::vector<Sys::FileDesc> file_list;
-};
+//struct Package {
+//    std::string name;
+//    std::vector<Sys::FileDesc> file_list;
+//};
 
-std::vector<Package> added_packages;
+//std::vector<Package> added_packages;
 } // namespace Sys
 
 #ifdef __ANDROID__
@@ -112,7 +112,7 @@ bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
 
         bool found_in_package = false;
 
-        string fname = file_name;
+        /*string fname = file_name;
         for (Package& p : added_packages) {
             for (FileDesc& f : p.file_list) {
                 if (fname == f.name) {
@@ -128,7 +128,7 @@ bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
         }
             if (found_in_package)
                 break;
-        }
+        }*/
 
         if (!found_in_package) {
             file_stream_->open(file_name, std::ios::in | std::ios::binary);
@@ -225,7 +225,7 @@ int32_t Sys::AssetFile::descriptor(off_t *start, off_t *len) {
 }
 #endif
 
-void Sys::AssetFile::AddPackage(const char *name) {
+/*void Sys::AssetFile::AddPackage(const char *name) {
     size_t ln = strlen(name);
     if (ln < 6 || name[ln - 5] != '.' || name[ln - 4] != 'p' || name[ln - 3] != 'a' ||
         name[ln - 2] != 'c' || name[ln - 1] != 'k') {
@@ -244,4 +244,4 @@ void Sys::AssetFile::RemovePackage(const char *name) {
             return;
         }
     }
-}
+}*/

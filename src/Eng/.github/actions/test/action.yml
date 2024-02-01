@@ -19,6 +19,7 @@ runs:
         chmod +x ./${{ inputs.bin-dir }}/test_Snd
         chmod +x ./${{ inputs.bin-dir }}/test_Eng
         chmod +x ./${{ inputs.bin-dir }}/test_Ren
+        chmod +x ./${{ inputs.bin-dir }}/test_glslx
         WORK_DIR=`pwd`
         cd ../../builds/Eng
         $WORK_DIR/${{ inputs.bin-dir }}/test_SW
@@ -27,6 +28,7 @@ runs:
         $WORK_DIR/${{ inputs.bin-dir }}/test_Phy
         $WORK_DIR/${{ inputs.bin-dir }}/test_Snd
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
+        $WORK_DIR/${{ inputs.bin-dir }}/test_glslx
         cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }}
         cd ../../..

@@ -221,8 +221,7 @@ template <typename T, typename FallBackAllocator = std::allocator<T>> class Mult
 
     // Returns true if and only if storage allocated from *this
     // can be deallocated from other, and vice versa.
-    bool operator==(const MultiPoolAllocator &other) const {
-        ((void)other);
+    bool operator==([[maybe_unused]] const MultiPoolAllocator &other) const {
         return true;
     }
 };

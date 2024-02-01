@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(Phy)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;Asan" CACHE STRING "" FORCE)
 
 IF(MSVC)
@@ -14,7 +17,6 @@ ENDIF(MSVC)
 IF(WIN32)
 
 ELSE(WIN32)
-    set(CMAKE_CXX_STANDARD  11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pthread -fPIC")
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
         set(LIBS dl pthread)

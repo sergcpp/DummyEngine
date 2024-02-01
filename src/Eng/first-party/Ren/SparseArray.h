@@ -182,7 +182,7 @@ template <typename T> class SparseArray {
         capacity_ = new_capacity;
     }
 
-    template <class... Args> uint32_t emplace(Args &&... args) {
+    template <class... Args> uint32_t emplace(Args &&...args) {
         if (size_ + 1 > capacity_) {
             reserve(capacity_ ? (capacity_ * 2) : 8);
         }
@@ -261,7 +261,7 @@ template <typename T> class SparseArray {
         }
     }
 
-    class SparseArrayIterator : public std::iterator<std::forward_iterator_tag, T> {
+    class SparseArrayIterator {
         friend class SparseArray<T>;
 
         SparseArray<T> *container_;
@@ -270,6 +270,12 @@ template <typename T> class SparseArray {
         SparseArrayIterator(SparseArray<T> *container, uint32_t index) : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = T *;
+        using reference = T &;
+
         T &operator*() { return container_->at(index_); }
         T *operator->() { return &container_->at(index_); }
         SparseArrayIterator &operator++() {
@@ -292,7 +298,7 @@ template <typename T> class SparseArray {
         bool operator!=(const SparseArrayIterator &rhs) const { return index_ != rhs.index_; }
     };
 
-    class SparseArrayConstIterator : public std::iterator<std::forward_iterator_tag, T> {
+    class SparseArrayConstIterator {
         friend class SparseArray<T>;
 
         const SparseArray<T> *container_;
@@ -302,6 +308,12 @@ template <typename T> class SparseArray {
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = T *;
+        using reference = T &;
+
         const T &operator*() const { return container_->at(index_); }
         const T *operator->() const { return &container_->at(index_); }
         SparseArrayConstIterator &operator++() {

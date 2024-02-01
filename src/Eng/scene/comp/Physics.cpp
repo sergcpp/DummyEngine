@@ -70,7 +70,7 @@ void Eng::Physics::Read(const JsObjectP &js_in, Physics &ph) {
         const JsStringP &js_shape_type = js_shape.at("type").as_str();
         if (js_shape_type.val == "sphere") {
             const JsNumber &js_radius = js_shape.at("radius").as_num();
-            ph.body.shape.reset(new Phy::ShapeSphere{real(js_radius.val)});
+            ph.body.shape = std::make_unique<Phy::ShapeSphere>(real(js_radius.val));
         } else if (js_shape_type.val == "box") {
             const JsArrayP &js_points = js_shape.at("points").as_arr();
 
@@ -82,7 +82,7 @@ void Eng::Physics::Read(const JsObjectP &js_in, Physics &ph) {
                                       real(js_point[2].as_num().val)};
             }
 
-            ph.body.shape.reset(new Phy::ShapeBox{points.get(), int(js_points.Size())});
+            ph.body.shape = std::make_unique<Phy::ShapeBox>(points.get(), int(js_points.Size()));
         } else if (js_shape_type.val == "convex_hull") {
 
         }

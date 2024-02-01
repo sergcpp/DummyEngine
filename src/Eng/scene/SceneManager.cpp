@@ -154,47 +154,47 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     { // Register default components
         using namespace std::placeholders;
 
-        default_comp_storage_[CompTransform].reset(new DefaultCompStorage<Transform>);
+        default_comp_storage_[CompTransform] = std::make_unique<DefaultCompStorage<Transform>>();
         RegisterComponent(CompTransform, default_comp_storage_[CompTransform].get(), nullptr);
 
-        default_comp_storage_[CompDrawable].reset(new DefaultCompStorage<Drawable>);
+        default_comp_storage_[CompDrawable] = std::make_unique<DefaultCompStorage<Drawable>>();
         RegisterComponent(CompDrawable, default_comp_storage_[CompDrawable].get(),
                           std::bind(&SceneManager::PostloadDrawable, this, _1, _2, _3));
 
-        default_comp_storage_[CompOccluder].reset(new DefaultCompStorage<Occluder>);
+        default_comp_storage_[CompOccluder] = std::make_unique<DefaultCompStorage<Occluder>>();
         RegisterComponent(CompOccluder, default_comp_storage_[CompOccluder].get(),
                           std::bind(&SceneManager::PostloadOccluder, this, _1, _2, _3));
 
-        default_comp_storage_[CompLightmap].reset(new DefaultCompStorage<Lightmap>);
+        default_comp_storage_[CompLightmap] = std::make_unique<DefaultCompStorage<Lightmap>>();
         RegisterComponent(CompLightmap, default_comp_storage_[CompLightmap].get(),
                           std::bind(&SceneManager::PostloadLightmap, this, _1, _2, _3));
 
-        default_comp_storage_[CompLightSource].reset(new DefaultCompStorage<LightSource>);
+        default_comp_storage_[CompLightSource] = std::make_unique<DefaultCompStorage<LightSource>>();
         RegisterComponent(CompLightSource, default_comp_storage_[CompLightSource].get(),
                           std::bind(&SceneManager::PostloadLightSource, this, _1, _2, _3));
 
-        default_comp_storage_[CompDecal].reset(new DefaultCompStorage<Decal>);
+        default_comp_storage_[CompDecal] = std::make_unique<DefaultCompStorage<Decal>>();
         RegisterComponent(CompDecal, default_comp_storage_[CompDecal].get(),
                           std::bind(&SceneManager::PostloadDecal, this, _1, _2, _3));
 
-        default_comp_storage_[CompProbe].reset(new DefaultCompStorage<LightProbe>);
+        default_comp_storage_[CompProbe] = std::make_unique<DefaultCompStorage<LightProbe>>();
         RegisterComponent(CompProbe, default_comp_storage_[CompProbe].get(),
                           std::bind(&SceneManager::PostloadLightProbe, this, _1, _2, _3));
 
-        default_comp_storage_[CompAnimState].reset(new DefaultCompStorage<AnimState>);
+        default_comp_storage_[CompAnimState] = std::make_unique<DefaultCompStorage<AnimState>>();
         RegisterComponent(CompAnimState, default_comp_storage_[CompAnimState].get(), nullptr);
 
-        default_comp_storage_[CompVegState].reset(new DefaultCompStorage<VegState>);
+        default_comp_storage_[CompVegState] = std::make_unique<DefaultCompStorage<VegState>>();
         RegisterComponent(CompVegState, default_comp_storage_[CompVegState].get(), nullptr);
 
-        default_comp_storage_[CompSoundSource].reset(new DefaultCompStorage<SoundSource>);
+        default_comp_storage_[CompSoundSource] = std::make_unique<DefaultCompStorage<SoundSource>>();
         RegisterComponent(CompSoundSource, default_comp_storage_[CompSoundSource].get(),
                           std::bind(&SceneManager::PostloadSoundSource, this, _1, _2, _3));
 
-        default_comp_storage_[CompPhysics].reset(new DefaultCompStorage<Physics>);
+        default_comp_storage_[CompPhysics] = std::make_unique<DefaultCompStorage<Physics>>();
         RegisterComponent(CompPhysics, default_comp_storage_[CompPhysics].get(), nullptr);
 
-        default_comp_storage_[CompAccStructure].reset(new DefaultCompStorage<AccStructure>);
+        default_comp_storage_[CompAccStructure] = std::make_unique<DefaultCompStorage<AccStructure>>();
         RegisterComponent(CompAccStructure, default_comp_storage_[CompAccStructure].get(),
                           std::bind(&SceneManager::PostloadAccStructure, this, _1, _2, _3));
     }
@@ -242,8 +242,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     finished_textures_.reserve(262144);
 
     for (int i = 0; i < MaxSimultaneousRequests; i++) {
-        // io_pending_tex_[i].buf.reset(new Sys::DefaultFileReadBuf);
-        io_pending_tex_[i].buf.reset(new TextureUpdateFileBuf(ren_ctx_.api_ctx()));
+        io_pending_tex_[i].buf = std::make_unique<TextureUpdateFileBuf>(ren_ctx_.api_ctx());
     }
 
     if (snd_ctx_) {

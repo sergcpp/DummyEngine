@@ -113,8 +113,8 @@ bool Gui::Renderer::Init() {
         ndx_stage_data_ = reinterpret_cast<uint16_t *>(index_stage_buf_->Map(Ren::BufMapWrite, true /* persistent */));
     } else {
         // use temporary storage
-        stage_vtx_data_.reset(new vertex_t[MaxVerticesPerRange * Ren::MaxFramesInFlight]);
-        stage_ndx_data_.reset(new uint16_t[MaxIndicesPerRange * Ren::MaxFramesInFlight]);
+        stage_vtx_data_ = std::make_unique<vertex_t[]>(MaxVerticesPerRange * Ren::MaxFramesInFlight);
+        stage_ndx_data_ = std::make_unique<uint16_t[]>(MaxIndicesPerRange * Ren::MaxFramesInFlight);
         vtx_stage_data_ = stage_vtx_data_.get();
         ndx_stage_data_ = stage_ndx_data_.get();
     }

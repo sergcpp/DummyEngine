@@ -362,11 +362,11 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     const auto attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
 
-    attribs_.reset(new char[attribs_size]);
+    attribs_ = std::make_unique<char[]>(attribs_size);
     data.read((char *)attribs_.get(), attribs_size);
 
     const auto index_data_size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
-    indices_.reset(new char[index_data_size]);
+    indices_ = std::make_unique<char[]>(index_data_size);
     data.read((char *)indices_.get(), index_data_size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
@@ -475,11 +475,11 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 
     const auto attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
 
-    attribs_.reset(new char[attribs_size]);
+    attribs_ = std::make_unique<char[]>(attribs_size);
     data.read((char *)attribs_.get(), attribs_size);
 
     const auto index_data_size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
-    indices_.reset(new char[index_data_size]);
+    indices_ = std::make_unique<char[]>(index_data_size);
     data.read((char *)indices_.get(), index_data_size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
@@ -601,11 +601,11 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     }
 
     const uint32_t sk_attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
-    attribs_.reset(new char[sk_attribs_size]);
+    attribs_ = std::make_unique<char[]>(sk_attribs_size);
     data.read((char *)attribs_.get(), sk_attribs_size);
 
     indices_buf_.size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
-    indices_.reset(new char[indices_buf_.size]);
+    indices_ = std::make_unique<char[]>(indices_buf_.size);
     data.read((char *)indices_.get(), indices_buf_.size);
 
     const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
@@ -639,7 +639,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     }
 
     skel_.bones_count = file_header.p[BONES_CHUNK].length / (64 + 8 + 12 + 16);
-    skel_.bones.reset(new Bone[skel_.bones_count]);
+    skel_.bones = std::make_unique<Bone[]>(skel_.bones_count);
 
     for (int i = 0; i < skel_.bones_count; i++) {
         float temp_f[4];
@@ -685,8 +685,8 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
             int(file_header.p[SHAPE_KEYS_CHUNK].length - 2 * sizeof(uint32_t)) /
             (64 + shape_keyed_vertices_count * (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float)));
 
-        deltas_.reset(new VtxDelta[(size_t)skel_.shapes_count * shape_keyed_vertices_count]);
-        skel_.shapes.reset(new ShapeKey[skel_.shapes_count]);
+        deltas_ = std::make_unique<VtxDelta[]>(skel_.shapes_count * shape_keyed_vertices_count);
+        skel_.shapes = std::make_unique<ShapeKey[]>(skel_.shapes_count);
 
         for (int i = 0; i < skel_.shapes_count; i++) {
             ShapeKey &sh_key = skel_.shapes[i];
@@ -965,11 +965,11 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     log->Info("after bone broups2");
 
     indices_buf_.size = (uint32_t)(new_indices.size() * sizeof(unsigned short));
-    indices_.reset(new char[indices_buf_.size]);
+    indices_ = std::make_unique<char[]>(indices_buf_.size);
     memcpy(indices_.get(), &new_indices[0], indices_buf_.size);
 
     attribs_buf1_.size = (uint32_t)(new_attribs.size() * sizeof(float));
-    attribs_.reset(new char[attribs_buf1_.size]);
+    attribs_ = std::make_unique<char[]>(attribs_buf1_.size);
     memcpy(attribs_.get(), &new_attribs[0], attribs_buf1_.size);
 }*/
 

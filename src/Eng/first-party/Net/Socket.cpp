@@ -360,8 +360,8 @@ bool Net::TCPSocket::Connect(const Address &dest) {
     address.sin_addr.s_addr = htonl(dest.address());
     address.sin_port = htons((unsigned short) dest.port());
 
-    int res = connect(handle_, (struct sockaddr *) &address, sizeof(sockaddr_in));
-    (void)res;
+    [[maybe_unused]] int res = connect(handle_, (struct sockaddr *)&address, sizeof(sockaddr_in));
+
     /*
     int valopt;
     fd_set myset;

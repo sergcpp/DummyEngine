@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(Net)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;Asan" CACHE STRING "" FORCE)
 
 IF(MSVC)
@@ -10,9 +13,6 @@ IF(MSVC)
     endif()
 ELSE(MSVC)
 ENDIF(MSVC)
-
-
-set(CMAKE_CXX_STANDARD  11)
 
 set(SOURCE_FILES    Address.h
                     Address.cpp

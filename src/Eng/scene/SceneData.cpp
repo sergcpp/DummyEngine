@@ -26,9 +26,9 @@ void Eng::PersistentGpuData::Clear() {
             descr_set = VK_NULL_HANDLE;
         }
     }
-    textures_descr_pool.reset();
-    rt_textures_descr_pool.reset();
-    rt_inline_textures_descr_pool.reset();
+    textures_descr_pool = {};
+    rt_textures_descr_pool = {};
+    rt_inline_textures_descr_pool = {};
     instance_buf = {};
 #elif defined(USE_GL_RENDER)
     textures_buf = {};

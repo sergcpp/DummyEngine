@@ -102,8 +102,8 @@ class Renderer {
     Ren::Framebuffer framebuffers_[Ren::MaxFramesInFlight];
 
     // buffers for the case if persistent mapping is not available
-    std::unique_ptr<vertex_t> stage_vtx_data_;
-    std::unique_ptr<uint16_t> stage_ndx_data_;
+    std::unique_ptr<vertex_t[]> stage_vtx_data_;
+    std::unique_ptr<uint16_t[]> stage_ndx_data_;
 
     Ren::BufferRef vertex_stage_buf_, index_stage_buf_;
     Ren::BufferRef vertex_buf_, index_buf_;

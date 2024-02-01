@@ -77,7 +77,7 @@ int Snd::LoadWAV(std::istream &in_data, int &channels, int &samples_per_second,
         return 0;
     }
 
-    samples.reset(new uint8_t[chunk_size]);
+    samples = std::make_unique<uint8_t[]>(chunk_size);
     if (!in_data.read((char *)&samples[0], chunk_size)) {
         return 0;
     }

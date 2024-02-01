@@ -54,8 +54,7 @@ namespace Sys {
 
         // Returns true if and only if storage allocated from *this
         // can be deallocated from other, and vice versa.
-        bool operator==(const MonoAlloc& other) const {
-            ((void)other);
+        bool operator==([[maybe_unused]] const MonoAlloc& other) const {
             return false;
         }
 
@@ -99,11 +98,7 @@ namespace Sys {
             return p;
         }
 
-        void deallocate(T * const p, const std::size_t n) const {
-            ((void)p);
-            ((void)n);
-        }
-
+        void deallocate([[maybe_unused]] T * const p, [[maybe_unused]] const std::size_t n) const {}
 
         // The following will be the same for all allocators that ignore hints.
         template <typename U>

@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.1)
 project(ltc_fit)
 
-
 if(WIN32)
     set(LIBS )
 elseif(APPLE)
@@ -10,14 +9,13 @@ else()
     set(LIBS X11)
 endif()
 
-
 set(SOURCE_FILES      brdf.h
                       brdf_beckmann.h
-											brdf_principledClearcoat.h
+                      brdf_principledClearcoat.h
                       brdf_disneyDiffuse.h
                       brdf_principledDiffuse.h
                       brdf_principledSheen.h
-											brdf_principledSpecular.h
+                      brdf_principledSpecular.h
                       brdf_ggx.h
                       CImg.h
                       dds.cpp

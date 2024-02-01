@@ -103,7 +103,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
                 return false;
             }
 
-            glyph_ranges_.reset(new glyph_range_t[glyph_range_count_]);
+            glyph_ranges_ = std::make_unique<glyph_range_t[]>(glyph_range_count_);
 
             if (!in_file.Read((char *)glyph_ranges_.get(), glyph_range_count_ * sizeof(glyph_range_t))) {
                 return false;
@@ -114,7 +114,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
                 glyphs_count_ += (glyph_ranges_[j].end - glyph_ranges_[j].beg);
             }
 
-            glyphs_.reset(new glyph_info_t[glyphs_count_]);
+            glyphs_ = std::make_unique<glyph_info_t[]>(glyphs_count_);
 
             if (!in_file.Read((char *)glyphs_.get(), glyphs_count_ * sizeof(glyph_info_t))) {
                 return false;

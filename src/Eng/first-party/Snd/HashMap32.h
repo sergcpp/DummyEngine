@@ -84,14 +84,10 @@ template <> class Equal<const char *> {
 
 template <> class Equal<String> {
   public:
-    template <typename K2> bool operator()(const String &k1, const K2 &k2) const {
-        return k1 == k2;
-    }
+    template <typename K2> bool operator()(const String &k1, const K2 &k2) const { return k1 == k2; }
 };
 
-template <typename K, typename V, typename HashFunc = Hash<K>,
-          typename KeyEqual = Equal<K>>
-class HashMap32 {
+template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual = Equal<K>> class HashMap32 {
     static const uint8_t OccupiedBit = 0b10000000;
     static const uint8_t HashMask = 0b01111111;
 
@@ -110,10 +106,8 @@ class HashMap32 {
     KeyEqual key_equal_;
 
   public:
-    explicit HashMap32(const HashFunc &hash_func = HashFunc(),
-                       const KeyEqual &key_equal = KeyEqual()) noexcept
-        : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0), hash_func_(hash_func),
-          key_equal_(key_equal) {}
+    explicit HashMap32(const HashFunc &hash_func = HashFunc(), const KeyEqual &key_equal = KeyEqual()) noexcept
+        : ctrl_(nullptr), nodes_(nullptr), capacity_(0), size_(0), hash_func_(hash_func), key_equal_(key_equal) {}
 
     explicit HashMap32(uint32_t capacity, const HashFunc &hash_func = HashFunc(),
                        const KeyEqual &key_equal = KeyEqual())
@@ -212,8 +206,7 @@ class HashMap32 {
         uint32_t i = hash & (capacity_ - 1);
         uint32_t end = i;
         while (ctrl_[i]) {
-            if (ctrl_[i] == ctrl && nodes_[i].hash == hash &&
-                key_equal_(nodes_[i].key, key)) {
+            if (ctrl_[i] == ctrl && nodes_[i].hash == hash && key_equal_(nodes_[i].key, key)) {
 
                 size_--;
                 ctrl_[i] = HashMask;
@@ -246,8 +239,7 @@ class HashMap32 {
         uint32_t i = hash & (capacity_ - 1);
         const uint32_t end = i;
         while (ctrl_[i]) {
-            if (ctrl_[i] == ctrl && nodes_[i].hash == hash &&
-                key_equal_(nodes_[i].key, key)) {
+            if (ctrl_[i] == ctrl && nodes_[i].hash == hash && key_equal_(nodes_[i].key, key)) {
                 return &nodes_[i].val;
             }
 
@@ -276,17 +268,22 @@ class HashMap32 {
         }
     }
 
-    class HashMap32Iterator : public std::iterator<std::forward_iterator_tag, Node> {
+    class HashMap32Iterator {
         friend class HashMap32<K, V, HashFunc, KeyEqual>;
 
         HashMap32<K, V, HashFunc, KeyEqual> *container_;
         uint32_t index_;
 
-        HashMap32Iterator(HashMap32<K, V, HashFunc, KeyEqual> *container,
-                          const uint32_t index)
+        HashMap32Iterator(HashMap32<K, V, HashFunc, KeyEqual> *container, const uint32_t index)
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = Node;
+        using difference_type = std::ptrdiff_t;
+        using pointer = Node *;
+        using reference = Node &;
+
         Node &operator*() { return container_->at(index_); }
         Node *operator->() { return &container_->at(index_); }
         HashMap32Iterator &operator++() {
@@ -309,17 +306,22 @@ class HashMap32 {
         bool operator!=(const HashMap32Iterator &rhs) { return index_ != rhs.index_; }
     };
 
-    class HashMap32ConstIterator : public std::iterator<std::forward_iterator_tag, Node> {
+    class HashMap32ConstIterator {
         friend class HashMap32<K, V, HashFunc, KeyEqual>;
 
         const HashMap32<K, V, HashFunc, KeyEqual> *container_;
         uint32_t index_;
 
-        HashMap32ConstIterator(const HashMap32<K, V, HashFunc, KeyEqual> *container,
-                               const uint32_t index)
+        HashMap32ConstIterator(const HashMap32<K, V, HashFunc, KeyEqual> *container, const uint32_t index)
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = Node;
+        using difference_type = std::ptrdiff_t;
+        using pointer = Node *;
+        using reference = Node &;
+
         const Node &operator*() { return container_->at(index_); }
         const Node *operator->() { return &container_->at(index_); }
         HashMap32ConstIterator &operator++() {
@@ -335,19 +337,11 @@ class HashMap32 {
         uint32_t index() const { return index_; }
 
         bool operator<(const HashMap32ConstIterator &rhs) { return index_ < rhs.index_; }
-        bool operator<=(const HashMap32ConstIterator &rhs) {
-            return index_ <= rhs.index_;
-        }
+        bool operator<=(const HashMap32ConstIterator &rhs) { return index_ <= rhs.index_; }
         bool operator>(const HashMap32ConstIterator &rhs) { return index_ > rhs.index_; }
-        bool operator>=(const HashMap32ConstIterator &rhs) {
-            return index_ >= rhs.index_;
-        }
-        bool operator==(const HashMap32ConstIterator &rhs) {
-            return index_ == rhs.index_;
-        }
-        bool operator!=(const HashMap32ConstIterator &rhs) {
-            return index_ != rhs.index_;
-        }
+        bool operator>=(const HashMap32ConstIterator &rhs) { return index_ >= rhs.index_; }
+        bool operator==(const HashMap32ConstIterator &rhs) { return index_ == rhs.index_; }
+        bool operator!=(const HashMap32ConstIterator &rhs) { return index_ != rhs.index_; }
     };
 
     using iterator = HashMap32Iterator;
@@ -416,8 +410,7 @@ class HashMap32 {
 
             for (uint32_t i = 0; i < old_capacity; i++) {
                 if (old_ctrl[i] & OccupiedBit) {
-                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key),
-                                   std::move(old_nodes[i].val));
+                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key), std::move(old_nodes[i].val));
                 }
             }
 
@@ -453,8 +446,7 @@ class HashMap32 {
 
             for (uint32_t i = 0; i < old_capacity; i++) {
                 if (old_ctrl[i] & OccupiedBit) {
-                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key),
-                                   std::move(old_nodes[i].val));
+                    InsertInternal(old_nodes[i].hash, std::move(old_nodes[i].key), std::move(old_nodes[i].val));
                 }
             }
 

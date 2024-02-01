@@ -298,9 +298,8 @@ template <typename T, int N> Vec<T, N> Ceil(const Vec<T, N> &v) {
 template <typename T, int N> Vec<T, N> Fract(const Vec<T, N> &v) {
     Vec<T, N> ret;
     for (int i = 0; i < N; i++) {
-        T integral_part;
+        [[maybe_unused]] T integral_part;
         ret[i] = std::modf(v[i], &integral_part);
-        (void)integral_part;
     }
     return ret;
 }

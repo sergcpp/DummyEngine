@@ -607,7 +607,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         new_mesh.tris_count = uint32_t(prim_indices.size()) - new_mesh.tris_index;
         new_mesh.vert_index = first_vertex;
 
-        acc->mesh->blas.reset(new Ren::AccStructureSW(mesh_index));
+        acc->mesh->blas = std::make_unique<Ren::AccStructureSW>(mesh_index);
 
         acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
     }

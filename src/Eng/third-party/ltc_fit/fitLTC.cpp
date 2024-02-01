@@ -1,6 +1,7 @@
 // fitLTC.cpp : Defines the entry point for the console application.
 //
 
+#define NOMINMAX 1
 #include <algorithm>
 #include <fstream>
 #include <iomanip>
@@ -20,7 +21,6 @@
 #include "export.h"
 #include "plot.h"
 
-#undef min
 #include "MVec.h"
 
 // size of precomputed table (theta, alpha)

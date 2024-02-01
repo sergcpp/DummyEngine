@@ -71,7 +71,7 @@ struct VpxCtx {
 };
 } // namespace Eng
 
-Eng::VideoPlayer::VideoPlayer() { ctx_.reset(new VpxCtx); }
+Eng::VideoPlayer::VideoPlayer() { ctx_ = std::make_unique<VpxCtx>(); }
 
 Eng::VideoPlayer::~VideoPlayer() = default;
 

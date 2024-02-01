@@ -122,7 +122,9 @@
 #include <sys/time.h>
 #include <unistd.h>
 #elif cimg_OS==2
+#define byte win_byte_override
 #include <windows.h>
+#undef byte
 #ifndef _WIN32_IE
 #define _WIN32_IE 0x0400
 #endif
@@ -4410,7 +4412,7 @@ namespace cimg_library {
     **/
     inline int strcasecmp(const char *const s1, const char *const s2) {
       if (!s1) return s2?-1:0;
-      const unsigned int l1 = std::strlen(s1), l2 = std::strlen(s2);
+      const unsigned int l1 = (unsigned int)std::strlen(s1), l2 = (unsigned int)std::strlen(s2);
       return cimg::strncasecmp(s1,s2,1+(l1<l2?l1:l2));
     }
 
@@ -4953,7 +4955,7 @@ namespace cimg_library {
         if (body) std::strcpy(body,filename);
         return filename + std::strlen(filename);
       }
-      const unsigned int l = p - filename - 1;
+      const unsigned int l = (unsigned int)(p - filename - 1);
       if (body) { std::memcpy(body,filename,l); body[l] = 0; }
       return p;
     }
@@ -8079,7 +8081,7 @@ namespace cimg_library {
 
       // Allocate space for window title
       const char *const nptitle = ptitle?ptitle:"";
-      const unsigned int s = std::strlen(nptitle) + 1;
+      const unsigned int s = (unsigned int)std::strlen(nptitle) + 1;
       char *const tmp_title = s?new char[s]:0;
       if (s) std::memcpy(tmp_title,nptitle,s*sizeof(char));
 
@@ -8285,7 +8287,7 @@ namespace cimg_library {
       va_end(ap);
       if (std::strcmp(_title,tmp)) {
         delete[] _title;
-        const unsigned int s = std::strlen(tmp) + 1;
+        const unsigned int s = (unsigned int)std::strlen(tmp) + 1;
         _title = new char[s];
         std::memcpy(_title,tmp,s*sizeof(char));
         SetWindowTextA(_window, tmp);
@@ -11619,12 +11621,12 @@ namespace cimg_library {
         reference(img),calling_function(funcname?funcname:"cimg_math_parser") {
         unsigned int l = 0;
         if (expression) {
-          l = std::strlen(expression);
+          l = (unsigned int)std::strlen(expression);
           expr.assign(expression,l+1);
           if (*expr._data) {
             char *d = expr._data;
             for (const char *s = expr._data; *s || (bool)(*d=0); ++s) if (*s!=' ') *(d++) = *s;
-            l = d - expr._data;
+            l = (unsigned int)(d - expr._data);
           }
         }
         if (!l) throw CImgArgumentException("[_cimg_math_parser] "
@@ -11768,7 +11770,7 @@ namespace cimg_library {
         for (char *s = se2; s>ss; --s) if (*s==';' && level[s-expr._data]==clevel) { compile(ss,s); _cimg_mp_return(compile(s+1,se)); }
         for (char *s = ss1, *ps = ss, *ns = ss2; s<se1; ++s, ++ps, ++ns)
           if (*s=='=' && *ns!='=' && *ps!='=' && *ps!='>' && *ps!='<' && *ps!='!' && level[s-expr._data]==clevel) {
-             CImg<charT> variable_name(ss,s-ss+1); variable_name.back() = 0;
+             CImg<charT> variable_name(ss,(unsigned int)(s-ss+1)); variable_name.back() = 0;
              bool is_valid_name = true;
              if ((*ss>='0' && *ss<='9') ||
                  (s==ss+1 && (*ss=='x' || *ss=='y' || *ss=='z' || *ss=='c' ||
@@ -11980,7 +11982,7 @@ namespace cimg_library {
         }
 
         // No known item found, assuming this is an already initialized variable.
-        CImg<charT> variable_name(ss,se-ss+1); variable_name.back() = 0;
+        CImg<charT> variable_name(ss,(unsigned int)(se-ss+1)); variable_name.back() = 0;
         for (unsigned int i = 0; i<mempos; ++i) if (label[i]._data && !std::strcmp(variable_name,label[i])) _cimg_mp_return(i);
         *se = saved_char;
         throw CImgArgumentException("[_cimg_math_parser] "
@@ -12061,7 +12063,7 @@ namespace cimg_library {
         return !mem[opcode(2)];
       }
       double mp_bitwise_not() {
-        return ~(unsigned long)mem[opcode(2)];
+        return double(~(unsigned long long)(mem[opcode(2)]));
       }
       double mp_modulo() {
         return cimg::mod(mem[opcode(2)],mem[opcode(3)]);
@@ -27808,7 +27810,7 @@ namespace cimg_library {
         throw CImgArgumentException(_cimg_instance
                                     "draw_text() : Empty specified font.",
                                     cimg_instance);
-      const unsigned int text_length = std::strlen(text);
+      const unsigned int text_length = (unsigned int)std::strlen(text);
       if (is_empty()) {
         // If needed, pre-compute necessary size of the image
         int x = 0, y = 0, w = 0;

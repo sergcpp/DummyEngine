@@ -81,7 +81,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
     glBindVertexArray(vi_depth_pass_solid_.gl_vao());
     glUseProgram(pi_solid_.prog()->id());
 
-    int draw_calls_count = 0;
+    [[maybe_unused]] int draw_calls_count = 0;
 
     for (int i = 0; i < int((*p_list_)->shadow_lists.count); i++) {
         const ShadowList &sh_list = (*p_list_)->shadow_lists.data[i];
@@ -243,6 +243,4 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
     glBindVertexArray(0);
     Ren::GLUnbindSamplers(0, 1);
-
-    (void)draw_calls_count;
 }

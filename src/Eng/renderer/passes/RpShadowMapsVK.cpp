@@ -168,7 +168,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
     }
 
     bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
-    int draw_calls_count = 0;
+    [[maybe_unused]] int draw_calls_count = 0;
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
 
@@ -376,8 +376,6 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
-
-    (void)draw_calls_count;
 }
 
 #undef COUNT_OF

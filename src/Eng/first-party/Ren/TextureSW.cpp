@@ -55,10 +55,9 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
     return *this;
 }
 
-void Ren::Texture2D::Init(const char *name, const void *data, int size,
+void Ren::Texture2D::Init(const char *name, const void *data, [[maybe_unused]] int size,
                           const Tex2DParams &p, eTexLoadStatus *load_status) {
     strcpy(name_, name);
-    ((void)size);
 
     if (!data) {
         unsigned char cyan[3] = {0, 255, 255};
@@ -84,16 +83,13 @@ void Ren::Texture2D::Init(const char *name, const void *data, int size,
     }
 }
 
-void Ren::Texture2D::Init(const char *name, const void *data[6], const int size[6],
-                          const Tex2DParams &params, eTexLoadStatus *load_status) {
+void Ren::Texture2D::Init(const char *name, [[maybe_unused]] const void *data[6], [[maybe_unused]] const int size[6],
+                          [[maybe_unused]] const Tex2DParams &params, eTexLoadStatus *load_status) {
     strcpy(name_, name);
     ready_ = false;
     if (load_status) {
         *load_status = TexNotSupported;
     }
-    ((void)data);
-    ((void)size);
-    ((void)params);
 }
 
 void Ren::Texture2D::InitFromRAWData(const void *data, const Tex2DParams &p) {
@@ -130,9 +126,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data, const Tex2DParams &p) {
     InitFromRAWData(image_data.get(), _p);
 }
 
-void Ren::Texture2D::InitFromTEXFile(const void *data, const Tex2DParams &p) {
-    ((void)p);
-
+void Ren::Texture2D::InitFromTEXFile(const void *data, [[maybe_unused]] const Tex2DParams &p) {
     SWint tex_id;
     if (params_.format == Undefined) {
         tex_id = swCreateTexture();
@@ -155,10 +149,7 @@ void Ren::Texture2D::InitFromTEXFile(const void *data, const Tex2DParams &p) {
     }
 }
 
-void Ren::Texture2D::SetFilter(eTexFilter f, eTexRepeat r) {
-    ((void)f);
-    ((void)r);
-}
+void Ren::Texture2D::SetFilter([[maybe_unused]] eTexFilter f, [[maybe_unused]] eTexRepeat r) {}
 
 #ifdef _MSC_VER
 #pragma warning(pop)

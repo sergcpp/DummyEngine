@@ -191,7 +191,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         while (proc_objects_capacity_ < scene.objects.size()) {
             proc_objects_capacity_ *= 2;
         }
-        proc_objects_.reset(new ProcessedObjData[scene.objects.size()]);
+        proc_objects_ = std::make_unique<ProcessedObjData[]>(proc_objects_capacity_);
     }
     memset(proc_objects_.get(), 0xff, sizeof(ProcessedObjData) * scene.objects.size());
 

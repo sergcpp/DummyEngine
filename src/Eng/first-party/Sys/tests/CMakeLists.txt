@@ -18,7 +18,6 @@ add_executable(test_Sys main.cpp
                         test_common.h
                         test_inplace_function.cpp
                         test_json.cpp
-                        test_optional.cpp
                         test_pack.cpp
                         test_scope_exit.cpp
                         test_signal.cpp

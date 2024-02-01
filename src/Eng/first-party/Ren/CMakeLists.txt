@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.1)
 project(Ren)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 find_library(METAL_LIB Metal)
 
 if(WIN32)
 else(WIN32)
-    set(CMAKE_CXX_STANDARD 11)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
         #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -msse2 -mfma -mavx512f -mavx512bw -mavx512dq")

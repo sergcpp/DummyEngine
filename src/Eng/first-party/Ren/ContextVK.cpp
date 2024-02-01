@@ -58,7 +58,7 @@ Ren::Context::~Context() {
         for (int i = 0; i < MaxFramesInFlight; ++i) {
             api_ctx_->backend_frame = i; // default_descr_alloc_'s destructors rely on this
 
-            default_descr_alloc_[i].reset();
+            default_descr_alloc_[i] = {};
             DestroyDeferredResources(api_ctx_.get(), i);
 
             api_ctx_->vkDestroyFence(api_ctx_->device, api_ctx_->in_flight_fences[i], nullptr);
@@ -68,7 +68,7 @@ Ren::Context::~Context() {
             api_ctx_->vkDestroyQueryPool(api_ctx_->device, api_ctx_->query_pools[i], nullptr);
         }
 
-        default_memory_allocs_.reset();
+        default_memory_allocs_ = {};
 
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, 1, &api_ctx_->setup_cmd_buf);
         api_ctx_->vkFreeCommandBuffers(api_ctx_->device, api_ctx_->command_pool, MaxFramesInFlight,
@@ -111,7 +111,7 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *preferred_device) {
-    api_ctx_.reset(new ApiContext);
+    api_ctx_ = std::make_unique<ApiContext>();
     if (!api_ctx_->Load(log)) {
         return false;
     }
@@ -205,8 +205,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 
-    default_memory_allocs_.reset(new MemoryAllocators(
-        "Default Allocs", api_ctx_.get(), 32 * 1024 * 1024 /* initial_block_size */, 1.5f /* growth_factor */));
+    default_memory_allocs_ = std::make_unique<MemoryAllocators>(
+        "Default Allocs", api_ctx_.get(), 32 * 1024 * 1024 /* initial_block_size */, 1.5f /* growth_factor */);
 
     InitDefaultBuffers();
 
@@ -249,9 +249,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         const int MaxAccCount = 1;
         const int InitialSetsCount = 16;
 
-        default_descr_alloc_[i].reset(new DescrMultiPoolAlloc(api_ctx_.get(), PoolStep, MaxImgSamplerCount,
-                                                              MaxStoreImgCount, MaxUbufCount, MaxSbufCount,
-                                                              MaxTbufCount, MaxAccCount, InitialSetsCount));
+        default_descr_alloc_[i] = std::make_unique<DescrMultiPoolAlloc>(api_ctx_.get(), PoolStep, MaxImgSamplerCount,
+                                                                        MaxStoreImgCount, MaxUbufCount, MaxSbufCount,
+                                                                        MaxTbufCount, MaxAccCount, InitialSetsCount);
     }
 
     VkPhysicalDeviceProperties device_properties = {};

@@ -240,9 +240,9 @@ int Ren::Skeleton::AddAnimSequence(AnimSeqRef ref) {
     anims.emplace_back();
     AnimLink &a = anims.back();
     a.anim = std::move(ref);
-    a.anim_bones.reset(new int[bones_count]);
+    a.anim_bones = std::make_unique<int[]>(bones_count);
     a.anim->LinkBones(&bones[0], bones_count, &a.anim_bones[0]);
-    a.anim_shapes.reset(new int[bones_count]);
+    a.anim_shapes = std::make_unique<int[]>(bones_count);
     a.anim->LinkShapes(&shapes[0], shapes_count, &a.anim_shapes[0]);
     return int(anims.size() - 1);
 }

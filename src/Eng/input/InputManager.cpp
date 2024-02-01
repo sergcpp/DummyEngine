@@ -9,7 +9,7 @@ struct InputManagerImp {
 };
 } // namespace Eng
 
-Eng::InputManager::InputManager() { imp_.reset(new InputManagerImp()); }
+Eng::InputManager::InputManager() { imp_ = std::make_unique<InputManagerImp>(); }
 
 Eng::InputManager::~InputManager() = default;
 

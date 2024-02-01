@@ -17,11 +17,11 @@ namespace Net {
         template<class T>
         void SaveVar(const Var<T> &v) {
             assert(CheckHashes(v.hash_.hash));
-            auto var_beg = (int_type) data_bytes_.size();
+            auto var_beg = int_type(uint16_t(data_bytes_.size()));
             header_.push_back(v.hash_.hash);
             header_.push_back(var_beg);
 
-            auto data_beg = (int_type) data_bytes_.size();
+            auto data_beg = int_type(uint16_t(data_bytes_.size()));
             data_bytes_.resize(var_beg + sizeof(T));
 
             memcpy(&data_bytes_[data_beg], v.p_val(), sizeof(T));

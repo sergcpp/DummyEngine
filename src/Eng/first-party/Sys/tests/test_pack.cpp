@@ -13,7 +13,7 @@ std::vector<std::string> file_list = {"./constant.fs", "./src/CMakeLists.txt"};
 
 void test_pack() {
 
-    {
+    /*{
         // Save/Load package
         Sys::WritePackage("./my_pack.pack", file_list);
 
@@ -52,5 +52,5 @@ void test_pack() {
         require(in_file1.Read(buf1.get(), size));
         in_file2.read(buf2.get(), size);
         require(memcmp(buf1.get(), buf2.get(), size) == 0);
-    }
+    }*/
 }

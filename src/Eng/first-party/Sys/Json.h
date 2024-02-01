@@ -6,7 +6,17 @@
 #include <vector>
 
 #include "PoolAlloc.h"
-#include "Variant.h"
+
+namespace Sys {
+template <size_t arg1, size_t... args> struct _compile_time_max;
+template <size_t arg> struct _compile_time_max<arg> {
+    static const size_t value = arg;
+};
+template <size_t arg1, size_t arg2, size_t... args> struct _compile_time_max<arg1, arg2, args...> {
+    static const size_t value =
+        arg1 >= arg2 ? _compile_time_max<arg1, args...>::value : _compile_time_max<arg2, args...>::value;
+};
+} // namespace Sys
 
 enum class JsType { Invalid = -1, Literal, Number, String, Array, Object };
 enum class JsLiteralType { Undefined, True, False, Null };
@@ -88,7 +98,7 @@ extern template struct JsStringT<std::allocator<char>>;
 extern template struct JsStringT<Sys::MultiPoolAllocator<char>>;
 
 template <typename Alloc> struct JsArrayT {
-    using AllocV = typename Alloc::template rebind<JsElementT<Alloc>>::other;
+    using AllocV = typename std::allocator_traits<Alloc>::template rebind_alloc<JsElementT<Alloc>>;
     std::vector<JsElementT<Alloc>, AllocV> elements;
 
     explicit JsArrayT(const Alloc &alloc = Alloc()) : elements(alloc) {}
@@ -121,7 +131,7 @@ extern template struct JsArrayT<std::allocator<char>>;
 extern template struct JsArrayT<Sys::MultiPoolAllocator<char>>;
 
 template <typename Alloc> struct JsObjectT {
-    using AllocV = typename Alloc::template rebind<std::pair<StdString<Alloc>, JsElementT<Alloc>>>::other;
+    using AllocV = typename std::allocator_traits<Alloc>::template rebind_alloc<std::pair<StdString<Alloc>, JsElementT<Alloc>>>;
     std::vector<std::pair<StdString<Alloc>, JsElementT<Alloc>>, AllocV> elements;
 
     explicit JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc) {}

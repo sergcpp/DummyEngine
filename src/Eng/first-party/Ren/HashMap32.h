@@ -268,7 +268,7 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
         }
     }
 
-    class HashMap32Iterator : public std::iterator<std::forward_iterator_tag, Node> {
+    class HashMap32Iterator {
         friend class HashMap32<K, V, HashFunc, KeyEqual>;
 
         HashMap32<K, V, HashFunc, KeyEqual> *container_;
@@ -278,6 +278,12 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = Node;
+        using difference_type = std::ptrdiff_t;
+        using pointer = Node *;
+        using reference = Node &;
+
         Node &operator*() { return container_->at(index_); }
         Node *operator->() { return &container_->at(index_); }
         HashMap32Iterator &operator++() {
@@ -300,7 +306,7 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
         bool operator!=(const HashMap32Iterator &rhs) { return index_ != rhs.index_; }
     };
 
-    class HashMap32ConstIterator : public std::iterator<std::forward_iterator_tag, Node> {
+    class HashMap32ConstIterator {
         friend class HashMap32<K, V, HashFunc, KeyEqual>;
 
         const HashMap32<K, V, HashFunc, KeyEqual> *container_;
@@ -310,6 +316,12 @@ template <typename K, typename V, typename HashFunc = Hash<K>, typename KeyEqual
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = Node;
+        using difference_type = std::ptrdiff_t;
+        using pointer = Node *;
+        using reference = Node &;
+
         const Node &operator*() { return container_->at(index_); }
         const Node *operator->() { return &container_->at(index_); }
         HashMap32ConstIterator &operator++() {

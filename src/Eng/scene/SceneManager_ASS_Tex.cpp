@@ -288,7 +288,7 @@ std::unique_ptr<uint8_t[]> ComputeBumpNormalmap(unsigned char *img_data, int wid
 
 int ComputeBumpQuadtree(unsigned char *img_data, int channels, Ren::ILog *log, std::unique_ptr<uint8_t[]> mipmaps[16],
                         int widths[16], int heights[16]) {
-    mipmaps[0].reset(new uint8_t[4 * widths[0] * heights[0]]);
+    mipmaps[0] = std::make_unique<uint8_t[]>(4 * widths[0] * heights[0]);
     for (int y = 0; y < heights[0]; y++) {
         for (int x = 0; x < widths[0]; x++) {
             const uint8_t h = img_data[(y * widths[0] + x) * channels];
@@ -349,18 +349,18 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
         if (channels == 3) {
             if (use_YCoCg) {
                 dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
-                dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+                dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
                 auto temp_YCoCg = Ren::ConvertRGB_to_CoCgxY(mipmaps[i], widths[i], heights[i]);
                 Ren::CompressImage_DXT5<true /* Is_YCoCg */>(temp_YCoCg.get(), widths[i], heights[i],
                                                              dxt_data[i].get());
             } else {
                 dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
-                dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+                dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
                 Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
             }
         } else {
             dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
-            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
             Ren::CompressImage_DXT5(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
@@ -399,7 +399,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     }
 
     for (int i = 0; i < mip_count; i++) {
-        dxt_data[i].reset();
+        dxt_data[i] = {};
     }
 
     return out_stream.good();
@@ -414,7 +414,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
 
-    mipmaps[0].reset(new uint8_t[w * h * channels]);
+    mipmaps[0] = std::make_unique<uint8_t[]>(w * h * channels);
     if (flip_y) {
         for (int j = 0; j < h; j++) {
             memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
@@ -477,7 +477,7 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const in
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
 
-    mipmaps[0].reset(new uint8_t[w * h * channels]);
+    mipmaps[0] = std::make_unique<uint8_t[]>(w * h * channels);
     // mirror by y (????)
     for (int j = 0; j < h; j++) {
         memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
@@ -508,11 +508,11 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const in
     for (int i = 0; i < mip_count; i++) {
         if (channels == 3) {
             dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
-            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
             Ren::CompressImage_DXT1<3>(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
         } else if (channels == 4) {
             dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
-            dxt_data[i].reset(new uint8_t[dxt_size[i]]);
+            dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
             Ren::CompressImage_DXT5(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
@@ -664,7 +664,7 @@ bool Write_KTX_ASTC(const uint8_t *image_data, const int w, const int h, const i
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
 
-    mipmaps[0].reset(new uint8_t[w * h * channels]);
+    mipmaps[0] = std::make_unique<uint8_t[]>(w * h * channels);
     if (flip_y) {
         for (int j = 0; j < h; j++) {
             memcpy(&mipmaps[0][j * w * channels], &image_data[(h - j - 1) * w * channels], w * channels);
@@ -703,7 +703,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
         // TODO: check if negative stride can be used instead of this
         std::unique_ptr<uint8_t[]> temp_data;
         if (flip_y) {
-            temp_data.reset(new uint8_t[w * h * channels]);
+            temp_data = std::make_unique<uint8_t[]>(w * h * channels);
             for (int j = 0; j < h; j++) {
                 memcpy(&temp_data[j * w * channels], &out_data[(h - j - 1) * w * channels], w * channels);
             }
@@ -969,7 +969,7 @@ bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file
         src_stream.read((char *)&compressed_size, sizeof(int));
         src_stream.read((char *)&compressed_buf[0], compressed_size);
 
-        mipmaps[i].reset(new uint8_t[orig_size]);
+        mipmaps[i] = std::make_unique<uint8_t[]>(orig_size);
 
         const int decompressed_size =
             Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
@@ -1021,7 +1021,7 @@ bool Eng::SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_fil
         src_stream.read((char *)&compressed_size, sizeof(int));
         src_stream.read((char *)&compressed_buf[0], compressed_size);
 
-        mipmaps[i].reset(new uint8_t[orig_size]);
+        mipmaps[i] = std::make_unique<uint8_t[]>(orig_size);
 
         const int decompressed_size =
             Net::DecompressLZO(&compressed_buf[0], compressed_size, &mipmaps[i][0], orig_size);
@@ -1293,7 +1293,7 @@ int SceneManagerInternal::ConvertToASTC(const uint8_t *image_data, int width, in
         const int zblocks = 1;
 
         buf_size = xblocks * yblocks * zblocks * 16;
-        out_buf.reset(new uint8_t[buf_size]);
+        out_buf = std::make_unique<uint8_t[]>(buf_size);
 
         encode_astc_image(src_image, nullptr, xdim, ydim, 1, &ewp, DECODE_LDR, swz_encode, swz_encode, &out_buf[0], 0,
                           8);
@@ -1344,9 +1344,7 @@ std::unique_ptr<uint8_t[]> SceneManagerInternal::DecodeASTC(const uint8_t *image
         }
     }
 
-    std::unique_ptr<uint8_t[]> ret_data;
-    ret_data.reset(new uint8_t[xsize * ysize * 4]);
-
+    std::unique_ptr<uint8_t[]> ret_data = std::make_unique<uint8_t[]>(xsize * ysize * 4);
     memcpy(&ret_data[0], &img->imagedata8[0][0][0], xsize * ysize * 4);
 
     destroy_image(img);

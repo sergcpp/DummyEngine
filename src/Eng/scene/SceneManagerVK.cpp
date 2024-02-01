@@ -60,7 +60,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
     // const uint32_t req_tex_buf_size = max_tex_count * sizeof(GLuint64);
 
     if (!pers_data.textures_descr_pool) {
-        pers_data.textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
+        pers_data.textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
     }
 
     const int materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
@@ -78,14 +78,14 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
         if (ren_ctx_.capabilities.raytracing) {
             assert(needed_descriptors_count == 1); // we have to be able to bind all textures at once
             if (!pers_data.rt_textures_descr_pool) {
-                pers_data.rt_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
+                pers_data.rt_textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
             }
             pers_data.rt_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
         }
 
         if (ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) {
             if (!pers_data.rt_inline_textures_descr_pool) {
-                pers_data.rt_inline_textures_descr_pool.reset(new Ren::DescrPool(api_ctx));
+                pers_data.rt_inline_textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
             }
             pers_data.rt_inline_textures_descr_pool->Init(descr_sizes, Ren::MaxFramesInFlight /* sets_count */);
         }
@@ -388,7 +388,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
             uint32_t(align_up(new_blas.size_info.accelerationStructureSize, AccStructAlignment));
 
         new_blas.acc = acc;
-        acc->mesh->blas.reset(new Ren::AccStructureVK);
+        acc->mesh->blas = std::make_unique<Ren::AccStructureVK>();
 
         acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
     }

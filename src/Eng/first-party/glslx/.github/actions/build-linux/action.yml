@@ -1,0 +1,26 @@
+name: 'Build Repo'
+inputs:
+  cmake-args:
+    required: true
+  config:
+    required: true
+  bin-dir:
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        WORK_DIR=`pwd`
+        cd ../../builds/glslx
+        #python scripts/update_version_string.py glslx.cpp
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{ inputs.config }} ${{ inputs.cmake-args }}
+        cd ..
+        cmake --build build --target all --parallel 16
+        if [ -n "${{ inputs.bin-dir }}" ]; then
+          mkdir $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/glslx* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/tests/test_glslx* $WORK_DIR/${{ inputs.bin-dir }}
+        fi
+      shell: bash

@@ -6,6 +6,7 @@
 
 #include "AssetFile.h"
 
+#if 0
 void Sys::ReadPackage(const char *pack_name, onfile_func on_file) {
     AssetFile in_file(pack_name, eOpenMode::In);
     size_t file_size = in_file.size();
@@ -100,3 +101,4 @@ bool Sys::ReadFromPackage(const char *pack_name, const char *fname, const size_t
     }
     return false;
 }
+#endif

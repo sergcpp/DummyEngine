@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+/*
 namespace Sys {
 typedef void (*onfile_func)(const char *name, void *data, int size);
 
@@ -25,3 +26,4 @@ std::vector<FileDesc> EnumFilesInPackage(const char *pack_name);
 bool ReadFromPackage(const char *pack_name, const char *fname, size_t pos, char *buf,
                      size_t size);
 } // namespace Sys
+*/

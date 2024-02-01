@@ -18,7 +18,7 @@ class Random_Impl {
 } // namespace Eng
 
 Eng::Random::Random(uint32_t seed) {
-    impl_.reset(new Random_Impl(seed));
+    impl_ = std::make_unique<Random_Impl>(seed);
 }
 
 Eng::Random::~Random() = default;

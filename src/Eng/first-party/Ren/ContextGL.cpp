@@ -46,7 +46,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     h_ = h;
     log_ = log;
 
-    api_ctx_.reset(new ApiContext);
+    api_ctx_ = std::make_unique<ApiContext>();
     for (int i = 0; i < MaxFramesInFlight; i++) {
         api_ctx_->in_flight_fences.emplace_back(MakeFence());
         glGenQueries(MaxTimestampQueries, api_ctx_->queries[i]);

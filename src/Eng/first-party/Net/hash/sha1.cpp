@@ -251,8 +251,8 @@ void SHA1::finish()
     }
 
     /* Append total_bits, split this uint64 into two uint32 */
-    block[BLOCK_INTS - 1] = total_bits;
-    block[BLOCK_INTS - 2] = (total_bits >> 32);
+    block[BLOCK_INTS - 1] = uint32_t(total_bits & 0xffffffff);
+    block[BLOCK_INTS - 2] = uint32_t(total_bits >> 32);
     transform(block);
 }
  

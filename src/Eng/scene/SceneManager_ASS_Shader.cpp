@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+#include <Sys/ScopeExit.h>
+
 #include <glslang/Include/glslang_c_interface.h>
 #include <glslang/Public/resource_limits_c.h>
 
@@ -325,6 +327,7 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 }
 
                 glslang_shader_t *shader = glslang_shader_create(&glslang_input);
+                SCOPE_EXIT(glslang_shader_delete(shader);)
 
                 if (!preamble.empty()) {
                     glslang_shader_set_preamble(shader, preamble.c_str());
@@ -340,8 +343,6 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
 #endif
-
-                    glslang_shader_delete(shader);
                     return false;
                 }
 
@@ -354,12 +355,11 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
 #endif
-
-                    glslang_shader_delete(shader);
                     continue;
                 }
 
                 glslang_program_t *program = glslang_program_create();
+                SCOPE_EXIT(glslang_program_delete(program);)
                 glslang_program_add_shader(program, shader);
 
                 int msg_rules = GLSLANG_MSG_SPV_RULES_BIT;
@@ -374,9 +374,6 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
 #endif
-
-                    glslang_program_delete(program);
-                    glslang_shader_delete(shader);
                     return false;
                 }
 
@@ -394,9 +391,6 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 // if (spirv_messages) {
                 //     ctx.log->Info("(%s) %s\b", out_file, spirv_messages);
                 // }
-
-                glslang_program_delete(program);
-                glslang_shader_delete(shader);
             }
         }
     }

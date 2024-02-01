@@ -29,5 +29,6 @@ runs:
           cp build/first-party/Phy/tests/test_Phy $WORK_DIR/${{ inputs.bin-dir }}
           cp build/first-party/Snd/tests/test_Snd $WORK_DIR/${{ inputs.bin-dir }}
           cp build/first-party/Net/tests/test_Net $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/first-party/glslx/tests/test_glslx $WORK_DIR/${{ inputs.bin-dir }}
         fi
       shell: bash
