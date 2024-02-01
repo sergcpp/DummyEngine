@@ -1,12 +1,11 @@
 #include "SceneManager.h"
 
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iterator>
 #include <numeric>
 #include <regex>
-
-#include <dirent.h>
 
 #if defined(__linux__) || defined(__APPLE__)
 #include <sys/stat.h>
@@ -17,7 +16,7 @@
 
 #include <Net/hash/Crc32.h>
 #include <Net/hash/murmur.h>
-//#include <Ray/internal/TextureSplitter.h>
+// #include <Ray/internal/TextureSplitter.h>
 #include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -161,75 +160,45 @@ std::unique_ptr<uint8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bo
     return tex_data;
 }
 
-void ReadAllFiles_r(Eng::assets_context_t &ctx, const char *in_folder,
-                    const std::function<void(Eng::assets_context_t &ctx, const char *)> &callback) {
-    DIR *in_dir = opendir(in_folder);
-    if (!in_dir) {
+void ReadAllFiles_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
+                    const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback) {
+    if (!std::filesystem::exists(in_folder)) {
         ctx.log->Error("Cannot open folder %s", in_folder);
         return;
     }
 
-    struct dirent *in_ent = nullptr;
-    while ((in_ent = readdir(in_dir))) {
-        if (in_ent->d_type == DT_DIR || in_ent->d_type == DT_LNK) {
-            if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
-                continue;
-            }
-            std::string path = in_folder;
-            path += '/';
-            path += in_ent->d_name;
-
-            ReadAllFiles_r(ctx, path.c_str(), callback);
+    for (const auto &entry : std::filesystem::directory_iterator(in_folder)) {
+        if (std::filesystem::is_directory(entry.path())) {
+            ReadAllFiles_r(ctx, entry.path(), callback);
         } else {
-            std::string path = in_folder;
-            path += '/';
-            path += in_ent->d_name;
-
-            callback(ctx, path.c_str());
+            callback(ctx, entry.path());
         }
     }
-
-    closedir(in_dir);
 }
 
-void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const char *in_folder,
-                       const std::function<void(Eng::assets_context_t &ctx, const char *)> &callback,
+void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
+                       const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback,
                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
-    DIR *in_dir = opendir(in_folder);
-    if (!in_dir) {
+    if (!std::filesystem::exists(in_folder)) {
         ctx.log->Error("Cannot open folder %s", in_folder);
         return;
     }
 
-    struct dirent *in_ent = nullptr;
-    while ((in_ent = readdir(in_dir))) {
-        if (in_ent->d_type == DT_DIR || in_ent->d_type == DT_LNK) {
-            if (strcmp(in_ent->d_name, ".") == 0 || strcmp(in_ent->d_name, "..") == 0) {
-                continue;
-            }
-            std::string path = in_folder;
-            path += '/';
-            path += in_ent->d_name;
-
-            ReadAllFiles_MT_r(ctx, path.c_str(), callback, threads, events);
+    for (const auto &entry : std::filesystem::directory_iterator(in_folder)) {
+        if (std::filesystem::is_directory(entry.path())) {
+            ReadAllFiles_MT_r(ctx, entry.path(), callback, threads, events);
         } else {
-            std::string path = in_folder;
-            path += '/';
-            path += in_ent->d_name;
-
             if (events.size() > 64) {
                 events.front().wait();
                 events.pop_front();
             }
 
-            events.push_back(threads->Enqueue([path, &ctx, callback]() { callback(ctx, path.c_str()); }));
+            events.push_back(threads->Enqueue([entry, &ctx, callback]() { callback(ctx, entry.path()); }));
         }
     }
-
-    closedir(in_dir);
 }
 
-uint32_t HashFile(const char *in_file, Ren::ILog *log) {
+uint32_t HashFile(const std::filesystem::path &in_file, Ren::ILog *log) {
     std::ifstream in_file_stream(in_file, std::ios::binary | std::ios::ate);
     if (!in_file_stream) {
         return 0;
@@ -240,7 +209,7 @@ uint32_t HashFile(const char *in_file, Ren::ILog *log) {
     const size_t HashChunkSize = 8 * 1024;
     uint8_t in_file_buf[HashChunkSize];
 
-    log->Info("[PrepareAssets] Hashing %s", in_file);
+    log->Info("[PrepareAssets] Hashing %s", in_file.generic_string().c_str());
 
     uint32_t hash = 0;
 
@@ -257,67 +226,37 @@ uint32_t HashFile(const char *in_file, Ren::ILog *log) {
     return hash;
 }
 
-bool GetFileModifyTime(const char *in_file, char out_str[32], Eng::assets_context_t &ctx, bool report_error) {
-#ifdef _WIN32
-    auto filetime_to_uint64 = [](const FILETIME &ft) -> uint64_t {
-        ULARGE_INTEGER ull;
-        ull.LowPart = ft.dwLowDateTime;
-        ull.HighPart = ft.dwHighDateTime;
-        return ull.QuadPart;
-    };
-
-    HANDLE in_h = CreateFile(in_file, 0, 0, NULL, OPEN_EXISTING, NULL, NULL);
-    if (in_h == INVALID_HANDLE_VALUE) {
-        if (report_error) {
-            ctx.log->Info("[PrepareAssets] Failed to open file %s", in_file);
-        }
-        CloseHandle(in_h);
-        return false;
-    }
-
-    FILETIME in_t;
-    GetFileTime(in_h, NULL, NULL, &in_t);
-    CloseHandle(in_h);
-
-    const uint64_t val = filetime_to_uint64(in_t);
-#else
-    struct stat st1 = {};
-    const int res1 = stat(in_file, &st1);
-    if (res1 == -1) {
-        if (report_error) {
-            ctx.log->Info("[PrepareAssets] Failed to open input file %s!", in_file);
-        }
-        return {};
-    }
-
-    const auto val = (unsigned long long)st1.st_ctime;
-#endif
-
-    sprintf(out_str, "%llu", val);
-
-    return true;
+template <typename TP> std::time_t to_time_t(TP tp) {
+    using namespace std::chrono;
+    auto sctp = time_point_cast<system_clock::duration>(tp - TP::clock::now() + system_clock::now());
+    return system_clock::to_time_t(sctp);
 }
 
-bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_context_t &ctx) {
+bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesystem::path &out_file,
+                       Eng::assets_context_t &ctx) {
 #if !defined(NDEBUG) && 0
     log->Info("Warning: glsl is forced to be not skipped!");
     if (strstr(in_file, ".glsl")) {
         return true;
     }
 #endif
+    namespace fs = std::filesystem;
 
-    if (strstr(in_file, "Antenna_Metal_diff")) {
-        volatile int ii = 0;
+    if (!fs::exists(in_file)) {
+        ctx.log->Error("File does not exist: %s!", in_file.generic_string().c_str());
+        return false;
     }
-
-    char in_t[32] = "", out_t[32] = "";
-    GetFileModifyTime(in_file, in_t, ctx, true /* report_error */);
-    GetFileModifyTime(out_file, out_t, ctx, false /* report_error */);
+    const time_t in_t = to_time_t(fs::last_write_time(in_file));
+    time_t out_t = {};
+    if (fs::exists(out_file)) {
+        out_t = to_time_t(fs::last_write_time(out_file));
+    }
+    const std::string in_t_str = std::to_string(in_t), out_t_str = std::to_string(out_t);
 
     std::lock_guard<std::mutex> _(ctx.cache_mtx);
     JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
-    const int *in_ndx = ctx.cache->db_map.Find(in_file);
+    const int *in_ndx = ctx.cache->db_map.Find(in_file.generic_string().c_str());
     if (in_ndx) {
         bool file_has_changed = true;
 
@@ -325,8 +264,8 @@ bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_co
         if (js_in_file.Has("in_time") && js_in_file.Has("out_time")) {
             const JsStringP &js_in_file_time = js_in_file.at("in_time").as_str();
             const JsStringP &js_out_file_time = js_in_file.at("out_time").as_str();
-            file_has_changed = (strncmp(js_in_file_time.val.c_str(), in_t, 32) != 0 ||
-                                strncmp(js_out_file_time.val.c_str(), out_t, 32) != 0);
+            file_has_changed = (strncmp(js_in_file_time.val.c_str(), in_t_str.c_str(), 32) != 0 ||
+                                strncmp(js_out_file_time.val.c_str(), out_t_str.c_str(), 32) != 0);
         }
 
         if (file_has_changed) {
@@ -343,17 +282,17 @@ bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_co
                     if (js_out_file_hash.val == out_hash_str) {
                         // write new time
                         if (!js_in_file.Has("in_time")) {
-                            js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
+                            js_in_file.Push("in_time", JsStringP(in_t_str.c_str(), *ctx.mp_alloc));
                         } else {
                             JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
-                            js_in_file_time.val = in_t;
+                            js_in_file_time.val = in_t_str;
                         }
 
                         if (!js_in_file.Has("out_time")) {
-                            js_in_file.Push("out_time", JsStringP(out_t, *ctx.mp_alloc));
+                            js_in_file.Push("out_time", JsStringP(out_t_str.c_str(), *ctx.mp_alloc));
                         } else {
                             JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
-                            js_out_file_time.val = out_t;
+                            js_out_file_time.val = out_t_str;
                         }
 
                         // can skip
@@ -368,15 +307,15 @@ bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_co
                     js_in_file.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
                 } else {
                     JsStringP &js_in_file_hash = js_in_file["in_hash"].as_str();
-                    js_in_file_hash.val = in_hash_str.c_str();
+                    js_in_file_hash.val = in_hash_str;
                 }
 
                 // write new time
                 if (!js_in_file.Has("in_time")) {
-                    js_in_file.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
+                    js_in_file.Push("in_time", JsStringP(in_t_str.c_str(), *ctx.mp_alloc));
                 } else {
                     JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
-                    js_in_file_time.val = in_t;
+                    js_in_file_time.val = in_t_str;
                 }
             }
         }
@@ -394,17 +333,21 @@ bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_co
 
                 const JsStringP &js_dep_time = js_dep.at("in_time").as_str();
 
-                char dep_t[32] = "";
-                GetFileModifyTime(dep.first.c_str(), dep_t, ctx, true /* report_error */);
+                if (!fs::exists(dep.first)) {
+                    ctx.log->Error("File does not exist: %s!", dep.first.c_str());
+                } else {
+                    const auto dep_t = to_time_t(fs::last_write_time(dep.first));
+                    const std::string dep_t_str = std::to_string(dep_t);
 
-                if (strncmp(js_dep_time.val.c_str(), dep_t, 32) != 0) {
-                    const uint32_t dep_hash = HashFile(dep.first.c_str(), ctx.log);
-                    const std::string dep_hash_str = std::to_string(dep_hash);
+                    if (strncmp(js_dep_time.val.c_str(), dep_t_str.c_str(), 32) != 0) {
+                        const uint32_t dep_hash = HashFile(dep.first, ctx.log);
+                        const std::string dep_hash_str = std::to_string(dep_hash);
 
-                    const JsStringP &js_dep_hash = js_dep.at("in_hash").as_str();
-                    if (js_dep_hash.val != dep_hash_str) {
-                        dependencies_have_changed = true;
-                        break;
+                        const JsStringP &js_dep_hash = js_dep.at("in_hash").as_str();
+                        if (js_dep_hash.val != dep_hash_str) {
+                            dependencies_have_changed = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -420,38 +363,12 @@ bool CheckAssetChanged(const char *in_file, const char *out_file, Eng::assets_co
         const std::string in_hash_str = std::to_string(in_hash);
 
         JsObjectP new_entry(*ctx.mp_alloc);
-        new_entry.Push("in_time", JsStringP(in_t, *ctx.mp_alloc));
+        new_entry.Push("in_time", JsStringP(in_t_str.c_str(), *ctx.mp_alloc));
         new_entry.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
-        const size_t new_ndx = js_files.Push(in_file, std::move(new_entry));
-        ctx.cache->db_map[in_file] = int(new_ndx);
+        const size_t new_ndx = js_files.Push(in_file.generic_string().c_str(), std::move(new_entry));
+        ctx.cache->db_map[in_file.generic_string().c_str()] = int(new_ndx);
     }
 
-    return true;
-}
-
-bool CreateFolders(const char *out_file, Ren::ILog *log) {
-    const char *end = strchr(out_file, '/');
-    while (end) {
-        char folder[256] = {};
-        strncpy(folder, out_file, end - out_file + 1);
-#ifdef _WIN32
-        if (!CreateDirectory(folder, NULL)) {
-            if (GetLastError() != ERROR_ALREADY_EXISTS) {
-                log->Error("[PrepareAssets] Failed to create directory!");
-                return false;
-            }
-        }
-#else
-        struct stat st = {};
-        if (stat(folder, &st) == -1) {
-            if (mkdir(folder, 0777) != 0) {
-                log->Error("[PrepareAssets] Failed to create directory!");
-                return false;
-            }
-        }
-#endif
-        end = strchr(end + 1, '/');
-    }
     return true;
 }
 
@@ -660,48 +577,61 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     g_asset_handlers["uncompressed.png"] = {"uncompressed.png", HCopy};
 
     double last_db_write = Sys::GetTimeS();
-    auto convert_file = [out_folder, &last_db_write](assets_context_t &ctx, const char *in_file) {
-        const char *base_path = strchr(in_file, '/');
-        if (!base_path) {
-            return;
+    auto convert_file = [out_folder, &last_db_write](assets_context_t &ctx, const std::filesystem::path &in_file) {
+        const std::filesystem::path parent_path = in_file.parent_path();
+
+        auto it = parent_path.begin();
+        ++it;
+
+        std::filesystem::path base_path;
+        while (it != parent_path.end()) {
+            base_path /= *it++;
         }
-        const char *ext = strchr(in_file, '.');
-        if (!ext) {
+
+        const std::filesystem::path _ext = in_file.extension();
+        if (_ext.empty()) {
             return;
         }
 
-        ext++;
+        const std::string filename = in_file.filename().generic_string();
+        const std::string ext_str(std::find(filename.begin(), filename.end(), '.'), filename.end());
+        const char *ext = ext_str.c_str() + 1;
 
         Handler *handler = g_asset_handlers.Find(ext);
         if (!handler) {
-            ctx.log->Info("[PrepareAssets] No handler found for %s", in_file);
+            ctx.log->Info("[PrepareAssets] No handler found for %s", in_file.generic_string().c_str());
             return;
         }
 
-        const std::string out_file =
-            out_folder + std::string(base_path, strlen(base_path) - strlen(ext)) + handler->ext;
+        std::filesystem::path out_file = out_folder / base_path / in_file.stem().stem();
+        out_file += ".";
+        out_file += handler->ext;
 
-        if (!CheckAssetChanged(in_file, out_file.c_str(), ctx)) {
+        if (!CheckAssetChanged(in_file, out_file, ctx)) {
             return;
         }
 
-        if (!CreateFolders(out_file.c_str(), ctx.log)) {
-            ctx.log->Info("[PrepareAssets] Failed to create directories for %s", out_file.c_str());
+        std::error_code ec;
+        std::filesystem::create_directories(out_file.parent_path());
+        if (ec) {
+            ctx.log->Info("[PrepareAssets] Failed to create directories for %s", out_file.generic_string().c_str());
             return;
         }
+
 
         // std::lock_guard<std::mutex> _(ctx.cache_mtx);
 
         Ren::SmallVector<std::string, 32> dependencies;
-        const bool res = handler->convert(ctx, in_file, out_file.c_str(), dependencies);
+        const bool res =
+            handler->convert(ctx, in_file.generic_string().c_str(), out_file.generic_string().c_str(), dependencies);
         if (res) {
-            const uint32_t out_hash = HashFile(out_file.c_str(), ctx.log);
+            const uint32_t out_hash = HashFile(out_file, ctx.log);
             const std::string out_hash_str = std::to_string(out_hash);
 
             std::lock_guard<std::mutex> _(ctx.cache_mtx);
             JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
-            const int *in_ndx = ctx.cache->db_map.Find(in_file);
+            const int *in_ndx = ctx.cache->db_map.Find(in_file.generic_string().c_str());
             if (in_ndx) {
                 JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
                 // store new hash value
@@ -712,15 +642,18 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                     js_out_file_hash.val = out_hash_str.c_str();
                 }
 
-                char out_t[32];
-                GetFileModifyTime(out_file.c_str(), out_t, ctx, true /* report_error */);
+                std::string out_t_str;
+                if (std::filesystem::exists(out_file)) {
+                    const auto out_t = to_time_t(std::filesystem::last_write_time(out_file));
+                    out_t_str = std::to_string(out_t);
+                }
 
                 // store new time value
                 if (!js_in_file.Has("out_time")) {
-                    js_in_file.Push("out_time", JsStringP(out_t, *ctx.mp_alloc));
+                    js_in_file.Push("out_time", JsStringP(out_t_str.c_str(), *ctx.mp_alloc));
                 } else {
                     JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
-                    js_out_file_time.val = out_t;
+                    js_out_file_time.val = out_t_str;
                 }
 
                 // store new dependencies list
@@ -732,14 +665,17 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
                     JsObjectP &js_deps = js_in_file.elements[ndx].second.as_obj();
                     for (size_t i = 0; i < dependencies.size(); ++i) {
-                        char dep_t[32];
-                        GetFileModifyTime(dependencies[i].c_str(), dep_t, ctx, true /* report_error */);
+                        std::string dep_t_str;
+                        if (std::filesystem::exists(dependencies[i])) {
+                            const auto dep_t = to_time_t(std::filesystem::last_write_time(dependencies[i]));
+                            dep_t_str = std::to_string(dep_t);
+                        }
 
-                        const uint32_t dep_hash = HashFile(dependencies[i].c_str(), ctx.log);
+                        const uint32_t dep_hash = HashFile(dependencies[i], ctx.log);
                         const std::string dep_hash_str = std::to_string(out_hash);
 
                         JsObjectP js_dep(*ctx.mp_alloc);
-                        js_dep.Push("in_time", JsStringP(dep_t, *ctx.mp_alloc));
+                        js_dep.Push("in_time", JsStringP(dep_t_str.c_str(), *ctx.mp_alloc));
                         js_dep.Push("in_hash", JsStringP(dep_hash_str.c_str(), *ctx.mp_alloc));
 
                         if (i < js_deps.Size()) {
@@ -913,13 +849,7 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
         throw std::runtime_error("Cannot load scene!");
     }
 
-    std::string base_path = in_file;
-    { // extract base part of file path
-        const size_t n = base_path.find_last_of('/');
-        if (n != std::string::npos) {
-            base_path = base_path.substr(0, n + 1);
-        }
-    }
+    const std::filesystem::path base_path = std::filesystem::path(in_file).parent_path();
 
     if (js_root.Has("objects")) {
         JsArray &js_objects = js_root.at("objects").as_arr();
@@ -975,10 +905,10 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
                 for (auto &js_src_pair : js_html_src.elements) {
                     const std::string &js_lang = js_src_pair.first, &js_file_path = js_src_pair.second.as_str().val;
 
-                    const std::string html_file_path = base_path + js_file_path;
+                    const std::filesystem::path html_file_path = base_path / std::filesystem::path(js_file_path);
 
                     std::string caption;
-                    std::string html_body = ExtractHTMLData(ctx, html_file_path.c_str(), caption);
+                    std::string html_body = ExtractHTMLData(ctx, html_file_path.u8string().c_str(), caption);
 
                     caption = std::regex_replace(caption, std::regex("\n"), "");
                     caption = std::regex_replace(caption, std::regex("\r"), "");

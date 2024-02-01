@@ -1,5 +1,6 @@
 #include "SceneManager.h"
 
+#include <filesystem>
 #include <fstream>
 
 #include <Sys/ScopeExit.h>
@@ -159,9 +160,7 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 const size_t n2 = line.find_last_of('\"');
 
                 const std::string file_name = line.substr(n1 + 1, n2 - n1 - 1);
-
-                const auto slash_pos = size_t(intptr_t(strrchr(in_file, '/') - in_file));
-                const std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
+                const std::string full_path = (std::filesystem::path(in_file).parent_path() / file_name).generic_string();
 
                 dst_stream << "#line 0\r\n";
 

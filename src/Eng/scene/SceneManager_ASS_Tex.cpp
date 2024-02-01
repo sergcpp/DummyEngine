@@ -1,5 +1,6 @@
 #include "SceneManager.h"
 
+#include <filesystem>
 #include <fstream>
 #include <future>
 
@@ -725,8 +726,6 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
     return res;
 }
 
-bool CreateFolders(const char *out_file, Ren::ILog *log);
-
 extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
@@ -1059,7 +1058,9 @@ bool Eng::SceneManager::WriteProbeCache(const char *out_folder, const char *scen
     const size_t prelude_length = out_file_name_base.length();
     out_file_name_base += scene_name;
 
-    if (!CreateFolders(out_file_name_base.c_str(), log)) {
+    std::error_code ec;
+    std::filesystem::create_directories(out_file_name_base, ec);
+    if (ec) {
         log->Error("Failed to create folders!");
         return false;
     }
