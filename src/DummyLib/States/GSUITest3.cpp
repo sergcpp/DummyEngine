@@ -259,8 +259,8 @@ void GSUITest3::Exit() { GSBaseState::Exit(); }
 void GSUITest3::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
     using namespace GSUITest3Internal;
 
-    if (hit_point_screen_.initialized()) {
-        paged_reader_->DrawHint(r, hit_point_screen_.GetValue() + Ren::Vec2f{0.0f, 0.05f}, root);
+    if (hit_point_screen_.has_value()) {
+        paged_reader_->DrawHint(r, hit_point_screen_.value() + Ren::Vec2f{0.0f, 0.05f}, root);
     }
 
     GSBaseState::DrawUI(r, root);
@@ -363,7 +363,7 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
             }
 
             hit_point_ndc_ = MapPointToPageFramebuf(p);
-            if (hit_point_ndc_.initialized()) {
+            if (hit_point_ndc_.has_value()) {
                 hit_point_screen_ = p;
                 blocked = true;
             }
@@ -403,7 +403,7 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
                                                    Ren::Vec2i{ren_ctx_->w(), ren_ctx_->h()});
         paged_reader_->Hover(p);
 
-        hit_point_screen_.destroy();
+        hit_point_screen_.reset();
     } break;
     case Eng::RawInputEv::P2Move: {
 
@@ -433,7 +433,7 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
     return true;
 }
 
-Sys::Optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p) {
+std::optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p) {
     using namespace GSUITest3Internal;
     using namespace Ren;
 
@@ -456,7 +456,7 @@ Sys::Optional<Ren::Vec2f> GSUITest3::MapPointToPageFramebuf(const Ren::Vec2f &p)
     const float t = -(page_plane[3] + ray_origin_ws[1]) / ray_dir_ws[1];
     const Vec3f inter_point = ray_origin_ws + t * ray_dir_ws;
 
-    Sys::Optional<Ren::Vec2f> ret;
+    std::optional<Ren::Vec2f> ret;
 
     if (inter_point[0] < page_corners_pos[0][0] && inter_point[0] > page_corners_pos[1][0] &&
         inter_point[2] < page_corners_pos[0][2] && inter_point[2] > page_corners_pos[1][2]) {

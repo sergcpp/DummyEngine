@@ -2,6 +2,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <optional>
 #include <thread>
 
 #include <Eng/ViewerBase.h>
@@ -14,7 +15,6 @@
 #include <Ren/Program.h>
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
-#include <Sys/Optional.h>
 
 #include "GSBaseState.h"
 
@@ -47,8 +47,8 @@ class GSUITest3 : public GSBaseState {
     Ren::Tex2DRef page_tex_;
     Ren::MaterialRef orig_page_mat_, page_mat_;
 
-    Sys::Optional<Ren::Vec2f> hit_point_screen_, hit_point_ndc_;
-    Sys::Optional<Ren::Vec2f> hint_pos_;
+    std::optional<Ren::Vec2f> hit_point_screen_, hit_point_ndc_;
+    std::optional<Ren::Vec2f> hint_pos_;
 
     enum class eBookState {
         BkClosed,
@@ -67,7 +67,7 @@ class GSUITest3 : public GSBaseState {
     void Draw() override;
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
-    Sys::Optional<Ren::Vec2f> MapPointToPageFramebuf(const Ren::Vec2f &p);
+    std::optional<Ren::Vec2f> MapPointToPageFramebuf(const Ren::Vec2f &p);
 
     void InitBookMaterials();
     void RedrawPages(Gui::Renderer *r);
