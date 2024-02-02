@@ -2,8 +2,6 @@
 
 #include "GL.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 extern const uint32_t g_gl_min_filter[] = {
     GL_NEAREST,               // NoFilter
@@ -12,7 +10,7 @@ extern const uint32_t g_gl_min_filter[] = {
     GL_LINEAR,                // BilinearNoMipmap
     GL_NEAREST_MIPMAP_NEAREST,// NearestMipmap
 };
-static_assert(COUNT_OF(g_gl_min_filter) == size_t(eTexFilter::_Count), "!");
+static_assert(std::size(g_gl_min_filter) == size_t(eTexFilter::_Count), "!");
 
 extern const uint32_t g_gl_mag_filter[] = {
     GL_NEAREST, // NoFilter
@@ -21,14 +19,14 @@ extern const uint32_t g_gl_mag_filter[] = {
     GL_LINEAR,  // BilinearNoMipmap
     GL_NEAREST, // NearestMipmap
 };
-static_assert(COUNT_OF(g_gl_mag_filter) == size_t(eTexFilter::_Count), "!");
+static_assert(std::size(g_gl_mag_filter) == size_t(eTexFilter::_Count), "!");
 
 extern const uint32_t g_gl_wrap_mode[] = {
     GL_REPEAT,          // Repeat
     GL_CLAMP_TO_EDGE,   // ClampToEdge
     GL_CLAMP_TO_BORDER, // ClampToBorder
 };
-static_assert(COUNT_OF(g_gl_wrap_mode) == size_t(eTexWrap::_Count), "!");
+static_assert(std::size(g_gl_wrap_mode) == size_t(eTexWrap::_Count), "!");
 
 extern const float AnisotropyLevel = 4.0f;
 } // namespace Ren
@@ -86,5 +84,3 @@ void Ren::GLUnbindSamplers(const int start, const int count) {
         glBindSampler(GLuint(i), 0);
     }
 }
-
-#undef COUNT_OF

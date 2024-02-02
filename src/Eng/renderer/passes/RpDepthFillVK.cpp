@@ -9,8 +9,6 @@
 #include <Ren/Span.h>
 #include <Ren/VKCtx.h>
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace RpSharedInternal {
 uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
                      Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches, uint32_t i,
@@ -155,7 +153,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_writes[3].descriptorCount = 1;
         descr_writes[3].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_vel_[0].prog()->descr_set_layouts()[0];
@@ -219,7 +217,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_writes[4].descriptorCount = 1;
         descr_writes[4].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
     }
 
     const Ren::Span<BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};
@@ -908,5 +906,3 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
 }
-
-#undef COUNT_OF

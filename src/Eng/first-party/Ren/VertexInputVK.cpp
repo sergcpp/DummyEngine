@@ -2,8 +2,6 @@
 
 #include "VKCtx.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const VkFormat g_vk_attrib_formats[][4] = {
     {}, // Undefined
@@ -20,7 +18,7 @@ const VkFormat g_vk_attrib_formats[][4] = {
     {VK_FORMAT_R8_UNORM, VK_FORMAT_R8G8_UNORM, VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8A8_UNORM},       // Uint8UNorm
     {VK_FORMAT_R32_SINT, VK_FORMAT_R32G32_SINT, VK_FORMAT_R32G32B32_SINT, VK_FORMAT_R32G32B32A32_SINT}, // Int32
 };
-static_assert(COUNT_OF(g_vk_attrib_formats) == int(eType::_Count), "!");
+static_assert(std::size(g_vk_attrib_formats) == int(eType::_Count), "!");
 
 const int g_type_sizes[] = {
     -1,               // Undefined
@@ -33,7 +31,7 @@ const int g_type_sizes[] = {
     sizeof(uint8_t),  // Uint8UNorm
     sizeof(int32_t),  // Int32
 };
-static_assert(COUNT_OF(g_type_sizes) == int(eType::_Count), "!");
+static_assert(std::size(g_type_sizes) == int(eType::_Count), "!");
 
 const int MaxVertexInputAttributeOffset = 16; // 16 seems to be supported by all implementations
 } // namespace Ren
@@ -128,5 +126,3 @@ bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle
 
     return true;
 }
-
-#undef COUNT_OF

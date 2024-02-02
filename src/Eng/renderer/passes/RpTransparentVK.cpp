@@ -8,8 +8,6 @@
 #include <Ren/RastState.h>
 #include <Ren/VKCtx.h>
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &instances_buf,
                                                 RpAllocBuf &instance_indices_buf, RpAllocBuf &unif_shared_data_buf,
                                                 RpAllocBuf &materials_buf, RpAllocBuf &cells_buf, RpAllocBuf &items_buf,
@@ -395,7 +393,7 @@ void Eng::RpTransparent::InitDescrSetLayout() {
         {REN_INST_INDICES_BUF_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
     VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    layout_info.bindingCount = COUNT_OF(bindings);
+    layout_info.bindingCount = std::size(bindings);
     layout_info.pBindings = bindings;
 
     const VkResult res =
@@ -408,5 +406,3 @@ Eng::RpTransparent::~RpTransparent() {
         api_ctx_->vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }
 }
-
-#undef COUNT_OF

@@ -8,8 +8,6 @@
 #include "ProbeStorage.h"
 #include "Texture.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D,             // Tex2D
@@ -21,7 +19,7 @@ const uint32_t gl_binding_targets[] = {
     0xffffffff,                // Image
     0xffffffff                 // AccStruct
 };
-static_assert(COUNT_OF(gl_binding_targets) == size_t(eBindTarget::_Count), "!");
+static_assert(std::size(gl_binding_targets) == size_t(eBindTarget::_Count), "!");
 
 extern const uint32_t g_gl_internal_formats[];
 
@@ -118,5 +116,3 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     glDispatchComputeIndirect(GLintptr(indir_buf_offset));
     glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, 0);
 }
-
-#undef COUNT_OF

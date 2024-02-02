@@ -3,8 +3,6 @@
 #include "Texture.h"
 #include "VKCtx.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const VkPipelineStageFlags g_stage_flags_vk[] = {
     VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,                                                     // VertexInput
@@ -67,7 +65,7 @@ const VkImageLayout g_image_layout_per_state_vk[] = {
     VK_IMAGE_LAYOUT_UNDEFINED,                        // BuildASWrite
     VK_IMAGE_LAYOUT_UNDEFINED                         // RayTracing
 };
-static_assert(COUNT_OF(g_image_layout_per_state_vk) == int(eResState::_Count), "!");
+static_assert(std::size(g_image_layout_per_state_vk) == int(eResState::_Count), "!");
 
 const VkAccessFlags g_access_flags_per_state_vk[] = {
     0,                                                                                          // Undefined
@@ -87,7 +85,7 @@ const VkAccessFlags g_access_flags_per_state_vk[] = {
     VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR, // BuildASWrite
     VK_ACCESS_SHADER_READ_BIT,                                                                      // RayTracing
 };
-static_assert(COUNT_OF(g_access_flags_per_state_vk) == int(eResState::_Count), "!");
+static_assert(std::size(g_access_flags_per_state_vk) == int(eResState::_Count), "!");
 
 const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
     {},                                   // Undefined
@@ -117,7 +115,7 @@ const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
     VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, // BuildASWrite
     VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR            // RayTracing
 };
-static_assert(COUNT_OF(g_pipeline_stages_per_state_vk) == int(eResState::_Count), "!");
+static_assert(std::size(g_pipeline_stages_per_state_vk) == int(eResState::_Count), "!");
 } // namespace Ren
 
 VkImageLayout Ren::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)]; }
@@ -215,5 +213,3 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, con
                                       uint32_t(img_barriers.size()), img_barriers.cdata());
     }
 }
-
-#undef COUNT_OF

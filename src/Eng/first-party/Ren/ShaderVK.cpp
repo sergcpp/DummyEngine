@@ -6,8 +6,6 @@
 
 #include "SPIRV-Reflect/spirv_reflect.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 void ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr_bindings,
                        SmallVectorImpl<Descr> &unif_bindings, SmallVectorImpl<Descr> &blck_bindings, ILog *log);
@@ -24,7 +22,7 @@ extern const VkShaderStageFlagBits g_shader_stages_vk[] = {
     VK_SHADER_STAGE_ANY_HIT_BIT_KHR,             // AnyHit
     VK_SHADER_STAGE_INTERSECTION_BIT_KHR         // Intersection
 };
-static_assert(COUNT_OF(g_shader_stages_vk) == int(eShaderType::_Count), "!");
+static_assert(std::size(g_shader_stages_vk) == int(eShaderType::_Count), "!");
 
 // TODO: not rely on this order somehow
 static_assert(int(eShaderType::RayGen) < int(eShaderType::Miss), "!");
@@ -201,5 +199,3 @@ void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr
         p = q + 1;
     }
 }
-
-#undef COUNT_OF

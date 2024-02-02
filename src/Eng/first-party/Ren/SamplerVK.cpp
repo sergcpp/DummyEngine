@@ -2,8 +2,6 @@
 
 #include "VKCtx.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 extern const VkFilter g_vk_min_mag_filter[] = {
     VK_FILTER_NEAREST, // NoFilter
@@ -12,14 +10,14 @@ extern const VkFilter g_vk_min_mag_filter[] = {
     VK_FILTER_LINEAR,  // BilinearNoMipmap
     VK_FILTER_NEAREST, // NearestMipmap
 };
-static_assert(COUNT_OF(g_vk_min_mag_filter) == size_t(eTexFilter::_Count), "!");
+static_assert(std::size(g_vk_min_mag_filter) == size_t(eTexFilter::_Count), "!");
 
 extern const VkSamplerAddressMode g_vk_wrap_mode[] = {
     VK_SAMPLER_ADDRESS_MODE_REPEAT,          // Repeat
     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // ClampToEdge
     VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER, // ClampToBorder
 };
-static_assert(COUNT_OF(g_vk_wrap_mode) == size_t(eTexWrap::_Count), "!");
+static_assert(std::size(g_vk_wrap_mode) == size_t(eTexWrap::_Count), "!");
 
 extern const VkSamplerMipmapMode g_vk_mipmap_mode[] = {
     VK_SAMPLER_MIPMAP_MODE_NEAREST, // NoFilter
@@ -28,7 +26,7 @@ extern const VkSamplerMipmapMode g_vk_mipmap_mode[] = {
     VK_SAMPLER_MIPMAP_MODE_NEAREST, // BilinearNoMipmap
     VK_SAMPLER_MIPMAP_MODE_NEAREST, // NearestMipmap
 };
-static_assert(COUNT_OF(g_vk_mipmap_mode) == size_t(eTexFilter::_Count), "!");
+static_assert(std::size(g_vk_mipmap_mode) == size_t(eTexFilter::_Count), "!");
 
 extern const VkCompareOp g_vk_compare_ops[] = {
     VK_COMPARE_OP_NEVER,            // None
@@ -41,7 +39,7 @@ extern const VkCompareOp g_vk_compare_ops[] = {
     VK_COMPARE_OP_ALWAYS,           // Always
     VK_COMPARE_OP_NEVER             // Never
 };
-static_assert(COUNT_OF(g_vk_compare_ops) == size_t(eTexCompare::_Count), "!");
+static_assert(std::size(g_vk_compare_ops) == size_t(eTexCompare::_Count), "!");
 
 extern const float AnisotropyLevel = 4.0f;
 } // namespace Ren
@@ -95,5 +93,3 @@ void Ren::Sampler::Init(ApiContext *api_ctx, const SamplingParams params) {
     api_ctx_ = api_ctx;
     params_ = params;
 }
-
-#undef COUNT_OF

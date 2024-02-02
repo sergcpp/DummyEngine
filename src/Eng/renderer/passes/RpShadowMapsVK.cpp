@@ -8,8 +8,6 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/shadow_interface.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace RpShadowMapsInternal {
 void _adjust_bias_and_viewport(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Eng::ShadowList &sh_list) {
     const VkViewport viewport = {float(sh_list.shadow_map_pos[0]),
@@ -100,7 +98,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
@@ -164,7 +162,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_writes[4].descriptorCount = 1;
         descr_writes[4].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, COUNT_OF(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
     }
 
     bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};
@@ -377,5 +375,3 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         api_ctx->vkCmdEndRenderPass(cmd_buf);
     }
 }
-
-#undef COUNT_OF

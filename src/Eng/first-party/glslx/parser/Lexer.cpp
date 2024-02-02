@@ -19,8 +19,6 @@ extern const operator_info_t g_operators[] = {
 #undef DECORATE
 } // namespace glslx
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 int glslx::token_t::precedence() const {
     // TODO: change precedence direction
     if (type == eTokType::Operator) {
@@ -162,7 +160,7 @@ void glslx::Lexer::ReadSingle(token_t &out) {
         out.string_mem.push_back('\0');
         out.as_identifier = out.string_mem.data();
 
-        for (int i = 0; i < COUNT_OF(g_keywords); ++i) {
+        for (int i = 0; i < std::size(g_keywords); ++i) {
             if (strcmp(g_keywords[i].name, out.as_identifier) == 0) {
                 out.type = eTokType::Keyword;
                 out.as_keyword = g_keywords[i].type;
@@ -543,5 +541,3 @@ void glslx::Lexer::ReadNumeric(const bool octal, const bool hex, std::string &ou
         }
     }
 }
-
-#undef COUNT_OF

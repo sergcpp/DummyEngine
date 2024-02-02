@@ -2,15 +2,13 @@
 
 #include "GL.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const uint32_t gl_cull_face[] = {
     0xffffffff, // None
     GL_FRONT,   // Front
     GL_BACK,    // Back
 };
-static_assert(COUNT_OF(gl_cull_face) == size_t(eCullFace::_Count), "!");
+static_assert(std::size(gl_cull_face) == size_t(eCullFace::_Count), "!");
 
 const uint32_t gl_blend_factor[] = {
     GL_ZERO,                // Zero
@@ -24,7 +22,7 @@ const uint32_t gl_blend_factor[] = {
     GL_DST_ALPHA,           // DstAlpha
     GL_ONE_MINUS_DST_ALPHA  // OneMinusDstAlpha
 };
-static_assert(COUNT_OF(gl_blend_factor) == size_t(eBlendFactor::_Count), "!");
+static_assert(std::size(gl_blend_factor) == size_t(eBlendFactor::_Count), "!");
 
 const uint32_t gl_compare_op[] = {
     GL_ALWAYS,   // Always
@@ -36,7 +34,7 @@ const uint32_t gl_compare_op[] = {
     GL_NOTEQUAL, // NotEqual
     GL_GEQUAL    // GEqual
 };
-static_assert(COUNT_OF(gl_compare_op) == size_t(eCompareOp::_Count), "!");
+static_assert(std::size(gl_compare_op) == size_t(eCompareOp::_Count), "!");
 
 const uint32_t gl_stencil_op[] = {
     GL_KEEP,    // Keep
@@ -46,14 +44,14 @@ const uint32_t gl_stencil_op[] = {
     GL_DECR,    // Decr
     GL_INVERT   // Invert
 };
-static_assert(COUNT_OF(gl_stencil_op) == size_t(eStencilOp::_Count), "!");
+static_assert(std::size(gl_stencil_op) == size_t(eStencilOp::_Count), "!");
 
 #ifndef __ANDROID__
 const uint32_t gl_polygon_mode[] = {
     GL_FILL, // Fill
     GL_LINE, // Line
 };
-static_assert(COUNT_OF(gl_polygon_mode) == size_t(ePolygonMode::_Count), "!");
+static_assert(std::size(gl_polygon_mode) == size_t(ePolygonMode::_Count), "!");
 #endif
 
 eCullFace cull_face_from_gl_enum(GLenum face) {
@@ -199,5 +197,3 @@ void Ren::RastState::Apply(const RastState *ref) const {
         }
     }
 }
-
-#undef COUNT_OF

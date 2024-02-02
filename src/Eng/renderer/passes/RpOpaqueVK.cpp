@@ -9,8 +9,6 @@
 
 #include "../Renderer_Structs.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace RpSharedInternal {
 uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
                                const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
@@ -455,7 +453,7 @@ void Eng::RpOpaque::InitDescrSetLayout() {
         {REN_INST_INDICES_BUF_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
     VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    layout_info.bindingCount = COUNT_OF(bindings);
+    layout_info.bindingCount = std::size(bindings);
     layout_info.pBindings = bindings;
 
     const VkResult res =
@@ -468,5 +466,3 @@ Eng::RpOpaque::~RpOpaque() {
         api_ctx_->vkDestroyDescriptorSetLayout(api_ctx_->device, descr_set_layout_, nullptr);
     }
 }
-
-#undef COUNT_OF

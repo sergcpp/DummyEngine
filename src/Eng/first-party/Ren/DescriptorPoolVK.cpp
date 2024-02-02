@@ -3,14 +3,12 @@
 #include "SmallVector.h"
 #include "VKCtx.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const VkDescriptorType g_descr_types_vk[] = {
     VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
     VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
     VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,   VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR};
-static_assert(COUNT_OF(g_descr_types_vk) == int(eDescrType::_Count), "!");
+static_assert(std::size(g_descr_types_vk) == int(eDescrType::_Count), "!");
 } // namespace Ren
 
 Ren::DescrPool &Ren::DescrPool::operator=(DescrPool &&rhs) noexcept {
@@ -197,5 +195,3 @@ bool Ren::DescrMultiPoolAlloc::Reset() {
     }
     return result;
 }
-
-#undef COUNT_OF

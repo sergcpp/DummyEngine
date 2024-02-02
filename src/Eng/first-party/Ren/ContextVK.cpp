@@ -20,8 +20,6 @@
 #pragma warning(disable : 4996)
 #endif
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 bool ignore_optick_errors = false;
 #if defined(__linux__)
@@ -121,7 +119,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     log_ = log;
 
     const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
-    const int enabled_layers_count = validation_level ? COUNT_OF(enabled_layers) : 0;
+    const int enabled_layers_count = validation_level ? int(std::size(enabled_layers)) : 0;
 
     if (!api_ctx_->InitVkInstance(enabled_layers, enabled_layers_count, validation_level, log)) {
         return false;
@@ -386,5 +384,3 @@ int Ren::Context::WriteTimestamp(const bool start) {
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-
-#undef COUNT_OF

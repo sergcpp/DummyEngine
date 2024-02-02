@@ -2,8 +2,6 @@
 
 #include "GL.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const uint32_t g_gl_attrib_types[] = {
     0xffffffff,        // Undefined
@@ -16,7 +14,7 @@ const uint32_t g_gl_attrib_types[] = {
     GL_UNSIGNED_BYTE,  // Uint8UNorm
     GL_INT,            // Int32
 };
-static_assert(COUNT_OF(g_gl_attrib_types) == size_t(eType::_Count), "!");
+static_assert(std::size(g_gl_attrib_types) == size_t(eType::_Count), "!");
 
 bool IsIntegerType(const eType type) { return type == eType::Uint32 || type == eType::Int32 || type == eType::Uint16; }
 bool IsNormalizedType(const eType type) {
@@ -90,5 +88,3 @@ bool Ren::VertexInput::Setup(Span<const VtxAttribDesc> _attribs, const BufHandle
 
     return true;
 }
-
-#undef COUNT_OF

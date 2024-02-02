@@ -10,8 +10,6 @@
 #include "SmallVector.h"
 #include "Texture.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 #if defined(__linux__)
 Display *g_dpy = nullptr;
@@ -377,7 +375,7 @@ bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int ena
     };
 
     VkValidationFeaturesEXT validation_features = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
-    validation_features.enabledValidationFeatureCount = COUNT_OF(enabled_validation_features);
+    validation_features.enabledValidationFeatureCount = std::size(enabled_validation_features);
     validation_features.pEnabledValidationFeatures = enabled_validation_features;
 
     if (validation_level > 1) {
@@ -1172,5 +1170,3 @@ void Ren::_SubmitCurrentCommandsWaitForCompletionAndResume(Ren::ApiContext *api_
 
     api_ctx->vkBeginCommandBuffer(api_ctx->draw_cmd_buf[api_ctx->backend_frame], &begin_info);
 }
-
-#undef COUNT_OF

@@ -19,8 +19,6 @@
 //#define TEX_VERBOSE_LOGGING
 #endif
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 const uint32_t g_gl_formats[] = {
     0xffffffff,                  // Undefined
@@ -58,7 +56,7 @@ const uint32_t g_gl_formats[] = {
     0xffffffff, // Compressed_ASTC
     0xffffffff, // None
 };
-static_assert(COUNT_OF(g_gl_formats) == size_t(eTexFormat::_Count), "!");
+static_assert(std::size(g_gl_formats) == size_t(eTexFormat::_Count), "!");
 
 const uint32_t g_gl_internal_formats[] = {
     0xffffffff,           // Undefined
@@ -96,7 +94,7 @@ const uint32_t g_gl_internal_formats[] = {
     0xffffffff,                       // Compressed_ASTC
     0xffffffff,                       // None
 };
-static_assert(COUNT_OF(g_gl_internal_formats) == size_t(eTexFormat::_Count), "!");
+static_assert(std::size(g_gl_internal_formats) == size_t(eTexFormat::_Count), "!");
 
 const uint32_t g_gl_types[] = {
     0xffffffff,        // Undefined
@@ -134,7 +132,7 @@ const uint32_t g_gl_types[] = {
     0xffffffff, // Compressed_ASTC
     0xffffffff, // None
 };
-static_assert(COUNT_OF(g_gl_types) == size_t(eTexFormat::_Count), "!");
+static_assert(std::size(g_gl_types) == size_t(eTexFormat::_Count), "!");
 
 const uint32_t g_gl_compare_func[] = {
     0xffffffff,  // None
@@ -147,7 +145,7 @@ const uint32_t g_gl_compare_func[] = {
     GL_ALWAYS,   // Always
     GL_NEVER,    // Never
 };
-static_assert(COUNT_OF(g_gl_compare_func) == size_t(eTexCompare::_Count), "!");
+static_assert(std::size(g_gl_compare_func) == size_t(eTexCompare::_Count), "!");
 
 uint32_t TextureHandleCounter = 0;
 
@@ -1335,5 +1333,3 @@ void Ren::GLUnbindTextureUnits(const int start, const int count) {
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
-
-#undef COUNT_OF

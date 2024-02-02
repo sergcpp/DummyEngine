@@ -5,8 +5,6 @@
 
 #include "SPIRV-Reflect/spirv_reflect.h"
 
-#define COUNT_OF(x) ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
 namespace Ren {
 GLuint LoadShader(GLenum shader_type, const char *source, ILog *log);
 #ifndef __ANDROID__
@@ -26,7 +24,7 @@ const GLenum GLShaderTypes[] = {GL_VERTEX_SHADER,
                                 0xffffffff /* AnyHit */,
                                 0xffffffff /* Miss */,
                                 0xffffffff /*Intersection*/};
-static_assert(COUNT_OF(GLShaderTypes) == int(Ren::eShaderType::_Count), "!");
+static_assert(std::size(GLShaderTypes) == int(Ren::eShaderType::_Count), "!");
 } // namespace Ren
 
 Ren::Shader::Shader(const char *name, ApiContext *api_ctx, const char *shader_src, const eShaderType type,
@@ -283,5 +281,3 @@ void Ren::ParseGLSLBindings(const char *shader_str, SmallVectorImpl<Descr> &attr
         p = q + 1;
     }
 }
-
-#undef COUNT_OF
