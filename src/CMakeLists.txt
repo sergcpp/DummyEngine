@@ -64,7 +64,8 @@ set_target_properties(Eng
                       Ren
                       SW
                       Snd
-                      Sys PROPERTIES FOLDER Libs)
+                      Sys
+                      glslx_lib PROPERTIES FOLDER Libs)
 
 set_target_properties(00_basic
                       01_texturing
@@ -81,13 +82,15 @@ set_target_properties(test_DummyLib
                       test_Ren
                       test_SW
                       test_Snd
-                      test_Sys PROPERTIES FOLDER Tests)
+                      test_Sys
+                      test_glslx PROPERTIES FOLDER Tests)
 
 set_target_properties(astc
                       ltc_fit
                       stb
                       SPIRV-Reflect
-                      optick PROPERTIES FOLDER _)
+                      optick
+                      glslx PROPERTIES FOLDER _)
 
 add_test(DummyLibTest   DummyLib/tests/test_DummyLib)
 add_test(EngTest        Eng/tests/test_Eng)
