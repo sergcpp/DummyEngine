@@ -362,7 +362,12 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
             return false;
         }
 
-        if ((is_type(eTokType::Identifier) || is_type(eTokType::Semicolon)) &&
+        bool is_typename = false;
+        if (is_type(eTokType::Identifier)) {
+            is_typename = FindType(tok_.as_identifier) != nullptr;
+        }
+
+        if ((is_type(eTokType::Identifier) || is_type(eTokType::Semicolon)) && !is_typename &&
             is_interface_block_storage(item.storage)) {
             ast_interface_block *unique = ParseInterfaceBlock(item.storage);
             if (!unique) {
