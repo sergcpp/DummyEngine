@@ -3,7 +3,7 @@
 #extension GL_KHR_shader_subgroup_quad : enable
 #endif
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif
@@ -16,7 +16,7 @@ UNIFORM_BLOCKS
     UniformParams : $ubUnifParamLoc
 PERM @MIPS_7
 PERM @NO_SUBGROUP_EXTENSIONS
-PERM @MIPS_7@NO_SUBGROUP_EXTENSIONS
+PERM @MIPS_7;NO_SUBGROUP_EXTENSIONS
 */
 
 #if !defined(NO_SUBGROUP_EXTENSIONS) && !defined(GL_KHR_shader_subgroup_quad)

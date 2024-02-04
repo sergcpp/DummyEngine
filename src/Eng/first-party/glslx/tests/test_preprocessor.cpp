@@ -156,6 +156,31 @@ void test_preprocessor() {
         require(preprocessor.Process() == expected);
         require(preprocessor.error().empty());
     }
+    { // function-like macro (7)
+        static const char source[] = "#define ADD(X, Y) X + Y\n"
+                                     "void main() {\n"
+                                     "    return ADD(2,\n"
+                                     "               3);\n"
+                                     "}";
+        static const char expected[] = "void main() {\n"
+                                       "    return 2 + 3;\n"
+                                       "}";
+        glslx::Preprocessor preprocessor(source);
+        require(preprocessor.Process() == expected);
+        require(preprocessor.error().empty());
+    }
+    { // function-like macro (8)
+        static const char source[] = "#define ADD(X, Y) X + Y\n"
+                                     "void main() {\n"
+                                     "    return ADD(ADD(2, 1), 3);\n"
+                                     "}";
+        static const char expected[] = "void main() {\n"
+                                       "    return 2 + 1 + 3;\n"
+                                       "}";
+        glslx::Preprocessor preprocessor(source);
+        require(preprocessor.Process() == expected);
+        require(preprocessor.error().empty());
+    }
     { // stringify
         static const char source[] = "#define FOO(Name) #Name\n"
                                      " FOO(Text)";
@@ -262,6 +287,13 @@ void test_preprocessor() {
         require(preprocessor.Process() == expected);
         require(preprocessor.error().empty());
     }
+    { // simple #if #elif #else #endif (2)
+        static const char source[] = "#if( 0 )\none\n#elif( 1 )\ntwo\n#else\nthree\n#endif";
+        static const char expected[] = "two\n";
+        glslx::Preprocessor preprocessor(source);
+        require(preprocessor.Process() == expected);
+        require(preprocessor.error().empty());
+    }
     { // more complex #elif case
         static const char source[] = "#if 0\n"
                                      "    one\n"
@@ -337,6 +369,18 @@ void test_preprocessor() {
         static const char expected[] = "    one\n"
                                        "\n"
                                        "    two";
+        glslx::Preprocessor preprocessor(source);
+        require(preprocessor.Process() == expected);
+        require(preprocessor.error().empty());
+    }
+    { // #ifndef + #undef
+        static const char source[] = "#define FOO\n"
+                                     "#undef FOO\n"
+                                     "#ifndef FOO\n"
+                                     "    one\n"
+                                     "#endif\n"
+                                     "#undef FOO";
+        static const char expected[] = "    one\n\n";
         glslx::Preprocessor preprocessor(source);
         require(preprocessor.Process() == expected);
         require(preprocessor.error().empty());
@@ -570,6 +614,33 @@ void test_preprocessor() {
         require(HasMacro(preprocessor, "PASSED_1"));
         require(!HasMacro(preprocessor, "FAILED_1"));
     }
+    { // expressions (3)
+        static const char source[] = R"(
+#define A 1
+#define C 0
+
+#if defined(B) || defined(A)
+	#define PASSED_0
+#else
+	#define FAILED_0
+#endif
+
+#if defined(C) && defined(A)
+	#define PASSED_1
+#else
+	#define FAILED_2
+#endif
+)";
+        glslx::Preprocessor preprocessor(source);
+        preprocessor.Process();
+        require(preprocessor.error().empty());
+
+        require(HasMacro(preprocessor, "PASSED_0"));
+        require(!HasMacro(preprocessor, "FAILED_0"));
+
+        require(HasMacro(preprocessor, "PASSED_1"));
+        require(!HasMacro(preprocessor, "FAILED_1"));
+    }
     { // ???
         static const char source[] = R"(
 #ifndef FOO_H
@@ -612,9 +683,9 @@ int main(int argc, char** argv) {
 )";
         glslx::preprocessor_config_t config;
         config.strip_comments = true;
-        glslx::Preprocessor preprocessor2(source, config);
-        require(preprocessor2.Process() == expected);
-        require(preprocessor2.error().empty());
+        glslx::Preprocessor preprocessor(source, config);
+        require(preprocessor.Process() == expected);
+        require(preprocessor.error().empty());
     }
 
     printf("OK\n");

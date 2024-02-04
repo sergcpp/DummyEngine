@@ -18,10 +18,6 @@ highp float rand(highp vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-float mad(float a, float b, float c) {
-    return a * b + c;
-}
-
 float pow3(float x) {
     return (x * x) * x;
 }
@@ -292,12 +288,12 @@ float ComputeTransmittanceAtDepthFrom4PowerMoments(float b_0, vec4 b, float dept
 
     // Compute a Cholesky factorization of the Hankel matrix B storing only non-
     // trivial entries or related products
-    float L21D11 = mad(-b[0], b[1], b[2]);
-    float D11 = mad(-b[0],b[0], b[1]);
+    float L21D11 = fma(-b[0], b[1], b[2]);
+    float D11 = fma(-b[0],b[0], b[1]);
     float InvD11 = 1.0 / D11;
     float L21 = L21D11 * InvD11;
-    float SquaredDepthVariance = mad(-b[1],b[1], b[3]);
-    float D22 = mad(-L21D11, L21, SquaredDepthVariance);
+    float SquaredDepthVariance = fma(-b[1],b[1], b[3]);
+    float D22 = fma(-L21D11, L21, SquaredDepthVariance);
 
     // Obtain a scaled inverse image of bz=(1,z[0],z[0]*z[0])^T
     vec3 c = vec3(1.0, z[0], z[0] * z[0]);

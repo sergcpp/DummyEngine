@@ -3,7 +3,7 @@
 #include "_fs_common.glsl"
 #include "blit_bilateral_interface.h"
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision mediump float;
 #endif

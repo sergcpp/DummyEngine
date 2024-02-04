@@ -1,7 +1,7 @@
 #version 310 es
 #extension GL_ARB_texture_multisample : enable
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision mediump float;
 #endif

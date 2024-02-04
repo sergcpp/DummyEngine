@@ -26,10 +26,6 @@ highp float rand(highp vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-float mad(float a, float b, float c) {
-    return a * b + c;
-}
-
 float pow3(float x) {
     return (x * x) * x;
 }

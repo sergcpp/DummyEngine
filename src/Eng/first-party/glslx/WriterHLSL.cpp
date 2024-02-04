@@ -284,8 +284,9 @@ void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool 
         return Write_Sequence(static_cast<const ast_sequence_expression *>(expression), out_stream);
     case eExprType::Operation: {
         const auto *operation = static_cast<const ast_operation_expression *>(expression);
-        const ast_type *op1_type = Evaluate_ExpressionResultType(tu_, operation->operand1);
-        const ast_type *op2_type = Evaluate_ExpressionResultType(tu_, operation->operand2);
+        int array_dims = 0;
+        const ast_type *op1_type = Evaluate_ExpressionResultType(tu_, operation->operand1, array_dims);
+        const ast_type *op2_type = Evaluate_ExpressionResultType(tu_, operation->operand2, array_dims);
 
         if (op1_type && op2_type) {
             if (operation->oper == eOperator::multiply && is_matrix_type(op1_type) && get_vector_size(op2_type) > 1) {
@@ -1109,7 +1110,8 @@ void glslx::WriterHLSL::Write_ConstructorCall(const ast_constructor_call *expres
     if (expression->parameters.size() == 1) {
         if (expression->type->builtin) {
             const auto *expr_type = static_cast<const ast_builtin *>(expression->type);
-            const ast_type *res_type = Evaluate_ExpressionResultType(tu_, expression->parameters[0]);
+            int array_dims = 0;
+            const ast_type *res_type = Evaluate_ExpressionResultType(tu_, expression->parameters[0], array_dims);
             if (res_type) {
                 const int vec_size = get_vector_size(expr_type->type);
                 if (is_scalar_type(res_type) && vec_size > 1) {
@@ -1183,7 +1185,8 @@ void glslx::WriterHLSL::Write_Assignment(const ast_assignment_expression *expres
     std::vector<access_index_t> indices;
     const auto [buf_index, buf_offset] = Find_BufferAccessExpression(expression->operand1, 0, indices);
     if (buf_index != -1) {
-        const ast_type *var_type = Evaluate_ExpressionResultType(tu_, expression->operand2);
+        int array_dims = 0;
+        const ast_type *var_type = Evaluate_ExpressionResultType(tu_, expression->operand2, array_dims);
         Write_Type(var_type, out_stream);
         out_stream << " __temp" + std::to_string(temp_var_index_) + " = ";
         Write_Expression(expression->operand2, false, out_stream);
@@ -1582,13 +1585,15 @@ std::pair<int, int> glslx::WriterHLSL::Find_BufferAccessExpression(const ast_exp
         return {int(std::distance(begin(byteaddress_bufs_), it)), offset};
     } else if (expression->type == eExprType::ArraySubscript) {
         const auto *subscript = static_cast<const ast_array_subscript *>(expression);
-        const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, subscript->operand);
+        int array_dims = 0;
+        const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, subscript->operand, array_dims);
         const int operand_size = Calc_TypeSize(operand_type);
         out_indices.push_back({subscript->index, operand_size});
         return Find_BufferAccessExpression(subscript->operand, offset, out_indices);
     } else if (expression->type == eExprType::FieldOrSwizzle) {
         const auto *field = static_cast<const ast_field_or_swizzle *>(expression);
-        const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, field->operand);
+        int array_dims = 0;
+        const ast_type *operand_type = Evaluate_ExpressionResultType(tu_, field->operand, array_dims);
         const int offset = Calc_FieldOffset(operand_type, field->name);
         return Find_BufferAccessExpression(field->operand, offset, out_indices);
     }
@@ -1641,7 +1646,8 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
     Find_AtomicOperations(expression, atomic_operations);
 
     for (int i = 0; i < int(atomic_operations.size()); ++i) {
-        const ast_type *temp_type = Evaluate_ExpressionResultType(tu_, atomic_operations[i].expr);
+        int array_dims = 0;
+        const ast_type *temp_type = Evaluate_ExpressionResultType(tu_, atomic_operations[i].expr, array_dims);
         Write_Type(temp_type, out_stream);
         atomic_operations[i].var_name = "__temp" + std::to_string(temp_var_index_++ + i);
         out_stream << " " << atomic_operations[i].var_name << ";\n";

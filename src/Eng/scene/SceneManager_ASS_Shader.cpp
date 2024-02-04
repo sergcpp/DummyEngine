@@ -2,11 +2,13 @@
 
 #include <filesystem>
 #include <fstream>
+#include <sstream>
 
 #include <Sys/ScopeExit.h>
 
 #include <glslang/Include/glslang_c_interface.h>
 #include <glslang/Public/resource_limits_c.h>
+#include <glslx/glslx.h>
 
 #include "../renderer/shaders/Renderer_GL_Defines.inl"
 
@@ -219,6 +221,11 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 std::remove(spv_file.c_str());
 
                 std::string preamble;
+                if (is_vk) {
+                    preamble += "#define VULKAN 1\n";
+                } else {
+                    preamble += "#define GL_SPIRV 1\n";
+                }
                 if (!perm.empty()) {
                     const char *params = perm.c_str();
                     if (!params || params[0] != '@') {
@@ -283,33 +290,72 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 const size_t glsl_file_size = size_t(glsl_file.tellg());
                 glsl_file.seekg(0, std::ios::beg);
 
-                std::unique_ptr<char[]> glsl_file_data(new char[glsl_file_size + 1]);
-                glsl_file.read(glsl_file_data.get(), glsl_file_size);
+                std::string glsl_file_data;
+                glsl_file_data.resize(glsl_file_size);
+                glsl_file.read(glsl_file_data.data(), glsl_file_size);
                 glsl_file_data[glsl_file_size] = 0;
 
+                glsl_file_data = preamble + glsl_file_data;
+
+                glslx::eTrUnitType unit_type;
                 if (strstr(out_file, ".vert.glsl")) {
+                    unit_type = glslx::eTrUnitType::Vertex;
                     glslang_input.stage = GLSLANG_STAGE_VERTEX;
                 } else if (strstr(out_file, ".frag.glsl")) {
+                    unit_type = glslx::eTrUnitType::Fragment;
                     glslang_input.stage = GLSLANG_STAGE_FRAGMENT;
                 } else if (strstr(out_file, ".comp.glsl")) {
+                    unit_type = glslx::eTrUnitType::Compute;
                     glslang_input.stage = GLSLANG_STAGE_COMPUTE;
                 } else if (strstr(out_file, ".geom.glsl")) {
+                    unit_type = glslx::eTrUnitType::Geometry;
                     glslang_input.stage = GLSLANG_STAGE_GEOMETRY;
                 } else if (strstr(out_file, ".tesc.glsl")) {
+                    unit_type = glslx::eTrUnitType::TessControl;
                     glslang_input.stage = GLSLANG_STAGE_TESSCONTROL;
                 } else if (strstr(out_file, ".tese.glsl")) {
+                    unit_type = glslx::eTrUnitType::TessEvaluation;
                     glslang_input.stage = GLSLANG_STAGE_TESSEVALUATION;
                 } else if (strstr(out_file, ".rgen.glsl")) {
+                    unit_type = glslx::eTrUnitType::RayGen;
                     glslang_input.stage = GLSLANG_STAGE_RAYGEN;
                 } else if (strstr(out_file, ".rchit.glsl")) {
+                    unit_type = glslx::eTrUnitType::ClosestHit;
                     glslang_input.stage = GLSLANG_STAGE_CLOSESTHIT;
                 } else if (strstr(out_file, ".rahit.glsl")) {
+                    unit_type = glslx::eTrUnitType::AnyHit;
                     glslang_input.stage = GLSLANG_STAGE_ANYHIT;
                 } else if (strstr(out_file, ".rmiss.glsl")) {
+                    unit_type = glslx::eTrUnitType::Miss;
                     glslang_input.stage = GLSLANG_STAGE_MISS;
                 }
 
-                glslang_input.code = glsl_file_data.get();
+                { // test shader rewrite
+                    glslx::Preprocessor preprocessor(glsl_file_data);
+                    std::string preprocessed = preprocessor.Process();
+                    if (!preprocessor.error().empty()) {
+                        ctx.log->Error("[PrepareAssets] GLSL preprocessing failed %s", out_file);
+                        ctx.log->Error("%s", preprocessor.error().data());
+                    }
+
+                    preprocessed = glslx::g_builtin_prototypes + preprocessed;
+
+                    glslx::Parser parser(preprocessed, out_file);
+                    std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
+                    if (!ast) {
+                        ctx.log->Error("[PrepareAssets] GLSL parsing failed %s", out_file);
+                        ctx.log->Error("%s", parser.error());
+                    }
+
+                    glslx::Prune_Unreachable(ast.get());
+
+                    std::stringstream ss;
+                    glslx::WriterGLSL().Write(ast.get(), ss);
+
+                    glsl_file_data = ss.str();
+                }
+
+                glslang_input.code = glsl_file_data.data();
 
                 if (is_vk) {
                     glslang_input.client = GLSLANG_CLIENT_VULKAN;
@@ -328,9 +374,9 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 glslang_shader_t *shader = glslang_shader_create(&glslang_input);
                 SCOPE_EXIT(glslang_shader_delete(shader);)
 
-                if (!preamble.empty()) {
-                    glslang_shader_set_preamble(shader, preamble.c_str());
-                }
+                //if (!preamble.empty()) {
+                //    glslang_shader_set_preamble(shader, preamble.c_str());
+                //}
 
                 if (!glslang_shader_preprocess(shader, &glslang_input)) {
                     ctx.log->Error("[PrepareAssets] GLSL preprocessing failed %s", out_file);

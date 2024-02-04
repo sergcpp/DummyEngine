@@ -2,7 +2,7 @@
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #extension GL_EXT_ray_query : require
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

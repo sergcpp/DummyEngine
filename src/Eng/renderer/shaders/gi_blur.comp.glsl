@@ -3,7 +3,7 @@
 //#extension GL_KHR_shader_subgroup_ballot : require
 #extension GL_ARB_shading_language_packing : require
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

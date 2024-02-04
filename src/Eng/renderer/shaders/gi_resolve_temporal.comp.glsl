@@ -5,7 +5,7 @@
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #endif
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

@@ -1,7 +1,7 @@
 #version 460
 #extension GL_EXT_ray_query : require
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

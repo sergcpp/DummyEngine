@@ -1,6 +1,6 @@
 #version 310 es
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision mediump int;
     precision highp float;
 #endif

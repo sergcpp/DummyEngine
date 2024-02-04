@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Ren
-	branch = master
-	commit = bcaebd046dc072ce1305ee8566af777357195141
+	branch = refactor_02_02
+	commit = a3e7d8918fc838f381da2c435869e4096c917fac
 	method = merge
 	cmdver = 0.4.6
-	parent = 961a57c19bc3e20d15a41e22f7b59d0f289bd444
+	parent = 99c4099af55ec13a4bfdfde97895d86e53be801c

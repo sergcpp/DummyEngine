@@ -74,6 +74,7 @@ class Parser {
     bool expect(eOperator op);
 
     ast_global_variable *AddHiddenGlobal(ast_builtin *type, const char *name, bool is_array = false,
+                                         eStorage storage = eStorage::In,
                                          ePrecision precision = ePrecision::None);
     bool InitSpecialGlobals(eTrUnitType type);
 
@@ -83,7 +84,7 @@ class Parser {
     bool ParseStorage(top_level_t &current);
     bool ParseAuxStorage(top_level_t &current);
     bool ParseInterpolation(top_level_t &current);
-    bool ParsePrecision(top_level_t &current);
+    bool ParsePrecision(ePrecision &precision);
     bool ParseInvariant(top_level_t &current);
     bool ParsePrecise(top_level_t &current);
     bool ParseMemoryFlags(top_level_t &current);
@@ -141,6 +142,7 @@ class Parser {
     ast_break_statement *ParseBreakStatement();
     ast_discard_statement *ParseDiscardStatement();
     ast_return_statement *ParseReturnStatement();
+    ast_ext_jump_statement *ParseExtJumpStatement();
     ast_for_statement *ParseForStatement(const ctrl_flow_params_t &ctrl_flow);
     ast_do_statement *ParseDoStatement(const ctrl_flow_params_t &ctrl_flow);
     ast_while_statement *ParseWhileStatement(const ctrl_flow_params_t &ctrl_flow);
@@ -159,5 +161,5 @@ int is_matrix_type(const ast_type *type);
 
 bool is_same_type(const ast_type *type1, const ast_type *type2);
 
-const ast_type *Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression);
+const ast_type *Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression, int &array_dims);
 } // namespace glslx

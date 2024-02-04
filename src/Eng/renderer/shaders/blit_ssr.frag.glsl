@@ -2,7 +2,7 @@
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

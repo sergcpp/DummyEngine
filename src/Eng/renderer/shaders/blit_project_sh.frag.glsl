@@ -1,7 +1,7 @@
 #version 310 es
 #extension GL_EXT_texture_cube_map_array : enable
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

@@ -66,7 +66,9 @@ glslx::Preprocessor::Preprocessor(std::string_view source, const preprocessor_co
 
 glslx::Preprocessor::~Preprocessor() = default;
 
-std::string_view glslx::Preprocessor::Process() {
+std::string glslx::Preprocessor::Process() {
+    std::string output;
+
     token_t curr_token = GetNextToken();
     while (curr_token.type != eTokenType::End) {
         switch (curr_token.type) {
@@ -135,7 +137,7 @@ std::string_view glslx::Preprocessor::Process() {
             const auto ctx_it =
                 std::find_if(cbegin(context_stack_), cend(context_stack_),
                              [&curr_token](const std::string &name) { return name == curr_token.raw_view; });
-            if (macro_it != cend(macros_) && ctx_it == cend(context_stack_)) {
+            if (macro_it != cend(macros_) /*&& ctx_it == cend(context_stack_)*/) {
                 const std::vector<token_t> expanded =
                     ExpandMacroDefinition(*macro_it, curr_token, std::bind(&Preprocessor::GetNextToken, this));
                 if (expanded.empty() && !error_.empty()) {
@@ -144,7 +146,7 @@ std::string_view glslx::Preprocessor::Process() {
                 tokens_queue_.insert(begin(tokens_queue_), begin(expanded), end(expanded));
             } else {
                 if (!ShouldTokenBeSkipped()) {
-                    output_.append(curr_token.raw_view);
+                    output.append(curr_token.raw_view);
                 }
             }
         } break;
@@ -155,24 +157,24 @@ std::string_view glslx::Preprocessor::Process() {
                 end(context_stack_));
             break;
         case eTokenType::Concat_Op:
-            while (output_.back() == ' ') {
-                output_.pop_back();
+            while (output.back() == ' ') {
+                output.pop_back();
             }
 
             while ((curr_token = GetNextToken()).type == eTokenType::Space)
                 ; // skip space tokens
 
             if (!ShouldTokenBeSkipped()) {
-                output_.append(curr_token.raw_view);
+                output.append(curr_token.raw_view);
             }
             break;
         case eTokenType::Stringize_Op:
-            output_.append((curr_token = GetNextToken()).raw_view);
+            output.append((curr_token = GetNextToken()).raw_view);
             break;
         case eTokenType::PassthroughDirective:
             if (!ShouldTokenBeSkipped()) {
-                output_.append("#");
-                output_.append(curr_token.raw_view);
+                output.append("#");
+                output.append(curr_token.raw_view);
             }
             break;
         default:
@@ -180,7 +182,7 @@ std::string_view glslx::Preprocessor::Process() {
                 break;
             }
             if (!ShouldTokenBeSkipped()) {
-                output_.append(curr_token.raw_view);
+                output.append(curr_token.raw_view);
             }
         }
         curr_token = GetNextToken();
@@ -189,7 +191,7 @@ std::string_view glslx::Preprocessor::Process() {
             curr_token = GetNextToken();
         }
     }
-    return output_;
+    return output;
 }
 
 void glslx::Preprocessor::ReadLine(std::string &out_line) {
@@ -525,7 +527,9 @@ bool glslx::Preprocessor::CreateMacroDefinition() {
             ; // skip space tokens
 
         while (curr_token.type != eTokenType::Newline) {
-            value.push_back(curr_token);
+            if (curr_token.type != eTokenType::Comment) {
+                value.push_back(curr_token);
+            }
             curr_token = GetNextToken();
         }
 
@@ -610,8 +614,7 @@ bool glslx::Preprocessor::RemoveMacroDefinition(const std::string &macro_name) {
     auto it = std::find_if(cbegin(macros_), cend(macros_),
                            [&macro_name](const macro_desc_t &macro) { return macro.name == macro_name; });
     if (it == cend(macros_)) {
-        error_ = "Undefined macro " + std::to_string(source_line_);
-        return false;
+        return true;
     }
 
     macros_.erase(it);
@@ -676,18 +679,20 @@ bool glslx::Preprocessor::ProcessInclude() {
 
 bool glslx::Preprocessor::ProcessIf() {
     token_t curr_token = GetNextToken();
-    if (!expect(eTokenType::Space, curr_token.type)) {
-        return false;
+    if (curr_token.type == eTokenType::Space) {
+        curr_token = GetNextToken();
     }
 
     std::vector<token_t> expression_tokens;
-    while ((curr_token = GetNextToken()).type != eTokenType::Newline) {
+    while (curr_token.type != eTokenType::Newline) {
         if (curr_token.type != eTokenType::Space) {
             expression_tokens.push_back(std::move(curr_token));
         }
+        curr_token = GetNextToken();
     }
 
-    if (!expect(eTokenType::Newline, curr_token.type)) {
+    if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
+        error_ = "Unexpected token at " + std::to_string(source_line_);
         return false;
     }
 
@@ -714,7 +719,8 @@ bool glslx::Preprocessor::ProcessIfdef() {
     const std::string macro_identifier = curr_token.raw_view;
 
     curr_token = GetNextToken();
-    if (!expect(eTokenType::Newline, curr_token.type)) {
+    if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
+        error_ = "Unexpected token at " + std::to_string(source_line_);
         return false;
     }
 
@@ -744,7 +750,8 @@ bool glslx::Preprocessor::ProcessIfndef() {
     const std::string macro_identifier = curr_token.raw_view;
 
     curr_token = GetNextToken();
-    if (!expect(eTokenType::Newline, curr_token.type)) {
+    if (curr_token.type != eTokenType::Space && curr_token.type != eTokenType::Newline) {
+        error_ = "Unexpected token at " + std::to_string(source_line_);
         return false;
     }
 
@@ -780,15 +787,16 @@ bool glslx::Preprocessor::ProcessElif() {
     }
 
     token_t curr_token = GetNextToken();
-    if (!expect(eTokenType::Space, curr_token.type)) {
-        return false;
+    if (curr_token.type == eTokenType::Space) {
+        curr_token = GetNextToken();
     }
 
     std::vector<token_t> expression_tokens;
-    while ((curr_token = GetNextToken()).type != eTokenType::Newline) {
+    while (curr_token.type != eTokenType::Newline) {
         if (curr_token.type != eTokenType::Space) {
             expression_tokens.push_back(std::move(curr_token));
         }
+        curr_token = GetNextToken();
     }
 
     if (!expect(eTokenType::Newline, curr_token.type)) {
@@ -846,12 +854,15 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
         }
 
         if (curr_token.type != eTokenType::Comma && curr_token.type != eTokenType::Bracket_End) {
-            if (!expect(eTokenType::Comma, curr_token.type)) {
+            if (!expect(eTokenType::Newline, curr_token.type)) {
                 return {};
             }
+            curr_token = get_next_token();
         }
 
-        processing_tokens.push_back(std::move(curr_arg_tokens));
+        if (!curr_arg_tokens.empty()) {
+            processing_tokens.push_back(std::move(curr_arg_tokens));
+        }
 
         if (curr_token.type == eTokenType::Bracket_End) {
             break;
@@ -868,14 +879,13 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
     for (int arg_index = 0; arg_index < int(processing_tokens.size()); ++arg_index) {
         const std::string &arg_name = macro.arg_names[arg_index];
 
-        std::string replacement_value;
-        for (const token_t &arg : processing_tokens[arg_index]) {
-            replacement_value.append(arg.raw_view);
-        }
-
-        for (token_t &tok : replacement_list) {
-            if (tok.type == eTokenType::Identifier && tok.raw_view == arg_name) {
-                tok.raw_view = replacement_value;
+        for (auto it = begin(replacement_list); it != end(replacement_list); ) {
+            if (it->type == eTokenType::Identifier && it->raw_view == arg_name) {
+                it = replacement_list.erase(it);
+                it = replacement_list.insert(it, begin(processing_tokens[arg_index]), end(processing_tokens[arg_index]));
+                it += processing_tokens[arg_index].size();
+            } else {
+                ++it;
             }
         }
     }
@@ -925,6 +935,10 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
                     return 0;
                 }
 
+                do {
+                    tokens.erase(tokens.cbegin());
+                } while (tokens.front().type == eTokenType::Space);
+
                 return int(std::find_if(cbegin(macros_), cend(macros_), [&identifier_token](auto &&item) {
                                return item.name == identifier_token.raw_view;
                            }) != cend(macros_));
@@ -972,9 +986,9 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         }
 
         bool result_apply = false;
-        token_t currToken;
-        while ((currToken = tokens.front()).type == eTokenType::Not || currToken.type == eTokenType::Not) {
-            switch (currToken.type) {
+        token_t curr_token;
+        while ((curr_token = tokens.front()).type == eTokenType::Not || curr_token.type == eTokenType::Not) {
+            switch (curr_token.type) {
             case eTokenType::Minus:
                 // TODO fix this
                 break;
@@ -1092,7 +1106,7 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
         return result;
     };
 
-    auto eval_end = [&tokens, &eval_eq]() {
+    auto eval_and = [&tokens, &eval_eq]() {
         int result = eval_eq();
 
         while (tokens.front().type == eTokenType::Space) {
@@ -1101,18 +1115,18 @@ int glslx::Preprocessor::EvaluateExpression(Span<const token_t> _tokens) {
 
         while (tokens.front().type == eTokenType::And) {
             tokens.erase(tokens.cbegin());
-            result = result && eval_eq();
+            result &= eval_eq();
         }
 
         return result;
     };
 
-    auto eval_or = [&tokens, &eval_end]() {
-        int result = eval_end();
+    auto eval_or = [&tokens, &eval_and]() {
+        int result = eval_and();
 
         while (tokens.front().type == eTokenType::Or) {
             tokens.erase(tokens.cbegin());
-            result = result || eval_end();
+            result |= eval_and();
         }
 
         return result;

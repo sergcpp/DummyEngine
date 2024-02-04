@@ -224,9 +224,9 @@ static const __m128i RGB_to_RGBA = _mm_set_epi8(-1 /* Insert zero */, 11, 10, 9,
 template <int Channels> void Extract4x4Block_SSSE3(const uint8_t src[], const int stride, uint8_t dst[64]) {
     for (int j = 0; j < 4; j++) {
         __m128i rgba;
-        if (Channels == 4) {
+        if constexpr (Channels == 4) {
             rgba = _mm_loadu_si128(reinterpret_cast<const __m128i *>(src));
-        } else if (Channels == 3) {
+        } else if constexpr (Channels == 3) {
             const __m128i rgb = _mm_loadu_si128(reinterpret_cast<const __m128i *>(src));
             rgba = _mm_shuffle_epi8(rgb, RGB_to_RGBA);
         }
@@ -262,11 +262,11 @@ void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4], ui
     max_col = _mm_max_epu8(max_col, _mm_srli_si128(max_col, 8));
     max_col = _mm_max_epu8(max_col, _mm_srli_si128(max_col, 4));
 
-    if (!Is_YCoCg) {
+    if constexpr (!Is_YCoCg) {
         __m128i min_col_16 = _mm_unpacklo_epi8(min_col, _mm_setzero_si128());
         __m128i max_col_16 = _mm_unpacklo_epi8(max_col, _mm_setzero_si128());
         __m128i inset = _mm_sub_epi16(max_col_16, min_col_16);
-        if (!UseAlpha) {
+        if constexpr (!UseAlpha) {
             inset = _mm_srli_epi16(inset, 4);
         } else {
             inset = _mm_mullo_epi16(inset, CoCgInsetMul);

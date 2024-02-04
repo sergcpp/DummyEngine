@@ -469,14 +469,16 @@ void glslx::WriterGLSL::Write_ArraySize(Span<const ast_constant_expression *cons
 }
 
 void glslx::WriterGLSL::Write_Variable(const ast_variable *variable, std::ostream &out_stream, const bool name_only) {
-    if (variable->is_precise) {
-        out_stream << "precise ";
-    }
-
     if (name_only) {
         out_stream << variable->name;
         return;
     }
+
+    if (variable->is_precise) {
+        out_stream << "precise ";
+    }
+
+    Write_Precision(variable->precision, out_stream);
 
     Write_Type(variable->base_type, out_stream);
     out_stream << " " << variable->name;
@@ -611,6 +613,15 @@ void glslx::WriterGLSL::Write_Precision(ePrecision precision, std::ostream &out_
 }
 
 void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable, std::ostream &out_stream) {
+    if (std::find(begin(written_globals_), end(written_globals_), variable) != end(written_globals_)) {
+        return;
+    }
+
+    if (variable->is_invariant && variable->is_hidden) {
+        out_stream << "invariant " << variable->name << ";\n";
+        return;
+    }
+
     if (variable->is_constant) {
         out_stream << "const ";
     }
@@ -619,7 +630,6 @@ void glslx::WriterGLSL::Write_GlobalVariable(const ast_global_variable *variable
     Write_Storage(variable->storage, out_stream);
     Write_AuxStorage(variable->aux_storage, out_stream);
     Write_Memory(variable->memory_flags, out_stream);
-    Write_Precision(variable->precision, out_stream);
 
     if (variable->is_invariant) {
         out_stream << "invariant ";
@@ -798,7 +808,20 @@ void glslx::WriterGLSL::Write_InterfaceBlock(const ast_interface_block *block, s
         out_stream << ";\n";
     }
     --nest_level_;
-    out_stream << "};\n";
+    out_stream << "}";
+    bool first = true;
+    for (int i = 0; i < int(tu_->globals.size()); ++i) {
+        if (tu_->globals[i]->base_type == block) {
+            if (first) {
+                out_stream << " " << tu_->globals[i]->name;
+            } else {
+                out_stream << ", " << tu_->globals[i]->name;
+            }
+            first = false;
+            written_globals_.push_back(tu_->globals[i]);
+        }
+    }
+    out_stream << ";\n";
 }
 
 void glslx::WriterGLSL::Write_VersionDirective(const ast_version_directive *version, std::ostream &out_stream) {
@@ -834,18 +857,30 @@ void glslx::WriterGLSL::Write_ExtensionDirective(const ast_extension_directive *
     }
 }
 
+void glslx::WriterGLSL::Write_DefaultPrecision(const ast_default_precision *precision, std::ostream &out_stream) {
+    out_stream << "precision ";
+    Write_Precision(precision->precision, out_stream);
+    Write_Type(precision->type, out_stream);
+    out_stream << ";\n";
+}
+
 void glslx::WriterGLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
+    tu_ = tu;
+
     if (tu->version) {
         Write_VersionDirective(tu->version, out_stream);
     }
     for (int i = 0; i < int(tu->extensions.size()); ++i) {
         Write_ExtensionDirective(tu->extensions[i], out_stream);
     }
+    for (int i = 0; i < int(tu->default_precision.size()); ++i) {
+        Write_DefaultPrecision(tu->default_precision[i], out_stream);
+    }
     for (int i = 0; i < int(tu->globals.size()); ++i) {
         if (!tu->globals[i]->base_type->builtin) {
             continue;
         }
-        if (!tu->globals[i]->is_hidden || config_.write_hidden) {
+        if (!tu->globals[i]->is_hidden || tu->globals[i]->is_invariant || config_.write_hidden) {
             Write_GlobalVariable(tu->globals[i], out_stream);
         }
     }

@@ -257,7 +257,9 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
                 } else {
                     bool args_match = true;
                     for (int i = 0; i < int(func->parameters.size()); ++i) {
-                        const ast_type *type = Evaluate_ExpressionResultType(ast_.get(), call->parameters[i]);
+                        int array_dims = 0;
+                        const ast_type *type =
+                            Evaluate_ExpressionResultType(ast_.get(), call->parameters[i], array_dims);
                         if (!type) {
                             args_match = false;
                             break;
@@ -347,7 +349,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
             if (!ParseStorage(item)) return false;
             if (!ParseAuxStorage(item)) return false;
             if (!ParseInterpolation(item)) return false;
-            if (!ParsePrecision(item)) return false;
+            if (!ParsePrecision(item.precision)) return false;
             if (!ParseInvariant(item)) return false;
             if (!ParsePrecise(item)) return false;
             if (!ParseMemoryFlags(item)) return false;
@@ -387,6 +389,22 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
                 return true;
             } else {
                 level.type = unique;
+            }
+        } else if (is_keyword(eKeyword::K_precision)) {
+            if (!next()) { // skip precision
+                return false;
+            }
+            ast_default_precision *pre = astnew<ast_default_precision>();
+            if (!ParsePrecision(pre->precision)) {
+                return false;
+            }
+            pre->type = ParseBuiltin();
+            if (!pre->type) {
+                return false;
+            }
+            ast_->default_precision.push_back(pre);
+            if (!next() || is_type(eTokType::Semicolon)) {
+                return true;
             }
         } else {
             items.push_back(item);
@@ -444,6 +462,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
         level.interpolation = next.interpolation;
         level.precision = next.precision;
         level.memory_flags |= next.memory_flags;
+        level.is_invariant = next.is_invariant;
 
         for (int i = 0; i < int(next.layout_qualifiers.size()); ++i) {
             for (int j = 0; j < int(level.layout_qualifiers.size()); ++j) {
@@ -462,9 +481,29 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
 
     if (!continuation && !level.type) {
         if (is_type(eTokType::Identifier)) {
-            level.type = FindType(tok_.as_identifier);
-            if (!next()) { // skip identifier
-                return false;
+            const token_t peek = lexer_.Peek();
+            if (level.is_invariant && peek.type == eTokType::Semicolon) {
+                ast_variable *var = FindVariable(tok_.as_identifier);
+                if (!var) {
+                    fatal("variable not found");
+                    return false;
+                }
+                if (var->type != eVariableType::Global) {
+                    fatal("expected global variable");
+                    return false;
+                }
+                ast_global_variable *gvar = static_cast<ast_global_variable *>(var);
+                gvar->is_invariant = true;
+
+                if (!next()) { // skip identifier
+                    return false;
+                }
+                return true;
+            } else {
+                level.type = FindType(tok_.as_identifier);
+                if (!next()) { // skip identifier
+                    return false;
+                }
             }
         } else {
             level.type = ParseBuiltin();
@@ -665,19 +704,19 @@ bool glslx::Parser::ParseInterpolation(top_level_t &current) {
     return true;
 }
 
-bool glslx::Parser::ParsePrecision(top_level_t &current) {
+bool glslx::Parser::ParsePrecision(ePrecision &precision) {
     if (is_keyword(eKeyword::K_highp)) {
-        current.precision = ePrecision::Highp;
+        precision = ePrecision::Highp;
         if (!next()) {
             return false;
         }
     } else if (is_keyword(eKeyword::K_mediump)) {
-        current.precision = ePrecision::Mediump;
+        precision = ePrecision::Mediump;
         if (!next()) {
             return false;
         }
     } else if (is_keyword(eKeyword::K_lowp)) {
-        current.precision = ePrecision::Lowp;
+        precision = ePrecision::Lowp;
         if (!next()) {
             return false;
         }
@@ -750,7 +789,10 @@ bool glslx::Parser::ParseLayout(top_level_t &current) {
         }
         while (!is_operator(eOperator::parenthesis_end)) {
             ast_layout_qualifier *qualifier = astnew<ast_layout_qualifier>();
-            if (!qualifier || (!is_type(eTokType::Identifier) && !is_keyword(eKeyword::K_shared))) {
+            if (!qualifier) {
+                return false;
+            }
+            if (!is_type(eTokType::Identifier) && !is_keyword(eKeyword::K_shared)) {
                 return false;
             }
 
@@ -882,6 +924,16 @@ bool glslx::Parser::is_constant(const ast_expression *expression) {
     } else if (expression->type == eExprType::UnaryMinus || expression->type == eExprType::UnaryPlus ||
                expression->type == eExprType::BitNot) {
         return is_constant(static_cast<const ast_unary_expression *>(expression)->operand);
+    } else if (expression->type == eExprType::ConstructorCall) {
+        const ast_constructor_call *call = static_cast<const ast_constructor_call *>(expression);
+        if (!call->type->builtin) {
+            return false;
+        }
+        bool ret = true;
+        for (int i = 0; i < int(call->parameters.size()); ++i) {
+            ret &= is_constant(call->parameters[i]);
+        }
+        return ret;
     } else if (expression->type == eExprType::Operation) {
         const ast_operation_expression *operation = static_cast<const ast_operation_expression *>(expression);
         return is_constant(operation->operand1) && is_constant(operation->operand2);
@@ -1166,6 +1218,8 @@ glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expressi
         }
     } else if (expression->type == eExprType::Sequence) {
         return expression;
+    } else if (expression->type == eExprType::ConstructorCall) {
+        return expression;
     } else if (expression->type == eExprType::ArraySpecifier) {
         ast_array_specifier *arr_specifier = static_cast<ast_array_specifier *>(expression);
         for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
@@ -1403,6 +1457,14 @@ glslx::ast_function *glslx::Parser::ParseFunction(const top_level_t &parse) {
         }
     }
 
+    if (function->parameters.size() == 1 && function->parameters[0]->base_type->builtin) {
+        ast_builtin *type = static_cast<ast_builtin *>(function->parameters[0]->base_type);
+        if (type->type == eKeyword::K_void) {
+            // drop single void parameter
+            function->parameters.clear();
+        }
+    }
+
     if (strcmp(function->name, "main") == 0) {
         if (!function->parameters.empty()) {
             fatal("'main' cannot have parameters");
@@ -1553,10 +1615,11 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
             if (!expression) {
                 return nullptr;
             }
-            ast_type *type = GetType(operand);
+            int array_dims = 0;
+            const ast_type *type = Evaluate_ExpressionResultType(ast_.get(), operand, array_dims);
             if (type && !type->builtin) {
                 ast_variable *field = nullptr;
-                ast_struct *kind = static_cast<ast_struct *>(type);
+                const ast_struct *kind = static_cast<const ast_struct *>(type);
                 for (int i = 0; i < int(kind->fields.size()); ++i) {
                     if (strcmp(kind->fields[i]->name, tok_.as_identifier) == 0) {
                         field = kind->fields[i];
@@ -1823,7 +1886,26 @@ glslx::ast_constant_expression *glslx::Parser::ParseArraySize() {
 }
 
 glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition> condition) {
-    if (is_type(eTokType::Scope_Begin)) {
+    bool accept_paren = false;
+    if (is_builtin()) {
+        const token_t peek = lexer_.Peek();
+        if (peek.type == eTokType::Operator && peek.as_operator == eOperator::bracket_begin) {
+            if (!next()) {
+                return nullptr;
+            }
+            if (!expect(eOperator::bracket_begin)) {
+                return nullptr;
+            }
+            if (!expect(eTokType::Const_int)) {
+                return nullptr;
+            }
+            if (!expect(eOperator::bracket_end)) {
+                return nullptr;
+            }
+            accept_paren = true;
+        }
+    }
+    if (is_type(eTokType::Scope_Begin) || (accept_paren && is_operator(eOperator::parenthesis_begin))) {
         if (!next()) {
             return nullptr;
         }
@@ -1831,8 +1913,9 @@ glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition>
         if (!arr_specifier) {
             return nullptr;
         }
-        while (!is_type(eTokType::Scope_End)) {
-            ast_expression *next_expression = ParseArraySpecifier(condition | eEndCondition::Comma);
+        while (!is_type(eTokType::Scope_End) && !is_operator(eOperator::parenthesis_end)) {
+            ast_expression *next_expression =
+                ParseArraySpecifier(condition | eEndCondition::Parenthesis | eEndCondition::Comma);
             if (!next_expression) {
                 return nullptr;
             }
@@ -1843,7 +1926,10 @@ glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition>
                 }
             }
         }
-        if (!expect(eTokType::Scope_End)) {
+        if (!is_type(eTokType::Scope_End) && !is_operator(eOperator::parenthesis_end)) {
+            return nullptr;
+        }
+        if (!next()) {
             return nullptr;
         }
         return arr_specifier;
@@ -2044,6 +2130,8 @@ glslx::ast_statement *glslx::Parser::ParseStatement() {
         return ParseDiscardStatement();
     } else if (is_keyword(eKeyword::K_return)) {
         return ParseReturnStatement();
+    } else if (is_keyword(eKeyword::K_ignoreIntersectionEXT) || is_keyword(eKeyword::K_terminateRayEXT)) {
+        return ParseExtJumpStatement();
     } else if (is_type(eTokType::Semicolon)) {
         return astnew<ast_empty_statement>();
     } else {
@@ -2233,6 +2321,11 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
         }
     }
 
+    ePrecision precision = ePrecision::None;
+    if (!ParsePrecision(precision)) {
+        return nullptr;
+    }
+
     ast_type *type = nullptr;
     if (is_builtin()) {
         type = ParseBuiltin();
@@ -2334,6 +2427,7 @@ glslx::ast_declaration_statement *glslx::Parser::ParseDeclarationStatement(const
         }
 
         variable->is_const = is_const;
+        variable->precision = precision;
         variable->base_type = type;
         variable->name = strnew(name);
         statement->variables.push_back(variable);
@@ -2416,6 +2510,21 @@ glslx::ast_return_statement *glslx::Parser::ParseReturnStatement() {
             fatal("expected semicolon after return statement");
             return nullptr;
         }
+    }
+    return statement;
+}
+
+glslx::ast_ext_jump_statement *glslx::Parser::ParseExtJumpStatement() {
+    ast_ext_jump_statement *statement = astnew<ast_ext_jump_statement>(tok_.as_keyword);
+    if (!statement) {
+        return nullptr;
+    }
+    if (!next()) { // skip 'return'
+        return nullptr;
+    }
+    if (!is_type(eTokType::Semicolon)) {
+        fatal("expected semicolon after discard statement");
+        return nullptr;
     }
     return statement;
 }
@@ -2615,12 +2724,12 @@ glslx::ast_type *glslx::Parser::GetType(ast_expression *expression) {
 }
 
 glslx::ast_global_variable *glslx::Parser::AddHiddenGlobal(ast_builtin *type, const char *name, const bool is_array,
-                                                           const ePrecision precision) {
+                                                           const eStorage storage, const ePrecision precision) {
     ast_global_variable *var = astnew<ast_global_variable>();
     if (!var) {
         return nullptr;
     }
-    var->storage = eStorage::In;
+    var->storage = storage;
     var->is_array = is_array;
     var->is_hidden = true;
     var->base_type = type;
@@ -2679,10 +2788,10 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
         res &= AddHiddenGlobal(int_type, "gl_DrawID") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_BaseVertex") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_BaseInstance") != nullptr;
-        res &= AddHiddenGlobal(vec4, "gl_Position") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_PointSize") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true) != nullptr;
+        res &= AddHiddenGlobal(vec4, "gl_Position", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_PointSize", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true, eStorage::Out) != nullptr;
     } else if (type == eTrUnitType::TessControl) {
         res &= AddHiddenGlobal(int_type, "gl_PatchVerticesIn") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
@@ -2722,13 +2831,13 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
     // https://github.com/KhronosGroup/GLSL/blob/master/extensions/khr/GL_KHR_shader_subgroup.txt
     if (type == eTrUnitType::Compute || type == eTrUnitType::Vertex || type == eTrUnitType::Geometry ||
         type == eTrUnitType::TessControl || type == eTrUnitType::TessEvaluation || type == eTrUnitType::Fragment) {
-        res &= AddHiddenGlobal(uint, "gl_SubgroupSize", false, ePrecision::Mediump) != nullptr;
-        res &= AddHiddenGlobal(uint, "gl_SubgroupInvocationID", false, ePrecision::Mediump) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupEqMask", false, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupGeMask", false, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupGtMask", false, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupLeMask", false, ePrecision::Highp) != nullptr;
-        res &= AddHiddenGlobal(uvec4, "gl_SubgroupLtMask", false, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(uint, "gl_SubgroupSize", false, eStorage::In, ePrecision::Mediump) != nullptr;
+        res &= AddHiddenGlobal(uint, "gl_SubgroupInvocationID", false, eStorage::In, ePrecision::Mediump) != nullptr;
+        res &= AddHiddenGlobal(uvec4, "gl_SubgroupEqMask", false, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(uvec4, "gl_SubgroupGeMask", false, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(uvec4, "gl_SubgroupGtMask", false, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(uvec4, "gl_SubgroupLeMask", false, eStorage::In, ePrecision::Highp) != nullptr;
+        res &= AddHiddenGlobal(uvec4, "gl_SubgroupLtMask", false, eStorage::In, ePrecision::Highp) != nullptr;
     }
 
     // https://github.com/KhronosGroup/GLSL/blob/master/extensions/ext/GLSL_EXT_ray_query.txt
@@ -3067,7 +3176,9 @@ bool is_same_type(const ast_type *_type1, const ast_type *_type2) {
 }
 } // namespace glslx
 
-const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression) {
+const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, const ast_expression *expression,
+                                                            int &array_dims) {
+    array_dims = 0;
     switch (expression->type) {
     case eExprType::IntConstant:
         return &g_int_type;
@@ -3080,22 +3191,28 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     case eExprType::BoolConstant:
         return &g_bool_type;
     case eExprType::VariableIdentifier: {
-        return static_cast<const ast_variable_identifier *>(expression)->variable->base_type;
+        ast_variable *var = static_cast<const ast_variable_identifier *>(expression)->variable;
+        array_dims = var->array_sizes.size();
+        return var->base_type;
     }
     case eExprType::FieldOrSwizzle: {
         const auto *expr = static_cast<const ast_field_or_swizzle *>(expression);
         if (expr->field) {
-            return Evaluate_ExpressionResultType(tu, expr->field);
+            return Evaluate_ExpressionResultType(tu, expr->field, array_dims);
         } else {
-            const ast_type *operand_type = Evaluate_ExpressionResultType(tu, expr->operand);
+            const ast_type *operand_type = Evaluate_ExpressionResultType(tu, expr->operand, array_dims);
             if (operand_type) {
                 return to_vector_type(to_scalar_type(operand_type), int(strlen(expr->name)));
             }
         }
     } break;
     case eExprType::ArraySubscript: {
-        const ast_type *operand_type =
-            Evaluate_ExpressionResultType(tu, static_cast<const ast_array_subscript *>(expression)->operand);
+        const ast_type *operand_type = Evaluate_ExpressionResultType(
+            tu, static_cast<const ast_array_subscript *>(expression)->operand, array_dims);
+        if (array_dims > 0) {
+            --array_dims;
+            return operand_type;
+        }
         if (operand_type && get_vector_size(operand_type) > 1) {
             return to_scalar_type(operand_type);
         }
@@ -3106,7 +3223,8 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
 
         std::vector<const ast_type *> arg_types;
         for (int i = 0; i < int(func_call->parameters.size()); ++i) {
-            arg_types.push_back(Evaluate_ExpressionResultType(tu, func_call->parameters[i]));
+            int array_dims = 0;
+            arg_types.push_back(Evaluate_ExpressionResultType(tu, func_call->parameters[i], array_dims));
             if (!arg_types.back()) {
                 return nullptr;
             }
@@ -3150,7 +3268,8 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     case eExprType::LogicalNot:
     case eExprType::PrefixIncrement:
     case eExprType::PrefixDecrement:
-        return Evaluate_ExpressionResultType(tu, static_cast<const ast_unary_expression *>(expression)->operand);
+        return Evaluate_ExpressionResultType(tu, static_cast<const ast_unary_expression *>(expression)->operand,
+                                             array_dims);
     case eExprType::Assign:
         /*if (nested) {
             out_stream << "(";
@@ -3162,16 +3281,17 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
         break;*/
         break;
     case eExprType::Sequence:
-        return Evaluate_ExpressionResultType(tu, static_cast<const ast_sequence_expression *>(expression)->operand1);
+        return Evaluate_ExpressionResultType(tu, static_cast<const ast_sequence_expression *>(expression)->operand1,
+                                             array_dims);
     case eExprType::Operation: {
         const auto *operation = static_cast<const ast_operation_expression *>(expression);
-        const ast_type *op1_type = Evaluate_ExpressionResultType(tu, operation->operand1);
-        const ast_type *op2_type = Evaluate_ExpressionResultType(tu, operation->operand2);
+        const ast_type *op1_type = Evaluate_ExpressionResultType(tu, operation->operand1, array_dims);
+        const ast_type *op2_type = Evaluate_ExpressionResultType(tu, operation->operand2, array_dims);
         if (!op1_type || !op2_type) {
             return nullptr;
         }
 
-        if (op1_type == op2_type) {
+        if (is_same_type(op1_type, op2_type)) {
             return op1_type;
         }
 

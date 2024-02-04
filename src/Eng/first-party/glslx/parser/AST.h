@@ -148,6 +148,7 @@ struct ast_statement;
 struct ast_struct;
 struct ast_interface_block;
 struct ast_variable;
+struct ast_default_precision;
 
 enum class eTrUnitType {
     Compute,
@@ -169,6 +170,7 @@ struct TrUnit {
 
     ast_version_directive *version = nullptr;
     std::vector<ast_extension_directive *> extensions;
+    std::vector<ast_default_precision *> default_precision;
     std::vector<ast_interface_block *> interface_blocks;
     std::vector<ast_struct *> structures;
     std::vector<ast_global_variable *> globals;
@@ -200,14 +202,12 @@ struct ast_struct : ast_type {
     ast_struct() noexcept : ast_type(false) {}
 };
 
-struct ast_interface_block : ast_type {
-    const char *name = nullptr;
+struct ast_interface_block : ast_struct {
     eStorage storage = eStorage::None;
     Bitmask<eMemory> memory_flags;
-    std::vector<ast_variable *> fields;
     std::vector<ast_layout_qualifier *> layout_qualifiers;
 
-    ast_interface_block() noexcept : ast_type(false) {}
+    ast_interface_block() noexcept {}
 };
 
 struct ast_version_directive : ast_type {
@@ -224,6 +224,13 @@ struct ast_extension_directive : ast_type {
     ast_extension_directive() noexcept : ast_type(false) {}
 };
 
+struct ast_default_precision : ast_type {
+    ePrecision precision = ePrecision::None;
+    ast_builtin *type = nullptr;
+
+    ast_default_precision() noexcept : ast_type(false) {}
+};
+
 enum class eVariableType { Function, Parameter, Global, Field };
 
 struct ast_variable : ast_node<ast_variable> {
@@ -232,6 +239,7 @@ struct ast_variable : ast_node<ast_variable> {
     bool is_array = false;
     bool is_precise = false;
     eVariableType type;
+    ePrecision precision = ePrecision::None;
     std::vector<ast_constant_expression *> array_sizes;
 
     ast_variable(eVariableType _type) noexcept : type(_type) {}
@@ -246,7 +254,6 @@ struct ast_function_variable : ast_variable {
 
 struct ast_function_parameter : ast_variable {
     Bitmask<eParamQualifier> qualifiers = eParamQualifier::None;
-    ePrecision precision = ePrecision::None;
 
     ast_function_parameter() noexcept : ast_variable(eVariableType::Parameter) {}
 };
@@ -255,7 +262,6 @@ struct ast_global_variable : ast_variable {
     eStorage storage = eStorage::None;
     eAuxStorage aux_storage = eAuxStorage::None;
     Bitmask<eMemory> memory_flags;
-    ePrecision precision = ePrecision::None;
     eInterpolation interpolation = eInterpolation::None;
     bool is_invariant = false;
     bool is_constant = false;
@@ -296,6 +302,7 @@ enum class eStatement {
     Break,
     Return,
     Discard,
+    ExtJump,
     _Count
 };
 
@@ -416,6 +423,12 @@ struct ast_return_statement : ast_jump_statement {
 
 struct ast_discard_statement : ast_jump_statement {
     ast_discard_statement() noexcept : ast_jump_statement(eStatement::Discard) {}
+};
+
+struct ast_ext_jump_statement : ast_jump_statement {
+    eKeyword keyword;
+
+    ast_ext_jump_statement(eKeyword _keyword) noexcept : ast_jump_statement(eStatement::ExtJump), keyword(_keyword) {}
 };
 
 enum class eExprType {

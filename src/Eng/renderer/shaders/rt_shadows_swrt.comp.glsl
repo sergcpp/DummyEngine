@@ -4,7 +4,7 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-#if defined(GL_ES) || defined(VULKAN)
+#if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
     precision highp float;
 #endif

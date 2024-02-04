@@ -161,9 +161,12 @@ void glslx::Mark_Statement(ast_statement *statement) {
             Mark_Statement(st);
         }
     } break;
-    case eStatement::CaseLabel:
-        Mark_Expression(static_cast<ast_case_label_statement *>(statement)->condition);
-        break;
+    case eStatement::CaseLabel: {
+        ast_case_label_statement *_case = static_cast<ast_case_label_statement *>(statement);
+        if (!_case->is_default) {
+            Mark_Expression(_case->condition);
+        }
+    } break;
     case eStatement::While: {
         auto *while_statement = static_cast<ast_while_statement *>(statement);
         Mark_Statement(while_statement->condition);
@@ -176,9 +179,15 @@ void glslx::Mark_Statement(ast_statement *statement) {
     } break;
     case eStatement::For: {
         auto *for_statement = static_cast<ast_for_statement *>(statement);
-        Mark_Statement(for_statement->init);
-        Mark_Expression(for_statement->condition);
-        Mark_Expression(for_statement->loop);
+        if (for_statement->init) {
+            Mark_Statement(for_statement->init);
+        }
+        if (for_statement->condition) {
+            Mark_Expression(for_statement->condition);
+        }
+        if (for_statement->loop) {
+            Mark_Expression(for_statement->loop);
+        }
         Mark_Statement(for_statement->body);
     } break;
     case eStatement::Return: {
@@ -211,6 +220,10 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
     for (ast_extension_directive *ext : tu->extensions) {
         ext->gc = 1;
     }
+    for (ast_default_precision *pre : tu->default_precision) {
+        pre->gc = 1;
+        Mark_Type(pre->type);
+    }
 
     for (ast_interface_block *block : tu->interface_blocks) {
         block->gc = 1;
@@ -227,8 +240,8 @@ void glslx::Prune_Unreachable(TrUnit *tu) {
 
     // keep all uniforms
     for (ast_global_variable *var : tu->globals) {
-        if (var->storage == eStorage::Uniform) {
-            var->gc = 1;
+        if (var->storage == eStorage::In || var->storage == eStorage::Out || var->storage == eStorage::Uniform) {
+            Mark_Variable(var);
         }
     }
 

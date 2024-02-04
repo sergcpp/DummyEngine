@@ -5,6 +5,9 @@
 
 namespace glslx {
 class WriterGLSL : public WriterBase {
+    const TrUnit *tu_ = nullptr;
+    std::vector<const ast_global_variable *> written_globals_;
+
     void Write_Builtin(const ast_builtin *builtin, std::ostream &out_stream);
     void Write_Type(const ast_type *type, std::ostream &out_stream);
     void Write_ArraySize(Span<const ast_constant_expression *const> array_sizes, std::ostream &out_stream);
@@ -76,6 +79,7 @@ class WriterGLSL : public WriterBase {
 
     void Write_VersionDirective(const ast_version_directive *version, std::ostream &out_stream);
     void Write_ExtensionDirective(const ast_extension_directive *extension, std::ostream &out_stream);
+    void Write_DefaultPrecision(const ast_default_precision *precision, std::ostream &out_stream);
 
   public:
     WriterGLSL(const writer_config_t &config = {}) : WriterBase(config) {}

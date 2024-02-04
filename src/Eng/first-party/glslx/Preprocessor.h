@@ -36,7 +36,6 @@ class Preprocessor {
     preprocessor_config_t config_;
     size_t source_line_ = 0;
     size_t curr_pos_ = 0;
-    std::string output_;
     std::string error_;
 
     enum class eTokenType {
@@ -173,7 +172,7 @@ class Preprocessor {
 
     std::string_view error() const { return error_; }
 
-    std::string_view Process();
+    std::string Process();
 
     Span<const macro_desc_t> macros() const { return Span<const macro_desc_t>{macros_.data() + 1, macros_.size() - 1}; }
 };

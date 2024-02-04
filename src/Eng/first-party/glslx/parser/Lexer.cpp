@@ -3,8 +3,9 @@
 #include <climits>
 
 namespace glslx {
-inline bool is_octal(int ch) { return unsigned(ch) - '0' < 8; }
-inline bool is_hex(int ch) { return (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || isdigit(ch); }
+inline bool is_octal(const int ch) { return unsigned(ch) - '0' < 8; }
+inline bool is_hex(const int ch) { return (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') || isdigit(ch); }
+inline bool is_space(const int ch) { return (ch >= '\t' && ch <= '\r') || ch == ' '; }
 
 #define DECORATE(X, Y, Z) {#X, eKeyword::K_##X, Y, Z},
 extern const keyword_info_t g_keywords[] = {
@@ -510,7 +511,7 @@ void glslx::Lexer::ReadSingle(token_t &out) {
 }
 
 void glslx::Lexer::SkipWhitespace(const bool skip_newline) {
-    while (position() < size_t(source_.size()) && isspace(at())) {
+    while (position() < size_t(source_.size()) && is_space(at())) {
         if (at() == '\n') {
             if (skip_newline) {
                 loc_.advance_line();
