@@ -234,7 +234,7 @@ template <typename TP> std::time_t to_time_t(TP tp) {
 
 bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesystem::path &out_file,
                        Eng::assets_context_t &ctx) {
-#if !defined(NDEBUG) && 1
+#if !defined(NDEBUG) && 0
     ctx.log->Info("Warning: glsl is forced to be not skipped!");
     if (in_file.extension() == ".glsl") {
         return true;
