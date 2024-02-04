@@ -345,6 +345,10 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                     if (!ast) {
                         ctx.log->Error("[PrepareAssets] GLSL parsing failed %s", out_file);
                         ctx.log->Error("%s", parser.error());
+#if !defined(NDEBUG) && defined(_WIN32)
+                        __debugbreak();
+#endif
+                        continue;
                     }
 
                     glslx::Prune_Unreachable(ast.get());
