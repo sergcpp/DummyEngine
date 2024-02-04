@@ -2796,8 +2796,8 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
         res &= AddHiddenGlobal(int_type, "gl_PatchVerticesIn") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_InvocationID") != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_TessLevelOuter", true) != nullptr;
-        res &= AddHiddenGlobal(float_type, "gl_TessLevelInner", true) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_TessLevelOuter", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_TessLevelInner", true, eStorage::Out) != nullptr;
         // TODO: add the rest
     } else if (type == eTrUnitType::TessEvaluation) {
         res &= AddHiddenGlobal(int_type, "gl_PatchVerticesIn") != nullptr;
@@ -2805,6 +2805,10 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
         res &= AddHiddenGlobal(vec3, "gl_TessCoord") != nullptr;
         res &= AddHiddenGlobal(float_type, "gl_TessLevelOuter", true) != nullptr;
         res &= AddHiddenGlobal(float_type, "gl_TessLevelInner", true) != nullptr;
+        res &= AddHiddenGlobal(vec4, "gl_Position", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_PointSize", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true, eStorage::Out) != nullptr;
         // TODO: add the rest
     } else if (type == eTrUnitType::Geometry) {
         res &= AddHiddenGlobal(int_type, "gl_PrimitiveIDIn") != nullptr;
@@ -2812,6 +2816,10 @@ bool glslx::Parser::InitSpecialGlobals(const eTrUnitType type) {
         res &= AddHiddenGlobal(int_type, "gl_PrimitiveID") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_Layer") != nullptr;
         res &= AddHiddenGlobal(int_type, "gl_ViewportIndex") != nullptr;
+        res &= AddHiddenGlobal(vec4, "gl_Position", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_PointSize", false, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_ClipDistance", true, eStorage::Out) != nullptr;
+        res &= AddHiddenGlobal(float_type, "gl_CullDistance", true, eStorage::Out) != nullptr;
         // TODO: add the rest
     } else if (type == eTrUnitType::Fragment) {
         res &= AddHiddenGlobal(vec4, "gl_FragCoord") != nullptr;
@@ -3191,8 +3199,8 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
     case eExprType::BoolConstant:
         return &g_bool_type;
     case eExprType::VariableIdentifier: {
-        ast_variable *var = static_cast<const ast_variable_identifier *>(expression)->variable;
-        array_dims = var->array_sizes.size();
+        const ast_variable *var = static_cast<const ast_variable_identifier *>(expression)->variable;
+        array_dims = int(var->array_sizes.size());
         return var->base_type;
     }
     case eExprType::FieldOrSwizzle: {
