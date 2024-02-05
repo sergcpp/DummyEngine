@@ -153,7 +153,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_writes[3].descriptorCount = 1;
         descr_writes[3].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_static_solid_vel_[0].prog()->descr_set_layouts()[0];
@@ -217,7 +217,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_writes[4].descriptorCount = 1;
         descr_writes[4].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
     const Ren::Span<BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};

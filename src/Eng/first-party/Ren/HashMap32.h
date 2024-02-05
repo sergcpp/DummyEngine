@@ -65,7 +65,7 @@ template <> class Hash<String> {
   public:
     uint32_t operator()(const String &s) const { return _str_hash(s.c_str()); }
 
-    uint32_t operator()(const StringPart &s) const { return _str_hash_len(s.str, s.len); }
+    uint32_t operator()(const std::string_view &s) const { return _str_hash_len(s.data(), s.length()); }
 
     uint32_t operator()(const char *s) const { return _str_hash(s); }
 };

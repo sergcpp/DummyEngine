@@ -453,7 +453,7 @@ void Eng::RpOpaque::InitDescrSetLayout() {
         {REN_INST_INDICES_BUF_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
     VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
-    layout_info.bindingCount = std::size(bindings);
+    layout_info.bindingCount = uint32_t(std::size(bindings));
     layout_info.pBindings = bindings;
 
     const VkResult res =

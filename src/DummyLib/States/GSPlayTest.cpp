@@ -97,12 +97,12 @@ void GSPlayTest::Enter() {
     LoadSequence(SEQ_NAME);
 }
 
-void GSPlayTest::LoadSequence(const char *seq_name) {
-    auto read_sequence = [](const char *seq_name, JsObject &js_seq) {
+void GSPlayTest::LoadSequence(const std::string_view seq_name) {
+    auto read_sequence = [](const std::string_view seq_name, JsObject &js_seq) {
 #if defined(__ANDROID__)
-        const std::string file_name = std::string("assets/scenes/") + seq_name;
+        const std::string file_name = std::string("assets/scenes/") + std::string(seq_name);
 #else
-        const std::string file_name = std::string("assets_pc/scenes/") + seq_name;
+        const std::string file_name = std::string("assets_pc/scenes/") + std::string(seq_name);
 #endif
 
         Sys::AssetFile in_seq(file_name);
@@ -137,11 +137,11 @@ void GSPlayTest::LoadSequence(const char *seq_name) {
     seq_edit_ui_->set_sequence(test_seq_);
 }
 
-bool GSPlayTest::SaveSequence(const char *seq_name) {
+bool GSPlayTest::SaveSequence(const std::string_view seq_name) {
     // rotate backup files
     for (int i = 7; i > 0; i--) {
-        const std::string name1 = std::string("assets/scenes/") + seq_name + std::to_string(i),
-                          name2 = std::string("assets/scenes/") + seq_name + std::to_string(i + 1);
+        const std::string name1 = std::string("assets/scenes/") + std::string(seq_name) + std::to_string(i),
+                          name2 = std::string("assets/scenes/") + std::string(seq_name) + std::to_string(i + 1);
         if (!std::ifstream(name1).good()) {
             continue;
         }
@@ -163,7 +163,7 @@ bool GSPlayTest::SaveSequence(const char *seq_name) {
     JsObject js_seq;
     test_seq_->Save(js_seq);
 
-    const std::string out_file_name = std::string("assets/scenes/") + seq_name;
+    const std::string out_file_name = std::string("assets/scenes/") + std::string(seq_name);
     if (std::ifstream(out_file_name).good()) {
         const std::string back_name = out_file_name + "1";
         const int ret = std::rename(out_file_name.c_str(), back_name.c_str());

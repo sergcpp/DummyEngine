@@ -99,7 +99,7 @@ class Buffer : public RefCounter, public LinearAlloc {
 
   public:
     Buffer() = default;
-    explicit Buffer(const char *name, ApiContext *api_ctx, eBufType type, uint32_t initial_size,
+    explicit Buffer(std::string_view name, ApiContext *api_ctx, eBufType type, uint32_t initial_size,
                     uint32_t suballoc_align = 1);
     Buffer(const Buffer &rhs) = delete;
     Buffer(Buffer &&rhs) noexcept { (*this) = std::move(rhs); }

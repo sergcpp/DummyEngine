@@ -93,8 +93,9 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
                     const double duration = seq->duration();
 
+                    // TODO: refactor this
                     char buf[16];
-                    sprintf(buf, "%.1fs", duration);
+                    snprintf(buf, sizeof(buf), "%.1fs", duration);
 
                     font_.DrawText(r, buf, text_pos, col, this);
                 }

@@ -52,31 +52,28 @@ bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
         while (*s && !std::isspace(*s))
             s++;
 
-        out_argv[out_argc].str.str = tok_start;
-        out_argv[out_argc].str.len = s - tok_start;
+        out_argv[out_argc].str = std::string_view(tok_start, s - tok_start);
         out_argc++;
     }
 
     for (int i = 0; i < out_argc; i++) {
         ArgData &arg = out_argv[i];
 
-        if (arg.str.str[0] == '"') {
-            if (arg.str.str[arg.str.len - 1] != '"') {
+        if (arg.str[0] == '"') {
+            if (arg.str[arg.str.length() - 1] != '"') {
                 return false;
             }
-
-            arg.str.str++;
-            arg.str.len -= 2;
-
+            arg.str = arg.str.substr(1, arg.str.length() - 2);
             arg.type = eArgType::ArgString;
-        } else if (std::isalpha(arg.str.str[0])) {
+        } else if (std::isalpha(arg.str[0])) {
             arg.type = eArgType::ArgString;
         } else {
             arg.type = eArgType::ArgNumber;
 
+            // TODO: refactor this
             char temp_buf[128];
-            memcpy(temp_buf, arg.str.str, arg.str.len);
-            temp_buf[arg.str.len] = '\0';
+            memcpy(temp_buf, arg.str.data(), arg.str.length());
+            temp_buf[arg.str.length()] = '\0';
 
             arg.val = strtod(temp_buf, nullptr);
         }

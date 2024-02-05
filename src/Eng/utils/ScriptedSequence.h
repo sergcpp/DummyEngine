@@ -160,7 +160,7 @@ class ScriptedSequence {
     }
 
     void Clear();
-    bool Load(const char *lookup_name, const JsObject &js_seq);
+    bool Load(std::string_view lookup_name, const JsObject &js_seq);
     void Save(JsObject &js_seq);
 
     void Reset();

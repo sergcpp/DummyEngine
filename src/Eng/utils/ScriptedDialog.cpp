@@ -12,8 +12,8 @@ void Eng::ScriptedDialog::Clear() {
     sequences_.clear();
 }
 
-bool Eng::ScriptedDialog::Load(const char *lookup_name, const JsObject &js_seq,
-                               bool (*read_sequence)(const char *name, JsObject &js_seq)) {
+bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const JsObject &js_seq,
+                               bool (*read_sequence)(const std::string_view name, JsObject &js_seq)) {
     sequences_.emplace_back(ren_ctx_, snd_ctx_, scene_manager_);
     if (sequences_.back().Load(lookup_name, js_seq)) {
         const int cur_seq_index = (int)sequences_.size() - 1;

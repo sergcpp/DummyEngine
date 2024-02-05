@@ -35,12 +35,12 @@ void Eng::ScriptedSequence::Clear() {
     choices_count_ = 0;
 }
 
-bool Eng::ScriptedSequence::Load(const char *lookup_name, const JsObject &js_seq) {
+bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     Clear();
 
-    if (lookup_name) {
+    if (!lookup_name.empty()) {
         lookup_name_ = lookup_name;
     }
 

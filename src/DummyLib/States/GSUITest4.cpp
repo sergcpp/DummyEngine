@@ -3,13 +3,13 @@
 #include <fstream>
 #include <memory>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/EditBox.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/gui/Utils.h>
-#include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
@@ -56,15 +56,16 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
 
     test_dialog_ = std::make_unique<Eng::ScriptedDialog>(*ren_ctx_, *snd_ctx_, *scene_manager_);
 
-    dialog_ui_ = std::make_unique<
-        DialogUI>(Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_, true /* debug */);
+    dialog_ui_ = std::make_unique<DialogUI>(Gui::Vec2f{-1.0f, 0.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_,
+                                            true /* debug */);
     dialog_ui_->make_choice_signal.Connect<DialogController, &DialogController::MakeChoice>(dial_ctrl_.get());
 
-    seq_edit_ui_ = std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
+    seq_edit_ui_ =
+        std::make_unique<SeqEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
     // seq_edit_ui_->set_sequence(/*test_seq_.get()*/ test_dialog_->GetSequence(0));
 
-    dialog_edit_ui_ = std::make_unique<
-        DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
+    dialog_edit_ui_ =
+        std::make_unique<DialogEditUI>(*ren_ctx_, *font_, Gui::Vec2f{-1.0f, -1.0f}, Gui::Vec2f{2.0f, 1.0f}, ui_root_);
     dialog_edit_ui_->set_dialog(test_dialog_.get());
 
     dialog_edit_ui_->set_cur_sequence_signal.Connect<DialogController, &DialogController::SetCurSequence>(
@@ -72,14 +73,15 @@ GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
 
     dialog_edit_ui_->edit_cur_seq_signal.Connect<GSUITest4, &GSUITest4::OnEditSequence>(this);
 
-    seq_cap_ui_ = std::make_unique<CaptionsUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
+    seq_cap_ui_ =
+        std::make_unique<CaptionsUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
     dial_ctrl_->push_caption_signal.Connect<CaptionsUI, &CaptionsUI::OnPushCaption>(seq_cap_ui_.get());
     dial_ctrl_->push_choice_signal.Connect<DialogUI, &DialogUI::OnPushChoice>(dialog_ui_.get());
     dial_ctrl_->switch_sequence_signal.Connect<DialogEditUI, &DialogEditUI::OnSwitchSequence>(dialog_edit_ui_.get());
     dial_ctrl_->start_puzzle_signal.Connect<GSUITest4, &GSUITest4::OnStartPuzzle>(this);
 
-    word_puzzle_ = std::make_unique<
-        WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_, *dialog_font_);
+    word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 1.0f}, ui_root_,
+                                                  *dialog_font_);
     word_puzzle_->puzzle_solved_signal.Connect<DialogController, &DialogController::ContinueChoice>(dial_ctrl_.get());
 }
 
@@ -95,7 +97,7 @@ void GSUITest4::Enter() {
     cmdline_->RegisterCommand("dialog", [weak_this](int argc, Eng::Cmdline::ArgData *argv) -> bool {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
-            shrd_this->LoadDialog(argv[1].str.str);
+            shrd_this->LoadDialog(argv[1].str.data());
         }
         return true;
     });
@@ -106,12 +108,12 @@ void GSUITest4::Enter() {
     LoadDialog(SEQ_NAME);
 }
 
-void GSUITest4::LoadDialog(const char *seq_name) {
-    auto read_sequence = [](const char *seq_name, JsObject &js_seq) {
+void GSUITest4::LoadDialog(const std::string_view seq_name) {
+    auto read_sequence = [](const std::string_view seq_name, JsObject &js_seq) {
 #if defined(__ANDROID__)
-        const std::string file_name = std::string("assets/scenes/") + seq_name;
+        const std::string file_name = std::string("assets/scenes/") + std::string(seq_name);
 #else
-        const std::string file_name = std::string("assets_pc/scenes/") + seq_name;
+        const std::string file_name = std::string("assets_pc/scenes/") + std::string(seq_name);
 #endif
 
         Sys::AssetFile in_seq(file_name);
@@ -149,11 +151,11 @@ void GSUITest4::LoadDialog(const char *seq_name) {
     use_free_cam_ = false;
 }
 
-bool GSUITest4::SaveSequence(const char *seq_name) {
+bool GSUITest4::SaveSequence(const std::string_view seq_name) {
     // rotate backup files
     for (int i = 7; i > 0; i--) {
-        const std::string name1 = std::string("assets/scenes/") + seq_name + std::to_string(i),
-                          name2 = std::string("assets/scenes/") + seq_name + std::to_string(i + 1);
+        const std::string name1 = std::string("assets/scenes/") + std::string(seq_name) + std::to_string(i),
+                          name2 = std::string("assets/scenes/") + std::string(seq_name) + std::to_string(i + 1);
         if (!std::ifstream(name1).good()) {
             continue;
         }
@@ -175,7 +177,7 @@ bool GSUITest4::SaveSequence(const char *seq_name) {
     JsObject js_seq;
     dial_ctrl_->GetCurSequence()->Save(js_seq);
 
-    const std::string out_file_name = std::string("assets/scenes/") + seq_name;
+    const std::string out_file_name = std::string("assets/scenes/") + std::string(seq_name);
     if (std::ifstream(out_file_name).good()) {
         const std::string back_name = out_file_name + "1";
         const int ret = std::rename(out_file_name.c_str(), back_name.c_str());
@@ -341,7 +343,7 @@ bool GSUITest4::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 

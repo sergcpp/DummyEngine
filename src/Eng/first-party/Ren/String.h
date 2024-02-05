@@ -2,16 +2,12 @@
 
 #include <cstring>
 #include <memory>
+#include <string_view>
 
 // Simple COW string class WITHOUT small-string optimization, NOT thread safe
 // Pointer returned by c_str() is persistent and safe to use after std::move
 
 namespace Ren {
-struct StringPart {
-    const char *str;
-    size_t len;
-};
-
 template <typename Alloc = std::allocator<char>> class BasicString {
     char *str_;
     size_t len_;
@@ -38,13 +34,13 @@ template <typename Alloc = std::allocator<char>> class BasicString {
         str_[len_] = '\0';
     }
 
-    explicit BasicString(const StringPart &str) {
-        len_ = str.len;
+    explicit BasicString(const std::string_view str) {
+        len_ = str.length();
         uint32_t *storage = (uint32_t *)alloc_.allocate(sizeof(uint32_t) + len_ + 1);
         // set number of users to 1
         *storage = 1;
         str_ = (char *)(storage + 1);
-        memcpy(str_, str.str, len_);
+        memcpy(str_, str.data(), len_);
         str_[len_] = '\0';
     }
 
@@ -147,25 +143,17 @@ template <typename Alloc = std::allocator<char>> class BasicString {
 
     friend bool operator!=(const BasicString &s1, const char *s2) { return strcmp(s1.str_, s2) != 0; }
 
-    friend bool operator==(const BasicString &s1, const StringPart &s2) {
-        return strncmp(s1.str_, s2.str, s2.len) == 0;
-    }
+    friend bool operator==(const BasicString &s1, const std::string_view s2) { return s1.str_ == s2; }
 
-    friend bool operator!=(const BasicString &s1, const StringPart &s2) {
-        return strncmp(s1.str_, s2.str, s2.len) != 0;
-    }
+    friend bool operator!=(const BasicString &s1, const std::string_view s2) { return s1.str_ != s2; }
 
     friend bool operator==(const char *s1, const BasicString &s2) { return strcmp(s1, s2.str_) == 0; }
 
     friend bool operator!=(const char *s1, const BasicString &s2) { return strcmp(s1, s2.str_) != 0; }
 
-    friend bool operator==(const StringPart &s1, const BasicString &s2) {
-        return strncmp(s1.str, s2.str_, s1.len) == 0;
-    }
+    friend bool operator==(const std::string_view s1, const BasicString &s2) { return s1 == s2.str_; }
 
-    friend bool operator!=(const StringPart &s1, const BasicString &s2) {
-        return strncmp(s1.str, s2.str_, s1.len) != 0;
-    }
+    friend bool operator!=(const std::string_view s1, const BasicString &s2) { return s1 != s2.str_; }
 };
 
 using String = BasicString<>;

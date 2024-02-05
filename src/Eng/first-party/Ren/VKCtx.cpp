@@ -375,7 +375,7 @@ bool Ren::ApiContext::InitVkInstance(const char *enabled_layers[], const int ena
     };
 
     VkValidationFeaturesEXT validation_features = {VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT};
-    validation_features.enabledValidationFeatureCount = std::size(enabled_validation_features);
+    validation_features.enabledValidationFeatureCount = uint32_t(std::size(enabled_validation_features));
     validation_features.pEnabledValidationFeatures = enabled_validation_features;
 
     if (validation_level > 1) {
@@ -929,13 +929,11 @@ bool Ren::ApiContext::InitPresentImageViews(ILog *log) {
 
 #ifdef ENABLE_OBJ_LABELS
     for (uint32_t i = 0; i < image_count; ++i) {
-        char name_buf[32];
-        sprintf(name_buf, "PresentImage[%u]", i);
-
+        const std::string name = "PresentImage[" + std::to_string(i) + "]";
         VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
         name_info.objectType = VK_OBJECT_TYPE_IMAGE;
         name_info.objectHandle = uint64_t(present_images[i]);
-        name_info.pObjectName = name_buf;
+        name_info.pObjectName = name.c_str();
         vkSetDebugUtilsObjectNameEXT(device, &name_info);
     }
 #endif

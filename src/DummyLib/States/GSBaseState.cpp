@@ -359,8 +359,9 @@ void GSBaseState::Enter() {
 
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
+            // TODO: refactor this
             char buf[1024];
-            sprintf(buf, "%s/scenes/%.*s", ASSETS_BASE_PATH, (int)argv[1].str.len, argv[1].str.str);
+            snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(argv[1].str.length()), argv[1].str.data());
             shrd_this->LoadScene(buf);
         }
         return true;

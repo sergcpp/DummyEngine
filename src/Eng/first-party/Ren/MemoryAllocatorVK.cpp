@@ -25,10 +25,9 @@ void Ren::MemAllocation::Release() {
     }
 }
 
-Ren::MemoryAllocator::MemoryAllocator(const char name[32], ApiContext *api_ctx, const uint32_t initial_block_size,
+Ren::MemoryAllocator::MemoryAllocator(const std::string_view name, ApiContext *api_ctx, const uint32_t initial_block_size,
                                       uint32_t mem_type_index, const float growth_factor)
-    : api_ctx_(api_ctx), growth_factor_(growth_factor), mem_type_index_(mem_type_index) {
-    strcpy(name_, name);
+    : name_(name), api_ctx_(api_ctx), growth_factor_(growth_factor), mem_type_index_(mem_type_index) {
 
     assert(growth_factor_ > 1.0f);
     AllocateNewBlock(initial_block_size);
@@ -42,7 +41,7 @@ Ren::MemoryAllocator::~MemoryAllocator() {
 
 bool Ren::MemoryAllocator::AllocateNewBlock(const uint32_t size) {
     char buf_name[48];
-    sprintf(buf_name, "%s block %i", name_, int(blocks_.size()));
+    sprintf(buf_name, "%s block %i", name_.c_str(), int(blocks_.size()));
 
     blocks_.emplace_back();
     MemBlock &new_block = blocks_.back();
@@ -93,7 +92,7 @@ void Ren::MemoryAllocator::Free(const uint32_t block_ndx, const uint32_t alloc_o
 
 void Ren::MemoryAllocators::Print(ILog *log) {
     /*log->Info("=================================================================");
-    log->Info("MemAllocs %s", name_);
+    log->Info("MemAllocs %s", name_.c_str());
     for (const auto &alloc : allocators_) {
         alloc.Print(log);
     }

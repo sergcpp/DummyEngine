@@ -33,7 +33,7 @@ class ScriptedDialog {
 
     void Clear();
 
-    bool Load(const char *lookup_name, const JsObject &js_seq,
-              bool (*read_sequence)(const char *name, JsObject &js_seq));
+    bool Load(std::string_view lookup_name, const JsObject &js_seq,
+              bool (*read_sequence)(const std::string_view name, JsObject &js_seq));
 };
 } // namespace Eng

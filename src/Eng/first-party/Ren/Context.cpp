@@ -463,9 +463,8 @@ void Ren::Context::InitDefaultBuffers() {
 
     default_stage_bufs_.ctx = this;
     for (int i = 0; i < StageBufferCount; ++i) {
-        char name_buf[32];
-        sprintf(name_buf, "default_stage_buf_%i", i);
-        default_stage_bufs_.bufs[i] = buffers_.Add(name_buf, api_ctx_.get(), eBufType::Stage, 32 * 1024 * 1024, 192);
+        const std::string name = "default_stage_buf_" + std::to_string(i);
+        default_stage_bufs_.bufs[i] = buffers_.Add(name, api_ctx_.get(), eBufType::Stage, 32 * 1024 * 1024, 192);
 #if defined(USE_VK_RENDER)
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;

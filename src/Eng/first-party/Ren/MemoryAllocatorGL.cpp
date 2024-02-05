@@ -2,11 +2,10 @@
 
 void Ren::MemAllocation::Release() {}
 
-Ren::MemoryAllocator::MemoryAllocator(const char name[32], ApiContext *api_ctx, const uint32_t initial_block_size,
-                                      uint32_t mem_type_index, const float growth_factor)
-    : api_ctx_(api_ctx), growth_factor_(growth_factor), mem_type_index_(mem_type_index) {
-    strcpy(name_, name);
-
+Ren::MemoryAllocator::MemoryAllocator(const std::string_view name, ApiContext *api_ctx,
+                                      const uint32_t initial_block_size, uint32_t mem_type_index,
+                                      const float growth_factor)
+    : name_(name), api_ctx_(api_ctx), growth_factor_(growth_factor), mem_type_index_(mem_type_index) {
     assert(growth_factor_ > 1.0f);
     AllocateNewBlock(initial_block_size);
 }

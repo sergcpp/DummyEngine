@@ -57,8 +57,8 @@ class GSPlayTest : public GSBaseState {
 
     void DrawUI(Gui::Renderer *r, Gui::BaseElement *root) override;
 
-    void LoadSequence(const char *seq_name);
-    bool SaveSequence(const char *seq_name);
+    void LoadSequence(std::string_view seq_name);
+    bool SaveSequence(std::string_view seq_name);
 
   public:
     explicit GSPlayTest(Viewer *viewer);

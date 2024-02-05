@@ -60,7 +60,7 @@ void test_string() {
     { // Part of string
         auto s1 = Ren::String{"test_string"}, s2 = Ren::String{"another_test_string_bla_bla"};
 
-        Ren::StringPart s3 = {&s2[8], 11}, s4 = {&s2[8], 12};
+        std::string_view s3 = {&s2[8], 11}, s4 = {&s2[8], 12};
 
         require(s1 == s3);
         require(s1 != s4);

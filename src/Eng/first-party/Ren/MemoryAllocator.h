@@ -48,7 +48,7 @@ struct MemAllocation {
 };
 
 class MemoryAllocator {
-    char name_[32];
+    std::string name_;
     ApiContext *api_ctx_ = nullptr;
     float growth_factor_;
 
@@ -65,7 +65,7 @@ class MemoryAllocator {
     bool AllocateNewBlock(uint32_t size);
 
   public:
-    MemoryAllocator(const char name[32], ApiContext *api_ctx, uint32_t initial_block_size, uint32_t mem_type_index,
+    MemoryAllocator(std::string_view name, ApiContext *api_ctx, uint32_t initial_block_size, uint32_t mem_type_index,
                     float growth_factor);
     ~MemoryAllocator();
 

@@ -13,7 +13,7 @@ class Cmdline {
 
     struct ArgData {
         eArgType type;
-        Ren::StringPart str;
+        std::string_view str;
         double val;
     };
     static const int MaxArgumentCount = 16;

@@ -53,7 +53,7 @@ uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, 
 
 int Ren::Buffer::g_GenCounter = 0;
 
-Ren::Buffer::Buffer(const char *name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
+Ren::Buffer::Buffer(std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
                     const uint32_t suballoc_align)
     : LinearAlloc(std::min(suballoc_align, initial_size), initial_size), name_(name), api_ctx_(api_ctx), type_(type),
       size_(0) {
