@@ -46,7 +46,7 @@ Ren::Program &Ren::Program::operator=(Program &&rhs) noexcept {
     pc_ranges_ = std::move(rhs.pc_ranges_);
     name_ = std::move(rhs.name_);
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     descr_set_layouts_ = std::move(rhs.descr_set_layouts_);
 
     RefCounter::operator=(std::move(rhs));

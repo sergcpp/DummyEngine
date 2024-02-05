@@ -21,7 +21,7 @@ Snd::Buffer::Buffer(const char *name, const void *data, const uint32_t size,
 
 void Snd::Buffer::FreeBuf() {
     if (buf_id_ != 0xffffffff) {
-        ALuint buf_id = exchange(buf_id_, 0xffffffff);
+        ALuint buf_id = std::exchange(buf_id_, 0xffffffff);
         alDeleteBuffers(1, &buf_id);
     }
 }
@@ -36,9 +36,9 @@ Snd::Buffer &Snd::Buffer::operator=(Buffer &&rhs) noexcept {
     FreeBuf();
 
     name_ = std::move(rhs.name_);
-    buf_id_ = exchange(rhs.buf_id_, 0xffffffff);
-    size_ = exchange(rhs.size_, 0);
-    params_ = exchange(rhs.params_, {});
+    buf_id_ = std::exchange(rhs.buf_id_, 0xffffffff);
+    size_ = std::exchange(rhs.size_, 0);
+    params_ = std::exchange(rhs.params_, {});
 
     return *this;
 }

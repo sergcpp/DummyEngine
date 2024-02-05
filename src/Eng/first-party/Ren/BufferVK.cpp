@@ -70,24 +70,24 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     assert(!mapped_ptr_);
     assert(mapped_offset_ == 0xffffffff);
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    handle_ = exchange(rhs.handle_, {});
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    handle_ = std::exchange(rhs.handle_, {});
     name_ = std::move(rhs.name_);
     alloc_ = std::move(rhs.alloc_);
-    suballoc_align_ = exchange(rhs.suballoc_align_, 1);
-    mem_ = exchange(rhs.mem_, {});
+    suballoc_align_ = std::exchange(rhs.suballoc_align_, 1);
+    mem_ = std::exchange(rhs.mem_, {});
 
-    type_ = exchange(rhs.type_, eBufType::Undefined);
+    type_ = std::exchange(rhs.type_, eBufType::Undefined);
 
-    size_ = exchange(rhs.size_, 0);
-    mapped_ptr_ = exchange(rhs.mapped_ptr_, nullptr);
-    mapped_offset_ = exchange(rhs.mapped_offset_, 0xffffffff);
+    size_ = std::exchange(rhs.size_, 0);
+    mapped_ptr_ = std::exchange(rhs.mapped_ptr_, nullptr);
+    mapped_offset_ = std::exchange(rhs.mapped_offset_, 0xffffffff);
 
 #ifndef NDEBUG
     flushed_ranges_ = std::move(rhs.flushed_ranges_);
 #endif
 
-    resource_state = exchange(rhs.resource_state, eResState::Undefined);
+    resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
 
     return (*this);
 }

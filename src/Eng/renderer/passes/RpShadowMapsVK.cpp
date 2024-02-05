@@ -98,7 +98,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_writes[2].descriptorCount = 1;
         descr_writes[2].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
     VkDescriptorSetLayout vege_descr_set_layout = pi_vege_solid_.prog()->descr_set_layouts()[0];
@@ -162,7 +162,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_writes[4].descriptorCount = 1;
         descr_writes[4].pBufferInfo = &mat_buf_info;
 
-        api_ctx->vkUpdateDescriptorSets(api_ctx->device, std::size(descr_writes), descr_writes, 0, nullptr);
+        api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
     bool region_cleared[REN_MAX_SHADOWMAPS_TOTAL] = {};

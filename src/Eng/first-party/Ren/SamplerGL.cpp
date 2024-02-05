@@ -40,15 +40,15 @@ Ren::Sampler &Ren::Sampler::operator=(Sampler &&rhs) {
 
     Destroy();
 
-    id_ = exchange(rhs.id_, 0);
-    params_ = exchange(rhs.params_, {});
+    id_ = std::exchange(rhs.id_, 0);
+    params_ = std::exchange(rhs.params_, {});
 
     return (*this);
 }
 
 void Ren::Sampler::Destroy() {
     if (id_) {
-        GLuint id = GLuint(exchange(id_, 0));
+        GLuint id = GLuint(std::exchange(id_, 0));
         glDeleteSamplers(1, &id);
     }
 }

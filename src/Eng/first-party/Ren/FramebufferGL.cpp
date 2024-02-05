@@ -13,13 +13,13 @@ Ren::Framebuffer &Ren::Framebuffer::operator=(Framebuffer &&rhs) noexcept {
 
     Destroy();
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    id_ = exchange(rhs.id_, 0);
-    w = exchange(rhs.w, -1);
-    h = exchange(rhs.h, -1);
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    id_ = std::exchange(rhs.id_, 0);
+    w = std::exchange(rhs.w, -1);
+    h = std::exchange(rhs.h, -1);
     color_attachments = std::move(rhs.color_attachments);
-    depth_attachment = exchange(rhs.depth_attachment, {});
-    stencil_attachment = exchange(rhs.stencil_attachment, {});
+    depth_attachment = std::exchange(rhs.depth_attachment, {});
+    stencil_attachment = std::exchange(rhs.stencil_attachment, {});
 
     return (*this);
 }

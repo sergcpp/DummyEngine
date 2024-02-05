@@ -58,8 +58,8 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
         api_ctx_->vkDestroyShaderModule(api_ctx_->device, module_, nullptr);
     }
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    module_ = exchange(rhs.module_, VkShaderModule(VK_NULL_HANDLE));
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    module_ = std::exchange(rhs.module_, VkShaderModule(VK_NULL_HANDLE));
     type_ = rhs.type_;
     name_ = std::move(rhs.name_);
 

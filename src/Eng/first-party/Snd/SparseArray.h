@@ -209,7 +209,7 @@ template <typename T> class SparseArray {
         }
     }
 
-    class SparseArrayIterator : public std::iterator<std::forward_iterator_tag, T> {
+    class SparseArrayIterator {
         friend class SparseArray<T>;
 
         SparseArray<T> *container_;
@@ -219,6 +219,12 @@ template <typename T> class SparseArray {
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = T *;
+        using reference = T &;
+
         T &operator*() { return container_->at(index_); }
         T *operator->() { return &container_->at(index_); }
         SparseArrayIterator &operator++() {
@@ -253,7 +259,7 @@ template <typename T> class SparseArray {
         }
     };
 
-    class SparseArrayConstIterator : public std::iterator<std::forward_iterator_tag, T> {
+    class SparseArrayConstIterator {
         friend class SparseArray<T>;
 
         const SparseArray<T> *container_;
@@ -263,6 +269,12 @@ template <typename T> class SparseArray {
             : container_(container), index_(index) {}
 
       public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+        using pointer = T *;
+        using reference = T &;
+
         const T &operator*() const { return container_->at(index_); }
         const T *operator->() const { return &container_->at(index_); }
         SparseArrayConstIterator &operator++() {

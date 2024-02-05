@@ -161,7 +161,7 @@ template <typename T, int AlignmentOfT = alignof(T)> class RingBuffer {
         buf_[mask(tail_++)].~T();
     }
 
-    class iterator : public std::iterator<std::random_access_iterator_tag, T> {
+    class iterator {
         friend class RingBuffer<T>;
 
         RingBuffer<T> *container_;

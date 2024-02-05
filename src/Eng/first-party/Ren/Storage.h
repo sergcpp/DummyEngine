@@ -60,7 +60,7 @@ class RefCounter {
     }
     RefCounter &operator=(const RefCounter &) { return *this; }
     RefCounter(RefCounter &&rhs) noexcept {
-        ctrl_ = exchange(rhs.ctrl_, nullptr);
+        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
     }
     RefCounter &operator=(RefCounter &&rhs) noexcept {
         if (ctrl_) {
@@ -70,7 +70,7 @@ class RefCounter {
             }
         }
 
-        ctrl_ = exchange(rhs.ctrl_, nullptr);
+        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
         return (*this);
     }
     ~RefCounter() {
@@ -129,8 +129,8 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
     }
 
     StrongRef(StrongRef &&rhs) noexcept {
-        storage_ = exchange(rhs.storage_, nullptr);
-        index_ = exchange(rhs.index_, 0);
+        storage_ = std::exchange(rhs.storage_, nullptr);
+        index_ = std::exchange(rhs.index_, 0);
     }
 
     StrongRef &operator=(const StrongRef &rhs) {
@@ -154,8 +154,8 @@ template <typename T, typename StorageType = Storage<T>> class StrongRef {
 
         Release();
 
-        storage_ = exchange(rhs.storage_, nullptr);
-        index_ = exchange(rhs.index_, 0);
+        storage_ = std::exchange(rhs.storage_, nullptr);
+        index_ = std::exchange(rhs.index_, 0);
 
         return (*this);
     }
@@ -248,9 +248,9 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
     }
 
     WeakRef(WeakRef &&rhs) noexcept {
-        storage_ = exchange(rhs.storage_, nullptr);
-        ctrl_ = exchange(rhs.ctrl_, nullptr);
-        index_ = exchange(rhs.index_, 0);
+        storage_ = std::exchange(rhs.storage_, nullptr);
+        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
+        index_ = std::exchange(rhs.index_, 0);
     }
 
     WeakRef &operator=(const WeakRef &rhs) {
@@ -290,9 +290,9 @@ template <typename T, typename StorageType = Storage<T>> class WeakRef {
 
         Release();
 
-        storage_ = exchange(rhs.storage_, nullptr);
-        ctrl_ = exchange(rhs.ctrl_, nullptr);
-        index_ = exchange(rhs.index_, 0);
+        storage_ = std::exchange(rhs.storage_, nullptr);
+        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
+        index_ = std::exchange(rhs.index_, 0);
 
         return *this;
     }

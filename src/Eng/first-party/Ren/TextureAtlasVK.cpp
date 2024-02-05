@@ -120,9 +120,9 @@ Ren::TextureAtlas::TextureAtlas(TextureAtlas &&rhs) noexcept
         formats_[i] = rhs.formats_[i];
         rhs.formats_[i] = eTexFormat::Undefined;
 
-        img_[i] = exchange(rhs.img_[i], VK_NULL_HANDLE);
-        img_view_[i] = exchange(rhs.img_view_[i], VK_NULL_HANDLE);
-        mem_[i] = exchange(rhs.mem_[i], VK_NULL_HANDLE);
+        img_[i] = std::exchange(rhs.img_[i], VK_NULL_HANDLE);
+        img_view_[i] = std::exchange(rhs.img_view_[i], VK_NULL_HANDLE);
+        mem_[i] = std::exchange(rhs.mem_[i], VK_NULL_HANDLE);
 
         sampler_ = std::move(rhs.sampler_);
     }
@@ -142,9 +142,9 @@ Ren::TextureAtlas &Ren::TextureAtlas::operator=(TextureAtlas &&rhs) noexcept {
             api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_[i]);
         }
 
-        img_[i] = exchange(rhs.img_[i], VK_NULL_HANDLE);
-        img_view_[i] = exchange(rhs.img_view_[i], VK_NULL_HANDLE);
-        mem_[i] = exchange(rhs.mem_[i], VK_NULL_HANDLE);
+        img_[i] = std::exchange(rhs.img_[i], VK_NULL_HANDLE);
+        img_view_[i] = std::exchange(rhs.img_view_[i], VK_NULL_HANDLE);
+        mem_[i] = std::exchange(rhs.mem_[i], VK_NULL_HANDLE);
     }
 
     splitter_ = std::move(rhs.splitter_);
@@ -376,10 +376,10 @@ Ren::TextureAtlasArray::~TextureAtlasArray() {
 }
 
 Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rhs) noexcept {
-    mip_count_ = exchange(rhs.mip_count_, 0);
-    layer_count_ = exchange(rhs.layer_count_, 0);
-    format_ = exchange(rhs.format_, eTexFormat::Undefined);
-    filter_ = exchange(rhs.filter_, eTexFilter::NoFilter);
+    mip_count_ = std::exchange(rhs.mip_count_, 0);
+    layer_count_ = std::exchange(rhs.layer_count_, 0);
+    format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
+    filter_ = std::exchange(rhs.filter_, eTexFilter::NoFilter);
 
     if (img_ != VK_NULL_HANDLE) {
         api_ctx_->image_views_to_destroy[api_ctx_->backend_frame].push_back(img_view_);
@@ -387,13 +387,13 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
         api_ctx_->mem_to_free[api_ctx_->backend_frame].push_back(mem_);
     }
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    img_ = exchange(rhs.img_, {});
-    mem_ = exchange(rhs.mem_, {});
-    img_view_ = exchange(rhs.img_view_, {});
-    sampler_ = exchange(rhs.sampler_, {});
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    img_ = std::exchange(rhs.img_, {});
+    mem_ = std::exchange(rhs.mem_, {});
+    img_view_ = std::exchange(rhs.img_view_, {});
+    sampler_ = std::exchange(rhs.sampler_, {});
 
-    resource_state = exchange(rhs.resource_state, eResState::Undefined);
+    resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
 
     for (int i = 0; i < layer_count_; i++) {
         splitters_[i] = std::move(rhs.splitters_[i]);

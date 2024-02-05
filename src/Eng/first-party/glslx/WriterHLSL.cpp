@@ -5,7 +5,7 @@
 
 namespace glslx {
 #define DECORATE(X, Y) #X,
-extern const char *g_hlsl_keywords[] = {
+const char *g_hlsl_keywords[] = {
 #include "KeywordsHLSL.inl"
 };
 #undef DECORATE
@@ -209,7 +209,7 @@ std::pair<int, int> get_binding_and_set(Span<const ast_layout_qualifier *const> 
     return std::make_pair(binding, set);
 }
 
-extern const char *g_atomic_functions[] = {"atomicAdd", "atomicAnd", "atomicOr", "atomicXor", "atomicMin", "atomicMax"};
+const char *g_atomic_functions[] = {"atomicAdd", "atomicAnd", "atomicOr", "atomicXor", "atomicMin", "atomicMax"};
 extern const int g_atomic_functions_count = int(std::size(g_atomic_functions));
 
 const std::map<std::string, std::string> g_hlsl_function_mapping = {{"intBitsToFloat", "asfloat"},

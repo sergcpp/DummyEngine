@@ -48,10 +48,10 @@ Ren::RenderPass &Ren::RenderPass::operator=(RenderPass &&rhs) noexcept {
 
     Destroy();
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    handle_ = exchange(rhs.handle_, {});
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    handle_ = std::exchange(rhs.handle_, {});
     color_rts = std::move(rhs.color_rts);
-    depth_rt = exchange(rhs.depth_rt, {});
+    depth_rt = std::exchange(rhs.depth_rt, {});
 
     return (*this);
 }

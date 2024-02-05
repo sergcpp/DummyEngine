@@ -28,7 +28,7 @@ struct MemAllocation {
     MemAllocation(const MemAllocation &rhs) = delete;
     MemAllocation(MemAllocation &&rhs) noexcept
         : block_ndx(rhs.block_ndx), alloc_off(rhs.alloc_off), alloc_size(rhs.alloc_size),
-          owner(exchange(rhs.owner, nullptr)) {}
+          owner(std::exchange(rhs.owner, nullptr)) {}
 
     MemAllocation &operator=(const MemAllocation &rhs) = delete;
     MemAllocation &operator=(MemAllocation &&rhs) noexcept {
@@ -37,7 +37,7 @@ struct MemAllocation {
         block_ndx = rhs.block_ndx;
         alloc_off = rhs.alloc_off;
         alloc_size = rhs.alloc_size;
-        owner = exchange(rhs.owner, nullptr);
+        owner = std::exchange(rhs.owner, nullptr);
 
         return (*this);
     }

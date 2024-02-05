@@ -58,7 +58,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
             const char *name = sequence_->GetTrackName(track);
             const char *target = sequence_->GetTrackTarget(track);
             if (name && target) {
-                sprintf(str_buf, "%s|%s", name, target);
+                snprintf(str_buf, sizeof(str_buf), "%s|%s", name, target);
                 font_.DrawText(r, str_buf, Ren::Vec2f{-1.0f + border_width, y_coord + font_height}, Gui::ColorBlack,
                                this);
             }
@@ -104,7 +104,7 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
                 }
 
                 const char *type_name = Eng::ScriptedSequence::ActionTypeNames[(int)seq_action->type];
-                sprintf(str_buf, "[%s]", type_name);
+                snprintf(str_buf, sizeof(str_buf), "[%s]", type_name);
 
                 float y_text_pos = y_coord + track_height - 2.0f * border_height - font_height;
 

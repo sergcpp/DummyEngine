@@ -235,10 +235,10 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 
     Free();
 
-    handle_ = exchange(rhs.handle_, {});
-    params = exchange(rhs.params, {});
-    ready_ = exchange(rhs.ready_, false);
-    cubemap_ready_ = exchange(rhs.cubemap_ready_, 0);
+    handle_ = std::exchange(rhs.handle_, {});
+    params = std::exchange(rhs.params, {});
+    ready_ = std::exchange(rhs.ready_, false);
+    cubemap_ready_ = std::exchange(rhs.cubemap_ready_, 0);
     name_ = std::move(rhs.name_);
 
     return (*this);
@@ -1272,9 +1272,9 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
 
     Free();
 
-    handle_ = exchange(rhs.handle_, {});
+    handle_ = std::exchange(rhs.handle_, {});
     buf_ = std::move(rhs.buf_);
-    params_ = exchange(rhs.params_, {});
+    params_ = std::exchange(rhs.params_, {});
     name_ = std::move(rhs.name_);
 
     RefCounter::operator=(std::move(rhs));

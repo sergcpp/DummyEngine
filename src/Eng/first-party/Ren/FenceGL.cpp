@@ -5,32 +5,21 @@
 
 #include "GL.h"
 
-namespace Ren {
-#ifndef REN_EXCHANGE_DEFINED
-template <class T, class U = T> T exchange(T &obj, U &&new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-#define REN_EXCHANGE_DEFINED
-#endif
-}
-
 Ren::SyncFence::~SyncFence() {
     if (sync_) {
-        auto sync = reinterpret_cast<GLsync>(exchange(sync_, nullptr));
+        auto sync = reinterpret_cast<GLsync>(std::exchange(sync_, nullptr));
         glDeleteSync(sync);
     }
 }
 
-Ren::SyncFence::SyncFence(SyncFence &&rhs) : sync_(exchange(rhs.sync_, nullptr)) {}
+Ren::SyncFence::SyncFence(SyncFence &&rhs) : sync_(std::exchange(rhs.sync_, nullptr)) {}
 
 Ren::SyncFence &Ren::SyncFence::operator=(SyncFence &&rhs) {
     if (sync_) {
-        auto sync = reinterpret_cast<GLsync>(exchange(sync_, nullptr));
+        auto sync = reinterpret_cast<GLsync>(std::exchange(sync_, nullptr));
         glDeleteSync(sync);
     }
-    sync_ = exchange(rhs.sync_, nullptr);
+    sync_ = std::exchange(rhs.sync_, nullptr);
     return (*this);
 }
 

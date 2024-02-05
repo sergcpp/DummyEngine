@@ -99,7 +99,7 @@ void TimelineUI::Draw(Gui::Renderer *r) {
         if (std::abs(t - std::round(t)) < RoundingThres) {
             // large tick
             char buf[16];
-            sprintf(buf, "%.1f", t);
+            snprintf(buf, sizeof(buf), "%.1f", t);
 
             const float width = font_.GetWidth(buf, -1, this);
             font_.DrawText(r, buf,

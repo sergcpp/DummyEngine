@@ -48,8 +48,8 @@ struct BufferRange {
         Release();
 
         buf = std::move(rhs.buf);
-        sub = exchange(rhs.sub, {});
-        size = exchange(rhs.size, 0);
+        sub = std::exchange(rhs.sub, {});
+        size = std::exchange(rhs.size, 0);
 
         return *this;
     }

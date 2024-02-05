@@ -13,14 +13,14 @@ Ren::Framebuffer &Ren::Framebuffer::operator=(Framebuffer &&rhs) noexcept {
 
     Destroy();
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    handle_ = exchange(rhs.handle_, VkFramebuffer{VK_NULL_HANDLE});
-    renderpass_ = exchange(rhs.renderpass_, VkRenderPass{VK_NULL_HANDLE});
-    w = exchange(rhs.w, -1);
-    h = exchange(rhs.h, -1);
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    handle_ = std::exchange(rhs.handle_, VkFramebuffer{VK_NULL_HANDLE});
+    renderpass_ = std::exchange(rhs.renderpass_, VkRenderPass{VK_NULL_HANDLE});
+    w = std::exchange(rhs.w, -1);
+    h = std::exchange(rhs.h, -1);
     color_attachments = std::move(rhs.color_attachments);
-    depth_attachment = exchange(rhs.depth_attachment, {});
-    stencil_attachment = exchange(rhs.stencil_attachment, {});
+    depth_attachment = std::exchange(rhs.depth_attachment, {});
+    stencil_attachment = std::exchange(rhs.stencil_attachment, {});
 
     return (*this);
 }

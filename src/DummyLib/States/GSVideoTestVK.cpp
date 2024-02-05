@@ -31,7 +31,7 @@ void GSVideoTest::InitVideoTextures() {
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             for (int j = 0; j < TextureSyncWindow; j++) {
-                sprintf(name_buf, "__video_Y_texture_%i_%i__", tx, j);
+                snprintf(name_buf, sizeof(name_buf), "__video_Y_texture_%i_%i__", tx, j);
                 y_tex_[tx][j] = ren_ctx_->textures().Add(name_buf, ren_ctx_->api_ctx(), params,
                                                          ren_ctx_->default_mem_allocs(), log_);
             }
@@ -46,7 +46,7 @@ void GSVideoTest::InitVideoTextures() {
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             for (int j = 0; j < TextureSyncWindow; j++) {
-                sprintf(name_buf, "__video_UV_texture_%i_%i__", tx, j);
+                snprintf(name_buf, sizeof(name_buf), "__video_UV_texture_%i_%i__", tx, j);
                 uv_tex_[tx][j] = ren_ctx_->textures().Add(name_buf, ren_ctx_->api_ctx(), params,
                                                           ren_ctx_->default_mem_allocs(), log_);
             }
@@ -64,7 +64,7 @@ void GSVideoTest::InitVideoTextures() {
             auto samplers = orig_vid_mat_[tx]->samplers;
             auto params = orig_vid_mat_[tx]->params;
 
-            sprintf(name_buf, "__video_texture_material_%i__", tx);
+            snprintf(name_buf, sizeof(name_buf), "__video_texture_material_%i__", tx);
             assert(false && "Temrorarily broken!");
             /*vid_mat_[tx] = scene_manager_->scene_data().materials.Add(
                 name_buf, orig_vid_mat_[tx]->flags() | uint32_t(Ren::eMatFlags::TaaResponsive), programs.data(),

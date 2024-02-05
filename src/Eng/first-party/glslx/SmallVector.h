@@ -7,19 +7,11 @@
 #include <algorithm>
 #include <initializer_list>
 #include <new>
+#include <utility>
 
 #include "Span.h"
 
 namespace glslx {
-#ifndef EXCHANGE_DEFINED
-template <class T, class U = T> T exchange(T &obj, U &&new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-#define EXCHANGE_DEFINED
-#endif
-
 #ifndef ALIGNED_MALLOC_DEFINED
 inline void *aligned_malloc(size_t size, size_t alignment) {
     while (alignment < sizeof(void *)) {
@@ -143,9 +135,9 @@ template <typename T, int AlignmentOfT = alignof(T)> class SmallVectorImpl {
         }
 
         if (rhs.capacity_ & OwnerBit) {
-            begin_ = exchange(rhs.begin_, (T *)nullptr);
-            end_ = exchange(rhs.end_, (T *)nullptr);
-            capacity_ = exchange(rhs.capacity_, 0);
+            begin_ = std::exchange(rhs.begin_, (T *)nullptr);
+            end_ = std::exchange(rhs.end_, (T *)nullptr);
+            capacity_ = std::exchange(rhs.capacity_, 0);
         } else {
             reserve(rhs.capacity_ & CapacityMask);
 

@@ -1,15 +1,11 @@
 #pragma once
 
+#include <utility>
+
 #include "HashMap32.h"
 #include "SparseArray.h"
 
 namespace Snd {
-template <class T, class U = T> T exchange(T &obj, U &&new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-
 template <typename T> class StrongRef;
 
 template <typename T> class Storage : public SparseArray<T> {
@@ -63,7 +59,7 @@ class RefCounter {
     RefCounter &operator=(const RefCounter &) { return *this; }
     RefCounter(RefCounter &&rhs) noexcept : counter_(rhs.counter_) { rhs.counter_ = 0; }
     RefCounter &operator=(RefCounter &&rhs) noexcept {
-        counter_ = exchange(rhs.counter_, 0);
+        counter_ = std::exchange(rhs.counter_, 0);
         return (*this);
     }
 
@@ -100,8 +96,8 @@ template <class T> class StrongRef {
     }
 
     StrongRef(StrongRef &&rhs) noexcept {
-        storage_ = exchange(rhs.storage_, nullptr);
-        index_ = exchange(rhs.index_, 0);
+        storage_ = std::exchange(rhs.storage_, nullptr);
+        index_ = std::exchange(rhs.index_, 0);
     }
 
     StrongRef &operator=(const StrongRef &rhs) {
@@ -125,8 +121,8 @@ template <class T> class StrongRef {
     StrongRef &operator=(StrongRef &&rhs) noexcept {
         Release();
 
-        storage_ = exchange(rhs.storage_, nullptr);
-        index_ = exchange(rhs.index_, 0);
+        storage_ = std::exchange(rhs.storage_, nullptr);
+        index_ = std::exchange(rhs.index_, 0);
 
         return *this;
     }

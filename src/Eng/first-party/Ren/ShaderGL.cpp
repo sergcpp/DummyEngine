@@ -60,7 +60,7 @@ Ren::Shader &Ren::Shader::operator=(Shader &&rhs) noexcept {
         glDeleteShader(id);
     }
 
-    id_ = exchange(rhs.id_, 0);
+    id_ = std::exchange(rhs.id_, 0);
     type_ = rhs.type_;
     source_ = rhs.source_;
     name_ = std::move(rhs.name_);

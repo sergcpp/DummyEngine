@@ -1,5 +1,7 @@
 #include "RastState.h"
 
+#include <iterator>
+
 #include "GL.h"
 
 namespace Ren {

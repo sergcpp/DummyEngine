@@ -180,15 +180,15 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
 
     Free();
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    handle_ = exchange(rhs.handle_, {});
-    alloc_ = exchange(rhs.alloc_, {});
-    params = exchange(rhs.params, {});
-    ready_ = exchange(rhs.ready_, false);
-    cubemap_ready_ = exchange(rhs.cubemap_ready_, 0);
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    handle_ = std::exchange(rhs.handle_, {});
+    alloc_ = std::exchange(rhs.alloc_, {});
+    params = std::exchange(rhs.params, {});
+    ready_ = std::exchange(rhs.ready_, false);
+    cubemap_ready_ = std::exchange(rhs.cubemap_ready_, 0);
     name_ = std::move(rhs.name_);
 
-    resource_state = exchange(rhs.resource_state, eResState::Undefined);
+    resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
 
     return (*this);
 }
@@ -416,7 +416,7 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
     }
 #endif
 
-    const TexHandle new_handle = {new_image, new_image_view, VK_NULL_HANDLE, exchange(handle_.sampler, {}),
+    const TexHandle new_handle = {new_image, new_image_view, VK_NULL_HANDLE, std::exchange(handle_.sampler, {}),
                                   TextureHandleCounter++};
     uint16_t new_initialized_mips = 0;
 
@@ -2160,9 +2160,9 @@ Ren::Texture1D &Ren::Texture1D::operator=(Texture1D &&rhs) noexcept {
     Free();
 
     buf_ = std::move(rhs.buf_);
-    params_ = exchange(rhs.params_, {});
+    params_ = std::exchange(rhs.params_, {});
     name_ = std::move(rhs.name_);
-    buf_view_ = exchange(rhs.buf_view_, {});
+    buf_view_ = std::exchange(rhs.buf_view_, {});
 
     return (*this);
 }

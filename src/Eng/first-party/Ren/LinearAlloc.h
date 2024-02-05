@@ -4,17 +4,9 @@
 #include <cstring>
 
 #include <string>
+#include <utility>
 
 namespace Ren {
-#ifndef REN_EXCHANGE_DEFINED
-template <class T, class U = T> T exchange(T &obj, U &&new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-#define REN_EXCHANGE_DEFINED
-#endif
-
 class ILog;
 
 class LinearAlloc {
@@ -40,7 +32,7 @@ class LinearAlloc {
 
     LinearAlloc(const LinearAlloc &rhs) = delete;
     LinearAlloc(LinearAlloc &&rhs) noexcept
-        : block_size_(rhs.block_size_), block_count_(rhs.block_count_), bitmap_(exchange(rhs.bitmap_, nullptr)) {}
+        : block_size_(rhs.block_size_), block_count_(rhs.block_count_), bitmap_(std::exchange(rhs.bitmap_, nullptr)) {}
 
     LinearAlloc &operator=(const LinearAlloc &rhs) = delete;
     LinearAlloc &operator=(LinearAlloc &&rhs) noexcept {
@@ -50,9 +42,9 @@ class LinearAlloc {
 
         delete[] bitmap_;
 
-        block_size_ = exchange(rhs.block_size_, 0);
-        block_count_ = exchange(rhs.block_count_, 0);
-        bitmap_ = exchange(rhs.bitmap_, nullptr);
+        block_size_ = std::exchange(rhs.block_size_, 0);
+        block_count_ = std::exchange(rhs.block_count_, 0);
+        bitmap_ = std::exchange(rhs.bitmap_, nullptr);
 
         return (*this);
     }

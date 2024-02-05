@@ -17,7 +17,7 @@ void DialogUI::Draw(Gui::Renderer *r) {
             font_.DrawText(r, choices_[i].text, pos, col, this);
         } else {
             char buf[256];
-            sprintf(buf, "%s [%s]", choices_[i].text, choices_[i].key);
+            snprintf(buf, sizeof(buf), "%s [%s]", choices_[i].text, choices_[i].key);
             font_.DrawText(r, buf, pos, col, this);
         }
         return true;

@@ -10,15 +10,6 @@
 //
 
 namespace Sys {
-#ifndef SYS_EXCHANGE_DEFINED
-template <class T, class U = T> T exchange(T &obj, U &&new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-#define SYS_EXCHANGE_DEFINED
-#endif
-
 const size_t InplaceFunctionDefaultCapacity = 16;
 
 //
@@ -53,7 +44,9 @@ template <class> struct IsInplaceFunction : std::false_type {};
 template <class Sig, size_t Cap, size_t Align>
 struct IsInplaceFunction<InplaceFunction<Sig, Cap, Align>> : std::true_type {};
 
-template <class T> struct type_wrapper { using type = T; };
+template <class T> struct type_wrapper {
+    using type = T;
+};
 
 template <class R, class... Args> struct func_table_t {
     using invoke_ptr_t = R (*)(void *, Args &&...);
@@ -157,7 +150,7 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
     }
 
     InplaceFunction(InplaceFunction &&rhs)
-        : func_table_{exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table())} {
+        : func_table_{std::exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table())} {
         func_table_->move_ptr(rhs.storage_, storage_);
     }
 
@@ -176,7 +169,7 @@ class InplaceFunction<R(Args...), Capacity, Alignment> {
 
     InplaceFunction &operator=(InplaceFunction &&rhs) noexcept {
         func_table_->destroy_ptr(storage_);
-        func_table_ = exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table());
+        func_table_ = std::exchange(rhs.func_table_, func_table_t<R, Args...>::empty_func_table());
         func_table_->move_ptr(rhs.storage_, storage_);
         return *this;
     }

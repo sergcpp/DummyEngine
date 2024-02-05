@@ -53,9 +53,9 @@ Ren::Sampler &Ren::Sampler::operator=(Sampler &&rhs) noexcept {
 
     RefCounter::operator=(std::move(rhs));
 
-    api_ctx_ = exchange(rhs.api_ctx_, nullptr);
-    handle_ = exchange(rhs.handle_, {});
-    params_ = exchange(rhs.params_, {});
+    api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
+    handle_ = std::exchange(rhs.handle_, {});
+    params_ = std::exchange(rhs.params_, {});
 
     return (*this);
 }

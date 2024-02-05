@@ -3,17 +3,9 @@
 #include <cassert>
 #include <cstring>
 #include <iterator>
+#include <utility>
 
 namespace Ren {
-#ifndef REN_EXCHANGE_DEFINED
-template <class T, class U = T> T exchange(T &obj, U &&new_value) {
-    T old_value = std::move(obj);
-    obj = std::forward<U>(new_value);
-    return old_value;
-}
-#define REN_EXCHANGE_DEFINED
-#endif
-
 template <typename T> class SparseArray {
   protected:
     uint8_t *ctrl_;
@@ -56,12 +48,12 @@ template <typename T> class SparseArray {
 
     SparseArray(SparseArray &&rhs) noexcept : ctrl_(nullptr), data_(nullptr), capacity_(0), size_(0), first_free_(0) {
 
-        ctrl_ = exchange(rhs.ctrl_, nullptr);
-        data_ = exchange(rhs.data_, nullptr);
+        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
+        data_ = std::exchange(rhs.data_, nullptr);
 
-        capacity_ = exchange(rhs.capacity_, 0);
-        size_ = exchange(rhs.size_, 0);
-        first_free_ = exchange(rhs.first_free_, 0);
+        capacity_ = std::exchange(rhs.capacity_, 0);
+        size_ = std::exchange(rhs.size_, 0);
+        first_free_ = std::exchange(rhs.first_free_, 0);
     }
 
     SparseArray &operator=(const SparseArray &rhs) {
@@ -105,12 +97,12 @@ template <typename T> class SparseArray {
         clear();
         delete[] ctrl_;
 
-        ctrl_ = exchange(rhs.ctrl_, nullptr);
-        data_ = exchange(rhs.data_, nullptr);
+        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
+        data_ = std::exchange(rhs.data_, nullptr);
 
-        capacity_ = exchange(rhs.capacity_, 0);
-        size_ = exchange(rhs.size_, 0);
-        first_free_ = exchange(rhs.first_free_, 0);
+        capacity_ = std::exchange(rhs.capacity_, 0);
+        size_ = std::exchange(rhs.size_, 0);
+        first_free_ = std::exchange(rhs.first_free_, 0);
 
         return (*this);
     }

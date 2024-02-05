@@ -41,9 +41,9 @@ Ren::VertexInput &Ren::VertexInput::operator=(VertexInput &&rhs) noexcept {
         glDeleteVertexArrays(1, &vao);
     }
 
-    gl_vao_ = exchange(rhs.gl_vao_, 0);
+    gl_vao_ = std::exchange(rhs.gl_vao_, 0);
     attribs = std::move(rhs.attribs);
-    elem_buf = exchange(rhs.elem_buf, {});
+    elem_buf = std::exchange(rhs.elem_buf, {});
 
     return (*this);
 }

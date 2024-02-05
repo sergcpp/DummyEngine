@@ -154,7 +154,7 @@ void Eng::SceneManager::TextureLoaderProc() {
         size_t read_offset = 0, read_size = 0;
 
         char path_buf[4096];
-        strcpy(path_buf, paths_.textures_path);
+        strncpy(path_buf, paths_.textures_path, sizeof(path_buf));
         strcat(path_buf, req->ref->name().c_str());
 
         bool read_success = true;

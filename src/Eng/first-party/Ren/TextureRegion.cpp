@@ -36,7 +36,7 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
     }
 
     name_ = std::move(rhs.name_);
-    atlas_ = exchange(rhs.atlas_, nullptr);
+    atlas_ = std::exchange(rhs.atlas_, nullptr);
     memcpy(texture_pos_, rhs.texture_pos_, 3 * sizeof(int));
     params_ = rhs.params_;
     ready_ = rhs.ready_;

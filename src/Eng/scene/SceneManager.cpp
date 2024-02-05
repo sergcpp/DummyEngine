@@ -216,7 +216,7 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
     { // load error texture
         char name_buf[64];
-        sprintf(name_buf, "%serror.uncompressed.png", paths_.textures_path);
+        snprintf(name_buf, sizeof(name_buf), "%serror.uncompressed.png", paths_.textures_path);
 
         Sys::AssetFile in_file(name_buf);
         if (in_file) {
@@ -678,7 +678,7 @@ void Eng::SceneManager::LoadProbeCache() {
 
 #if !defined(__ANDROID__)
                 const uint8_t *p_data = file_data.data() + sizeof(Ren::DDSHeader);
-                int data_len = in_file_size - int(sizeof(Ren::DDSHeader));
+                int data_len = int(in_file_size - sizeof(Ren::DDSHeader));
 
                 int _res = res;
                 int level = 0;

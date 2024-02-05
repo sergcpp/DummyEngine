@@ -233,12 +233,12 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
         glDeleteTextures(1, &tex_id);
     }
 
-    mip_count_ = exchange(rhs.mip_count_, 0);
-    layer_count_ = exchange(rhs.layer_count_, 0);
-    format_ = exchange(rhs.format_, eTexFormat::Undefined);
-    filter_ = exchange(rhs.filter_, eTexFilter::NoFilter);
+    mip_count_ = std::exchange(rhs.mip_count_, 0);
+    layer_count_ = std::exchange(rhs.layer_count_, 0);
+    format_ = std::exchange(rhs.format_, eTexFormat::Undefined);
+    filter_ = std::exchange(rhs.filter_, eTexFilter::NoFilter);
 
-    tex_id_ = exchange(rhs.tex_id_, 0xffffffff);
+    tex_id_ = std::exchange(rhs.tex_id_, 0xffffffff);
 
     for (int i = 0; i < layer_count_; i++) {
         splitters_[i] = std::move(rhs.splitters_[i]);
