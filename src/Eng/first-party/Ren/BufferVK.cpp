@@ -55,16 +55,15 @@ int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
                     const uint32_t suballoc_align)
-    : LinearAlloc(std::min(suballoc_align, initial_size), initial_size), name_(name), api_ctx_(api_ctx), type_(type),
-      size_(0) {
-    Resize(size());
+    : name_(name), api_ctx_(api_ctx), type_(type), size_(0), alloc_(std::make_unique<FreelistAlloc>(initial_size)),
+      suballoc_align_(suballoc_align) {
+    Resize(initial_size);
 }
 
 Ren::Buffer::~Buffer() { Free(); }
 
 Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     RefCounter::operator=(static_cast<RefCounter &&>(rhs));
-    LinearAlloc::operator=(static_cast<LinearAlloc &&>(rhs));
 
     Free();
 
@@ -74,6 +73,8 @@ Ren::Buffer &Ren::Buffer::operator=(Buffer &&rhs) noexcept {
     api_ctx_ = exchange(rhs.api_ctx_, nullptr);
     handle_ = exchange(rhs.handle_, {});
     name_ = std::move(rhs.name_);
+    alloc_ = std::move(rhs.alloc_);
+    suballoc_align_ = exchange(rhs.suballoc_align_, 1);
     mem_ = exchange(rhs.mem_, {});
 
     type_ = exchange(rhs.type_, eBufType::Undefined);
@@ -97,10 +98,13 @@ VkDeviceAddress Ren::Buffer::vk_device_address() const {
     return api_ctx_->vkGetBufferDeviceAddressKHR(api_ctx_->device, &addr_info);
 }
 
-uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf, void *_cmd_buf,
-                                     const uint32_t init_off) {
-    const uint32_t alloc_off = Alloc(req_size, tag);
-    if (alloc_off != 0xffffffff) {
+Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf,
+                                               void *_cmd_buf, const uint32_t init_off) {
+    const FreelistAlloc::Allocation alloc = alloc_->Alloc(suballoc_align_, req_size);
+    assert(alloc.pool == 0);
+    assert(alloc_->IntegrityCheck());
+    const SubAllocation ret = {alloc.offset, alloc.block};
+    if (ret.offset != 0xffffffff) {
         if (init_buf) {
             assert(init_buf->type_ == eBufType::Stage);
             VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
@@ -131,7 +135,7 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.buffer = handle_.buf;
-                new_barrier.offset = VkDeviceSize{alloc_off};
+                new_barrier.offset = VkDeviceSize{ret.offset};
                 new_barrier.size = VkDeviceSize{req_size};
 
                 src_stages |= VKPipelineStagesForState(this->resource_state);
@@ -145,7 +149,7 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
 
             VkBufferCopy region_to_copy = {};
             region_to_copy.srcOffset = VkDeviceSize{init_off};
-            region_to_copy.dstOffset = VkDeviceSize{alloc_off};
+            region_to_copy.dstOffset = VkDeviceSize{ret.offset};
             region_to_copy.size = VkDeviceSize{req_size};
 
             api_ctx_->vkCmdCopyBuffer(cmd_buf, init_buf->handle_.buf, handle_.buf, 1, &region_to_copy);
@@ -153,11 +157,8 @@ uint32_t Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, c
             init_buf->resource_state = eResState::CopySrc;
             this->resource_state = eResState::CopyDst;
         }
-
-        return alloc_off;
     }
-
-    return 0xffffffff;
+    return ret;
 }
 
 void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, const Buffer &init_buf,
@@ -215,8 +216,9 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
     this->resource_state = eResState::CopyDst;
 }
 
-bool Ren::Buffer::FreeSubRegion(const uint32_t offset, const uint32_t size) {
-    LinearAlloc::Free(offset, size);
+bool Ren::Buffer::FreeSubRegion(const SubAllocation alloc) {
+    alloc_->Free(alloc.block);
+    assert(alloc_->IntegrityCheck());
     return true;
 }
 
@@ -236,10 +238,8 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
         size_ *= 2;
     }
 
-    if (old_size) {
-        LinearAlloc::Resize(size_);
-        assert(size_ == size());
-    }
+    alloc_->ResizePool(0, size_);
+    assert(alloc_->IntegrityCheck());
 
     VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     buf_create_info.size = VkDeviceSize(new_size);
@@ -314,7 +314,7 @@ void Ren::Buffer::Free() {
 
         handle_ = {};
         size_ = 0;
-        LinearAlloc::Clear();
+        // LinearAlloc::Clear();
     }
 }
 

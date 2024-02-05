@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "Fence.h"
-#include "LinearAlloc.h"
+#include "FreelistAlloc.h"
 #include "Resource.h"
 #include "SmallVector.h"
 #include "Storage.h"
@@ -80,15 +80,21 @@ struct RangeFence {
         : range(_range), fence(std::move(_fence)) {}
 };
 
-class Buffer : public RefCounter, public LinearAlloc {
+struct SubAllocation {
+    uint32_t offset = 0xffffffff;
+    uint32_t block = 0xffffffff;
+};
+
+class Buffer : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
     BufHandle handle_;
     String name_;
+    std::unique_ptr<FreelistAlloc> alloc_;
 #if defined(USE_VK_RENDER)
     VkDeviceMemory mem_ = VK_NULL_HANDLE;
 #endif
     eBufType type_ = eBufType::Undefined;
-    uint32_t size_ = 0;
+    uint32_t size_ = 0, suballoc_align_ = 1;
     uint8_t *mapped_ptr_ = nullptr;
     uint32_t mapped_offset_ = 0xffffffff;
 #ifndef NDEBUG
@@ -110,7 +116,7 @@ class Buffer : public RefCounter, public LinearAlloc {
 
     const String &name() const { return name_; }
     eBufType type() const { return type_; }
-    // uint32_t size() const { return size_; }
+    uint32_t size() const { return size_; }
 
     BufHandle handle() const { return handle_; }
 #if defined(USE_VK_RENDER)
@@ -126,11 +132,11 @@ class Buffer : public RefCounter, public LinearAlloc {
     bool is_mapped() const { return mapped_ptr_ != nullptr; }
     uint8_t *mapped_ptr() const { return mapped_ptr_; }
 
-    uint32_t AllocSubRegion(uint32_t size, const char *tag, const Buffer *init_buf = nullptr, void *cmd_buf = nullptr,
-                            uint32_t init_off = 0);
+    SubAllocation AllocSubRegion(uint32_t size, const char *tag, const Buffer *init_buf = nullptr,
+                                 void *cmd_buf = nullptr, uint32_t init_off = 0);
     void UpdateSubRegion(uint32_t offset, uint32_t size, const Buffer &init_buf, uint32_t init_off = 0,
                          void *cmd_buf = nullptr);
-    bool FreeSubRegion(uint32_t offset, uint32_t size);
+    bool FreeSubRegion(SubAllocation alloc);
 
     void Resize(uint32_t new_size, bool keep_content = true);
     void Free();

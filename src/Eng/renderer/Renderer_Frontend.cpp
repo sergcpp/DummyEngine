@@ -219,7 +219,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const auto *anims = (AnimState *)scene.comp_store[CompAnimState]->SequentialData();
     const auto *acc_structs = (AccStructure *)scene.comp_store[CompAccStructure]->SequentialData();
 
-    const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_offset_ / 16;
+    const uint32_t skinned_buf_vtx_offset = skinned_buf1_vtx_.offset / 16;
 
     const Mat4f &view_from_world = list.draw_cam.view_matrix(), &clip_from_view = list.draw_cam.proj_matrix();
 
@@ -380,7 +380,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 const auto cam_dist_u8 = (uint8_t)_MIN(255 * cam_dist / 500.0f, 255);
                 const uint16_t cam_dist_u16 = uint16_t(0xffffu * (cam_dist / 500.0f));
 
-                uint32_t base_vertex = mesh->attribs_buf1().offset / 16;
+                uint32_t base_vertex = mesh->attribs_buf1().sub.offset / 16;
 
                 if (obj.comp_mask & CompAnimStateBit) {
                     const AnimState &as = anims[obj.components[CompAnimState]];
@@ -390,7 +390,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 __push_ellipsoids(dr, tr.world_from_object, list);
 
-                const uint32_t indices_start = mesh->indices_buf().offset;
+                const uint32_t indices_start = mesh->indices_buf().sub.offset;
                 for (const auto &grp : mesh->groups()) {
                     const Material *mat = grp.mat.get();
                     const uint32_t mat_flags = mat->flags();
@@ -538,15 +538,15 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             OPTICK_EVENT("SORT RT INSTANCES");
 
             const Vec3f &cam_pos = list.draw_cam.world_position();
-            std::partial_sort(temp_rt_visible_objects_.data(), temp_rt_visible_objects_.data() + REN_MAX_RT_OBJ_INSTANCES,
-                              temp_rt_visible_objects_.data() + rt_objects_count.load(),
-                              [&](const VisObj lhs, const VisObj rhs) {
-                                  const SceneObject &lhs_obj = scene.objects[lhs.index];
-                                  const SceneObject &rhs_obj = scene.objects[rhs.index];
+            std::partial_sort(
+                temp_rt_visible_objects_.data(), temp_rt_visible_objects_.data() + REN_MAX_RT_OBJ_INSTANCES,
+                temp_rt_visible_objects_.data() + rt_objects_count.load(), [&](const VisObj lhs, const VisObj rhs) {
+                    const SceneObject &lhs_obj = scene.objects[lhs.index];
+                    const SceneObject &rhs_obj = scene.objects[rhs.index];
 
-                                  return acc_structs[lhs_obj.components[CompAccStructure]].surf_area / lhs.dist2 >
-                                         acc_structs[rhs_obj.components[CompAccStructure]].surf_area / rhs.dist2;
-                              });
+                    return acc_structs[lhs_obj.components[CompAccStructure]].surf_area / lhs.dist2 >
+                           acc_structs[rhs_obj.components[CompAccStructure]].surf_area / rhs.dist2;
+                });
         }
 
         temp_rt_visible_objects_.resize(_MIN(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES));
@@ -918,7 +918,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 const Mesh *mesh = dr.mesh.get();
 
                 if (proc_objects_[i.index].base_vertex == 0xffffffff) {
-                    proc_objects_[i.index].base_vertex = mesh->attribs_buf1().offset / 16;
+                    proc_objects_[i.index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
 
                     if (obj.comp_mask & CompAnimStateBit) {
                         const AnimState &as = anims[obj.components[CompAnimState]];
@@ -968,7 +968,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
                         batch.moving_bit = 0;
                         batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                        batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
+                        batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
                         batch.base_vertex = proc_objects_[i.index].base_vertex;
                         batch.indices_count = grp.num_indices;
                         batch.instance_index = i.index;
@@ -1139,7 +1139,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
                         if (proc_objects_[n->prim_index].base_vertex == 0xffffffff) {
-                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().offset / 16;
+                            proc_objects_[n->prim_index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
 
                             if (obj.comp_mask & CompAnimStateBit) {
                                 const AnimState &as = anims[obj.components[CompAnimState]];
@@ -1171,7 +1171,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
                                 batch.moving_bit = 0;
                                 batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                                batch.indices_offset = (mesh->indices_buf().offset + grp.offset) / sizeof(uint32_t);
+                                batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
                                 batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
                                 batch.indices_count = grp.num_indices;
                                 batch.instance_index = n->prim_index;
@@ -2085,8 +2085,8 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     const Ren::BufferRange &sk_buf = mesh->sk_attribs_buf();
     const Ren::BufferRange &deltas_buf = mesh->sk_deltas_buf();
 
-    const uint32_t vertex_beg = sk_buf.offset / 48, vertex_cnt = sk_buf.size / 48;
-    const uint32_t deltas_offset = deltas_buf.offset / 24;
+    const uint32_t vertex_beg = sk_buf.sub.offset / 48, vertex_cnt = sk_buf.size / 48;
+    const uint32_t deltas_offset = deltas_buf.sub.offset / 24;
 
     const uint32_t curr_out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
 

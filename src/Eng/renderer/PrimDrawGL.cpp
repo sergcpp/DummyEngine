@@ -72,11 +72,11 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Prog
 
     if (prim == ePrim::Quad) {
         glBindVertexArray(fs_quad_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_.offset));
     } else if (prim == ePrim::Sphere) {
         glBindVertexArray(sphere_vtx_input_.gl_vao());
         glDrawElements(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
-                       (void *)uintptr_t(sphere_ndx_offset_));
+                       (void *)uintptr_t(sphere_ndx_.offset));
     }
 
 #ifndef NDEBUG
@@ -137,11 +137,11 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
 
     if (prim == ePrim::Quad) {
         glBindVertexArray(fs_quad_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_.offset));
     } else if (prim == ePrim::Sphere) {
         glBindVertexArray(sphere_vtx_input_.gl_vao());
         glDrawElements(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
-                       (void *)uintptr_t(sphere_ndx_offset_));
+                       (void *)uintptr_t(sphere_ndx_.offset));
     }
 
 #ifndef NDEBUG

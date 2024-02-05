@@ -23,11 +23,9 @@ class PrimDraw {
   private:
     bool initialized_ = false;
 
-    uint32_t quad_vtx1_offset_ = 0xffffffff, quad_vtx2_offset_ = 0xffffffff, quad_ndx_offset_ = 0xffffffff;
-
-    uint32_t sphere_vtx1_offset_ = 0xffffffff, sphere_vtx2_offset_ = 0xffffffff, sphere_ndx_offset_ = 0xffffffff;
-
-    uint32_t temp_buf1_vtx_offset_ = 0xffffffff, temp_buf2_vtx_offset_ = 0xffffffff, temp_buf_ndx_offset_ = 0xffffffff;
+    Ren::SubAllocation quad_vtx1_, quad_vtx2_, quad_ndx_;
+    Ren::SubAllocation sphere_vtx1_, sphere_vtx2_, sphere_ndx_;
+    Ren::SubAllocation temp_vtx1_, temp_vtx2_, temp_ndx_;
 
     Ren::MeshRef skydome_mesh_;
 
@@ -62,9 +60,9 @@ class PrimDraw {
     uint32_t fs_quad_vao() const { return fs_quad_vtx_input_.gl_vao(); }
 
     // TODO: refactor this
-    uint32_t temp_buf1_vtx_offset() const { return temp_buf1_vtx_offset_; }
+    uint32_t temp_buf1_vtx_offset() const { return temp_vtx1_.offset; }
 
-    uint32_t temp_buf_ndx_offset() const { return temp_buf_ndx_offset_; }
+    uint32_t temp_buf_ndx_offset() const { return temp_ndx_.offset; }
 #endif
 
     const Ren::Mesh *skydome_mesh() const { return skydome_mesh_.get(); }

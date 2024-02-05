@@ -33,11 +33,11 @@ struct VtxDelta {
 
 struct BufferRange {
     BufferRef buf;
-    uint32_t offset, size;
+    SubAllocation sub;
+    uint32_t size = 0;
 
-    BufferRange() : offset(0), size(0) {}
-    BufferRange(BufferRef &_buf, const uint32_t _offset, const uint32_t _size)
-        : buf(_buf), offset(_offset), size(_size) {}
+    BufferRange() = default;
+    BufferRange(BufferRef &_buf, const SubAllocation _sub, uint32_t _size) : buf(_buf), sub(_sub), size(_size) {}
     ~BufferRange() { Release(); }
 
     BufferRange(const BufferRange &rhs) = delete;
@@ -48,7 +48,7 @@ struct BufferRange {
         Release();
 
         buf = std::move(rhs.buf);
-        offset = exchange(rhs.offset, 0);
+        sub = exchange(rhs.sub, {});
         size = exchange(rhs.size, 0);
 
         return *this;
@@ -56,7 +56,7 @@ struct BufferRange {
 
     void Release() {
         if (buf) {
-            const bool res = buf->FreeSubRegion(offset, size);
+            const bool res = buf->FreeSubRegion(sub);
             assert(res);
         }
         buf = {};

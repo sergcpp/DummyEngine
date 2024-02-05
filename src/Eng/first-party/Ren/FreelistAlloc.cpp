@@ -187,6 +187,9 @@ Ren::FreelistAlloc::Allocation Ren::FreelistAlloc::Alloc(const uint32_t size) {
 }
 
 Ren::FreelistAlloc::Allocation Ren::FreelistAlloc::Alloc(uint32_t align, uint32_t size) {
+    if (align == 1) {
+        return Alloc(size);
+    }
     uint32_t block = block_locate_free(size + align);
     uint32_t offset = 0xffffffff;
     uint16_t pool = 0xffff;

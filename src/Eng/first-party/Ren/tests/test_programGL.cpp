@@ -144,7 +144,7 @@ void main() {
             stage_buf.Unmap();
         }
 
-        const uint32_t offset = buf.AllocSubRegion(128 * sizeof(AttribData), "test", &stage_buf);
+        const uint32_t offset = buf.AllocSubRegion(128 * sizeof(AttribData), "test", &stage_buf).offset;
         require(offset == 0);
 
         glUseProgram(p->id());

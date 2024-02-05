@@ -213,7 +213,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     for (size_t i = 0; i < api_ctx_->present_images.size(); ++i) {
         char name_buf[24];
-        sprintf(name_buf, "Present Image [%i]", int(i));
+        snprintf(name_buf, sizeof(name_buf), "Present Image [%i]", int(i));
 
         Tex2DParams params;
         params.w = w;
@@ -293,7 +293,7 @@ void Ren::Context::Resize(const int w, const int h) {
 
     for (size_t i = 0; i < api_ctx_->present_images.size(); ++i) {
         char name_buf[24];
-        sprintf(name_buf, "Present Image [%i]", int(i));
+        snprintf(name_buf, sizeof(name_buf), "Present Image [%i]", int(i));
 
         Tex2DParams params;
         params.w = w;

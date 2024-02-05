@@ -46,9 +46,9 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                 temp_stage_buf.Unmap();
             }
 
-            quad_vtx1_offset_ = vtx_buf1->AllocSubRegion(mem_required, "quad", &temp_stage_buf, ctx.current_cmd_buf());
-            quad_vtx2_offset_ = vtx_buf2->AllocSubRegion(mem_required, "quad", nullptr);
-            assert(quad_vtx1_offset_ == quad_vtx2_offset_ && "Offsets do not match!");
+            quad_vtx1_ = vtx_buf1->AllocSubRegion(mem_required, "quad", &temp_stage_buf, ctx.current_cmd_buf());
+            quad_vtx2_ = vtx_buf2->AllocSubRegion(mem_required, "quad", nullptr);
+            assert(quad_vtx1_.offset == quad_vtx2_.offset && "Offsets do not match!");
         }
 
         { // Allocate quad indices
@@ -61,8 +61,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                 temp_stage_buf.Unmap();
             }
 
-            quad_ndx_offset_ =
-                ndx_buf->AllocSubRegion(6 * sizeof(uint16_t), "quad", &temp_stage_buf, ctx.current_cmd_buf());
+            quad_ndx_ = ndx_buf->AllocSubRegion(6 * sizeof(uint16_t), "quad", &temp_stage_buf, ctx.current_cmd_buf());
         }
 
         { // Allocate sphere positions
@@ -76,10 +75,10 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
             }
 
             // Allocate sphere vertices
-            sphere_vtx1_offset_ =
+            sphere_vtx1_ =
                 vtx_buf1->AllocSubRegion(SphereVerticesSize, "sphere", &temp_stage_buf, ctx.current_cmd_buf());
-            sphere_vtx2_offset_ = vtx_buf2->AllocSubRegion(SphereVerticesSize, "sphere", nullptr);
-            assert(sphere_vtx1_offset_ == sphere_vtx2_offset_ && "Offsets do not match!");
+            sphere_vtx2_ = vtx_buf2->AllocSubRegion(SphereVerticesSize, "sphere", nullptr);
+            assert(sphere_vtx1_.offset == sphere_vtx2_.offset && "Offsets do not match!");
         }
 
         { // Allocate sphere indices
@@ -92,14 +91,14 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                 temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(sizeof(__sphere_indices)));
                 temp_stage_buf.Unmap();
             }
-            sphere_ndx_offset_ =
+            sphere_ndx_ =
                 ndx_buf->AllocSubRegion(sizeof(__sphere_indices), "sphere", &temp_stage_buf, ctx.current_cmd_buf());
 
             // Allocate temporary buffer
-            temp_buf1_vtx_offset_ = vtx_buf1->AllocSubRegion(TempBufSize, "temp");
-            temp_buf2_vtx_offset_ = vtx_buf2->AllocSubRegion(TempBufSize, "temp");
-            assert(temp_buf1_vtx_offset_ == temp_buf2_vtx_offset_ && "Offsets do not match!");
-            temp_buf_ndx_offset_ = ndx_buf->AllocSubRegion(TempBufSize, "temp");
+            temp_vtx1_ = vtx_buf1->AllocSubRegion(TempBufSize, "temp");
+            temp_vtx2_ = vtx_buf2->AllocSubRegion(TempBufSize, "temp");
+            assert(temp_vtx1_.offset == temp_vtx1_.offset && "Offsets do not match!");
+            temp_ndx_ = ndx_buf->AllocSubRegion(TempBufSize, "temp");
         }
 
         { // Load skydome mesh
@@ -116,16 +115,16 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
 
     { // setup quad vertices
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), REN_VTX_POS_LOC, 2, Ren::eType::Float32, 0, quad_vtx1_offset_},
+            {vtx_buf1->handle(), REN_VTX_POS_LOC, 2, Ren::eType::Float32, 0, quad_vtx1_.offset},
             {vtx_buf1->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
-             uint32_t(quad_vtx1_offset_ + 8 * sizeof(float))}};
+             uint32_t(quad_vtx1_.offset + 8 * sizeof(float))}};
 
         fs_quad_vtx_input_.Setup(attribs, ndx_buf);
     }
 
     { // setup sphere vertices
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_offset_}};
+            {vtx_buf1->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_.offset}};
         sphere_vtx_input_.Setup(attribs, ndx_buf);
     }
 
@@ -135,40 +134,37 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
 void Eng::PrimDraw::CleanUp() {
     using namespace PrimDrawInternal;
 
-    if (quad_vtx1_offset_ != 0xffffffff) {
+    if (quad_vtx1_.offset != 0xffffffff) {
         Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
                        ndx_buf = ctx_->default_indices_buf();
 
-        uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
-        mem_required += (16 - mem_required % 16); // align to vertex stride
-
-        vtx_buf1->FreeSubRegion(quad_vtx1_offset_, mem_required);
-        assert(quad_vtx2_offset_ != 0xffffffff);
-        vtx_buf2->FreeSubRegion(quad_vtx2_offset_, mem_required);
-        assert(quad_ndx_offset_ != 0xffffffff);
-        ndx_buf->FreeSubRegion(quad_ndx_offset_, 6 * sizeof(uint16_t));
+        vtx_buf1->FreeSubRegion(quad_vtx1_);
+        assert(quad_vtx2_.offset != 0xffffffff);
+        vtx_buf2->FreeSubRegion(quad_vtx2_);
+        assert(quad_ndx_.offset != 0xffffffff);
+        ndx_buf->FreeSubRegion(quad_ndx_);
     }
 
-    if (sphere_vtx1_offset_ != 0xffffffff) {
+    if (sphere_vtx1_.offset != 0xffffffff) {
         Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
                        ndx_buf = ctx_->default_indices_buf();
 
-        vtx_buf1->FreeSubRegion(sphere_vtx1_offset_, SphereVerticesSize);
-        assert(sphere_vtx2_offset_ != 0xffffffff);
-        vtx_buf2->FreeSubRegion(sphere_vtx2_offset_, SphereVerticesSize);
-        assert(sphere_ndx_offset_ != 0xffffffff);
-        ndx_buf->FreeSubRegion(sphere_ndx_offset_, sizeof(__sphere_indices));
+        vtx_buf1->FreeSubRegion(sphere_vtx1_);
+        assert(sphere_vtx2_.offset != 0xffffffff);
+        vtx_buf2->FreeSubRegion(sphere_vtx2_);
+        assert(sphere_ndx_.offset != 0xffffffff);
+        ndx_buf->FreeSubRegion(sphere_ndx_);
     }
 
-    if (temp_buf1_vtx_offset_ != 0xffffffff) {
+    if (temp_vtx1_.offset != 0xffffffff) {
         Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2(),
                        ndx_buf = ctx_->default_indices_buf();
 
-        vtx_buf1->FreeSubRegion(temp_buf1_vtx_offset_, TempBufSize);
-        assert(temp_buf2_vtx_offset_ != 0xffffffff);
-        vtx_buf2->FreeSubRegion(temp_buf2_vtx_offset_, TempBufSize);
-        assert(temp_buf_ndx_offset_ != 0xffffffff);
-        ndx_buf->FreeSubRegion(temp_buf_ndx_offset_, TempBufSize);
+        vtx_buf1->FreeSubRegion(temp_vtx1_);
+        assert(temp_vtx2_.offset != 0xffffffff);
+        vtx_buf2->FreeSubRegion(temp_vtx2_);
+        assert(temp_ndx_.offset != 0xffffffff);
+        ndx_buf->FreeSubRegion(temp_ndx_);
     }
 }
 

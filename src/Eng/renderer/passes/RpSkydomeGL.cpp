@@ -45,8 +45,8 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
     const Ren::Mesh *skydome_mesh = prim_draw_.skydome_mesh();
     glDrawElementsBaseVertex(GL_TRIANGLES, GLsizei(skydome_mesh->indices_buf().size / sizeof(uint32_t)),
-                             GL_UNSIGNED_INT, (void *)uintptr_t(skydome_mesh->indices_buf().offset),
-                             GLint(skydome_mesh->attribs_buf1().offset / 16));
+                             GL_UNSIGNED_INT, (void *)uintptr_t(skydome_mesh->indices_buf().sub.offset),
+                             GLint(skydome_mesh->attribs_buf1().sub.offset / 16));
 
     glDepthFunc(GL_LESS);
 

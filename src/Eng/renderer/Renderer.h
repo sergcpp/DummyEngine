@@ -9,6 +9,7 @@ extern "C" {
 }
 
 #include "../scene/SceneData.h"
+#include "PrimDraw.h"
 #include "passes/RpBuildAccStructures.h"
 #include "passes/RpCombine.h"
 #include "passes/RpDOF.h"
@@ -33,7 +34,6 @@ extern "C" {
 #include "passes/RpSkydome.h"
 #include "passes/RpTransparent.h"
 #include "passes/RpUpdateAccBuffers.h"
-#include "PrimDraw.h"
 
 #include "Renderer_DrawList.h"
 #include "shaders/Renderer_GL_Defines.inl"
@@ -69,12 +69,12 @@ class Renderer {
 
     void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
-    //void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count,
-    //                float multiplier = 1.0f);
+    // void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count,
+    //                 float multiplier = 1.0f);
     void BlitTexture(float px, float py, float sx, float sy, const Ren::Tex2DRef &tex, float multiplier = 1.0f,
                      bool is_ms = false);
 
-    //void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
+    // void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
     void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
     bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
 
@@ -100,7 +100,7 @@ class Renderer {
     Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
 
-    //FrameBuf probe_sample_buf_;
+    // FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
@@ -114,11 +114,11 @@ class Renderer {
 
     static const uint64_t DefaultFlags =
 #if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO |
-         EnableLightmap | EnableLights | EnableDecals | EnableShadows | EnableTonemap |
-         EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers | EnableDOF /*|
-                                                                              EnableRTShadows*/
-         //| EnableDeferred | EnableHQ_HDR
+        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
+         EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
+         EnableDOF /*|
+               EnableRTShadows*/
+                   //| EnableDeferred | EnableHQ_HDR
         );
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
@@ -163,8 +163,7 @@ class Renderer {
 
     ShadowFrustumCache sun_shadow_cache_[4];
 
-    uint32_t temp_buf1_vtx_offset_, temp_buf2_vtx_offset_, temp_buf_ndx_offset_, skinned_buf1_vtx_offset_,
-        skinned_buf2_vtx_offset_;
+    Ren::SubAllocation temp_buf1_vtx_, temp_buf2_vtx_, temp_buf_ndx_, skinned_buf1_vtx_, skinned_buf2_vtx_;
 
 #if defined(USE_GL_RENDER)
     Ren::Tex2DRef temp_tex_;
@@ -284,14 +283,12 @@ class Renderer {
     void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, float max_exposure,
                     bool static_accumulation, RpResRef &resolved_color);
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
-    void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
-                                RpResRef &out_depth_down_2x);
+    void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 
     void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                              const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                              const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                             const PersistentGpuData &persistent_data,
-                             const AccelerationStructureData &acc_struct_data,
+                             const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                              const BindlessTextureData &bindless, RpResRef depth_hierarchy,
                              RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
@@ -300,18 +297,16 @@ class Renderer {
     void AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
                           const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                          const PersistentGpuData &persistent_data,
-                          const AccelerationStructureData &acc_struct_data,
+                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                           const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                           FrameTextures &frame_textures);
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                               const AccelerationStructureData &acc_struct_data,
-                               const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
-                               FrameTextures &frame_textures, bool debug_denoise);
+                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                               RpResRef rt_obj_instances_res, FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                               const AccelerationStructureData &acc_struct_data,
-                               const BindlessTextureData &bindless, FrameTextures &frame_textures);
+                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                               FrameTextures &frame_textures);
 
     void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 

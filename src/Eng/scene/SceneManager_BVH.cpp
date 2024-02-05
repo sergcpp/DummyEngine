@@ -544,8 +544,10 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         const Ren::BufferRange &attribs = acc->mesh->attribs_buf1();
         const Ren::BufferRange &indices = acc->mesh->indices_buf();
 
-        const uint32_t first_vertex = attribs.offset / 16;
-        const uint32_t prim_offset = indices.offset / (3 * sizeof(uint32_t));
+        assert((attribs.sub.offset % 16) == 0);
+        const uint32_t first_vertex = attribs.sub.offset / 16;
+        assert((indices.sub.offset % (3 * sizeof(uint32_t))) == 0);
+        const uint32_t prim_offset = indices.sub.offset / (3 * sizeof(uint32_t));
 
         assert(acc->mesh->type() == Ren::eMeshType::Simple);
         const int VertexStride = 13;
@@ -657,7 +659,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
             }
         }
 
-        const uint32_t indices_start = acc.mesh->indices_buf().offset;
+        const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
         for (const Ren::TriGroup &grp : acc.mesh->groups()) {
             const Ren::Material *mat = grp.mat.get();
             const uint32_t mat_flags = mat->flags();
@@ -671,7 +673,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
             geo_instances.emplace_back();
             auto &geo = geo_instances.back();
             geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
-            geo.vertices_start = acc.mesh->attribs_buf1().offset / 16;
+            geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
             geo.material_index = grp.mat.index();
             geo.flags = 0;
             if (lm) {

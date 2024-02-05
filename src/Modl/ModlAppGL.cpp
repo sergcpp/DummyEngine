@@ -231,9 +231,9 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
         const Ren::BufferRange &sk_attribs_buf = m->sk_attribs_buf();
         const Ren::BufferRange &sk_deltas_buf = m->sk_deltas_buf();
 
-        const int vertex_offset = int(sk_attribs_buf.offset) / 48,
+        const int vertex_offset = int(sk_attribs_buf.sub.offset) / 48,
                   vertex_count = int(sk_attribs_buf.size) / 48;
-        const int delta_offset = int(sk_deltas_buf.offset) / 24,
+        const int delta_offset = int(sk_deltas_buf.sub.offset) / 24,
                   delta_count = int(sk_deltas_buf.size) / 24;
 
         if (skel->shapes_count && (shape_key_index_ != -1 || !skel->anims.empty())) {

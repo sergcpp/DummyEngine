@@ -147,7 +147,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
                                     uniform_data_offset, uniform_data_len, uniform_data);
 
         if (prim == ePrim::Quad) {
-            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
+            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
             api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
                                       1,                    // instance count
@@ -185,7 +185,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
                                     uniform_data_offset, uniform_data_len, uniform_data);
 
         if (prim == ePrim::Quad) {
-            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_offset_, VK_INDEX_TYPE_UINT16);
+            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
             api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
                                       1,                    // instance count

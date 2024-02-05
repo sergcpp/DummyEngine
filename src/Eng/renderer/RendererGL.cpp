@@ -1317,17 +1317,17 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
         glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-        glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_), sizeof(positions), positions);
-        glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_ + sizeof(positions)), sizeof(uvs), uvs);
-        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_offset_), sizeof(indices), indices);
+        glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_.offset), sizeof(positions), positions);
+        glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_.offset + sizeof(positions)), sizeof(uvs), uvs);
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_.offset), sizeof(indices), indices);
 
         glEnableVertexAttribArray(REN_VTX_POS_LOC);
         glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
-                              (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+                              (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset));
 
         glEnableVertexAttribArray(REN_VTX_UV1_LOC);
         glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
-                              (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
+                              (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset + sizeof(positions)));
 
         glUniform1f(4, multiplier);
 
@@ -1337,7 +1337,7 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, tex->id());
         }
 
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_.offset));
     }
 
     glDisableVertexAttribArray(REN_VTX_POS_LOC);
@@ -1472,20 +1472,20 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
     glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset));
 
     glEnableVertexAttribArray(REN_VTX_UV1_LOC);
     glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
-                          (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
+                          (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset + 8 * sizeof(float)));
 
-    glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_), 8 * sizeof(float),
+    glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_.offset), 8 * sizeof(float),
                     PrimDrawInternal::fs_quad_positions);
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_offset_), 6 * sizeof(uint16_t),
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_.offset), 6 * sizeof(uint16_t),
                     PrimDrawInternal::fs_quad_indices);
 
     const float uvs[] = {-1.0f, 1.0f, -1.0, -1.0f, 1.0f, -1.0f, 1.0f, 1.0f};
 
-    glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_ + 8 * sizeof(float)), sizeof(uvs), uvs);
+    glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_.offset + 8 * sizeof(float)), sizeof(uvs), uvs);
 
     Ren::Program *prog = blit_prefilter_prog_.get();
     glUseProgram(prog->id());
@@ -1511,7 +1511,7 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
                                       GLint(probe_index * 6 + face));
             assert(glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
+            glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_.offset));
         }
 
         res /= 2;

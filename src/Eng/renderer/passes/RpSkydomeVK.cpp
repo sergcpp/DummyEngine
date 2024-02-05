@@ -98,8 +98,8 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     const Ren::Mesh *skydome_mesh = prim_draw_.skydome_mesh();
     api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(skydome_mesh->indices_buf().size / sizeof(uint32_t)), // index count
                               1,                                                                      // instance count
-                              uint32_t(skydome_mesh->indices_buf().offset / sizeof(uint32_t)),        // first index
-                              int32_t(skydome_mesh->attribs_buf1().offset / 16),                      // vertex offset
+                              uint32_t(skydome_mesh->indices_buf().sub.offset / sizeof(uint32_t)),    // first index
+                              int32_t(skydome_mesh->attribs_buf1().sub.offset / 16),                  // vertex offset
                               0);                                                                     // first instance
 
     api_ctx->vkCmdEndRenderPass(cmd_buf);
