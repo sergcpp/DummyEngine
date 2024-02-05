@@ -11,6 +11,8 @@ static const unsigned char test_tga_img[] = {
 };
 
 void test_texture() {
+    printf("Test texture            | ");
+
     { // TGA load
         TestContext test;
 
@@ -47,4 +49,6 @@ void test_texture() {
             require(t_ref3->ready());
         }
     }
+
+    printf("OK\n");
 }

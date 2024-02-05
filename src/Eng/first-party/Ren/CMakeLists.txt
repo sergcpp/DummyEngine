@@ -44,6 +44,8 @@ set(SOURCE_FILES Anim.h
                  DebugMarker.h
                  DescriptorPool.h
                  DrawCall.h
+                 FreelistAlloc.h
+                 FreelistAlloc.cpp
                  MemoryAllocator.h
                  Fence.h
                  Fixed.h

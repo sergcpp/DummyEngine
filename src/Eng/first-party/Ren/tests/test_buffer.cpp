@@ -7,6 +7,8 @@
 #include "../Utils.h"
 
 void test_buffer() {
+    printf("Test buffer             | ");
+
     { // Test suballocation
         TestContext test;
 
@@ -21,4 +23,6 @@ void test_buffer() {
 
         require(buf.AllocSubRegion(16, "temp") == 0);
     }
+
+    printf("OK\n");
 }

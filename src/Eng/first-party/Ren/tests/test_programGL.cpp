@@ -5,6 +5,8 @@
 #include "../Material.h"
 
 void test_program() {
+    printf("Test program            | ");
+    
     { // Load glsl program
         TestContext test;
 
@@ -383,4 +385,6 @@ void main() {
             printf("Could not test spirv loading!\n");
         }
     }
+    
+    printf("OK\n");
 }

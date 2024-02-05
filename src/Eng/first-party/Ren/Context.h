@@ -60,6 +60,8 @@ struct StageBufs {
     }
 };
 
+const char *Version();
+
 class Context {
   protected:
     int w_ = 0, h_ = 0;

@@ -36,6 +36,8 @@ unsigned int __anim_len = 508;
 } // namespace
 
 void test_anim() {
+    printf("Test anim               | ");
+
     { // Load anim
         membuf sbuf(__anim, sizeof(__anim));
         std::istream in(&sbuf);
@@ -114,4 +116,6 @@ void test_anim() {
         require(anim.frames()[31] == Approx(-0.7071067690849304).epsilon(0.0001));
         require(anim.frames()[32] == Approx(0.7071067690849304).epsilon(0.0001));
     }
+
+    printf("OK\n");
 }

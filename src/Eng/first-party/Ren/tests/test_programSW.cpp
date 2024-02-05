@@ -18,6 +18,8 @@ VSHADER vshader(VS_IN, VS_OUT) {}
 FSHADER fshader(FS_IN, FS_OUT) {}
 
 void test_program() {
+    printf("Test program            | ");
+    
     {
         // Create program
         ProgramTest test;
@@ -63,4 +65,6 @@ void test_program() {
 
         require(pp->ready());
     }
+    
+    printf("OK\n");
 }

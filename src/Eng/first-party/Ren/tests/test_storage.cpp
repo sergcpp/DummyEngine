@@ -3,6 +3,8 @@
 #include "../Storage.h"
 
 void test_storage() {
+    printf("Test storage            | ");
+
     class MyObj : public Ren::RefCounter {
         Ren::String name_;
 
@@ -69,4 +71,6 @@ void test_storage() {
         ref2 = {};
         require(counter == 0);
     }
+
+    printf("OK\n");
 }

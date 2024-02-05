@@ -3,6 +3,8 @@
 #include "../Span.h"
 
 void test_span() {
+    printf("Test span               | ");
+
     { // basic usage
         const int data[] = {1, 2, 3, 4, 5};
 
@@ -79,4 +81,6 @@ void test_span() {
         }
         require(sum == 15);
     }
+
+    printf("OK\n");
 }

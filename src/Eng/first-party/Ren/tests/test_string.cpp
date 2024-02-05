@@ -3,6 +3,8 @@
 #include "../String.h"
 
 void test_string() {
+    printf("Test string             | ");
+
     { // Basic usage
         Ren::String s1, s2;
 
@@ -72,4 +74,6 @@ void test_string() {
         require(s5 == s1);
         require(s6 != s1);
     }
+
+    printf("OK\n");
 }

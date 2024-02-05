@@ -17,6 +17,8 @@ std::vector<int> GenTestData(int size) {
 } // namespace
 
 void test_sparse_array() {
+    printf("Test sparse_array       | ");
+
     { // reserve method
         Ren::SparseArray<int> s1;
         require(s1.size() == 0);
@@ -146,4 +148,6 @@ void test_sparse_array() {
             require(s1[i] == data[i]);
         }
     }
+
+    printf("OK\n");
 }

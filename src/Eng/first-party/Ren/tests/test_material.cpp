@@ -10,6 +10,8 @@ static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1, const
 static Ren::Tex2DRef OnTextureNeeded(const char *name) { return {}; }
 
 void test_material() {
+    printf("Test material           | ");
+
     { // Load material
         TestContext test;
 
@@ -71,4 +73,6 @@ void test_material() {
         require(m_ref->params[0] == Ren::Vec4f(0, 1, 2, 3));
         require(m_ref->params[1] == Ren::Vec4f(0.5f, 1.2f, 11, 15));
     }
+
+    printf("OK\n");
 }

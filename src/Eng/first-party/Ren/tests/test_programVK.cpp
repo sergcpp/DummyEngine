@@ -5,6 +5,8 @@
 #include "../Material.h"
 
 void test_program() {
+    printf("Test program            | ");
+
     { // Load spirv program
         TestContext test;
 #if 0
@@ -433,4 +435,6 @@ void main(void) {
         }
 #endif
     }
+
+    printf("OK\n");
 }

@@ -7,6 +7,8 @@
 #define _ABS(x) ((x) < 0 ? -(x) : (x))
 
 void test_utils() {
+    printf("Test utils              | ");
+
     std::unique_ptr<uint8_t[]> data_in(new uint8_t[256 * 256 * 256 * 3]);
 
     { // fill initial array with test data (every possible color)
@@ -58,4 +60,6 @@ void test_utils() {
             }
         }
     }
+
+    printf("OK\n");
 }

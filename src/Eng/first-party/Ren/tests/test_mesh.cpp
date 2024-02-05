@@ -80,9 +80,9 @@ unsigned int __skeletal_mesh_len = 802;
 } // namespace
 
 void test_mesh() {
+    printf("Test mesh               | ");
 
-    {
-        // Load simple mesh
+    { // Load simple mesh
         membuf sbuf(__ivy_mesh, sizeof(__ivy_mesh));
         std::istream in(&sbuf);
 
@@ -222,4 +222,6 @@ void test_mesh() {
         require(bool(mat_ref));
         require(!mat_ref->ready());
     }
+
+    printf("OK\n");
 }

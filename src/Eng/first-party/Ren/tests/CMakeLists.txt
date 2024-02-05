@@ -29,18 +29,17 @@ set(SOURCE_FILES main.cpp
                  test_anim.cpp
                  test_buffer.cpp
                  test_common.h
+                 test_freelist_alloc.cpp
                  test_hashmap.cpp
-                 test_mat.cpp
                  test_material.cpp
                  test_mesh.cpp
+                 test_math.cpp
                  test_span.cpp
                  test_sparse_array.cpp
                  test_storage.cpp
                  test_string.cpp
                  test_texture.cpp
-                 test_utils.cpp
-                 test_vec.cpp
-                 )
+                 test_utils.cpp)
 
 if(${RENDERER} STREQUAL "VK")
     set(SOURCE_FILES ${SOURCE_FILES}

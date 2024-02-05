@@ -42,4 +42,6 @@ using Tex2DRef = StrongRef<Texture2D>;
 using WeakTex2DRef = WeakRef<Texture2D>;
 using Tex1DRef = StrongRef<Texture1D>;
 using WeakTex1DRef = WeakRef<Texture1D>;
+
+const char *Version();
 }

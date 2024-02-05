@@ -9,6 +9,8 @@
 #include "GLCtx.h"
 #endif
 
+const char *Ren::Version() { return "v0.1.0-unknown-commit"; }
+
 Ren::MeshRef Ren::Context::LoadMesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,
                                     int ndx_count, eMeshLoadStatus *load_status) {
     return LoadMesh(name, positions, vtx_count, indices, ndx_count, default_stage_bufs_, default_vertex_buf1_,
