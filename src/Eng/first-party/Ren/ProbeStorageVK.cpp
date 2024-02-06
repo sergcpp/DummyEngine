@@ -62,10 +62,7 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
             FindMemoryType(&api_ctx->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
             "Probe Storage");
 
-        const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
-
-        res = api_ctx->vkBindImageMemory(api_ctx->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
-                                         aligned_offset);
+        res = api_ctx->vkBindImageMemory(api_ctx->device, handle_.img, alloc_.owner->mem(alloc_.pool), alloc_.offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return false;

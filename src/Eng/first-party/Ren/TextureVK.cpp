@@ -368,10 +368,8 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
             FindMemoryType(&api_ctx_->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
             name_.c_str());
 
-        const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(new_alloc.alloc_off), tex_mem_req.alignment);
-
-        res = api_ctx_->vkBindImageMemory(api_ctx_->device, new_image, new_alloc.owner->mem(new_alloc.block_ndx),
-                                          aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, new_image, new_alloc.owner->mem(new_alloc.pool),
+                                          new_alloc.offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return false;
@@ -599,10 +597,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
             FindMemoryType(&api_ctx_->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
             name_.c_str());
 
-        const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
-
-        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
-                                          aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.pool), alloc_.offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -1153,10 +1148,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
             FindMemoryType(&api_ctx_->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
             name_.c_str());
 
-        const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
-
-        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
-                                          aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.pool), alloc_.offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -1484,10 +1476,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
             FindMemoryType(&api_ctx_->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
             name_.c_str());
 
-        const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
-
-        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
-                                          aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.pool), alloc_.offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;
@@ -1712,10 +1701,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
             FindMemoryType(&api_ctx_->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
             name_.c_str());
 
-        const VkDeviceSize aligned_offset = AlignTo(VkDeviceSize(alloc_.alloc_off), tex_mem_req.alignment);
-
-        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.block_ndx),
-                                          aligned_offset);
+        res = api_ctx_->vkBindImageMemory(api_ctx_->device, handle_.img, alloc_.owner->mem(alloc_.pool), alloc_.offset);
         if (res != VK_SUCCESS) {
             log->Error("Failed to bind memory!");
             return;

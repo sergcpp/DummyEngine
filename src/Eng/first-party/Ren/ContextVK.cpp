@@ -203,8 +203,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     capabilities.dynamic_rendering = api_ctx_->dynamic_rendering_supported;
     CheckDeviceCapabilities();
 
-    default_memory_allocs_ = std::make_unique<MemoryAllocators>(
-        "Default Allocs", api_ctx_.get(), 32 * 1024 * 1024 /* initial_block_size */, 1.5f /* growth_factor */);
+    default_memory_allocs_ =
+        std::make_unique<MemoryAllocators>("Default Allocs", api_ctx_.get(), 32 * 1024 * 1024 /* initial_block_size */,
+                                           1.5f /* growth_factor */, 128 * 1024 * 1024 /* max_pool_size */);
 
     InitDefaultBuffers();
 
