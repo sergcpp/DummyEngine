@@ -162,7 +162,8 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 const size_t n2 = line.find_last_of('\"');
 
                 const std::string file_name = line.substr(n1 + 1, n2 - n1 - 1);
-                const std::string full_path = (std::filesystem::path(in_file).parent_path() / file_name).generic_string();
+                const std::string full_path =
+                    (std::filesystem::path(in_file).parent_path() / file_name).generic_string();
 
                 dst_stream << "#line 0\r\n";
 
@@ -220,11 +221,15 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 ctx.log->Info("[PrepareAssets] Prep %s", spv_file.c_str());
                 std::remove(spv_file.c_str());
 
+                const bool TestShaderRewrite = true;
+
                 std::string preamble;
-                if (is_vk) {
-                    preamble += "#define VULKAN 1\n";
-                } else {
-                    preamble += "#define GL_SPIRV 1\n";
+                if (TestShaderRewrite) {
+                    if (is_vk) {
+                        preamble += "#define VULKAN 1\n";
+                    } else {
+                        preamble += "#define GL_SPIRV 1\n";
+                    }
                 }
                 if (!perm.empty()) {
                     const char *params = perm.c_str();
@@ -295,7 +300,9 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 glsl_file.read(glsl_file_data.data(), glsl_file_size);
                 glsl_file_data[glsl_file_size] = 0;
 
-                glsl_file_data = preamble + glsl_file_data;
+                if (TestShaderRewrite) {
+                    glsl_file_data = preamble + glsl_file_data;
+                }
 
                 glslx::eTrUnitType unit_type;
                 if (strstr(out_file, ".vert.glsl")) {
@@ -330,7 +337,7 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                     glslang_input.stage = GLSLANG_STAGE_MISS;
                 }
 
-                { // test shader rewrite
+                if (TestShaderRewrite) {
                     glslx::Preprocessor preprocessor(glsl_file_data);
                     std::string preprocessed = preprocessor.Process();
                     if (!preprocessor.error().empty()) {
@@ -378,9 +385,9 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 glslang_shader_t *shader = glslang_shader_create(&glslang_input);
                 SCOPE_EXIT(glslang_shader_delete(shader);)
 
-                //if (!preamble.empty()) {
-                //    glslang_shader_set_preamble(shader, preamble.c_str());
-                //}
+                if (!TestShaderRewrite && !preamble.empty()) {
+                    glslang_shader_set_preamble(shader, preamble.c_str());
+                }
 
                 if (!glslang_shader_preprocess(shader, &glslang_input)) {
                     ctx.log->Error("[PrepareAssets] GLSL preprocessing failed %s", out_file);

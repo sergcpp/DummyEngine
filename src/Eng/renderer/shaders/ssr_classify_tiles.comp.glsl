@@ -21,9 +21,9 @@ UNIFORM_BLOCKS
 PERM @NO_SUBGROUP_EXTENSIONS
 */
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP_EXTENSIONS
-#endif
+//#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
+//#define NO_SUBGROUP_EXTENSIONS
+//#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
