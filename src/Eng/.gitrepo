@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 8eb29c19d05deb5c974b3b0dcee0169097f06abf
+	branch = freelist_alloc
+	commit = 4ddf231048bc00575dc64dc304f4ccc165a6b345
 	method = merge
 	cmdver = 0.4.6
-	parent = a5cf39e66deaa69a2310698e09fc878b4e267188
+	parent = a748fc3db1cc53693503542852761e165c84f6dc
