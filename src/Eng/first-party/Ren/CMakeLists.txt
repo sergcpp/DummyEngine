@@ -52,8 +52,6 @@ set(SOURCE_FILES Anim.h
                  Framebuffer.h
                  Fwd.h
                  HashMap32.h
-                 LinearAlloc.h
-                 LinearAlloc.cpp
                  Log.h
                  Material.h
                  Material.cpp
