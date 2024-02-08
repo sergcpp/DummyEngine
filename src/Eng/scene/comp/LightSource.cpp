@@ -75,6 +75,13 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.area = 1.0f;
     }
 
+    if (js_in.Has("cull_offset")) {
+        const JsNumber &js_cull_offset = js_in.at("cull_offset").as_num();
+        ls.cull_radius = float(js_cull_offset.val);
+    } else {
+        ls.cull_offset = 0.1f;
+    }
+
     if (js_in.Has("cull_radius")) {
         const JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
         ls.cull_radius = float(js_cull_radius.val);
@@ -173,6 +180,14 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         if (ls.angle_deg != 45.0f) {
             js_out.Push("angle", JsNumber{ls.angle_deg});
         }
+    }
+
+    if (ls.cull_offset != 0.1f) {
+        js_out.Push("cull_offset", JsNumber{ls.cull_offset});
+    }
+
+    if (ls.cull_radius != 0.1f) {
+        js_out.Push("cull_radius", JsNumber{ls.cull_radius});
     }
 
     if (ls.cast_shadow) {

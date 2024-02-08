@@ -1092,7 +1092,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 Camera shadow_cam;
                 shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
-                shadow_cam.Perspective(light_angle, 1.0f, 0.1f, ls->cull_radius);
+                shadow_cam.Perspective(light_angle, 1.0f, ls->cull_offset, ls->cull_radius);
                 shadow_cam.UpdatePlanes();
 
                 // TODO: Check visibility of shadow frustum itself

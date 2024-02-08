@@ -16,7 +16,7 @@ struct LightSource {
     float brightness;
     Ren::Vec3f dir;
     float spot, cap_radius;
-    float cull_radius;
+    float cull_offset, cull_radius;
     bool cast_shadow, cache_shadow;
     float shadow_bias[2];
 
