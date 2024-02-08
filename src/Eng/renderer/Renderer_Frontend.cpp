@@ -1083,25 +1083,16 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             for (int i = 0; i < int(regions.size()); ++i) {
                 ShadReg *region = regions[i];
 
-                Vec3f _light_dir = light_dir, _light_up = light_up;
-                if (i == 4) {
-                    _light_dir = light_dir;
+                Vec3f _light_dir, _light_up;
+                if (i == 0 || i == 1) {
+                    _light_dir = (i == 0) ? light_up : -light_up;
+                    _light_up = -light_dir;
+                } else if (i == 2 || i == 3) {
+                    _light_dir = (i == 2) ? light_side : -light_side;
+                    _light_up = -light_dir;
+                } else if (i == 4 || i == 5) {
+                    _light_dir = (i == 4) ? light_dir : -light_dir;
                     _light_up = light_up;
-                } else if (i == 5) {
-                    _light_dir = -light_dir;
-                    _light_up = light_up;
-                } else if (i == 2) {
-                    _light_dir = light_side;
-                    _light_up = -light_dir;
-                } else if (i == 3) {
-                    _light_dir = -light_side;
-                    _light_up = -light_dir;
-                } else if (i == 0) {
-                    _light_dir = light_up;
-                    _light_up = -light_dir;
-                } else if (i == 1) {
-                    _light_dir = -light_up;
-                    _light_up = -light_dir;
                 }
 
                 Camera shadow_cam;
@@ -1119,8 +1110,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 // TODO: Check visibility of shadow frustum itself
 
-                const Mat4f clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
-
                 ShadowList &sh_list = list.shadow_lists.data[list.shadow_lists.count++];
 
                 sh_list.shadow_map_pos[0] = sh_list.scissor_test_pos[0] = region->pos[0];
@@ -1133,20 +1122,13 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 }
                 sh_list.shadow_batch_start = list.shadow_batches.count;
                 sh_list.shadow_batch_count = 0;
-                sh_list.cam_near = region->cam_near = shadow_cam.near();
-                sh_list.cam_far = region->cam_far = shadow_cam.far();
                 sh_list.view_frustum_outline_count = 0;
                 sh_list.bias[0] = ls->shadow_bias[0];
                 sh_list.bias[1] = ls->shadow_bias[1];
 
-                ShadowMapRegion &reg = list.shadow_regions.data[list.shadow_regions.count++];
-                reg.transform = Vec4f{float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH,
-                                      float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
-                                      float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH,
-                                      float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT};
-                reg.clip_from_world = clip_from_world;
-
                 bool light_sees_dynamic_objects = false;
+
+                float near_clip = ls->cull_radius, far_clip = 0.0f;
 
                 const uint32_t skip_check_bit = (1u << 31u);
                 const uint32_t index_bits = ~skip_check_bit;
@@ -1185,6 +1167,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
                                 continue;
                             }
+
+                            const float max_extent = 0.5f * Distance(tr.bbox_min, tr.bbox_max);
+                            const float dist = Distance(light_center, 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws));
+                            near_clip = std::min(near_clip, dist - max_extent);
+                            far_clip = std::max(far_clip, dist + max_extent);
 
                             const Mesh *mesh = dr.mesh.get();
 
@@ -1242,6 +1229,19 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
                     }
                 }
+
+                shadow_cam.Perspective(light_angle, 1.0f, std::max(ls->cull_offset, near_clip),
+                                       std::min(ls->cull_radius, far_clip));
+
+                sh_list.cam_near = region->cam_near = shadow_cam.near();
+                sh_list.cam_far = region->cam_far = shadow_cam.far();
+
+                ShadowMapRegion &reg = list.shadow_regions.data[list.shadow_regions.count++];
+                reg.transform = Vec4f{float(sh_list.shadow_map_pos[0]) / SHADOWMAP_WIDTH,
+                                      float(sh_list.shadow_map_pos[1]) / SHADOWMAP_HEIGHT,
+                                      float(sh_list.shadow_map_size[0]) / SHADOWMAP_WIDTH,
+                                      float(sh_list.shadow_map_size[1]) / SHADOWMAP_HEIGHT};
+                reg.clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
 
                 if (!light_sees_dynamic_objects && region->last_update != 0xffffffff &&
                     (scene.update_counter - region->last_update > 2)) {
