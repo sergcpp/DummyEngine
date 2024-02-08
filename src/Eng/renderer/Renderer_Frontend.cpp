@@ -446,30 +446,32 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 litem_to_lsource_.count < REN_MAX_LIGHTS_TOTAL) {
                 const LightSource &light = lights_src[obj.components[CompLightSource]];
 
-                auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
-                pos = tr.world_from_object * pos;
-                pos /= pos[3];
+                if (light.col[0] > 0.0f || light.col[1] > 0.0f || light.col[2] > 0.0f) {
+                    auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
+                    pos = tr.world_from_object * pos;
+                    pos /= pos[3];
 
-                auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
-                dir = tr.world_from_object * dir;
+                    auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
+                    dir = tr.world_from_object * dir;
 
-                const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
-                const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
+                    const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
+                    const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
-                litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
-                LightItem &ls = list.lights.data[list.lights.count++];
+                    litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
+                    LightItem &ls = list.lights.data[list.lights.count++];
 
-                ls.col[0] = light.col[0] / light.area;
-                ls.col[1] = light.col[1] / light.area;
-                ls.col[2] = light.col[2] / light.area;
-                ls.type = int(light.type);
-                memcpy(ls.pos, &pos[0], 3 * sizeof(float));
-                ls.radius = light.radius;
-                memcpy(ls.dir, &dir[0], 3 * sizeof(float));
-                ls.spot = light.spot;
-                memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
-                ls.shadowreg_index = -1;
-                memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
+                    ls.col[0] = light.col[0] / light.area;
+                    ls.col[1] = light.col[1] / light.area;
+                    ls.col[2] = light.col[2] / light.area;
+                    ls.type = int(light.type);
+                    memcpy(ls.pos, &pos[0], 3 * sizeof(float));
+                    ls.radius = light.radius;
+                    memcpy(ls.dir, &dir[0], 3 * sizeof(float));
+                    ls.spot = light.spot;
+                    memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
+                    ls.shadowreg_index = -1;
+                    memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
+                }
             }
 
             if (decals_enabled && (obj.comp_mask & CompDecalBit) && ditem_to_decal_.count < REN_MAX_DECALS_TOTAL) {
@@ -1029,8 +1031,13 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             // Try to allocate best resolution possible
             // TODO: make all regions use the same resolution
             for (; res_index < 4 && !regions[r]; res_index++) {
+                int alloc_res[2] = {ShadowResolutions[res_index][0], ShadowResolutions[res_index][1]};
+                if (r < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
+                    // allocate half of a region
+                    alloc_res[1] /= 2;
+                }
                 int pos[2];
-                int node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
+                int node = shadow_splitter_.Allocate(alloc_res, pos);
                 if (node == -1 && allocated_shadow_regions_.count) {
                     ShadReg *oldest = &allocated_shadow_regions_.data[0];
                     for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
@@ -1039,11 +1046,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
                     }
                     if ((scene.update_counter - oldest->last_visible) > 10) {
-                        // kick out one of old cached region
+                        // kick out one of old cached regions
                         shadow_splitter_.Free(oldest->pos);
                         *oldest = allocated_shadow_regions_.data[--allocated_shadow_regions_.count];
                         // try again to insert
-                        node = shadow_splitter_.Allocate(ShadowResolutions[res_index], pos);
+                        node = shadow_splitter_.Allocate(alloc_res, pos);
                     }
                 }
                 if (node != -1) {
@@ -1085,22 +1092,30 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     _light_up = light_up;
                 } else if (i == 2) {
                     _light_dir = light_side;
-                    _light_up = light_up;
+                    _light_up = -light_dir;
                 } else if (i == 3) {
                     _light_dir = -light_side;
-                    _light_up = light_up;
+                    _light_up = -light_dir;
                 } else if (i == 0) {
                     _light_dir = light_up;
-                    _light_up = light_side;
+                    _light_up = -light_dir;
                 } else if (i == 1) {
                     _light_dir = -light_up;
-                    _light_up = light_side;
+                    _light_up = -light_dir;
                 }
 
                 Camera shadow_cam;
                 shadow_cam.SetupView(light_center, light_center + _light_dir, _light_up);
                 shadow_cam.Perspective(light_angle, 1.0f, ls->cull_offset, ls->cull_radius);
                 shadow_cam.UpdatePlanes();
+
+                if (i < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
+                    // cut top half of a frustum
+                    Ren::Plane plane;
+                    plane.n = _light_up;
+                    plane.d = Dot(plane.n, light_center);
+                    shadow_cam.set_frustum_plane(Ren::eCamPlane::Top, plane);
+                }
 
                 // TODO: Check visibility of shadow frustum itself
 
@@ -1112,6 +1127,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 sh_list.shadow_map_pos[1] = sh_list.scissor_test_pos[1] = region->pos[1];
                 sh_list.shadow_map_size[0] = sh_list.scissor_test_size[0] = region->size[0];
                 sh_list.shadow_map_size[1] = sh_list.scissor_test_size[1] = region->size[1];
+                if (i < 4 && (ls->type == eLightType::Rect || ls->type == eLightType::Disk)) {
+                    // set to half of a region
+                    sh_list.scissor_test_size[1] /= 2;
+                }
                 sh_list.shadow_batch_start = list.shadow_batches.count;
                 sh_list.shadow_batch_count = 0;
                 sh_list.cam_near = region->cam_near = shadow_cam.near();
