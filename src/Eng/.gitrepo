@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 82e83c2df00cf34d0a665a74e9f3e8620a3536cb
+	branch = area_shadows
+	commit = 5e74d5c9204a0e1a8ab88a8c411a3f3f095bec4e
 	method = merge
 	cmdver = 0.4.6
-	parent = 035167839c92d58a2b7217781d9d3aada92e90e6
+	parent = 463be0f615fd61bdaece2234bcaab0ed4a7f2360
