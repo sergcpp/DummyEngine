@@ -91,6 +91,8 @@ class Camera {
     const Plane &frustum_plane_vs(const int i) const { return frustum_vs_.planes[i]; }
     const Plane &frustum_plane_vs(const eCamPlane i) const { return frustum_vs_.planes[int(i)]; }
 
+    void set_frustum_plane(const eCamPlane i, const Plane &plane) { frustum_.planes[int(i)] = plane; }
+
     bool is_orthographic() const { return is_orthographic_; }
 
     void Perspective(float angle, float aspect, float near, float far);
