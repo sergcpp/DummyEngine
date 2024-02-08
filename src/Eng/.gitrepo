@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = half_cube
-	commit = 4df6ba82d23e8a8153acb4c716d471d1f7cea028
+	branch = depth_bounds
+	commit = 6f91231a85936b86feba375b3904b477aafa4f9f
 	method = merge
 	cmdver = 0.4.6
-	parent = e799a9fe841f6026c8b02a15675d19de77c6f368
+	parent = 29532f1dbba2eb334b601e836d857a2a890d4649
