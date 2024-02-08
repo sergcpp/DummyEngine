@@ -997,9 +997,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         const int ShadowResolutions[][2] = {{512, 512}, {256, 256}, {128, 128}, {64, 64}};
 
         SmallVector<ShadReg *, 6> regions;
-        if (ls->type == eLightType::Sphere || ls->type == eLightType::Rect || ls->type == eLightType::Disk ||
-            ls->type == eLightType::Line) {
+        if (ls->type == eLightType::Sphere || ls->type == eLightType::Line) {
             regions.resize(6, nullptr);
+        } else if (ls->type == eLightType::Rect || ls->type == eLightType::Disk) {
+            regions.resize(5, nullptr);
         } else {
             regions.resize(1, nullptr);
         }
@@ -1076,16 +1077,22 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 ShadReg *region = regions[i];
 
                 Vec3f _light_dir = light_dir, _light_up = light_up;
-                if (i == 1) {
+                if (i == 4) {
+                    _light_dir = light_dir;
+                    _light_up = light_up;
+                } else if (i == 5) {
                     _light_dir = -light_dir;
+                    _light_up = light_up;
                 } else if (i == 2) {
                     _light_dir = light_side;
+                    _light_up = light_up;
                 } else if (i == 3) {
                     _light_dir = -light_side;
-                } else if (i == 4) {
+                    _light_up = light_up;
+                } else if (i == 0) {
                     _light_dir = light_up;
                     _light_up = light_side;
-                } else if (i == 5) {
+                } else if (i == 1) {
                     _light_dir = -light_up;
                     _light_up = light_side;
                 }

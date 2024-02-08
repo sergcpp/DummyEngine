@@ -72,21 +72,21 @@ vec3 EvaluateLightSource() {
 
 int cubemap_face(vec3 dir) {
     if (abs(dir.x) >= abs(dir.y) && abs(dir.x) >= abs(dir.z)) {
-        return dir.x > 0.0 ? 0 : 1;
+        return dir.x > 0.0 ? 4 : 5;
     } else if (abs(dir.y) >= abs(dir.z)) {
         return dir.y > 0.0 ? 2 : 3;
     }
-    return dir.z > 0.0 ? 4 : 5;
+    return dir.z > 0.0 ? 0 : 1;
 }
 
 int cubemap_face(vec3 _dir, vec3 f, vec3 u, vec3 v) {
     vec3 dir = vec3(-dot(_dir, f), dot(_dir, u), dot(_dir, v));
     if (abs(dir.x) >= abs(dir.y) && abs(dir.x) >= abs(dir.z)) {
-        return dir.x > 0.0 ? 0 : 1;
+        return dir.x > 0.0 ? 4 : 5;
     } else if (abs(dir.y) >= abs(dir.z)) {
         return dir.y > 0.0 ? 2 : 3;
     }
-    return dir.z > 0.0 ? 4 : 5;
+    return dir.z > 0.0 ? 0 : 1;
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
@@ -223,9 +223,15 @@ void main() {
 
         const bool TwoSided = false;
 
+        int type = floatBitsToInt(col_and_type.w);
+        vec3 to_light = normalize(pos_ws.xyz - pos_and_radius.xyz);
+        if (type != LIGHT_TYPE_SPHERE && dot(to_light, dir_and_spot.xyz) > 0.0) {
+            continue;
+        }
+
         int shadowreg_index = floatBitsToInt(u_and_reg.w);
         if (shadowreg_index != -1) {
-            shadowreg_index += cubemap_face(normalize(pos_ws.xyz - pos_and_radius.xyz), dir_and_spot.xyz, normalize(u_and_reg.xyz), normalize(v_and_unused.xyz));
+            shadowreg_index += cubemap_face(to_light, dir_and_spot.xyz, normalize(u_and_reg.xyz), normalize(v_and_unused.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
             vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(pos_ws.xyz, 1.0);
@@ -244,23 +250,19 @@ void main() {
             col_and_type.xyz *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
         }
 
-        int type = floatBitsToInt(col_and_type.w);
         if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
-            vec3 lp = pos_and_radius.xyz;
-
             // TODO: simplify this!
-            vec3 to = normalize(pos_ws.xyz - lp);
-            vec3 u = normalize(V - to * dot(V, to));
-            vec3 v = cross(to, u);
+            vec3 u = normalize(V - to_light * dot(V, to_light));
+            vec3 v = cross(to_light, u);
 
             u *= pos_and_radius.w;
             v *= pos_and_radius.w;
 
             vec3 points[4];
-            points[0] = lp + u + v;
-            points[1] = lp + u - v;
-            points[2] = lp - u - v;
-            points[3] = lp - u + v;
+            points[0] = pos_and_radius.xyz + u + v;
+            points[1] = pos_and_radius.xyz + u - v;
+            points[2] = pos_and_radius.xyz - u - v;
+            points[3] = pos_and_radius.xyz - u + v;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;
@@ -294,13 +296,11 @@ void main() {
                 additional_light += 0.25 * col_and_type.xyz * coat / M_PI;
             }
         } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
-            vec3 lp = pos_and_radius.xyz;
-
             vec3 points[4];
-            points[0] = lp + u_and_reg.xyz + v_and_unused.xyz;
-            points[1] = lp + u_and_reg.xyz - v_and_unused.xyz;
-            points[2] = lp - u_and_reg.xyz - v_and_unused.xyz;
-            points[3] = lp - u_and_reg.xyz + v_and_unused.xyz;
+            points[0] = pos_and_radius.xyz + u_and_reg.xyz + v_and_unused.xyz;
+            points[1] = pos_and_radius.xyz + u_and_reg.xyz - v_and_unused.xyz;
+            points[2] = pos_and_radius.xyz - u_and_reg.xyz - v_and_unused.xyz;
+            points[3] = pos_and_radius.xyz - u_and_reg.xyz + v_and_unused.xyz;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;
@@ -334,13 +334,11 @@ void main() {
                 additional_light += 0.25 * col_and_type.xyz * coat / 4.0;
             }
         } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
-            vec3 lp = pos_and_radius.xyz;
-
             vec3 points[4];
-            points[0] = lp + u_and_reg.xyz + v_and_unused.xyz;
-            points[1] = lp + u_and_reg.xyz - v_and_unused.xyz;
-            points[2] = lp - u_and_reg.xyz - v_and_unused.xyz;
-            points[3] = lp - u_and_reg.xyz + v_and_unused.xyz;
+            points[0] = pos_and_radius.xyz + u_and_reg.xyz + v_and_unused.xyz;
+            points[1] = pos_and_radius.xyz + u_and_reg.xyz - v_and_unused.xyz;
+            points[2] = pos_and_radius.xyz - u_and_reg.xyz - v_and_unused.xyz;
+            points[3] = pos_and_radius.xyz - u_and_reg.xyz + v_and_unused.xyz;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;
@@ -374,11 +372,9 @@ void main() {
                 additional_light += 0.25 * col_and_type.xyz * coat / 4.0;
             }
         } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
-            vec3 lp = pos_and_radius.xyz;
-
             vec3 points[2];
-            points[0] = lp + v_and_unused.xyz;
-            points[1] = lp - v_and_unused.xyz;
+            points[0] = pos_and_radius.xyz + v_and_unused.xyz;
+            points[1] = pos_and_radius.xyz - v_and_unused.xyz;
 
             if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
                 vec3 dcol = base_color;
