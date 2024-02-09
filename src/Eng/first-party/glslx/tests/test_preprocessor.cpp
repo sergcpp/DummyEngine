@@ -687,6 +687,27 @@ int main(int argc, char** argv) {
         require(preprocessor.Process() == expected);
         require(preprocessor.error().empty());
     }
+    { // extension macros
+        static const char source[] = "#version 450\n"
+                                     "#extension GL_KHR_shader_subgroup_basic : enable\n"
+                                     "#if defined(GL_KHR_shader_subgroup_basic)\n"
+                                     "#define NUM 42\n"
+                                     "#else\n"
+                                     "#define NUM 24\n"
+                                     "#endif\n"
+                                     "int func() {\n"
+                                     "    return NUM;\n"
+                                     "}";
+        static const char expected[] = "#version 450\n"
+                                       "#extension GL_KHR_shader_subgroup_basic : enable\n"
+                                       "\n"
+                                       "int func() {\n"
+                                       "    return 42;\n"
+                                       "}";
+        glslx::Preprocessor preprocessor(source);
+        require(preprocessor.Process() == expected);
+        require(preprocessor.error().empty());
+    }
 
     printf("OK\n");
 }

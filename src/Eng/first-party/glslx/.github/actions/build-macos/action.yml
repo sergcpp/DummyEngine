@@ -12,7 +12,7 @@ runs:
     - run: |
         WORK_DIR=`pwd`
         cd ../../builds/glslx
-        #python3 scripts/update_version_string.py glslx.cpp
+        python3 scripts/update_version_string.py glslx.cpp
         mkdir build
         cd build
         cmake .. -DCMAKE_BUILD_TYPE=${{ inputs.config }} ${{ inputs.cmake-args }}

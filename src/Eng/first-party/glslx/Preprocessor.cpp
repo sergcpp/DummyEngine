@@ -22,7 +22,7 @@ bool is_escape_sequence(const std::string &str, size_t pos) {
     return false;
 }
 bool is_separator(const char ch) {
-    static const char Separators[] = ",()<>\"+-*/&|!=;";
+    static const char Separators[] = ",()<>\"+-*/&|!=:;";
     for (int i = 0; i < sizeof(Separators) - 1; ++i) {
         if (Separators[i] == ch) {
             return true;
@@ -47,9 +47,9 @@ glslx::Preprocessor::Preprocessor(std::unique_ptr<std::istream> stream, const pr
                                          {"endif", eTokenType::Endif},
                                          {"include", eTokenType::Include},
                                          {"defined", eTokenType::Defined},
+                                         {"extension", eTokenType::Extension},
                                          {"line", eTokenType::PassthroughDirective},
                                          {"version", eTokenType::PassthroughDirective},
-                                         {"extension", eTokenType::PassthroughDirective},
                                          {"pragma", eTokenType::PassthroughDirective}},
       macros_{{"__LINE__"}} {
     streams_.push_back(std::move(stream));
@@ -175,6 +175,15 @@ std::string glslx::Preprocessor::Process() {
             if (!ShouldTokenBeSkipped()) {
                 output.append("#");
                 output.append(curr_token.raw_view);
+            }
+            break;
+        case eTokenType::Extension:
+            if (!ShouldTokenBeSkipped()) {
+                output.append("#");
+                output.append(curr_token.raw_view);
+                if (!ProcessExtension(output)) {
+                    return {};
+                }
             }
             break;
         default:
@@ -478,6 +487,8 @@ glslx::Preprocessor::token_t glslx::Preprocessor::ScanSeparator(const char ch, s
             return {eTokenType::Equal, "==", source_line_, curr_pos_};
         }
         return {eTokenType::Blob, "=", source_line_, curr_pos_};
+    case ':':
+        return {eTokenType::Colon, ":", source_line_, curr_pos_};
     case ';':
         return {eTokenType::Semicolon, ";", source_line_, curr_pos_};
     }
@@ -673,6 +684,48 @@ bool glslx::Preprocessor::ProcessInclude() {
     if (!streams_.back() || !streams_.back()->good()) {
         error_ = "Failed to include '" + path + "'";
         return false;
+    }
+    return true;
+}
+
+bool glslx::Preprocessor::ProcessExtension(std::string &output) {
+    token_t curr_token = GetNextToken();
+    output.append(curr_token.raw_view);
+    if (!expect(eTokenType::Space, curr_token.type)) {
+        return false;
+    }
+    curr_token = GetNextToken();
+    output.append(curr_token.raw_view);
+    if (!expect(eTokenType::Identifier, curr_token.type)) {
+        return false;
+    }
+    const std::string extension_name = curr_token.raw_view;
+    curr_token = GetNextToken();
+    output.append(curr_token.raw_view);
+    if (!expect(eTokenType::Space, curr_token.type)) {
+        return false;
+    }
+    curr_token = GetNextToken();
+    output.append(curr_token.raw_view);
+    if (!expect(eTokenType::Colon, curr_token.type)) {
+        return false;
+    }
+    curr_token = GetNextToken();
+    output.append(curr_token.raw_view);
+    if (!expect(eTokenType::Space, curr_token.type)) {
+        return false;
+    }
+    curr_token = GetNextToken();
+    output.append(curr_token.raw_view);
+    if (!expect(eTokenType::Identifier, curr_token.type)) {
+        return false;
+    }
+    if (curr_token.raw_view != "disable") {
+        macro_desc_t macro_desc;
+        macro_desc.name = extension_name;
+        macro_desc.value.push_back({eTokenType::Number, "1", source_line_});
+
+        macros_.push_back(macro_desc);
     }
     return true;
 }
@@ -879,10 +932,11 @@ glslx::Preprocessor::ExpandMacroDefinition(const macro_desc_t &macro, const toke
     for (int arg_index = 0; arg_index < int(processing_tokens.size()); ++arg_index) {
         const std::string &arg_name = macro.arg_names[arg_index];
 
-        for (auto it = begin(replacement_list); it != end(replacement_list); ) {
+        for (auto it = begin(replacement_list); it != end(replacement_list);) {
             if (it->type == eTokenType::Identifier && it->raw_view == arg_name) {
                 it = replacement_list.erase(it);
-                it = replacement_list.insert(it, begin(processing_tokens[arg_index]), end(processing_tokens[arg_index]));
+                it =
+                    replacement_list.insert(it, begin(processing_tokens[arg_index]), end(processing_tokens[arg_index]));
                 it += processing_tokens[arg_index].size();
             } else {
                 ++it;

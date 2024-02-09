@@ -81,9 +81,11 @@ class Preprocessor {
         LessEqual,
         Equal,
         NotEqual,
+        Colon,
         Semicolon,
         PassthroughDirective,
-        Comment
+        Comment,
+        Extension
     };
 
     struct token_t {
@@ -145,6 +147,7 @@ class Preprocessor {
     bool RemoveMacroDefinition(const std::string &macro_name);
 
     bool ProcessInclude();
+    bool ProcessExtension(std::string &output);
 
     bool ProcessIf();
     bool ProcessIfdef();

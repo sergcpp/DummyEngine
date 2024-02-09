@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
     { // preprocess input file
         glslx::Preprocessor preprocessor(std::make_unique<std::ifstream>(input_name, std::ios::binary),
                                          preprocessor_config);
-        preprocessed_source += preprocessor.Process();
+        preprocessed_source = preprocessor.Process();
         if (!preprocessor.error().empty()) {
             printf("Failed to preprocess shader: %s\n", preprocessor.error().data());
             return -1;
