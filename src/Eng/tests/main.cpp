@@ -53,16 +53,18 @@ int main(int argc, char *argv[]) {
     test_widgets();
 
     const char *device_name = nullptr;
-    bool multithreaded = false;
+    int threads_count = 1;
     int validation_level = 2;
 
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {
             device_name = argv[i];
-        } else if (strcmp(argv[i], "--mt") == 0) {
-            multithreaded = true;
+        } else if (strcmp(argv[i], "-j") == 0 && (++i != argc)) {
+            threads_count = atoi(argv[++i]);
+        } else if (strncmp(argv[i], "-j", 2) == 0) {
+            threads_count = atoi(&argv[i][2]);
         } else if (strcmp(argv[i], "--validation_level") == 0 || strcmp(argv[i], "-vl") == 0) {
-            validation_level = std::atoi(argv[++i]);
+            validation_level = atoi(argv[++i]);
         }
     }
 
@@ -72,7 +74,7 @@ int main(int argc, char *argv[]) {
     InitAndDestroyFakeGLContext();
 #endif
 
-    Sys::ThreadPool mt_run_pool(multithreaded ? 4 : 1);
+    Sys::ThreadPool mt_run_pool(threads_count);
 
     puts(" ---------------");
 

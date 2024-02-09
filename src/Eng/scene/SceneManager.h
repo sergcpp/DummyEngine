@@ -45,8 +45,8 @@ namespace SceneManagerInternal {
 // TODO: remove this from header file
 struct AssetCache {
     JsObjectP js_db;
-    Ren::HashMap32<const char *, int> db_map;
-    Ren::HashMap32<const char *, uint32_t> texture_averages;
+    Ren::HashMap32<std::string, int> db_map;
+    Ren::HashMap32<std::string, uint32_t> texture_averages;
 
     explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
 

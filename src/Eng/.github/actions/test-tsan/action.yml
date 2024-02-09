@@ -1,8 +1,5 @@
 name: 'Test'
 inputs:
-  bin-name:
-    required: false
-    default: "test_glslx"
   bin-dir:
     required: true
   test-args:
@@ -16,8 +13,10 @@ runs:
         path: ${{ inputs.bin-dir }}/
     - run: |
         export ASAN_OPTIONS="windows_hook_legacy_allocators=false"
-        chmod +x ./${{ inputs.bin-dir }}/${{ inputs.bin-name }}
+        chmod +x ./${{ inputs.bin-dir }}/test_Eng-tsan
         WORK_DIR=`pwd`
-        cd ../../builds/glslx/tests
-        $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ${{ inputs.test-args }}
+        cd ../../builds/Eng
+        cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng-tsan ${{ inputs.test-args }}
+        cd ../../..
       shell: bash
