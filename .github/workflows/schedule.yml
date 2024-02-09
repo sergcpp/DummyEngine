@@ -119,6 +119,29 @@ jobs:
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "RelWithDebInfo"
+  build-windows-x86_64-vk-asan:
+    runs-on: [ windows, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-windows
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "Asan"
+          bin-dir: "windows-x86_64-vk-asan"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-x86_64-vk-asan
+          path: windows-x86_64-vk-asan/
   build-linux-x86_64-gl-rel:
     runs-on: [ linux, builder ]
     defaults:
@@ -233,3 +256,26 @@ jobs:
         with:
           cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
           config: "RelWithDebInfo"
+  build-linux-x86_64-vk-tsan:
+    runs-on: [ linux, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-linux
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON"
+          config: "Tsan"
+          bin-dir: "linux-x86_64-vk-tsan"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: linux-x86_64-vk-tsan
+          path: linux-x86_64-vk-tsan/
