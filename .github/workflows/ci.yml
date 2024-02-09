@@ -111,7 +111,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-gl"
-          test-args: "--mt"
+          test-args: "-j4"
   test-windows-x86_64-vk-amd:
     runs-on: [ windows, x86_64, amd ]
     needs:
@@ -127,7 +127,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
-          test-args: "--mt --device AMD --nocpu"
+          test-args: "-j4 --device AMD --nocpu"
   test-windows-x86_64-vk-nv:
     runs-on: [ windows, x86_64, nv ]
     needs:
@@ -143,7 +143,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
-          test-args: "--mt --device NV --nocpu"
+          test-args: "-j4 --device NV --nocpu"
   test-windows-x86_64-vk-arc:
     runs-on: [ windows, x86_64, arc ]
     needs:
@@ -159,7 +159,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
-          test-args: "--mt --device Arc --nocpu"
+          test-args: "-j4 --device Arc --nocpu"
   test-windows-x86_64-vk-xe:
     runs-on: [ windows, x86_64, xe ]
     needs:
@@ -175,7 +175,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
-          test-args: "--mt --device Xe --validation_level 1 --nocpu"
+          test-args: "-j4 --device Xe --validation_level 1 --nocpu"
   # test-linux-x86_64-gl:
   #   runs-on: [ linux, x86_64 ]
   #   needs:
@@ -191,7 +191,7 @@ jobs:
   #       uses: ./.github/actions/test
   #       with:
   #         bin-dir: "linux-x86_64-gl"
-  #         test-args: "--mt"
+  #         test-args: "-j4"
   test-linux-x86_64-vk-amd:
     runs-on: [ linux, x86_64, amd ]
     needs:
@@ -207,7 +207,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
-          test-args: "--mt --device AMD --nocpu"
+          test-args: "-j4 --device AMD --nocpu"
   test-linux-x86_64-vk-nv:
     runs-on: [ linux, x86_64, nv ]
     needs:
@@ -223,4 +223,4 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
-          test-args: "--mt --device NV --nocpu"
+          test-args: "-j4 --device NV --nocpu"
