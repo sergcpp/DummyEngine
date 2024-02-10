@@ -6,21 +6,10 @@
 #endif
 
 #include "_fs_common.glsl"
-#include "_ltc.glsl"
 #include "_principled.glsl"
 #include "gbuffer_shade_interface.h"
 
 #define LIGHT_ATTEN_CUTOFF 0.004
-
-#define ENABLE_SPHERE_LIGHT 1
-#define ENABLE_RECT_LIGHT 1
-#define ENABLE_DISK_LIGHT 1
-#define ENABLE_LINE_LIGHT 1
-
-#define ENABLE_DIFFUSE 1
-#define ENABLE_SHEEN 1
-#define ENABLE_SPECULAR 1
-#define ENABLE_CLEARCOAT 1
 
 /*
 PERM @HQ_HDR
@@ -47,39 +36,13 @@ layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
 layout(binding = SUN_SHADOW_TEX_SLOT) uniform sampler2D g_sun_shadow_tex;
-layout(binding = LTC_DIFF_LUT_TEX_SLOT) uniform sampler2D g_ltc_diff_lut[2];
-layout(binding = LTC_SHEEN_LUT_TEX_SLOT) uniform sampler2D g_ltc_sheen_lut[2];
-layout(binding = LTC_SPEC_LUT_TEX_SLOT) uniform sampler2D g_ltc_spec_lut[2];
-layout(binding = LTC_COAT_LUT_TEX_SLOT) uniform sampler2D g_ltc_coat_lut[2];
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts[8];
 
 #ifdef HQ_HDR
 layout(binding = OUT_COLOR_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
 #else
 layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
 #endif
-
-vec3 EvaluateLightSource() {
-    return vec3(0.0);
-}
-
-int cubemap_face(vec3 dir) {
-    if (abs(dir.x) >= abs(dir.y) && abs(dir.x) >= abs(dir.z)) {
-        return dir.x > 0.0 ? 4 : 5;
-    } else if (abs(dir.y) >= abs(dir.z)) {
-        return dir.y > 0.0 ? 2 : 3;
-    }
-    return dir.z > 0.0 ? 0 : 1;
-}
-
-int cubemap_face(vec3 _dir, vec3 f, vec3 u, vec3 v) {
-    vec3 dir = vec3(-dot(_dir, f), dot(_dir, u), dot(_dir, v));
-    if (abs(dir.x) >= abs(dir.y) && abs(dir.x) >= abs(dir.z)) {
-        return dir.x > 0.0 ? 4 : 5;
-    } else if (abs(dir.y) >= abs(dir.z)) {
-        return dir.y > 0.0 ? 2 : 3;
-    }
-    return dir.z > 0.0 ? 0 : 1;
-}
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
@@ -124,11 +87,10 @@ void main() {
     //
     vec3 additional_light = vec3(0.0);
 
-    vec3 V = normalize(g_shrd_data.cam_pos_and_gamma.xyz - pos_ws.xyz);
-    float N_dot_V = saturate(dot(normal.xyz, V));
-
-    vec3 I = V;
+    vec3 P = pos_ws.xyz;
+    vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
     vec3 N = normal.xyz;
+    float N_dot_V = saturate(dot(N, I));
 
     vec3 tint_color = vec3(0.0);
 
@@ -162,9 +124,7 @@ void main() {
     vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
     float spec_color_lum = lum(approx_spec_col);
 
-    float diffuse_weight, specular_weight, clearcoat_weight, refraction_weight;
-    get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat,
-                     diffuse_weight, specular_weight, clearcoat_weight, refraction_weight);
+    lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
     vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
@@ -174,7 +134,6 @@ void main() {
 
     // Approximation of FH (using shading normal)
     float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
-
     vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
     //
@@ -182,19 +141,17 @@ void main() {
     //
 
     vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
-
-    vec4 diff_t1 = textureLod(g_ltc_diff_lut[0], ltc_uv, 0.0);
-    vec2 diff_t2 = textureLod(g_ltc_diff_lut[1], ltc_uv, 0.0).xy;
-
-    vec4 sheen_t1 = textureLod(g_ltc_sheen_lut[0], ltc_uv, 0.0);
-    vec2 sheen_t2 = textureLod(g_ltc_sheen_lut[1], ltc_uv, 0.0).xy;
-
-    vec4 spec_t1 = textureLod(g_ltc_spec_lut[0], ltc_uv, 0.0);
-    vec2 spec_t2 = textureLod(g_ltc_spec_lut[1], ltc_uv, 0.0).xy;
-
     vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
-    vec4 coat_t1 = textureLod(g_ltc_coat_lut[0], coat_ltc_uv, 0.0);
-    vec2 coat_t2 = textureLod(g_ltc_coat_lut[1], coat_ltc_uv, 0.0).xy;
+
+    ltc_params_t ltc;
+    ltc.diff_t1 = textureLod(g_ltc_luts[0], ltc_uv, 0.0);
+    ltc.diff_t2 = textureLod(g_ltc_luts[1], ltc_uv, 0.0).xy;
+    ltc.sheen_t1 = textureLod(g_ltc_luts[2], ltc_uv, 0.0);
+    ltc.sheen_t2 = textureLod(g_ltc_luts[3], ltc_uv, 0.0).xy;
+    ltc.spec_t1 = textureLod(g_ltc_luts[4], ltc_uv, 0.0);
+    ltc.spec_t2 = textureLod(g_ltc_luts[5], ltc_uv, 0.0).xy;
+    ltc.coat_t1 = textureLod(g_ltc_luts[6], coat_ltc_uv, 0.0);
+    ltc.coat_t2 = textureLod(g_ltc_luts[7], coat_ltc_uv, 0.0).xy;
 
     //
     // Evaluate lights
@@ -206,27 +163,27 @@ void main() {
         highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int li = int(bitfieldExtract(item_data, 0, 12));
 
-        vec4 col_and_type = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
-        vec4 pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
-        vec4 dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
+        light_item_t litem;
+        litem.col_and_type = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
+        litem.pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
+        litem.dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
+        litem.u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
+        litem.v_and_unused = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
 
-        vec4 u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
-        vec4 v_and_unused = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
-
-        const bool TwoSided = false;
-
-        int type = floatBitsToInt(col_and_type.w);
-        vec3 to_light = normalize(pos_ws.xyz - pos_and_radius.xyz);
-        if (type != LIGHT_TYPE_SPHERE && type != LIGHT_TYPE_LINE && dot(to_light, dir_and_spot.xyz) > 0.0) {
+        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc,
+                                                      g_ltc_luts[1], g_ltc_luts[3], g_ltc_luts[5], g_ltc_luts[7],
+                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+        if (all(equal(light_contribution, vec3(0.0)))) {
             continue;
         }
 
-        int shadowreg_index = floatBitsToInt(u_and_reg.w);
+        int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
         if (shadowreg_index != -1) {
-            shadowreg_index += cubemap_face(to_light, dir_and_spot.xyz, normalize(u_and_reg.xyz), normalize(v_and_unused.xyz));
+            vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
+            shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_unused.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
-            vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(pos_ws.xyz, 1.0);
+            vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
             pp /= pp.w;
 
             #if defined(VULKAN)
@@ -239,167 +196,10 @@ void main() {
                 pp.y = 1.0 - pp.y;
             #endif // VULKAN
 
-            col_and_type.xyz *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+            light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
         }
 
-        if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
-            // TODO: simplify this!
-            vec3 u = normalize(V - to_light * dot(V, to_light));
-            vec3 v = cross(to_light, u);
-
-            u *= pos_and_radius.w;
-            v *= pos_and_radius.w;
-
-            vec3 points[4];
-            points[0] = pos_and_radius.xyz + u + v;
-            points[1] = pos_and_radius.xyz + u - v;
-            points[2] = pos_and_radius.xyz - u - v;
-            points[3] = pos_and_radius.xyz - u + v;
-
-            if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
-                vec3 dcol = base_color;
-
-                vec3 diff = LTC_Evaluate_Disk(g_ltc_diff_lut[1], N, V, pos_ws.xyz, diff_t1, points, TwoSided);
-                diff *= dcol * diff_t2.x;// + (1.0 - dcol) * diff_t2.y;
-
-                if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                    vec3 _sheen = LTC_Evaluate_Disk(g_ltc_sheen_lut[1], N, V, pos_ws.xyz, sheen_t1, points, TwoSided);
-                    diff += _sheen * (sheen_color * sheen_t2.x + (1.0 - sheen_color) * sheen_t2.y);
-                }
-
-                additional_light += col_and_type.xyz * diff / M_PI;
-            }
-
-            if (specular_weight > 0.0 && ENABLE_SPECULAR != 0) {
-                vec3 scol = approx_spec_col;
-
-                vec3 spec = LTC_Evaluate_Disk(g_ltc_spec_lut[1], N, V, pos_ws.xyz, spec_t1, points, TwoSided);
-                spec *= scol * spec_t2.x + (1.0 - scol) * spec_t2.y;
-
-                additional_light += col_and_type.xyz * spec / M_PI;
-            }
-
-            if (clearcoat_weight > 0.0 && ENABLE_CLEARCOAT != 0) {
-                vec3 ccol = approx_clearcoat_col;
-
-                vec3 coat = LTC_Evaluate_Disk(g_ltc_coat_lut[1], N, V, pos_ws.xyz, coat_t1, points, TwoSided);
-                coat *= ccol * coat_t2.x + (1.0 - ccol) * coat_t2.y;
-
-                additional_light += 0.25 * col_and_type.xyz * coat / M_PI;
-            }
-        } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
-            vec3 points[4];
-            points[0] = pos_and_radius.xyz + u_and_reg.xyz + v_and_unused.xyz;
-            points[1] = pos_and_radius.xyz + u_and_reg.xyz - v_and_unused.xyz;
-            points[2] = pos_and_radius.xyz - u_and_reg.xyz - v_and_unused.xyz;
-            points[3] = pos_and_radius.xyz - u_and_reg.xyz + v_and_unused.xyz;
-
-            if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
-                vec3 dcol = base_color;
-
-                vec3 diff = LTC_Evaluate_Rect(g_ltc_diff_lut[1], N, V, pos_ws.xyz, diff_t1, points, TwoSided);
-                diff *= dcol * diff_t2.x;// + (1.0 - dcol) * diff_t2.y;
-
-                if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                    vec3 _sheen = LTC_Evaluate_Rect(g_ltc_sheen_lut[1], N, V, pos_ws.xyz, sheen_t1, points, TwoSided);
-                    diff += _sheen * (sheen_color * sheen_t2.x + (1.0 - sheen_color) * sheen_t2.y);
-                }
-
-                additional_light += col_and_type.xyz * diff / 4.0;
-            }
-
-            if (specular_weight > 0.0 && ENABLE_SPECULAR != 0) {
-                vec3 scol = approx_spec_col;
-
-                vec3 spec = LTC_Evaluate_Rect(g_ltc_spec_lut[1], N, V, pos_ws.xyz, spec_t1, points, TwoSided);
-                spec *= scol * spec_t2.x + (1.0 - scol) * spec_t2.y;
-
-                additional_light += col_and_type.xyz * spec / 4.0;
-            }
-
-            if (clearcoat_weight > 0.0 && ENABLE_CLEARCOAT != 0) {
-                vec3 ccol = approx_clearcoat_col;
-
-                vec3 coat = LTC_Evaluate_Rect(g_ltc_coat_lut[1], N, V, pos_ws.xyz, coat_t1, points, TwoSided);
-                coat *= ccol * coat_t2.x + (1.0 - ccol) * coat_t2.y;
-
-                additional_light += 0.25 * col_and_type.xyz * coat / 4.0;
-            }
-        } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
-            vec3 points[4];
-            points[0] = pos_and_radius.xyz + u_and_reg.xyz + v_and_unused.xyz;
-            points[1] = pos_and_radius.xyz + u_and_reg.xyz - v_and_unused.xyz;
-            points[2] = pos_and_radius.xyz - u_and_reg.xyz - v_and_unused.xyz;
-            points[3] = pos_and_radius.xyz - u_and_reg.xyz + v_and_unused.xyz;
-
-            if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
-                vec3 dcol = base_color;
-
-                vec3 diff = LTC_Evaluate_Disk(g_ltc_diff_lut[1], N, V, pos_ws.xyz, diff_t1, points, TwoSided);
-                diff *= dcol * diff_t2.x;// + (1.0 - dcol) * diff_t2.y;
-
-                if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                    vec3 _sheen = LTC_Evaluate_Disk(g_ltc_sheen_lut[1], N, V, pos_ws.xyz, sheen_t1, points, TwoSided);
-                    diff += _sheen * (sheen_color * sheen_t2.x + (1.0 - sheen_color) * sheen_t2.y);
-                }
-
-                additional_light += col_and_type.xyz * diff / 4.0;
-            }
-
-            if (specular_weight > 0.0 && ENABLE_SPECULAR != 0) {
-                vec3 scol = approx_spec_col;
-
-                vec3 spec = LTC_Evaluate_Disk(g_ltc_spec_lut[1], N, V, pos_ws.xyz, spec_t1, points, TwoSided);
-                spec *= scol * spec_t2.x + (1.0 - scol) * spec_t2.y;
-
-                additional_light += col_and_type.xyz * spec / 4.0;
-            }
-
-            if (clearcoat_weight > 0.0 && ENABLE_CLEARCOAT != 0) {
-                vec3 ccol = approx_clearcoat_col;
-
-                vec3 coat = LTC_Evaluate_Disk(g_ltc_coat_lut[1], N, V, pos_ws.xyz, coat_t1, points, TwoSided);
-                coat *= ccol * coat_t2.x + (1.0 - ccol) * coat_t2.y;
-
-                additional_light += 0.25 * col_and_type.xyz * coat / 4.0;
-            }
-        } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
-            vec3 points[2];
-            points[0] = pos_and_radius.xyz + v_and_unused.xyz;
-            points[1] = pos_and_radius.xyz - v_and_unused.xyz;
-
-            if (diffuse_weight > 0.0 && ENABLE_DIFFUSE != 0) {
-                vec3 dcol = base_color;
-
-                vec3 diff = LTC_Evaluate_Line(N, V, pos_ws.xyz, diff_t1, points, 0.01);
-                diff *= dcol * diff_t2.x;// + (1.0 - dcol) * diff_t2.y;
-
-                if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                    vec3 _sheen = LTC_Evaluate_Line(N, V, pos_ws.xyz, sheen_t1, points, 0.01);
-                    diff += _sheen * (sheen_color * sheen_t2.x + (1.0 - sheen_color) * sheen_t2.y);
-                }
-
-                additional_light += col_and_type.xyz * diff;
-            }
-
-            if (specular_weight > 0.0 && ENABLE_SPECULAR != 0) {
-                vec3 scol = approx_spec_col;
-
-                vec3 spec = LTC_Evaluate_Line(N, V, pos_ws.xyz, spec_t1, points, 0.01);
-                spec *= scol * spec_t2.x + (1.0 - scol) * spec_t2.y;
-
-                additional_light += col_and_type.xyz * spec;
-            }
-
-            if (clearcoat_weight > 0.0 && ENABLE_CLEARCOAT != 0) {
-                vec3 ccol = approx_clearcoat_col;
-
-                vec3 coat = LTC_Evaluate_Line(N, V, pos_ws.xyz, coat_t1, points, 0.01);
-                coat *= ccol * coat_t2.x + (1.0 - ccol) * coat_t2.y;
-
-                additional_light += 0.25 * col_and_type.xyz * coat / 4.0;
-            }
-        }
+        additional_light += light_contribution;
     }
 
     //
@@ -412,7 +212,7 @@ void main() {
         highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         int pi = int(bitfieldExtract(item_data, 24, 8));
 
-        float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, pos_ws.xyz);
+        float dist = distance(g_shrd_data.probes[pi].pos_and_radius.xyz, P);
         float fade = 1.0 - smoothstep(0.9, 1.0, dist / g_shrd_data.probes[pi].pos_and_radius.w);
 
         indirect_col += fade * EvalSHIrradiance_NonLinear(normal.xyz, g_shrd_data.probes[pi].sh_coeffs[0],
@@ -440,7 +240,7 @@ void main() {
         );
 
         /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-            vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * pos_ws).xyz;
+            vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(P, 1.0)).xyz;
     #if defined(VULKAN)
             shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
     #else // VULKAN

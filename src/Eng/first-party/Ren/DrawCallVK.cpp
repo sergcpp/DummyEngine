@@ -8,9 +8,9 @@
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
                                           Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
-    VkDescriptorImageInfo img_sampler_infos[16];
-    VkDescriptorImageInfo img_storage_infos[16];
-    VkDescriptorBufferInfo ubuf_infos[16];
+    VkDescriptorImageInfo img_sampler_infos[24];
+    VkDescriptorImageInfo img_storage_infos[24];
+    VkDescriptorBufferInfo ubuf_infos[24];
     VkDescriptorBufferInfo sbuf_infos[16];
     VkWriteDescriptorSetAccelerationStructureKHR desc_tlas_infos[16];
     DescrSizes descr_sizes;

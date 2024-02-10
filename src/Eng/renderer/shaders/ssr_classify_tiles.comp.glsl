@@ -16,7 +16,9 @@
 #include "ssr_classify_tiles_interface.h"
 
 /*
+PERM @HQ_HDR
 PERM @NO_SUBGROUP_EXTENSIONS
+PERM @HQ_HDR;NO_SUBGROUP_EXTENSIONS
 */
 
 #if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
@@ -44,7 +46,11 @@ layout(binding = SOBOL_BUF_SLOT) uniform highp usamplerBuffer g_sobol_seq_tex;
 layout(binding = SCRAMLING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_scrambling_tile_tex;
 layout(binding = RANKING_TILE_BUF_SLOT) uniform highp usamplerBuffer g_ranking_tile_tex;
 
-layout(binding = REFL_IMG_SLOT, r11f_g11f_b10f) uniform writeonly image2D g_refl_img;
+#ifdef HQ_HDR
+    layout(binding = REFL_IMG_SLOT, rgba16f) uniform writeonly image2D g_refl_img;
+#else
+    layout(binding = REFL_IMG_SLOT, r11f_g11f_b10f) uniform writeonly image2D g_refl_img;
+#endif
 layout(binding = NOISE_IMG_SLOT, rg8) uniform writeonly image2D g_noise_img;
 
 bool IsReflectiveSurface(ivec2 px_coords) {

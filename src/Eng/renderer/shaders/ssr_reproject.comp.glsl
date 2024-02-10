@@ -10,6 +10,10 @@
 #include "ssr_common.glsl"
 #include "ssr_reproject_interface.h"
 
+/*
+PERM @HQ_HDR
+*/
+
 layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
@@ -33,8 +37,13 @@ layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
 };
 
-layout(binding = OUT_REPROJECTED_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_reprojected_img;
-layout(binding = OUT_AVG_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_avg_refl_img;
+#ifdef HQ_HDR
+    layout(binding = OUT_REPROJECTED_IMG_SLOT, rgba16f) uniform image2D g_out_reprojected_img;
+    layout(binding = OUT_AVG_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_avg_refl_img;
+#else
+    layout(binding = OUT_REPROJECTED_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_reprojected_img;
+    layout(binding = OUT_AVG_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_avg_refl_img;
+#endif
 layout(binding = OUT_VERIANCE_IMG_SLOT, r16f) uniform image2D g_out_variance_img;
 layout(binding = OUT_SAMPLE_COUNT_IMG_SLOT, r16f) uniform image2D g_out_sample_count_img;
 

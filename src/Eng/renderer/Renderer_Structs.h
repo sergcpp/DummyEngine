@@ -308,10 +308,11 @@ struct SharedDataBlock {
     Ren::Vec4f clip_info, cam_pos_and_gamma, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
+    Ren::Vec4u item_counts;
     ProbeItem probes[REN_MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
 };
-static_assert(sizeof(SharedDataBlock) == 7856, "!");
+static_assert(sizeof(SharedDataBlock) == 7872, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 

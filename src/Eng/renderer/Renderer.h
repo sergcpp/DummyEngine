@@ -118,7 +118,7 @@ class Renderer {
          EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
          EnableDOF // | EnableRTShadows
          //| EnableDeferred | EnableHQ_HDR
-        );
+            );
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -225,10 +225,10 @@ class Renderer {
 
     Ren::Pipeline pi_skinning_, pi_gbuf_shade_, pi_gbuf_shade_hq_;
     // HQ SSR
-    Ren::Pipeline pi_ssr_classify_tiles_, pi_ssr_write_indirect_, pi_ssr_trace_hq_;
+    Ren::Pipeline pi_ssr_classify_tiles_[2], pi_ssr_write_indirect_, pi_ssr_trace_hq_;
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
-    Ren::Pipeline pi_ssr_reproject_, pi_ssr_prefilter_, pi_ssr_resolve_temporal_;
+    Ren::Pipeline pi_ssr_reproject_[2], pi_ssr_prefilter_[2], pi_ssr_resolve_temporal_[2];
     // GI
     Ren::Pipeline pi_gi_classify_tiles_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::Pipeline pi_gi_rt_write_indirect_;
@@ -243,7 +243,7 @@ class Renderer {
 
     Ren::ProgramRef blit_static_vel_prog_, blit_gauss2_prog_, blit_ao_prog_, blit_bilateral_prog_, blit_taa_prog_,
         blit_taa_static_prog_, blit_ssr_prog_, blit_ssr_dilate_prog_, blit_upscale_prog_, blit_down2_prog_,
-        blit_down_depth_prog_;
+        blit_down_depth_prog_, blit_ssr_compose_prog_;
 
     struct CommonBuffers {
         RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, lights_res, decals_res,
@@ -291,7 +291,7 @@ class Renderer {
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 
     void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                             const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
+                             const Ren::WeakTex2DRef lm_indir_sh[4], bool deferred_shading, bool debug_denoise,
                              const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                              const BindlessTextureData &bindless, RpResRef depth_hierarchy,

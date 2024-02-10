@@ -18,6 +18,9 @@ struct RpDebugRTData {
     RpResRef vtx_buf2;
     RpResRef ndx_buf;
     RpResRef env_tex;
+    RpResRef lights_buf;
+    RpResRef shadowmap_tex;
+    RpResRef ltc_luts_tex[8];
     RpResRef lm_tex[5];
     RpResRef dummy_black;
 

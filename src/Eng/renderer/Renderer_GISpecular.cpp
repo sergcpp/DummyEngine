@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 
+#include "shaders/blit_ssr_compose_new_interface.h"
 #include "shaders/blit_ssr_dilate_interface.h"
 #include "shaders/blit_ssr_interface.h"
 #include "shaders/ssr_classify_tiles_interface.h"
@@ -13,9 +14,9 @@
 #include "shaders/ssr_write_indirect_args_interface.h"
 
 void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                                        const Ren::WeakTex2DRef lm_indir_sh[4], const bool debug_denoise,
-                                        const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                                        const PersistentGpuData &persistent_data,
+                                        const Ren::WeakTex2DRef lm_indir_sh[4], const bool deferred_shading,
+                                        const bool debug_denoise, const Ren::ProbeStorage *probe_storage,
+                                        const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data,
                                         const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                                         RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
@@ -73,6 +74,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
     RpResRef ray_list, tile_list;
     RpResRef refl_tex, noise_tex;
 
+    const bool hq_hdr = (render_flags_ & EnableHQ_HDR) != 0;
+
     { // Classify pixel quads
         auto &ssr_classify = rp_builder_.AddPass("SSR CLASSIFY");
 
@@ -114,7 +117,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            if (hq_hdr) {
+                params.format = Ren::eTexFormat::RawRGBA16F;
+            } else {
+                params.format = Ren::eTexFormat::RawRG11F_B10F;
+            }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             refl_tex = data->out_refl_tex =
@@ -130,7 +137,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 ssr_classify.AddStorageImageOutput("Blue Noise Tex", params, Stg::ComputeShader);
         }
 
-        ssr_classify.set_execute_cb([this, data](RpBuilder &builder) {
+        ssr_classify.set_execute_cb([this, data, hq_hdr](RpBuilder &builder) {
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->normal);
             RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
@@ -186,8 +193,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             uniform_params.samples_and_guided = Ren::Vec2u{uint32_t(SamplesPerQuad), VarianceGuided ? 1u : 0u};
             uniform_params.frame_index = view_state_.frame_index;
 
-            Ren::DispatchCompute(pi_ssr_classify_tiles_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
-                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+            Ren::DispatchCompute(pi_ssr_classify_tiles_[hq_hdr], grp_count, bindings, &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -353,6 +360,17 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->ray_list = rt_refl.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
+            data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights_res, stage);
+
+            data->shadowmap_tex = rt_refl.AddTextureInput(shadow_map_tex_, stage);
+            data->ltc_luts_tex[0] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], stage);
+            data->ltc_luts_tex[1] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], stage);
+            data->ltc_luts_tex[2] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], stage);
+            data->ltc_luts_tex[3] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], stage);
+            data->ltc_luts_tex[4] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], stage);
+            data->ltc_luts_tex[5] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], stage);
+            data->ltc_luts_tex[6] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], stage);
+            data->ltc_luts_tex[7] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], stage);
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
@@ -427,7 +445,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            if (hq_hdr) {
+                params.format = Ren::eTexFormat::RawRGBA16F;
+            } else {
+                params.format = Ren::eTexFormat::RawRG11F_B10F;
+            }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -438,7 +460,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             Ren::Tex2DParams params;
             params.w = (view_state_.scr_res[0] + 7) / 8;
             params.h = (view_state_.scr_res[1] + 7) / 8;
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            if (hq_hdr) {
+                params.format = Ren::eTexFormat::RawRGBA16F;
+            } else {
+                params.format = Ren::eTexFormat::RawRG11F_B10F;
+            }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -471,7 +497,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
         data->sample_count_hist_tex =
             ssr_reproject.AddHistoryTextureInput(data->out_sample_count_tex, Stg::ComputeShader);
 
-        ssr_reproject.set_execute_cb([this, data](RpBuilder &builder) {
+        ssr_reproject.set_execute_cb([this, data, hq_hdr](RpBuilder &builder) {
             RpAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
@@ -512,9 +538,9 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, 0.0f};
 
-            Ren::DispatchComputeIndirect(pi_ssr_reproject_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            Ren::DispatchComputeIndirect(pi_ssr_reproject_[hq_hdr], *indir_args_buf.ref, data->indir_args_offset,
+                                         bindings, &uniform_params, sizeof(uniform_params),
+                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -547,7 +573,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            if (hq_hdr) {
+                params.format = Ren::eTexFormat::RawRGBA16F;
+            } else {
+                params.format = Ren::eTexFormat::RawRG11F_B10F;
+            }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -566,7 +596,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 ssr_prefilter.AddStorageImageOutput("Variance Temp 2", params, Stg::ComputeShader);
         }
 
-        ssr_prefilter.set_execute_cb([this, data](RpBuilder &builder) {
+        ssr_prefilter.set_execute_cb([this, data, hq_hdr](RpBuilder &builder) {
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
             RpAllocTex &avg_refl_tex = builder.GetReadTexture(data->avg_refl_tex);
@@ -599,9 +629,9 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
-            Ren::DispatchComputeIndirect(pi_ssr_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
-                                         &uniform_params, sizeof(uniform_params), builder.ctx().default_descr_alloc(),
-                                         builder.ctx().log());
+            Ren::DispatchComputeIndirect(pi_ssr_prefilter_[hq_hdr], *indir_args_buf.ref, data->indir_args_offset,
+                                         bindings, &uniform_params, sizeof(uniform_params),
+                                         builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
@@ -635,7 +665,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawRG11F_B10F;
+            if (hq_hdr) {
+                params.format = Ren::eTexFormat::RawRGBA16F;
+            } else {
+                params.format = Ren::eTexFormat::RawRG11F_B10F;
+            }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
@@ -653,7 +687,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->out_variance_tex = ssr_temporal.AddStorageImageOutput("Variance", params, Stg::ComputeShader);
         }
 
-        ssr_temporal.set_execute_cb([this, data](RpBuilder &builder) {
+        ssr_temporal.set_execute_cb([this, data, hq_hdr](RpBuilder &builder) {
             RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
             RpAllocTex &avg_refl_tex = builder.GetReadTexture(data->avg_refl_tex);
@@ -683,13 +717,13 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.thresholds = Ren::Vec2f{GlossyThreshold, MirrorThreshold};
 
-            Ren::DispatchComputeIndirect(pi_ssr_resolve_temporal_, *indir_args_buf.ref, data->indir_args_offset,
+            Ren::DispatchComputeIndirect(pi_ssr_resolve_temporal_[hq_hdr], *indir_args_buf.ref, data->indir_args_offset,
                                          bindings, &uniform_params, sizeof(uniform_params),
                                          builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
     }
 
-    { // Compose reflections
+    if (!deferred_shading) {
         auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE");
 
         auto *data = ssr_compose.AllocPassData<RpSSRCompose2Data>();
@@ -710,6 +744,82 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
         rp_ssr_compose2_.Setup(&view_state_, probe_storage, data);
         ssr_compose.set_executor(&rp_ssr_compose2_);
+    } else {
+        auto &ssr_compose = rp_builder_.AddPass("SSR COMPOSE NEW");
+
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef depth_tex;
+            RpResRef normal_tex;
+            RpResRef albedo_tex;
+            RpResRef spec_tex;
+            RpResRef refl_tex;
+            RpResRef brdf_lut;
+
+            RpResRef output_tex;
+        };
+
+        auto *data = ssr_compose.AllocPassData<PassData>();
+
+        data->shared_data =
+            ssr_compose.AddUniformBufferInput(common_buffers.shared_data_res, Stg::VertexShader | Stg::FragmentShader);
+        data->depth_tex = ssr_compose.AddTextureInput(frame_textures.depth, Stg::FragmentShader);
+        data->normal_tex = ssr_compose.AddTextureInput(frame_textures.normal, Stg::FragmentShader);
+        data->albedo_tex = ssr_compose.AddTextureInput(frame_textures.albedo, Stg::FragmentShader);
+        data->spec_tex = ssr_compose.AddTextureInput(frame_textures.specular, Stg::FragmentShader);
+
+        if (debug_denoise) {
+            data->refl_tex = ssr_compose.AddTextureInput(refl_tex, Stg::FragmentShader);
+        } else {
+            data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
+        }
+        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Stg::FragmentShader);
+        frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
+
+        ssr_compose.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &normal_tex = builder.GetReadTexture(data->normal_tex);
+            RpAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
+            RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+            RpAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
+            RpAllocTex &brdf_lut = builder.GetReadTexture(data->brdf_lut);
+
+            RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
+
+            Ren::RastState rast_state;
+            rast_state.depth.test_enabled = false;
+            rast_state.depth.write_enabled = false;
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+
+            rast_state.blend.enabled = true;
+            rast_state.blend.src = unsigned(Ren::eBlendFactor::One);
+            rast_state.blend.dst = unsigned(Ren::eBlendFactor::One);
+
+            rast_state.viewport[2] = view_state_.act_res[0];
+            rast_state.viewport[3] = view_state_.act_res[1];
+
+            { // compose reflections on top of clean buffer
+                const Ren::RenderTarget render_targets[] = {{output_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+
+                // TODO: get rid of global binding slots
+                const Ren::Binding bindings[] = {
+                    {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::BRDF_TEX_SLOT, *brdf_lut.ref},
+                };
+
+                SSRComposeNew::Params uniform_params;
+                uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
+
+                prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_ssr_compose_prog_, render_targets, {}, rast_state,
+                                    builder.rast_state(), bindings, &uniform_params, sizeof(uniform_params), 0);
+            }
+        });
     }
 }
 

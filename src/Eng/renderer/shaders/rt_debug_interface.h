@@ -33,6 +33,8 @@ const int MESHES_BUF_SLOT = 12;
 const int MESH_INSTANCES_BUF_SLOT = 13;
 const int LIGHTS_BUF_SLOT = 14;
 const int LMAP_TEX_SLOTS = 15;
+const int SHADOW_TEX_SLOT = 22;
+const int LTC_LUTS_TEX_SLOT = 25;
 const int OUT_IMG_SLOT = 1;
 
 INTERFACE_END

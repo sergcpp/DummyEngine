@@ -9,8 +9,11 @@
 #endif
 
 #include "_rt_common.glsl"
+#include "_fs_common.glsl"
 #include "_swrt_common.glsl"
 #include "_texturing.glsl"
+#include "_principled.glsl"
+
 #include "ssr_common.glsl"
 #include "rt_reflections_interface.h"
 
@@ -44,6 +47,13 @@ layout(binding = NDX_BUF_SLOT) uniform usamplerBuffer g_vtx_indices;
 layout(binding = PRIM_NDX_BUF_SLOT) uniform usamplerBuffer g_prim_indices;
 layout(binding = MESHES_BUF_SLOT) uniform usamplerBuffer g_meshes;
 layout(binding = MESH_INSTANCES_BUF_SLOT) uniform samplerBuffer g_mesh_instances;
+
+layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
+    light_item_t g_lights[];
+};
+
+layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts[8];
 
 layout(binding = LMAP_TEX_SLOTS) uniform sampler2D g_lm_textures[5];
 
@@ -95,7 +105,7 @@ void main() {
     vec3 normal_ws = normal_roughness.xyz;
     vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
 
-    float roughness = normal_roughness.w;
+    float roughness = normal_roughness.w * normal_roughness.w;
 
     const vec2 px_center = vec2(icoord) + vec2(0.5);
     const vec2 in_uv = px_center / vec2(g_params.img_size);
@@ -117,7 +127,7 @@ void main() {
     vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
-    vec3 col = vec3(1.0, 0.0, 0.0);
+    vec3 final_color = vec3(1.0, 0.0, 0.0);
     float ray_len = 0.0;
 
     vec3 inv_d = safe_invert(refl_ray_ws.xyz);
@@ -133,12 +143,15 @@ void main() {
                                  ray_origin_ws.xyz + 0.001 * refl_ray_ws.xyz, refl_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
 
     if (inter.mask == 0) {
-        col = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
+        final_color = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
     } else {
+        bool is_backfacing = (inter.prim_index < 0);
+        int tri_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
+
         int i = inter.geo_index;
         for (; i < inter.geo_index + inter.geo_count; ++i) {
             int tri_start = int(g_geometries[i].indices_start) / 3;
-            if (tri_start > inter.prim_index) {
+            if (tri_start > tri_index) {
                 break;
             }
         }
@@ -148,9 +161,9 @@ void main() {
         RTGeoInstance geo = g_geometries[geo_index];
         MaterialData mat = g_materials[geo.material_index];
 
-        uint i0 = texelFetch(g_vtx_indices, 3 * inter.prim_index + 0).x;
-        uint i1 = texelFetch(g_vtx_indices, 3 * inter.prim_index + 1).x;
-        uint i2 = texelFetch(g_vtx_indices, 3 * inter.prim_index + 2).x;
+        uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+        uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+        uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
 
         vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
         vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
@@ -183,9 +196,10 @@ void main() {
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
 
-        col = SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
+        vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
 #else
         // TODO: Fallback to shared texture atlas
+        vec3 base_color = vec3(1.0);
 #endif
 
         if ((geo.flags & RTGeoLightmappedBit) != 0u) {
@@ -198,7 +212,7 @@ void main() {
 
             vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
             vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
-            col *= (direct_lm + indirect_lm);
+            final_color = base_color * (direct_lm + indirect_lm);
         } else {
             uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
             uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
@@ -208,34 +222,134 @@ void main() {
             vec3 normal1 = vec3(unpackSnorm2x16(packed1.x), unpackSnorm2x16(packed1.y).x);
             vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
 
-            vec3 normal = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
+            vec3 N = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
+            if (is_backfacing) {
+                N = -N;
+            }
 
-            col *= EvalSHIrradiance_NonLinear(normal,
-                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
-                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
-                                              g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
+            vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * inter.t;
+            vec3 I = -refl_ray_ws.xyz;
+            float N_dot_V = saturate(dot(N, I));
+
+            vec3 tint_color = vec3(0.0);
+
+            const float base_color_lum = lum(base_color);
+            if (base_color_lum > 0.0) {
+                tint_color = base_color / base_color_lum;
+            }
+
+            float roughness = mat.params[0].w;
+            float sheen = mat.params[1].x;
+            float sheen_tint = mat.params[1].y;
+            float specular = mat.params[1].z;
+            float specular_tint = mat.params[1].w;
+            float metallic = mat.params[2].x;
+            float transmission = mat.params[2].y;
+            float clearcoat = mat.params[2].z;
+            float clearcoat_roughness = mat.params[2].w;
+
+            vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
+            spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
+
+            float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+            float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+
+            // Approximation of FH (using shading normal)
+            float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+
+            vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+            float spec_color_lum = lum(approx_spec_col);
+
+            lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+
+            vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
+
+            float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+            float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
+            float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+
+            // Approximation of FH (using shading normal)
+            float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
+
+            vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
+
+            //
+            // Fetch LTC data
+            //
+
+            vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
+            vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
+
+            ltc_params_t ltc;
+            ltc.diff_t1 = textureLod(g_ltc_luts[0], ltc_uv, 0.0);
+            ltc.diff_t2 = textureLod(g_ltc_luts[1], ltc_uv, 0.0).xy;
+            ltc.sheen_t1 = textureLod(g_ltc_luts[2], ltc_uv, 0.0);
+            ltc.sheen_t2 = textureLod(g_ltc_luts[3], ltc_uv, 0.0).xy;
+            ltc.spec_t1 = textureLod(g_ltc_luts[4], ltc_uv, 0.0);
+            ltc.spec_t2 = textureLod(g_ltc_luts[5], ltc_uv, 0.0).xy;
+            ltc.coat_t1 = textureLod(g_ltc_luts[6], coat_ltc_uv, 0.0);
+            ltc.coat_t2 = textureLod(g_ltc_luts[7], coat_ltc_uv, 0.0).xy;
+
+            vec3 light_total = vec3(0.0);
+
+            for (int li = 0; li < int(g_shrd_data.item_counts.x); ++li) {
+                light_item_t litem = g_lights[li];
+
+                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc,
+                                                              g_ltc_luts[1], g_ltc_luts[3], g_ltc_luts[5], g_ltc_luts[7],
+                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                if (all(equal(light_contribution, vec3(0.0)))) {
+                    continue;
+                }
+
+                int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
+                if (shadowreg_index != -1) {
+                    vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
+                    shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_unused.xyz));
+                    vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+                    vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+                    pp /= pp.w;
+
+                    #if defined(VULKAN)
+                        pp.xy = pp.xy * 0.5 + vec2(0.5);
+                    #else // VULKAN
+                        pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+                    #endif // VULKAN
+                    pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+                    #if defined(VULKAN)
+                        pp.y = 1.0 - pp.y;
+                    #endif // VULKAN
+
+                    light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+                }
+
+                light_total += light_contribution;
+            }
+
+            final_color = light_total;
         }
 
         ray_len = inter.t;
     }
 
-    imageStore(g_out_color_img, icoord, vec4(col, 1.0));
+    imageStore(g_out_color_img, icoord, vec4(final_color, 1.0));
     imageStore(g_out_raylen_img, icoord, vec4(ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
-        imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
         imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_vertical) {
         ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
         imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_diagonal) {
         ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
         imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
 }

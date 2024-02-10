@@ -50,7 +50,15 @@ void Eng::Renderer::InitPipelines() {
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "ssr_classify_tiles", "internal/ssr_classify_tiles.comp.glsl");
         assert(prog->ready());
 
-        if (!pi_ssr_classify_tiles_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        if (!pi_ssr_classify_tiles_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        Ren::ProgramRef prog_hq =
+            sh_.LoadProgram(ctx_, "ssr_classify_tiles_hq", "internal/ssr_classify_tiles.comp.glsl@HQ_HDR");
+        assert(prog_hq->ready());
+
+        if (!pi_ssr_classify_tiles_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -83,8 +91,13 @@ void Eng::Renderer::InitPipelines() {
     { // Reflections reprojection
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "ssr_reproject", "internal/ssr_reproject.comp.glsl");
         assert(prog->ready());
+        if (!pi_ssr_reproject_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
 
-        if (!pi_ssr_reproject_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "ssr_reproject_hq", "internal/ssr_reproject.comp.glsl@HQ_HDR");
+        assert(prog_hq->ready());
+        if (!pi_ssr_reproject_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -92,7 +105,14 @@ void Eng::Renderer::InitPipelines() {
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "ssr_prefilter", "internal/ssr_prefilter.comp.glsl");
         assert(prog->ready());
 
-        if (!pi_ssr_prefilter_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        if (!pi_ssr_prefilter_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "ssr_prefilter_hq", "internal/ssr_prefilter.comp.glsl@HQ_HDR");
+        assert(prog_hq->ready());
+
+        if (!pi_ssr_prefilter_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -100,7 +120,15 @@ void Eng::Renderer::InitPipelines() {
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "ssr_resolve_temporal", "internal/ssr_resolve_temporal.comp.glsl");
         assert(prog->ready());
 
-        if (!pi_ssr_resolve_temporal_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        if (!pi_ssr_resolve_temporal_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        Ren::ProgramRef prog_hq =
+            sh_.LoadProgram(ctx_, "ssr_resolve_temporal_hq", "internal/ssr_resolve_temporal.comp.glsl@HQ_HDR");
+        assert(prog_hq->ready());
+
+        if (!pi_ssr_resolve_temporal_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -144,6 +172,10 @@ void Eng::Renderer::InitPipelines() {
     blit_ssr_dilate_prog_ = sh_.LoadProgram(ctx_, "blit_ssr_dilate", "internal/blit_ssr_dilate.vert.glsl",
                                             "internal/blit_ssr_dilate.frag.glsl");
     assert(blit_ssr_dilate_prog_->ready());
+
+    blit_ssr_compose_prog_ = sh_.LoadProgram(ctx_, "blit_ssr_compose", "internal/blit_ssr_compose_new.vert.glsl",
+                                             "internal/blit_ssr_compose_new.frag.glsl");
+    assert(blit_ssr_compose_prog_->ready());
 
     blit_upscale_prog_ =
         sh_.LoadProgram(ctx_, "blit_upscale", "internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
@@ -503,6 +535,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 Ren::Vec4f{p_list_->env.prev_wind_scroll_lf[0], p_list_->env.prev_wind_scroll_lf[1],
                            p_list_->env.prev_wind_scroll_hf[0], p_list_->env.prev_wind_scroll_hf[1]};
 
+            shrd_data.item_counts = Ren::Vec4u{p_list_->lights.count, p_list_->decals.count, 0, 0};
+
             memcpy(&shrd_data.probes[0], p_list_->probes.data, sizeof(ProbeItem) * p_list_->probes.count);
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data, sizeof(EllipsItem) * p_list_->ellipsoids.count);
 
@@ -787,7 +821,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpResRef cells_buf, items_buf, lights_buf, decals_buf;
         RpResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
         RpResRef depth_tex, albedo_tex, normal_tex, spec_tex;
-        RpResRef ltc_diff_lut_tex[2], ltc_sheen_lut_tex[2], ltc_spec_lut_tex[2], ltc_coat_lut_tex[2];
+        RpResRef ltc_luts_tex[8];
         RpResRef output_tex;
     };
 
@@ -813,17 +847,14 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     data->normal_tex = gbuf_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
     data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
 
-    data->ltc_diff_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], Stg::ComputeShader);
-    data->ltc_diff_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], Stg::ComputeShader);
-
-    data->ltc_sheen_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], Stg::ComputeShader);
-    data->ltc_sheen_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], Stg::ComputeShader);
-
-    data->ltc_spec_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], Stg::ComputeShader);
-    data->ltc_spec_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], Stg::ComputeShader);
-
-    data->ltc_coat_lut_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], Stg::ComputeShader);
-    data->ltc_coat_lut_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], Stg::ComputeShader);
+    data->ltc_luts_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], Stg::ComputeShader);
+    data->ltc_luts_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], Stg::ComputeShader);
+    data->ltc_luts_tex[2] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], Stg::ComputeShader);
+    data->ltc_luts_tex[3] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], Stg::ComputeShader);
+    data->ltc_luts_tex[4] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], Stg::ComputeShader);
+    data->ltc_luts_tex[5] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], Stg::ComputeShader);
+    data->ltc_luts_tex[6] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], Stg::ComputeShader);
+    data->ltc_luts_tex[7] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
         gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
@@ -845,17 +876,14 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
         RpAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
 
-        RpAllocTex &ltc_diff_lut_tex0 = builder.GetReadTexture(data->ltc_diff_lut_tex[0]);
-        RpAllocTex &ltc_diff_lut_tex1 = builder.GetReadTexture(data->ltc_diff_lut_tex[1]);
-
-        RpAllocTex &ltc_sheen_lut_tex0 = builder.GetReadTexture(data->ltc_sheen_lut_tex[0]);
-        RpAllocTex &ltc_sheen_lut_tex1 = builder.GetReadTexture(data->ltc_sheen_lut_tex[1]);
-
-        RpAllocTex &ltc_spec_lut_tex0 = builder.GetReadTexture(data->ltc_spec_lut_tex[0]);
-        RpAllocTex &ltc_spec_lut_tex1 = builder.GetReadTexture(data->ltc_spec_lut_tex[1]);
-
-        RpAllocTex &ltc_coat_lut_tex0 = builder.GetReadTexture(data->ltc_coat_lut_tex[0]);
-        RpAllocTex &ltc_coat_lut_tex1 = builder.GetReadTexture(data->ltc_coat_lut_tex[1]);
+        RpAllocTex &ltc_luts_tex0 = builder.GetReadTexture(data->ltc_luts_tex[0]);
+        RpAllocTex &ltc_luts_tex1 = builder.GetReadTexture(data->ltc_luts_tex[1]);
+        RpAllocTex &ltc_luts_tex2 = builder.GetReadTexture(data->ltc_luts_tex[2]);
+        RpAllocTex &ltc_luts_tex3 = builder.GetReadTexture(data->ltc_luts_tex[3]);
+        RpAllocTex &ltc_luts_tex4 = builder.GetReadTexture(data->ltc_luts_tex[4]);
+        RpAllocTex &ltc_luts_tex5 = builder.GetReadTexture(data->ltc_luts_tex[5]);
+        RpAllocTex &ltc_luts_tex6 = builder.GetReadTexture(data->ltc_luts_tex[6]);
+        RpAllocTex &ltc_luts_tex7 = builder.GetReadTexture(data->ltc_luts_tex[7]);
 
         RpAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
@@ -873,14 +901,14 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::Tex2D, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_DIFF_LUT_TEX_SLOT, 0, *ltc_diff_lut_tex0.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_DIFF_LUT_TEX_SLOT, 1, *ltc_diff_lut_tex1.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_SHEEN_LUT_TEX_SLOT, 0, *ltc_sheen_lut_tex0.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_SHEEN_LUT_TEX_SLOT, 1, *ltc_sheen_lut_tex1.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_SPEC_LUT_TEX_SLOT, 0, *ltc_spec_lut_tex0.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_SPEC_LUT_TEX_SLOT, 1, *ltc_spec_lut_tex1.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_COAT_LUT_TEX_SLOT, 0, *ltc_coat_lut_tex0.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_COAT_LUT_TEX_SLOT, 1, *ltc_coat_lut_tex1.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 0, *ltc_luts_tex0.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 1, *ltc_luts_tex1.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 2, *ltc_luts_tex2.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 3, *ltc_luts_tex3.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 4, *ltc_luts_tex4.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 5, *ltc_luts_tex5.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 6, *ltc_luts_tex6.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 7, *ltc_luts_tex7.ref},
             {Ren::eBindTarget::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

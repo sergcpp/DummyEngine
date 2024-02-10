@@ -30,7 +30,7 @@ void main() {
     target /= target.w;
     vec4 direction = g_shrd_data.inv_view_matrix * vec4(normalize(target.xyz), 0);
 
-    const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
+    const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;
     const float t_max = 1000.0;
 

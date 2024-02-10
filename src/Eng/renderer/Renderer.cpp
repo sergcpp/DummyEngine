@@ -1057,7 +1057,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         if ((list.render_flags & EnableSSR) != 0 && (list.render_flags & DebugWireframe) == 0) {
             const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
-                AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_,
+                AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_, deferred_shading,
                                     (list.render_flags & DebugReflDenoise) != 0, list.probe_storage, common_buffers,
                                     persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
                                     rt_obj_instances_res, frame_textures);
@@ -1095,6 +1095,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->vtx_buf1 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stages);
             data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stages);
             data->ndx_buf = debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), stages);
+            data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights_res, stages);
+
+            data->shadowmap_tex = debug_rt.AddTextureInput(shadow_map_tex_, stages);
+            data->ltc_luts_tex[0] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], stages);
+            data->ltc_luts_tex[1] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], stages);
+            data->ltc_luts_tex[2] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], stages);
+            data->ltc_luts_tex[3] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], stages);
+            data->ltc_luts_tex[4] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], stages);
+            data->ltc_luts_tex[5] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], stages);
+            data->ltc_luts_tex[6] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], stages);
+            data->ltc_luts_tex[7] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], stages);
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;

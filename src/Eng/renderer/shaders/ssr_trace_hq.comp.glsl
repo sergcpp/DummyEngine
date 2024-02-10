@@ -86,7 +86,7 @@ void main() {
 
     vec4 normal_fetch = texelFetch(g_norm_tex, pix_uvs, 0);
     vec4 norm_rough = UnpackNormalAndRoughness(normal_fetch);
-    float roughness = norm_rough.w;
+    float roughness = norm_rough.w * norm_rough.w;
 
     float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
 

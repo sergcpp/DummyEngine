@@ -15,9 +15,19 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
+    RpAllocTex &ltc_lut_tex0 = builder.GetReadTexture(pass_data_->ltc_luts_tex[0]);
+    RpAllocTex &ltc_lut_tex1 = builder.GetReadTexture(pass_data_->ltc_luts_tex[1]);
+    RpAllocTex &ltc_lut_tex2 = builder.GetReadTexture(pass_data_->ltc_luts_tex[2]);
+    RpAllocTex &ltc_lut_tex3 = builder.GetReadTexture(pass_data_->ltc_luts_tex[3]);
+    RpAllocTex &ltc_lut_tex4 = builder.GetReadTexture(pass_data_->ltc_luts_tex[4]);
+    RpAllocTex &ltc_lut_tex5 = builder.GetReadTexture(pass_data_->ltc_luts_tex[5]);
+    RpAllocTex &ltc_lut_tex6 = builder.GetReadTexture(pass_data_->ltc_luts_tex[6]);
+    RpAllocTex &ltc_lut_tex7 = builder.GetReadTexture(pass_data_->ltc_luts_tex[7]);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
         if (pass_data_->lm_tex[i]) {
@@ -37,11 +47,11 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
 
     VkDescriptorSetLayout descr_set_layout = pi_debug_hwrt_.prog()->descr_set_layouts()[0];
     Ren::DescrSizes descr_sizes;
-    descr_sizes.img_sampler_count = 5;
+    descr_sizes.img_sampler_count = 14;
     descr_sizes.store_img_count = 1;
     descr_sizes.ubuf_count = 1;
     descr_sizes.acc_count = 1;
-    descr_sizes.sbuf_count = 5;
+    descr_sizes.sbuf_count = 6;
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, descr_set_layout);
     descr_sets[1] = bindless_tex_->rt_textures_descr_set;
@@ -50,11 +60,18 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
         const VkDescriptorBufferInfo ubuf_info = {unif_sh_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorImageInfo env_info = {env_tex.ref->handle().sampler, env_tex.ref->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}; // environment texture
+        const VkDescriptorImageInfo shadowmap_tex_info = shadowmap_tex.ref->vk_desc_image_info();
+        const VkDescriptorImageInfo ltc_luts_tex[8] = {
+            ltc_lut_tex0.ref->vk_desc_image_info(), ltc_lut_tex1.ref->vk_desc_image_info(),
+            ltc_lut_tex2.ref->vk_desc_image_info(), ltc_lut_tex3.ref->vk_desc_image_info(),
+            ltc_lut_tex4.ref->vk_desc_image_info(), ltc_lut_tex5.ref->vk_desc_image_info(),
+            ltc_lut_tex6.ref->vk_desc_image_info(), ltc_lut_tex7.ref->vk_desc_image_info()};
         const VkDescriptorBufferInfo geo_data_info = {geo_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_data_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo vtx_buf1_info = {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo vtx_buf2_info = {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo ndx_buf_info = {ndx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkDescriptorBufferInfo lights_buf_info = {lights_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorImageInfo lm_infos[] = {
             lm_tex[0]->ref->vk_desc_image_info(), lm_tex[1]->ref->vk_desc_image_info(),
             lm_tex[2]->ref->vk_desc_image_info(), lm_tex[3]->ref->vk_desc_image_info(),
@@ -68,7 +85,7 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             output_img_info = ctx.backbuffer_ref()->vk_desc_image_info(0, VK_IMAGE_LAYOUT_GENERAL);
         }
 
-        Ren::SmallVector<VkWriteDescriptorSet, 16> descr_writes;
+        Ren::SmallVector<VkWriteDescriptorSet, 32> descr_writes;
         { // shared buf
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -152,6 +169,36 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descr_write.descriptorCount = 1;
             descr_write.pBufferInfo = &ndx_buf_info;
+        }
+        { // lights_buf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            descr_write.dstSet = descr_sets[0];
+            descr_write.dstBinding = RTDebug::LIGHTS_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pBufferInfo = &lights_buf_info;
+        }
+        { // shadowmap_tex
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            descr_write.dstSet = descr_sets[0];
+            descr_write.dstBinding = RTDebug::SHADOW_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &shadowmap_tex_info;
+        }
+        { // LTC LUTs
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            descr_write.dstSet = descr_sets[0];
+            descr_write.dstBinding = RTDebug::LTC_LUTS_TEX_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descr_write.descriptorCount = 8;
+            descr_write.pImageInfo = ltc_luts_tex;
         }
         { // lightmap
             auto &descr_write = descr_writes.emplace_back();

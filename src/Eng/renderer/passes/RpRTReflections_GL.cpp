@@ -20,6 +20,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocBuf &rt_blas_buf = builder.GetReadBuffer(pass_data_->swrt.rt_blas_buf);
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
     RpAllocTex &noise_tex = builder.GetReadTexture(pass_data_->noise_tex);
@@ -35,6 +36,15 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &mesh_instances_buf = builder.GetReadBuffer(pass_data_->swrt.mesh_instances_buf);
     RpAllocBuf &textures_buf = builder.GetReadBuffer(pass_data_->swrt.textures_buf);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
+    RpAllocTex &ltc_lut_tex0 = builder.GetReadTexture(pass_data_->ltc_luts_tex[0]);
+    RpAllocTex &ltc_lut_tex1 = builder.GetReadTexture(pass_data_->ltc_luts_tex[1]);
+    RpAllocTex &ltc_lut_tex2 = builder.GetReadTexture(pass_data_->ltc_luts_tex[2]);
+    RpAllocTex &ltc_lut_tex3 = builder.GetReadTexture(pass_data_->ltc_luts_tex[3]);
+    RpAllocTex &ltc_lut_tex4 = builder.GetReadTexture(pass_data_->ltc_luts_tex[4]);
+    RpAllocTex &ltc_lut_tex5 = builder.GetReadTexture(pass_data_->ltc_luts_tex[5]);
+    RpAllocTex &ltc_lut_tex6 = builder.GetReadTexture(pass_data_->ltc_luts_tex[6]);
+    RpAllocTex &ltc_lut_tex7 = builder.GetReadTexture(pass_data_->ltc_luts_tex[7]);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
         if (pass_data_->lm_tex[i]) {
@@ -115,6 +125,16 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
+        {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 0, *ltc_lut_tex0.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 1, *ltc_lut_tex1.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 2, *ltc_lut_tex2.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 3, *ltc_lut_tex3.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 4, *ltc_lut_tex4.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 5, *ltc_lut_tex5.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 6, *ltc_lut_tex6.ref},
+        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, 7, *ltc_lut_tex7.ref},
         {Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
 

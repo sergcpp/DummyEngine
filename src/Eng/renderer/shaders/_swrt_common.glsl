@@ -6,26 +6,29 @@
 #define FLT_EPS 0.0000001
 #define FLT_MAX 3.402823466e+38
 
-bool IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out float u, out float v) {
+#define IGNORE_BACKFACING 0
+
+int IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out float u, out float v) {
     vec3 e10 = v1 - v0;
     vec3 e20 = v2 - v0;
 
     vec3 pvec = cross(d, e20);
     float det = dot(e10, pvec);
+#if IGNORE_BACKFACING
     if (det < FLT_EPS) {
-        return false;
+        return 0;
     }
 
     vec3 tvec = o - v0;
     u = dot(tvec, pvec);
     if (u < 0.0 || u > det) {
-        return false;
+        return 0;
     }
 
     vec3 qvec = cross(tvec, e10);
     v = dot(d, qvec);
     if (v < 0.0 || u + v > det) {
-        return false;
+        return 0;
     }
 
     t = dot(e20, qvec);
@@ -36,7 +39,30 @@ bool IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out fl
     u *= inv_det;
     v *= inv_det;
 
-    return true;
+    return 1;
+#else
+    if (det > -FLT_EPS && det < FLT_EPS) {
+        return 0;
+    }
+
+    float inv_det = 1.0 / det;
+
+    vec3 tvec = o - v0;
+    u = dot(tvec, pvec) * inv_det;
+    if (u < 0.0 || u > 1.0) {
+        return 0;
+    }
+
+    vec3 qvec = cross(tvec, e10);
+    v = dot(d, qvec) * inv_det;
+    if (v < 0.0 || u + v > 1.0) {
+        return 0;
+    }
+
+    t = dot(e20, qvec) * inv_det;
+
+    return det > 0.0 ? 1 : -1;
+#endif
 }
 
 bool _bbox_test_fma(vec3 inv_d, vec3 neg_inv_d_o, float t, vec3 bbox_min, vec3 bbox_max) {
@@ -134,11 +160,12 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
         uint i2 = texelFetch(vtx_indices, 3 * j + 2).x;
 
         float t, u, v;
-        if (IntersectTri(ro, rd, texelFetch(vtx_positions, int(first_vertex + i0)).xyz,
-                                 texelFetch(vtx_positions, int(first_vertex + i1)).xyz,
-                                 texelFetch(vtx_positions, int(first_vertex + i2)).xyz, t, u, v) && t > 0.0 && t < out_inter.t) {
+        int inter_result = IntersectTri(ro, rd, texelFetch(vtx_positions, int(first_vertex + i0)).xyz,
+                                        texelFetch(vtx_positions, int(first_vertex + i1)).xyz,
+                                        texelFetch(vtx_positions, int(first_vertex + i2)).xyz, t, u, v);
+        if (inter_result != 0 && t > 0.0 && t < out_inter.t) {
             out_inter.mask = -1;
-            out_inter.prim_index = int(j);
+            out_inter.prim_index = inter_result > 0 ? int(j) : -int(j) - 1;
             out_inter.obj_index = obj_index;
             out_inter.geo_index = geo_index;
             out_inter.geo_count = geo_count;
