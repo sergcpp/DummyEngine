@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;

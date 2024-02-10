@@ -1,16 +1,9 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 //#extension GL_EXT_control_flow_attributes : enable
 
-$ModifyWarning
-
 #include "internal/_vs_common.glsl"
-
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
 
 layout(triangles, fractional_odd_spacing, ccw) in;
 //layout(triangles, equal_spacing, ccw) in;
@@ -50,12 +43,7 @@ out highp vec3 g_vtx_sh_uvs[4];
 
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_tex;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

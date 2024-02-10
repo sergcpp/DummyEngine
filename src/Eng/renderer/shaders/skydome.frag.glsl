@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -12,12 +12,7 @@
 PERM @COLOR_ONLY
 */
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buf : enable
 //#extension GL_EXT_control_flow_attributes : enable
@@ -6,16 +6,12 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-$ModifyWarning
-
 #include "_vs_common.glsl"
 #include "_vegetation.glsl"
 #include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
 /*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
 PERM @VEGETATION
 */
 
@@ -27,12 +23,7 @@ layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 layout(location = REN_VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
 #endif // VEGETATION
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

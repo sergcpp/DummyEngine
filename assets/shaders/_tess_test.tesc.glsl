@@ -1,16 +1,9 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 //#extension GL_EXT_control_flow_attributes : enable
 
-$ModifyWarning
-
 #include "internal/_vs_common.glsl"
-
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
 
 layout (vertices = 3) out;
 
@@ -42,12 +35,7 @@ out mediump vec3 g_vtx_tangent_es[];
 out highp vec3 g_vtx_sh_uvs_es[][4];
 #endif
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = 0, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

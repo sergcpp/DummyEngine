@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #ifndef NO_SUBGROUP_EXTENSIONS
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
@@ -16,9 +16,6 @@
 #include "ssr_resolve_temporal_interface.h"
 
 /*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-    UniformParams : $ubUnifParamLoc
 PERM @NO_SUBGROUP_EXTENSIONS
 */
 

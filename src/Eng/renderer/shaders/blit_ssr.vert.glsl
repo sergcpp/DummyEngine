@@ -1,12 +1,7 @@
-#version 310 es
+#version 320 es
 
 #include "_vs_common.glsl"
 #include "blit_ssr_interface.h"
-
-/*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
-*/
 
 layout(location = REN_VTX_POS_LOC) in vec2 g_in_vtx_pos;
 layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs;

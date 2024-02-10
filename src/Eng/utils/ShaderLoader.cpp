@@ -243,8 +243,7 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, const char *name
         const int params_cnt = ParamsStringToDef(params, temp_param_def_);
         assert(params_cnt != -1);
 
-        const std::string shader_src =
-            ReadGLSLContent(name, name_len, !temp_param_def_.empty() ? temp_param_def_.c_str() : nullptr, ctx.log());
+        const std::string shader_src = ReadGLSLContent(name, ctx.log());
         if (!shader_src.empty()) {
             ret->Init(shader_src.c_str(), type, &status, ctx.log());
             if (status == Ren::eShaderLoadStatus::SetToDefault) {

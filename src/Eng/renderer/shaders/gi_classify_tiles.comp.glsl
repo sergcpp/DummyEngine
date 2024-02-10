@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #ifndef NO_SUBGROUP_EXTENSIONS
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
@@ -16,8 +16,6 @@
 #include "gi_classify_tiles_interface.h"
 
 /*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
 PERM @NO_SUBGROUP_EXTENSIONS
 */
 

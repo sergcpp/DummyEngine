@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
@@ -6,8 +6,6 @@
 #if !defined(VULKAN) && !defined(GL_SPIRV)
 #extension GL_ARB_bindless_texture : enable
 #endif
-
-$ModifyWarning
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -29,12 +27,7 @@ layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
 layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
 layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

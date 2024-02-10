@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_ARB_texture_multisample : enable
 #extension GL_EXT_texture_buffer : enable
 #extension GL_EXT_texture_cube_map_array : enable
@@ -11,17 +11,7 @@
 #include "_fs_common.glsl"
 #include "blit_ssr_compose2_interface.h"
 
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #if !defined(VULKAN) && !defined(GL_SPIRV)
 #extension GL_ARB_bindless_texture : enable
@@ -15,17 +15,7 @@
 PERM @TRANSPARENT_PERM
 */
 
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

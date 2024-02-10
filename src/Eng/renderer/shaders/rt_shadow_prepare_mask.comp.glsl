@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #ifndef NO_SUBGROUP_EXTENSIONS
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
@@ -17,8 +17,6 @@
 #include "rt_shadow_common.glsl.inl"
 
 /*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
 PERM @NO_SUBGROUP_EXTENSIONS
 */
 

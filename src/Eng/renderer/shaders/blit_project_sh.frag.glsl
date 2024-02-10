@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_cube_map_array : enable
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)

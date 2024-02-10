@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #ifndef NO_SUBGROUP_EXTENSIONS
 #extension GL_KHR_shader_subgroup_quad : enable
 #endif
@@ -12,8 +12,6 @@
 #include "depth_hierarchy_interface.h"
 
 /*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
 PERM @MIPS_7
 PERM @NO_SUBGROUP_EXTENSIONS
 PERM @MIPS_7;NO_SUBGROUP_EXTENSIONS

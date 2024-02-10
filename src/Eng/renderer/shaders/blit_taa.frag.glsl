@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision mediump int;
@@ -10,8 +10,6 @@
 #include "blit_taa_interface.h"
 
 /*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
 PERM @USE_CLIPPING
 PERM @USE_ROUNDED_NEIBOURHOOD
 PERM @USE_TONEMAP

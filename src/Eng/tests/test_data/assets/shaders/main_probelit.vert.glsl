@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 //#extension GL_EXT_control_flow_attributes : enable
@@ -6,16 +6,9 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-$ModifyWarning
-
 #include "internal/_vs_common.glsl"
 #include "internal/_vs_instance_index_emu.glsl"
 #include "internal/_texturing.glsl"
-
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
 
 layout(location = REN_VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = REN_VTX_NOR_LOC) in vec4 g_in_vtx_normal;
@@ -23,12 +16,7 @@ layout(location = REN_VTX_TAN_LOC) in vec2 g_in_vtx_tangent;
 layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 layout(location = REN_VTX_AUX_LOC) in uint g_vtx_unused;
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

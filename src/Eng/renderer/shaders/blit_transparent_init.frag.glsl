@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_ARB_texture_multisample : enable
 
 #ifdef GL_ES

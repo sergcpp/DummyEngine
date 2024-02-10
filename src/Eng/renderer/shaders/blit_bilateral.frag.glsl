@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #include "_fs_common.glsl"
 #include "blit_bilateral_interface.h"
@@ -7,11 +7,6 @@
     precision highp int;
     precision mediump float;
 #endif
-
-/*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
-*/
 
 layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth_tex;
 layout(binding = INPUT_TEX_SLOT) uniform lowp sampler2D g_input_tex;

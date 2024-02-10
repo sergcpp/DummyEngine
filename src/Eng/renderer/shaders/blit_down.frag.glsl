@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -7,11 +7,6 @@
 
 #include "_fs_common.glsl"
 #include "blit_down_interface.h"
-
-/*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
-*/
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_ARB_shading_language_packing : require
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
@@ -9,11 +9,6 @@
 #include "_cs_common.glsl"
 #include "ssr_common.glsl"
 #include "ssr_prefilter_interface.h"
-
-/*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
-*/
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

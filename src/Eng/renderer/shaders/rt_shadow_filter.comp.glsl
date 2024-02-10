@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -10,19 +10,11 @@
 #include "rt_shadow_common.glsl.inl"
 
 /*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-    UniformParams : $ubUnifParamLoc
 PERM @PASS_0
 PERM @PASS_1
 */
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

@@ -8,7 +8,7 @@ namespace Eng {
 class ShaderLoader {
     std::string temp_param_str_, temp_param_def_;
 
-    static std::string ReadGLSLContent(const char *name, int name_len, const char *prelude, Ren::ILog *log);
+    static std::string ReadGLSLContent(const char *name, Ren::ILog *log);
 
   public:
     ShaderLoader();

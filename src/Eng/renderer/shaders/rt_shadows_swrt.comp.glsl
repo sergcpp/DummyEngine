@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_KHR_shader_subgroup_arithmetic : require
 #if !defined(VULKAN) && !defined(GL_SPIRV)
 #extension GL_ARB_bindless_texture : enable
@@ -15,22 +15,11 @@
 #include "rt_shadows_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-    UniformParams : $ubUnifParamLoc
-*/
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

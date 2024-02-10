@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #extension GL_EXT_texture_buffer : enable
 #extension GL_OES_texture_buffer : enable
 //#extension GL_EXT_control_flow_attributes : enable
@@ -6,15 +6,8 @@
 #extension GL_ARB_bindless_texture : enable
 #endif
 
-$ModifyWarning
-
 #include "internal/_vs_common.glsl"
 #include "internal/_texturing.glsl"
-
-/*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-*/
 
 layout(triangles, fractional_odd_spacing, ccw) in;
 //layout(triangles, equal_spacing, ccw) in;
@@ -39,12 +32,7 @@ LAYOUT(location = 8) out lowp float g_tex_height;
 layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_tex;
 #endif // BINDLESS_TEXTURES
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = 0, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = 0, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 #ifndef NO_SUBGROUP_EXTENSIONS
 #extension GL_KHR_shader_subgroup_ballot : enable
 #endif
@@ -13,9 +13,6 @@
 #include "ssr_trace_hq_interface.h"
 
 /*
-UNIFORM_BLOCKS
-    SharedDataBlock : $ubSharedDataLoc
-    UniformParams : $ubUnifParamLoc
 PERM @NO_SUBGROUP_EXTENSIONS
 */
 
@@ -27,12 +24,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-#if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
-#else
-layout (std140)
-#endif
-uniform SharedDataBlock {
+layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

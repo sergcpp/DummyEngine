@@ -1,12 +1,7 @@
-#version 310 es
+#version 320 es
 
 #include "_common.glsl"
 #include "skinning_interface.h"
-
-/*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
-*/
 
 struct InVertex {
     highp vec4 p_and_nxy;

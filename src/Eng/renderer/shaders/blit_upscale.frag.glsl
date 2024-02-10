@@ -1,4 +1,4 @@
-#version 310 es
+#version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -7,11 +7,6 @@
 
 #include "_fs_common.glsl"
 #include "blit_upscale_interface.h"
-
-/*
-UNIFORM_BLOCKS
-    UniformParams : $ubUnifParamLoc
-*/
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = DEPTH_LOW_TEX_SLOT) uniform mediump sampler2D g_depth_low_tex;
