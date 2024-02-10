@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = gl_shaders
-	commit = 6c9f9a74b7784b7e2c1abca2f6dfcfdd1747fbe7
+	branch = fixes_10_02
+	commit = 3f950f47ee9c487983fe56ed842ce089781b70d3
 	method = merge
 	cmdver = 0.4.6
-	parent = 338f258bd7b9c9f20df3eba428fe0a4bc8a62771
+	parent = c2affb71fa8f43c66115205d825857210d36fb8d
