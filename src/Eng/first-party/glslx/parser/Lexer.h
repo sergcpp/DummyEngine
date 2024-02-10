@@ -112,6 +112,7 @@ class Lexer {
     void ReadNumeric(bool octal, bool hex, std::string &out_digits);
 
   public:
+    Lexer() = default;
     Lexer(std::string_view source);
 
     location_t location() const { return loc_; }

@@ -1097,15 +1097,14 @@ void test_hlsl_writer() {
         require(ss.str() == expected);
     }
     { // matrix multiply
-        std::string final_source = glslx::g_builtin_prototypes;
-        final_source += "vec3 test(vec3 n, mat4 xform) {\n"
-                        "    return (transpose(xform) * vec4(n, 0.0)).xyz;\n"
-                        "}\n";
+        static const char source[] = "vec3 test(vec3 n, mat4 xform) {\n"
+                                     "    return (transpose(xform) * vec4(n, 0.0)).xyz;\n"
+                                     "}\n";
         static const char expected[] = "float3 test(float3 n, row_major float4x4 xform) {\n"
                                        "    return mul(float4(n, 0.0), transpose(xform)).xyz;\n"
                                        "}\n";
 
-        glslx::Parser parser(final_source, "atomic.glsl");
+        glslx::Parser parser(source, "atomic.glsl");
         std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
         require_fatal(tr_unit != nullptr);
 

@@ -1,3 +1,4 @@
+// https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#built-in-functions
 R"(
 // Angle and Trigonometry Functions
 genFType radians(genFType degrees) [[builtin]];         genFType degrees(genFType radians) [[builtin]];

@@ -49,6 +49,10 @@ static const eKeyword g_GenTypesTable[][4] = {
     {eKeyword::K_subpassInputMS, eKeyword::K_isubpassInputMS, eKeyword::K_usubpassInputMS}};
 static_assert(int(eKeyword::K_genFType) == 331, "!");
 static_assert(int(eKeyword::K_gsubpassInputMS) == 364, "!");
+
+extern const char g_builtin_prototypes[] =
+#include "BuiltinPrototypes.inl"
+    ;
 } // namespace glslx
 
 #define IVAL(x) static_cast<ast_int_constant *>(x)->value
@@ -57,7 +61,7 @@ static_assert(int(eKeyword::K_gsubpassInputMS) == 364, "!");
 #define DVAL(x) static_cast<ast_double_constant *>(x)->value
 #define BVAL(x) static_cast<ast_bool_constant *>(x)->value
 
-glslx::Parser::Parser(std::string_view source, const char *file_name) : lexer_(source), file_name_(file_name) {}
+glslx::Parser::Parser(std::string_view source, const char *file_name) : source_(source), file_name_(file_name) {}
 
 std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
     ast_ = std::make_unique<TrUnit>(type);
@@ -66,148 +70,11 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
         fatal("failed to initialize special globals");
         return nullptr;
     }
-    while (true) {
-        lexer_.Read(tok_, true);
-
-        if (lexer_.error()) {
-            fatal("%s", lexer_.error());
-            return nullptr;
-        }
-
-        if (is_type(eTokType::Eof)) {
-            break;
-        }
-
-        if (is_type(eTokType::Directive)) {
-            if (tok_.as_directive.type == eDirType::Version) {
-                if (ast_->version) {
-                    fatal("multiple version directives are not allowed");
-                    return nullptr;
-                }
-                ast_version_directive *directive = astnew<ast_version_directive>();
-                if (!directive) {
-                    fatal("internal error");
-                    return nullptr;
-                }
-                directive->number = tok_.as_directive.as_version.number;
-                directive->type = tok_.as_directive.as_version.type;
-                ast_->version = directive;
-            } else if (tok_.as_directive.type == eDirType::Extension) {
-                ast_extension_directive *extension = astnew<ast_extension_directive>();
-                if (!extension) {
-                    fatal("internal error");
-                    return nullptr;
-                }
-                extension->name = strnew(tok_.as_directive.as_extension.name);
-                extension->behavior = tok_.as_directive.as_extension.behavior;
-                ast_->extensions.push_back(extension);
-            }
-            continue;
-        }
-
-        std::vector<top_level_t> items;
-        if (!ParseTopLevel(items)) {
-            return nullptr;
-        }
-
-        if (is_type(eTokType::Semicolon)) {
-            for (int i = 0; i < int(items.size()); ++i) {
-                top_level_t &parse = items[i];
-                ast_global_variable *global = astnew<ast_global_variable>();
-                if (!global) {
-                    return nullptr;
-                }
-                global->storage = parse.storage;
-                global->aux_storage = parse.aux_storage;
-                global->memory_flags = parse.memory_flags;
-                global->precision = parse.precision;
-                global->interpolation = parse.interpolation;
-                global->base_type = parse.type;
-                global->name = strnew(parse.name);
-                global->is_invariant = parse.is_invariant;
-                global->is_precise = parse.is_precise;
-                global->layout_qualifiers = parse.layout_qualifiers;
-                if (parse.initial_value) {
-                    if (!(global->initial_value = Evaluate(parse.initial_value))) {
-                        return nullptr;
-                    }
-                }
-                global->is_array = parse.is_array;
-                global->array_sizes = parse.array_sizes;
-                ast_->globals.push_back(global);
-                scopes_.back().push_back(global);
-            }
-        } else if (is_operator(eOperator::parenthesis_begin)) {
-            ast_function *function = ParseFunction(items.front());
-            if (!function) {
-                return nullptr;
-            }
-
-            std::vector<ast_builtin *> gen_types;
-            if (function->return_type->builtin) {
-                auto *return_type = static_cast<ast_builtin *>(function->return_type);
-                if (is_generic_type(return_type->type)) {
-                    gen_types.push_back(return_type);
-                }
-            }
-            for (int i = 0; i < int(function->parameters.size()); ++i) {
-                if (function->parameters[i]->base_type->builtin) {
-                    auto *param_type = static_cast<ast_builtin *>(function->parameters[i]->base_type);
-                    if (is_generic_type(param_type->type) &&
-                        std::find(begin(gen_types), end(gen_types), param_type) == end(gen_types)) {
-                        gen_types.push_back(param_type);
-                    }
-                }
-            }
-
-            if (!gen_types.empty()) {
-                if (!function->is_prototype || !(function->attributes & eFunctionAttribute::Builtin)) {
-                    fatal("generics are only allowed for builtin prototypes");
-                    return nullptr;
-                }
-
-                for (int s = 0; s < 4; ++s) {
-                    ast_function *new_func = nullptr;
-                    if (function->return_type->builtin) {
-                        auto *return_type = static_cast<ast_builtin *>(function->return_type);
-                        if (is_generic_type(return_type->type) &&
-                            g_GenTypesTable[int(return_type->type) - int(eKeyword::K_genFType)][s] != eKeyword(0)) {
-                            if (!new_func) {
-                                new_func = astnew<ast_function>(*function);
-                                if (!new_func) {
-                                    return nullptr;
-                                }
-                            }
-                            new_func->return_type = FindOrAddBuiltin(
-                                g_GenTypesTable[int(return_type->type) - int(eKeyword::K_genFType)][s]);
-                        }
-                    }
-                    for (int i = 0; i < int(function->parameters.size()); ++i) {
-                        if (function->parameters[i]->base_type->builtin) {
-                            auto *param_type = static_cast<ast_builtin *>(function->parameters[i]->base_type);
-                            if (is_generic_type(param_type->type) &&
-                                g_GenTypesTable[int(param_type->type) - int(eKeyword::K_genFType)][s] != eKeyword(0)) {
-                                if (!new_func) {
-                                    new_func = astnew<ast_function>(*function);
-                                    if (!new_func) {
-                                        return nullptr;
-                                    }
-                                }
-                                new_func->parameters[i] = astnew<ast_function_parameter>(*new_func->parameters[i]);
-                                new_func->parameters[i]->base_type = FindOrAddBuiltin(
-                                    g_GenTypesTable[int(param_type->type) - int(eKeyword::K_genFType)][s]);
-                            }
-                        }
-                    }
-
-                    if (new_func) {
-                        ast_->functions.push_back(new_func);
-                    }
-                }
-            } else {
-                ast_->functions.push_back(function);
-            }
-        }
+    if (!ParseSource(g_builtin_prototypes)) {
+        return nullptr;
+    }
+    if (!ParseSource(source_)) {
+        return nullptr;
     }
 
     // Resolve function prototypes
@@ -278,6 +145,154 @@ std::unique_ptr<glslx::TrUnit> glslx::Parser::Parse(const eTrUnitType type) {
     }
 
     return std::move(ast_);
+}
+
+bool glslx::Parser::ParseSource(std::string_view source) {
+    lexer_ = Lexer{source};
+    while (true) {
+        lexer_.Read(tok_, true);
+
+        if (lexer_.error()) {
+            fatal("%s", lexer_.error());
+            return false;
+        }
+
+        if (is_type(eTokType::Eof)) {
+            break;
+        }
+
+        if (is_type(eTokType::Directive)) {
+            if (tok_.as_directive.type == eDirType::Version) {
+                if (ast_->version) {
+                    fatal("multiple version directives are not allowed");
+                    return false;
+                }
+                ast_version_directive *directive = astnew<ast_version_directive>();
+                if (!directive) {
+                    fatal("internal error");
+                    return false;
+                }
+                directive->number = tok_.as_directive.as_version.number;
+                directive->type = tok_.as_directive.as_version.type;
+                ast_->version = directive;
+            } else if (tok_.as_directive.type == eDirType::Extension) {
+                ast_extension_directive *extension = astnew<ast_extension_directive>();
+                if (!extension) {
+                    fatal("internal error");
+                    return false;
+                }
+                extension->name = strnew(tok_.as_directive.as_extension.name);
+                extension->behavior = tok_.as_directive.as_extension.behavior;
+                ast_->extensions.push_back(extension);
+            }
+            continue;
+        }
+
+        std::vector<top_level_t> items;
+        if (!ParseTopLevel(items)) {
+            return false;
+        }
+
+        if (is_type(eTokType::Semicolon)) {
+            for (int i = 0; i < int(items.size()); ++i) {
+                top_level_t &parse = items[i];
+                ast_global_variable *global = astnew<ast_global_variable>();
+                if (!global) {
+                    return false;
+                }
+                global->storage = parse.storage;
+                global->aux_storage = parse.aux_storage;
+                global->memory_flags = parse.memory_flags;
+                global->precision = parse.precision;
+                global->interpolation = parse.interpolation;
+                global->base_type = parse.type;
+                global->name = strnew(parse.name);
+                global->is_invariant = parse.is_invariant;
+                global->is_precise = parse.is_precise;
+                global->layout_qualifiers = parse.layout_qualifiers;
+                if (parse.initial_value) {
+                    if (!(global->initial_value = Evaluate(parse.initial_value))) {
+                        return false;
+                    }
+                }
+                global->is_array = parse.is_array;
+                global->array_sizes = parse.array_sizes;
+                ast_->globals.push_back(global);
+                scopes_.back().push_back(global);
+            }
+        } else if (is_operator(eOperator::parenthesis_begin)) {
+            ast_function *function = ParseFunction(items.front());
+            if (!function) {
+                return false;
+            }
+
+            std::vector<ast_builtin *> gen_types;
+            if (function->return_type->builtin) {
+                auto *return_type = static_cast<ast_builtin *>(function->return_type);
+                if (is_generic_type(return_type->type)) {
+                    gen_types.push_back(return_type);
+                }
+            }
+            for (int i = 0; i < int(function->parameters.size()); ++i) {
+                if (function->parameters[i]->base_type->builtin) {
+                    auto *param_type = static_cast<ast_builtin *>(function->parameters[i]->base_type);
+                    if (is_generic_type(param_type->type) &&
+                        std::find(begin(gen_types), end(gen_types), param_type) == end(gen_types)) {
+                        gen_types.push_back(param_type);
+                    }
+                }
+            }
+
+            if (!gen_types.empty()) {
+                if (!function->is_prototype || !(function->attributes & eFunctionAttribute::Builtin)) {
+                    fatal("generics are only allowed for builtin prototypes");
+                    return false;
+                }
+
+                for (int s = 0; s < 4; ++s) {
+                    ast_function *new_func = nullptr;
+                    if (function->return_type->builtin) {
+                        auto *return_type = static_cast<ast_builtin *>(function->return_type);
+                        if (is_generic_type(return_type->type) &&
+                            g_GenTypesTable[int(return_type->type) - int(eKeyword::K_genFType)][s] != eKeyword(0)) {
+                            if (!new_func) {
+                                new_func = astnew<ast_function>(*function);
+                                if (!new_func) {
+                                    return false;
+                                }
+                            }
+                            new_func->return_type = FindOrAddBuiltin(
+                                g_GenTypesTable[int(return_type->type) - int(eKeyword::K_genFType)][s]);
+                        }
+                    }
+                    for (int i = 0; i < int(function->parameters.size()); ++i) {
+                        if (function->parameters[i]->base_type->builtin) {
+                            auto *param_type = static_cast<ast_builtin *>(function->parameters[i]->base_type);
+                            if (is_generic_type(param_type->type) &&
+                                g_GenTypesTable[int(param_type->type) - int(eKeyword::K_genFType)][s] != eKeyword(0)) {
+                                if (!new_func) {
+                                    new_func = astnew<ast_function>(*function);
+                                    if (!new_func) {
+                                        return false;
+                                    }
+                                }
+                                new_func->parameters[i] = astnew<ast_function_parameter>(*new_func->parameters[i]);
+                                new_func->parameters[i]->base_type = FindOrAddBuiltin(
+                                    g_GenTypesTable[int(param_type->type) - int(eKeyword::K_genFType)][s]);
+                            }
+                        }
+                    }
+
+                    if (new_func) {
+                        ast_->functions.push_back(new_func);
+                    }
+                }
+            } else {
+                ast_->functions.push_back(function);
+            }
+        }
+    }
+    return true;
 }
 
 bool glslx::Parser::next() {

@@ -1,11 +1,6 @@
 #include "PreludeGLSL.h"
 
 namespace glslx {
-// https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#built-in-functions
-const char g_builtin_prototypes[] = 
-#include "parser/BuiltinPrototypes.inl"
-;
-
 const char g_glsl_prelude[] = R"(
 uint uaddCarry(uint x, uint y, uint carryIn, out uint carryOut) {
     carryOut = (x > ~y) || (x + ~y < ~carryIn);

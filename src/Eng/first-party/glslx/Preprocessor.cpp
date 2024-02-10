@@ -689,33 +689,25 @@ bool glslx::Preprocessor::ProcessInclude() {
 }
 
 bool glslx::Preprocessor::ProcessExtension(std::string &output) {
-    token_t curr_token = GetNextToken();
-    output.append(curr_token.raw_view);
-    if (!expect(eTokenType::Space, curr_token.type)) {
-        return false;
+    token_t curr_token;
+    while ((curr_token = GetNextToken()).type == eTokenType::Space) {
+        output.append(curr_token.raw_view);
     }
-    curr_token = GetNextToken();
     output.append(curr_token.raw_view);
     if (!expect(eTokenType::Identifier, curr_token.type)) {
         return false;
     }
     const std::string extension_name = curr_token.raw_view;
-    curr_token = GetNextToken();
-    output.append(curr_token.raw_view);
-    if (!expect(eTokenType::Space, curr_token.type)) {
-        return false;
+    while ((curr_token = GetNextToken()).type == eTokenType::Space) {
+        output.append(curr_token.raw_view);
     }
-    curr_token = GetNextToken();
     output.append(curr_token.raw_view);
     if (!expect(eTokenType::Colon, curr_token.type)) {
         return false;
     }
-    curr_token = GetNextToken();
-    output.append(curr_token.raw_view);
-    if (!expect(eTokenType::Space, curr_token.type)) {
-        return false;
+    while ((curr_token = GetNextToken()).type == eTokenType::Space) {
+        output.append(curr_token.raw_view);
     }
-    curr_token = GetNextToken();
     output.append(curr_token.raw_view);
     if (!expect(eTokenType::Identifier, curr_token.type)) {
         return false;

@@ -345,8 +345,6 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                         ctx.log->Error("%s", preprocessor.error().data());
                     }
 
-                    preprocessed = glslx::g_builtin_prototypes + preprocessed;
-
                     glslx::Parser parser(preprocessed, out_file);
                     std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
                     if (!ast) {

@@ -122,13 +122,13 @@ int main(int argc, char *argv[]) {
         out_file.write(preprocessed_source.c_str(), preprocessed_source.length());
     }
 
-    std::string final_source = glslx::g_builtin_prototypes;
-    if (strcmp(target, "GLSL") != 0) {
-        final_source += glslx::g_glsl_prelude;
-    }
-    final_source += preprocessed_source;
-
     if (output_name) {
+        std::string final_source;
+        if (strcmp(target, "GLSL") != 0) {
+            final_source += glslx::g_glsl_prelude;
+        }
+        final_source += preprocessed_source;
+
         glslx::eTrUnitType tu_type = glslx::eTrUnitType::Compute;
         if (strcmp(shader, "vertex") == 0) {
             tu_type = glslx::eTrUnitType::Vertex;

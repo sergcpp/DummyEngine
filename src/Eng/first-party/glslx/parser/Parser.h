@@ -29,6 +29,7 @@ class Parser {
 
     std::unique_ptr<TrUnit> ast_;
     Lexer lexer_;
+    std::string_view source_;
     token_t tok_;
     std::vector<scope> scopes_;
     std::vector<ast_builtin *> builtins_;
@@ -60,6 +61,8 @@ class Parser {
     enum class eEndCondition { Semicolon, Parenthesis, Bracket, Colon, Comma };
 
     template <typename T> T *ParseBlock(const char *type);
+
+    bool ParseSource(std::string_view source);
 
   public:
     Parser(std::string_view source, const char *file_name);
