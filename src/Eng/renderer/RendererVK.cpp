@@ -121,15 +121,6 @@ void Eng::Renderer::DestroyRendererInternal() {
     log->Info("DestroyRendererInternal");
 }
 
-uint64_t Eng::Renderer::GetGpuTimeBlockingUs() {
-#if 0
-    GLint64 time = 0;
-    glGetInteger64v(GL_TIMESTAMP, &time);
-    return (uint64_t)(time / 1000);
-#endif
-    return 0;
-}
-
 void Eng::Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 #if 0

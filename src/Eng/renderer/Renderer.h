@@ -117,8 +117,8 @@ class Renderer {
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap | EnableBloom | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
          EnableDOF // | EnableRTShadows
-         // | EnableDeferred | EnableHQ_HDR
-            );
+         //| EnableDeferred | EnableHQ_HDR
+        );
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -139,12 +139,18 @@ class Renderer {
         uint32_t index;
         float dist2;
     };
-    std::vector<VisObj> temp_visible_objects_, temp_rt_visible_objects_;
+    struct VisObjStorage {
+        std::vector<VisObj> objects;
+        std::atomic_int count = 0;
+
+        VisObjStorage() = default;
+        VisObjStorage(VisObjStorage &&rhs) noexcept : objects(rhs.objects), count(rhs.count.load()) {}
+    };
+    Ren::HashMap32<uint32_t, VisObjStorage> temp_visible_objects_, temp_rt_visible_objects_;
     DynArray<BBox> decals_boxes_;
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
     int backend_gpu_start_ = -1, backend_gpu_end_ = -1;
-    int64_t backend_time_diff_ = 0;
     float reduced_average_ = 0.0f;
     Ren::Vec4f prev_wind_scroll_;
 
@@ -314,14 +320,13 @@ class Renderer {
     void InitPipelines();
     void InitRendererInternal();
     void DestroyRendererInternal();
-    static uint64_t GetGpuTimeBlockingUs();
 
     // Parallel Jobs
     static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
                                            const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
                                            uint64_t comp_mask, SWcull_ctx *cull_ctx, uint8_t visit_mask,
-                                           ProcessedObjData proc_objects[], VisObj out_visible_objects[],
-                                           std::atomic_int &inout_count);
+                                           ProcessedObjData proc_objects[],
+                                           Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
                                           const LightSource *const *litem_to_lsource, DrawList &list,
                                           std::atomic_int &items_count);

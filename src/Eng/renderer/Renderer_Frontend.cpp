@@ -190,18 +190,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     }
     memset(proc_objects_.get(), 0xff, sizeof(ProcessedObjData) * scene.objects.size());
 
-    temp_visible_objects_.resize(scene.objects.size());
-    temp_rt_visible_objects_.resize(scene.objects.size());
-
     const float ExtendedFrustumOffset = 100.0f;
     const float ExtendedFrustumFrontOffset = 200.0f;
 
-    Ren::Frustum ext_frustum = list.draw_cam.frustum();
-    for (int i = 0; i < 6; ++i) {
-        ext_frustum.planes[i].d += ExtendedFrustumOffset;
-    }
-    ext_frustum.planes[int(Ren::eCamPlane::Far)].d =
-        -ext_frustum.planes[int(Ren::eCamPlane::Near)].d + (ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
+    Ren::Camera ext_cam(list.draw_cam.world_position() - ExtendedFrustumOffset * list.draw_cam.fwd(),
+                        list.draw_cam.world_position(), list.draw_cam.up());
+    ext_cam.Perspective(list.draw_cam.angle(), list.draw_cam.aspect(), 1.0f,
+                        ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
+    ext_cam.UpdatePlanes();
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
@@ -316,41 +312,40 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     if (scene.root_node != 0xffffffff) {
         Ren::Frustum z_frustums[REN_GRID_RES_Z];
         list.draw_cam.ExtractSubFrustums(1, 1, REN_GRID_RES_Z, z_frustums);
-        std::atomic_int objects_count = {};
 
         std::future<void> futures[2 * REN_GRID_RES_Z];
 
         const uint64_t CompMask = (CompDrawableBit | CompDecalBit | CompLightSourceBit | CompProbeBit);
+        for (auto it = temp_visible_objects_.begin(); it != temp_visible_objects_.end(); ++it) {
+            it->val.objects.clear();
+            it->val.count = 0;
+        }
+        for (auto it = scene.object_counts.cbegin(); it != scene.object_counts.cend(); ++it) {
+            VisObjStorage &s = temp_visible_objects_[it->key & CompMask];
+            s.objects.resize(s.objects.size() + it->val);
+        }
         for (int i = 0; i < REN_GRID_RES_Z; ++i) {
-            futures[i] =
-                threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
-                                 list.draw_cam.world_position(), clip_from_identity, CompMask, &cull_ctx_, 0b00000001,
-                                 proc_objects_.get(), temp_visible_objects_.data(), std::ref(objects_count));
+            futures[i] = threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
+                                          list.draw_cam.world_position(), clip_from_identity, CompMask, &cull_ctx_,
+                                          0b00000001, proc_objects_.get(), std::ref(temp_visible_objects_));
         }
 
         Ren::Frustum rt_z_frustums[REN_GRID_RES_Z];
-
-        const float z_beg = -ext_frustum.planes[int(Ren::eCamPlane::Near)].d;
-        const float z_end = ext_frustum.planes[int(Ren::eCamPlane::Far)].d;
-
-        for (int i = 0; i < REN_GRID_RES_Z; ++i) {
-            rt_z_frustums[i] = ext_frustum;
-
-            const float k_near = float(i) / REN_GRID_RES_Z;
-            const float k_far = float(i + 1) / REN_GRID_RES_Z;
-
-            rt_z_frustums[i].planes[int(Ren::eCamPlane::Near)].d = -(z_beg + k_near * (z_end - z_beg));
-            rt_z_frustums[i].planes[int(Ren::eCamPlane::Far)].d = z_beg + k_far * (z_end - z_beg);
-        }
-
-        std::atomic_int rt_objects_count = {};
+        ext_cam.ExtractSubFrustums(1, 1, REN_GRID_RES_Z, rt_z_frustums);
 
         const uint64_t RTCompMask = CompAccStructureBit;
+        for (auto it = temp_rt_visible_objects_.begin(); it != temp_rt_visible_objects_.end(); ++it) {
+            it->val.objects.clear();
+            it->val.count = 0;
+        }
+        for (auto it = scene.object_counts.cbegin(); it != scene.object_counts.cend(); ++it) {
+            VisObjStorage &s = temp_rt_visible_objects_[it->key & RTCompMask];
+            s.objects.resize(s.objects.size() + it->val);
+        }
         for (int i = 0; i < REN_GRID_RES_Z; ++i) {
-            futures[REN_GRID_RES_Z + i] =
-                threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(rt_z_frustums[i]), std::ref(scene),
-                                 list.draw_cam.world_position(), Ren::Mat4f{}, RTCompMask, nullptr, 0b00000010,
-                                 proc_objects_.get(), temp_rt_visible_objects_.data(), std::ref(rt_objects_count));
+            futures[REN_GRID_RES_Z + i] = threads_.Enqueue(
+                GatherObjectsForZSlice_Job, std::ref(rt_z_frustums[i]), std::ref(scene), list.draw_cam.world_position(),
+                Ren::Mat4f{}, RTCompMask, nullptr, 0b00000010, proc_objects_.get(), std::ref(temp_rt_visible_objects_));
         }
 
         /////
@@ -359,170 +354,183 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             futures[i].wait();
         }
 
-        for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data(), objects_count.load()}) {
-            const SceneObject &obj = scene.objects[i.index];
+        for (auto it = temp_visible_objects_.begin(); it != temp_visible_objects_.end(); ++it) {
+            if (it->key & CompDrawableBit) {
+                for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
+                    const SceneObject &obj = scene.objects[i.index];
 
-            const Transform &tr = transforms[obj.components[CompTransform]];
-
-            if ((obj.comp_mask & CompDrawableBit)) {
-                const Drawable &dr = drawables[obj.components[CompDrawable]];
-                if (!(dr.vis_mask & render_mask)) {
-                    continue;
-                }
-                const Mesh *mesh = dr.mesh.get();
-
-                const float cam_dist = Distance(cam.world_position(), 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws));
-                const auto cam_dist_u8 = (uint8_t)std::min(255 * cam_dist / 500.0f, 255.0f);
-                const uint16_t cam_dist_u16 = uint16_t(0xffffu * (cam_dist / 500.0f));
-
-                uint32_t base_vertex = mesh->attribs_buf1().sub.offset / 16;
-
-                if (obj.comp_mask & CompAnimStateBit) {
-                    const AnimState &as = anims[obj.components[CompAnimState]];
-                    base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
-                }
-                proc_objects_[i.index].base_vertex = base_vertex;
-
-                __push_ellipsoids(dr, tr.world_from_object, list);
-
-                const uint32_t indices_start = mesh->indices_buf().sub.offset;
-                for (const auto &grp : mesh->groups()) {
-                    const Material *mat = grp.mat.get();
-                    const uint32_t mat_flags = mat->flags();
-
-                    __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
-
-                    if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
-                        (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
-                        CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
-
-                        fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
-                        fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
-                        fwd_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                        fwd_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
-                        fwd_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                        if (!ctx_.capabilities.bindless_texture) {
-                            fwd_batch.mat_id = uint32_t(grp.mat.index());
-                        } else {
-                            fwd_batch.mat_id = 0;
-                        }
-                        fwd_batch.cam_dist = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(cam_dist_u8) : 0;
-                        fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                        fwd_batch.base_vertex = base_vertex;
-                        fwd_batch.indices_count = grp.num_indices;
-                        fwd_batch.instance_index = i.index;
-                        fwd_batch.material_index = int32_t(grp.mat.index());
-                        fwd_batch.instance_count = 1;
+                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    const Drawable &dr = drawables[obj.components[CompDrawable]];
+                    if (!(dr.vis_mask & render_mask)) {
+                        continue;
                     }
+                    const Mesh *mesh = dr.mesh.get();
 
-                    if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
-                        ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
-                         (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
-                        BasicDrawBatch &base_batch = list.basic_batches.data[list.basic_batches.count++];
+                    const float cam_dist = Distance(cam.world_position(), 0.5f * (tr.bbox_min_ws + tr.bbox_max_ws));
+                    const auto cam_dist_u8 = (uint8_t)std::min(255 * cam_dist / 500.0f, 255.0f);
+                    const uint16_t cam_dist_u16 = uint16_t(0xffffu * (cam_dist / 500.0f));
 
-                        base_batch.type_bits = BasicDrawBatch::TypeSimple;
+                    uint32_t base_vertex = mesh->attribs_buf1().sub.offset / 16;
 
-                        if (obj.comp_mask & CompAnimStateBit) {
-                            base_batch.type_bits = BasicDrawBatch::TypeSkinned;
-                        } else if (obj.comp_mask & CompVegStateBit) {
-                            base_batch.type_bits = BasicDrawBatch::TypeVege;
+                    if (obj.comp_mask & CompAnimStateBit) {
+                        const AnimState &as = anims[obj.components[CompAnimState]];
+                        base_vertex = __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
+                    }
+                    proc_objects_[i.index].base_vertex = base_vertex;
+
+                    __push_ellipsoids(dr, tr.world_from_object, list);
+
+                    const uint32_t indices_start = mesh->indices_buf().sub.offset;
+                    for (const auto &grp : mesh->groups()) {
+                        const Material *mat = grp.mat.get();
+                        const uint32_t mat_flags = mat->flags();
+
+                        __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
+
+                        if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
+                            (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
+                            CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
+
+                            fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
+                            fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
+                            fwd_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                            fwd_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
+                            fwd_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                            if (!ctx_.capabilities.bindless_texture) {
+                                fwd_batch.mat_id = uint32_t(grp.mat.index());
+                            } else {
+                                fwd_batch.mat_id = 0;
+                            }
+                            fwd_batch.cam_dist =
+                                (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(cam_dist_u8) : 0;
+                            fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                            fwd_batch.base_vertex = base_vertex;
+                            fwd_batch.indices_count = grp.num_indices;
+                            fwd_batch.instance_index = i.index;
+                            fwd_batch.material_index = int32_t(grp.mat.index());
+                            fwd_batch.instance_count = 1;
                         }
 
-                        base_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                        base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                        base_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                        base_batch.custom_shaded = (mat_flags & uint32_t(eMatFlags::CustomShaded)) ? 1 : 0;
-                        base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
-                        base_batch.base_vertex = base_vertex;
-                        base_batch.indices_count = grp.num_indices;
-                        base_batch.instance_index = i.index;
-                        base_batch.material_index = int32_t(grp.mat.index());
-                        base_batch.instance_count = 1;
+                        if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
+                            ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
+                             (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
+                            BasicDrawBatch &base_batch = list.basic_batches.data[list.basic_batches.count++];
+
+                            base_batch.type_bits = BasicDrawBatch::TypeSimple;
+
+                            if (obj.comp_mask & CompAnimStateBit) {
+                                base_batch.type_bits = BasicDrawBatch::TypeSkinned;
+                            } else if (obj.comp_mask & CompVegStateBit) {
+                                base_batch.type_bits = BasicDrawBatch::TypeVege;
+                            }
+
+                            base_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                            base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
+                            base_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                            base_batch.custom_shaded = (mat_flags & uint32_t(eMatFlags::CustomShaded)) ? 1 : 0;
+                            base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
+                            base_batch.base_vertex = base_vertex;
+                            base_batch.indices_count = grp.num_indices;
+                            base_batch.instance_index = i.index;
+                            base_batch.material_index = int32_t(grp.mat.index());
+                            base_batch.instance_count = 1;
+                        }
                     }
                 }
             }
+            if (lighting_enabled && (it->key & CompLightSourceBit) && litem_to_lsource_.count < REN_MAX_LIGHTS_TOTAL) {
+                for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
+                    const SceneObject &obj = scene.objects[i.index];
 
-            if (lighting_enabled && (obj.comp_mask & CompLightSourceBit) &&
-                litem_to_lsource_.count < REN_MAX_LIGHTS_TOTAL) {
-                const LightSource &light = lights_src[obj.components[CompLightSource]];
+                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    const LightSource &light = lights_src[obj.components[CompLightSource]];
 
-                if (light.col[0] > 0.0f || light.col[1] > 0.0f || light.col[2] > 0.0f) {
-                    auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
+                    if (light.col[0] > 0.0f || light.col[1] > 0.0f || light.col[2] > 0.0f) {
+                        auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
+                        pos = tr.world_from_object * pos;
+                        pos /= pos[3];
+
+                        auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
+                        dir = tr.world_from_object * dir;
+
+                        const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
+                        const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
+
+                        litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
+                        LightItem &ls = list.lights.data[list.lights.count++];
+
+                        ls.col[0] = light.col[0] / light.area;
+                        ls.col[1] = light.col[1] / light.area;
+                        ls.col[2] = light.col[2] / light.area;
+                        ls.type = int(light.type);
+                        memcpy(ls.pos, &pos[0], 3 * sizeof(float));
+                        ls.radius = light.radius;
+                        memcpy(ls.dir, &dir[0], 3 * sizeof(float));
+                        ls.spot = light.spot;
+                        memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
+                        ls.shadowreg_index = -1;
+                        memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
+                    }
+                }
+            }
+            if (decals_enabled && (it->key & CompDecalBit) && ditem_to_decal_.count < REN_MAX_DECALS_TOTAL) {
+                for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
+                    const SceneObject &obj = scene.objects[i.index];
+
+                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    const Decal &decal = decals[obj.components[CompDecal]];
+
+                    const Mat4f &view_from_object = decal.view, &clip_from_view = decal.proj;
+
+                    const Mat4f view_from_world = view_from_object * tr.object_from_world,
+                                clip_from_world = clip_from_view * view_from_world;
+
+                    const Mat4f world_from_clip = Inverse(clip_from_world);
+
+                    Vec3f bbox_min = Vec3f{std::numeric_limits<float>::max()},
+                          bbox_max = Vec3f{std::numeric_limits<float>::lowest()};
+
+                    for (int k = 0; k < 8; k++) {
+                        Vec4f p = world_from_clip * ClipFrustumPoints[k];
+                        p /= p[3];
+
+                        bbox_min = Min(bbox_min, Vec3f{p});
+                        bbox_max = Max(bbox_max, Vec3f{p});
+                    }
+
+                    ditem_to_decal_.data[ditem_to_decal_.count++] = &decal;
+                    decals_boxes_.data[decals_boxes_.count++] = {bbox_min, bbox_max};
+
+                    const Mat4f clip_from_world_transposed = Transpose(clip_from_world);
+
+                    DecalItem &de = list.decals.data[list.decals.count++];
+                    memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
+                    memcpy(&de.mask[0], &decal.mask[0], 4 * sizeof(float));
+                    memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
+                    memcpy(&de.norm[0], &decal.norm[0], 4 * sizeof(float));
+                    memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
+                }
+            }
+            if ((it->key & CompProbeBit) && list.probes.count < REN_MAX_PROBES_TOTAL) {
+                for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
+                    const SceneObject &obj = scene.objects[i.index];
+
+                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    const LightProbe &probe = probes[obj.components[CompProbe]];
+
+                    auto pos = Vec4f{probe.offset[0], probe.offset[1], probe.offset[2], 1.0f};
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
-                    auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
-                    dir = tr.world_from_object * dir;
-
-                    const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
-                    const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
-
-                    litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
-                    LightItem &ls = list.lights.data[list.lights.count++];
-
-                    ls.col[0] = light.col[0] / light.area;
-                    ls.col[1] = light.col[1] / light.area;
-                    ls.col[2] = light.col[2] / light.area;
-                    ls.type = int(light.type);
-                    memcpy(ls.pos, &pos[0], 3 * sizeof(float));
-                    ls.radius = light.radius;
-                    memcpy(ls.dir, &dir[0], 3 * sizeof(float));
-                    ls.spot = light.spot;
-                    memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
-                    ls.shadowreg_index = -1;
-                    memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
-                }
-            }
-
-            if (decals_enabled && (obj.comp_mask & CompDecalBit) && ditem_to_decal_.count < REN_MAX_DECALS_TOTAL) {
-                const Decal &decal = decals[obj.components[CompDecal]];
-
-                const Mat4f &view_from_object = decal.view, &clip_from_view = decal.proj;
-
-                const Mat4f view_from_world = view_from_object * tr.object_from_world,
-                            clip_from_world = clip_from_view * view_from_world;
-
-                const Mat4f world_from_clip = Inverse(clip_from_world);
-
-                Vec3f bbox_min = Vec3f{std::numeric_limits<float>::max()},
-                      bbox_max = Vec3f{std::numeric_limits<float>::lowest()};
-
-                for (int k = 0; k < 8; k++) {
-                    Vec4f p = world_from_clip * ClipFrustumPoints[k];
-                    p /= p[3];
-
-                    bbox_min = Min(bbox_min, Vec3f{p});
-                    bbox_max = Max(bbox_max, Vec3f{p});
-                }
-
-                ditem_to_decal_.data[ditem_to_decal_.count++] = &decal;
-                decals_boxes_.data[decals_boxes_.count++] = {bbox_min, bbox_max};
-
-                const Mat4f clip_from_world_transposed = Transpose(clip_from_world);
-
-                DecalItem &de = list.decals.data[list.decals.count++];
-                memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
-                memcpy(&de.mask[0], &decal.mask[0], 4 * sizeof(float));
-                memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
-                memcpy(&de.norm[0], &decal.norm[0], 4 * sizeof(float));
-                memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
-            }
-
-            if ((obj.comp_mask & CompProbeBit) && list.probes.count < REN_MAX_PROBES_TOTAL) {
-                const LightProbe &probe = probes[obj.components[CompProbe]];
-
-                auto pos = Vec4f{probe.offset[0], probe.offset[1], probe.offset[2], 1.0f};
-                pos = tr.world_from_object * pos;
-                pos /= pos[3];
-
-                ProbeItem &pr = list.probes.data[list.probes.count++];
-                pr.layer = float(probe.layer_index);
-                pr.radius = probe.radius;
-                memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
-                for (int k = 0; k < 4; k++) {
-                    pr.sh_coeffs[0][k] = probe.sh_coeffs[k][0];
-                    pr.sh_coeffs[1][k] = probe.sh_coeffs[k][1];
-                    pr.sh_coeffs[2][k] = probe.sh_coeffs[k][2];
+                    ProbeItem &pr = list.probes.data[list.probes.count++];
+                    pr.layer = float(probe.layer_index);
+                    pr.radius = probe.radius;
+                    memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
+                    for (int k = 0; k < 4; k++) {
+                        pr.sh_coeffs[0][k] = probe.sh_coeffs[k][0];
+                        pr.sh_coeffs[1][k] = probe.sh_coeffs[k][1];
+                        pr.sh_coeffs[2][k] = probe.sh_coeffs[k][2];
+                    }
                 }
             }
         }
@@ -531,24 +539,25 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             futures[i].wait();
         }
 
-        if (rt_objects_count > REN_MAX_RT_OBJ_INSTANCES) {
+        VisObjStorage &rt_objects = temp_rt_visible_objects_[RTCompMask];
+        if (rt_objects.count > REN_MAX_RT_OBJ_INSTANCES) {
             OPTICK_EVENT("SORT RT INSTANCES");
 
             const Vec3f &cam_pos = list.draw_cam.world_position();
-            std::partial_sort(
-                temp_rt_visible_objects_.data(), temp_rt_visible_objects_.data() + REN_MAX_RT_OBJ_INSTANCES,
-                temp_rt_visible_objects_.data() + rt_objects_count.load(), [&](const VisObj lhs, const VisObj rhs) {
-                    const SceneObject &lhs_obj = scene.objects[lhs.index];
-                    const SceneObject &rhs_obj = scene.objects[rhs.index];
+            std::partial_sort(rt_objects.objects.data(), rt_objects.objects.data() + REN_MAX_RT_OBJ_INSTANCES,
+                              rt_objects.objects.data() + rt_objects.count.load(),
+                              [&](const VisObj lhs, const VisObj rhs) {
+                                  const SceneObject &lhs_obj = scene.objects[lhs.index];
+                                  const SceneObject &rhs_obj = scene.objects[rhs.index];
 
-                    return acc_structs[lhs_obj.components[CompAccStructure]].surf_area / lhs.dist2 >
-                           acc_structs[rhs_obj.components[CompAccStructure]].surf_area / rhs.dist2;
-                });
+                                  return acc_structs[lhs_obj.components[CompAccStructure]].surf_area / lhs.dist2 >
+                                         acc_structs[rhs_obj.components[CompAccStructure]].surf_area / rhs.dist2;
+                              });
         }
 
-        temp_rt_visible_objects_.resize(std::min(rt_objects_count.load(), REN_MAX_RT_OBJ_INSTANCES));
+        rt_objects.objects.resize(std::min(rt_objects.count.load(), REN_MAX_RT_OBJ_INSTANCES));
 
-        for (const VisObj i : temp_rt_visible_objects_) {
+        for (const VisObj i : rt_objects.objects) {
             const SceneObject &obj = scene.objects[i.index];
 
             const Transform &tr = transforms[obj.components[CompTransform]];
@@ -876,20 +885,25 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 z_frustums[i].planes[7].d = z_beg + k_far * (z_end - z_beg);
             }
 
-            std::atomic_int objects_count = {};
-
             std::future<void> futures[24];
 
             uint64_t CompMask = CompDrawableBit;
             if (rt_shadows_enabled) {
                 CompMask |= CompAccStructureBit;
             }
-
+            for (auto it = temp_visible_objects_.begin(); it != temp_visible_objects_.end(); ++it) {
+                it->val.objects.clear();
+                it->val.count = 0;
+            }
+            for (auto it = scene.object_counts.cbegin(); it != scene.object_counts.cend(); ++it) {
+                VisObjStorage &s = temp_visible_objects_[it->key & CompMask];
+                s.objects.resize(s.objects.size() + it->val);
+            }
             for (int i = 0; i < ZSliceCount; ++i) {
                 futures[i] =
                     threads_.Enqueue(GatherObjectsForZSlice_Job, std::ref(z_frustums[i]), std::ref(scene),
                                      shadow_cam.world_position(), Ren::Mat4f{}, CompMask, nullptr, (0b00000100 << casc),
-                                     proc_objects_.get(), temp_visible_objects_.data(), std::ref(objects_count));
+                                     proc_objects_.get(), std::ref(temp_visible_objects_));
             }
 
             for (int i = 0; i < ZSliceCount; ++i) {
@@ -898,83 +912,86 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             /////
 
-            for (const VisObj i : Ren::Span<VisObj>{temp_visible_objects_.data(), objects_count.load()}) {
-                const SceneObject &obj = scene.objects[i.index];
+            for (auto it = temp_visible_objects_.begin(); it != temp_visible_objects_.end(); ++it) {
+                for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
+                    const SceneObject &obj = scene.objects[i.index];
 
-                const Transform &tr = transforms[obj.components[CompTransform]];
-                const Drawable &dr = drawables[obj.components[CompDrawable]];
-                if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
-                    continue;
-                }
-
-                if ((tr.bbox_max_ws[0] - tr.bbox_min_ws[0]) < object_dim_thres &&
-                    (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
-                    (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) {
-                    continue;
-                }
-
-                const Mesh *mesh = dr.mesh.get();
-
-                if (proc_objects_[i.index].base_vertex == 0xffffffff) {
-                    proc_objects_[i.index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
-
-                    if (obj.comp_mask & CompAnimStateBit) {
-                        const AnimState &as = anims[obj.components[CompAnimState]];
-                        proc_objects_[i.index].base_vertex =
-                            __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
+                    const Transform &tr = transforms[obj.components[CompTransform]];
+                    const Drawable &dr = drawables[obj.components[CompDrawable]];
+                    if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
+                        continue;
                     }
-                }
 
-                if (proc_objects_[i.index].rt_sh_index == -1 && (obj.comp_mask & CompAccStructureBit)) {
-                    proc_objects_[i.index].rt_sh_index = list.rt_obj_instances[1].count;
-
-                    const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
-                    if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
-                        const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
-
-                        RTObjInstance &new_instance = list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
-                        memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
-                        memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-                        new_instance.geo_index = acc->geo_index;
-                        new_instance.geo_count = acc->geo_count;
-                        new_instance.mask = 0xff;
-                        memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
-                        new_instance.blas_ref = acc;
+                    if ((tr.bbox_max_ws[0] - tr.bbox_min_ws[0]) < object_dim_thres &&
+                        (tr.bbox_max_ws[1] - tr.bbox_min_ws[1]) < object_dim_thres &&
+                        (tr.bbox_max_ws[2] - tr.bbox_min_ws[2]) < object_dim_thres) {
+                        continue;
                     }
-                }
 
-                for (const auto &grp : mesh->groups()) {
-                    const Material *mat = grp.mat.get();
-                    const uint32_t mat_flags = mat->flags();
+                    const Mesh *mesh = dr.mesh.get();
 
-                    if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                        if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
-                            mat->textures[3]) {
-                            // assume only the third texture gives transparency
-                            __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
+                    if (proc_objects_[i.index].base_vertex == 0xffffffff) {
+                        proc_objects_[i.index].base_vertex = mesh->attribs_buf1().sub.offset / 16;
+
+                        if (obj.comp_mask & CompAnimStateBit) {
+                            const AnimState &as = anims[obj.components[CompAnimState]];
+                            proc_objects_[i.index].base_vertex =
+                                __push_skeletal_mesh(skinned_buf_vtx_offset, as, mesh, list);
                         }
+                    }
 
-                        BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                    if (proc_objects_[i.index].rt_sh_index == -1 && (obj.comp_mask & CompAccStructureBit)) {
+                        proc_objects_[i.index].rt_sh_index = list.rt_obj_instances[1].count;
 
-                        batch.type_bits = BasicDrawBatch::TypeSimple;
+                        const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
+                        if (acc && list.rt_obj_instances[1].count < REN_MAX_RT_OBJ_INSTANCES) {
+                            const Mat4f world_from_object_trans = Transpose(tr.world_from_object);
 
-                        // we do not care if it is skinned
-                        if (obj.comp_mask & CompVegStateBit) {
-                            batch.type_bits = BasicDrawBatch::TypeVege;
+                            RTObjInstance &new_instance =
+                                list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
+                            memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
+                            memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
+                            new_instance.geo_index = acc->geo_index;
+                            new_instance.geo_count = acc->geo_count;
+                            new_instance.mask = 0xff;
+                            memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
+                            new_instance.blas_ref = acc;
                         }
+                    }
 
-                        batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                        batch.moving_bit = 0;
-                        batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                        batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
-                        batch.base_vertex = proc_objects_[i.index].base_vertex;
-                        batch.indices_count = grp.num_indices;
-                        batch.instance_index = i.index;
-                        batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
-                                                (batch.type_bits == BasicDrawBatch::TypeVege))
-                                                   ? int32_t(grp.mat.index())
-                                                   : 0;
-                        batch.instance_count = 1;
+                    for (const auto &grp : mesh->groups()) {
+                        const Material *mat = grp.mat.get();
+                        const uint32_t mat_flags = mat->flags();
+
+                        if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
+                            if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
+                                mat->textures[3]) {
+                                // assume only the third texture gives transparency
+                                __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
+                            }
+
+                            BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+
+                            batch.type_bits = BasicDrawBatch::TypeSimple;
+
+                            // we do not care if it is skinned
+                            if (obj.comp_mask & CompVegStateBit) {
+                                batch.type_bits = BasicDrawBatch::TypeVege;
+                            }
+
+                            batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                            batch.moving_bit = 0;
+                            batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                            batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
+                            batch.base_vertex = proc_objects_[i.index].base_vertex;
+                            batch.indices_count = grp.num_indices;
+                            batch.instance_index = i.index;
+                            batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
+                                                    (batch.type_bits == BasicDrawBatch::TypeVege))
+                                                       ? int32_t(grp.mat.index())
+                                                       : 0;
+                            batch.instance_count = 1;
+                        }
                     }
                 }
             }
@@ -1580,8 +1597,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,
                                                const Ren::Vec3f &cam_pos, const Ren::Mat4f &clip_from_identity,
                                                const uint64_t comp_mask, SWcull_ctx *cull_ctx, const uint8_t visit_mask,
-                                               ProcessedObjData proc_objects[], VisObj out_visible_objects[],
-                                               std::atomic_int &inout_count) {
+                                               ProcessedObjData proc_objects[],
+                                               Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -1685,9 +1702,10 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
                 if (cam_visibility != eVisResult::Invisible) {
                     const uint8_t mask = proc_objects[n->prim_index].visited_mask.fetch_and(~visit_mask);
                     if (mask & visit_mask) {
-                        const uint32_t index = inout_count.fetch_add(1);
-                        out_visible_objects[index] = {n->prim_index,
-                                                      Distance2(cam_pos, 0.5f * (tr.bbox_max_ws + tr.bbox_min_ws))};
+                        VisObjStorage &s = out_visible_objects2[obj.comp_mask & comp_mask];
+                        const uint32_t index2 = s.count.fetch_add(1);
+                        s.objects[index2] = {n->prim_index,
+                                             Distance2(cam_pos, 0.5f * (tr.bbox_max_ws + tr.bbox_min_ws))};
                     }
                 }
             }
@@ -2209,7 +2227,6 @@ void RendererInternal::__record_textures(Eng::DynArray<Eng::TexEntry> &storage, 
 }
 
 #undef BBOX_POINTS
-#undef _MAX
 #undef _CROSS
 
 #undef REN_UNINITIALIZE_X2

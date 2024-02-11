@@ -13,6 +13,7 @@ if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -finline-small-functions ")
         elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHs")
             # allow to inline some functions in debug mode
             set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Ob1 /fp:except")

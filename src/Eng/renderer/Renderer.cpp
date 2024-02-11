@@ -542,10 +542,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     const bool cur_hq_ssr_enabled = (list.render_flags & EnableSSR_HQ) != 0;
     const bool cur_dof_enabled = (list.render_flags & EnableDOF) != 0;
 
-    uint64_t gpu_draw_start = 0;
-    if (list.render_flags & DebugTimings) {
-        gpu_draw_start = GetGpuTimeBlockingUs();
-    }
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
     // Write timestamp at the beginning of execution
     backend_gpu_start_ = ctx_.WriteTimestamp(true);
@@ -1424,7 +1420,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     // store values for current frame
     backend_cpu_start_ = cpu_draw_start_us;
     backend_cpu_end_ = cpu_draw_end_us;
-    backend_time_diff_ = int64_t(gpu_draw_start) - int64_t(backend_cpu_start_);
 
     // Write timestamp at the end of execution
     backend_gpu_end_ = ctx_.WriteTimestamp(false);

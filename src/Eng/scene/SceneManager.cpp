@@ -331,8 +331,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     for (const JsElementP &js_elem : js_objects.elements) {
         const JsObjectP &js_obj = js_elem.as_obj();
 
-        scene_data_.objects.emplace_back();
-        SceneObject &obj = scene_data_.objects.back();
+        SceneObject &obj = scene_data_.objects.emplace_back();
 
         Ren::Vec3f obj_bbox[2] = {Ren::Vec3f{std::numeric_limits<float>::max()},
                                   Ren::Vec3f{std::numeric_limits<float>::lowest()}};
@@ -377,6 +376,13 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             const JsStringP &js_name = js_obj.at("name").as_str();
             obj.name = Ren::String{js_name.val.c_str()};
             scene_data_.name_to_object[obj.name] = uint32_t(scene_data_.objects.size() - 1);
+        }
+
+        uint32_t *count = scene_data_.object_counts.Find(obj.comp_mask);
+        if (count) {
+            ++(*count);
+        } else {
+            scene_data_.object_counts.Insert(obj.comp_mask, 1);
         }
     }
 

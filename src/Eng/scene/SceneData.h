@@ -222,6 +222,7 @@ struct SceneData {
 
     std::vector<SceneObject> objects;
     Ren::HashMap32<Ren::String, uint32_t> name_to_object;
+    Ren::HashMap32<uint32_t, uint32_t> object_counts;
 
     std::vector<bvh_node_t> nodes;
     std::vector<uint32_t> free_nodes;

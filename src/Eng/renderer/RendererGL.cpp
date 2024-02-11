@@ -997,12 +997,6 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 }
 #endif
 
-uint64_t Eng::Renderer::GetGpuTimeBlockingUs() {
-    GLint64 time = 0;
-    glGetInteger64v(GL_TIMESTAMP, &time);
-    return (uint64_t)(time / 1000);
-}
-
 void Eng::Renderer::BlitPixels(const void *data, const int w, const int h, const Ren::eTexFormat format) {
     using namespace RendererInternal;
 
