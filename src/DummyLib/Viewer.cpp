@@ -319,8 +319,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             dict_link_t &link = dict_hashmap[Ren::String{js_orth.val.c_str()}];
             link.entries[link.entries_count++] = (uint32_t)dict_entries.size();
 
-            dict_entries.emplace_back();
-            dict_entry_t &entry = dict_entries.back();
+            dict_entry_t &entry = dict_entries.emplace_back();
 
             entry.orth = Ren::String{js_orth.val.c_str()};
 
@@ -475,8 +474,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             const auto key_str_offset = (uint32_t)comb_str_buf_ndx1;
             comb_str_buf_ndx1 += key_len + 1;
 
-            links_compact.emplace_back();
-            Dictionary::dict_link_compact_t &link = links_compact.back();
+            Dictionary::dict_link_compact_t &link = links_compact.emplace_back();
             link.key_str_off = key_str_offset;
             link.entry_index = (uint32_t)entries_compact.size();
             link.entry_count = src_link.entries_count;
@@ -486,8 +484,7 @@ bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, con
             for (uint32_t i = 0; i < src_link.entries_count; i++) {
                 const dict_entry_t &src_entry = dict_entries[src_link.entries[i]];
 
-                entries_compact.emplace_back();
-                Dictionary::dict_entry_compact_t &dst_entry = entries_compact.back();
+                Dictionary::dict_entry_compact_t &dst_entry = entries_compact.emplace_back();
 
                 dst_entry.pos = (uint8_t)src_entry.pos;
                 dst_entry.num = (uint8_t)src_entry.num;

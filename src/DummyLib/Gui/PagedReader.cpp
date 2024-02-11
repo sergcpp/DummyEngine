@@ -64,9 +64,8 @@ bool PagedReader::LoadBook(const JsObject &js_book, const char *src_lang, const 
         for (const JsElement &js_chapter_el : js_chapters.elements) {
             const auto &js_chapter = (const JsObject &)js_chapter_el.as_obj();
 
-            chapters_[0].emplace_back();
-            chapters_[1].emplace_back();
-            ChapterData &chapter_src = chapters_[0].back(), &chapter_trg = chapters_[1].back();
+            ChapterData &chapter_src = chapters_[0].emplace_back();
+            ChapterData &chapter_trg = chapters_[1].emplace_back();
 
             if (js_chapter.Has("caption")) {
                 const JsObject &js_caption = js_chapter.at("caption").as_obj();
@@ -274,8 +273,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                         push_color = color_cyan;
                     }
 
-                    options_rects_.emplace_back();
-                    rect_t &rect = options_rects_.back();
+                    rect_t &rect = options_rects_.emplace_back();
                     rect.dims[0] = Ren::Vec2f{ x_offset, y_offset };
                 } else if (strcmp(tag_str, "/option") == 0) {
                     pop_color = true;
@@ -304,8 +302,7 @@ void PagedReader::DrawCurrentPage(Gui::Renderer *r) const {
                         push_color = color_yellow;
                     }
 
-                    hint_rects_.emplace_back();
-                    rect_t &rect = hint_rects_.back();
+                    rect_t &rect = hint_rects_.emplace_back();
                     rect.dims[0] = Ren::Vec2f{ x_offset, y_offset };
                 } else if (strcmp(tag_str, "/hint") == 0) {
                     pop_color = true;
@@ -470,8 +467,7 @@ void PagedReader::UpdatePages() {
 
             int char_pos = 0;
             while (input_src_data[char_pos]) {
-                chapter.pages.emplace_back();
-                PageData &page = chapter.pages.back();
+                PageData &page = chapter.pages.emplace_back();
 
                 float x_offset = x_start, y_offset = y_start;
                 portion_buf_size = 0;
@@ -541,8 +537,7 @@ void PagedReader::UpdatePages() {
                             sentence.rect_end = (int)chapter.sentence_rects.size();
                         }
 
-                        chapter.sentences.emplace_back();
-                        SentenceData &next_sentence = chapter.sentences.back();
+                        SentenceData &next_sentence = chapter.sentences.emplace_back();
                         next_sentence.start_pos = char_pos;
                         next_sentence.rect_beg = (int)chapter.sentence_rects.size();
                     }

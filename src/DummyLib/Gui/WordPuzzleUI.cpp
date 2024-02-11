@@ -68,9 +68,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
         for (const JsElement &js_opt_el : js_options.elements) {
             const JsObject &js_opt = js_opt_el.as_obj();
 
-            text_options_.emplace_back();
-
-            OptionData &opt_data = text_options_.back();
+            OptionData &opt_data = text_options_.emplace_back();
             opt_data.var_start = (int)option_variants_.size();
             opt_data.var_count = 0;
             opt_data.var_correct = opt_data.var_start;
@@ -102,9 +100,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
         for (const JsElement &js_hint_el : js_hints.elements) {
             const JsObject &js_hint = js_hint_el.as_obj();
 
-            text_hints_.emplace_back();
-
-            HintData &hint_data = text_hints_.back();
+            HintData &hint_data = text_hints_.emplace_back();
             hint_data.str_index = (int)hint_strings_.size();
             hint_data.is_hover = false;
 
@@ -143,8 +139,7 @@ bool WordPuzzleUI::Load(const JsObject &js_puzzle) {
                     text_hints_[hint_index].len = char_pos - 7 - text_hints_[hint_index].pos;
                     hint_index++;
                 } else if (strcmp(tag_str, "split") == 0) {
-                    text_splits_.emplace_back();
-                    SplitData &sd = text_splits_.back();
+                    SplitData &sd = text_splits_.emplace_back();
                     sd.pos = char_pos;
                     sd.hint_start = hint_index;
                     sd.option_start = option_index;
@@ -224,8 +219,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
             for (const int i : chosen_splits_) {
                 const SplitData &sd = text_splits_[i];
 
-                split_rects_.emplace_back();
-                rect_t &rect = split_rects_.back();
+                rect_t &rect = split_rects_.emplace_back();
                 rect.dims[0] = Ren::Vec2f{draw_offset[0], draw_offset[1] - 0.125f * font_height};
 
                 draw_offset = DrawTextBuffer(r, &text_data_[sd.pos], sd.len, draw_offset, options_rects_,
@@ -256,8 +250,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
                 const SplitData &sd = text_splits_[i];
                 const Ren::Vec2f &draw_offset = draw_offsets[sd.slot_index];
 
-                split_rects_.emplace_back();
-                rect_t &rect = split_rects_.back();
+                rect_t &rect = split_rects_.emplace_back();
                 rect.dims[0] = Ren::Vec2f{draw_offset[0], draw_offset[1] - 0.125f * font_height};
 
                 int expanded_option = -1;
@@ -309,9 +302,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
             const float width =
                 font_.DrawText(r, var.c_str(), opt_pos, (i == hover_var_) ? Gui::ColorRed : Gui::ColorWhite, this);
 
-            expanded_rects_.emplace_back();
-            rect_t &rect = expanded_rects_.back();
-
+            rect_t &rect = expanded_rects_.emplace_back();
             rect.dims[0] = opt_pos;
             rect.dims[1] = Gui::Vec2f{width, font_height * 0.8f};
 
@@ -589,8 +580,7 @@ Ren::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
                     push_color = Gui::ColorCyan;
                 }
 
-                out_options_rects.emplace_back();
-                rect_t &rect = out_options_rects.back();
+                rect_t &rect = out_options_rects.emplace_back();
                 rect.dims[0] = draw_offset;
                 rect.data = option_index;
             } else if (strcmp(tag_str, "/option") == 0) {
@@ -619,8 +609,7 @@ Ren::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
                     push_color = Gui::ColorYellow;
                 }
 
-                out_hint_rects.emplace_back();
-                rect_t &rect = out_hint_rects.back();
+                rect_t &rect = out_hint_rects.emplace_back();
                 rect.dims[0] = draw_offset;
                 rect.data = hint_index;
             } else if (strcmp(tag_str, "/hint") == 0) {

@@ -237,8 +237,7 @@ int Ren::Skeleton::AddAnimSequence(AnimSeqRef ref) {
             return i;
         }
     }
-    anims.emplace_back();
-    AnimLink &a = anims.back();
+    AnimLink &a = anims.emplace_back();
     a.anim = std::move(ref);
     a.anim_bones = std::make_unique<int[]>(bones_count);
     a.anim->LinkBones(&bones[0], bones_count, &a.anim_bones[0]);

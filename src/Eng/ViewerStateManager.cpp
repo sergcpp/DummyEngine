@@ -20,8 +20,7 @@ void Eng::ViewerStateManager::Push(const std::shared_ptr<ViewerState> &state) {
     if (!states_.empty()) {
         states_.back()->Exit();
     }
-    states_.emplace_back(state);
-    states_.back()->Enter();
+    states_.emplace_back(state)->Enter();
 }
 
 std::shared_ptr<Eng::ViewerState> Eng::ViewerStateManager::Pop() {

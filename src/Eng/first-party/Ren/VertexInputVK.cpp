@@ -78,7 +78,6 @@ void Ren::VertexInput::FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDe
     SmallVector<std::pair<BufHandle, VkDeviceSize>, 8> bound_buffers;
     for (const auto &attr_descr : attribs) {
         auto &vk_attr = out_attribs.emplace_back();
-
         vk_attr.location = uint32_t(attr_descr.loc);
         vk_attr.format = g_vk_attrib_formats[int(attr_descr.type)][attr_descr.size - 1];
         if (attr_descr.offset > MaxVertexInputAttributeOffset) {
@@ -101,7 +100,6 @@ void Ren::VertexInput::FillVKDescriptions(SmallVectorImpl<VkVertexInputBindingDe
             vk_attr.binding = uint32_t(bound_buffers.size());
 
             auto &vk_binding = out_bindings.emplace_back();
-
             vk_binding.binding = uint32_t(bound_buffers.size());
             if (attr_descr.stride) {
                 vk_binding.stride = uint32_t(attr_descr.stride);
