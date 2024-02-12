@@ -14,8 +14,8 @@ struct Params {
     float fade;
 };
 
-DEF_CONST_INT(HDR_TEX_SLOT, 0)
-DEF_CONST_INT(BLURED_TEX_SLOT, 1)
+const int HDR_TEX_SLOT = 0;
+const int BLURED_TEX_SLOT = 1;
 
 INTERFACE_END
 

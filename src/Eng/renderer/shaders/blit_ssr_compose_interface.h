@@ -9,7 +9,7 @@ struct Params {
     VEC4_TYPE transform;
 };
 
-DEF_CONST_INT(SSR_TEX_SLOT, 0);
+const int SSR_TEX_SLOT = 0;
 
 INTERFACE_END
 

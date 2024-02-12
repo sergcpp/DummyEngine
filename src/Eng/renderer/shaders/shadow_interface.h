@@ -9,7 +9,7 @@ struct Params {
     MAT4_TYPE g_shadow_view_proj_mat;
 };
 
-DEF_CONST_INT(U_M_MATRIX_LOC, 12)
+const int U_M_MATRIX_LOC = 12;
 
 INTERFACE_END
 

@@ -10,7 +10,7 @@ struct Params {
     VEC4_TYPE offset;
 };
 
-DEF_CONST_INT(SRC_TEX_SLOT, 0)
+const int SRC_TEX_SLOT = 0;
 
 INTERFACE_END
 

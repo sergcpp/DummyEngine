@@ -149,7 +149,7 @@ void IntersectTris_ClosestHit(samplerBuffer vtx_positions, usamplerBuffer vtx_in
     }
 }
 
-#define MAX_STACK_SIZE 48
+const int MAX_STACK_SIZE = 48;
 shared uint g_stack[64][MAX_STACK_SIZE];
 
 void Traverse_MicroTree_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,

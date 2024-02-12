@@ -5,7 +5,7 @@
 
 INTERFACE_START(Ellipsoid)
 
-DEF_CONST_INT(U_M_MATRIX_LOC, 0)
+const int U_M_MATRIX_LOC = 0;
 
 INTERFACE_END
 

@@ -10,8 +10,8 @@ struct Params {
     VEC2_TYPE resolution;
 };
 
-DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
-DEF_CONST_INT(RAND_TEX_SLOT, 1)
+const int DEPTH_TEX_SLOT = 0;
+const int RAND_TEX_SLOT = 1;
 
 INTERFACE_END
 

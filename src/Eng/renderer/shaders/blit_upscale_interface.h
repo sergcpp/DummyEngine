@@ -11,9 +11,9 @@ struct Params {
     VEC4_TYPE clip_info;
 };
 
-DEF_CONST_INT(DEPTH_TEX_SLOT, 0)
-DEF_CONST_INT(DEPTH_LOW_TEX_SLOT, 1)
-DEF_CONST_INT(INPUT_TEX_SLOT, 2)
+const int DEPTH_TEX_SLOT = 0;
+const int DEPTH_LOW_TEX_SLOT = 1;
+const int INPUT_TEX_SLOT = 2;
 
 INTERFACE_END
 

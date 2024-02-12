@@ -15,10 +15,10 @@ struct Params {
     float mix_factor; // for static accumulation
 };
 
-DEF_CONST_INT(CURR_TEX_SLOT, 0)
-DEF_CONST_INT(HIST_TEX_SLOT, 1);
-DEF_CONST_INT(DEPTH_TEX_SLOT, 2);
-DEF_CONST_INT(VELOCITY_TEX_SLOT, 3);
+const int CURR_TEX_SLOT = 0;
+const int HIST_TEX_SLOT = 1;
+const int DEPTH_TEX_SLOT = 2;
+const int VELOCITY_TEX_SLOT = 3;
 
 INTERFACE_END
 

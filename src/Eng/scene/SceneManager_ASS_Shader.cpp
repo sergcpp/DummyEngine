@@ -50,29 +50,6 @@ void Eng::SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string
             throw std::runtime_error("Unknown variable!");
         }
     }
-
-    if (line.find("DEF_CONST_INT(") == 0) {
-        line = line.substr(14);
-        const size_t n1 = line.find(',');
-        if (n1 != std::string::npos) {
-            const std::string binding_name = line.substr(0, n1);
-
-            line = line.substr(n1 + 1);
-            while (!line.empty() && line[0] == ' ') {
-                line = line.substr(1);
-            }
-
-            const size_t n2 = line.find(')');
-            if (n2 != std::string::npos) {
-                const std::string binding_index = line.substr(0, n2);
-
-                line = "#define ";
-                line += binding_name;
-                line += " ";
-                line += binding_index;
-            }
-        }
-    }
 }
 
 bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
