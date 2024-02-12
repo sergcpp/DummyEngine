@@ -136,7 +136,7 @@ Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_
     tbuf_based_count_ = (max_tbuf_count + pool_step - 1) / pool_step;
     acc_based_count_ = (max_acc_count + pool_step - 1) / pool_step;
     const uint32_t required_pools_count = img_sampler_based_count_ * store_img_based_count_ * ubuf_based_count_ *
-                                          sbuf_based_count_ * tbuf_based_count_ * acc_based_count_;
+                                          sbuf_based_count_ * tbuf_based_count_ * std::max(acc_based_count_, 1u);
 
     // store rounded values
     max_img_sampler_count_ = pool_step * img_sampler_based_count_;
@@ -149,18 +149,25 @@ Ren::DescrMultiPoolAlloc::DescrMultiPoolAlloc(ApiContext *api_ctx, const uint32_
     for (uint32_t i = 0; i < required_pools_count; ++i) {
         uint32_t index = i;
 
-        DescrSizes pool_sizes;
-        pool_sizes.acc_count = pool_step * ((index % acc_based_count_) + 1);
-        index /= acc_based_count_;
+        DescrSizes pool_sizes = {};
+        if (acc_based_count_ != 0) {
+            pool_sizes.acc_count = pool_step * ((index % acc_based_count_) + 1);
+            index /= acc_based_count_;
+        }
         pool_sizes.tbuf_count = pool_step * ((index % tbuf_based_count_) + 1);
+        assert(tbuf_based_count_ != 0);
         index /= tbuf_based_count_;
         pool_sizes.sbuf_count = pool_step * ((index % sbuf_based_count_) + 1);
+        assert(sbuf_based_count_ != 0);
         index /= sbuf_based_count_;
         pool_sizes.ubuf_count = pool_step * ((index % ubuf_based_count_) + 1);
+        assert(ubuf_based_count_ != 0);
         index /= ubuf_based_count_;
         pool_sizes.img_sampler_count = pool_step * ((index % img_sampler_based_count_) + 1);
+        assert(img_sampler_based_count_ != 0);
         index /= img_sampler_based_count_;
         pool_sizes.store_img_count = pool_step * ((index % store_img_based_count_) + 1);
+        assert(store_img_based_count_ != 0);
         index /= store_img_based_count_;
 
         pools_.emplace_back(api_ctx, pool_sizes, initial_sets_count);
