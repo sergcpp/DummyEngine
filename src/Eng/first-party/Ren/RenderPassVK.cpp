@@ -21,14 +21,14 @@ extern const VkAttachmentLoadOp vk_load_ops[] = {
     VK_ATTACHMENT_LOAD_OP_LOAD,      // Load
     VK_ATTACHMENT_LOAD_OP_CLEAR,     // Clear
     VK_ATTACHMENT_LOAD_OP_DONT_CARE, // DontCare
-    VK_ATTACHMENT_LOAD_OP_DONT_CARE  // None
+    VK_ATTACHMENT_LOAD_OP_NONE_EXT   // None
 };
 static_assert((sizeof(vk_load_ops) / sizeof(vk_load_ops[0])) == int(eLoadOp::_Count), "!");
 
 extern const VkAttachmentStoreOp vk_store_ops[] = {
     VK_ATTACHMENT_STORE_OP_STORE,     // Store
     VK_ATTACHMENT_STORE_OP_DONT_CARE, // DontCare
-    VK_ATTACHMENT_STORE_OP_STORE      // None
+    VK_ATTACHMENT_STORE_OP_NONE_EXT   // None
 };
 static_assert((sizeof(vk_store_ops) / sizeof(vk_store_ops[0])) == int(eStoreOp::_Count), "!");
 
@@ -77,9 +77,21 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
         att_desc.format = Ren::VKFormatFromTexFormat(_depth_rt.format);
         att_desc.samples = VkSampleCountFlagBits(_depth_rt.samples);
         att_desc.loadOp = vk_load_ops[int(_depth_rt.load)];
+        if (att_desc.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        }
         att_desc.storeOp = vk_store_ops[int(_depth_rt.store)];
+        if (att_desc.storeOp == VK_ATTACHMENT_STORE_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        }
         att_desc.stencilLoadOp = vk_load_ops[int(_depth_rt.stencil_load)];
+        if (att_desc.stencilLoadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        }
         att_desc.stencilStoreOp = vk_store_ops[int(_depth_rt.stencil_store)];
+        if (att_desc.stencilStoreOp == VK_ATTACHMENT_STORE_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+        }
         att_desc.initialLayout = VkImageLayout(_depth_rt.layout);
         att_desc.finalLayout = att_desc.initialLayout;
 
@@ -113,6 +125,19 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
         att_desc.stencilStoreOp = vk_store_ops[int(_color_rts[i].store)];
         att_desc.initialLayout = VkImageLayout(_color_rts[i].layout);
         att_desc.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+        if (att_desc.loadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        }
+        if (att_desc.stencilLoadOp == VK_ATTACHMENT_LOAD_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+        }
+        if (att_desc.storeOp == VK_ATTACHMENT_STORE_OP_NONE && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        }
+        if (att_desc.stencilStoreOp == VK_ATTACHMENT_STORE_OP_NONE && !api_ctx->renderpass_loadstore_none_supported) {
+            att_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+        }
 
         color_attachment_refs[i].attachment = att_index;
         color_attachment_refs[i].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;

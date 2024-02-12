@@ -6,8 +6,8 @@
 #include <fstream>
 #include <sstream>
 
-#include <Eng/ViewerStateManager.h>
 #include <Eng/Log.h>
+#include <Eng/ViewerStateManager.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Random.h>
@@ -206,7 +206,7 @@ void Viewer::Frame() {
     VkSubmitInfo submit_info = {VK_STRUCTURE_TYPE_SUBMIT_INFO};
 
     const VkSemaphore wait_semaphores[] = {api_ctx->image_avail_semaphores[api_ctx->backend_frame]};
-    const VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    const VkPipelineStageFlags wait_stages[] = {VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT};
 
     submit_info.waitSemaphoreCount = 1;
     submit_info.pWaitSemaphores = wait_semaphores;

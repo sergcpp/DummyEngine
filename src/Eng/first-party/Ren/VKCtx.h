@@ -57,6 +57,8 @@ struct ApiContext {
 
     bool dynamic_rendering_supported = false;
 
+    bool renderpass_loadstore_none_supported = false;
+
     // resources scheduled for deferred destruction
     SmallVector<VkImage, 128> images_to_destroy[MaxFramesInFlight];
     SmallVector<VkImageView, 128> image_views_to_destroy[MaxFramesInFlight];

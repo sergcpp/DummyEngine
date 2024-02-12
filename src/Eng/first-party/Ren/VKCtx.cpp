@@ -502,6 +502,10 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
         device_extensions.push_back(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);   // required for depth stencil resolve
     }
 
+    if (this->renderpass_loadstore_none_supported) {
+        device_extensions.push_back(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME);
+    }
+
     device_info.enabledExtensionCount = uint32_t(device_extensions.size());
     device_info.ppEnabledExtensionNames = device_extensions.cdata();
 
@@ -600,7 +604,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
         vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
 
         bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
-             dynamic_rendering_supported = false;
+             dynamic_rendering_supported = false, renderpass_loadstore_none_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -625,6 +629,8 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                     ray_query_supported = true;
                 } else if (strcmp(ext.extensionName, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME) == 0) {
                     // dynamic_rendering_supported = true;
+                } else if (strcmp(ext.extensionName, VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) == 0) {
+                    renderpass_loadstore_none_supported = true;
                 }
             }
 
@@ -705,6 +711,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                 this->raytracing_supported = (acc_struct_supported && raytracing_supported);
                 this->ray_query_supported = ray_query_supported;
                 this->dynamic_rendering_supported = dynamic_rendering_supported;
+                this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;
             }
         }
     }
