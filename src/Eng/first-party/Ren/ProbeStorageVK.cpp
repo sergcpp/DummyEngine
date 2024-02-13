@@ -147,6 +147,9 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx->supported_stages_mask;
+    dst_stages &= api_ctx->supported_stages_mask;
+
     VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
     api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0,
@@ -287,6 +290,9 @@ bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     VkCommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();
 
     api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages, 0,
@@ -376,6 +382,9 @@ void Ren::ProbeStorage::Finalize() {
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::ShaderResource);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!img_barriers.empty()) {
         VkCommandBuffer cmd_buf = api_ctx_->BegSingleTimeCommands();

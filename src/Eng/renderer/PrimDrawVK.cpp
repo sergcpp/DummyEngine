@@ -89,6 +89,9 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
             depth_rt.ref->resource_state = Ren::eResState::DepthWrite;
         }
 
+        src_stages &= ctx_->api_ctx()->supported_stages_mask;
+        dst_stages &= ctx_->api_ctx()->supported_stages_mask;
+
         if (!img_barriers.empty()) {
             ctx_->api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                   dst_stages, 0, 0, nullptr, 0, nullptr, uint32_t(img_barriers.size()),

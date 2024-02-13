@@ -59,6 +59,8 @@ struct ApiContext {
 
     bool renderpass_loadstore_none_supported = false;
 
+    uint32_t supported_stages_mask = 0xffffffff;
+
     // resources scheduled for deferred destruction
     SmallVector<VkImage, 128> images_to_destroy[MaxFramesInFlight];
     SmallVector<VkImageView, 128> image_views_to_destroy[MaxFramesInFlight];

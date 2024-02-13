@@ -208,6 +208,9 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, con
     src_stages &= to_pipeline_stage_flags_vk(src_stages_mask);
     dst_stages &= to_pipeline_stage_flags_vk(dst_stages_mask);
 
+    src_stages &= api_ctx->supported_stages_mask;
+    dst_stages &= api_ctx->supported_stages_mask;
+
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
                                       0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),

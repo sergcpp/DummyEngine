@@ -142,6 +142,9 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
                 dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
             }
 
+            src_stages &= api_ctx_->supported_stages_mask;
+            dst_stages &= api_ctx_->supported_stages_mask;
+
             if (!barriers.empty()) {
                 api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
                                                uint32_t(barriers.size()), barriers.cdata(), 0, nullptr);
@@ -198,6 +201,9 @@ void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, co
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
@@ -413,6 +419,9 @@ void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uin
         dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     if (!barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
                                        barriers.cdata(), 0, nullptr);
@@ -443,6 +452,9 @@ void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void
         src_stages |= VKPipelineStagesForState(resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),
@@ -499,6 +511,9 @@ void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst
         src_stages |= VKPipelineStagesForState(dst.resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
+
+    src_stages &= src.api_ctx()->supported_stages_mask;
+    dst_stages &= src.api_ctx()->supported_stages_mask;
 
     if (!barriers.empty()) {
         src.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr, uint32_t(barriers.size()),

@@ -712,6 +712,9 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                 this->ray_query_supported = ray_query_supported;
                 this->dynamic_rendering_supported = dynamic_rendering_supported;
                 this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;
+                if (!this->raytracing_supported) {
+                    supported_stages_mask &= ~VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+                }
             }
         }
     }

@@ -111,6 +111,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
             dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::CopyDst);
         }
 
+        src_stages &= ctx_.api_ctx()->supported_stages_mask;
+        dst_stages &= ctx_.api_ctx()->supported_stages_mask;
+
         if (!buf_barriers.empty()) {
             ctx_.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,
                                                  uint32_t(buf_barriers.size()), buf_barriers.cdata(), 0, nullptr);
@@ -203,6 +206,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
         src_stages |= Ren::VKPipelineStagesForState(atlas.resource_state);
         dst_stages |= Ren::VKPipelineStagesForState(Ren::eResState::ShaderResource);
     }
+
+    src_stages &= ctx_.api_ctx()->supported_stages_mask;
+    dst_stages &= ctx_.api_ctx()->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         ctx_.api_ctx()->vkCmdPipelineBarrier(cmd_buf, src_stages, dst_stages, 0, 0, nullptr,

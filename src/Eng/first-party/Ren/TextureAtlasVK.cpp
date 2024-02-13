@@ -211,6 +211,9 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
                                        0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
@@ -271,6 +274,9 @@ void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
         src_stages |= VKPipelineStagesForState(resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::ShaderResource);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
@@ -474,6 +480,9 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
                 src_stages |= VKPipelineStagesForState(resource_state);
                 dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
             }
+
+            src_stages &= api_ctx_->supported_stages_mask;
+            dst_stages &= api_ctx_->supported_stages_mask;
 
             if (!buf_barriers.empty() || !img_barriers.empty()) {
                 api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,

@@ -506,6 +506,9 @@ bool Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int 
                 dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
             }
 
+            src_stages &= api_ctx_->supported_stages_mask;
+            dst_stages &= api_ctx_->supported_stages_mask;
+
             if (!barriers.empty()) {
                 api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                                dst_stages, 0, 0, nullptr, 0, nullptr, uint32_t(barriers.size()),
@@ -699,6 +702,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
             dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
         }
 
+        src_stages &= api_ctx_->supported_stages_mask;
+        dst_stages &= api_ctx_->supported_stages_mask;
+
         if (!buf_barriers.empty() || !img_barriers.empty()) {
             api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                                            dst_stages, 0, 0, nullptr, uint32_t(buf_barriers.size()),
@@ -885,6 +891,9 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
                                        0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
@@ -1037,6 +1046,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
@@ -1226,6 +1238,9 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
@@ -1555,6 +1570,9 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
                                        0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
@@ -1780,6 +1798,9 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
                                        0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
@@ -1931,6 +1952,9 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
 
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
+
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
                                        0, 0, nullptr, uint32_t(buf_barriers.size()), buf_barriers.cdata(),
@@ -2049,6 +2073,9 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
         src_stages |= VKPipelineStagesForState(sbuf.resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
     }
+
+    src_stages &= api_ctx_->supported_stages_mask;
+    dst_stages &= api_ctx_->supported_stages_mask;
 
     if (!buf_barriers.empty() || !img_barriers.empty()) {
         api_ctx_->vkCmdPipelineBarrier(cmd_buf, src_stages ? src_stages : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dst_stages,
