@@ -1397,7 +1397,8 @@ void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
                                               Ren::eStageBits &src_stages, Ren::eStageBits &dst_stages) {
     for (const RpResource *next_res = res.next_use; next_res; next_res = next_res->next_use) {
         if (next_res->desired_state != res.desired_state ||
-            next_res->desired_state == Ren::eResState::UnorderedAccess) {
+            next_res->desired_state == Ren::eResState::UnorderedAccess ||
+            next_res->desired_state == Ren::eResState::CopyDst) {
             break;
         }
         dst_stages |= next_res->stages;
@@ -1406,7 +1407,8 @@ void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
     if (res.type == eRpResType::Buffer) {
         RpAllocBuf &buf = buffers_.at(res.index);
         if (buf.ref->resource_state != res.desired_state ||
-            buf.ref->resource_state == Ren::eResState::UnorderedAccess) {
+            buf.ref->resource_state == Ren::eResState::UnorderedAccess ||
+            buf.ref->resource_state == Ren::eResState::CopyDst) {
             src_stages |= buf.used_in_stages;
             dst_stages |= res.stages;
             buf.used_in_stages = Ren::eStageBits::None;
