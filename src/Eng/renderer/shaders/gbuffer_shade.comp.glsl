@@ -217,7 +217,7 @@ void main() {
 
         int type = floatBitsToInt(col_and_type.w);
         vec3 to_light = normalize(pos_ws.xyz - pos_and_radius.xyz);
-        if (type != LIGHT_TYPE_SPHERE && dot(to_light, dir_and_spot.xyz) > 0.0) {
+        if (type != LIGHT_TYPE_SPHERE && type != LIGHT_TYPE_LINE && dot(to_light, dir_and_spot.xyz) > 0.0) {
             continue;
         }
 
