@@ -1005,7 +1005,7 @@ void glslx::Parser::fatal(const char *fmt, ...) {
     free(message);
 
     error_ = concat;
-    ast_->str.push_back(error_);
+    ast_->str.push_back(concat);
 }
 
 glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expression) {

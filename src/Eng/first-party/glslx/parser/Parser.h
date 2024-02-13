@@ -33,7 +33,7 @@ class Parser {
     token_t tok_;
     std::vector<scope> scopes_;
     std::vector<ast_builtin *> builtins_;
-    char *error_ = nullptr;
+    const char *error_ = nullptr;
     const char *file_name_ = nullptr;
 
     std::vector<ast_function_call *> function_calls_;
