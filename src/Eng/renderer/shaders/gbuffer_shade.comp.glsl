@@ -1,4 +1,5 @@
 #version 320 es
+#extension GL_EXT_control_flow_attributes : require
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -51,20 +52,20 @@ void main() {
         return;
     }
 
-    ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
-    vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
+    const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
+    const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
-    highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
+    const highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
+    const highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+    const int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
 
-    int ix = int(gl_GlobalInvocationID.x), iy = int(gl_GlobalInvocationID.y);
-    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
+    const int ix = int(gl_GlobalInvocationID.x), iy = int(gl_GlobalInvocationID.y);
+    const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+    const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+    const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     vec4 pos_cs = vec4(norm_uvs, depth, 1.0);
 #if defined(VULKAN)
@@ -78,19 +79,18 @@ void main() {
     pos_ws /= pos_ws.w;
     pos_ws.xyz += g_shrd_data.cam_pos_and_gamma.xyz;
 
-    vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
-    vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0));
-    uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).r;
+    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0));
+    const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).r;
 
     //
     // Artificial lights
     //
-    vec3 additional_light = vec3(0.0);
 
-    vec3 P = pos_ws.xyz;
-    vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
-    vec3 N = normal.xyz;
-    float N_dot_V = saturate(dot(N, I));
+    const vec3 P = pos_ws.xyz;
+    const vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
+    const vec3 N = normal.xyz;
+    const float N_dot_V = saturate(dot(N, I));
 
     vec3 tint_color = vec3(0.0);
 
@@ -102,46 +102,46 @@ void main() {
     vec4 mat_params0, mat_params1;
     UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
 
-    float roughness = normal.w;
-    float sheen = mat_params0.x;
-    float sheen_tint = mat_params0.y;
-    float specular = mat_params0.z;
-    float specular_tint = mat_params0.w;
-    float metallic = mat_params1.x;
-    float transmission = mat_params1.y;
-    float clearcoat = mat_params1.z;
-    float clearcoat_roughness = mat_params1.w;
+    const float roughness = normal.w;
+    const float sheen = mat_params0.x;
+    const float sheen_tint = mat_params0.y;
+    const float specular = mat_params0.z;
+    const float specular_tint = mat_params0.w;
+    const float metallic = mat_params1.x;
+    const float transmission = mat_params1.y;
+    const float clearcoat = mat_params1.z;
+    const float clearcoat_roughness = mat_params1.w;
 
     vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
     spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
 
-    float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
-    float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+    const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+    const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
 
     // Approximation of FH (using shading normal)
-    float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+    const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
 
-    vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
-    float spec_color_lum = lum(approx_spec_col);
+    const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+    const float spec_color_lum = lum(approx_spec_col);
 
-    lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
-    vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
+    const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
-    float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
-    float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
-    float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+    const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+    const float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
+    const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
 
     // Approximation of FH (using shading normal)
-    float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
-    vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
+    const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
+    const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
     //
     // Fetch LTC data
     //
 
-    vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
-    vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
+    const vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
+    const vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
 
     ltc_params_t ltc;
     ltc.diff_t1 = textureLod(g_ltc_luts[0], ltc_uv, 0.0);
@@ -157,11 +157,11 @@ void main() {
     // Evaluate lights
     //
 
-    vec2 debug_uvs = vec2(0.0), _unused;
+    vec3 additional_light = vec3(0.0);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-        highp uint item_data = texelFetch(g_items_buf, int(i)).x;
-        int li = int(bitfieldExtract(item_data, 0, 12));
+        const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+        const int li = int(bitfieldExtract(item_data, 0, 12));
 
         light_item_t litem;
         litem.col_and_type = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 0);
@@ -178,7 +178,7 @@ void main() {
         }
 
         int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
-        if (shadowreg_index != -1) {
+        [[dont_flatten]] if (shadowreg_index != -1) {
             vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
             shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_unused.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;

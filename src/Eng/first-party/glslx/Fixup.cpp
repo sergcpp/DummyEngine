@@ -23,6 +23,9 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     } break;
     case eStatement::If: {
         auto *if_statement = static_cast<ast_if_statement *>(statement);
+        if (config_.remove_ctrl_flow_attributes) {
+            if_statement->attributes = {};
+        }
         // Visit_Expression(if_statement->condition);
         if (if_statement->then_statement) {
             Visit_Statement(if_statement->then_statement);
@@ -33,6 +36,9 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     } break;
     case eStatement::Switch: {
         auto *switch_statement = static_cast<ast_switch_statement *>(statement);
+        if (config_.remove_ctrl_flow_attributes) {
+            switch_statement->attributes = {};
+        }
         // Mark_Expression(switch_statement->expression);
         for (ast_statement *st : switch_statement->statements) {
             Visit_Statement(st);
@@ -43,16 +49,25 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
         break;
     case eStatement::While: {
         auto *while_statement = static_cast<ast_while_statement *>(statement);
+        if (config_.remove_ctrl_flow_attributes) {
+            while_statement->flow_params.attributes = {};
+        }
         Visit_Statement(while_statement->condition);
         Visit_Statement(while_statement->body);
     } break;
     case eStatement::Do: {
         auto *do_statement = static_cast<ast_do_statement *>(statement);
+        if (config_.remove_ctrl_flow_attributes) {
+            do_statement->flow_params.attributes = {};
+        }
         Visit_Statement(do_statement->body);
         // Visit_Expression(do_statement->condition);
     } break;
     case eStatement::For: {
         auto *for_statement = static_cast<ast_for_statement *>(statement);
+        if (config_.remove_ctrl_flow_attributes) {
+            for_statement->flow_params.attributes = {};
+        }
         if (config_.randomize_loop_counters && for_statement->init &&
             for_statement->init->type == eStatement::Declaration) {
             auto *declaration = static_cast<ast_declaration_statement *>(for_statement->init);
@@ -102,6 +117,13 @@ void glslx::Fixup::Visit_Function(ast_function *func) {
 
 void glslx::Fixup::Apply(TrUnit *tu) {
     tu_ = tu;
+    for (auto it = begin(tu->extensions); it != end(tu->extensions);) {
+        if (config_.remove_ctrl_flow_attributes && strcmp((*it)->name, "GL_EXT_control_flow_attributes") == 0) {
+            it = tu->extensions.erase(it);
+        } else {
+            ++it;
+        }
+    }
     for (ast_function *func : tu->functions) {
         next_counter_ = 0;
         Visit_Function(func);

@@ -312,6 +312,7 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                 config.randomize_loop_counters = false;
                 if (sh_output == eShaderOutput::GLSL) {
                     config.remove_const = true;
+                    config.remove_ctrl_flow_attributes = true;
                 }
                 glslx::Fixup(config).Apply(ast.get());
 

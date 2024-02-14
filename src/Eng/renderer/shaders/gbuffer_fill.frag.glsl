@@ -49,26 +49,26 @@ layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
 layout(location = REN_OUT_SPEC_INDEX) out uint g_out_specular;
 
 void main(void) {
-    highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
-    highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
+    const highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
+    const highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+    const int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
 
-    int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
+    const int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
+    const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
-                                          bitfieldExtract(cell_data.x, 24, 8));
-    highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
-                                          bitfieldExtract(cell_data.y, 8, 8));
+    const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24),
+                                                bitfieldExtract(cell_data.x, 24, 8));
+    const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
+                                                bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs));
     vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
     vec4 spec_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
-    vec3 dp_dx = dFdx(g_vtx_pos);
-    vec3 dp_dy = dFdy(g_vtx_pos);
+    const vec3 dp_dx = dFdx(g_vtx_pos);
+    const vec3 dp_dy = dFdy(g_vtx_pos);
 
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + dcount_and_pcount.x; i++) {
         highp uint item_data = texelFetch(g_items_buf, int(i)).x;

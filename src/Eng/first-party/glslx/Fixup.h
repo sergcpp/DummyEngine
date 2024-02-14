@@ -6,6 +6,7 @@ namespace glslx {
 struct fixup_config_t {
     bool randomize_loop_counters = true;
     bool remove_const = false;
+    bool remove_ctrl_flow_attributes = false;
 };
 
 class Fixup {

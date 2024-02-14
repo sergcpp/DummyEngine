@@ -59,13 +59,13 @@ LAYOUT(location = 9) out flat vec4 g_mat_params1;
 invariant gl_Position;
 
 void main(void) {
-    ivec2 instance = g_instance_indices[gl_InstanceIndex];
+    const ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
-    mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
+    const mat4 model_matrix = FetchModelMatrix(g_instances_buf, instance.x);
     vec3 vtx_pos_ls = g_in_vtx_pos;
     vec3 vtx_nor_ls = g_in_vtx_normal.xyz, vtx_tan_ls = vec3(g_in_vtx_normal.w, g_in_vtx_tangent);
 
-    MaterialData mat = g_materials[instance.y];
+    const MaterialData mat = g_materials[instance.y];
 
 #ifdef VEGETATION
     // load vegetation properties
