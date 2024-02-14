@@ -22,6 +22,7 @@
 
 namespace Ren {
 bool ignore_optick_errors = false;
+std::mutex g_device_mtx;
 #if defined(__linux__)
 extern Display *g_dpy;
 #endif
@@ -47,6 +48,8 @@ const std::pair<uint32_t, const char *> KnownVendors[] = {
 Ren::Context::Context() = default;
 
 Ren::Context::~Context() {
+    std::lock_guard<std::mutex> _(g_device_mtx);
+
     api_ctx_->present_image_refs.clear();
     ReleaseAll();
 
@@ -117,6 +120,8 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     w_ = w;
     h_ = h;
     log_ = log;
+
+    std::lock_guard<std::mutex> _(g_device_mtx);
 
     const char *enabled_layers[] = {"VK_LAYER_KHRONOS_validation", "VK_LAYER_KHRONOS_synchronization2"};
     const int enabled_layers_count = validation_level ? int(std::size(enabled_layers)) : 0;
