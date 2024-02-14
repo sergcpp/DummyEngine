@@ -36,16 +36,17 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     using namespace std::chrono;
 
     const auto start_time = high_resolution_clock::now();
-    std::string ref_name = std::string("assets/references/") + test_name;
+
+    const char *test_postfix = "";
     if (img_test == eImgTest::NoShadow) {
-        ref_name += "/ref_noshadow.uncompressed.png";
+        test_postfix = "_noshadow";
     } else if (img_test == eImgTest::NoGI) {
-        ref_name += "/ref_nogi.uncompressed.png";
+        test_postfix = "_nogi";
     } else if (img_test == eImgTest::NoDiffuseGI) {
-        ref_name += "/ref_nodiffusegi.uncompressed.png";
-    } else if (img_test == eImgTest::Full) {
-        ref_name += "/ref.uncompressed.png";
+        test_postfix = "_nodiffusegi";
     }
+    const std::string ref_name =
+        std::string("assets/references/") + test_name + "/ref" + test_postfix + ".uncompressed.png";
 
     int ref_w, ref_h, ref_channels;
     uint8_t *ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
@@ -353,34 +354,17 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 
     const double test_duration_ms = duration<double>(high_resolution_clock::now() - start_time).count() * 1000.0;
 
-    printf("Test %s (PSNR: %.2f/%.2f dB, Fireflies: %i/%i, Time: %.2fms)\n", test_name, psnr, min_psnr, error_pixels,
-           pix_thres, test_duration_ms);
+    printf("Test %s%s (PSNR: %.2f/%.2f dB, Fireflies: %i/%i, Time: %.2fms)\n", test_name, test_postfix, psnr, min_psnr,
+           error_pixels, pix_thres, test_duration_ms);
     require(psnr >= min_psnr && error_pixels <= pix_thres);
 
     std::lock_guard<std::mutex> _(g_stbi_mutex);
 
     stbi_flip_vertically_on_write(flip_y);
 
-    std::string out_name = std::string("assets_pc/references/") + test_name;
-    std::string diff_name = std::string("assets_pc/references/") + test_name;
-    std::string mask_name = std::string("assets_pc/references/") + test_name;
-    if (img_test == eImgTest::NoShadow) {
-        out_name += "/out_noshadow.png";
-        diff_name += "/diff_noshadow.png";
-        mask_name += "/mask_noshadow.png";
-    } else if (img_test == eImgTest::NoGI) {
-        out_name += "/out_nogi.png";
-        diff_name += "/diff_nogi.png";
-        mask_name += "/mask_nogi.png";
-    } else if (img_test == eImgTest::NoDiffuseGI) {
-        out_name += "/out_nodiffusegi.png";
-        diff_name += "/diff_nodiffusegi.png";
-        mask_name += "/mask_nodiffusegi.png";
-    } else if (img_test == eImgTest::Full) {
-        out_name += "/out.png";
-        diff_name += "/diff.png";
-        mask_name += "/mask.png";
-    }
+    const std::string out_name = std::string("assets_pc/references/") + test_name + "/out" + test_postfix + ".png";
+    const std::string diff_name = std::string("assets_pc/references/") + test_name + "/diff" + test_postfix + ".png";
+    const std::string mask_name = std::string("assets_pc/references/") + test_name + "/mask" + test_postfix + ".png";
 
     stbi_write_png(out_name.c_str(), ref_w, ref_h, 4, img_data, 4 * ref_w);
     stbi_flip_vertically_on_write(false);
