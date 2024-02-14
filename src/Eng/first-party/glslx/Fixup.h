@@ -5,6 +5,7 @@
 namespace glslx {
 struct fixup_config_t {
     bool randomize_loop_counters = true;
+    bool remove_const = false;
 };
 
 class Fixup {
@@ -14,6 +15,7 @@ class Fixup {
 
     void Visit_Statement(ast_statement *statement);
 
+    void Visit_FunctionParameter(ast_function_parameter *parameter);
     void Visit_Function(ast_function *func);
 
   public:

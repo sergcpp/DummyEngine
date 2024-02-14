@@ -404,11 +404,11 @@ void glslx::WriterHLSL::Write_LoopAttributes(ctrl_flow_params_t ctrl_flow, std::
     if (ctrl_flow.attributes & eCtrlFlowAttribute::Unroll) {
         out_stream << "unroll";
         ctrl_flow.attributes &=
-            ~(Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
+            ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
     } else if (ctrl_flow.attributes & eCtrlFlowAttribute::DontUnroll) {
         out_stream << "loop";
         ctrl_flow.attributes &=
-            ~(Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
+            ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
     }
     out_stream << "] ";
 }
@@ -485,16 +485,16 @@ void glslx::WriterHLSL::Write_IfStatement(const ast_if_statement *statement, std
     out_stream << ")";
     if (statement->else_statement) {
         Write_Statement(statement->then_statement, out_stream,
-                        DefaultOutputFlags & ~(Bitmask<eOutputFlags>{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
+                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
         out_stream << " else";
         if (statement->else_statement->type == eStatement::If) {
             out_stream << " ";
         }
         Write_Statement(statement->else_statement, out_stream,
-                        DefaultOutputFlags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+                        DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     } else {
         Write_Statement(statement->then_statement, out_stream,
-                        DefaultOutputFlags & ~(Bitmask<eOutputFlags>{eOutputFlags::WriteTabs}));
+                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs}));
     }
 }
 
@@ -549,7 +549,7 @@ void glslx::WriterHLSL::Write_DoStatement(const ast_do_statement *statement, std
     if (statement->body->type != eStatement::Compound) {
         out_stream << " ";
     }
-    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     Write_Tabs(out_stream);
     out_stream << "while (";
     Write_Expression(statement->condition, false, out_stream);
@@ -587,7 +587,7 @@ void glslx::WriterHLSL::Write_ForStatement(const ast_for_statement *statement, s
         Write_Expression(statement->loop, false, out_stream);
     }
     out_stream << ")";
-    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
 }
 
 void glslx::WriterHLSL::Write_ContinueStatement(const ast_continue_statement *statement, std::ostream &out_stream,

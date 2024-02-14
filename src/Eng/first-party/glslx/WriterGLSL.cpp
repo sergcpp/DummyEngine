@@ -129,64 +129,62 @@ void glslx::WriterGLSL::Write_LoopAttributes(ctrl_flow_params_t ctrl_flow, std::
     out_stream << "[[";
     if (ctrl_flow.attributes & eCtrlFlowAttribute::Unroll) {
         out_stream << "unroll";
-        ctrl_flow.attributes &=
-            ~(Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
+        ctrl_flow.attributes &= ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     } else if (ctrl_flow.attributes & eCtrlFlowAttribute::DontUnroll) {
         out_stream << "dont_unroll";
-        ctrl_flow.attributes &=
-            ~(Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
+        ctrl_flow.attributes &= ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::DependencyInfinite) {
         out_stream << "dependency_infinite";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::DependencyInfinite};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::DependencyInfinite};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::DependencyLength) {
         out_stream << "dependency_length(" << ctrl_flow.dependency_length << ")";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::DependencyLength};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::DependencyLength};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::MinIterations) {
         out_stream << "min_iterations(" << ctrl_flow.min_iterations << ")";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::MinIterations};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::MinIterations};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::MaxIterations) {
         out_stream << "max_iterations(" << ctrl_flow.max_iterations << ")";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::MaxIterations};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::MaxIterations};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::IterationMultiple) {
         out_stream << "iteration_multiple(" << ctrl_flow.iteration_multiple << ")";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::IterationMultiple};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::IterationMultiple};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::PeelCount) {
         out_stream << "peel_count(" << ctrl_flow.peel_count << ")";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::PeelCount};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::PeelCount};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
     }
     if (ctrl_flow.attributes & eCtrlFlowAttribute::PartialCount) {
         out_stream << "partial_count(" << ctrl_flow.partial_count << ")";
-        ctrl_flow.attributes &= ~Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::PartialCount};
+        ctrl_flow.attributes &= ~Bitmask{eCtrlFlowAttribute::PartialCount};
         if (ctrl_flow.attributes) {
             out_stream << ", ";
         }
@@ -261,16 +259,15 @@ void glslx::WriterGLSL::Write_IfStatement(const ast_if_statement *statement, std
     out_stream << ")";
     if (statement->else_statement) {
         Write_Statement(statement->then_statement, out_stream,
-                        DefaultOutputFlags & ~(Bitmask<eOutputFlags>{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
+                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::NewLine));
         out_stream << " else";
         if (statement->else_statement->type == eStatement::If) {
             out_stream << " ";
         }
-        Write_Statement(statement->else_statement, out_stream,
-                        DefaultOutputFlags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+        Write_Statement(statement->else_statement, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     } else {
         Write_Statement(statement->then_statement, out_stream,
-                        DefaultOutputFlags & ~(Bitmask<eOutputFlags>{eOutputFlags::WriteTabs}));
+                        DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs}));
     }
 }
 
@@ -317,7 +314,7 @@ void glslx::WriterGLSL::Write_WhileStatement(const ast_while_statement *statemen
         break;
     }
     out_stream << ")";
-    Write_Statement(statement->body, out_stream, output_flags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+    Write_Statement(statement->body, out_stream, output_flags & ~Bitmask{eOutputFlags::WriteTabs});
 }
 
 void glslx::WriterGLSL::Write_DoStatement(const ast_do_statement *statement, std::ostream &out_stream,
@@ -327,7 +324,7 @@ void glslx::WriterGLSL::Write_DoStatement(const ast_do_statement *statement, std
     if (statement->body->type != eStatement::Compound) {
         out_stream << " ";
     }
-    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     Write_Tabs(out_stream);
     out_stream << "while (";
     Write_Expression(statement->condition, false, out_stream);
@@ -365,7 +362,7 @@ void glslx::WriterGLSL::Write_ForStatement(const ast_for_statement *statement, s
         Write_Expression(statement->loop, false, out_stream);
     }
     out_stream << ")";
-    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask<eOutputFlags>{eOutputFlags::WriteTabs});
+    Write_Statement(statement->body, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
 }
 
 void glslx::WriterGLSL::Write_ContinueStatement(const ast_continue_statement *statement, std::ostream &out_stream,

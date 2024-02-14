@@ -9,7 +9,7 @@
 namespace glslx {
 enum class eOutputFlags { WriteTabs, Semicolon, NewLine };
 const Bitmask<eOutputFlags> DefaultOutputFlags =
-    Bitmask<eOutputFlags>(eOutputFlags::WriteTabs) | eOutputFlags::Semicolon | eOutputFlags::NewLine;
+    Bitmask{eOutputFlags::WriteTabs} | eOutputFlags::Semicolon | eOutputFlags::NewLine;
 
 struct writer_config_t {
     std::string tab = "    ";

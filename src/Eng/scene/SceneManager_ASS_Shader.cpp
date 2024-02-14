@@ -308,6 +308,13 @@ bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_
                     continue;
                 }
 
+                glslx::fixup_config_t config;
+                config.randomize_loop_counters = false;
+                if (sh_output == eShaderOutput::GLSL) {
+                    config.remove_const = true;
+                }
+                glslx::Fixup(config).Apply(ast.get());
+
                 glslx::Prune_Unreachable(ast.get());
 
                 std::stringstream ss;

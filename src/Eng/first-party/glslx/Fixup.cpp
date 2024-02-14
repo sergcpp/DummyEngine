@@ -4,6 +4,17 @@
 
 void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     switch (statement->type) {
+    case eStatement::Declaration: {
+        auto *declaration = static_cast<ast_declaration_statement *>(statement);
+        for (int i = 0; i < int(declaration->variables.size()); ++i) {
+            if (!declaration->variables[i]->initial_value) {
+                continue;
+            }
+            if (config_.remove_const && !IsConstant(declaration->variables[i]->initial_value)) {
+                declaration->variables[i]->is_const = false;
+            }
+        }
+    } break;
     case eStatement::Compound: {
         auto *compound = static_cast<ast_compound_statement *>(statement);
         for (ast_statement *st : compound->statements) {
@@ -12,7 +23,7 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     } break;
     case eStatement::If: {
         auto *if_statement = static_cast<ast_if_statement *>(statement);
-        //Visit_Expression(if_statement->condition);
+        // Visit_Expression(if_statement->condition);
         if (if_statement->then_statement) {
             Visit_Statement(if_statement->then_statement);
         }
@@ -22,13 +33,13 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     } break;
     case eStatement::Switch: {
         auto *switch_statement = static_cast<ast_switch_statement *>(statement);
-        //Mark_Expression(switch_statement->expression);
+        // Mark_Expression(switch_statement->expression);
         for (ast_statement *st : switch_statement->statements) {
             Visit_Statement(st);
         }
     } break;
     case eStatement::CaseLabel:
-        //Mark_Expression(static_cast<ast_case_label_statement *>(statement)->condition);
+        // Mark_Expression(static_cast<ast_case_label_statement *>(statement)->condition);
         break;
     case eStatement::While: {
         auto *while_statement = static_cast<ast_while_statement *>(statement);
@@ -38,11 +49,12 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     case eStatement::Do: {
         auto *do_statement = static_cast<ast_do_statement *>(statement);
         Visit_Statement(do_statement->body);
-        //Visit_Expression(do_statement->condition);
+        // Visit_Expression(do_statement->condition);
     } break;
     case eStatement::For: {
         auto *for_statement = static_cast<ast_for_statement *>(statement);
-        if (for_statement->init->type == eStatement::Declaration) {
+        if (config_.randomize_loop_counters && for_statement->init &&
+            for_statement->init->type == eStatement::Declaration) {
             auto *declaration = static_cast<ast_declaration_statement *>(for_statement->init);
             for (ast_function_variable *var : declaration->variables) {
                 char temp[16];
@@ -67,13 +79,22 @@ void glslx::Fixup::Visit_Statement(ast_statement *statement) {
     case eStatement::Return: {
         auto *return_statement = static_cast<ast_return_statement *>(statement);
         if (return_statement->expression) {
-            //Mark_Expression(return_statement->expression);
+            // Mark_Expression(return_statement->expression);
         }
     } break;
     }
 }
 
+void glslx::Fixup::Visit_FunctionParameter(ast_function_parameter *parameter) {
+    if (config_.remove_const) {
+        parameter->qualifiers &= ~Bitmask{eParamQualifier::Const};
+    }
+}
+
 void glslx::Fixup::Visit_Function(ast_function *func) {
+    for (ast_function_parameter *parameter : func->parameters) {
+        Visit_FunctionParameter(parameter);
+    }
     for (ast_statement *statement : func->statements) {
         Visit_Statement(statement);
     }

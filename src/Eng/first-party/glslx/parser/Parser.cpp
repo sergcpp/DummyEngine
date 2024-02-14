@@ -584,7 +584,7 @@ bool glslx::Parser::ParseTopLevelItem(top_level_t &level, top_level_t *continuat
                     return false;
                 }
             }
-            if (!is_constant(level.initial_value)) {
+            if (!IsConstant(level.initial_value)) {
                 fatal("not a valid constant expression");
                 return false;
             }
@@ -843,10 +843,10 @@ bool glslx::Parser::ParseLayout(top_level_t &current) {
                     return false;
                 }
                 if (!(qualifier->initial_value =
-                          ParseExpression(Bitmask<eEndCondition>{eEndCondition::Comma} | eEndCondition::Parenthesis))) {
+                          ParseExpression(Bitmask{eEndCondition::Comma} | eEndCondition::Parenthesis))) {
                     return false;
                 }
-                if (!is_constant(qualifier->initial_value)) {
+                if (!IsConstant(qualifier->initial_value)) {
                     fatal("value for layout qualifier `%s' is not a valid constant expression", qualifier->name);
                     return false;
                 }
@@ -922,55 +922,6 @@ bool glslx::Parser::is_vector_type(const ast_type *type) {
            btype->type == eKeyword::K_uvec2 || btype->type == eKeyword::K_uvec3 || btype->type == eKeyword::K_uvec4;
 }
 
-bool glslx::Parser::is_constant_value(const ast_expression *expression) {
-    return expression->type == eExprType::IntConstant || expression->type == eExprType::UIntConstant ||
-           expression->type == eExprType::FloatConstant || expression->type == eExprType::DoubleConstant ||
-           expression->type == eExprType::BoolConstant;
-}
-
-bool glslx::Parser::is_constant(const ast_expression *expression) {
-    if (is_constant_value(expression)) {
-        return true;
-    } else if (expression->type == eExprType::VariableIdentifier) {
-        const ast_variable *reference = static_cast<const ast_variable_identifier *>(expression)->variable;
-        if (reference->type != eVariableType::Global) {
-            return false;
-        }
-        const ast_expression *initial_value = static_cast<const ast_global_variable *>(reference)->initial_value;
-        if (!initial_value) {
-            return false;
-        }
-        return is_constant(initial_value);
-    } else if (expression->type == eExprType::UnaryMinus || expression->type == eExprType::UnaryPlus ||
-               expression->type == eExprType::BitNot) {
-        return is_constant(static_cast<const ast_unary_expression *>(expression)->operand);
-    } else if (expression->type == eExprType::ConstructorCall) {
-        const ast_constructor_call *call = static_cast<const ast_constructor_call *>(expression);
-        if (!call->type->builtin) {
-            return false;
-        }
-        bool ret = true;
-        for (int i = 0; i < int(call->parameters.size()); ++i) {
-            ret &= is_constant(call->parameters[i]);
-        }
-        return ret;
-    } else if (expression->type == eExprType::Operation) {
-        const ast_operation_expression *operation = static_cast<const ast_operation_expression *>(expression);
-        return is_constant(operation->operand1) && is_constant(operation->operand2);
-    } else if (expression->type == eExprType::Sequence) {
-        const ast_sequence_expression *sequence = static_cast<const ast_sequence_expression *>(expression);
-        return is_constant(sequence->operand1) && is_constant(sequence->operand2);
-    } else if (expression->type == eExprType::ArraySpecifier) {
-        const ast_array_specifier *arr_specifier = static_cast<const ast_array_specifier *>(expression);
-        bool ret = true;
-        for (int i = 0; i < int(arr_specifier->expressions.size()); ++i) {
-            ret &= is_constant(arr_specifier->expressions[i]);
-        }
-        return ret;
-    }
-    return false;
-}
-
 void glslx::Parser::fatal(const char *fmt, ...) {
     char *banner = nullptr;
     const int banner_len = allocfmt(&banner, "%s:%zu:%zu: error: ", file_name_, lexer_.line(), lexer_.column());
@@ -1011,11 +962,16 @@ void glslx::Parser::fatal(const char *fmt, ...) {
 glslx::ast_constant_expression *glslx::Parser::Evaluate(ast_expression *expression) {
     if (!expression) {
         return nullptr;
-    } else if (is_constant_value(expression)) {
+    } else if (IsConstantValue(expression)) {
         return expression;
     } else if (expression->type == eExprType::VariableIdentifier) {
-        return Evaluate(static_cast<ast_global_variable *>(static_cast<ast_variable_identifier *>(expression)->variable)
-                            ->initial_value);
+        auto *var = static_cast<ast_variable_identifier *>(expression)->variable;
+        if (var->type == eVariableType::Global) {
+            return Evaluate(static_cast<ast_global_variable *>(var)->initial_value);
+        } else if (var->type == eVariableType::Function) {
+            return Evaluate(static_cast<ast_function_variable *>(var)->initial_value);
+        }
+        return expression;
     } else if (expression->type == eExprType::UnaryMinus) {
         ast_expression *operand = Evaluate(static_cast<ast_unary_expression *>(expression)->operand);
         if (!operand) {
@@ -1554,8 +1510,7 @@ glslx::ast_constructor_call *glslx::Parser::ParseConstructorCall() {
         return nullptr;
     }
     while (!is_operator(eOperator::parenthesis_end)) {
-        ast_expression *parameter =
-            ParseExpression(Bitmask<eEndCondition>(eEndCondition::Comma) | eEndCondition::Parenthesis);
+        ast_expression *parameter = ParseExpression(Bitmask{eEndCondition::Comma} | eEndCondition::Parenthesis);
         if (!parameter) {
             return nullptr;
         }
@@ -1587,8 +1542,7 @@ glslx::ast_function_call *glslx::Parser::ParseFunctionCall() {
         return nullptr;
     }
     while (!is_operator(eOperator::parenthesis_end)) {
-        ast_expression *parameter =
-            ParseExpression(Bitmask<eEndCondition>(eEndCondition::Comma) | eEndCondition::Parenthesis);
+        ast_expression *parameter = ParseExpression(Bitmask{eEndCondition::Comma} | eEndCondition::Parenthesis);
         if (!parameter) {
             return nullptr;
         }
@@ -1696,7 +1650,7 @@ glslx::ast_expression *glslx::Parser::ParseUnary(const Bitmask<eEndCondition> co
             if (!(expression->index = ParseExpression(eEndCondition::Bracket))) {
                 return nullptr;
             }
-            if (is_constant(expression->index)) {
+            if (IsConstant(expression->index)) {
                 if (!(expression->index = Evaluate(expression->index))) {
                     return nullptr;
                 }
@@ -2257,7 +2211,7 @@ glslx::ast_switch_statement *glslx::Parser::ParseSwitchStatement(const Bitmask<e
         if (next_statement->type == eStatement::CaseLabel) {
             auto *case_label = static_cast<ast_case_label_statement *>(next_statement);
             if (!case_label->is_default) {
-                if (!is_constant(case_label->condition)) {
+                if (!IsConstant(case_label->condition)) {
                     fatal("case label is not a valid constant expression");
                     return nullptr;
                 }

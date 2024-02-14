@@ -77,8 +77,7 @@ class Parser {
     bool expect(eOperator op);
 
     ast_global_variable *AddHiddenGlobal(ast_builtin *type, const char *name, bool is_array = false,
-                                         eStorage storage = eStorage::In,
-                                         ePrecision precision = ePrecision::None);
+                                         eStorage storage = eStorage::In, ePrecision precision = ePrecision::None);
     bool InitSpecialGlobals(eTrUnitType type);
 
     bool ParseTopLevel(std::vector<top_level_t> &items);
@@ -105,8 +104,6 @@ class Parser {
     bool is_builtin() const;
 
     static bool is_vector_type(const ast_type *type);
-    static bool is_constant_value(const ast_expression *expression);
-    static bool is_constant(const ast_expression *expression);
 
     void fatal(const char *fmt, ...);
 

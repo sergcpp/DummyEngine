@@ -85,7 +85,7 @@ enum class eInterpolation {
 // https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.html#precision-and-precision-qualifiers
 enum class ePrecision {
     None = -1,
-    Highp,   // 32-bit two’s complement for integers, 32-bit IEEE 754 floating-point for float
+    Highp,   // 32-bit twoï¿½s complement for integers, 32-bit IEEE 754 floating-point for float
     Mediump, // SPIR-V RelaxedPrecision when targeting Vulkan, otherwise none.
     Lowp     // SPIR-V RelaxedPrecision when targeting Vulkan, otherwise none.
 };
@@ -132,10 +132,10 @@ enum class eCtrlFlowAttribute {
 enum class eFunctionAttribute { Builtin };
 
 const Bitmask<eCtrlFlowAttribute> LoopAttributesMask =
-    Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll |
+    Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll |
     eCtrlFlowAttribute::DependencyInfinite | eCtrlFlowAttribute::DependencyLength;
 const Bitmask<eCtrlFlowAttribute> SelectionAttributesMask =
-    Bitmask<eCtrlFlowAttribute>{eCtrlFlowAttribute::Flatten} | eCtrlFlowAttribute::DontFlatten;
+    Bitmask{eCtrlFlowAttribute::Flatten} | eCtrlFlowAttribute::DontFlatten;
 
 struct ast_function;
 struct ast_global_variable;
@@ -607,4 +607,7 @@ struct ast_ternary_expression : ast_expression {
 
     ast_ternary_expression() noexcept : ast_expression(eExprType::Ternary) {}
 };
+
+bool IsConstantValue(const ast_expression *expression);
+bool IsConstant(const ast_expression *expression);
 } // namespace glslx
