@@ -7,27 +7,27 @@
 #include "Socket.h"
 
 namespace Net {
-enum PCPOpCode { OP_NONE = -1, OP_ANNOUNCE = 0, OP_MAP, OP_PEER };
+enum class ePCPOpCode { None = -1, Announce = 0, Map, Peer };
 
-enum PCPResCode {
-    PCP_RES_SUCCESS = 0,
-    PCP_RES_UNSUPP_VERSION,
-    PCP_RES_NOT_AUTHORIZED,
-    PCP_RES_MALFORMED_REQUEST,
-    PCP_RES_UNSUPP_OPCODE,
-    PCP_RES_UNSUPP_OPTION,
-    PCP_RES_NETWORK_FAILURE,
-    PCP_RES_NO_RESOURCES,
-    PCP_RES_UNSUPP_PROTOCOL,
-    PCP_RES_USER_EX_QUOTA,
-    PCP_RES_CANNOT_PROVIDE_EXTERNAL,
-    PCP_RES_ADDRESS_MISMATCH,
-    PCP_RES_EXCESSIVE_REMOTE_PEERS
+enum class ePCPResCode {
+    Success = 0,
+    UnsuppVersion,
+    NotAuthorized,
+    MalformedRequest,
+    UnsuppOpCode,
+    UncuppOption,
+    NetworkFailure,
+    NoResources,
+    UnsuppProtocol,
+    UserExQuota,
+    CannotProvideExternal,
+    AddressMismatch,
+    ExcessiveRemotePeers
 };
 
-enum PCPProto {
-    PCP_UDP = 17,
-    PCP_TCP = 6,
+enum class ePCPProto {
+    UDP = 17,
+    TCP = 6,
 };
 
 struct PCPNonce {
@@ -41,18 +41,18 @@ struct PCPNonce {
 bool GenPCPNonce(void *buf, int len);
 
 class PCPRequest {
-    PCPOpCode opcode_;
+    ePCPOpCode opcode_;
     uint32_t lifetime_;
     Net::Address client_address_, external_address_, remote_address_;
     PCPNonce nonce_;
-    PCPProto proto_;
+    ePCPProto proto_;
     uint16_t internal_port_, external_port_;
     uint16_t remote_port_;
 
   public:
-    PCPRequest() : opcode_(OP_NONE) {}
+    PCPRequest() : opcode_(ePCPOpCode::None) {}
 
-    PCPOpCode opcode() const { return opcode_; }
+    ePCPOpCode opcode() const { return opcode_; }
 
     uint32_t lifetime() const { return lifetime_; }
 
@@ -62,7 +62,7 @@ class PCPRequest {
 
     PCPNonce nonce() const { return nonce_; }
 
-    PCPProto proto() const { return proto_; }
+    ePCPProto proto() const { return proto_; }
 
     uint16_t internal_port() const { return internal_port_; }
 
@@ -75,14 +75,14 @@ class PCPRequest {
     void set_external_address(const Address &addr) { external_address_ = addr; }
 
     void MakeAnnounceRequest(const Address &client_address) {
-        opcode_ = OP_ANNOUNCE;
+        opcode_ = ePCPOpCode::Announce;
         lifetime_ = 0;
         client_address_ = client_address;
     }
 
-    void MakeMapRequest(PCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
+    void MakeMapRequest(ePCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
                         const Address &client_address, const PCPNonce &nonce) {
-        opcode_ = OP_MAP;
+        opcode_ = ePCPOpCode::Map;
         proto_ = proto;
         internal_port_ = internal_port;
         external_port_ = external_port;
@@ -91,10 +91,10 @@ class PCPRequest {
         nonce_ = nonce;
     }
 
-    void MakePeerRequest(PCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
+    void MakePeerRequest(ePCPProto proto, uint16_t internal_port, uint16_t external_port, uint32_t lifetime,
                          const Address &external_address, uint16_t remote_port, const Address &remote_address,
                          const PCPNonce &nonce) {
-        opcode_ = OP_PEER;
+        opcode_ = ePCPOpCode::Peer;
         proto_ = proto;
         internal_port_ = internal_port;
         external_port_ = external_port;
@@ -111,21 +111,21 @@ class PCPRequest {
 };
 
 class PCPResponse {
-    PCPOpCode opcode_;
-    PCPResCode res_code_;
+    ePCPOpCode opcode_;
+    ePCPResCode res_code_;
     uint32_t lifetime_;
     uint32_t time_;
     PCPNonce nonce_;
-    PCPProto proto_;
+    ePCPProto proto_;
     Address external_address_, remote_address_;
     uint16_t internal_port_, external_port_, remote_port_;
 
   public:
-    PCPResponse() : opcode_(OP_NONE) {}
+    PCPResponse() : opcode_(ePCPOpCode::None) {}
 
-    PCPOpCode opcode() const { return opcode_; }
+    ePCPOpCode opcode() const { return opcode_; }
 
-    PCPResCode res_code() const { return res_code_; }
+    ePCPResCode res_code() const { return res_code_; }
 
     uint32_t lifetime() const { return lifetime_; }
 
@@ -135,21 +135,21 @@ class PCPResponse {
 
     PCPNonce nonce() const { return nonce_; }
 
-    PCPProto proto() const { return proto_; }
+    ePCPProto proto() const { return proto_; }
 
     uint16_t internal_port() const { return internal_port_; }
 
     uint16_t external_port() const { return external_port_; }
 
-    void MakeAnnounceResponse(PCPResCode res_code) {
-        opcode_ = OP_ANNOUNCE;
+    void MakeAnnounceResponse(ePCPResCode res_code) {
+        opcode_ = ePCPOpCode::Announce;
         res_code_ = res_code;
         lifetime_ = 0;
     }
 
-    void MakeMapResponse(PCPProto proto, PCPResCode res_code, uint16_t internal_port, uint16_t external_port,
+    void MakeMapResponse(ePCPProto proto, ePCPResCode res_code, uint16_t internal_port, uint16_t external_port,
                          uint32_t lifetime, uint32_t time, const Address &external_address, const PCPNonce &nonce) {
-        opcode_ = OP_MAP;
+        opcode_ = ePCPOpCode::Map;
         res_code_ = res_code;
         internal_port_ = internal_port;
         external_port_ = external_port;
@@ -160,10 +160,10 @@ class PCPResponse {
         proto_ = proto;
     }
 
-    void MakePeerResponse(PCPProto proto, PCPResCode res_code, uint16_t internal_port, uint16_t external_port,
+    void MakePeerResponse(ePCPProto proto, ePCPResCode res_code, uint16_t internal_port, uint16_t external_port,
                           uint32_t lifetime, uint32_t time, const Address &external_address, uint16_t remote_port,
                           const Address &remote_address, const PCPNonce &nonce) {
-        opcode_ = OP_PEER;
+        opcode_ = ePCPOpCode::Peer;
         res_code_ = res_code;
         internal_port_ = internal_port;
         external_port_ = external_port;
@@ -183,15 +183,15 @@ class PCPResponse {
 
 class PCPSession {
   public:
-    enum State {
-        REQUEST_MAPPING,
-        IDLE_MAPPED,
-        IDLE_FAILED,
+    enum class eState {
+        RequestMapping,
+        IdleMapped,
+        IdleFailed,
     };
 
-    PCPSession(PCPProto proto, const Address &pcp_server, uint16_t internal_port, uint16_t external_port,
+    PCPSession(ePCPProto proto, const Address &pcp_server, uint16_t internal_port, uint16_t external_port,
                unsigned int lifetime = 7200)
-        : state_(REQUEST_MAPPING), proto_(proto), err_code_(PCP_RES_SUCCESS), internal_port_(internal_port),
+        : state_(eState::RequestMapping), proto_(proto), err_code_(ePCPResCode::Success), internal_port_(internal_port),
           external_port_(external_port), lifetime_(lifetime), main_timer_(0), request_timer_(0), request_counter_(0),
           pcp_server_(pcp_server) {
         GenPCPNonce(&nonce_, sizeof(PCPNonce));
@@ -202,17 +202,17 @@ class PCPSession {
 
     Address local_addr() const { return sock_.local_addr(); }
 
-    State state() const { return state_; }
+    eState state() const { return state_; }
 
-    PCPResCode err_code() const { return err_code_; }
+    ePCPResCode err_code() const { return err_code_; }
 
     void Update(unsigned int dt_ms);
 
   private:
-    State state_;
+    eState state_;
 
-    PCPProto proto_;
-    PCPResCode err_code_;
+    ePCPProto proto_;
+    ePCPResCode err_code_;
     uint16_t internal_port_, external_port_;
     PCPNonce nonce_;
     unsigned int lifetime_;

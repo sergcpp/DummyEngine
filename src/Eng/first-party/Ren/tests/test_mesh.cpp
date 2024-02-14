@@ -126,8 +126,8 @@ void test_mesh() {
         require(m_ref->indices() != nullptr);
         require(m_ref->indices_buf().size == 20);
 
-        require(m_ref->flags() == Ren::MeshHasAlpha);
-        require(m_ref->groups()[0].flags == Ren::MeshHasAlpha);
+        require(m_ref->flags() == Ren::eMeshFlags::HasAlpha);
+        require(m_ref->groups()[0].flags == Ren::eMeshFlags::HasAlpha);
 
         {
             Ren::eMeshLoadStatus load_status;

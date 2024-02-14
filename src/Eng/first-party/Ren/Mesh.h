@@ -4,6 +4,7 @@
 
 #include "AccStructure.h"
 #include "Anim.h"
+#include "Bitmask.h"
 #include "Buffer.h"
 #include "Material.h"
 #include "SmallVector.h"
@@ -12,13 +13,13 @@
 namespace Ren {
 class ILog;
 
-enum eMeshFlags { MeshHasAlpha = 1 };
+enum class eMeshFlags { HasAlpha = 0 };
 
 struct TriGroup {
     int offset = -1;
     int num_indices = 0;
     MaterialRef mat;
-    uint32_t flags = 0;
+    Bitmask<eMeshFlags> flags;
 
     TriGroup() = default;
     TriGroup(const TriGroup &rhs) = delete;
@@ -71,7 +72,7 @@ using material_load_callback = std::function<MaterialRef(const char *name)>;
 
 class Mesh : public RefCounter {
     eMeshType type_ = eMeshType::Undefined;
-    uint32_t flags_ = 0;
+    Bitmask<eMeshFlags> flags_;
     bool ready_ = false;
     BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_, indices_buf_;
     std::unique_ptr<char[]> attribs_, indices_;
@@ -112,7 +113,7 @@ class Mesh : public RefCounter {
     Mesh &operator=(Mesh &&rhs) = default;
 
     eMeshType type() const { return type_; }
-    uint32_t flags() const { return flags_; }
+    Bitmask<eMeshFlags> flags() const { return flags_; }
     bool ready() const { return ready_; }
 #if defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t attribs_buf1_id() const { return attribs_buf1_.buf->id(); }

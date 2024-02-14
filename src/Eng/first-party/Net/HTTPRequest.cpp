@@ -28,7 +28,7 @@ bool Net::HTTPRequest::Parse(const char *buf) {
         std::string item(p, q);
 
         if (item == "GET") {
-            method_.type = GET;
+            method_.type = eMethodType::GET;
             p = q + 1;
             q = strpbrk(p, delims);
             method_.arg = std::string(p, q);
@@ -36,12 +36,12 @@ bool Net::HTTPRequest::Parse(const char *buf) {
             q = strpbrk(p, delims);
             item = std::string(p, q);
             if (item == "HTTP/1.0") {
-                method_.ver = _1_0;
+                method_.ver = eHTTPVer::_1_0;
             } else if (item == "HTTP/1.1") {
-                method_.ver = _1_1;
+                method_.ver = eHTTPVer::_1_1;
             }
         } else if (item == "POST") {
-            method_.type = POST;
+            method_.type = eMethodType::POST;
         } else if (item == "Host:") {
             p = q + 1;
             q = strpbrk(p, delims);

@@ -5,7 +5,7 @@
 #include "MMat.h"
 
 namespace Ren {
-enum ePointPos { Front, Back, OnPlane };
+enum class ePointPos { Front, Back, OnPlane };
 
 struct Plane {
     Vec3f n;
@@ -15,7 +15,7 @@ struct Plane {
     Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &v2);
     explicit Plane(eUninitialized) : n(Uninitialize) {} // NOLINT
 
-    int ClassifyPoint(const float point[3]) const;
+    ePointPos ClassifyPoint(const float point[3]) const;
 };
 
 enum class eCamPlane { Left, Right, Top, Bottom, Near, Far, _Count };

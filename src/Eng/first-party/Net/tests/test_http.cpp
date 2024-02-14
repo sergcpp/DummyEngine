@@ -29,9 +29,9 @@ void test_http() {
         Net::HTTPRequest req;
         assert(req.Parse(pack1));
 
-        assert(req.method().type == Net::GET);
+        assert(req.method().type == Net::eMethodType::GET);
         assert(req.method().arg == "/");
-        assert(req.method().ver == Net::_1_1);
+        assert(req.method().ver == Net::eHTTPVer::_1_1);
 
         assert(req.host_addr() == Net::Address(192, 168, 0, 102, 30000));
 

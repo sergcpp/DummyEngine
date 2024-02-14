@@ -10,16 +10,16 @@ Ren::Plane::Plane(const Ren::Vec3f &v0, const Ren::Vec3f &v1, const Ren::Vec3f &
     d = -Dot(v0, n);
 }
 
-int Ren::Plane::ClassifyPoint(const float point[3]) const {
+Ren::ePointPos Ren::Plane::ClassifyPoint(const float point[3]) const {
     const float epsilon = 0.002f;
 
     float result = Dot(MakeVec3(point), n) + d;
     if (result > epsilon) {
-        return Front;
+        return ePointPos::Front;
     } else if (result < -epsilon) {
-        return Back;
+        return ePointPos::Back;
     }
-    return OnPlane;
+    return ePointPos::OnPlane;
 }
 
 void Ren::Frustum::UpdateFromMatrix(const Mat4f &xform) {
@@ -67,7 +67,7 @@ void Ren::Frustum::UpdateFromMatrix(const Mat4f &xform) {
 
 Ren::eVisResult Ren::Frustum::CheckVisibility(const Vec3f &point) const {
     for (int pl = 0; pl < planes_count; pl++) {
-        if (planes[pl].ClassifyPoint(&point[0]) == Back) {
+        if (planes[pl].ClassifyPoint(&point[0]) == ePointPos::Back) {
             return eVisResult::Invisible;
         }
     }
@@ -82,7 +82,7 @@ Ren::eVisResult Ren::Frustum::CheckVisibility(const float bbox[8][3]) const {
         int in_count = 8;
 
         for (int i = 0; i < 8; i++) {
-            if (planes[pl].ClassifyPoint(&bbox[i][0]) == Back) {
+            if (planes[pl].ClassifyPoint(&bbox[i][0]) == ePointPos::Back) {
                 in_count--;
             }
         }

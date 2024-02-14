@@ -4,88 +4,66 @@
 #include "Socket.h"
 
 namespace Net {
-    const int MAX_PACKET_SIZE = 4096;
+const int MAX_PACKET_SIZE = 4096;
 
-    class UDPConnection : public IConnection {
-    public:
-        enum Mode {
-            NONE, CLIENT, SERVER
-        };
+class UDPConnection : public IConnection {
+  public:
+    enum class eMode { None, Client, Server };
 
-        UDPConnection(unsigned int protocol_id, float timeout_s);
+    UDPConnection(unsigned int protocol_id, float timeout_s);
 
-        ~UDPConnection();
+    ~UDPConnection();
 
-        const UDPSocket &socket() const { return socket_; }
+    const UDPSocket &socket() const { return socket_; }
 
-        void Start(int port) override;
+    void Start(int port) override;
 
-        void Stop();
+    void Stop();
 
-        void Listen();
+    void Listen();
 
-        void Connect(const Address &address) override;
+    void Connect(const Address &address) override;
 
-        void Update(float dt_s) override;
+    void Update(float dt_s) override;
 
-        bool SendPacket(const unsigned char data[], int size) override;
+    bool SendPacket(const unsigned char data[], int size) override;
 
-        int ReceivePacket(unsigned char data[], int size) override;
+    int ReceivePacket(unsigned char data[], int size) override;
 
-        bool listening() const {
-            return state_ == LISTENING;
-        }
+    bool listening() const { return state_ == eState::Listening; }
 
-        bool connecting() const {
-            return state_ == CONNECTING;
-        }
+    bool connecting() const { return state_ == eState::Connecting; }
 
-        bool connect_failed() const {
-            return state_ == CONNECTFAIL;
-        }
+    bool connect_failed() const { return state_ == eState::ConnectFailed; }
 
-        bool connected() const {
-            return state_ == CONNECTED;
-        }
+    bool connected() const { return state_ == eState::Connected; }
 
-        Mode mode() const {
-            return mode_;
-        }
+    eMode mode() const { return mode_; }
 
-        bool running() const {
-            return running_;
-        }
+    bool running() const { return running_; }
 
-        Address address() const override {
-            return address_;
-        }
+    Address address() const override { return address_; }
 
-        Address local_addr() const override {
-            return socket_.local_addr();
-        }
+    Address local_addr() const override { return socket_.local_addr(); }
 
-        float timeout_acc() const {
-            return timeout_acc_;
-        }
+    float timeout_acc() const { return timeout_acc_; }
 
-    private:
-        void ClearData() {
-            state_ = DISCONNECTED;
-            timeout_acc_ = 0;
-            address_ = Address();
-        }
+  private:
+    void ClearData() {
+        state_ = eState::Disconnected;
+        timeout_acc_ = 0;
+        address_ = Address();
+    }
 
-        enum State {
-            DISCONNECTED, LISTENING, CONNECTING, CONNECTFAIL, CONNECTED
-        };
+    enum class eState { Disconnected, Listening, Connecting, ConnectFailed, Connected };
 
-        unsigned int protocol_id_;
-        float timeout_s_, timeout_acc_;
+    unsigned int protocol_id_;
+    float timeout_s_, timeout_acc_;
 
-        bool running_;
-        Mode mode_;
-        State state_;
-        UDPSocket socket_;
-        Address address_;
-    };
-}
+    bool running_;
+    eMode mode_;
+    eState state_;
+    UDPSocket socket_;
+    Address address_;
+};
+} // namespace Net

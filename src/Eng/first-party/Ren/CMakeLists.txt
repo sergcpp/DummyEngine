@@ -42,6 +42,7 @@ set(SOURCE_FILES Anim.h
                  Anim.cpp
                  AccStructure.h
                  AccStructure.cpp
+                 Bitmask.h
                  Buffer.h
                  Buffer.cpp
                  Camera.h

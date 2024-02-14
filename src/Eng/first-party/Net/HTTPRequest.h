@@ -6,16 +6,16 @@
 #include "Address.h"
 
 namespace Net {
-    enum MethodType {
+    enum class eMethodType {
         GET, POST
     };
-    enum HTTPVer {
+    enum class eHTTPVer {
         _1_0, _1_1
     };
     struct Method {
-        MethodType type;
+        eMethodType type;
         std::string arg;
-        HTTPVer ver;
+        eHTTPVer ver;
     };
 
     class HTTPRequest {

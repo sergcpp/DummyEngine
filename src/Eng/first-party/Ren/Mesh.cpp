@@ -280,7 +280,7 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     stage_buf.Unmap();
 
     type_ = eMeshType::Simple;
-    flags_ = 0;
+    flags_ = {};
     ready_ = true;
 
     attribs_buf1_.sub = vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_.c_str(), &stage_buf, cmd_buf);
@@ -376,7 +376,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         data.read(name.data(), 64);
     }
 
-    flags_ = 0;
+    flags_ = {};
 
     const int tri_groups_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
     assert(tri_groups_count == materials_count);
@@ -389,11 +389,10 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
         auto &grp = groups_.emplace_back();
         grp.offset = int(index * sizeof(uint32_t));
         grp.num_indices = (int)num_indices;
-        grp.flags = 0;
 
         if (alpha) {
-            grp.flags |= MeshHasAlpha;
-            flags_ |= MeshHasAlpha;
+            grp.flags |= eMeshFlags::HasAlpha;
+            flags_ |= eMeshFlags::HasAlpha;
         }
 
         grp.mat = on_mat_load(&material_names[i][0]);
@@ -489,7 +488,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
         data.read(name.data(), 64);
     }
 
-    flags_ = 0;
+    flags_ = {};
 
     const int tri_strips_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
     assert(tri_strips_count == materials_count);
@@ -502,11 +501,10 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
         auto &grp = groups_.emplace_back();
         grp.offset = (int)(index * sizeof(uint32_t));
         grp.num_indices = (int)num_indices;
-        grp.flags = 0;
 
         if (alpha) {
-            grp.flags |= MeshHasAlpha;
-            flags_ |= MeshHasAlpha;
+            grp.flags |= eMeshFlags::HasAlpha;
+            flags_ |= eMeshFlags::HasAlpha;
         }
 
         grp.mat = on_mat_load(&material_names[i][0]);
@@ -615,7 +613,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         data.read(name.data(), 64);
     }
 
-    flags_ = 0;
+    flags_ = {};
 
     const int tri_groups_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
     assert(tri_groups_count == materials_count);
@@ -628,11 +626,10 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         auto &grp = groups_.emplace_back();
         grp.offset = int(index * sizeof(uint32_t));
         grp.num_indices = (int)num_indices;
-        grp.flags = 0;
 
         if (alpha) {
-            grp.flags |= MeshHasAlpha;
-            flags_ |= MeshHasAlpha;
+            grp.flags |= eMeshFlags::HasAlpha;
+            flags_ |= eMeshFlags::HasAlpha;
         }
 
         grp.mat = on_mat_load(&material_names[i][0]);
