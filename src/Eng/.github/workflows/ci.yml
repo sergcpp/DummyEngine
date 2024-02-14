@@ -207,7 +207,7 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
-          test-args: "-j4 --device AMD"
+          test-args: "-j2 --device AMD"
   test-linux-x86_64-vk-nv:
     runs-on: [ linux, x86_64, nv ]
     needs:
