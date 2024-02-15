@@ -224,7 +224,7 @@ class SceneManager {
     Eng::ShaderLoader &sh_;
     Snd::Context *snd_ctx_ = nullptr;
     Ren::MeshRef cam_rig_;
-    Ren::Tex2DRef error_tex_;
+    Ren::Tex2DRef white_tex_, error_tex_;
     //Ray::RendererBase &ray_renderer_;
     Sys::ThreadPool &threads_;
     //std::vector<Ray::RegionContext> ray_reg_ctx_;
@@ -257,7 +257,7 @@ class SceneManager {
         uint8_t mip_offset_to_init, mip_count_to_init;
     };
 
-    enum class eRequestState { Idle, PendingIO, PendingUpdate };
+    enum class eRequestState { Idle, PendingIO, PendingUpdate, PendingError };
 
     struct TextureRequestPending : public TextureRequest {
         std::unique_ptr<Sys::FileReadBufBase> buf;

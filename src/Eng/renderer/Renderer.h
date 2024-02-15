@@ -117,8 +117,7 @@ class Renderer {
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap /*| EnableBloom*/ | EnableTaa /*| EnableTaaStatic*/ | EnableTimers |
          EnableDOF // | EnableRTShadows
-         | EnableDeferred | EnableHQ_HDR
-            );
+         | EnableDeferred | EnableHQ_HDR);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);

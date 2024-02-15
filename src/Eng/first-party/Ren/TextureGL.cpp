@@ -50,10 +50,12 @@ const uint32_t g_gl_formats[] = {
 #ifndef __ANDROID__
     GL_DEPTH_COMPONENT, // Depth32
 #endif
-    0xffffffff, // Compressed_DXT1
-    0xffffffff, // Compressed_DXT3
-    0xffffffff, // Compressed_DXT5
-    0xffffffff, // Compressed_ASTC
+    0xffffffff, // BC1
+    0xffffffff, // BC2
+    0xffffffff, // BC3
+    0xffffffff, // BC4
+    0xffffffff, // BC5
+    0xffffffff, // ASTC
     0xffffffff, // None
 };
 static_assert(std::size(g_gl_formats) == size_t(eTexFormat::_Count), "!");
@@ -88,10 +90,12 @@ const uint32_t g_gl_internal_formats[] = {
 #ifndef __ANDROID__
     GL_DEPTH_COMPONENT32, // Depth32
 #endif
-    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, // Compressed_DXT1
-    GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // Compressed_DXT3
-    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // Compressed_DXT5
-    0xffffffff,                       // Compressed_ASTC
+    GL_COMPRESSED_RGBA_S3TC_DXT1_EXT, // BC1
+    GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, // BC2
+    GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, // BC3
+    GL_COMPRESSED_RED_RGTC1_EXT,      // BC4
+    GL_COMPRESSED_RED_GREEN_RGTC2_EXT,// BC5
+    0xffffffff,                       // ASTC
     0xffffffff,                       // None
 };
 static_assert(std::size(g_gl_internal_formats) == size_t(eTexFormat::_Count), "!");
@@ -126,10 +130,12 @@ const uint32_t g_gl_types[] = {
 #ifndef __ANDROID__
     GL_UNSIGNED_INT, // Depth32
 #endif
-    0xffffffff, // Compressed_DXT1
-    0xffffffff, // Compressed_DXT3
-    0xffffffff, // Compressed_DXT5
-    0xffffffff, // Compressed_ASTC
+    0xffffffff, // BC1
+    0xffffffff, // BC2
+    0xffffffff, // BC3
+    0xffffffff, // BC4
+    0xffffffff, // BC5
+    0xffffffff, // ASTC
     0xffffffff, // None
 };
 static_assert(std::size(g_gl_types) == size_t(eTexFormat::_Count), "!");
@@ -548,17 +554,17 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
     switch (px_format) {
     case 1:
-        format = eTexFormat::DXT1;
+        format = eTexFormat::BC1;
         block = eTexBlock::_4x4;
         block_size_bytes = 8;
         break;
     case 3:
-        format = eTexFormat::DXT3;
+        format = eTexFormat::BC2;
         block = eTexBlock::_4x4;
         block_size_bytes = 16;
         break;
     case 5:
-        format = eTexFormat::DXT5;
+        format = eTexFormat::BC3;
         block = eTexBlock::_4x4;
         block_size_bytes = 16;
         break;

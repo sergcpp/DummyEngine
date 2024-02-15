@@ -4,9 +4,11 @@
 
 bool Ren::IsCompressedFormat(const eTexFormat format) {
     switch (format) {
-    case eTexFormat::DXT1:
-    case eTexFormat::DXT3:
-    case eTexFormat::DXT5:
+    case eTexFormat::BC1:
+    case eTexFormat::BC2:
+    case eTexFormat::BC3:
+    case eTexFormat::BC4:
+    case eTexFormat::BC5:
     case eTexFormat::ASTC:
         return true;
     default:

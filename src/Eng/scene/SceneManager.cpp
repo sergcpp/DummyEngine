@@ -214,6 +214,21 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
 
     Ren::ILog *log = ren_ctx_.log();
 
+    { // create white texture
+        Ren::Tex2DParams p;
+        p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
+        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        p.format = Ren::eTexFormat::RawRGBA8888;
+        p.w = p.h = 1;
+
+        static const uint8_t data[4] = {255, 255, 255, 255};
+
+        Ren::eTexLoadStatus status;
+        white_tex_ = ren_ctx_.LoadTexture2D("White Tex", data, sizeof(data), p,
+                                            ren_ctx_.default_stage_bufs(), ren_ctx_.default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedFromData);
+    }
+
     { // load error texture
         char name_buf[64];
         snprintf(name_buf, sizeof(name_buf), "%serror.uncompressed.png", paths_.textures_path);

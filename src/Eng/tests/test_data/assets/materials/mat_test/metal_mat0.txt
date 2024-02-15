@@ -4,7 +4,8 @@ sw_program: main
 flag: two_sided
 texture: default_basecolor.dds
 texture: default_normalmap.dds
-texture: default_specular.png
+texture: default_roughness.png
+texture: default_metallic.png
 param: 0.0 0.5 0.5 0.0      // base color, roughness
 param: 0.0 0.0 0.5 0.0      // sheen, sheen_tint, specular, spec_tint
 param: 1.0 0.0 0.0 0.0      // metallic, transmission, clearcoat, clearcoat_roughness

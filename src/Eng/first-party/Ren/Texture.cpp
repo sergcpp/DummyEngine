@@ -1,5 +1,7 @@
 #include "Texture.h"
 
+#include "Utils.h"
+
 #if defined(USE_GL_RENDER)
 #include "GL.h"
 #endif
@@ -73,10 +75,12 @@ const int g_per_pixel_data_len[] = {
 #ifndef __ANDROID__
     4, // Depth32
 #endif
-    -1, // Compressed_DXT1
-    -1, // Compressed_DXT3
-    -1, // Compressed_DXT5
-    -1, // Compressed_ASTC
+    -1, // BC1
+    -1, // BC2
+    -1, // BC3
+    -1, // BC4
+    -1, // BC5
+    -1, // ASTC
     -1  // None
 };
 static_assert(sizeof(g_per_pixel_data_len) / sizeof(g_per_pixel_data_len[0]) == int(eTexFormat::_Count), "!");
@@ -84,15 +88,22 @@ static_assert(sizeof(g_per_pixel_data_len) / sizeof(g_per_pixel_data_len[0]) == 
 
 int Ren::GetBlockLenBytes(const eTexFormat format, const eTexBlock block) {
     switch (format) {
-    case eTexFormat::DXT1:
+    case eTexFormat::BC1:
         assert(block == eTexBlock::_4x4);
-        return 8;
-    case eTexFormat::DXT3:
-    case eTexFormat::DXT5:
+        return BlockSize_BC1;
+    case eTexFormat::BC2:
+    case eTexFormat::BC3:
         assert(block == eTexBlock::_4x4);
-        return 16;
+        return BlockSize_BC3;
+    case eTexFormat::BC4:
+        assert(block == eTexBlock::_4x4);
+        return BlockSize_BC4;
+    case eTexFormat::BC5:
+        assert(block == eTexBlock::_4x4);
+        return BlockSize_BC5;
     case eTexFormat::ASTC:
         assert(false);
+        break;
     default:
         return -1;
     }
@@ -184,17 +195,17 @@ Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_forma
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::DXT1;
+        return eTexFormat::BC1;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::DXT3;
+        return eTexFormat::BC2;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
         (*block) = eTexBlock::_4x4;
-        return eTexFormat::DXT5;
+        return eTexFormat::BC3;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR:
         (*is_srgb) = true;
     case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:

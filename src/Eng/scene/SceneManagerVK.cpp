@@ -201,6 +201,13 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
     Ren::SmallVector<Ren::TransitionInfo, 256> img_transitions;
     img_infos.reserve((update_range.second - update_range.first) * REN_MAX_TEX_PER_MATERIAL);
 
+    if (white_tex_->resource_state != Ren::eResState::ShaderResource) {
+        img_transitions.emplace_back(white_tex_.get(), Ren::eResState::ShaderResource);
+    }
+    if (error_tex_->resource_state != Ren::eResState::ShaderResource) {
+        img_transitions.emplace_back(error_tex_.get(), Ren::eResState::ShaderResource);
+    }
+
     for (uint32_t i = update_range.first; i < update_range.second; ++i) {
         const uint32_t rel_i = i - update_range.first;
 
@@ -223,7 +230,8 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
                 img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
             for (; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
-                img_infos.push_back(error_tex_->vk_desc_image_info());
+                material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
+                img_infos.push_back(white_tex_->vk_desc_image_info());
             }
 
             int k = 0;
@@ -235,6 +243,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
             }
         } else {
             for (int j = 0; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
+                material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
                 img_infos.push_back(error_tex_->vk_desc_image_info());
             }
         }

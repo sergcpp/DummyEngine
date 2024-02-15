@@ -54,7 +54,7 @@ int main(int argc, char *argv[]) {
 
     const char *device_name = nullptr;
     int threads_count = 1;
-    int validation_level = 2;
+    int validation_level = 1;
 
     for (int i = 1; i < argc; i++) {
         if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {

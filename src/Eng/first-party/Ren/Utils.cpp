@@ -26,122 +26,122 @@
 
 namespace Ren {
 const eTexFormat g_tex_format_from_dxgi_format[] = {
-    eTexFormat::Undefined,          // DXGI_FORMAT_UNKNOWN
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32A32_TYPELESS
-    eTexFormat::RawRGBA32F,         // DXGI_FORMAT_R32G32B32A32_FLOAT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32A32_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32A32_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32_FLOAT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32B32_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16B16A16_TYPELESS
-    eTexFormat::RawRGBA16F,         // DXGI_FORMAT_R16G16B16A16_FLOAT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16B16A16_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16B16A16_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16B16A16_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16B16A16_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32_TYPELESS
-    eTexFormat::RawRG32F,           // DXGI_FORMAT_R32G32_FLOAT
-    eTexFormat::RawRG32UI,          // DXGI_FORMAT_R32G32_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G32_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32G8X24_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_D32_FLOAT_S8X24_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_X32_TYPELESS_G8X24_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R10G10B10A2_TYPELESS
-    eTexFormat::RawRGB10_A2,        // DXGI_FORMAT_R10G10B10A2_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R10G10B10A2_UINT
-    eTexFormat::RawRG11F_B10F,      // DXGI_FORMAT_R11G11B10_FLOAT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8B8A8_TYPELESS
-    eTexFormat::RawRGBA8888,        // DXGI_FORMAT_R8G8B8A8_UNORM
-    eTexFormat::RawRGBA8888,        // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8B8A8_UINT
-    eTexFormat::RawRGBA8888Snorm,   // DXGI_FORMAT_R8G8B8A8_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8B8A8_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16_TYPELESS
-    eTexFormat::RawRG16F,           // DXGI_FORMAT_R16G16_FLOAT
-    eTexFormat::RawRG16,            // DXGI_FORMAT_R16G16_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16G16_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_D32_FLOAT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32_FLOAT
-    eTexFormat::RawR32UI,           // DXGI_FORMAT_R32_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R32_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R24G8_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_D24_UNORM_S8_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R24_UNORM_X8_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_X24_TYPELESS_G8_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8_TYPELESS
-    eTexFormat::RawRG88,            // DXGI_FORMAT_R8G8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16_TYPELESS
-    eTexFormat::RawR16F,            // DXGI_FORMAT_R16_FLOAT
-    eTexFormat::Undefined,          // DXGI_FORMAT_D16_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R16_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8_TYPELESS
-    eTexFormat::RawR8,              // DXGI_FORMAT_R8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8_UINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8_SINT
-    eTexFormat::Undefined,          // DXGI_FORMAT_A8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R1_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R9G9B9E5_SHAREDEXP
-    eTexFormat::Undefined,          // DXGI_FORMAT_R8G8_B8G8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_G8R8_G8B8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC1_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC1_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC1_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC2_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC2_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC2_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC3_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC3_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC3_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC4_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC4_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC4_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC5_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC5_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC5_SNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_B5G6R5_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_B5G5R5A1_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_B8G8R8A8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_B8G8R8X8_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_B8G8R8A8_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_B8G8R8X8_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC6H_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC6H_UF16
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC6H_SF16
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC7_TYPELESS
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC7_UNORM
-    eTexFormat::Undefined,          // DXGI_FORMAT_BC7_UNORM_SRGB
-    eTexFormat::Undefined,          // DXGI_FORMAT_AYUV
-    eTexFormat::Undefined,          // DXGI_FORMAT_Y410
-    eTexFormat::Undefined,          // DXGI_FORMAT_Y416
-    eTexFormat::Undefined,          // DXGI_FORMAT_NV12
-    eTexFormat::Undefined,          //  DXGI_FORMAT_P010
-    eTexFormat::Undefined,          // DXGI_FORMAT_P016
-    eTexFormat::Undefined,          // DXGI_FORMAT_420_OPAQUE
-    eTexFormat::Undefined,          // DXGI_FORMAT_YUY2
-    eTexFormat::Undefined,          // DXGI_FORMAT_Y210
-    eTexFormat::Undefined,          // DXGI_FORMAT_Y216
-    eTexFormat::Undefined,          // DXGI_FORMAT_NV11
-    eTexFormat::Undefined,          // DXGI_FORMAT_AI44
-    eTexFormat::Undefined,          // DXGI_FORMAT_IA44
-    eTexFormat::Undefined,          // DXGI_FORMAT_P8
-    eTexFormat::Undefined,          // DXGI_FORMAT_A8P8
-    eTexFormat::Undefined,          // DXGI_FORMAT_B4G4R4A4_UNORM = 115
+    eTexFormat::Undefined,        // DXGI_FORMAT_UNKNOWN
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32A32_TYPELESS
+    eTexFormat::RawRGBA32F,       // DXGI_FORMAT_R32G32B32A32_FLOAT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32A32_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32A32_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_FLOAT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32B32_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_TYPELESS
+    eTexFormat::RawRGBA16F,       // DXGI_FORMAT_R16G16B16A16_FLOAT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16B16A16_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32_TYPELESS
+    eTexFormat::RawRG32F,         // DXGI_FORMAT_R32G32_FLOAT
+    eTexFormat::RawRG32UI,        // DXGI_FORMAT_R32G32_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G32_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32G8X24_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_D32_FLOAT_S8X24_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32_FLOAT_X8X24_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_X32_TYPELESS_G8X24_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R10G10B10A2_TYPELESS
+    eTexFormat::RawRGB10_A2,      // DXGI_FORMAT_R10G10B10A2_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R10G10B10A2_UINT
+    eTexFormat::RawRG11F_B10F,    // DXGI_FORMAT_R11G11B10_FLOAT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8B8A8_TYPELESS
+    eTexFormat::RawRGBA8888,      // DXGI_FORMAT_R8G8B8A8_UNORM
+    eTexFormat::RawRGBA8888,      // DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8B8A8_UINT
+    eTexFormat::RawRGBA8888Snorm, // DXGI_FORMAT_R8G8B8A8_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8B8A8_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_TYPELESS
+    eTexFormat::RawRG16F,         // DXGI_FORMAT_R16G16_FLOAT
+    eTexFormat::RawRG16,          // DXGI_FORMAT_R16G16_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16G16_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_D32_FLOAT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32_FLOAT
+    eTexFormat::RawR32UI,         // DXGI_FORMAT_R32_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R32_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R24G8_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_D24_UNORM_S8_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R24_UNORM_X8_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_X24_TYPELESS_G8_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_TYPELESS
+    eTexFormat::RawRG88,          // DXGI_FORMAT_R8G8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16_TYPELESS
+    eTexFormat::RawR16F,          // DXGI_FORMAT_R16_FLOAT
+    eTexFormat::Undefined,        // DXGI_FORMAT_D16_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R16_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8_TYPELESS
+    eTexFormat::RawR8,            // DXGI_FORMAT_R8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8_UINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8_SINT
+    eTexFormat::Undefined,        // DXGI_FORMAT_A8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R1_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R9G9B9E5_SHAREDEXP
+    eTexFormat::Undefined,        // DXGI_FORMAT_R8G8_B8G8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_G8R8_G8B8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC1_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC1_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC1_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC2_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC2_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC2_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC3_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC3_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC3_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC4_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC4_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC4_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC5_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC5_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC5_SNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_B5G6R5_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_B5G5R5A1_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8A8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8X8_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_R10G10B10_XR_BIAS_A2_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8A8_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8X8_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC6H_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC6H_UF16
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC6H_SF16
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC7_TYPELESS
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC7_UNORM
+    eTexFormat::Undefined,        // DXGI_FORMAT_BC7_UNORM_SRGB
+    eTexFormat::Undefined,        // DXGI_FORMAT_AYUV
+    eTexFormat::Undefined,        // DXGI_FORMAT_Y410
+    eTexFormat::Undefined,        // DXGI_FORMAT_Y416
+    eTexFormat::Undefined,        // DXGI_FORMAT_NV12
+    eTexFormat::Undefined,        //  DXGI_FORMAT_P010
+    eTexFormat::Undefined,        // DXGI_FORMAT_P016
+    eTexFormat::Undefined,        // DXGI_FORMAT_420_OPAQUE
+    eTexFormat::Undefined,        // DXGI_FORMAT_YUY2
+    eTexFormat::Undefined,        // DXGI_FORMAT_Y210
+    eTexFormat::Undefined,        // DXGI_FORMAT_Y216
+    eTexFormat::Undefined,        // DXGI_FORMAT_NV11
+    eTexFormat::Undefined,        // DXGI_FORMAT_AI44
+    eTexFormat::Undefined,        // DXGI_FORMAT_IA44
+    eTexFormat::Undefined,        // DXGI_FORMAT_P8
+    eTexFormat::Undefined,        // DXGI_FORMAT_A8P8
+    eTexFormat::Undefined,        // DXGI_FORMAT_B4G4R4A4_UNORM = 115
 };
 static_assert(sizeof(g_tex_format_from_dxgi_format) / sizeof(g_tex_format_from_dxgi_format[0]) == 116, "!");
 
@@ -281,6 +281,8 @@ force_inline Ren::Vec4f taylor_inv_sqrt(const Ren::Vec4f &r) {
 force_inline Ren::Vec4f fade(const Ren::Vec4f &t) {
     return t * t * t * (t * (t * 6.0f - Ren::Vec4f{15.0f}) + Ren::Vec4f{10.0f});
 }
+
+int round_up(int v, int align) { return align * ((v + align - 1) / align); }
 
 } // namespace Ren
 
@@ -595,11 +597,11 @@ std::unique_ptr<uint8_t[]> Ren::ConvertCoCgxY_to_RGB(const uint8_t image_data[],
 Ren::eTexFormat Ren::TexFormatFromDXGIFormat(const DXGI_FORMAT f) { return g_tex_format_from_dxgi_format[int(f)]; }
 
 int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], const int channels,
-                     const eMipOp op[4]) {
+                     const eMipOp op[4], const int min_tex_dim) {
     int mip_count = 1;
 
     int _w = widths[0], _h = heights[0];
-    while (_w > 1 || _h > 1) {
+    while (_w > min_tex_dim && _h > min_tex_dim) {
         int _prev_w = _w, _prev_h = _h;
         _w = std::max(_w / 2, 1);
         _h = std::max(_h / 2, 1);
@@ -720,11 +722,12 @@ int Ren::InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int
     return mip_count;
 }
 
-int Ren::InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16]) {
+int Ren::InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16],
+                         const int min_tex_dim) {
     int mip_count = 1;
 
     int _w = widths[0], _h = heights[0];
-    while (_w > 1 || _h > 1) {
+    while (_w > min_tex_dim && _h > min_tex_dim) {
         int _prev_w = _w, _prev_h = _h;
         _w = std::max(_w / 2, 1);
         _h = std::max(_h / 2, 1);
@@ -1426,27 +1429,29 @@ float Ren::PerlinNoise(const Ren::Vec4f &P, const Ren::Vec4f &rep) {
 //
 
 namespace Ren {
-template <int Channels> void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[64]) {
-    if (Channels == 4) {
+template <int SrcChannels, int DstChannels = 4>
+void Extract4x4Block_Ref(const uint8_t src[], const int stride, uint8_t dst[16 * DstChannels]) {
+    if (SrcChannels == 4 && DstChannels == 4) {
         for (int j = 0; j < 4; j++) {
             memcpy(&dst[j * 4 * 4], src, 4 * 4);
             src += stride;
         }
-    } else if (Channels == 3) {
+    } else {
         for (int j = 0; j < 4; j++) {
             for (int i = 0; i < 4; i++) {
-                memcpy(&dst[i * 4], &src[i * 3], 3);
+                memcpy(&dst[i * DstChannels], &src[i * SrcChannels],
+                       SrcChannels < DstChannels ? SrcChannels : DstChannels);
             }
-            dst += 4 * 4;
+            dst += 4 * DstChannels;
             src += stride;
         }
     }
 }
 
-template <int Channels>
+template <int SrcChannels, int DstChannels = 4>
 void ExtractIncomplete4x4Block_Ref(const uint8_t src[], const int stride, const int blck_w, const int blck_h,
-                                   uint8_t dst[64]) {
-    if (Channels == 4) {
+                                   uint8_t dst[16 * DstChannels]) {
+    if (SrcChannels == 4 && DstChannels == 4) {
         for (int j = 0; j < blck_h; j++) {
             assert(blck_w <= 4);
             memcpy(&dst[0], src, 4 * blck_w);
@@ -1456,27 +1461,29 @@ void ExtractIncomplete4x4Block_Ref(const uint8_t src[], const int stride, const 
             dst += 4 * 4;
             src += stride;
         }
-    } else if (Channels == 3) {
+    } else {
         for (int j = 0; j < blck_h; j++) {
             for (int i = 0; i < blck_w; i++) {
-                memcpy(&dst[i * 4], &src[i * 3], 3);
+                memcpy(&dst[i * DstChannels], &src[i * SrcChannels],
+                       SrcChannels < DstChannels ? SrcChannels : DstChannels);
             }
             for (int i = blck_w; i < 4; i++) {
-                memcpy(&dst[i * 4], &dst[(blck_w - 1) * 4], 4);
+                memcpy(&dst[i * DstChannels], &dst[(blck_w - 1) * DstChannels], DstChannels);
             }
-            dst += 4 * 4;
+            dst += 4 * DstChannels;
             src += stride;
         }
     }
-    uint8_t *dst2 = dst - 4 * 4;
+    uint8_t *dst2 = dst - 4 * DstChannels;
     for (int j = blck_h; j < 4; j++) {
-        memcpy(dst, dst2, 4 * 4);
-        dst += 4 * 4;
+        memcpy(dst, dst2, 4 * DstChannels);
+        dst += 4 * DstChannels;
     }
 }
 
 // WARNING: Reads 4 bytes outside of block!
 template <int Channels> void Extract4x4Block_SSSE3(const uint8_t src[], int stride, uint8_t dst[64]);
+template <int Channels> void Extract4x4Block_NEON(const uint8_t src[], int stride, uint8_t dst[64]);
 
 force_inline int ColorDistance(const uint8_t c1[3], const uint8_t c2[3]) {
     // euclidean distance
@@ -1575,8 +1582,25 @@ void GetMinMaxColorByBBox_Ref(const uint8_t block[64], uint8_t min_color[4], uin
     }
 }
 
+void GetMinMaxAlphaByBBox_Ref(const uint8_t block[16], uint8_t &min_alpha, uint8_t &max_alpha) {
+    min_alpha = 255;
+    max_alpha = 0;
+
+    // clang-format off
+    for (int i = 0; i < 16; i++) {
+        if (block[i] < min_alpha) min_alpha = block[i];
+        if (block[i] > max_alpha) max_alpha = block[i];
+    }
+    // clang-format on
+}
+
 template <bool UseAlpha = false, bool Is_YCoCg = false>
 void GetMinMaxColorByBBox_SSE2(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]);
+template <bool UseAlpha = false, bool Is_YCoCg = false>
+void GetMinMaxColorByBBox_NEON(const uint8_t block[64], uint8_t min_color[4], uint8_t max_color[4]);
+
+void GetMinMaxAlphaByBBox_SSE2(const uint8_t block[16], uint8_t &min_alpha, uint8_t &max_alpha);
+void GetMinMaxAlphaByBBox_NEON(const uint8_t block[16], uint8_t &min_alpha, uint8_t &max_alpha);
 
 void InsetYCoCgBBox_Ref(uint8_t min_color[4], uint8_t max_color[4]) {
     const int inset[] = {(max_color[0] - min_color[0]) - ((1 << (4 - 1)) - 1),
@@ -1848,9 +1872,63 @@ void EmitAlphaIndices_Ref(const uint8_t block[64], const uint8_t min_alpha, cons
     push_u8((ind[13] >> 1) | (ind[14] << 2) | (ind[15] << 5), out_data);
 }
 
-void EmitAlphaIndices_SSE2(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha, uint8_t *&out_data);
+void EmitAlphaOnlyIndices_Ref(const uint8_t block[16], const uint8_t min_alpha, const uint8_t max_alpha,
+                              uint8_t *&out_data) {
+    uint8_t ind[16];
 
-void EmitDXT1Block_Ref(const uint8_t block[64], uint8_t *&out_data) {
+    const uint8_t half_step = (max_alpha - min_alpha) / (2 * 7);
+
+    // division by 14 and 7 can be 'emulated' with:
+    // y = (1 << 16) / 14 + 1
+    // x = (x * y) >> 16          -->      pmulhw x, y
+
+    const uint8_t ab1 = min_alpha + half_step;
+    const uint8_t ab2 = (6 * max_alpha + 1 * min_alpha) / 7 + half_step;
+    const uint8_t ab3 = (5 * max_alpha + 2 * min_alpha) / 7 + half_step;
+    const uint8_t ab4 = (4 * max_alpha + 3 * min_alpha) / 7 + half_step;
+    const uint8_t ab5 = (3 * max_alpha + 4 * min_alpha) / 7 + half_step;
+    const uint8_t ab6 = (2 * max_alpha + 5 * min_alpha) / 7 + half_step;
+    const uint8_t ab7 = (1 * max_alpha + 6 * min_alpha) / 7 + half_step;
+
+    for (int i = 0; i < 16; i++) {
+        const uint8_t a = block[i];
+
+        const int b1 = (a <= ab1);
+        const int b2 = (a <= ab2);
+        const int b3 = (a <= ab3);
+        const int b4 = (a <= ab4);
+        const int b5 = (a <= ab5);
+        const int b6 = (a <= ab6);
+        const int b7 = (a <= ab7);
+
+        // x <= y can be emulated with min(x, y) == x
+
+        const int ndx = (b1 + b2 + b3 + b4 + b5 + b6 + b7 + 1) & 0b00000111;
+        ind[i] = ndx ^ (2 > ndx);
+    }
+
+    // Write indices 3 bit each (48 = 4x8 in total)
+    // [ 2][ 2][ 1][ 1][ 1][ 0][ 0][ 0]
+    push_u8((ind[0] >> 0) | (ind[1] << 3) | (ind[2] << 6), out_data);
+    // [ 5][ 4][ 4][ 4][ 3][ 3][ 3][ 2]
+    push_u8((ind[2] >> 2) | (ind[3] << 1) | (ind[4] << 4) | (ind[5] << 7), out_data);
+    // [ 7][ 7][ 7][ 6][ 6][ 6][ 5][ 5]
+    push_u8((ind[5] >> 1) | (ind[6] << 2) | (ind[7] << 5), out_data);
+    // [10][10][ 9][ 9][ 9][ 8][ 8][ 8]
+    push_u8((ind[8] >> 0) | (ind[9] << 3) | (ind[10] << 6), out_data);
+    // [13][12][12][12][11][11][11][10]
+    push_u8((ind[10] >> 2) | (ind[11] << 1) | (ind[12] << 4) | (ind[13] << 7), out_data);
+    // [15][15][15][14][14][14][13][13]
+    push_u8((ind[13] >> 1) | (ind[14] << 2) | (ind[15] << 5), out_data);
+}
+
+void EmitAlphaIndices_SSE2(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha, uint8_t *&out_data);
+void EmitAlphaIndices_NEON(const uint8_t block[64], uint8_t min_alpha, uint8_t max_alpha, uint8_t *&out_data);
+
+void EmitAlphaOnlyIndices_SSE2(const uint8_t block[16], uint8_t min_alpha, uint8_t max_alpha, uint8_t *&out_data);
+void EmitAlphaOnlyIndices_NEON(const uint8_t block[16], uint8_t min_alpha, uint8_t max_alpha, uint8_t *&out_data);
+
+void Emit_BC1_Block_Ref(const uint8_t block[64], uint8_t *&out_data) {
     uint8_t min_color[4], max_color[4];
     GetMinMaxColorByBBox_Ref(block, min_color, max_color);
 
@@ -1860,7 +1938,7 @@ void EmitDXT1Block_Ref(const uint8_t block[64], uint8_t *&out_data) {
     EmitColorIndices_Ref(block, min_color, max_color, out_data);
 }
 
-template <bool Is_YCoCg> void EmitDXT5Block_Ref(uint8_t block[64], uint8_t *&out_data) {
+template <bool Is_YCoCg> void Emit_BC3_Block_Ref(uint8_t block[64], uint8_t *&out_data) {
     uint8_t min_color[4], max_color[4];
     GetMinMaxColorByBBox_Ref<true /* UseAlpha */, Is_YCoCg>(block, min_color, max_color);
     if (Is_YCoCg) {
@@ -1888,8 +1966,74 @@ template <bool Is_YCoCg> void EmitDXT5Block_Ref(uint8_t block[64], uint8_t *&out
     EmitColorIndices_Ref(block, min_color, max_color, out_data);
 }
 
-#if !defined(__aarch64__)
-void EmitDXT1Block_SSE2(const uint8_t block[64], uint8_t *&out_data) {
+void Emit_BC4_Block_Ref(uint8_t block[16], uint8_t *&out_data) {
+    uint8_t min_alpha, max_alpha;
+    GetMinMaxAlphaByBBox_Ref(block, min_alpha, max_alpha);
+
+    //
+    // Write alpha block
+    //
+
+    push_u8(max_alpha, out_data);
+    push_u8(min_alpha, out_data);
+
+    EmitAlphaOnlyIndices_Ref(block, min_alpha, max_alpha, out_data);
+}
+
+#if defined(__ARM_NEON__) || defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+void Emit_BC1_Block_NEON(const uint8_t block[64], uint8_t *&out_data) {
+    alignas(16) uint8_t min_color[4], max_color[4];
+    GetMinMaxColorByBBox_NEON(block, min_color, max_color);
+
+    push_u16(rgb888_to_rgb565(max_color), out_data);
+    push_u16(rgb888_to_rgb565(min_color), out_data);
+
+    EmitColorIndices_NEON(block, min_color, max_color, out_data);
+}
+
+template <bool Is_YCoCg> void Emit_BC3_Block_NEON(uint8_t block[64], uint8_t *&out_data) {
+    uint8_t min_color[4], max_color[4];
+    GetMinMaxColorByBBox_NEON<true /* UseAlpha */, Is_YCoCg>(block, min_color, max_color);
+    if (Is_YCoCg) {
+        ScaleYCoCg_NEON(block, min_color, max_color);
+        InsetYCoCgBBox_NEON(min_color, max_color);
+        SelectYCoCgDiagonal_NEON(block, min_color, max_color);
+    }
+
+    //
+    // Write alpha block
+    //
+
+    push_u8(max_color[3], out_data);
+    push_u8(min_color[3], out_data);
+
+    EmitAlphaIndices_NEON(block, min_color[3], max_color[3], out_data);
+
+    //
+    // Write color block
+    //
+
+    push_u16(rgb888_to_rgb565(max_color), out_data);
+    push_u16(rgb888_to_rgb565(min_color), out_data);
+
+    EmitColorIndices_NEON(block, min_color, max_color, out_data);
+}
+
+void Emit_BC4_Block_NEON(uint8_t block[16], uint8_t *&out_data) {
+    uint8_t min_alpha, max_alpha;
+    GetMinMaxAlphaByBBox_NEON(block, min_alpha, max_alpha);
+
+    //
+    // Write alpha block
+    //
+
+    push_u8(max_alpha, out_data);
+    push_u8(min_alpha, out_data);
+
+    EmitAlphaOnlyIndices_NEON(block, min_alpha, max_alpha, out_data);
+}
+#else
+void Emit_BC1_Block_SSE2(const uint8_t block[64], uint8_t *&out_data) {
     alignas(16) uint8_t min_color[4], max_color[4];
     GetMinMaxColorByBBox_SSE2(block, min_color, max_color);
 
@@ -1899,7 +2043,7 @@ void EmitDXT1Block_SSE2(const uint8_t block[64], uint8_t *&out_data) {
     EmitColorIndices_SSE2(block, min_color, max_color, out_data);
 }
 
-template <bool Is_YCoCg> void EmitDXT5Block_SSE2(uint8_t block[64], uint8_t *&out_data) {
+template <bool Is_YCoCg> void Emit_BC3_Block_SSE2(uint8_t block[64], uint8_t *&out_data) {
     alignas(16) uint8_t min_color[4], max_color[4];
     GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, Is_YCoCg>(block, min_color, max_color);
     if (Is_YCoCg) {
@@ -1926,133 +2070,389 @@ template <bool Is_YCoCg> void EmitDXT5Block_SSE2(uint8_t block[64], uint8_t *&ou
 
     EmitColorIndices_SSE2(block, min_color, max_color, out_data);
 }
+
+void Emit_BC4_Block_SSE2(uint8_t block[16], uint8_t *&out_data) {
+    uint8_t min_alpha, max_alpha;
+    GetMinMaxAlphaByBBox_SSE2(block, min_alpha, max_alpha);
+
+    //
+    // Write alpha block
+    //
+
+    push_u8(max_alpha, out_data);
+    push_u8(min_alpha, out_data);
+
+    EmitAlphaOnlyIndices_SSE2(block, min_alpha, max_alpha, out_data);
+}
 #endif
-
-// clang-format off
-
-const int BlockSize_DXT1 = 2 * sizeof(uint16_t) + sizeof(uint32_t);
-//                         \_ low/high colors_/   \_ 16 x 2-bit _/
-
-const int BlockSize_DXT5 = 2 * sizeof(uint8_t) + 6 * sizeof(uint8_t) +
-//                         \_ low/high alpha_/     \_ 16 x 3-bit _/
-                           2 * sizeof(uint16_t) + sizeof(uint32_t);
-//                         \_ low/high colors_/   \_ 16 x 2-bit _/
-
-// clang-format on
 
 } // namespace Ren
 
-int Ren::GetRequiredMemory_DXT1(const int w, const int h) { return BlockSize_DXT1 * ((w + 3) / 4) * ((h + 3) / 4); }
+int Ren::GetRequiredMemory_BC1(const int w, const int h, const int pitch_align) {
+    return round_up(BlockSize_BC1 * ((w + 3) / 4), pitch_align) * ((h + 3) / 4);
+}
 
-int Ren::GetRequiredMemory_DXT5(const int w, const int h) { return BlockSize_DXT5 * ((w + 3) / 4) * ((h + 3) / 4); }
+int Ren::GetRequiredMemory_BC3(const int w, const int h, const int pitch_align) {
+    return round_up(BlockSize_BC3 * ((w + 3) / 4), pitch_align) * ((h + 3) / 4);
+}
 
-template <int Channels>
-void Ren::CompressImage_DXT1(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[]) {
+int Ren::GetRequiredMemory_BC4(const int w, const int h, const int pitch_align) {
+    return round_up(BlockSize_BC4 * ((w + 3) / 4), pitch_align) * ((h + 3) / 4);
+}
+
+int Ren::GetRequiredMemory_BC5(const int w, const int h, const int pitch_align) {
+    return round_up(BlockSize_BC5 * ((w + 3) / 4), pitch_align) * ((h + 3) / 4);
+}
+
+template <int SrcChannels>
+void Ren::CompressImage_BC1(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[], int dst_pitch) {
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
-#if !defined(__aarch64__)
+    const int pitch_pad = dst_pitch == 0 ? 0 : dst_pitch - BlockSize_BC1 * ((w + 3) / 4);
+
+#if defined(__ARM_NEON__) || defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+    for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * SrcChannels) {
+        const int w_limited = (SrcChannels == 3 && j == h_aligned - 4 && h_aligned == h) ? w_aligned - 4 : w_aligned;
+        for (int i = 0; i < w_limited; i += 4) {
+            Extract4x4Block_Ref<SrcChannels>(&img_src[i * SrcChannels], w * SrcChannels, block);
+            Emit_BC1_Block_NEON(block, p_out);
+        }
+        if (w_limited != w_aligned && w_aligned >= 4) {
+            // process last block (avoid reading 4 bytes outside of range)
+            Extract4x4Block_Ref<SrcChannels>(&img_src[(w_aligned - 4) * SrcChannels], w * SrcChannels, block);
+            Emit_BC1_Block_NEON(block, p_out);
+        }
+        // process last (incomplete) column
+        if (w_aligned != w) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels>(&img_src[w_aligned * SrcChannels], w * SrcChannels, w % 4, 4,
+                                                       block);
+            Emit_BC1_Block_NEON(block, p_out);
+        }
+        p_out += pitch_pad;
+    }
+    // process last (incomplete) row
+    for (int i = 0; i < w && h_aligned != h; i += 4) {
+        ExtractIncomplete4x4Block_Ref<SrcChannels>(&img_src[i * SrcChannels], w * SrcChannels, _MIN(4, w - i), h % 4,
+                                                   block);
+        Emit_BC1_Block_NEON(block, p_out);
+    }
+#else
     if (g_CpuFeatures.sse2_supported && g_CpuFeatures.ssse3_supported) {
-        for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
-            const int w_limited = (Channels == 3 && j == h_aligned - 4 && h_aligned == h) ? w_aligned - 4 : w_aligned;
+        for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * SrcChannels) {
+            const int w_limited =
+                (SrcChannels == 3 && j == h_aligned - 4 && h_aligned == h) ? w_aligned - 4 : w_aligned;
             for (int i = 0; i < w_limited; i += 4) {
-                Extract4x4Block_SSSE3<Channels>(&img_src[i * Channels], w * Channels, block);
-                EmitDXT1Block_SSE2(block, p_out);
+                Extract4x4Block_SSSE3<SrcChannels>(&img_src[i * SrcChannels], w * SrcChannels, block);
+                Emit_BC1_Block_SSE2(block, p_out);
             }
             if (w_limited != w_aligned && w_aligned >= 4) {
                 // process last block (avoid reading 4 bytes outside of range)
-                Extract4x4Block_Ref<Channels>(&img_src[(w_aligned - 4) * Channels], w * Channels, block);
-                EmitDXT1Block_SSE2(block, p_out);
+                Extract4x4Block_Ref<SrcChannels>(&img_src[(w_aligned - 4) * SrcChannels], w * SrcChannels, block);
+                Emit_BC1_Block_SSE2(block, p_out);
             }
             // process last (incomplete) column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels], w * Channels, w % 4, 4, block);
-                EmitDXT1Block_SSE2(block, p_out);
+                ExtractIncomplete4x4Block_Ref<SrcChannels>(&img_src[w_aligned * SrcChannels], w * SrcChannels, w % 4, 4,
+                                                           block);
+                Emit_BC1_Block_SSE2(block, p_out);
             }
+            p_out += pitch_pad;
         }
         // process last (incomplete) row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, _MIN(4, w - i), h % 4, block);
-            EmitDXT1Block_SSE2(block, p_out);
+            ExtractIncomplete4x4Block_Ref<SrcChannels>(&img_src[i * SrcChannels], w * SrcChannels, _MIN(4, w - i),
+                                                       h % 4, block);
+            Emit_BC1_Block_SSE2(block, p_out);
         }
-    } else
-#endif
-    {
-        for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * Channels) {
+    } else {
+        for (int j = 0; j < h_aligned; j += 4, img_src += 4 * w * SrcChannels) {
             for (int i = 0; i < w_aligned; i += 4) {
-                Extract4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, block);
-                EmitDXT1Block_Ref(block, p_out);
+                Extract4x4Block_Ref<SrcChannels>(&img_src[i * SrcChannels], w * SrcChannels, block);
+                Emit_BC1_Block_Ref(block, p_out);
             }
             // process last column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<Channels>(&img_src[w_aligned * Channels], w * Channels, w % 4, 4, block);
-                EmitDXT1Block_Ref(block, p_out);
+                ExtractIncomplete4x4Block_Ref<SrcChannels>(&img_src[w_aligned * SrcChannels], w * SrcChannels, w % 4, 4,
+                                                           block);
+                Emit_BC1_Block_Ref(block, p_out);
             }
+            p_out += pitch_pad;
         }
         // process last row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<Channels>(&img_src[i * Channels], w * Channels, _MIN(4, w - i), h % 4, block);
-            EmitDXT1Block_Ref(block, p_out);
+            ExtractIncomplete4x4Block_Ref<SrcChannels>(&img_src[i * SrcChannels], w * SrcChannels, _MIN(4, w - i),
+                                                       h % 4, block);
+            Emit_BC1_Block_Ref(block, p_out);
         }
     }
+#endif
 }
 
-template void Ren::CompressImage_DXT1<4 /* Channels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
-template void Ren::CompressImage_DXT1<3 /* Channels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+template void Ren::CompressImage_BC1<4 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+template void Ren::CompressImage_BC1<3 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
 
 template <bool Is_YCoCg>
-void Ren::CompressImage_DXT5(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[]) {
+void Ren::CompressImage_BC3(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[], int dst_pitch) {
     alignas(16) uint8_t block[64] = {};
     uint8_t *p_out = img_dst;
 
     const int w_aligned = w - (w % 4);
     const int h_aligned = h - (h % 4);
 
-#if !defined(__aarch64__)
+    const int pitch_pad = dst_pitch == 0 ? 0 : dst_pitch - BlockSize_BC3 * ((w + 3) / 4);
+
+#if defined(__ARM_NEON__) || defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+    for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
+        for (int i = 0; i < w_aligned; i += 4) {
+            Extract4x4Block_NEON<4>(&img_src[i * 4], w * 4, block);
+            Emit_BC3_Block_NEON<Is_YCoCg>(block, p_out);
+        }
+        // process last (incomplete) column
+        if (w_aligned != w) {
+            ExtractIncomplete4x4Block_Ref<4>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
+            Emit_BC3_Block_NEON<Is_YCoCg>(block, p_out);
+        }
+        p_out += pitch_pad;
+    }
+    // process last (incomplete) row
+    for (int i = 0; i < w && h_aligned != h; i += 4) {
+        ExtractIncomplete4x4Block_Ref<4>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
+        Emit_BC3_Block_NEON<Is_YCoCg>(block, p_out);
+    }
+#else
     if (g_CpuFeatures.sse2_supported && g_CpuFeatures.ssse3_supported) {
         for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
             for (int i = 0; i < w_aligned; i += 4) {
-                Extract4x4Block_SSSE3<4 /* Channels */>(&img_src[i * 4], w * 4, block);
-                EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
+                Extract4x4Block_SSSE3<4 /* SrcChannels */>(&img_src[i * 4], w * 4, block);
+                Emit_BC3_Block_SSE2<Is_YCoCg>(block, p_out);
             }
             // process last (incomplete) column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
-                EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
+                ExtractIncomplete4x4Block_Ref<4 /* SrcChannels */>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
+                Emit_BC3_Block_SSE2<Is_YCoCg>(block, p_out);
             }
+            p_out += pitch_pad;
         }
         // process last (incomplete) row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
-            EmitDXT5Block_SSE2<Is_YCoCg>(block, p_out);
+            ExtractIncomplete4x4Block_Ref<4 /* SrcChannels */>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
+            Emit_BC3_Block_SSE2<Is_YCoCg>(block, p_out);
         }
-    } else
-#endif
-    {
+    } else {
         for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * 4) {
             for (int i = 0; i < w_aligned; i += 4) {
-                Extract4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, block);
-                EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
+                Extract4x4Block_Ref<4>(&img_src[i * 4], w * 4, block);
+                Emit_BC3_Block_Ref<Is_YCoCg>(block, p_out);
             }
             // process last (incomplete) column
             if (w_aligned != w) {
-                ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
-                EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
+                ExtractIncomplete4x4Block_Ref<4>(&img_src[w_aligned * 4], w * 4, w % 4, 4, block);
+                Emit_BC3_Block_Ref<Is_YCoCg>(block, p_out);
             }
+            p_out += pitch_pad;
         }
         // process last (incomplete) row
         for (int i = 0; i < w && h_aligned != h; i += 4) {
-            ExtractIncomplete4x4Block_Ref<4 /* Channels */>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
-            EmitDXT5Block_Ref<Is_YCoCg>(block, p_out);
+            ExtractIncomplete4x4Block_Ref<4>(&img_src[i * 4], w * 4, _MIN(4, w - i), h % 4, block);
+            Emit_BC3_Block_Ref<Is_YCoCg>(block, p_out);
         }
     }
+#endif
 }
 
-template void Ren::CompressImage_DXT5<false /* Is_YCoCg */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
-template void Ren::CompressImage_DXT5<true /* Is_YCoCg */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+template void Ren::CompressImage_BC3<false /* Is_YCoCg */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                           int dst_pitch);
+template void Ren::CompressImage_BC3<true /* Is_YCoCg */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+
+template <int SrcChannels>
+void Ren::CompressImage_BC4(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[], int dst_pitch) {
+    alignas(16) uint8_t block[16] = {};
+    uint8_t *p_out = img_dst;
+
+    const int w_aligned = w - (w % 4);
+    const int h_aligned = h - (h % 4);
+
+    const int pitch_pad = dst_pitch == 0 ? 0 : dst_pitch - BlockSize_BC4 * ((w + 3) / 4);
+
+#if defined(__ARM_NEON__) || defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+    for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * SrcChannels) {
+        for (int i = 0; i < w_aligned; i += 4) {
+            Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels], w * SrcChannels, block);
+            Emit_BC4_Block_NEON(block, p_out);
+        }
+        // process last (incomplete) column
+        if (w_aligned != w) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels], w * SrcChannels, w % 4, 4,
+                                                          block);
+            Emit_BC4_Block_NEON(block, p_out);
+        }
+        p_out += pitch_pad;
+    }
+    // process last (incomplete) row
+    for (int i = 0; i < w && h_aligned != h; i += 4) {
+        ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels], w * SrcChannels, _MIN(4, w - i), h % 4,
+                                                      block);
+        Emit_BC4_Block_NEON(block, p_out);
+    }
+#else
+    if (g_CpuFeatures.sse2_supported) {
+        for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * SrcChannels) {
+            for (int i = 0; i < w_aligned; i += 4) {
+                Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels], w * SrcChannels, block);
+                Emit_BC4_Block_SSE2(block, p_out);
+            }
+            // process last (incomplete) column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels], w * SrcChannels, w % 4,
+                                                              4, block);
+                Emit_BC4_Block_SSE2(block, p_out);
+            }
+            p_out += pitch_pad;
+        }
+        // process last (incomplete) row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels], w * SrcChannels, _MIN(4, w - i),
+                                                          h % 4, block);
+            Emit_BC4_Block_SSE2(block, p_out);
+        }
+    } else {
+        for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * SrcChannels) {
+            for (int i = 0; i < w_aligned; i += 4) {
+                Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels], w * SrcChannels, block);
+                Emit_BC4_Block_Ref(block, p_out);
+            }
+            // process last (incomplete) column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels], w * SrcChannels, w % 4,
+                                                              4, block);
+                Emit_BC4_Block_Ref(block, p_out);
+            }
+            p_out += pitch_pad;
+        }
+        // process last (incomplete) row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels], w * SrcChannels, _MIN(4, w - i),
+                                                          h % 4, block);
+            Emit_BC4_Block_Ref(block, p_out);
+        }
+    }
+#endif
+}
+
+template void Ren::CompressImage_BC4<4 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+template void Ren::CompressImage_BC4<3 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+template void Ren::CompressImage_BC4<2 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+template void Ren::CompressImage_BC4<1 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+
+template <int SrcChannels>
+void Ren::CompressImage_BC5(const uint8_t img_src[], const int w, const int h, uint8_t img_dst[], int dst_pitch) {
+    alignas(16) uint8_t block1[16] = {}, block2[16] = {};
+    uint8_t *p_out = img_dst;
+
+    const int w_aligned = w - (w % 4);
+    const int h_aligned = h - (h % 4);
+
+    const int pitch_pad = dst_pitch == 0 ? 0 : dst_pitch - BlockSize_BC5 * ((w + 3) / 4);
+
+#if defined(__ARM_NEON__) || defined(__arm__) || defined(__aarch64__) || defined(_M_ARM) || defined(_M_ARM64)
+    for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * SrcChannels) {
+        for (int i = 0; i < w_aligned; i += 4) {
+            Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 0], w * SrcChannels, block1);
+            Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 1], w * SrcChannels, block2);
+            Emit_BC4_Block_NEON(block1, p_out);
+            Emit_BC4_Block_NEON(block2, p_out);
+        }
+        // process last (incomplete) column
+        if (w_aligned != w) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels + 0], w * SrcChannels, w % 4,
+                                                          4, block1);
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels + 1], w * SrcChannels, w % 4,
+                                                          4, block2);
+            Emit_BC4_Block_NEON(block1, p_out);
+            Emit_BC4_Block_NEON(block2, p_out);
+        }
+        p_out += pitch_pad;
+    }
+    // process last (incomplete) row
+    for (int i = 0; i < w && h_aligned != h; i += 4) {
+        ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 0], w * SrcChannels, _MIN(4, w - i),
+                                                      h % 4, block1);
+        ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 1], w * SrcChannels, _MIN(4, w - i),
+                                                      h % 4, block2);
+        Emit_BC4_Block_NEON(block1, p_out);
+        Emit_BC4_Block_NEON(block2, p_out);
+    }
+#else
+    if (g_CpuFeatures.sse2_supported) {
+        for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * SrcChannels) {
+            for (int i = 0; i < w_aligned; i += 4) {
+                Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 0], w * SrcChannels, block1);
+                Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 1], w * SrcChannels, block2);
+                Emit_BC4_Block_SSE2(block1, p_out);
+                Emit_BC4_Block_SSE2(block2, p_out);
+            }
+            // process last (incomplete) column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels + 0], w * SrcChannels,
+                                                              w % 4, 4, block1);
+                ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels + 1], w * SrcChannels,
+                                                              w % 4, 4, block2);
+                Emit_BC4_Block_SSE2(block1, p_out);
+                Emit_BC4_Block_SSE2(block2, p_out);
+            }
+            p_out += pitch_pad;
+        }
+        // process last (incomplete) row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 0], w * SrcChannels,
+                                                          _MIN(4, w - i), h % 4, block1);
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 1], w * SrcChannels,
+                                                          _MIN(4, w - i), h % 4, block2);
+            Emit_BC4_Block_SSE2(block1, p_out);
+            Emit_BC4_Block_SSE2(block2, p_out);
+        }
+    } else {
+        for (int j = 0; j < h_aligned; j += 4, img_src += w * 4 * SrcChannels) {
+            for (int i = 0; i < w_aligned; i += 4) {
+                Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 0], w * SrcChannels, block1);
+                Extract4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 1], w * SrcChannels, block2);
+                Emit_BC4_Block_Ref(block1, p_out);
+                Emit_BC4_Block_Ref(block2, p_out);
+            }
+            // process last (incomplete) column
+            if (w_aligned != w) {
+                ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels + 0], w * SrcChannels,
+                                                              w % 4, 4, block1);
+                ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[w_aligned * SrcChannels + 1], w * SrcChannels,
+                                                              w % 4, 4, block2);
+                Emit_BC4_Block_Ref(block1, p_out);
+                Emit_BC4_Block_Ref(block2, p_out);
+            }
+            p_out += pitch_pad;
+        }
+        // process last (incomplete) row
+        for (int i = 0; i < w && h_aligned != h; i += 4) {
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 0], w * SrcChannels,
+                                                          _MIN(4, w - i), h % 4, block1);
+            ExtractIncomplete4x4Block_Ref<SrcChannels, 1>(&img_src[i * SrcChannels + 1], w * SrcChannels,
+                                                          _MIN(4, w - i), h % 4, block2);
+            Emit_BC4_Block_Ref(block1, p_out);
+            Emit_BC4_Block_Ref(block2, p_out);
+        }
+    }
+#endif
+}
 
 #undef _MIN
 #undef _MAX

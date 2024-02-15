@@ -7,6 +7,7 @@
 #include <Net/Compress.h>
 #include <Ren/Utils.h>
 #include <Sys/Json.h>
+#include <Sys/ScopeExit.h>
 #include <Sys/ThreadPool.h>
 
 #include <stb/stb_image.h>
@@ -340,31 +341,37 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     //
     // Compress mip images
     //
-    std::unique_ptr<uint8_t[]> dxt_data[16];
-    int dxt_size[16] = {}, dxt_size_total = 0;
+    std::unique_ptr<uint8_t[]> compressed_data[16];
+    int compressed_size[16] = {}, compressed_size_total = 0;
 
     const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
-    const bool use_DXT5 = (channels == 4) || use_YCoCg;
+    const bool use_BC3 = (channels == 4) || use_YCoCg;
 
     for (int i = 0; i < mip_count; i++) {
-        if (channels == 3) {
+        if (channels == 1) {
+            compressed_size[i] = Ren::GetRequiredMemory_BC4(widths[i], heights[i], 1);
+            // NOTE: 1 byte is added due to BC4/BC5 compression write outside of memory block
+            compressed_data[i] = std::make_unique<uint8_t[]>(compressed_size[i] + 1);
+            Ren::CompressImage_BC4(mipmaps[i], widths[i], heights[i], compressed_data[i].get());
+        } else if (channels == 3) {
             if (use_YCoCg) {
-                dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
-                dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
+                compressed_size[i] = Ren::GetRequiredMemory_BC3(widths[i], heights[i], 1);
+                compressed_data[i] = std::make_unique<uint8_t[]>(compressed_size[i]);
                 auto temp_YCoCg = Ren::ConvertRGB_to_CoCgxY(mipmaps[i], widths[i], heights[i]);
-                Ren::CompressImage_DXT5<true /* Is_YCoCg */>(temp_YCoCg.get(), widths[i], heights[i],
-                                                             dxt_data[i].get());
+                Ren::CompressImage_BC3<true /* Is_YCoCg */>(temp_YCoCg.get(), widths[i], heights[i],
+                                                            compressed_data[i].get());
             } else {
-                dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
-                dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
-                Ren::CompressImage_DXT1<3>(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
+                compressed_size[i] = Ren::GetRequiredMemory_BC1(widths[i], heights[i], 1);
+                compressed_data[i] = std::make_unique<uint8_t[]>(compressed_size[i]);
+                Ren::CompressImage_BC1<3>(mipmaps[i], widths[i], heights[i], compressed_data[i].get());
             }
         } else {
-            dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
-            dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
-            Ren::CompressImage_DXT5(mipmaps[i], widths[i], heights[i], dxt_data[i].get());
+            assert(channels == 4);
+            compressed_size[i] = Ren::GetRequiredMemory_BC3(widths[i], heights[i], 1);
+            compressed_data[i] = std::make_unique<uint8_t[]>(compressed_size[i]);
+            Ren::CompressImage_BC3(mipmaps[i], widths[i], heights[i], compressed_data[i].get());
         }
-        dxt_size_total += dxt_size[i];
+        compressed_size_total += compressed_size[i];
     }
 
     //
@@ -377,17 +384,17 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
                      unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
     header.dwWidth = widths[0];
     header.dwHeight = heights[0];
-    header.dwPitchOrLinearSize = dxt_size_total;
+    header.dwPitchOrLinearSize = compressed_size_total;
     header.dwMipMapCount = mip_count;
     header.sPixelFormat.dwSize = 32;
     header.sPixelFormat.dwFlags = DDPF_FOURCC;
 
-    if (!use_DXT5) {
-        header.sPixelFormat.dwFourCC =
-            (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('1') << 24u);
+    if (channels == 1) {
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC4_UNORM;
+    } else if (!use_BC3) {
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC1_UNORM;
     } else {
-        header.sPixelFormat.dwFourCC =
-            (unsigned('D') << 0u) | (unsigned('X') << 8u) | (unsigned('T') << 16u) | (unsigned('5') << 24u);
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC3_UNORM;
     }
 
     header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
@@ -396,11 +403,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     out_stream.write((char *)&header, sizeof(header));
 
     for (int i = 0; i < mip_count; i++) {
-        out_stream.write((char *)dxt_data[i].get(), dxt_size[i]);
-    }
-
-    for (int i = 0; i < mip_count; i++) {
-        dxt_data[i] = {};
+        out_stream.write((char *)compressed_data[i].get(), compressed_size[i]);
     }
 
     return out_stream.good();
@@ -410,7 +413,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
                const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
-    const bool use_YCoCg = strstr(out_file, "_diff"); // Store diffuse as YCoCg
+    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
@@ -508,13 +511,13 @@ bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const in
 
     for (int i = 0; i < mip_count; i++) {
         if (channels == 3) {
-            dxt_size[i] = Ren::GetRequiredMemory_DXT1(widths[i], heights[i]);
+            dxt_size[i] = Ren::GetRequiredMemory_BC1(widths[i], heights[i], 1);
             dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
-            Ren::CompressImage_DXT1<3>(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
+            Ren::CompressImage_BC1<3>(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
         } else if (channels == 4) {
-            dxt_size[i] = Ren::GetRequiredMemory_DXT5(widths[i], heights[i]);
+            dxt_size[i] = Ren::GetRequiredMemory_BC3(widths[i], heights[i], 1);
             dxt_data[i] = std::make_unique<uint8_t[]>(dxt_size[i]);
-            Ren::CompressImage_DXT5(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
+            Ren::CompressImage_BC3(mipmaps[i].get(), widths[i], heights[i], dxt_data[i].get());
         }
         dxt_size_total += dxt_size[i];
     }
@@ -744,9 +747,42 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
 
     std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
     src_stream.read((char *)&src_buf[0], src_size);
+    if (!src_stream) {
+        return false;
+    }
 
     int width, height, channels;
-    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    uint8_t *image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    SCOPE_EXIT({ free(image_data); })
+
+    bool is_1px_texture = (width > 4 && height > 4),
+         is_single_channel = !strstr(out_file, "_diff") && !strstr(out_file, "_basecolor") && (channels > 1);
+    for (int i = 0; i < width * height && (is_1px_texture || is_single_channel); ++i) {
+        for (int j = 0; j < channels; ++j) {
+            is_1px_texture &= (image_data[i * channels + j] == image_data[j]);
+            is_single_channel &= (image_data[i * channels + j] == image_data[i * channels + 0]);
+        }
+    }
+    if (is_single_channel || is_1px_texture) {
+        // drop resolution to minimal block size
+        const int width_new = is_1px_texture ? 4 : width;
+        const int height_new = is_1px_texture ? 4 : height;
+        // drop unnecessary channels
+        const int channels_new = is_single_channel ? 1 : channels;
+        uint8_t *const image_data_new = (uint8_t *)malloc(width_new * height_new * channels_new);
+        for (int y = 0; y < height_new; ++y) {
+            for (int x = 0; x < width_new; ++x) {
+                for (int j = 0; j < channels_new; ++j) {
+                    image_data_new[(y * width_new + x) * channels_new + j] = image_data[(y * width + x) * channels + j];
+                }
+            }
+        }
+        free(image_data);
+        image_data = image_data_new;
+        width = width_new;
+        height = height_new;
+        channels = channels_new;
+    }
 
     uint8_t average_color[4] = {};
 
@@ -825,7 +861,6 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
         res &= Write_DDS(image_data, width, height, channels, false /* flip_y */, is_rgbm /* is_rgbm */, out_file,
                          average_color);
     }
-    free(image_data);
 
     {
         std::lock_guard<std::mutex> _(ctx.cache_mtx);

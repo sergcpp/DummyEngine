@@ -46,8 +46,8 @@ enum class eMipOp {
                  // neighbours
 };
 int InitMipMaps(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], int channels,
-                const eMipOp op[4]);
-int InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16]);
+                const eMipOp op[4], int min_tex_dim = 1);
+int InitMipMapsRGBM(std::unique_ptr<uint8_t[]> mipmaps[16], int widths[16], int heights[16], int min_tex_dim = 1);
 
 void ReorderTriangleIndices(const uint32_t *indices, uint32_t indices_count, uint32_t vtx_count, uint32_t *out_indices);
 
@@ -104,6 +104,17 @@ static_assert(sizeof(KTXHeader) == 64, "!");
 #define DDSCAPS_COMPLEX 0x00000008
 #define DDSCAPS_TEXTURE 0x00001000
 #define DDSCAPS_MIPMAP 0x00400000
+
+const uint32_t FourCC_BC1_UNORM =
+    (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('1') << 24u);
+const uint32_t FourCC_BC2_UNORM =
+    (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('3') << 24u);
+const uint32_t FourCC_BC3_UNORM =
+    (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('5') << 24u);
+const uint32_t FourCC_BC4_UNORM =
+    (uint32_t('B') << 0u) | (uint32_t('C') << 8u) | (uint32_t('4') << 16u) | (uint32_t('U') << 24u);
+const uint32_t FourCC_BC5_UNORM =
+    (uint32_t('A') << 0u) | (uint32_t('T') << 8u) | (uint32_t('I') << 16u) | (uint32_t('2') << 24u);
 
 struct DDSHeader {
     uint32_t dwMagic;
@@ -301,14 +312,32 @@ void InterleaveUVChannels_16px(const uint8_t *u_src, const uint8_t *v_src, int u
                                uint8_t *uv_dst);
 
 //
-// DXT compression
+// BCn compression
 //
 
-int GetRequiredMemory_DXT1(int w, int h);
-int GetRequiredMemory_DXT5(int w, int h);
+// clang-format off
 
-// NOTE: intended for realtime compression, quality might be not the best
-template <int Channels> void CompressImage_DXT1(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+const int BlockSize_BC1 = 2 * sizeof(uint16_t) + sizeof(uint32_t);
+//                        \_ low/high colors_/   \_ 16 x 2-bit _/
+const int BlockSize_BC4 = 2 * sizeof(uint8_t) + 6 * sizeof(uint8_t);
+//                        \_ low/high alpha_/     \_ 16 x 3-bit _/
+const int BlockSize_BC3 = BlockSize_BC1 + BlockSize_BC4;
+const int BlockSize_BC5 = BlockSize_BC4 + BlockSize_BC4;
 
-template <bool Is_YCoCg = false> void CompressImage_DXT5(const uint8_t img_src[], int w, int h, uint8_t img_dst[]);
+// clang-format on
+
+int GetRequiredMemory_BC1(int w, int h, int pitch_align);
+int GetRequiredMemory_BC3(int w, int h, int pitch_align);
+int GetRequiredMemory_BC4(int w, int h, int pitch_align);
+int GetRequiredMemory_BC5(int w, int h, int pitch_align);
+
+// NOTE: intended for realtime compression, quality may be not the best
+template <int SrcChannels>
+void CompressImage_BC1(const uint8_t img_src[], int w, int h, uint8_t img_dst[], int dst_pitch = 0);
+template <bool Is_YCoCg = false>
+void CompressImage_BC3(const uint8_t img_src[], int w, int h, uint8_t img_dst[], int dst_pitch = 0);
+template <int SrcChannels = 1>
+void CompressImage_BC4(const uint8_t img_src[], int w, int h, uint8_t img_dst[], int dst_pitch = 0);
+template <int SrcChannels = 2>
+void CompressImage_BC5(const uint8_t img_src[], int w, int h, uint8_t img_dst[], int dst_pitch = 0);
 } // namespace Ren

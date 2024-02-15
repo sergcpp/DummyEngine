@@ -88,11 +88,13 @@ Ren::Context::~Context() {
             api_ctx_->vkDestroyImageView(api_ctx_->device, api_ctx_->present_image_views[i], nullptr);
             // vkDestroyImage(api_ctx_->device, api_ctx_->present_images[i], nullptr);
         }
-
-        api_ctx_->vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
-
+        if (api_ctx_->swapchain) {
+            api_ctx_->vkDestroySwapchainKHR(api_ctx_->device, api_ctx_->swapchain, nullptr);
+        }
         api_ctx_->vkDestroyDevice(api_ctx_->device, nullptr);
-        api_ctx_->vkDestroySurfaceKHR(api_ctx_->instance, api_ctx_->surface, nullptr);
+        if (api_ctx_->surface) {
+            api_ctx_->vkDestroySurfaceKHR(api_ctx_->instance, api_ctx_->surface, nullptr);
+        }
         if (api_ctx_->debug_callback) {
             api_ctx_->vkDestroyDebugReportCallbackEXT(api_ctx_->instance, api_ctx_->debug_callback, nullptr);
         }

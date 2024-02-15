@@ -35,9 +35,11 @@ enum class eTexFormat : uint8_t {
 #ifndef __ANDROID__
     Depth32,
 #endif
-    DXT1,
-    DXT3,
-    DXT5,
+    BC1,
+    BC2,
+    BC3,
+    BC4,
+    BC5,
     ASTC,
     None,
     _Count
@@ -64,7 +66,7 @@ int CalcMipCount(int w, int h, int min_res, eTexFilter filter);
 #if defined(__ANDROID__)
 const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::ASTC;
 #else
-const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::DXT5;
+const Ren::eTexFormat DefaultCompressedRGBA = Ren::eTexFormat::BC3;
 #endif
 
 enum class eTexBlock : uint8_t {

@@ -49,9 +49,11 @@ extern const VkFormat g_vk_formats[] = {
 #ifndef __ANDROID__
     VK_FORMAT_D32_SFLOAT, // Depth32
 #endif
-    VK_FORMAT_BC1_RGBA_UNORM_BLOCK, // Compressed_DXT1
-    VK_FORMAT_BC2_UNORM_BLOCK,      // Compressed_DXT3
-    VK_FORMAT_BC3_UNORM_BLOCK,      // Compressed_DXT5
+    VK_FORMAT_BC1_RGBA_UNORM_BLOCK, // BC1
+    VK_FORMAT_BC2_UNORM_BLOCK,      // BC2
+    VK_FORMAT_BC3_UNORM_BLOCK,      // BC3
+    VK_FORMAT_BC4_UNORM_BLOCK,      // BC4
+    VK_FORMAT_BC5_UNORM_BLOCK,      // BC5
     VK_FORMAT_UNDEFINED,            // Compressed_ASTC
     VK_FORMAT_UNDEFINED,            // None
 };
@@ -812,17 +814,17 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
     const int px_format = int(header.sPixelFormat.dwFourCC >> 24u) - '0';
     switch (px_format) {
     case 1:
-        format = eTexFormat::DXT1;
+        format = eTexFormat::BC1;
         block = eTexBlock::_4x4;
         block_size_bytes = 8;
         break;
     case 3:
-        format = eTexFormat::DXT3;
+        format = eTexFormat::BC2;
         block = eTexBlock::_4x4;
         block_size_bytes = 16;
         break;
     case 5:
-        format = eTexFormat::DXT5;
+        format = eTexFormat::BC3;
         block = eTexBlock::_4x4;
         block_size_bytes = 16;
         break;
@@ -1403,17 +1405,17 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
         const int px_format = int(header->sPixelFormat.dwFourCC >> 24u) - '0';
         switch (px_format) {
         case 1:
-            format = eTexFormat::DXT1;
+            format = eTexFormat::BC1;
             block = eTexBlock::_4x4;
             block_size_bytes = 8;
             break;
         case 3:
-            format = eTexFormat::DXT3;
+            format = eTexFormat::BC2;
             block = eTexBlock::_4x4;
             block_size_bytes = 16;
             break;
         case 5:
-            format = eTexFormat::DXT5;
+            format = eTexFormat::BC3;
             block = eTexBlock::_4x4;
             block_size_bytes = 16;
             break;

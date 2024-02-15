@@ -4,5 +4,6 @@ sw_program: main
 flag: two_sided
 texture: default_basecolor.dds
 texture: default_normalmap.dds
-texture: default_specular.png
+texture: default_roughness.png
+texture: default_metallic.png
 param: 0.75 0.75 0.75 0.0

@@ -23,21 +23,22 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
     params.h = uint16_t(hdr.dwHeight);
     params.mip_count = uint8_t(hdr.dwMipMapCount);
 
-    const int px_format = int(hdr.sPixelFormat.dwFourCC >> 24u) - '0';
-    switch (px_format) {
-    case 1:
-        params.format = Ren::eTexFormat::DXT1;
+    if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC1_UNORM) {
+        params.format = Ren::eTexFormat::BC1;
         params.block = Ren::eTexBlock::_4x4;
-        break;
-    case 3:
-        params.format = Ren::eTexFormat::DXT3;
+    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC2_UNORM) {
+        params.format = Ren::eTexFormat::BC2;
         params.block = Ren::eTexBlock::_4x4;
-        break;
-    case 5:
-        params.format = Ren::eTexFormat::DXT5;
+    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC3_UNORM) {
+        params.format = Ren::eTexFormat::BC3;
         params.block = Ren::eTexBlock::_4x4;
-        break;
-    default:
+    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC4_UNORM) {
+        params.format = Ren::eTexFormat::BC4;
+        params.block = Ren::eTexBlock::_4x4;
+    } else if (hdr.sPixelFormat.dwFourCC == Ren::FourCC_BC5_UNORM) {
+        params.format = Ren::eTexFormat::BC5;
+        params.block = Ren::eTexBlock::_4x4;
+    } else {
         params.block = Ren::eTexBlock::_None;
         if (hdr.sPixelFormat.dwFlags & DDPF_RGB) {
             // Uncompressed
@@ -52,7 +53,6 @@ void ParseDDSHeader(const Ren::DDSHeader &hdr, Ren::Tex2DParams &params, Ren::IL
             // Possibly need to read DX10 header
             params.format = Ren::eTexFormat::Undefined;
         }
-        return;
     }
 }
 
@@ -141,7 +141,8 @@ void Eng::SceneManager::TextureLoaderProc() {
                 __itt_task_end(__g_itt_domain);
             }
 
-            static_cast<TextureRequest &>(*req) = requested_textures_.front();
+            assert(!req->ref);
+            static_cast<TextureRequest &>(*req) = std::move(requested_textures_.front());
             requested_textures_.pop_front();
         }
 
@@ -153,9 +154,8 @@ void Eng::SceneManager::TextureLoaderProc() {
 
         size_t read_offset = 0, read_size = 0;
 
-        char path_buf[4096];
-        strncpy(path_buf, paths_.textures_path, sizeof(path_buf));
-        strcat(path_buf, req->ref->name().c_str());
+        std::string path_buf = paths_.textures_path;
+        path_buf += req->ref->name().c_str();
 
         bool read_success = true;
 
@@ -164,8 +164,8 @@ void Eng::SceneManager::TextureLoaderProc() {
                 Ren::DDSHeader header;
 
                 size_t data_size = sizeof(Ren::DDSHeader);
-                read_success = tex_reader_.ReadFileBlocking(path_buf, 0 /* file_offset */, sizeof(Ren::DDSHeader),
-                                                            &header, data_size);
+                read_success = tex_reader_.ReadFileBlocking(path_buf.c_str(), 0 /* file_offset */,
+                                                            sizeof(Ren::DDSHeader), &header, data_size);
                 read_success &= (data_size == sizeof(Ren::DDSHeader));
 
                 req->read_offset = sizeof(Ren::DDSHeader);
@@ -182,8 +182,8 @@ void Eng::SceneManager::TextureLoaderProc() {
                     if (header.sPixelFormat.dwFourCC == ((unsigned('D') << 0u) | (unsigned('X') << 8u) |
                                                          (unsigned('1') << 16u) | (unsigned('0') << 24u))) {
                         Ren::DDS_HEADER_DXT10 dx10_header;
-                        tex_reader_.ReadFileBlocking(path_buf, sizeof(Ren::DDSHeader), sizeof(Ren::DDS_HEADER_DXT10),
-                                                     &dx10_header, data_size);
+                        tex_reader_.ReadFileBlocking(path_buf.c_str(), sizeof(Ren::DDSHeader),
+                                                     sizeof(Ren::DDS_HEADER_DXT10), &dx10_header, data_size);
 
                         req->orig_format = Ren::TexFormatFromDXGIFormat(dx10_header.dxgiFormat);
 
@@ -246,14 +246,15 @@ void Eng::SceneManager::TextureLoaderProc() {
             assert(req->ref->params.w == req->orig_w || req->ref->params.h != req->orig_h);
 
             if (read_size) {
-                read_success = tex_reader_.ReadFileNonBlocking(path_buf, read_offset, read_size, *req->buf, req->ev);
+                read_success =
+                    tex_reader_.ReadFileNonBlocking(path_buf.c_str(), read_offset, read_size, *req->buf, req->ev);
                 assert(req->buf->data_len() == read_size);
             }
         }
 
-        if (read_success) {
+        { //
             std::lock_guard<std::mutex> _(tex_requests_lock_);
-            req->state = eRequestState::PendingIO;
+            req->state = read_success ? eRequestState::PendingIO : eRequestState::PendingError;
         }
 
         __itt_task_end(__g_itt_domain);
@@ -359,6 +360,11 @@ void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
                         req->state = eRequestState::Idle;
                         tex_loader_cnd_.notify_one();
                     }
+                } else if (io_pending_tex_[i].state == eRequestState::PendingError) {
+                    TextureRequestPending *req = &io_pending_tex_[i];
+                    static_cast<TextureRequest &>(*req) = {};
+                    req->state = eRequestState::Idle;
+                    tex_loader_cnd_.notify_one();
                 }
             }
         }

@@ -63,13 +63,17 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
     MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::BufMapWrite));
     GLuint64 *texture_data = nullptr;
-    GLuint64 error_handle = 0;
+    GLuint64 white_tex_handle = 0, error_tex_handle = 0;
     if (ren_ctx_.capabilities.bindless_texture) {
         texture_data = reinterpret_cast<GLuint64 *>(textures_stage_buf.Map(Ren::BufMapWrite));
 
-        error_handle = glGetTextureHandleARB(error_tex_->id());
-        if (!glIsTextureHandleResidentARB(error_handle)) {
-            glMakeTextureHandleResidentARB(error_handle);
+        white_tex_handle = glGetTextureHandleARB(white_tex_->id());
+        if (!glIsTextureHandleResidentARB(white_tex_handle)) {
+            glMakeTextureHandleResidentARB(white_tex_handle);
+        }
+        error_tex_handle = glGetTextureHandleARB(error_tex_->id());
+        if (!glIsTextureHandleResidentARB(error_tex_handle)) {
+            glMakeTextureHandleResidentARB(error_tex_handle);
         }
     }
 
@@ -92,7 +96,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
             for (; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
                 material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
                 if (texture_data) {
-                    texture_data[rel_i * REN_MAX_TEX_PER_MATERIAL + j] = error_handle;
+                    texture_data[rel_i * REN_MAX_TEX_PER_MATERIAL + j] = white_tex_handle;
                 }
             }
 
@@ -107,7 +111,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
             for (int j = 0; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
                 material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
                 if (texture_data) {
-                    texture_data[rel_i * REN_MAX_TEX_PER_MATERIAL + j] = error_handle;
+                    texture_data[rel_i * REN_MAX_TEX_PER_MATERIAL + j] = error_tex_handle;
                 }
             }
         }

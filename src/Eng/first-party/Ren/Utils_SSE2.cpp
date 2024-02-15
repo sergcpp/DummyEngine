@@ -292,6 +292,25 @@ template void GetMinMaxColorByBBox_SSE2<true /* UseAlpha */, true /* Is_YCoCg */
                                                                                   uint8_t min_color[4],
                                                                                   uint8_t max_color[4]);
 
+void GetMinMaxAlphaByBBox_SSE2(const uint8_t block[16], uint8_t &min_alpha, uint8_t &max_alpha) {
+    __m128i min_col = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
+    __m128i max_col = min_col;
+
+    // Find horizontal min/max values
+    min_col = _mm_min_epu8(min_col, _mm_srli_si128(min_col, 8));
+    min_col = _mm_min_epu8(min_col, _mm_srli_si128(min_col, 4));
+    min_col = _mm_min_epu8(min_col, _mm_srli_si128(min_col, 2));
+    min_col = _mm_min_epu8(min_col, _mm_srli_si128(min_col, 1));
+
+    max_col = _mm_max_epu8(max_col, _mm_srli_si128(max_col, 8));
+    max_col = _mm_max_epu8(max_col, _mm_srli_si128(max_col, 4));
+    max_col = _mm_max_epu8(max_col, _mm_srli_si128(max_col, 2));
+    max_col = _mm_max_epu8(max_col, _mm_srli_si128(max_col, 1));
+
+    min_alpha = _mm_extract_epi16(min_col, 0) & 0xff;
+    max_alpha = _mm_extract_epi16(max_col, 0) & 0xff;
+}
+
 static const __m128i YCoCgScaleBias =
     _mm_set_epi8(0, 0, -128, -128, 0, 0, -128, -128, 0, 0, -128, -128, 0, 0, -128, -128);
 
@@ -623,24 +642,8 @@ static const __m128i AlphaMask5 = _mm_setr_epi32(7 << 15, 0, 7 << 15, 0);
 static const __m128i AlphaMask6 = _mm_setr_epi32(7 << 18, 0, 7 << 18, 0);
 static const __m128i AlphaMask7 = _mm_setr_epi32(7 << 21, 0, 7 << 21, 0);
 
-void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha, const uint8_t max_alpha,
-                           uint8_t *&out_data) {
-    __m128i line0 = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
-    __m128i line1 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 16));
-    __m128i line2 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 32));
-    __m128i line3 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 48));
-
-    line0 = _mm_srli_epi32(line0, 24);
-    line1 = _mm_srli_epi32(line1, 24);
-    line2 = _mm_srli_epi32(line2, 24);
-    line3 = _mm_srli_epi32(line3, 24);
-
-    __m128i line01 = _mm_packus_epi16(line0, line1);
-    __m128i line23 = _mm_packus_epi16(line2, line3);
-
-    // pack all 16 alpha values
-    __m128i alpha = _mm_packus_epi16(line01, line23);
-
+void EmitAlphaIndicesInternal_SSE2(__m128i alpha, const uint8_t min_alpha, const uint8_t max_alpha,
+                                   uint8_t *&out_data) {
     __m128i max = _mm_set1_epi16(max_alpha);
     __m128i min = _mm_set1_epi16(min_alpha);
 
@@ -746,6 +749,34 @@ void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha, con
     _mm_storeu_si32(out_data + 3, index);
 
     out_data += 6;
+}
+
+void EmitAlphaIndices_SSE2(const uint8_t block[64], const uint8_t min_alpha, const uint8_t max_alpha,
+                           uint8_t *&out_data) {
+    __m128i line0 = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
+    __m128i line1 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 16));
+    __m128i line2 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 32));
+    __m128i line3 = _mm_load_si128(reinterpret_cast<const __m128i *>(block + 48));
+
+    line0 = _mm_srli_epi32(line0, 24);
+    line1 = _mm_srli_epi32(line1, 24);
+    line2 = _mm_srli_epi32(line2, 24);
+    line3 = _mm_srli_epi32(line3, 24);
+
+    __m128i line01 = _mm_packus_epi16(line0, line1);
+    __m128i line23 = _mm_packus_epi16(line2, line3);
+
+    // pack all 16 alpha values
+    __m128i alpha = _mm_packus_epi16(line01, line23);
+
+    EmitAlphaIndicesInternal_SSE2(alpha, min_alpha, max_alpha, out_data);
+}
+
+void EmitAlphaOnlyIndices_SSE2(const uint8_t block[16], const uint8_t min_alpha, const uint8_t max_alpha,
+                               uint8_t *&out_data) {
+    __m128i alpha = _mm_load_si128(reinterpret_cast<const __m128i *>(block));
+
+    EmitAlphaIndicesInternal_SSE2(alpha, min_alpha, max_alpha, out_data);
 }
 
 } // namespace Ren
