@@ -1,0 +1,11 @@
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+sw_program: main
+flag: two_sided
+texture: mat_test/rusting-lined-metal_albedo.png
+texture: mat_test/rusting-lined-metal_normal-ogl.png
+texture: mat_test/rusting-lined-metal_roughness.png
+texture: mat_test/rusting-lined-metal_metallic.png
+param: 1.0 1.0 1.0 1.0      // base color, roughness
+param: 0.0 0.0 0.5 0.0      // sheen, sheen_tint, specular, spec_tint
+param: 1.0 0.0 0.0 0.0      // metallic, transmission, clearcoat, clearcoat_roughness

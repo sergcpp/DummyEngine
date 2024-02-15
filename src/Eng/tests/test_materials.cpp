@@ -373,7 +373,24 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 }
 
 void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
-    { // diffuse material
+    { // complex materials
+        std::vector<std::future<void>> futures;
+
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 34.49, 1354, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 31.14, 1897, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 29.25, 2696, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 33.08, 1219, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 31.10, 1696, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 29.37, 2447, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 32.89, 1938, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 30.61, 2440, NoGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 25.35, 10998, NoDiffuseGI));
+
+        for (auto &f : futures) {
+            f.wait();
+        }
+    }
+    /*{ // diffuse material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat0", device_name, vl, 40.87, 2, NoShadow));
@@ -610,5 +627,5 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         for (auto &f : futures) {
             f.wait();
         }
-    }
+    }*/
 }

@@ -130,8 +130,6 @@ void main() {
     vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
-    vec3 col;
-
     const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;
     const float t_max = 1000.0;
@@ -176,6 +174,7 @@ void main() {
     }
 
     float ray_len = 0.0;
+    vec3 col;
 
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
         col = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround

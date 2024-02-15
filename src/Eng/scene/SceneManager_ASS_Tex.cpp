@@ -344,7 +344,8 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     std::unique_ptr<uint8_t[]> compressed_data[16];
     int compressed_size[16] = {}, compressed_size_total = 0;
 
-    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
+    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_albedo") ||
+                           strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
     const bool use_BC3 = (channels == 4) || use_YCoCg;
 
     for (int i = 0; i < mip_count; i++) {
@@ -413,7 +414,8 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
                const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
-    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
+    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_albedo") ||
+                           strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
@@ -756,7 +758,8 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     SCOPE_EXIT({ free(image_data); })
 
     bool is_1px_texture = (width > 4 && height > 4),
-         is_single_channel = !strstr(out_file, "_diff") && !strstr(out_file, "_basecolor") && (channels > 1);
+         is_single_channel = !strstr(out_file, "_diff") && !strstr(out_file, "_albedo") &&
+                             !strstr(out_file, "_basecolor") && (channels > 1);
     for (int i = 0; i < width * height && (is_1px_texture || is_single_channel); ++i) {
         for (int j = 0; j < channels; ++j) {
             is_1px_texture &= (image_data[i * channels + j] == image_data[j]);
