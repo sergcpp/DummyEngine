@@ -18,9 +18,10 @@
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
+layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_base_tex;
 layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
+layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_roug_tex;
+layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_metl_tex;
 #endif // BINDLESS_TEXTURES
 layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
 layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
@@ -36,13 +37,14 @@ LAYOUT(location = 1) in mediump vec2 g_vtx_uvs;
 LAYOUT(location = 2) in mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 4) in flat TEX_HANDLE g_diff_tex;
+    LAYOUT(location = 4) in flat TEX_HANDLE g_base_tex;
     LAYOUT(location = 5) in flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 6) in flat TEX_HANDLE g_spec_tex;
+    LAYOUT(location = 6) in flat TEX_HANDLE g_roug_tex;
+    LAYOUT(location = 7) in flat TEX_HANDLE g_metl_tex;
 #endif // BINDLESS_TEXTURES
-LAYOUT(location = 7) in flat vec4 g_base_color;
-LAYOUT(location = 8) in flat vec4 g_mat_params0;
-LAYOUT(location = 9) in flat vec4 g_mat_params1;
+LAYOUT(location = 8) in flat vec4 g_base_color;
+LAYOUT(location = 9) in flat vec4 g_mat_params0;
+LAYOUT(location = 10) in flat vec4 g_mat_params1;
 
 layout(location = REN_OUT_ALBEDO_INDEX) out vec4 g_out_albedo;
 layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
@@ -62,9 +64,10 @@ void main(void) {
     const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                                 bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_diff_tex), g_vtx_uvs));
+    vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
     vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
-    vec4 spec_color = texture(SAMPLER2D(g_spec_tex), g_vtx_uvs);
+    float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).r;
+    float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).r;
 
     vec2 duv_dx = dFdx(g_vtx_uvs), duv_dy = dFdy(g_vtx_uvs);
     const vec3 dp_dx = dFdx(g_vtx_pos);
@@ -112,12 +115,12 @@ void main(void) {
                 norm_color = mix(norm_color, decal_norm, decal_influence);
             }
 
-            vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 6);
+            /*vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 6);
             if (spec_uvs_tr.z > 0.0) {
                 vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;
                 vec4 decal_spec = textureGrad(g_decals_tex, spec_uvs, spec_uvs_tr.zw * duv_dx, spec_uvs_tr.zw * duv_dy);
-                spec_color = mix(spec_color, decal_spec, decal_influence);
-            }
+                roug_color = mix(roug_color, decal_spec, decal_influence);
+            }*/
         }
     }
 
@@ -129,6 +132,6 @@ void main(void) {
 
     // TODO: try to get rid of explicit srgb conversion
     g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, 1.0);
-    g_out_normal = PackNormalAndRoughness(normal, spec_color.w * g_base_color.w);
-    g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1);
+    g_out_normal = PackNormalAndRoughness(normal, roug_color * g_base_color.w);
+    g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1 * vec4(metl_color, 1.0, 1.0, 1.0));
 }

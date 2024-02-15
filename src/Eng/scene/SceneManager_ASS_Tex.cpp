@@ -343,7 +343,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
     std::unique_ptr<uint8_t[]> dxt_data[16];
     int dxt_size[16] = {}, dxt_size_total = 0;
 
-    const bool use_YCoCg = strstr(out_file, "_diff.") || strstr(out_file, "_basecolor."); // Store diffuse as YCoCg
+    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
     const bool use_DXT5 = (channels == 4) || use_YCoCg;
 
     for (int i = 0; i < mip_count; i++) {
@@ -410,7 +410,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
                const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
-    const bool use_YCoCg = strstr(out_file, "_diff."); // Store diffuse as YCoCg
+    const bool use_YCoCg = strstr(out_file, "_diff"); // Store diffuse as YCoCg
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};

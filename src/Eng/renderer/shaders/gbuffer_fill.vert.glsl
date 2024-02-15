@@ -48,13 +48,14 @@ LAYOUT(location = 1) out mediump vec2 g_vtx_uvs;
 LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
 LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 4) out flat TEX_HANDLE g_diff_tex;
+    LAYOUT(location = 4) out flat TEX_HANDLE g_base_tex;
     LAYOUT(location = 5) out flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 6) out flat TEX_HANDLE g_spec_tex;
+    LAYOUT(location = 6) out flat TEX_HANDLE g_roug_tex;
+    LAYOUT(location = 7) out flat TEX_HANDLE g_metl_tex;
 #endif // BINDLESS_TEXTURES
-LAYOUT(location = 7) out flat vec4 g_base_color;
-LAYOUT(location = 8) out flat vec4 g_mat_params0;
-LAYOUT(location = 9) out flat vec4 g_mat_params1;
+LAYOUT(location = 8) out flat vec4 g_base_color;
+LAYOUT(location = 9) out flat vec4 g_mat_params0;
+LAYOUT(location = 10) out flat vec4 g_mat_params1;
 
 invariant gl_Position;
 
@@ -96,9 +97,10 @@ void main(void) {
     g_vtx_uvs = g_in_vtx_uvs0;
 
 #if defined(BINDLESS_TEXTURES)
-    g_diff_tex = GET_HANDLE(mat.texture_indices[0]);
+    g_base_tex = GET_HANDLE(mat.texture_indices[0]);
     g_norm_tex = GET_HANDLE(mat.texture_indices[1]);
-    g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
+    g_roug_tex = GET_HANDLE(mat.texture_indices[2]);
+    g_metl_tex = GET_HANDLE(mat.texture_indices[3]);
 #endif // BINDLESS_TEXTURES
 
     g_base_color = mat.params[0];
