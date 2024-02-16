@@ -23,13 +23,15 @@ float fresnel_dielectric_cos(float cosi, float eta) {
 
 struct lobe_weights_t {
     float diffuse, specular, clearcoat, refraction;
+    float diffuse_mul;
 };
 
 lobe_weights_t get_lobe_weights(float base_color_lum, float spec_color_lum, float specular,
                                 float metallic, float transmission, float clearcoat) {
     // taken from Cycles
     lobe_weights_t ret;
-    ret.diffuse = base_color_lum * (1.0 - metallic) * (1.0 - transmission);
+    ret.diffuse_mul = (1.0 - metallic) * (1.0 - transmission);
+    ret.diffuse = base_color_lum * ret.diffuse_mul;
     float final_transmission = transmission * (1.0 - metallic);
     ret.specular = (specular != 0.0 || metallic != 0.0) ? spec_color_lum * (1.0 - final_transmission) : 0.0;
     ret.clearcoat = 0.25 * clearcoat * (1.0 - metallic);
@@ -86,10 +88,6 @@ struct light_item_t {
     vec4 v_and_unused;
 };
 
-struct lobe_weights_t {
-    float diffuse, specular, clearcoat, refraction;
-};
-
 #define ENABLE_SPHERE_LIGHT 1
 #define ENABLE_RECT_LIGHT 1
 #define ENABLE_DISK_LIGHT 1
@@ -138,7 +136,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
-            ret += litem.col_and_type.xyz * diff / M_PI;
+            ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / M_PI;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
             vec3 scol = spec_color;
@@ -174,7 +172,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
-            ret += litem.col_and_type.xyz * diff / 4.0;
+            ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
             vec3 scol = spec_color;
@@ -210,7 +208,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
-            ret += litem.col_and_type.xyz * diff / 4.0;
+            ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
             vec3 scol = spec_color;
@@ -244,7 +242,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
-            ret += litem.col_and_type.xyz * diff;
+            ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
             vec3 scol = spec_color;
