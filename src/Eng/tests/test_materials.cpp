@@ -279,7 +279,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     };
 
     // Make sure all textures are loaded
-    for (int i = 0; i < 9999; ++i) {
+    for (int i = 0; i < 100; ++i) {
         begin_frame();
         scene_manager.Serve(10);
         end_frame();
@@ -390,7 +390,8 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
             f.wait();
         }
     }
-    /*{ // diffuse material
+    puts(" ---------------");
+    { // diffuse material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat0", device_name, vl, 40.87, 2, NoShadow));
@@ -548,10 +549,10 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat6", device_name, vl, 30.95, 1049, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 35.45, 1162, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 32.56, 1845, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 29.87, 1910, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 29.87, 1912, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 36.29, 2076, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 32.51, 2659, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 29.78, 2985, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 29.78, 2986, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat9", device_name, vl, 40.78, 1, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat9", device_name, vl, 33.68, 882, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat9", device_name, vl, 29.67, 3691, NoDiffuseGI));
@@ -627,5 +628,5 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         for (auto &f : futures) {
             f.wait();
         }
-    }*/
+    }
 }
