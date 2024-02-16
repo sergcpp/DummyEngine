@@ -1440,7 +1440,7 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(const char *name) {
                       float(res[0]) / DECALS_ATLAS_RESX, float(res[1]) / DECALS_ATLAS_RESY};
 }
 
-void Eng::SceneManager::Serve(const int texture_budget) {
+bool Eng::SceneManager::Serve(const int texture_budget, const bool animate_texture_lod) {
     using namespace SceneManagerConstants;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_serve_str);
@@ -1448,17 +1448,19 @@ void Eng::SceneManager::Serve(const int texture_budget) {
     scene_data_.decals_atlas.Finalize(ren_ctx_.current_cmd_buf());
 
     EstimateTextureMemory(texture_budget);
-    ProcessPendingTextures(texture_budget);
+    bool finished = ProcessPendingTextures(texture_budget, animate_texture_lod);
 
     UpdateMaterialsBuffer();
-    UpdateInstanceBuffer();
+    finished &= UpdateInstanceBuffer();
 
     __itt_task_end(__g_itt_domain);
+
+    return finished;
 }
 
-void Eng::SceneManager::UpdateInstanceBuffer() {
+bool Eng::SceneManager::UpdateInstanceBuffer() {
     if (instance_data_to_update_.empty()) {
-        return;
+        return true;
     }
 
     sort(begin(instance_data_to_update_), end(instance_data_to_update_));
@@ -1477,6 +1479,10 @@ void Eng::SceneManager::UpdateInstanceBuffer() {
     } else {
         UpdateInstanceBufferRange(instance_data_to_update_[0], instance_data_to_update_[0]);
     }
+
+    instance_data_to_update_.clear();
+
+    return false;
 }
 
 void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end) {

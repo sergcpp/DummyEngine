@@ -262,7 +262,7 @@ void Eng::SceneManager::UpdateObjects() {
 
     scene_data_.update_counter++;
 
-    instance_data_to_update_.clear();
+    // instance_data_to_update_.clear();
 
     bvh_node_t *nodes = scene_data_.nodes.data();
 
@@ -437,13 +437,13 @@ void Eng::SceneManager::UpdateObjects() {
 
                 // rotate left_child with children of right_child
                 if (!right_child_of(par_node).prim_count) {
-                    float cost_before = surface_area(nodes[par_node.right_child]);
+                    const float cost_before = surface_area(nodes[par_node.right_child]);
 
-                    float rotation_costs[2] = {
+                    const float rotation_costs[2] = {
                         surface_area_of_union(left_child_of(par_node), right_child_of(right_child_of(par_node))),
                         surface_area_of_union(left_child_of(par_node), left_child_of(right_child_of(par_node)))};
 
-                    int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
+                    const int best_rot = rotation_costs[0] < rotation_costs[1] ? 0 : 1;
                     if (rotation_costs[best_rot] < cost_before) {
                         left_child_of(par_node).parent = par_node.right_child;
 

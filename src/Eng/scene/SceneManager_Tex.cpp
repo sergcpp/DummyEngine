@@ -142,6 +142,7 @@ void Eng::SceneManager::TextureLoaderProc() {
             }
 
             assert(!req->ref);
+            req->state = eRequestState::InProgress;
             static_cast<TextureRequest &>(*req) = std::move(requested_textures_.front());
             requested_textures_.pop_front();
         }
@@ -302,10 +303,12 @@ void Eng::SceneManager::EstimateTextureMemory(const int portion_size) {
     }
 }
 
-void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
+bool Eng::SceneManager::ProcessPendingTextures(const int portion_size, const bool animate_lod) {
     using namespace SceneManagerConstants;
 
     OPTICK_GPU_EVENT("ProcessPendingTextures");
+
+    bool finished = true;
 
     //
     // Process io pending textures
@@ -318,7 +321,9 @@ void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
         size_t bytes_read = 0;
         {
             std::lock_guard<std::mutex> _(tex_requests_lock_);
+            finished &= requested_textures_.empty();
             for (int i = 0; i < MaxSimultaneousRequests; i++) {
+                finished &= io_pending_tex_[i].state == eRequestState::Idle;
                 if (io_pending_tex_[i].state == eRequestState::PendingIO) {
                     res = io_pending_tex_[i].ev.GetResult(false /* block */, &bytes_read);
                     if (res != Sys::eFileReadResult::Pending) {
@@ -458,7 +463,11 @@ void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
         OPTICK_EVENT("lod transition");
         for (auto it = std::begin(lod_transit_textures_); it != std::end(lod_transit_textures_);) {
             Ren::SamplingParams cur_sampling = (*it)->params.sampling;
-            cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
+            if (animate_lod) {
+                cur_sampling.min_lod.set_value(std::max(cur_sampling.min_lod.value() - 1, 0));
+            } else {
+                cur_sampling.min_lod.set_value(0);
+            }
             (*it)->SetSampling(cur_sampling);
 
             SceneManagerInternal::CaptureMaterialTextureChange(ren_ctx_, scene_data_, *it);
@@ -471,6 +480,8 @@ void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
             }
         }
     }
+
+    finished &= lod_transit_textures_.empty();
 
     { // Process GC'ed textures
         std::lock_guard<std::mutex> lock(gc_textures_mtx_);
@@ -503,6 +514,8 @@ void Eng::SceneManager::ProcessPendingTextures(const int portion_size) {
             gc_textures_.pop_front();
         }
     }
+
+    return finished;
 }
 
 void Eng::SceneManager::RebuildMaterialTextureGraph() {

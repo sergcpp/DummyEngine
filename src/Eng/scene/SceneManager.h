@@ -163,7 +163,7 @@ class SceneManager {
     void StopTextureLoader();
     void ForceTextureReload();
 
-    void Serve(int texture_budget = 1);
+    bool Serve(int texture_budget = 1, bool animate_texture_lod = true);
 
     using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file,
                                                 Ren::SmallVectorImpl<std::string> &out_dependencies)>;
@@ -201,7 +201,7 @@ class SceneManager {
     Ren::Vec4f LoadDecalTexture(const char *name);
 
     void EstimateTextureMemory(int portion_size);
-    void ProcessPendingTextures(int portion_size);
+    bool ProcessPendingTextures(int portion_size, bool animate_lod);
 
     void RebuildMaterialTextureGraph();
 
@@ -210,7 +210,7 @@ class SceneManager {
         init_pipelines_;
 
     void UpdateMaterialsBuffer();
-    void UpdateInstanceBuffer();
+    bool UpdateInstanceBuffer();
     void UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end);
     void InitHWRTAccStructures();
     void InitSWRTAccStructures();
@@ -257,7 +257,7 @@ class SceneManager {
         uint8_t mip_offset_to_init, mip_count_to_init;
     };
 
-    enum class eRequestState { Idle, PendingIO, PendingUpdate, PendingError };
+    enum class eRequestState { Idle, InProgress, PendingIO, PendingUpdate, PendingError };
 
     struct TextureRequestPending : public TextureRequest {
         std::unique_ptr<Sys::FileReadBufBase> buf;
