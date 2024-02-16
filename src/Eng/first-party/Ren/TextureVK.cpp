@@ -2139,20 +2139,33 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
                                       dst_tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &reg);
 }
 
-void Ren::ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
+void Ren::ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
     assert(tex.resource_state == eResState::CopyDst);
 
-    VkClearColorValue clear_val = {};
-    memcpy(clear_val.float32, rgba, 4 * sizeof(float));
+    if (!Ren::IsDepthFormat(tex.params.format)) {
+        VkClearColorValue clear_val = {};
+        memcpy(clear_val.float32, rgba, 4 * sizeof(float));
 
-    VkImageSubresourceRange clear_range = {};
-    clear_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    clear_range.layerCount = 1;
-    clear_range.levelCount = 1;
+        VkImageSubresourceRange clear_range = {};
+        clear_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        clear_range.layerCount = 1;
+        clear_range.levelCount = 1;
 
-    tex.api_ctx()->vkCmdClearColorImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val, 1,
-                                        &clear_range);
+        tex.api_ctx()->vkCmdClearColorImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val,
+                                            1, &clear_range);
+    } else {
+        VkClearDepthStencilValue clear_val = {};
+        clear_val.depth = rgba[0];
+
+        VkImageSubresourceRange clear_range = {};
+        clear_range.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+        clear_range.layerCount = 1;
+        clear_range.levelCount = 1;
+
+        tex.api_ctx()->vkCmdClearDepthStencilImage(cmd_buf, tex.handle().img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                   &clear_val, 1, &clear_range);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////

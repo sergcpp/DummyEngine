@@ -164,7 +164,7 @@ void CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, uint32_t src_level, ui
                       Texture2D &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t width,
                       uint32_t height);
 
-void ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf);
+void ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf);
 
 class Texture1D : public RefCounter {
     BufferRef buf_;

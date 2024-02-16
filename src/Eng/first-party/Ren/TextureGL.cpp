@@ -1257,7 +1257,7 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
                        GLsizei(width), GLsizei(height), 1);
 }
 
-void Ren::ClearColorImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
+void Ren::ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
     glClearTexImage(tex.id(), 0, GL_RGBA, GL_FLOAT, rgba);
 }
 

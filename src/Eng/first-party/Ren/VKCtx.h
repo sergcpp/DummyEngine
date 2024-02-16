@@ -125,6 +125,7 @@ struct ApiContext {
     PFN_vkCmdPushConstants vkCmdPushConstants = {};
     PFN_vkCmdBlitImage vkCmdBlitImage = {};
     PFN_vkCmdClearColorImage vkCmdClearColorImage = {};
+    PFN_vkCmdClearDepthStencilImage vkCmdClearDepthStencilImage = {};
     PFN_vkCmdClearAttachments vkCmdClearAttachments = {};
     PFN_vkCmdCopyImage vkCmdCopyImage = {};
     PFN_vkCmdDispatch vkCmdDispatch = {};

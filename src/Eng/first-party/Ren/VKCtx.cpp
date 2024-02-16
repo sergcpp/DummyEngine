@@ -213,6 +213,7 @@ bool Ren::ApiContext::Load(ILog *log) {
     LOAD_VK_FUN(vkCmdPushConstants)
     LOAD_VK_FUN(vkCmdBlitImage)
     LOAD_VK_FUN(vkCmdClearColorImage)
+    LOAD_VK_FUN(vkCmdClearDepthStencilImage)
     LOAD_VK_FUN(vkCmdClearAttachments)
     LOAD_VK_FUN(vkCmdCopyImage)
     LOAD_VK_FUN(vkCmdDispatch)

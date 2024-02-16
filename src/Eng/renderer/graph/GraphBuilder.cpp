@@ -604,6 +604,8 @@ Eng::RpAllocTex &Eng::RpBuilder::GetWriteTexture(const RpResRef handle) {
 }
 
 void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
+    std::vector<Ren::Tex2DRef> textures_to_clear;
+
     for (size_t i = 0; i < pass.output_.size(); i++) {
         RpResource res = pass.output_[i];
         if (res.type == eRpResType::Buffer) {
@@ -631,6 +633,9 @@ void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
                 tex.ref = tex.strong_ref;
                 hist_tex.ref = hist_tex.strong_ref;
 
+                // Needed to clear the image initially
+                hist_tex.desc.usage |= Ren::eTexUsageBits::Transfer;
+
                 if (!hist_tex.ref || hist_tex.desc != hist_tex.ref->params) {
                     if (hist_tex.ref) {
                         const uint32_t mem_before = Ren::EstimateMemory(hist_tex.ref->params);
@@ -645,11 +650,17 @@ void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
                     Ren::eTexLoadStatus status;
                     hist_tex.strong_ref =
                         ctx_.LoadTexture2D(hist_tex.name.c_str(), hist_tex.desc, ctx_.default_mem_allocs(), &status);
+
                     hist_tex.ref = hist_tex.strong_ref;
                     assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                            status == Ren::eTexLoadStatus::Reinitialized);
                 }
+
+                textures_to_clear.emplace_back(hist_tex.strong_ref);
             }
+
+            // Needed to clear the image initially
+            tex.desc.usage |= Ren::eTexUsageBits::Transfer;
 
             if (tex.alias_of != -1) {
                 const RpAllocTex &orig_tex = textures_.at(tex.alias_of);
@@ -673,8 +684,28 @@ void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
                 tex.ref = tex.strong_ref;
                 assert(status == Ren::eTexLoadStatus::CreatedDefault || status == Ren::eTexLoadStatus::Found ||
                        status == Ren::eTexLoadStatus::Reinitialized);
+
+                // TODO: this is redundant!
+                textures_to_clear.emplace_back(tex.strong_ref);
             }
         }
+    }
+
+    { // Clear textures
+        void *cmd_buf = ctx_.BegTempSingleTimeCommands();
+
+        std::vector<Ren::TransitionInfo> transitions;
+        for (const Ren::Tex2DRef &t : textures_to_clear) {
+            transitions.emplace_back(t.get(), Ren::eResState::CopyDst);
+        }
+        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+
+        for (Ren::Tex2DRef &t : textures_to_clear) {
+            static const float rgba[4] = {};
+            Ren::ClearImage(*t, rgba, cmd_buf);
+        }
+
+        ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
 }
 
