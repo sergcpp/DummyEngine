@@ -279,7 +279,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     };
 
     // Make sure all textures are loaded
-    for (int i = 0; i < 99; ++i) {
+    for (int i = 0; i < 9999; ++i) {
         begin_frame();
         scene_manager.Serve(10);
         end_frame();
