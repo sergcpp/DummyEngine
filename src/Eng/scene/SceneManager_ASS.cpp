@@ -541,12 +541,12 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     g_asset_handlers["anim"] = {"anim", HCopy};
     g_asset_handlers["wav"] = {"wav", HCopy};
     g_asset_handlers["ivf"] = {"ivf", HCopy};
-    g_asset_handlers["glsl"] = {"glsl", HCopy};
-    g_asset_handlers["vert.glsl"] = {"vert.glsl", HPreprocessShader};
-    g_asset_handlers["frag.glsl"] = {"frag.glsl", HPreprocessShader};
-    g_asset_handlers["tesc.glsl"] = {"tesc.glsl", HPreprocessShader};
-    g_asset_handlers["tese.glsl"] = {"tese.glsl", HPreprocessShader};
-    g_asset_handlers["comp.glsl"] = {"comp.glsl", HPreprocessShader};
+    //g_asset_handlers["glsl"] = {"glsl", HCopy};
+    g_asset_handlers["vert.glsl"] = {"vert.glsl", HCompileShader};
+    g_asset_handlers["frag.glsl"] = {"frag.glsl", HCompileShader};
+    g_asset_handlers["tesc.glsl"] = {"tesc.glsl", HCompileShader};
+    g_asset_handlers["tese.glsl"] = {"tese.glsl", HCompileShader};
+    g_asset_handlers["comp.glsl"] = {"comp.glsl", HCompileShader};
     g_asset_handlers["ttf"] = {"font", HConvTTFToFont};
     g_asset_handlers["json"] = {"json", HPreprocessJson};
 
@@ -556,12 +556,12 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["png"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
         g_asset_handlers["dds"] = {"dds", HCopy};
-        g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HPreprocessShader};
-        g_asset_handlers["rint.glsl"] = {"rint.glsl", HPreprocessShader};
-        g_asset_handlers["rchit.glsl"] = {"rchit.glsl", HPreprocessShader};
-        g_asset_handlers["rahit.glsl"] = {"rahit.glsl", HPreprocessShader};
-        g_asset_handlers["rmiss.glsl"] = {"rmiss.glsl", HPreprocessShader};
-        g_asset_handlers["rcall.glsl"] = {"rcall.glsl", HPreprocessShader};
+        g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HCompileShader};
+        g_asset_handlers["rint.glsl"] = {"rint.glsl", HCompileShader};
+        g_asset_handlers["rchit.glsl"] = {"rchit.glsl", HCompileShader};
+        g_asset_handlers["rahit.glsl"] = {"rahit.glsl", HCompileShader};
+        g_asset_handlers["rmiss.glsl"] = {"rmiss.glsl", HCompileShader};
+        g_asset_handlers["rcall.glsl"] = {"rcall.glsl", HCompileShader};
     } else if (strcmp(platform, "android") == 0) {
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};

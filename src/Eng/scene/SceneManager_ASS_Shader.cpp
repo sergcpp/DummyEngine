@@ -99,8 +99,8 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
     return true;
 }
 
-bool Eng::SceneManager::HPreprocessShader(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                          Ren::SmallVectorImpl<std::string> &out_dependencies) {
+bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                       Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::remove(out_file);
 
     std::vector<std::string> permutations;
