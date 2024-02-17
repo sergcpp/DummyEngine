@@ -42,22 +42,18 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
 
-    //printf("Eng Version: %s\n", Eng::Version());
+    // printf("Eng Version: %s\n", Eng::Version());
     puts(" ---------------");
-
-    Sys::InitWorker();
-
-    // test_object_pool();
-    test_cmdline();
-    test_unicode();
-    test_widgets();
 
     const char *device_name = nullptr;
     int threads_count = 1;
     int validation_level = 1;
 
     for (int i = 1; i < argc; i++) {
-        if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {
+        if (strcmp(argv[i], "--prepare_assets") == 0) {
+            Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
+            return 0;
+        } else if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {
             device_name = argv[i];
         } else if (strcmp(argv[i], "-j") == 0 && (++i != argc)) {
             threads_count = atoi(argv[++i]);
@@ -75,9 +71,13 @@ int main(int argc, char *argv[]) {
 #endif
 
     Sys::ThreadPool mt_run_pool(threads_count);
+    Sys::InitWorker();
 
+    // test_object_pool();
+    test_cmdline();
+    test_unicode();
+    test_widgets();
     puts(" ---------------");
-
     test_materials(mt_run_pool, device_name, validation_level);
 
     Sys::StopWorker();

@@ -163,7 +163,7 @@ std::unique_ptr<uint8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bo
 void ReadAllFiles_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
                     const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback) {
     if (!std::filesystem::exists(in_folder)) {
-        ctx.log->Error("Cannot open folder %s", in_folder);
+        //ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
     }
 
@@ -180,7 +180,7 @@ void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const std::filesystem::path &
                        const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback,
                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     if (!std::filesystem::exists(in_folder)) {
-        ctx.log->Error("Cannot open folder %s", in_folder);
+        //ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
     }
 
@@ -192,7 +192,6 @@ void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const std::filesystem::path &
                 events.front().wait();
                 events.pop_front();
             }
-
             events.push_back(threads->Enqueue([entry, &ctx, callback]() { callback(ctx, entry.path()); }));
         }
     }

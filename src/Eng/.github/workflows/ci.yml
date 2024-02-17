@@ -22,6 +22,10 @@ jobs:
           cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-gl"
+      - name: Prepare assets
+        uses: ./.github/actions/prepare-assets
+        with:
+          bin-dir: "windows-x86_64-gl"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -44,6 +48,10 @@ jobs:
         with:
           cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
+          bin-dir: "windows-x86_64-vk"
+      - name: Prepare assets
+        uses: ./.github/actions/prepare-assets
+        with:
           bin-dir: "windows-x86_64-vk"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -68,6 +76,10 @@ jobs:
           cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-gl"
+      - name: Prepare assets
+        uses: ./.github/actions/prepare-assets
+        with:
+          bin-dir: "linux-x86_64-gl"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -90,6 +102,10 @@ jobs:
         with:
           cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
+          bin-dir: "linux-x86_64-vk"
+      - name: Prepare assets
+        uses: ./.github/actions/prepare-assets
+        with:
           bin-dir: "linux-x86_64-vk"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -176,22 +192,6 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           test-args: "-j1 --device Xe --validation_level 1"
-  # test-linux-x86_64-gl:
-  #   runs-on: [ linux, x86_64 ]
-  #   needs:
-  #     - build-linux-x86_64-gl-rel
-  #   steps:
-  #     - name: Checkout Workflows
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: .github
-  #     - name: Re-initialize repository
-  #       uses: ./.github/actions/checkout
-  #     - name: Run Tests
-  #       uses: ./.github/actions/test
-  #       with:
-  #         bin-dir: "linux-x86_64-gl"
-  #         test-args: "-j1"
   test-linux-x86_64-vk-amd:
     runs-on: [ linux, x86_64, amd ]
     needs:

@@ -46,7 +46,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         test_postfix = "_nodiffusegi";
     }
     const std::string ref_name =
-        std::string("assets/references/") + test_name + "/ref" + test_postfix + ".uncompressed.png";
+        std::string("assets_pc/references/") + test_name + "/ref" + test_postfix + ".uncompressed.png";
 
     int ref_w, ref_h, ref_channels;
     uint8_t *ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
@@ -86,7 +86,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     JsObjectP js_scene(alloc);
 
     { // Load scene data from file
-        const std::string scene_name = std::string("assets/scenes/") + test_name + ".json";
+        const std::string scene_name = std::string("assets_pc/scenes/") + test_name + ".json";
         Sys::AssetFile in_scene(scene_name);
         require_return(bool(in_scene));
 

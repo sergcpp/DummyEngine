@@ -1,0 +1,12 @@
+name: 'Prepare Assets'
+inputs:
+  bin-dir:
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        cd ./${{ inputs.bin-dir }}/test_data
+        ../test_Eng --prepare_assets
+        rm -r assets
+      shell: bash
