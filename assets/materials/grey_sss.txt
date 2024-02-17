@@ -2,6 +2,6 @@ gl_program: main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag
 gl_program: main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
 sw_program: main
 texture: grey_diff.png
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: default_specular.png
 texture: skin_diffusion.uncompressed.png srgb norepeat

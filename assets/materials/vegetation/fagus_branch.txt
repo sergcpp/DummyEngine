@@ -4,7 +4,7 @@ sw_program: main
 flag: alpha_test
 flag: two_sided
 texture: vegetation/tree_branches_fagus_a_tex_diff.png
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: default_specular.png
 texture: vegetation/tree_branches_fagus_a_tex_mask.png
 texture: vegetation/fagus_pp_pos.dds nofilter

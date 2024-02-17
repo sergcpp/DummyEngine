@@ -354,6 +354,11 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
             // NOTE: 1 byte is added due to BC4/BC5 compression write outside of memory block
             compressed_data[i] = std::make_unique<uint8_t[]>(compressed_size[i] + 1);
             Ren::CompressImage_BC4(mipmaps[i], widths[i], heights[i], compressed_data[i].get());
+        } else if (channels == 2) {
+            compressed_size[i] = Ren::GetRequiredMemory_BC5(widths[i], heights[i], 1);
+            // NOTE: 1 byte is added due to BC4/BC5 compression write outside of memory block
+            compressed_data[i] = std::make_unique<uint8_t[]>(compressed_size[i] + 1);
+            Ren::CompressImage_BC5(mipmaps[i], widths[i], heights[i], compressed_data[i].get());
         } else if (channels == 3) {
             if (use_YCoCg) {
                 compressed_size[i] = Ren::GetRequiredMemory_BC3(widths[i], heights[i], 1);
@@ -392,6 +397,8 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
 
     if (channels == 1) {
         header.sPixelFormat.dwFourCC = Ren::FourCC_BC4_UNORM;
+    } else if (channels == 2) {
+        header.sPixelFormat.dwFourCC = Ren::FourCC_BC5_UNORM;
     } else if (!use_BC3) {
         header.sPixelFormat.dwFourCC = Ren::FourCC_BC1_UNORM;
     } else {
@@ -791,20 +798,18 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
 
     bool res = true;
     if (strstr(in_file, "_norm")) {
-        // this is normal map, store it in RxGB format
-        std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 4]);
+        // this is normal map, store it in BC5 format
+        std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 2]);
         assert(channels == 3);
 
         for (int j = 0; j < height; j++) {
             for (int i = 0; i < width; i++) {
-                temp_data[4 * (j * width + i) + 0] = 0;
-                temp_data[4 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
-                temp_data[4 * (j * width + i) + 2] = image_data[3 * (j * width + i) + 2];
-                temp_data[4 * (j * width + i) + 3] = image_data[3 * (j * width + i) + 0];
+                temp_data[2 * (j * width + i) + 0] = image_data[3 * (j * width + i) + 0];
+                temp_data[2 * (j * width + i) + 1] = image_data[3 * (j * width + i) + 1];
             }
         }
 
-        res &= Write_DDS(temp_data.get(), width, height, 4, false /* flip_y */, false /* is_rgbm */, out_file,
+        res &= Write_DDS(temp_data.get(), width, height, 2, false /* flip_y */, false /* is_rgbm */, out_file,
                          average_color);
     } else if (strstr(in_file, "_bump")) {
         if (channels != 1) {

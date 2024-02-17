@@ -65,7 +65,7 @@ void main(void) {
                                                 bitfieldExtract(cell_data.y, 8, 8));
 
     vec3 diff_color = YCoCg_to_RGB(texture(SAMPLER2D(g_base_tex), g_vtx_uvs));
-    vec3 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).wyz;
+    vec2 norm_color = texture(SAMPLER2D(g_norm_tex), g_vtx_uvs).xy;
     float roug_color = texture(SAMPLER2D(g_roug_tex), g_vtx_uvs).r;
     float metl_color = texture(SAMPLER2D(g_metl_tex), g_vtx_uvs).r;
 
@@ -111,7 +111,7 @@ void main(void) {
             vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 5);
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
-                vec3 decal_norm = textureGrad(g_decals_tex, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).wyz;
+                vec2 decal_norm = textureGrad(g_decals_tex, norm_uvs, norm_uvs_tr.zw * duv_dx, norm_uvs_tr.zw * duv_dy).xy;
                 norm_color = mix(norm_color, decal_norm, decal_influence);
             }
 
@@ -124,7 +124,8 @@ void main(void) {
         }
     }
 
-    vec3 normal = norm_color * 2.0 - 1.0;
+    vec3 normal = vec3(norm_color, 1.0);
+    normal = normal * 2.0 - 1.0;
     normal = normalize(mat3(cross(g_vtx_tangent, g_vtx_normal), g_vtx_tangent, g_vtx_normal) * normal);
     if (!gl_FrontFacing) {
         normal = -normal;

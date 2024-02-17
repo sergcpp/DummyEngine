@@ -3,7 +3,7 @@ gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag
 sw_program: main
 flag: two_sided
 texture: default_basecolor.png
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: default_roughness.png
 texture: default_metallic.png
 param: 0.0 0.5 0.0 0.75     // base color, roughness

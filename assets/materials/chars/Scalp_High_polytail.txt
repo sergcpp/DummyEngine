@@ -4,7 +4,7 @@ sw_program: main
 flag: alpha_test
 flag: alpha_blend
 texture: chars/Scalp_High_polytail_diff.png
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: chars/Scalp_High_polytail_spec.png srgb
 texture: chars/High_polytail_mask.png
 texture: chars/Scalp_High_polytail_mask.png

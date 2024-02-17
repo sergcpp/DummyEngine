@@ -2,5 +2,5 @@ gl_program: main_lightmapped_nossr main_lightmapped.vert.glsl main_lightmapped_n
 gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
 texture: carpet_diff.png
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: default_specular.png

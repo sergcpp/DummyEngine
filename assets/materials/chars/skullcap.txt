@@ -4,6 +4,6 @@ sw_program: main
 flag: alpha_test
 flag: alpha_blend
 texture: chars/skullcap_diff.jpg
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: chars/skullcap_spec.png srgb
 texture: chars/skullcap_mask.jpg

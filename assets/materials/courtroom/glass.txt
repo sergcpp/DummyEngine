@@ -3,5 +3,5 @@ gl_program: main_glass_thin main_glass_thin.vert.glsl main_glass_thin.frag.glsl
 sw_program: main
 flag: alpha_blend
 texture: ornament_dark_diff.png
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: white.png

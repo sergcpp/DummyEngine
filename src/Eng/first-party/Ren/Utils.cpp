@@ -2454,6 +2454,13 @@ void Ren::CompressImage_BC5(const uint8_t img_src[], const int w, const int h, u
 #endif
 }
 
+template void Ren::CompressImage_BC5<4 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+template void Ren::CompressImage_BC5<3 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+template void Ren::CompressImage_BC5<2 /* SrcChannels */>(const uint8_t img_src[], int w, int h, uint8_t img_dst[],
+                                                          int dst_pitch);
+
 #undef _MIN
 #undef _MAX
 

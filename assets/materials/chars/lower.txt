@@ -5,6 +5,6 @@ flag: two_sided
 flag: alpha_blend
 flag: alpha_test
 texture: chars/lower_diff.jpg
-texture: default_normalmap.dds
+texture: default_normalmap.png
 texture: chars/skullcap_spec.png srgb
 texture: chars/lower_mask.jpg
