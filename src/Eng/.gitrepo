@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = bc4_compression
-	commit = df29b1dec4191f4dc9d57ce3f1dc453bfd1985c6
+	branch = fixes_17_02
+	commit = c2c273a57285e247fb1feceef60c1cc7c47319e5
 	method = merge
 	cmdver = 0.4.6
-	parent = 0f39b4597cf7782518b97b3593311c6b74bfbc82
+	parent = ed319594fcde2ef66335747f818c3d775e601983
