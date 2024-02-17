@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 29f17c32cb12f385c9a23e2e304bd54cbe31a61a
+	branch = bc5_compression
+	commit = 1bd42028605a8bb4fdc3911c0bcd0c7a3be2e9f4
 	method = merge
 	cmdver = 0.4.6
-	parent = 2a39a04a6f237c4b8629763dcd0a391bd58d6f24
+	parent = 24a82756ccf4d8a6e0a1a9461cd9e2a01b4cccb4
