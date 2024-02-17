@@ -127,7 +127,14 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-gl"
+          out-dir: "windows-x86_64-gl-output"
           test-args: "-j1"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-gl-output
+          path: windows-x86_64-gl-output/
   test-windows-x86_64-vk-amd:
     runs-on: [ windows, x86_64, amd ]
     needs:
@@ -143,7 +150,14 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-amd-output"
           test-args: "-j1 --device AMD --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-amd-output
+          path: windows-x86_64-vk-amd-output/
   test-windows-x86_64-vk-nv:
     runs-on: [ windows, x86_64, nv ]
     needs:
@@ -159,7 +173,14 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-nv-output"
           test-args: "-j1 --device NV --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-nv-output
+          path: windows-x86_64-vk-nv-output/
   test-windows-x86_64-vk-arc:
     runs-on: [ windows, x86_64, arc ]
     needs:
@@ -175,7 +196,14 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-arc-output"
           test-args: "-j1 --device Arc --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-arc-output
+          path: windows-x86_64-vk-arc-output/
   test-windows-x86_64-vk-xe:
     runs-on: [ windows, x86_64, xe ]
     needs:
@@ -191,23 +219,14 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-xe-output"
           test-args: "-j1 --device Xe --validation_level 1 --nocpu"
-  # test-linux-x86_64-gl:
-  #   runs-on: [ linux, x86_64 ]
-  #   needs:
-  #     - build-linux-x86_64-gl-rel
-  #   steps:
-  #     - name: Checkout Workflows
-  #       uses: actions/checkout@v4
-  #       with:
-  #         sparse-checkout: .github
-  #     - name: Re-initialize repository
-  #       uses: ./.github/actions/checkout
-  #     - name: Run Tests
-  #       uses: ./.github/actions/test
-  #       with:
-  #         bin-dir: "linux-x86_64-gl"
-  #         test-args: "-j1"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-xe-output
+          path: windows-x86_64-vk-xe-output/
   test-linux-x86_64-vk-amd:
     runs-on: [ linux, x86_64, amd ]
     needs:
@@ -223,7 +242,14 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
+          out-dir: "linux-x86_64-vk-amd-output"
           test-args: "-j1 --device AMD --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: linux-x86_64-vk-amd-output
+          path: linux-x86_64-vk-amd-output/
   test-linux-x86_64-vk-nv:
     runs-on: [ linux, x86_64, nv ]
     needs:
@@ -239,4 +265,52 @@ jobs:
         uses: ./.github/actions/test
         with:
           bin-dir: "linux-x86_64-vk"
+          out-dir: "linux-x86_64-vk-nv-output"
           test-args: "-j1 --device NV --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: linux-x86_64-vk-nv-output
+          path: linux-x86_64-vk-nv-output/
+  analyze-output:
+    runs-on: [ linux ]
+    needs: [ test-windows-x86_64-gl, test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
+    if: always()
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: src/Eng/scripts/analyze_output.py
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-gl-output
+          path: windows-x86_64-gl-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-vk-nv-output
+          path: windows-x86_64-vk-nv-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-vk-amd-output
+          path: windows-x86_64-vk-amd-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-vk-arc-output
+          path: windows-x86_64-vk-arc-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: windows-x86_64-vk-xe-output
+          path: windows-x86_64-vk-xe-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x86_64-vk-amd-output
+          path: linux-x86_64-vk-amd-output/
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-x86_64-vk-nv-output
+          path: linux-x86_64-vk-nv-output/
+      - name: Analyze Output
+        run: |
+          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt
+        shell: bash

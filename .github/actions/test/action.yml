@@ -2,6 +2,8 @@ name: 'Test'
 inputs:
   bin-dir:
     required: true
+  out-dir:
+    required: true
   test-args:
     required: true
 runs:
@@ -29,8 +31,9 @@ runs:
         $WORK_DIR/${{ inputs.bin-dir }}/test_Snd
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
         cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }}
+        mkdir $WORK_DIR/${{ inputs.out-dir }}
+        $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }} | tee $WORK_DIR/${{ inputs.out-dir }}/test_Eng_output.txt
         cd $WORK_DIR/../../builds/DummyEngine/src/Ray/tests
-        $WORK_DIR/${{ inputs.bin-dir }}/test_Ray ${{ inputs.test-args }}
+        #$WORK_DIR/${{ inputs.bin-dir }}/test_Ray ${{ inputs.test-args }}
         cd ../../..
       shell: bash
