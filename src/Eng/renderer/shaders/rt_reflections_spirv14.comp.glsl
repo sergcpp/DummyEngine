@@ -231,18 +231,21 @@ void main() {
 
             col = base_color * (direct_lm + indirect_lm);
         } else {
-            vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
-            vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
-            vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
+            const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
+            const vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x),
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
+            const vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x),
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
 
             vec3 N = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
             if (backfacing) {
                 N = -N;
             }
 
-            vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * hit_t;
-            vec3 I = -refl_ray_ws.xyz;//normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
-            float N_dot_V = saturate(dot(N, I));
+            const vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * hit_t;
+            const vec3 I = -refl_ray_ws.xyz;//normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
+            const float N_dot_V = saturate(dot(N, I));
 
             vec3 tint_color = vec3(0.0);
 
@@ -251,47 +254,48 @@ void main() {
                 tint_color = base_color / base_color_lum;
             }
 
-            float roughness = mat.params[0].w;
-            float sheen = mat.params[1].x;
-            float sheen_tint = mat.params[1].y;
-            float specular = mat.params[1].z;
-            float specular_tint = mat.params[1].w;
-            float metallic = mat.params[2].x;
-            float transmission = mat.params[2].y;
-            float clearcoat = mat.params[2].z;
-            float clearcoat_roughness = mat.params[2].w;
+            const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[2]), uv, tex_lod).r;
+            const float sheen = mat.params[1].x;
+            const float sheen_tint = mat.params[1].y;
+            const float specular = mat.params[1].z;
+            const float specular_tint = mat.params[1].w;
+            const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[3]), uv, tex_lod).r;
+            const float transmission = mat.params[2].y;
+            const float clearcoat = mat.params[2].z;
+            const float clearcoat_roughness = mat.params[2].w;
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
             spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
 
-            float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
-            float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+            const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+            const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
 
             // Approximation of FH (using shading normal)
-            float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+            const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
 
-            vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
-            float spec_color_lum = lum(approx_spec_col);
+            const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+            const float spec_color_lum = lum(approx_spec_col);
 
-            lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+            const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular,
+                                                                 metallic, transmission, clearcoat);
 
-            vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
+            const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
-            float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
-            float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
-            float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+            const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+            const float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
+            const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
 
             // Approximation of FH (using shading normal)
-            float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
+            const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
 
-            vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
+            const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
             //
             // Fetch LTC data
             //
 
-            vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
-            vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
+            const vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
+            const vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
 
             ltc_params_t ltc;
             ltc.diff_t1 = textureLod(g_ltc_luts[0], ltc_uv, 0.0);

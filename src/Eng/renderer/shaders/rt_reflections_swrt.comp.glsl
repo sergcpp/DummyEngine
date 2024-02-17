@@ -200,6 +200,7 @@ void main() {
 #else
         // TODO: Fallback to shared texture atlas
         vec3 base_color = vec3(1.0);
+        float tex_lod = 0.0;
 #endif
 
         if ((geo.flags & RTGeoLightmappedBit) != 0u) {
@@ -214,22 +215,22 @@ void main() {
             vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
             final_color = base_color * (direct_lm + indirect_lm);
         } else {
-            uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
-            uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
-            uvec2 packed2 = texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).xy;
+            const uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
+            const uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
+            const uvec2 packed2 = texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).xy;
 
-            vec3 normal0 = vec3(unpackSnorm2x16(packed0.x), unpackSnorm2x16(packed0.y).x);
-            vec3 normal1 = vec3(unpackSnorm2x16(packed1.x), unpackSnorm2x16(packed1.y).x);
-            vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
+            const vec3 normal0 = vec3(unpackSnorm2x16(packed0.x), unpackSnorm2x16(packed0.y).x);
+            const vec3 normal1 = vec3(unpackSnorm2x16(packed1.x), unpackSnorm2x16(packed1.y).x);
+            const vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
 
             vec3 N = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
             if (is_backfacing) {
                 N = -N;
             }
 
-            vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * inter.t;
-            vec3 I = -refl_ray_ws.xyz;
-            float N_dot_V = saturate(dot(N, I));
+            const vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * inter.t;
+            const vec3 I = -refl_ray_ws.xyz;
+            const float N_dot_V = saturate(dot(N, I));
 
             vec3 tint_color = vec3(0.0);
 
@@ -238,15 +239,23 @@ void main() {
                 tint_color = base_color / base_color_lum;
             }
 
-            float roughness = mat.params[0].w;
-            float sheen = mat.params[1].x;
-            float sheen_tint = mat.params[1].y;
-            float specular = mat.params[1].z;
-            float specular_tint = mat.params[1].w;
-            float metallic = mat.params[2].x;
-            float transmission = mat.params[2].y;
-            float clearcoat = mat.params[2].z;
-            float clearcoat_roughness = mat.params[2].w;
+#if defined(BINDLESS_TEXTURES)
+            const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[2])), uv, tex_lod).r;
+#else
+            const float roughness = mat.params[0].w;
+#endif
+            const float sheen = mat.params[1].x;
+            const float sheen_tint = mat.params[1].y;
+            const float specular = mat.params[1].z;
+            const float specular_tint = mat.params[1].w;
+#if defined(BINDLESS_TEXTURES)
+            const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[3])), uv, tex_lod).r;
+#else
+            const float metallic = mat.params[2].x;
+#endif
+            const float transmission = mat.params[2].y;
+            const float clearcoat = mat.params[2].z;
+            const float clearcoat_roughness = mat.params[2].w;
 
             vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
             spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
