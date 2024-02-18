@@ -19,24 +19,24 @@
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_sss_tex;
-layout(binding = REN_MAT_TEX4_SLOT) uniform sampler2D g_norm_detail_tex;
+layout(binding = BIND_MAT_TEX0) uniform sampler2D g_diff_tex;
+layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;
+layout(binding = BIND_MAT_TEX2) uniform sampler2D g_spec_tex;
+layout(binding = BIND_MAT_TEX3) uniform sampler2D g_sss_tex;
+layout(binding = BIND_MAT_TEX4) uniform sampler2D g_norm_detail_tex;
 #endif // BINDLESS_TEXTURES
-layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4];
-layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
-layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
-layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D g_cone_rt_lut;
+layout(binding = BIND_SHAD_TEX) uniform sampler2DShadow g_shadow_tex;
+layout(binding = BIND_LMAP_SH) uniform sampler2D g_lm_indirect_sh_texture[4];
+layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
+layout(binding = BIND_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
+layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = BIND_LIGHT_BUF) uniform highp samplerBuffer g_lights_buf;
+layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_CONE_RT_LUT) uniform lowp sampler2D g_cone_rt_lut;
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -54,17 +54,17 @@ LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs[4];
 #endif // BINDLESS_TEXTURES
 LAYOUT(location = 13) in flat vec4 material_params;
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
-layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
-layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
+layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
+layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
+layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 
 void main(void) {
     highp float lin_depth = g_shrd_data.clip_info[0] / (gl_FragCoord.z * (g_shrd_data.clip_info[1] - g_shrd_data.clip_info[2]) + g_shrd_data.clip_info[2]);
     highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
+    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
-    int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(g_shrd_data.res_and_fres.x);
+    int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(g_shrd_data.res_and_fres.x);
 
     highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
     highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));

@@ -29,9 +29,6 @@
 
 #include <glslang/Include/glslang_c_interface.h>
 
-// TODO: pass defines as a parameter
-#include "../renderer/shaders/Renderer_GL_Defines.inl"
-
 namespace SceneManagerInternal {
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();

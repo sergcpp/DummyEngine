@@ -116,13 +116,13 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         Ren::Binding bindings[3];
 
         if (view_state_->is_multisampled) {
-            bindings[0] = {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT, *depth_tex.ref};
+            bindings[0] = {Ren::eBindTarget::Tex2DMs, BIND_BASE0_TEX, *depth_tex.ref};
         } else {
-            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *depth_tex.ref};
+            bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *depth_tex.ref};
         }
 
-        bindings[1] = {Ren::eBindTarget::TBuf, REN_CELLS_BUF_SLOT, *cells_buf.tbos[0]};
-        bindings[2] = {Ren::eBindTarget::TBuf, REN_ITEMS_BUF_SLOT, *items_buf.tbos[0]};
+        bindings[1] = {Ren::eBindTarget::TBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]};
+        bindings[2] = {Ren::eBindTarget::TBuf, BIND_ITEMS_BUF, *items_buf.tbos[0]};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&output_fb_, 0}, blit_prog, bindings, 3, uniforms, 4);
     }
@@ -194,7 +194,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
             view_state_->is_multisampled ? blit_debug_bvh_ms_prog_.get() : blit_debug_bvh_prog_.get();
 
         Ren::Binding bindings[3];
-        bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock),
+        bindings[0] = {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock),
                        *unif_shared_data_buf.ref};
         bindings[1] = {view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D, 0,
                        *depth_tex.ref};
@@ -253,8 +253,8 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
     { // setup temp vao
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), REN_VTX_POS_LOC, 2, Ren::eType::Float32, 0, prim_draw_.temp_buf1_vtx_offset()},
-            {vtx_buf1->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
+            {vtx_buf1->handle(), VTX_POS_LOC, 2, Ren::eType::Float32, 0, prim_draw_.temp_buf1_vtx_offset()},
+            {vtx_buf1->handle(), VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
              uint32_t(prim_draw_.temp_buf1_vtx_offset() + 8 * sizeof(float))}};
 
         if (!temp_vtx_input_.Setup(attribs, 2, ndx_buf->handle())) {
@@ -279,7 +279,7 @@ int RpDebugTextures::BlitTex(Ren::RastState &applied_state, const int x, const i
     rast_state.ApplyChanged(applied_state);
     applied_state = rast_state;
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *tex}};
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *tex}};
 
     const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {4, mul}};
 

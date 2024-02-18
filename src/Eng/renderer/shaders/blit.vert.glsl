@@ -2,8 +2,8 @@
 
 #include "_vs_common.glsl"
 
-layout(location = REN_VTX_POS_LOC) in vec2 g_in_vtx_pos;
-layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
+layout(location = VTX_POS_LOC) in vec2 g_in_vtx_pos;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {

@@ -301,7 +301,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::Tex2D, GITraceSS::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
                                              {Trg::Tex2D, GITraceSS::COLOR_TEX_SLOT, *color_tex.ref},
                                              {Trg::Tex2D, GITraceSS::NORM_TEX_SLOT, *normal_tex.ref},
@@ -506,7 +506,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *shared_data_buf.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
                 {Trg::Tex2D, GIReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Trg::Tex2D, GIReproject::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2D, GIReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
@@ -681,7 +681,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2D, GIResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2D, GIResolveTemporal::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
                 {Trg::Tex2D, GIResolveTemporal::GI_TEX_SLOT, *gi_tex.ref},
@@ -750,7 +750,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::Tex2D, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
                                              {Trg::Tex2D, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
                                              //{Trg::Tex2D, GIBlur::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
@@ -821,7 +821,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                              {Trg::Tex2D, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
                                              {Trg::Tex2D, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
                                              //{Trg::Tex2D, GIBlur::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},

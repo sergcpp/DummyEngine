@@ -12,7 +12,7 @@
 PERM @COLOR_ONLY
 */
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -20,9 +20,9 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 LAYOUT(location = 0) in highp vec3 g_vtx_pos;
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
+layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 #if !defined(COLOR_ONLY)
-layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
+layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 #endif
 
 void main() {

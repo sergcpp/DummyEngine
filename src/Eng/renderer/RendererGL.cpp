@@ -173,7 +173,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
 
     Graph::RpAllocBuf &unif_shared_data_buf =
         rp_builder_.GetReadBuffer(unif_shared_data_buf_[cur_buf_chunk_]);
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF,
                      GLuint(unif_shared_data_buf.ref->id()));
 
     //
@@ -192,7 +192,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeShadowMapStart], GL_TIMESTAMP);
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT,
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF,
                                GLuint(instances_tbo_[cur_buf_chunk_]->id()));
 
     glEnable(GL_CULL_FACE);
@@ -216,49 +216,49 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
     // Bind persistent resources (shadow atlas, lightmap, cells item data)
     //
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shadow_tex_->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SHAD_TEX, shadow_tex_->id());
 
     if (list.decals_atlas) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT,
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX,
                                    list.decals_atlas->tex_id(0));
     }
 
     if ((list.render_flags & (EnableZFill | EnableSSAO)) == (EnableZFill | EnableSSAO)) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, combined_tex_->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, combined_tex_->id());
     } else {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, dummy_white_->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, dummy_white_->id());
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut_->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut_->id());
 
     if ((list.render_flags & EnableLightmap) && list.env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l,
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l,
                                        list.env.lm_indir_sh[sh_l]->id());
         }
     } else {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l,
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l,
                                        dummy_black_->id());
         }
     }
 
     if (list.probe_storage) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
                                    list.probe_storage->tex_id());
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT,
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF,
                                lights_tbo_[cur_buf_chunk_]->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT,
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF,
                                decals_tbo_[cur_buf_chunk_]->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT,
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF,
                                cells_tbo_[cur_buf_chunk_]->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT,
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF,
                                items_tbo_[cur_buf_chunk_]->id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex_->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT, cone_rt_lut_->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex_->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut_->id());
 
     //
     // Depth-fill pass (draw opaque surfaces -> draw alpha-tested surfaces)
@@ -307,7 +307,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         DebugMarker _("RESOLVE MS BUFFER");
 
         const PrimDraw::Binding bindings[] = {{Ren::eBindTarget::Tex2DMs,
-                                               REN_BASE0_TEX_SLOT,
+                                               BIND_BASE0_TEX,
                                                clean_buf_.attachments[0].tex->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
@@ -354,7 +354,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeTaaStart], GL_TIMESTAMP);
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT, 0);
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX, 0);
 
     glDisable(GL_DEPTH_TEST);
 
@@ -432,26 +432,26 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             apply_dof) {
             if (apply_dof) {
                 if ((list.render_flags & EnableTaa) != 0) {
-                    bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+                    bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
                                    clean_buf_.attachments[0].tex->handle()};
                 } else {
-                    bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+                    bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
                                    dof_tex_->handle()};
                 }
             } else {
-                bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+                bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
                                resolved_or_transparent_tex_->handle()};
             }
         } else {
-            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
-                           clean_buf_.attachments[REN_OUT_COLOR_INDEX].tex->handle()};
+            bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
+                           clean_buf_.attachments[LOC_OUT_COLOR].tex->handle()};
         }
 
         if ((list.render_flags & EnableBloom) && !(list.render_flags & DebugWireframe)) {
-            bindings[1] = {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT,
+            bindings[1] = {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX,
                            blur_tex_[0]->handle()};
         } else {
-            bindings[1] = {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT,
+            bindings[1] = {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX,
                            dummy_black_->handle()};
         }
 
@@ -478,9 +478,9 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             Ren::Program *blit_prog = blit_fxaa_prog_.get();
 
             const PrimDraw::Binding bindings[] = {
-                {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+                {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
                  combined_buf_.attachments[0].tex->handle()},
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC,
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF,
                  unif_shared_data_buf.ref->handle()}};
 
             const PrimDraw::Uniform uniforms[] = {
@@ -538,16 +538,16 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         PrimDraw::Binding bindings[3];
 
         if (clean_buf_.sample_count > 1) {
-            bindings[0] = {Ren::eBindTarget::Tex2DMs, REN_BASE0_TEX_SLOT,
+            bindings[0] = {Ren::eBindTarget::Tex2DMs, BIND_BASE0_TEX,
                            clean_buf_.depth_tex->handle()};
         } else {
-            bindings[0] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+            bindings[0] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
                            clean_buf_.depth_tex->handle()};
         }
 
-        bindings[1] = {Ren::eBindTarget::TexBuf, REN_CELLS_BUF_SLOT,
+        bindings[1] = {Ren::eBindTarget::TexBuf, BIND_CELLS_BUF,
                        cells_tbo_[cur_buf_chunk_]->handle()};
-        bindings[2] = {Ren::eBindTarget::TexBuf, REN_ITEMS_BUF_SLOT,
+        bindings[2] = {Ren::eBindTarget::TexBuf, BIND_ITEMS_BUF,
                        items_tbo_[cur_buf_chunk_]->handle()};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {blit_fb, 0}, blit_prog, bindings, 3,
@@ -583,7 +583,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         ////
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, temp_tex_->handle()}
+            {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, temp_tex_->handle()}
         };
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 256.0f, 128.0f}},
@@ -617,13 +617,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glBindBuffer(GL_ARRAY_BUFFER, last_vertex_buf1_);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, last_index_buffer_);
 
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        glEnableVertexAttribArray(VTX_POS_LOC);
+        glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                               (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+        glEnableVertexAttribArray(VTX_UV1_LOC);
         glVertexAttribPointer(
-            REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
             (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_offset_),
@@ -632,7 +632,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shadow_tex_->id(),
                                      GL_TEXTURE_COMPARE_MODE, GL_NONE);
 
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, shadow_tex_->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BASE0_TEX, shadow_tex_->id());
 
         const float k =
             (float(shadow_tex_->params().h) / float(shadow_tex_->params().w)) *
@@ -774,8 +774,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         ren_glTextureParameteri_Comp(GL_TEXTURE_2D, shadow_tex_->id(),
                                      GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
 
-        glDisableVertexAttribArray(REN_VTX_POS_LOC);
-        glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+        glDisableVertexAttribArray(VTX_POS_LOC);
+        glDisableVertexAttribArray(VTX_UV1_LOC);
     }*/
 
     glBindVertexArray(temp_vao_.id());
@@ -787,7 +787,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         rast_state.Apply();
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, reduced_tex_->handle()}};
+            {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, reduced_tex_->handle()}};
 
         const auto &p = reduced_tex_->params();
 
@@ -877,13 +877,13 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, (GLintptr)temp_buf_ndx_offset_,
                             6 * sizeof(uint16_t), PrimDrawInternal::fs_quad_indices);
 
-            glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            glEnableVertexAttribArray(VTX_POS_LOC);
+            glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                                   (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+            glEnableVertexAttribArray(VTX_UV1_LOC);
             glVertexAttribPointer(
-                REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                 (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
             if (clean_buf_.sample_count > 1) {
@@ -900,8 +900,8 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
                            (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
 
-            glDisableVertexAttribArray(REN_VTX_POS_LOC);
-            glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+            glDisableVertexAttribArray(VTX_POS_LOC);
+            glDisableVertexAttribArray(VTX_UV1_LOC);
 
             glDisable(GL_BLEND);
         }
@@ -915,7 +915,7 @@ void Renderer::DrawObjectsInternal(const DrawList &list, const FrameBuf *target)
         glQueryCounter(queries_[cur_query_][TimeDrawEnd], GL_TIMESTAMP);
     }
 
-    for (int i = REN_MAT_TEX0_SLOT; i <= REN_MAT_TEX4_SLOT; i++) {
+    for (int i = BIND_MAT_TEX0; i <= BIND_MAT_TEX4; i++) {
         ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, i, 0);
     }
 
@@ -1105,10 +1105,10 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
 
         Graph::RpAllocBuf &unif_shared_data_buf =
             rp_builder_.GetReadBuffer(unif_shared_data_buf_[cur_buf_chunk_]);
-        glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+        glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF,
                          (GLuint)unif_shared_data_buf.ref->id());*/
 
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *temp_tex_}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *temp_tex_}};
         const Eng::PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
 
         if (!down_tex_4x_fb_.Setup(ctx_.api_ctx(), {}, down_tex_4x_->params.w, down_tex_4x_->params.h, down_tex_4x_, {},
@@ -1138,7 +1138,7 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
             ////
 
             const PrimDraw::Binding binding = {
-                Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, down_tex_4x_->handle()};
+                Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, down_tex_4x_->handle()};
 
             const PrimDraw::Uniform uniforms[] = {
                 {0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {1, 0.0f}};
@@ -1165,7 +1165,7 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
             ////
 
             const PrimDraw::Binding binding = {
-                Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, blur_tex_[1]->handle()};
+                Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, blur_tex_[1]->handle()};
 
             const PrimDraw::Uniform uniforms[] = {
                 {0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {1, 1.0f}};
@@ -1194,8 +1194,8 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
         exposure = std::min(exposure, 1000.0f);
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, temp_tex_->handle()},
-            {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, blur_tex_[0]->handle()}};
+            {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, temp_tex_->handle()},
+            {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, blur_tex_[0]->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, float(h), float(w), -float(h)}}, // vertically flipped
@@ -1247,12 +1247,12 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_offset_), 6 * sizeof(uint16_t),
                             PrimDrawInternal::fs_quad_indices);
 
-            glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            glEnableVertexAttribArray(VTX_POS_LOC);
+            glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                                   (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-            glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            glEnableVertexAttribArray(VTX_UV1_LOC);
+            glVertexAttribPointer(VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                                   (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
             glUniform1f(4, multiplier);
@@ -1261,9 +1261,9 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
         glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_), sizeof(positions), positions);
 
         if (buf.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, buf.attachments[i].tex->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, BIND_BASE0_TEX, buf.attachments[i].tex->id());
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, buf.attachments[i].tex->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BASE0_TEX, buf.attachments[i].tex->id());
         }
 
         glBindVertexArray(temp_vtx_input_.gl_vao());
@@ -1271,8 +1271,8 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 }*/
 
 void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, const float sy,
@@ -1315,27 +1315,27 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
         glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_.offset + sizeof(positions)), sizeof(uvs), uvs);
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_.offset), sizeof(indices), indices);
 
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        glEnableVertexAttribArray(VTX_POS_LOC);
+        glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                               (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset));
 
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-        glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        glEnableVertexAttribArray(VTX_UV1_LOC);
+        glVertexAttribPointer(VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                               (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset + sizeof(positions)));
 
         glUniform1f(4, multiplier);
 
         if (is_ms) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT, tex->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, BIND_BASE0_TEX, tex->id());
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, tex->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BASE0_TEX, tex->id());
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(temp_buf_ndx_.offset));
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 }
 
 /*void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, const int face) {
@@ -1368,11 +1368,11 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
     glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-    glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-    glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+    glEnableVertexAttribArray(VTX_UV1_LOC);
+    glVertexAttribPointer(VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                           (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
     glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_), 8 * sizeof(float),
@@ -1430,8 +1430,8 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
         }
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 
     glBindVertexArray(0);
 
@@ -1465,11 +1465,11 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
     glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-    glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset));
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset));
 
-    glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+    glEnableVertexAttribArray(VTX_UV1_LOC);
+    glVertexAttribPointer(VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                           (const GLvoid *)uintptr_t(temp_buf1_vtx_.offset + 8 * sizeof(float)));
 
     glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_.offset), 8 * sizeof(float),
@@ -1512,8 +1512,8 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
         level++;
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 
     glBindVertexArray(0);
 
@@ -1545,11 +1545,11 @@ bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int prob
     glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-    glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0, (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-    glEnableVertexAttribArray(REN_VTX_UV1_LOC);
-    glVertexAttribPointer(REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+    glEnableVertexAttribArray(VTX_UV1_LOC);
+    glVertexAttribPointer(VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                           (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
     const float uvs[] = {0.0f,
@@ -1631,8 +1631,8 @@ bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int prob
         }
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 
     glBindVertexArray(0);
 

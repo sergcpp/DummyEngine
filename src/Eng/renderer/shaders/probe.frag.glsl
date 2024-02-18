@@ -8,11 +8,11 @@
 
 #include "_fs_common.glsl"
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = BIND_BASE0_TEX) uniform mediump samplerCubeArray g_env_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {
@@ -30,7 +30,7 @@ layout(location = 0) in vec3 g_vtx_pos;
 in vec3 g_vtx_pos;
 #endif
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
+layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 
 void main() {
     vec3 view_dir_ws = normalize(g_vtx_pos - g_shrd_data.probes[g_probe_index].pos_and_radius.xyz);

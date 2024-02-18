@@ -43,7 +43,7 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         VkWriteDescriptorSet descr_writes[2];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = descr_set;
-        descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
+        descr_writes[0].dstBinding = BIND_UB_SHARED_DATA_BUF;
         descr_writes[0].dstArrayElement = 0;
         descr_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descr_writes[0].descriptorCount = 1;

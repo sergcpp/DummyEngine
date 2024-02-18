@@ -29,7 +29,7 @@ void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                      {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
                                      {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
                                      {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
@@ -85,7 +85,7 @@ void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+    const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                                      {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
                                      {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
                                      {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
@@ -178,7 +178,7 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},

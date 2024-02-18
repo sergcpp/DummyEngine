@@ -1,5 +1,5 @@
 
-#include "Renderer_GL_Defines.inl"
+#include "Constants.inl"
 
 #define M_PI 3.1415926535897932384626433832795
 #define GOLDEN_RATIO 1.61803398875
@@ -55,7 +55,7 @@ vec3 UnpackUnitVector(vec2 p) {
 vec4 PackNormalAndRoughness(vec3 N, float roughness) {
     vec4 p;
 
-#if REN_USE_OCT_PACKED_NORMALS == 1
+#if USE_OCT_PACKED_NORMALS == 1
     p.xy = PackUnitVector(N);
     p.z = roughness;
     p.w = 0;
@@ -76,7 +76,7 @@ vec4 PackNormalAndRoughness(vec3 N, float roughness) {
 vec4 UnpackNormalAndRoughness(vec4 p) {
     vec4 r;
 
-#if REN_USE_OCT_PACKED_NORMALS == 1
+#if USE_OCT_PACKED_NORMALS == 1
     r.xyz = UnpackUnitVector(p.xy);
     r.w = p.z;
 #else
@@ -176,18 +176,18 @@ struct EllipsItem {
 struct SharedData {
     mat4 view_matrix, proj_matrix, view_proj_no_translation, prev_view_proj_no_translation;
     mat4 inv_view_matrix, inv_proj_matrix, inv_view_proj_no_translation, delta_matrix;
-    ShadowMapRegion shadowmap_regions[REN_MAX_SHADOWMAPS_TOTAL];
+    ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, taa_info, frustum_info;
     vec4 clip_info, cam_pos_and_gamma, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
-    ProbeItem probes[REN_MAX_PROBES_TOTAL];
-    EllipsItem ellipsoids[REN_MAX_ELLIPSES_TOTAL];
+    ProbeItem probes[MAX_PROBES_TOTAL];
+    EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL];
 };
 
 struct MaterialData {
-    uint texture_indices[REN_MAX_TEX_PER_MATERIAL];
+    uint texture_indices[MAX_TEX_PER_MATERIAL];
     uint _pad[2];
     vec4 params[3];
 };

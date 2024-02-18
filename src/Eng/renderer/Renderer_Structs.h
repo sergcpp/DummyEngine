@@ -14,13 +14,13 @@
 #include <Ren/Buffer.h>
 #endif
 
-#include "shaders/Renderer_GL_Defines.inl"
-
 namespace Ren {
 class IAccStructure;
 }
 
 namespace Eng {
+#include "shaders/Constants.inl"
+
 struct LightItem {
     float col[3];
     int type;
@@ -37,7 +37,7 @@ struct DecalItem {
     // TODO: use 16-bit unorms
     float mask[4], diff[4], norm[4], spec[4];
 };
-static_assert(sizeof(DecalItem) == REN_DECALS_BUF_STRIDE * 4 * sizeof(float), "!");
+static_assert(sizeof(DecalItem) == DECALS_BUF_STRIDE * 4 * sizeof(float), "!");
 
 struct ProbeItem {
     float position[3], radius;
@@ -303,21 +303,21 @@ struct ViewState {
 struct SharedDataBlock {
     Ren::Mat4f view_matrix, proj_matrix, view_proj_no_translation, prev_view_proj_no_translation;
     Ren::Mat4f inv_view_matrix, inv_proj_matrix, inv_view_proj_no_translation, delta_matrix;
-    ShadowMapRegion shadowmap_regions[REN_MAX_SHADOWMAPS_TOTAL];
+    ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, uTaaInfo, uFrustumInfo;
     Ren::Vec4f clip_info, cam_pos_and_gamma, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;
-    ProbeItem probes[REN_MAX_PROBES_TOTAL] = {};
-    EllipsItem ellipsoids[REN_MAX_ELLIPSES_TOTAL] = {};
+    ProbeItem probes[MAX_PROBES_TOTAL] = {};
+    EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
 };
 static_assert(sizeof(SharedDataBlock) == 7872, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 
 struct MaterialData {
-    uint32_t texture_indices[REN_MAX_TEX_PER_MATERIAL];
+    uint32_t texture_indices[MAX_TEX_PER_MATERIAL];
     uint32_t _pad[2];
     Ren::Vec4f params[MAX_MATERIAL_PARAMS];
 };
@@ -411,18 +411,18 @@ static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48, "!");
 const size_t sizeof_VkAccelerationStructureInstanceKHR = 64;
 
 // Constant that controls buffers orphaning
-const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * REN_MAX_SKIN_XFORMS_TOTAL;
-const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * REN_MAX_SHAPE_KEYS_TOTAL;
-const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * REN_MAX_SKIN_REGIONS_TOTAL;
-const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL;
-const size_t InstanceIndicesBufChunkSize = sizeof(Ren::Vec2i) * REN_MAX_INSTANCES_TOTAL;
-const size_t LightsBufChunkSize = sizeof(LightItem) * REN_MAX_LIGHTS_TOTAL;
-const size_t DecalsBufChunkSize = sizeof(DecalItem) * REN_MAX_DECALS_TOTAL;
-const size_t CellsBufChunkSize = sizeof(CellData) * REN_CELLS_COUNT;
-const size_t ItemsBufChunkSize = sizeof(ItemData) * REN_MAX_ITEMS_TOTAL;
-const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * REN_MAX_RT_OBJ_INSTANCES;
-const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * REN_MAX_RT_OBJ_INSTANCES;
-const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * REN_MAX_RT_TLAS_NODES;
+const size_t SkinTransformsBufChunkSize = sizeof(SkinTransform) * MAX_SKIN_XFORMS_TOTAL;
+const size_t ShapeKeysBufChunkSize = sizeof(ShapeKeyData) * MAX_SHAPE_KEYS_TOTAL;
+const size_t SkinRegionsBufChunkSize = sizeof(SkinRegion) * MAX_SKIN_REGIONS_TOTAL;
+const size_t InstanceDataBufChunkSize = sizeof(InstanceData) * MAX_INSTANCES_TOTAL;
+const size_t InstanceIndicesBufChunkSize = sizeof(Ren::Vec2i) * MAX_INSTANCES_TOTAL;
+const size_t LightsBufChunkSize = sizeof(LightItem) * MAX_LIGHTS_TOTAL;
+const size_t DecalsBufChunkSize = sizeof(DecalItem) * MAX_DECALS_TOTAL;
+const size_t CellsBufChunkSize = sizeof(CellData) * ITEM_CELLS_COUNT;
+const size_t ItemsBufChunkSize = sizeof(ItemData) * MAX_ITEMS_TOTAL;
+const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES;
+const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES;
+const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * MAX_RT_TLAS_NODES;
 const size_t SharedDataBlockSize = 8 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");

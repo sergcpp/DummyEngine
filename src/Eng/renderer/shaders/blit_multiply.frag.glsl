@@ -13,25 +13,25 @@ PERM @MSAA_4
 
 #include "_fs_common.glsl"
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_REFL_SSR_TEX_SLOT) uniform sampler2D g_tex;
+layout(binding = BIND_REFL_SSR_TEX) uniform sampler2D g_tex;
 #if defined(MSAA_4)
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2DMS s_mul_tex;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_tex;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2DMS g_norm_tex;
+layout(binding = BIND_REFL_SPEC_TEX) uniform mediump sampler2DMS s_mul_tex;
+layout(binding = BIND_REFL_DEPTH_TEX) uniform mediump sampler2DMS g_depth_tex;
+layout(binding = BIND_REFL_NORM_TEX) uniform mediump sampler2DMS g_norm_tex;
 #else
-layout(binding = REN_REFL_SPEC_TEX_SLOT) uniform mediump sampler2D s_mul_tex;
-layout(binding = REN_REFL_DEPTH_TEX_SLOT) uniform mediump sampler2DMS g_depth_tex;
-layout(binding = REN_REFL_NORM_TEX_SLOT) uniform mediump sampler2D g_norm_tex;
+layout(binding = BIND_REFL_SPEC_TEX) uniform mediump sampler2D s_mul_tex;
+layout(binding = BIND_REFL_DEPTH_TEX) uniform mediump sampler2DMS g_depth_tex;
+layout(binding = BIND_REFL_NORM_TEX) uniform mediump sampler2D g_norm_tex;
 #endif
-layout(binding = REN_REFL_PREV_TEX_SLOT) uniform mediump sampler2D g_prev_tex;
-layout(binding = REN_REFL_BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_tex;
-layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_REFL_PREV_TEX) uniform mediump sampler2D g_prev_tex;
+layout(binding = BIND_REFL_BRDF_TEX) uniform sampler2D g_brdf_lut_tex;
+layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -126,10 +126,10 @@ void main() {
         ray_origin_ws /= ray_origin_ws.w;
 
         highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-        int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
+        int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
         int ix = int(g_vtx_uvs.x), iy = int(g_vtx_uvs.y);
-        int cell_index = slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * REN_GRID_RES_X + (ix * REN_GRID_RES_X / int(g_shrd_data.res_and_fres.x));
+        int cell_index = slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(g_shrd_data.res_and_fres.y)) * ITEM_GRID_RES_X + (ix * ITEM_GRID_RES_X / int(g_shrd_data.res_and_fres.x));
 
         highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
         highp uint offset = bitfieldExtract(cell_data.x, 0, 24);

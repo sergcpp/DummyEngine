@@ -55,7 +55,7 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                 }
                 Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(Skinning::Params), nullptr);
 
-                glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_UNIF_PARAM_LOC, temp_unif_buffer.id());
+                glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_UNIF_PARAM_BUF, temp_unif_buffer.id());
 
                 glDispatchCompute((sr.vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1,
                                   1);
@@ -81,7 +81,7 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                 }
                 Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(Skinning::Params), nullptr);
 
-                glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_UNIF_PARAM_LOC, temp_unif_buffer.id());
+                glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_UNIF_PARAM_BUF, temp_unif_buffer.id());
 
                 glDispatchCompute(
                     (sr.shape_keyed_vertex_count + Skinning::LOCAL_GROUP_SIZE - 1) / Skinning::LOCAL_GROUP_SIZE, 1, 1);

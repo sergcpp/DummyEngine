@@ -5,7 +5,7 @@
 #include <Ren/GL.h>
 #include <Ren/ProbeStorage.h>
 
-#include "shaders/Renderer_GL_Defines.inl"
+#include "Renderer_Structs.h"
 
 namespace PrimDrawInternal {
 extern const int SphereIndicesCount;
@@ -132,7 +132,7 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
             Ren::Buffer("Temp uniform buf", ctx_->api_ctx(), Ren::eBufType::Uniform, uniform_data_len, 16);
         Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);
 
-        glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_UNIF_PARAM_LOC, temp_unif_buffer.id());
+        glBindBufferBase(GL_UNIFORM_BUFFER, Eng::BIND_UB_UNIF_PARAM_BUF, temp_unif_buffer.id());
     }
 
     if (prim == ePrim::Quad) {

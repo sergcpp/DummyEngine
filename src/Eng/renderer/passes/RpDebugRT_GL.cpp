@@ -91,8 +91,8 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     }
 
     const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::SBuf, REN_BINDLESS_TEX_SLOT, *textures_buf.ref},
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::SBuf, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::TBuf, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},

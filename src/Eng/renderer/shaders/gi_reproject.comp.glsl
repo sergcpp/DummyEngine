@@ -10,7 +10,7 @@
 #include "gi_common.glsl"
 #include "gi_reproject_interface.h"
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

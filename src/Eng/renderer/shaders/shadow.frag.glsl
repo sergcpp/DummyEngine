@@ -17,7 +17,7 @@ PERM @TRANSPARENT_PERM
 
 #ifdef TRANSPARENT_PERM
 #if !defined(BINDLESS_TEXTURES)
-    layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_alpha_tex;
+    layout(binding = BIND_MAT_TEX3) uniform sampler2D g_alpha_tex;
 #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 

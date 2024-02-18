@@ -11,13 +11,13 @@
 PERM @MSAA_4
 */
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_original;
-layout(binding = REN_BASE1_TEX_SLOT) uniform sampler2D g_small_blur;
-layout(binding = REN_BASE2_TEX_SLOT) uniform sampler2D g_large_blur;
+layout(binding = BIND_BASE0_TEX) uniform sampler2D g_original;
+layout(binding = BIND_BASE1_TEX) uniform sampler2D g_small_blur;
+layout(binding = BIND_BASE2_TEX) uniform sampler2D g_large_blur;
 #if defined(MSAA_4)
 layout(binding = 3) uniform mediump sampler2DMS g_depth;
 #else

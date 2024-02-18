@@ -32,9 +32,9 @@ void Eng::RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_t
     RpAllocTex &shad_tex = builder.GetReadTexture(shad_tex_);
     RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
-#if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
+#if (OIT_MODE == OIT_MOMENT_BASED)
     DrawTransparent_Moments(builder);
-#elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
+#elif (OIT_MODE == OIT_WEIGHTED_BLENDED)
 #else
     DrawTransparent_Simple(builder, instances_buf, instance_indices_buf, unif_shared_data_buf, materials_buf, cells_buf,
                            items_buf, lights_buf, decals_buf, shad_tex, color_tex, ssao_tex);
@@ -74,12 +74,12 @@ void Eng::RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
     { // VertexInput for main drawing (uses all attributes)
         const Ren::VtxAttribDesc attribs[] = {
             // Attributes from buffer 1
-            {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+            {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
             // Attributes from buffer 2
-            {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
-            {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
+            {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
+            {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
+            {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
 
         draw_pass_vi_.Setup(attribs, ndx_buf.ref);
     }

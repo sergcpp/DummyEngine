@@ -19,7 +19,7 @@ PERM @MSAA_4
 #define MAX_STEPS 48.0
 #define BSEARCH_STEPS 4
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

@@ -56,14 +56,14 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
         pers_data.materials_buf->Resize(req_mat_buf_size);
     }
 
-    const uint32_t max_tex_count = std::max(1u, REN_MAX_TEX_PER_MATERIAL * max_mat_count);
+    const uint32_t max_tex_count = std::max(1u, MAX_TEX_PER_MATERIAL * max_mat_count);
     // const uint32_t req_tex_buf_size = max_tex_count * sizeof(GLuint64);
 
     if (!pers_data.textures_descr_pool) {
         pers_data.textures_descr_pool = std::make_unique<Ren::DescrPool>(api_ctx);
     }
 
-    const int materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
+    const int materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
     if (pers_data.textures_descr_pool->descr_count(Ren::eDescrType::CombinedImageSampler) < max_tex_count) {
         assert(materials_per_descriptor > 0);
@@ -92,7 +92,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
         if (!pers_data.textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = REN_BINDLESS_TEX_SLOT;
+            textures_binding.binding = BIND_BINDLESS_TEX;
             textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
             textures_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -116,7 +116,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
         if (ren_ctx_.capabilities.raytracing && !pers_data.rt_textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = REN_BINDLESS_TEX_SLOT;
+            textures_binding.binding = BIND_BINDLESS_TEX;
             textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
             textures_binding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
@@ -141,7 +141,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
         if ((ren_ctx_.capabilities.ray_query || ren_ctx_.capabilities.swrt) &&
             !pers_data.rt_inline_textures_descr_layout) {
             VkDescriptorSetLayoutBinding textures_binding = {};
-            textures_binding.binding = REN_BINDLESS_TEX_SLOT;
+            textures_binding.binding = BIND_BINDLESS_TEX;
             textures_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             textures_binding.descriptorCount = api_ctx->max_combined_image_samplers;
             textures_binding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
@@ -199,7 +199,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
     Ren::SmallVector<VkDescriptorImageInfo, 256> img_infos;
     Ren::SmallVector<Ren::TransitionInfo, 256> img_transitions;
-    img_infos.reserve((update_range.second - update_range.first) * REN_MAX_TEX_PER_MATERIAL);
+    img_infos.reserve((update_range.second - update_range.first) * MAX_TEX_PER_MATERIAL);
 
     if (white_tex_->resource_state != Ren::eResState::ShaderResource) {
         img_transitions.emplace_back(white_tex_.get(), Ren::eResState::ShaderResource);
@@ -218,7 +218,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
         if (mat) {
             int j = 0;
             for (; j < int(mat->textures.size()); ++j) {
-                material_data[rel_i].texture_indices[j] = arr_offset * REN_MAX_TEX_PER_MATERIAL + j;
+                material_data[rel_i].texture_indices[j] = arr_offset * MAX_TEX_PER_MATERIAL + j;
 
                 if (mat->textures[j]->resource_state != Ren::eResState::ShaderResource) {
                     img_transitions.emplace_back(mat->textures[j].get(), Ren::eResState::ShaderResource);
@@ -229,8 +229,8 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
                 img_info.imageView = mat->textures[j]->handle().views[0];
                 img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
-            for (; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
-                material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
+            for (; j < MAX_TEX_PER_MATERIAL; ++j) {
+                material_data[rel_i].texture_indices[j] = i * MAX_TEX_PER_MATERIAL + j;
                 img_infos.push_back(white_tex_->vk_desc_image_info());
             }
 
@@ -242,8 +242,8 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
                 material_data[rel_i].params[k] = Ren::Vec4f{0.0f};
             }
         } else {
-            for (int j = 0; j < REN_MAX_TEX_PER_MATERIAL; ++j) {
-                material_data[rel_i].texture_indices[j] = i * REN_MAX_TEX_PER_MATERIAL + j;
+            for (int j = 0; j < MAX_TEX_PER_MATERIAL; ++j) {
+                material_data[rel_i].texture_indices[j] = i * MAX_TEX_PER_MATERIAL + j;
                 img_infos.push_back(error_tex_->vk_desc_image_info());
             }
         }
@@ -264,12 +264,12 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
             VkWriteDescriptorSet descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = scene_data_.persistent_data.textures_descr_sets[ren_ctx_.backend_frame()][set_index];
-            descr_write.dstBinding = REN_BINDLESS_TEX_SLOT;
-            descr_write.dstArrayElement = uint32_t(arr_offset * REN_MAX_TEX_PER_MATERIAL);
+            descr_write.dstBinding = BIND_BINDLESS_TEX;
+            descr_write.dstArrayElement = uint32_t(arr_offset * MAX_TEX_PER_MATERIAL);
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descr_write.descriptorCount = uint32_t(REN_MAX_TEX_PER_MATERIAL);
+            descr_write.descriptorCount = uint32_t(MAX_TEX_PER_MATERIAL);
             descr_write.pBufferInfo = nullptr;
-            descr_write.pImageInfo = img_infos.cdata() + rel_i * REN_MAX_TEX_PER_MATERIAL;
+            descr_write.pImageInfo = img_infos.cdata() + rel_i * MAX_TEX_PER_MATERIAL;
             descr_write.pTexelBufferView = nullptr;
             descr_write.pNext = nullptr;
 
@@ -648,7 +648,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
 
     scene_data_.persistent_data.rt_instance_buf =
         ren_ctx_.LoadBuffer("RT Instance Buf", Ren::eBufType::Storage,
-                            uint32_t(REN_MAX_RT_OBJ_INSTANCES * sizeof(VkAccelerationStructureInstanceKHR)));
+                            uint32_t(MAX_RT_OBJ_INSTANCES * sizeof(VkAccelerationStructureInstanceKHR)));
     // Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
     //                                uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
 
@@ -677,7 +677,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
                                       nullptr, 0, nullptr);
     }
 
-    const uint32_t max_instance_count = REN_MAX_RT_OBJ_INSTANCES; // allocate for worst case
+    const uint32_t max_instance_count = MAX_RT_OBJ_INSTANCES; // allocate for worst case
 
     VkAccelerationStructureGeometryInstancesDataKHR instances_data = {
         VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR};
@@ -792,7 +792,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
         tlas_build_info.srcAccelerationStructure = VK_NULL_HANDLE;
 
         const uint32_t instance_count = uint32_t(tlas_instances.size());
-        const uint32_t max_instance_count = REN_MAX_RT_OBJ_INSTANCES; // allocate for worst case
+        const uint32_t max_instance_count = MAX_RT_OBJ_INSTANCES; // allocate for worst case
 
         VkAccelerationStructureBuildSizesInfoKHR size_info = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};

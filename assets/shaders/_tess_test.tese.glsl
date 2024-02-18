@@ -29,7 +29,7 @@ LAYOUT(location = 4) out highp vec3 g_vtx_sh_uvs[4];
 LAYOUT(location = 8) out lowp float g_tex_height;
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_tex;
+layout(binding = BIND_MAT_TEX3) uniform sampler2D g_bump_tex;
 #endif // BINDLESS_TEXTURES
 
 layout (binding = 0, std140) uniform SharedDataBlock {

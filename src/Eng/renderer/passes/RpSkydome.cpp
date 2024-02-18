@@ -46,7 +46,7 @@ void Eng::RpSkydome::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocB
 
         const int buf1_stride = 16, buf2_stride = 16;
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1.ref->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+            {vtx_buf1.ref->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
 
         if (!vtx_input_.Setup(attribs, ndx_buf.ref)) {
             ctx.log()->Error("[RpSkydome::LazyInit]: Failed to initialize vertex input!");

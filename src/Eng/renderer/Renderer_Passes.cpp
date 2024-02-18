@@ -477,7 +477,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 view_state_.prev_clip_from_view * (view_state_.down_buf_view_from_world * shrd_data.inv_view_matrix);
 
             if (p_list_->shadow_regions.count) {
-                assert(p_list_->shadow_regions.count <= REN_MAX_SHADOWMAPS_TOTAL);
+                assert(p_list_->shadow_regions.count <= MAX_SHADOWMAPS_TOTAL);
                 memcpy(&shrd_data.shadowmap_regions[0], &p_list_->shadow_regions.data[0],
                        sizeof(ShadowMapRegion) * p_list_->shadow_regions.count);
             }
@@ -496,9 +496,9 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             const float transparent_near = near;
             const float transparent_far = 16.0f;
             const int transparent_mode =
-#if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
+#if (OIT_MODE == OIT_MOMENT_BASED)
                 (render_flags_ & EnableOIT) ? 2 : 0;
-#elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
+#elif (OIT_MODE == OIT_WEIGHTED_BLENDED)
                 (render_flags_ & EnableOIT) ? 1 : 0;
 #else
                 0;
@@ -888,7 +888,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_shared_data_buf.ref},
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
             {Ren::eBindTarget::TBuf, GBufferShade::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
             {Ren::eBindTarget::TBuf, GBufferShade::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
             {Ren::eBindTarget::TBuf, GBufferShade::LIGHT_BUF_SLOT, *lights_buf.tbos[0]},
@@ -1187,7 +1187,7 @@ void Eng::Renderer::AddFillStaticVelocityPass(const CommonBuffers &common_buffer
 
         const Ren::Binding bindings[] = {
             {Ren::eBindTarget::Tex2D, BlitStaticVel::DEPTH_TEX_SLOT, *depth_tex.ref},
-            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
 
         const Ren::RenderTarget render_targets[] = {{velocity_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
         const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::None, Ren::eStoreOp::None,

@@ -89,7 +89,7 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = descr_sets[0];
-            descr_write.dstBinding = REN_UB_SHARED_DATA_LOC;
+            descr_write.dstBinding = BIND_UB_SHARED_DATA_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descr_write.descriptorCount = 1;
@@ -311,7 +311,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     }
 
     const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::TBuf, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},

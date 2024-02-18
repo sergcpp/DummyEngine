@@ -771,7 +771,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
     scene_data_.persistent_data.rt_geo_data_buf =
         ren_ctx_.LoadBuffer("SWRT Geo Data Buf", Ren::eBufType::Storage, total_geo_instances_size);
 
-    const uint32_t max_nodes_count = REN_MAX_RT_TLAS_NODES;
+    const uint32_t max_nodes_count = MAX_RT_TLAS_NODES;
     scene_data_.persistent_data.rt_tlas_buf =
         ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
     scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(

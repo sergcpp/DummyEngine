@@ -46,11 +46,11 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
         { // VAO for simple and skinned meshes
             const Ren::VtxAttribDesc attribs[] = {
                 // Attributes from buffer 1
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
                 // Attributes from buffer 2
-                {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
-                {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)}};
+                {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
+                {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)}};
             if (!vi_simple_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: vi_simple_ init failed!");
             }
@@ -59,12 +59,12 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
         { // VAO for vegetation meshes (uses additional vertex color attribute)
             const Ren::VtxAttribDesc attribs[] = {
                 // Attributes from buffer 1
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
                 // Attributes from buffer 2
-                {vtx_buf2.ref, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
-                {vtx_buf2.ref, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)},
-                {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+                {vtx_buf2.ref, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf2_stride, 0},
+                {vtx_buf2.ref, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf2_stride, 4 * sizeof(uint16_t)},
+                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
             if (!vi_vegetation_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: vi_vegetation_ init failed!");
             }

@@ -121,9 +121,6 @@ void __init_wind_params(const Eng::VegState &vs, const Eng::Environment &env, co
 #include "__cam_rig.inl"
 } // namespace SceneManagerInternal
 
-// TODO: remove this!
-#include "../renderer/shaders/Renderer_GL_Defines.inl"
-
 Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context *snd_ctx,
                                 Sys::ThreadPool &threads, const path_config_t &paths)
     : ren_ctx_(ren_ctx), sh_(sh), snd_ctx_(snd_ctx), threads_(threads), paths_(paths),
@@ -1494,10 +1491,10 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
 
     if (!scene_data_.persistent_data.instance_buf) {
         scene_data_.persistent_data.instance_buf =
-            ren_ctx_.LoadBuffer("Instance Buf", Ren::eBufType::Texture, sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL);
+            ren_ctx_.LoadBuffer("Instance Buf", Ren::eBufType::Texture, sizeof(InstanceData) * MAX_INSTANCES_TOTAL);
         scene_data_.persistent_data.instance_buf_tbo =
             ren_ctx_.CreateTexture1D("Instances TBO", scene_data_.persistent_data.instance_buf,
-                                     Ren::eTexFormat::RawRGBA32F, 0, sizeof(InstanceData) * REN_MAX_INSTANCES_TOTAL);
+                                     Ren::eTexFormat::RawRGBA32F, 0, sizeof(InstanceData) * MAX_INSTANCES_TOTAL);
     }
 
     const uint32_t total_data_to_update = sizeof(InstanceData) * (obj_end - obj_beg + 1);

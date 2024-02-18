@@ -16,7 +16,7 @@
 PERM @HQ_HDR
 */
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -58,7 +58,7 @@ void main() {
     const highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
     const highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
     const highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    const int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
+    const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     const int ix = int(gl_GlobalInvocationID.x), iy = int(gl_GlobalInvocationID.y);
     const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);

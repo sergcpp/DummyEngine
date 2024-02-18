@@ -3,8 +3,8 @@
 #include "_vs_common.glsl"
 #include "blit_upscale_interface.h"
 
-layout(location = REN_VTX_POS_LOC) in vec2 g_in_vtx_pos;
-layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
+layout(location = VTX_POS_LOC) in vec2 g_in_vtx_pos;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

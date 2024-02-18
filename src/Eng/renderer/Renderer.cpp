@@ -386,12 +386,12 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // VertexInput for main drawing (uses all attributes)
         const Ren::VtxAttribDesc attribs[] = {
             // Attributes from buffer 1
-            {vtx_buf1, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-            {vtx_buf1, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+            {vtx_buf1, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+            {vtx_buf1, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
             // Attributes from buffer 2
-            {vtx_buf2, REN_VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
-            {vtx_buf2, REN_VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
-            {vtx_buf2, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
+            {vtx_buf2, VTX_NOR_LOC, 4, Ren::eType::Int16SNorm, buf1_stride, 0},
+            {vtx_buf2, VTX_TAN_LOC, 2, Ren::eType::Int16SNorm, buf1_stride, 4 * sizeof(uint16_t)},
+            {vtx_buf2, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf1_stride, 6 * sizeof(uint16_t)}};
 
         draw_pass_vi_.Setup(attribs, ndx_buf);
     }
@@ -400,7 +400,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         Ren::RenderTargetInfo color_rts[] = {
             {Ren::eTexFormat::RawRG11F_B10F, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-#if REN_USE_OCT_PACKED_NORMALS == 1
+#if USE_OCT_PACKED_NORMALS == 1
             {Ren::eTexFormat::RawRGB10_A2, 1 /* samples */, Ren::eImageLayout::ColorAttachmentOptimal,
              Ren::eLoadOp::Load, Ren::eStoreOp::Store},
 #else
@@ -485,26 +485,26 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         // Allocate buffer for skinned vertices
         // TODO: fix this. do not allocate twice more memory in buf2
-        skinned_buf1_vtx_ = vtx_buf1->AllocSubRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
-        skinned_buf2_vtx_ = vtx_buf2->AllocSubRegion(REN_MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
+        skinned_buf1_vtx_ = vtx_buf1->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
+        skinned_buf2_vtx_ = vtx_buf2->AllocSubRegion(MAX_SKIN_VERTICES_TOTAL * 16 * 2, "skinned");
         assert(skinned_buf1_vtx_.offset == skinned_buf2_vtx_.offset && "Offsets do not match!");
     }
 
-    temp_sub_frustums_.count = REN_CELLS_COUNT;
+    temp_sub_frustums_.count = ITEM_CELLS_COUNT;
     temp_sub_frustums_.realloc(temp_sub_frustums_.count);
 
-    decals_boxes_.realloc(REN_MAX_DECALS_TOTAL);
-    litem_to_lsource_.realloc(REN_MAX_LIGHTS_TOTAL);
-    ditem_to_decal_.realloc(REN_MAX_DECALS_TOTAL);
-    allocated_shadow_regions_.realloc(REN_MAX_SHADOWMAPS_TOTAL);
+    decals_boxes_.realloc(MAX_DECALS_TOTAL);
+    litem_to_lsource_.realloc(MAX_LIGHTS_TOTAL);
+    ditem_to_decal_.realloc(MAX_DECALS_TOTAL);
+    allocated_shadow_regions_.realloc(MAX_SHADOWMAPS_TOTAL);
 
     for (int i = 0; i < 2; i++) {
-        temp_sort_spans_32_[i].realloc(std::max(REN_MAX_SHADOW_BATCHES, REN_MAX_TEX_COUNT));
-        temp_sort_spans_64_[i].realloc(REN_MAX_MAIN_BATCHES);
+        temp_sort_spans_32_[i].realloc(std::max(MAX_SHADOW_BATCHES, MAX_TEX_COUNT));
+        temp_sort_spans_64_[i].realloc(MAX_MAIN_BATCHES);
     }
 
 #if defined(USE_GL_RENDER)
-    Ren::g_param_buf_binding = REN_UB_UNIF_PARAM_LOC;
+    Ren::g_param_buf_binding = BIND_UB_UNIF_PARAM_BUF;
 #endif
 }
 
@@ -860,7 +860,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // Main HDR color
         frame_textures.color_params.w = view_state_.scr_res[0];
         frame_textures.color_params.h = view_state_.scr_res[1];
-#if (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED) || (REN_OIT_MODE == REN_OIT_MOMENT_BASED && REN_OIT_MOMENT_RENORMALIZE)
+#if (OIT_MODE == OIT_WEIGHTED_BLENDED) || (OIT_MODE == OIT_MOMENT_BASED && OIT_MOMENT_RENORMALIZE)
         // renormalization requires buffer with alpha channel
         frame_textures.color_params.format = Ren::eTexFormat::RawRGBA16F;
 #else
@@ -894,7 +894,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // 4-component world-space normal (alpha or z is roughness)
         frame_textures.normal_params.w = view_state_.scr_res[0];
         frame_textures.normal_params.h = view_state_.scr_res[1];
-#if REN_USE_OCT_PACKED_NORMALS == 1
+#if USE_OCT_PACKED_NORMALS == 1
         frame_textures.normal_params.format = Ren::eTexFormat::RawRGB10_A2;
 #else
         frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;

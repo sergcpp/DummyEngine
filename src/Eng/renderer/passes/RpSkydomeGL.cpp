@@ -21,7 +21,7 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
     RpAllocTex &env_tex = builder.GetReadTexture(env_tex_);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, GLuint(unif_shared_data_buf.ref->id()));
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, GLuint(unif_shared_data_buf.ref->id()));
 
 #if defined(REN_DIRECT_DRAWING)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

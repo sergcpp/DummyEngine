@@ -7,8 +7,8 @@
 
 #include "_fs_common.glsl"
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_shrunk_coc;
-layout(binding = REN_BASE1_TEX_SLOT) uniform sampler2D g_blurred_coc;
+layout(binding = BIND_BASE0_TEX) uniform sampler2D g_shrunk_coc;
+layout(binding = BIND_BASE1_TEX) uniform sampler2D g_blurred_coc;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;

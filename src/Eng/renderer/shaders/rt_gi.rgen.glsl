@@ -15,7 +15,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 #if defined(VULKAN) || defined(GL_SPIRV)
-layout (binding = REN_UB_SHARED_DATA_LOC, std140)
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140)
 #else
 layout (std140)
 #endif

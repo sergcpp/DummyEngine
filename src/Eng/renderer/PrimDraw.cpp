@@ -2,7 +2,7 @@
 
 #include <Ren/Context.h>
 
-#include "shaders/Renderer_GL_Defines.inl"
+#include "Renderer_Structs.h"
 
 namespace PrimDrawInternal {
 #if defined(USE_VK_RENDER)
@@ -115,8 +115,8 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
 
     { // setup quad vertices
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), REN_VTX_POS_LOC, 2, Ren::eType::Float32, 0, quad_vtx1_.offset},
-            {vtx_buf1->handle(), REN_VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
+            {vtx_buf1->handle(), VTX_POS_LOC, 2, Ren::eType::Float32, 0, quad_vtx1_.offset},
+            {vtx_buf1->handle(), VTX_UV1_LOC, 2, Ren::eType::Float32, 0,
              uint32_t(quad_vtx1_.offset + 8 * sizeof(float))}};
 
         fs_quad_vtx_input_.Setup(attribs, ndx_buf);
@@ -124,7 +124,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
 
     { // setup sphere vertices
         const Ren::VtxAttribDesc attribs[] = {
-            {vtx_buf1->handle(), REN_VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_.offset}};
+            {vtx_buf1->handle(), VTX_POS_LOC, 3, Ren::eType::Float32, 0, sphere_vtx1_.offset}};
         sphere_vtx_input_.Setup(attribs, ndx_buf);
     }
 

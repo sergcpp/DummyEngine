@@ -19,11 +19,11 @@
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_mat0_tex;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_mat1_tex;
+layout(binding = BIND_MAT_TEX0) uniform sampler2D g_mat0_tex;
+layout(binding = BIND_MAT_TEX1) uniform sampler2D g_mat1_tex;
 #endif // BINDLESS_TEXTURES
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -33,8 +33,8 @@ LAYOUT(location = 4) in vec2 g_vtx_uvs0;
     LAYOUT(location = 9) in flat TEX_HANDLE g_mat1_tex;
 #endif // BINDLESS_TEXTURES
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
-layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
+layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
+layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
 
 void main(void) {
     vec3 col_yuv;

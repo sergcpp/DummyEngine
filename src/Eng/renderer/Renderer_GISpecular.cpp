@@ -282,7 +282,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2D, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
                 {Trg::Tex2D, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
                 {Trg::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
@@ -517,7 +517,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocTex &out_sample_count_tex = builder.GetWriteTexture(data->out_sample_count_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *shared_data_buf.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
                 {Trg::Tex2D, SSRReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Trg::Tex2D, SSRReproject::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2D, SSRReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
@@ -702,7 +702,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2D, SSRResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2D, SSRResolveTemporal::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
                 {Trg::Tex2D, SSRResolveTemporal::REFL_TEX_SLOT, *refl_tex.ref},
@@ -804,7 +804,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
                 // TODO: get rid of global binding slots
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
+                    {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
@@ -877,7 +877,7 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
                 const Ren::Binding bindings[] = {
                     {Trg::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
                     {Trg::Tex2D, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
-                    {Trg::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
+                    {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 
                 SSRTrace::Params uniform_params;
                 uniform_params.transform =

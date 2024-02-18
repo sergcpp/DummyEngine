@@ -261,6 +261,7 @@ endif()
 
 file(GLOB RENDERER_SHADERS
      "renderer/shaders/*.h"
+     "renderer/shaders/*.inl"
      "renderer/shaders/*.glsl"
 )
 

@@ -23,7 +23,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
 
     std::vector<gpu_bvh_node_t> nodes;
-    Ren::SmallVector<gpu_mesh_instance_t, REN_MAX_RT_OBJ_INSTANCES> mesh_instances;
+    Ren::SmallVector<gpu_mesh_instance_t, MAX_RT_OBJ_INSTANCES> mesh_instances;
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
@@ -46,7 +46,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 
         Eng::split_settings_t s;
         const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, mi_indices);
-        assert(nodes_count <= REN_MAX_RT_TLAS_NODES);
+        assert(nodes_count <= MAX_RT_TLAS_NODES);
 
         for (const uint32_t i : mi_indices) {
             const auto &inst = rt_obj_instances.data[i];

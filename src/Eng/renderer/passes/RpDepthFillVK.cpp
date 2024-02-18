@@ -90,7 +90,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
+    const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
     BackendInfo _dummy = {};
     uint32_t i = 0;
@@ -123,7 +123,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         VkWriteDescriptorSet descr_writes[4];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = simple_descr_sets[0];
-        descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
+        descr_writes[0].dstBinding = BIND_UB_SHARED_DATA_BUF;
         descr_writes[0].dstArrayElement = 0;
         descr_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descr_writes[0].descriptorCount = 1;
@@ -131,7 +131,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = simple_descr_sets[0];
-        descr_writes[1].dstBinding = REN_INST_BUF_SLOT;
+        descr_writes[1].dstBinding = BIND_INST_BUF;
         descr_writes[1].dstArrayElement = 0;
         descr_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
         descr_writes[1].descriptorCount = 1;
@@ -139,7 +139,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = simple_descr_sets[0];
-        descr_writes[2].dstBinding = REN_INST_INDICES_BUF_SLOT;
+        descr_writes[2].dstBinding = BIND_INST_NDX_BUF;
         descr_writes[2].dstArrayElement = 0;
         descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[2].descriptorCount = 1;
@@ -147,7 +147,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = simple_descr_sets[0];
-        descr_writes[3].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[3].dstBinding = BIND_MATERIALS_BUF;
         descr_writes[3].dstArrayElement = 0;
         descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[3].descriptorCount = 1;
@@ -179,7 +179,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         VkWriteDescriptorSet descr_writes[5];
         descr_writes[0] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[0].dstSet = vege_descr_sets[0];
-        descr_writes[0].dstBinding = REN_UB_SHARED_DATA_LOC;
+        descr_writes[0].dstBinding = BIND_UB_SHARED_DATA_BUF;
         descr_writes[0].dstArrayElement = 0;
         descr_writes[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
         descr_writes[0].descriptorCount = 1;
@@ -187,7 +187,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[1] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[1].dstSet = vege_descr_sets[0];
-        descr_writes[1].dstBinding = REN_INST_BUF_SLOT;
+        descr_writes[1].dstBinding = BIND_INST_BUF;
         descr_writes[1].dstArrayElement = 0;
         descr_writes[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
         descr_writes[1].descriptorCount = 1;
@@ -195,7 +195,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[2] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[2].dstSet = vege_descr_sets[0];
-        descr_writes[2].dstBinding = REN_INST_INDICES_BUF_SLOT;
+        descr_writes[2].dstBinding = BIND_INST_NDX_BUF;
         descr_writes[2].dstArrayElement = 0;
         descr_writes[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[2].descriptorCount = 1;
@@ -203,7 +203,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[3] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[3].dstSet = vege_descr_sets[0];
-        descr_writes[3].dstBinding = REN_NOISE_TEX_SLOT;
+        descr_writes[3].dstBinding = BIND_NOISE_TEX;
         descr_writes[3].dstArrayElement = 0;
         descr_writes[3].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         descr_writes[3].descriptorCount = 1;
@@ -211,7 +211,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
 
         descr_writes[4] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
         descr_writes[4].dstSet = vege_descr_sets[0];
-        descr_writes[4].dstBinding = REN_MATERIALS_SLOT;
+        descr_writes[4].dstBinding = BIND_MATERIALS_BUF;
         descr_writes[4].dstArrayElement = 0;
         descr_writes[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
         descr_writes[4].descriptorCount = 1;

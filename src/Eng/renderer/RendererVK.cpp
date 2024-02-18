@@ -232,10 +232,10 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
 
         Graph::RpAllocBuf &unif_shared_data_buf =
             rp_builder_.GetReadBuffer(unif_shared_data_buf_[cur_buf_chunk_]);
-        glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC,
+        glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF,
                          (GLuint)unif_shared_data_buf.ref->id());*/
 
-        const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT,
+        const PrimDraw::Binding binding = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX,
                                            temp_tex_->handle()};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}}};
@@ -268,7 +268,7 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
             ////
 
             const PrimDraw::Binding binding = {
-                Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, down_tex_4x_->handle()};
+                Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, down_tex_4x_->handle()};
 
             const PrimDraw::Uniform uniforms[] = {
                 {0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {1, 0.0f}};
@@ -295,7 +295,7 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
             ////
 
             const PrimDraw::Binding binding = {
-                Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, blur_tex_[1]->handle()};
+                Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, blur_tex_[1]->handle()};
 
             const PrimDraw::Uniform uniforms[] = {
                 {0, Ren::Vec4f{0.0f, 0.0f, float(p.w), float(p.h)}}, {1, 1.0f}};
@@ -324,8 +324,8 @@ void Eng::Renderer::BlitPixelsTonemap(const void *data, const int w, const int h
         exposure = std::min(exposure, 1000.0f);
 
         const PrimDraw::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, temp_tex_->handle()},
-            {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, blur_tex_[0]->handle()}};
+            {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, temp_tex_->handle()},
+            {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, blur_tex_[0]->handle()}};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, float(h), float(w), -float(h)}}, // vertically flipped
@@ -384,13 +384,13 @@ void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, c
             glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_offset_),
                             6 * sizeof(uint16_t), PrimDrawInternal::fs_quad_indices);
 
-            glEnableVertexAttribArray(REN_VTX_POS_LOC);
-            glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            glEnableVertexAttribArray(VTX_POS_LOC);
+            glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                                   (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-            glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+            glEnableVertexAttribArray(VTX_UV1_LOC);
             glVertexAttribPointer(
-                REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+                VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                 (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
             glUniform1f(4, multiplier);
@@ -400,10 +400,10 @@ void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, c
                         sizeof(positions), positions);
 
         if (buf.sample_count > 1) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, BIND_BASE0_TEX,
                                        buf.attachments[i].tex->id());
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT,
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BASE0_TEX,
                                        buf.attachments[i].tex->id());
         }
 
@@ -413,8 +413,8 @@ void Eng::Renderer::BlitBuffer(const float px, const float py, const float sx, c
                        (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 }
 #endif
 
@@ -464,30 +464,30 @@ void Eng::Renderer::BlitTexture(const float px, const float py, const float sx, 
         glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, GLintptr(temp_buf_ndx_offset_),
                         sizeof(indices), indices);
 
-        glEnableVertexAttribArray(REN_VTX_POS_LOC);
-        glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        glEnableVertexAttribArray(VTX_POS_LOC);
+        glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                               (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-        glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+        glEnableVertexAttribArray(VTX_UV1_LOC);
         glVertexAttribPointer(
-            REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+            VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
             (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + sizeof(positions)));
 
         glUniform1f(4, multiplier);
 
         if (is_ms) {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, REN_BASE0_TEX_SLOT,
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D_MULTISAMPLE, BIND_BASE0_TEX,
                                        tex->id());
         } else {
-            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BASE0_TEX_SLOT, tex->id());
+            ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BASE0_TEX, tex->id());
         }
 
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT,
                        (const GLvoid *)uintptr_t(temp_buf_ndx_offset_));
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 #endif
 }
 
@@ -524,13 +524,13 @@ void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::Prob
     glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-    glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                           (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-    glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+    glEnableVertexAttribArray(VTX_UV1_LOC);
     glVertexAttribPointer(
-        REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
         (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
     glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_), 8 * sizeof(float),
@@ -600,8 +600,8 @@ void Eng::Renderer::BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::Prob
         }
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 
     glBindVertexArray(0);
 
@@ -638,13 +638,13 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
     glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-    glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                           (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-    glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+    glEnableVertexAttribArray(VTX_UV1_LOC);
     glVertexAttribPointer(
-        REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
         (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
     glBufferSubData(GL_ARRAY_BUFFER, GLintptr(temp_buf1_vtx_offset_), 8 * sizeof(float),
@@ -689,8 +689,8 @@ void Eng::Renderer::BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, co
         level++;
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 
     glBindVertexArray(0);
 
@@ -725,13 +725,13 @@ bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int prob
     glBindBuffer(GL_ARRAY_BUFFER, vtx_buf1->id());
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ndx_buf->id());
 
-    glEnableVertexAttribArray(REN_VTX_POS_LOC);
-    glVertexAttribPointer(REN_VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+    glEnableVertexAttribArray(VTX_POS_LOC);
+    glVertexAttribPointer(VTX_POS_LOC, 2, GL_FLOAT, GL_FALSE, 0,
                           (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_));
 
-    glEnableVertexAttribArray(REN_VTX_UV1_LOC);
+    glEnableVertexAttribArray(VTX_UV1_LOC);
     glVertexAttribPointer(
-        REN_VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
+        VTX_UV1_LOC, 2, GL_FLOAT, GL_FALSE, 0,
         (const GLvoid *)uintptr_t(temp_buf1_vtx_offset_ + 8 * sizeof(float)));
 
     const float uvs[] = {0.0f,
@@ -817,8 +817,8 @@ bool Eng::Renderer::BlitProjectSH(const Ren::ProbeStorage &store, const int prob
         }
     }
 
-    glDisableVertexAttribArray(REN_VTX_POS_LOC);
-    glDisableVertexAttribArray(REN_VTX_UV1_LOC);
+    glDisableVertexAttribArray(VTX_POS_LOC);
+    glDisableVertexAttribArray(VTX_UV1_LOC);
 
     glBindVertexArray(0);
 

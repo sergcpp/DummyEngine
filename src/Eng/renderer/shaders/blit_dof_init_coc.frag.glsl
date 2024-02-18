@@ -7,7 +7,7 @@
 
 #include "_fs_common.glsl"
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -19,7 +19,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = 1) uniform vec4 g_dof_equation;
 #endif
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_depth;
+layout(binding = BIND_BASE0_TEX) uniform sampler2D g_depth;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;

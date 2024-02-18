@@ -74,8 +74,8 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     }
 
     const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::SBuf, REN_BINDLESS_TEX_SLOT, *textures_buf.ref},
-        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+        {Ren::eBindTarget::SBuf, BIND_BINDLESS_TEX, *textures_buf.ref},
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},

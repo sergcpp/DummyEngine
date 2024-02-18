@@ -185,7 +185,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_SHAD_TEX_SLOT;
+            descr_write.dstBinding = BIND_SHAD_TEX;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -195,7 +195,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_LMAP_SH_SLOT;
+            descr_write.dstBinding = BIND_LMAP_SH;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 4;
@@ -205,7 +205,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_DECAL_TEX_SLOT;
+            descr_write.dstBinding = BIND_DECAL_TEX;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -215,7 +215,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_SSAO_TEX_SLOT;
+            descr_write.dstBinding = BIND_SSAO_TEX_SLOT;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -225,7 +225,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_NOISE_TEX_SLOT;
+            descr_write.dstBinding = BIND_NOISE_TEX;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -235,7 +235,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_ENV_TEX_SLOT;
+            descr_write.dstBinding = BIND_ENV_TEX;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -245,7 +245,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_CONE_RT_LUT_SLOT;
+            descr_write.dstBinding = BIND_CONE_RT_LUT;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -255,7 +255,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_BRDF_TEX_SLOT;
+            descr_write.dstBinding = BIND_BRDF_LUT;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
             descr_write.descriptorCount = 1;
@@ -265,7 +265,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_LIGHT_BUF_SLOT;
+            descr_write.dstBinding = BIND_LIGHT_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             descr_write.descriptorCount = 1;
@@ -275,7 +275,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_DECAL_BUF_SLOT;
+            descr_write.dstBinding = BIND_DECAL_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             descr_write.descriptorCount = 1;
@@ -285,7 +285,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_CELLS_BUF_SLOT;
+            descr_write.dstBinding = BIND_CELLS_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             descr_write.descriptorCount = 1;
@@ -295,7 +295,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_ITEMS_BUF_SLOT;
+            descr_write.dstBinding = BIND_ITEMS_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             descr_write.descriptorCount = 1;
@@ -305,7 +305,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_INST_BUF_SLOT;
+            descr_write.dstBinding = BIND_INST_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
             descr_write.descriptorCount = 1;
@@ -315,7 +315,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_INST_INDICES_BUF_SLOT;
+            descr_write.dstBinding = BIND_INST_NDX_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descr_write.descriptorCount = 1;
@@ -325,7 +325,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_UB_SHARED_DATA_LOC;
+            descr_write.dstBinding = BIND_UB_SHARED_DATA_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
             descr_write.descriptorCount = 1;
@@ -335,7 +335,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
             descr_write.dstSet = res_descr_set;
-            descr_write.dstBinding = REN_MATERIALS_SLOT;
+            descr_write.dstBinding = BIND_MATERIALS_BUF;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
             descr_write.descriptorCount = 1;
@@ -357,7 +357,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
     const VkRect2D scissor = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     api_ctx->vkCmdSetScissor(cmd_buf, 0, 1, &scissor);
 
-    const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / REN_MAX_TEX_PER_MATERIAL;
+    const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
     Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches.data, (*p_list_)->custom_batches.count};
     Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices.data,
@@ -431,26 +431,26 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
 void Eng::RpOpaque::InitDescrSetLayout() {
     VkDescriptorSetLayoutBinding bindings[] = {
         // textures (10)
-        {REN_SHAD_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_LMAP_SH_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_DECAL_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_SSAO_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_NOISE_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT},
-        {REN_ENV_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_CONE_RT_LUT_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        //{REN_BRDF_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_SHAD_TEX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_LMAP_SH, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 4, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_DECAL_TEX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_SSAO_TEX_SLOT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_NOISE_TEX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        {BIND_ENV_TEX, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_CONE_RT_LUT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        //{BIND_BRDF_LUT, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
         // texel buffers (4)
-        {REN_LIGHT_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_DECAL_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_CELLS_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_ITEMS_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
-        {REN_INST_BUF_SLOT, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        {BIND_LIGHT_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_DECAL_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_CELLS_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_ITEMS_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT},
+        {BIND_INST_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
         // uniform buffers (1)
-        {REN_UB_SHARED_DATA_LOC, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
+        {BIND_UB_SHARED_DATA_BUF, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1,
          VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
         // storage buffers (2)
-        {REN_MATERIALS_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
-        {REN_INST_INDICES_BUF_SLOT, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
+        {BIND_MATERIALS_BUF, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT},
+        {BIND_INST_NDX_BUF, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT}};
 
     VkDescriptorSetLayoutCreateInfo layout_info = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
     layout_info.bindingCount = uint32_t(std::size(bindings));

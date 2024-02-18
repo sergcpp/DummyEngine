@@ -43,7 +43,7 @@ void Eng::RpSSRCompose2::Execute(RpBuilder &builder) {
 
         // TODO: get rid of global binding slots
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
             {Ren::eBindTarget::Tex2D, SSRCompose2::SPEC_TEX_SLOT, *spec_tex.ref},
             {Ren::eBindTarget::Tex2D, SSRCompose2::DEPTH_TEX_SLOT, *depth_tex.ref},
             {Ren::eBindTarget::Tex2D, SSRCompose2::NORM_TEX_SLOT, *normal_tex.ref},

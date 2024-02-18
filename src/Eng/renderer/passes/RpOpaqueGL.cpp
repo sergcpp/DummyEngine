@@ -11,8 +11,8 @@ void _bind_textures_and_samplers(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
     assert(mat.textures.size() == mat.samplers.size());
     for (int j = 0; j < int(mat.textures.size()); ++j) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX0_SLOT + j, mat.textures[j]->id());
-        glBindSampler(REN_MAT_TEX0_SLOT + j, mat.samplers[j]->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, Eng::BIND_MAT_TEX0 + j, mat.textures[j]->id());
+        glBindSampler(Eng::BIND_MAT_TEX0 + j, mat.samplers[j]->id());
     }
 }
 uint32_t _draw_list_range_full(Eng::RpBuilder &builder, const Ren::MaterialStorage &materials,
@@ -64,7 +64,7 @@ uint32_t _draw_list_range_full(Eng::RpBuilder &builder, const Ren::MaterialStora
         cur_pipe_id = batch.pipe_id;
         cur_mat_id = batch.mat_id;
 
-        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
+        glUniform1ui(Eng::REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(cur_primitive, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -111,7 +111,7 @@ uint32_t _draw_list_range_full_rev(Eng::RpBuilder &builder, const Ren::MaterialS
         cur_pipe_id = batch.pipe_id;
         cur_mat_id = batch.mat_id;
 
-        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
+        glUniform1ui(Eng::REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -193,40 +193,40 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
     }
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
     if (ctx.capabilities.bindless_texture) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
     }
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, unif_shared_data_buf.ref->id());
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, unif_shared_data_buf.ref->id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SHAD_TEX_SLOT, shad_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SHAD_TEX, shad_tex.ref->id());
 
     if ((*p_list_)->decals_atlas) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_DECAL_TEX_SLOT, (*p_list_)->decals_atlas->tex_id(0));
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_DECAL_TEX, (*p_list_)->decals_atlas->tex_id(0));
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_SSAO_TEX_SLOT, ssao_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_SSAO_TEX_SLOT, ssao_tex.ref->id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_BRDF_TEX_SLOT, brdf_lut.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut.ref->id());
 
     for (int sh_l = 0; sh_l < 4; sh_l++) {
-        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_LMAP_SH_SLOT + sh_l, lm_tex[sh_l]->ref->id());
+        ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, lm_tex[sh_l]->ref->id());
     }
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, REN_ENV_TEX_SLOT,
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_CUBE_MAP_ARRAY, BIND_ENV_TEX,
                                (*p_list_)->probe_storage ? (*p_list_)->probe_storage->handle().id : 0);
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_LIGHT_BUF_SLOT, GLuint(lights_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_DECAL_BUF_SLOT, GLuint(decals_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_CELLS_BUF_SLOT, GLuint(cells_buf.tbos[0]->id()));
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_ITEMS_BUF_SLOT, GLuint(items_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_LIGHT_BUF, GLuint(lights_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_DECAL_BUF, GLuint(decals_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_CELLS_BUF, GLuint(cells_buf.tbos[0]->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_ITEMS_BUF, GLuint(items_buf.tbos[0]->id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex.ref->id());
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_CONE_RT_LUT_SLOT, cone_rt_lut.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_CONE_RT_LUT, cone_rt_lut.ref->id());
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
     const Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches.data,
                                                       (*p_list_)->custom_batches.count};
@@ -316,7 +316,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
         }
     }
 
-    Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 8);
+    Ren::GLUnbindSamplers(BIND_MAT_TEX0, 8);
 }
 
 Eng::RpOpaque::~RpOpaque() = default;

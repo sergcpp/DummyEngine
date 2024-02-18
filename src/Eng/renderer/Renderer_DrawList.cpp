@@ -7,38 +7,38 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
                          Ren::BufferRef _decals_stage_buf, Ren::BufferRef _rt_obj_instances_stage_buf,
                          Ren::BufferRef _rt_sh_obj_instances_stage_buf, Ren::BufferRef _rt_tlas_nodes_stage_buf,
                          Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
-    instance_indices.realloc(REN_MAX_INSTANCES_TOTAL);
+    instance_indices.realloc(MAX_INSTANCES_TOTAL);
     instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
-    shadow_batches.realloc(REN_MAX_SHADOW_BATCHES);
-    shadow_batch_indices.realloc(REN_MAX_SHADOW_BATCHES);
-    shadow_lists.realloc(REN_MAX_SHADOWMAPS_TOTAL);
-    shadow_regions.realloc(REN_MAX_SHADOWMAPS_TOTAL);
-    basic_batches.realloc(REN_MAX_MAIN_BATCHES);
-    basic_batch_indices.realloc(REN_MAX_MAIN_BATCHES);
-    custom_batches.realloc(REN_MAX_MAIN_BATCHES);
-    custom_batch_indices.realloc(REN_MAX_MAIN_BATCHES);
-    skin_transforms.realloc(REN_MAX_SKIN_XFORMS_TOTAL);
+    shadow_batches.realloc(MAX_SHADOW_BATCHES);
+    shadow_batch_indices.realloc(MAX_SHADOW_BATCHES);
+    shadow_lists.realloc(MAX_SHADOWMAPS_TOTAL);
+    shadow_regions.realloc(MAX_SHADOWMAPS_TOTAL);
+    basic_batches.realloc(MAX_MAIN_BATCHES);
+    basic_batch_indices.realloc(MAX_MAIN_BATCHES);
+    custom_batches.realloc(MAX_MAIN_BATCHES);
+    custom_batch_indices.realloc(MAX_MAIN_BATCHES);
+    skin_transforms.realloc(MAX_SKIN_XFORMS_TOTAL);
     skin_transforms_stage_buf = std::move(_skin_transforms_stage_buf);
-    skin_regions.realloc(REN_MAX_SKIN_REGIONS_TOTAL);
-    shape_keys_data.realloc(REN_MAX_SHAPE_KEYS_TOTAL);
+    skin_regions.realloc(MAX_SKIN_REGIONS_TOTAL);
+    shape_keys_data.realloc(MAX_SHAPE_KEYS_TOTAL);
     shape_keys_stage_buf = std::move(_shape_keys_stage_buf);
-    lights.realloc(REN_MAX_LIGHTS_TOTAL);
+    lights.realloc(MAX_LIGHTS_TOTAL);
     lights_stage_buf = std::move(_lights_stage_buf);
-    decals.realloc(REN_MAX_DECALS_TOTAL);
+    decals.realloc(MAX_DECALS_TOTAL);
     decals_stage_buf = std::move(_decals_stage_buf);
-    probes.realloc(REN_MAX_PROBES_TOTAL);
-    ellipsoids.realloc(REN_MAX_ELLIPSES_TOTAL);
+    probes.realloc(MAX_PROBES_TOTAL);
+    ellipsoids.realloc(MAX_ELLIPSES_TOTAL);
 
-    cells.realloc(REN_CELLS_COUNT);
-    cells.count = REN_CELLS_COUNT;
+    cells.realloc(ITEM_CELLS_COUNT);
+    cells.count = ITEM_CELLS_COUNT;
     cells_stage_buf = std::move(_cells_stage_buf);
 
-    items.realloc(REN_MAX_ITEMS_TOTAL);
+    items.realloc(MAX_ITEMS_TOTAL);
     items_stage_buf = std::move(_items_stage_buf);
 
-    rt_geo_instances.realloc(REN_MAX_RT_GEO_INSTANCES);
+    rt_geo_instances.realloc(MAX_RT_GEO_INSTANCES);
     for (int i = 0; i < 2; ++i) {
-        rt_obj_instances[i].realloc(REN_MAX_RT_OBJ_INSTANCES);
+        rt_obj_instances[i].realloc(MAX_RT_OBJ_INSTANCES);
     }
     rt_obj_instances_stage_buf[0] = std::move(_rt_obj_instances_stage_buf);
     rt_obj_instances_stage_buf[1] = std::move(_rt_sh_obj_instances_stage_buf);
@@ -47,10 +47,10 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
 
     shared_data_stage_buf = std::move(_shared_data_stage_buf);
 
-    visible_textures.realloc(REN_MAX_TEX_COUNT);
-    desired_textures.realloc(REN_MAX_TEX_COUNT);
+    visible_textures.realloc(MAX_TEX_COUNT);
+    desired_textures.realloc(MAX_TEX_COUNT);
 
-    cached_shadow_regions.realloc(REN_MAX_SHADOWMAPS_TOTAL);
+    cached_shadow_regions.realloc(MAX_SHADOWMAPS_TOTAL);
 }
 
 void Eng::DrawList::Clear() {

@@ -19,22 +19,22 @@
 #define LIGHT_ATTEN_CUTOFF 0.004
 
 #if !defined(BINDLESS_TEXTURES)
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
+layout(binding = BIND_MAT_TEX0) uniform sampler2D g_diff_tex;
+layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;
+layout(binding = BIND_MAT_TEX2) uniform sampler2D g_spec_tex;
 #endif // BINDLESS_TEXTURES
-layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = REN_LMAP_SH_SLOT) uniform sampler2D g_lm_indirect_sh_texture[4];
-layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
-layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = REN_ENV_TEX_SLOT) uniform mediump samplerCubeArray g_env_tex;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
-layout(binding = REN_CONE_RT_LUT_SLOT) uniform lowp sampler2D g_cone_rt_lut;
+layout(binding = BIND_SHAD_TEX) uniform sampler2DShadow g_shadow_tex;
+layout(binding = BIND_LMAP_SH) uniform sampler2D g_lm_indirect_sh_texture[4];
+layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
+layout(binding = BIND_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
+layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_env_tex;
+layout(binding = BIND_LIGHT_BUF) uniform highp samplerBuffer g_lights_buf;
+layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_CONE_RT_LUT) uniform lowp sampler2D g_cone_rt_lut;
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -52,14 +52,14 @@ LAYOUT(location = 6) in highp vec4 g_vtx_sh_uvs2;
     LAYOUT(location = 10) in flat TEX_HANDLE g_mat3_tex; // unused
 #endif // BINDLESS_TEXTURES
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
-layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
-layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
+layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
+layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
+layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 
 void main(void) {
     highp float lin_depth = LinearizeDepth(gl_FragCoord.z, g_shrd_data.clip_info);
     highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
-    int slice = clamp(int(k * float(REN_GRID_RES_Z)), 0, REN_GRID_RES_Z - 1);
+    int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     int ix = int(gl_FragCoord.x), iy = int(gl_FragCoord.y);
     int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
@@ -81,9 +81,9 @@ void main(void) {
         int di = int(bitfieldExtract(item_data, 12, 12));
 
         mat4 de_proj;
-        de_proj[0] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 0);
-        de_proj[1] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 1);
-        de_proj[2] = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 2);
+        de_proj[0] = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 0);
+        de_proj[1] = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 1);
+        de_proj[2] = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 2);
         de_proj[3] = vec4(0.0, 0.0, 0.0, 1.0);
         de_proj = transpose(de_proj);
 
@@ -98,20 +98,20 @@ void main(void) {
 
         if (app.x < 1.0 && app.y < 1.0 && app.z < 1.0) {
             float decal_influence = 1.0;
-            vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 3);
+            vec4 mask_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 3);
             if (mask_uvs_tr.z > 0.0) {
                 vec2 mask_uvs = mask_uvs_tr.xy + mask_uvs_tr.zw * uvs;
                 decal_influence = textureGrad(g_decals_tex, mask_uvs, mask_uvs_tr.zw * duv_dx, mask_uvs_tr.zw * duv_dy).r;
             }
 
-            vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 4);
+            vec4 diff_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 4);
             if (diff_uvs_tr.z > 0.0) {
                 vec2 diff_uvs = diff_uvs_tr.xy + diff_uvs_tr.zw * uvs;
                 vec3 decal_diff = YCoCg_to_RGB(textureGrad(g_decals_tex, diff_uvs, diff_uvs_tr.zw * duv_dx, diff_uvs_tr.zw * duv_dy));
                 diff_color = mix(diff_color, SRGBToLinear(decal_diff), decal_influence);
             }
 
-            vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 5);
+            vec4 norm_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 5);
 
             if (norm_uvs_tr.z > 0.0) {
                 vec2 norm_uvs = norm_uvs_tr.xy + norm_uvs_tr.zw * uvs;
@@ -119,7 +119,7 @@ void main(void) {
                 norm_color = mix(norm_color, decal_norm, decal_influence);
             }
 
-            vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * REN_DECALS_BUF_STRIDE + 6);
+            vec4 spec_uvs_tr = texelFetch(g_decals_buf, di * DECALS_BUF_STRIDE + 6);
 
             if (spec_uvs_tr.z > 0.0) {
                 vec2 spec_uvs = spec_uvs_tr.xy + spec_uvs_tr.zw * uvs;

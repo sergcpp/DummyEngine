@@ -46,7 +46,7 @@
 #if defined(VULKAN)
 #define LAYOUT_PARAMS layout(push_constant)
 #else
-#define LAYOUT_PARAMS layout(binding = REN_UB_UNIF_PARAM_LOC, std140)
+#define LAYOUT_PARAMS layout(binding = BIND_UB_UNIF_PARAM_BUF, std140)
 #endif
 #endif // __cplusplus
 

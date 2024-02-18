@@ -11,14 +11,14 @@
     #define SAMPLER2D(ndx) scene_textures[nonuniformEXT(ndx)]
     #define GET_HANDLE
 
-    layout(set = REN_SET_SCENETEXTURES, binding = REN_BINDLESS_TEX_SLOT) uniform sampler2D scene_textures[];
+    layout(set = BIND_SET_SCENETEXTURES, binding = BIND_BINDLESS_TEX) uniform sampler2D scene_textures[];
 #else // VULKAN
     #if defined(GL_ARB_bindless_texture)
         #define TEX_HANDLE uvec2
         #define SAMPLER2D(ndx) sampler2D(ndx)
         #define GET_HANDLE(ndx) texture_handles[ndx]
 
-        layout(binding = REN_BINDLESS_TEX_SLOT, std430) readonly buffer TextureHandles {
+        layout(binding = BIND_BINDLESS_TEX, std430) readonly buffer TextureHandles {
             uvec2 texture_handles[];
         };
     #else // GL_ARB_bindless_texture

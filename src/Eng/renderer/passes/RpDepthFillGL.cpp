@@ -10,8 +10,8 @@ namespace RpSharedInternal {
 void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
     assert(mat.textures.size() >= 1 && mat.samplers.size() >= 1);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_MAT_TEX3_SLOT, mat.textures[3]->id());
-    glBindSampler(REN_MAT_TEX3_SLOT, mat.samplers[3]->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, Eng::BIND_MAT_TEX3, mat.textures[3]->id());
+    glBindSampler(Eng::BIND_MAT_TEX3, mat.samplers[3]->id());
 }
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
                      uint32_t i, uint32_t mask, int *draws_count) {
@@ -25,7 +25,7 @@ uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<co
             continue;
         }
 
-        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
+        glUniform1ui(Eng::REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -56,7 +56,7 @@ uint32_t _draw_range_ext(Eng::RpBuilder &builder, const Ren::MaterialStorage *ma
             cur_mat_id = batch.material_index;
         }
 
-        glUniform1ui(REN_U_BASE_INSTANCE_LOC, batch.instance_start);
+        glUniform1ui(Eng::REN_U_BASE_INSTANCE_LOC, batch.instance_start);
 
         glDrawElementsInstancedBaseVertex(GL_TRIANGLES, batch.indices_count, GL_UNSIGNED_INT,
                                           (const GLvoid *)uintptr_t(batch.indices_offset * sizeof(uint32_t)),
@@ -79,17 +79,17 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     RpAllocBuf &textures_buf = builder.GetReadBuffer(textures_buf_);
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, REN_UB_SHARED_DATA_LOC, GLuint(unif_shared_data_buf.ref->id()));
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_SHARED_DATA_BUF, GLuint(unif_shared_data_buf.ref->id()));
 
     assert(instances_buf.tbos[0]);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, REN_INST_BUF_SLOT, GLuint(instances_buf.tbos[0]->id()));
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_INST_INDICES_BUF_SLOT, GLuint(instance_indices_buf.ref->id()));
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, REN_NOISE_TEX_SLOT, noise_tex.ref->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_NOISE_TEX, noise_tex.ref->id());
 
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_MATERIALS_SLOT, GLuint(materials_buf.ref->id()));
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materials_buf.ref->id()));
     if (ctx.capabilities.bindless_texture) {
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, REN_BINDLESS_TEX_SLOT, GLuint(textures_buf.ref->id()));
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_BINDLESS_TEX, GLuint(textures_buf.ref->id()));
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, GLuint(depth_fill_fb_[ctx.backend_frame()][fb_to_use_].id()));
@@ -601,5 +601,5 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         }
     }
 
-    Ren::GLUnbindSamplers(REN_MAT_TEX0_SLOT, 1);
+    Ren::GLUnbindSamplers(BIND_MAT_TEX0, 1);
 }

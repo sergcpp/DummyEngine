@@ -17,13 +17,13 @@ PERM @OUTPUT_VELOCITY
 PERM @OUTPUT_VELOCITY;TRANSPARENT_PERM
 */
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
 #ifdef TRANSPARENT_PERM
     #if !defined(BINDLESS_TEXTURES)
-        layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_alpha_tex;
+        layout(binding = BIND_MAT_TEX3) uniform sampler2D g_alpha_tex;
     #endif // BINDLESS_TEXTURES
     #ifdef HASHED_TRANSPARENCY
         layout(location = 3) uniform float hash_scale;

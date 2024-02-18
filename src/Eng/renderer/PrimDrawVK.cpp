@@ -5,8 +5,6 @@
 #include <Ren/ProbeStorage.h>
 #include <Ren/VKCtx.h>
 
-#include "shaders/Renderer_GL_Defines.inl"
-
 namespace Ren {
 extern const VkAttachmentLoadOp vk_load_ops[];
 extern const VkAttachmentStoreOp vk_store_ops[];

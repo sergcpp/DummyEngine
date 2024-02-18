@@ -13,11 +13,11 @@ PERM @MSAA_4
 */
 
 #if defined(MSAA_4)
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS s_accum_tex;
-layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2DMS s_additional_tex;
+layout(binding = BIND_BASE0_TEX) uniform mediump sampler2DMS s_accum_tex;
+layout(binding = BIND_BASE1_TEX) uniform mediump sampler2DMS s_additional_tex;
 #else
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2D s_accum_tex;
-layout(binding = REN_BASE1_TEX_SLOT) uniform mediump sampler2D s_additional_tex;
+layout(binding = BIND_BASE0_TEX) uniform mediump sampler2D s_accum_tex;
+layout(binding = BIND_BASE1_TEX) uniform mediump sampler2D s_additional_tex;
 #endif
 
 #if defined(VULKAN) || defined(GL_SPIRV)
@@ -40,10 +40,10 @@ void main() {
     vec4 accum = texelFetch(s_accum_tex, icoord, 0);
 #endif
 
-#if (REN_OIT_MODE == REN_OIT_MOMENT_BASED)
+#if (OIT_MODE == OIT_MOMENT_BASED)
     float b0 = texelFetch(s_additional_tex, icoord, 0).x;
 
-#if REN_OIT_MOMENT_RENORMALIZE
+#if OIT_MOMENT_RENORMALIZE
     if (accum.w > 0.0000001) {
         accum.xyz /= accum.w;
     }
@@ -51,7 +51,7 @@ void main() {
 
     float k = exp(-b0);
     g_out_color = vec4(accum.xyz, k);
-#elif (REN_OIT_MODE == REN_OIT_WEIGHTED_BLENDED)
+#elif (OIT_MODE == OIT_WEIGHTED_BLENDED)
     float revealage = texelFetch(s_additional_tex, icoord, 0).x;
 
     g_out_color = vec4(accum.rgb / clamp(accum.a, 1e-4, 5e4), revealage);

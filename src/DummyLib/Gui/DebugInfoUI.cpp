@@ -100,19 +100,23 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      MAIN GATHER: %.3f ms", front_info_smooth_.main_gather_time_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "      MAIN GATHER: %.3f ms",
+                 front_info_smooth_.main_gather_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "    SHADOW GATHER: %.3f ms", front_info_smooth_.shadow_gather_time_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "    SHADOW GATHER: %.3f ms",
+                 front_info_smooth_.shadow_gather_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "          SORTING: %.3f ms", front_info_smooth_.drawables_sort_time_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "          SORTING: %.3f ms",
+                 front_info_smooth_.drawables_sort_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "      ITEM ASSIGN: %.3f ms", front_info_smooth_.items_assignment_time_ms);
+        snprintf(text_buffer, sizeof(text_buffer), "      ITEM ASSIGN: %.3f ms",
+                 front_info_smooth_.items_assignment_time_ms);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
@@ -125,9 +129,10 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         /*vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "           DRAW CALLS: [%.1f, %.1f, %.1f]", back_info_smooth_.shadow_draw_calls_count,
-                back_info_smooth_.depth_fill_draw_calls_count, back_info_smooth_.opaque_draw_calls_count);
-        font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
+        snprintf(text_buffer, sizeof(text_buffer), "           DRAW CALLS: [%.1f, %.1f, %.1f]",
+        back_info_smooth_.shadow_draw_calls_count, back_info_smooth_.depth_fill_draw_calls_count,
+        back_info_smooth_.opaque_draw_calls_count); font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset},
+        text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "            TRIANGLES: %.2f M", back_info_smooth_.tris_rendered);
@@ -136,7 +141,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         for (int i = 0; i < back_info_smooth_.pass_timings_count; ++i) {
             vertical_offset -= font_height;
             snprintf(text_buffer, sizeof(text_buffer), " %16s: %.3f ms", back_info_smooth_.pass_names[i].c_str(),
-                    back_info_smooth_.pass_timings_ms[i]);
+                     back_info_smooth_.pass_timings_ms[i]);
             font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
         }
 
@@ -162,7 +167,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "      LIGHTS DATA: %.3f kb",
-                items_info_smooth_.lights_count * sizeof(Eng::LightItem) / 1024.0f);
+                 items_info_smooth_.lights_count * sizeof(Eng::LightItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
@@ -171,16 +176,17 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "      DECALS DATA: %.3f kb",
-                items_info_smooth_.decals_count * sizeof(Eng::DecalItem) / 1024.0f);
+                 items_info_smooth_.decals_count * sizeof(Eng::DecalItem) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
-        snprintf(text_buffer, sizeof(text_buffer), "       CELLS DATA: %.3f kb", REN_CELLS_COUNT * sizeof(Eng::CellData) / 1024.0f);
+        snprintf(text_buffer, sizeof(text_buffer), "       CELLS DATA: %.3f kb",
+                 Eng::ITEM_CELLS_COUNT * sizeof(Eng::CellData) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
         vertical_offset -= font_height;
         snprintf(text_buffer, sizeof(text_buffer), "       ITEMS DATA: %.3f kb",
-                items_info_smooth_.items_total * sizeof(Eng::ItemData) / 1024.0f);
+                 items_info_smooth_.items_total * sizeof(Eng::ItemData) / 1024.0f);
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 

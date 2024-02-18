@@ -56,20 +56,20 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
 
         // TODO: get rid of global binding slots
         const Ren::Binding bindings[] = {
-            {clean_buf_bind_target, REN_REFL_SPEC_TEX_SLOT, *spec_tex.ref},
-            {clean_buf_bind_target, REN_REFL_DEPTH_TEX_SLOT, *depth_tex.ref},
-            {clean_buf_bind_target, REN_REFL_NORM_TEX_SLOT, *normal_tex.ref},
+            {clean_buf_bind_target, BIND_REFL_SPEC_TEX, *spec_tex.ref},
+            {clean_buf_bind_target, BIND_REFL_DEPTH_TEX, *depth_tex.ref},
+            {clean_buf_bind_target, BIND_REFL_NORM_TEX, *normal_tex.ref},
             //
-            {Ren::eBindTarget::Tex2D, REN_REFL_DEPTH_LOW_TEX_SLOT, *depth_down_2x_tex.ref},
-            {Ren::eBindTarget::Tex2D, REN_REFL_SSR_TEX_SLOT, *ssr_tex.ref},
+            {Ren::eBindTarget::Tex2D, BIND_REFL_DEPTH_LOW_TEX, *depth_down_2x_tex.ref},
+            {Ren::eBindTarget::Tex2D, BIND_REFL_SSR_TEX, *ssr_tex.ref},
             //
-            {Ren::eBindTarget::Tex2D, REN_REFL_PREV_TEX_SLOT, *down_buf_4x_tex.ref},
-            {Ren::eBindTarget::Tex2D, REN_REFL_BRDF_TEX_SLOT, *brdf_lut.ref},
+            {Ren::eBindTarget::Tex2D, BIND_REFL_PREV_TEX, *down_buf_4x_tex.ref},
+            {Ren::eBindTarget::Tex2D, BIND_REFL_BRDF_TEX, *brdf_lut.ref},
             //
-            {Ren::eBindTarget::TBuf, REN_CELLS_BUF_SLOT, *cells_buf.tbos[0]},
-            {Ren::eBindTarget::TBuf, REN_ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-            {Ren::eBindTarget::TexCubeArray, REN_ENV_TEX_SLOT, *probe_storage_},
-            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
+            {Ren::eBindTarget::TBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]},
+            {Ren::eBindTarget::TBuf, BIND_ITEMS_BUF, *items_buf.tbos[0]},
+            {Ren::eBindTarget::TexCubeArray, BIND_ENV_TEX, *probe_storage_},
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 
         SSRCompose::Params uniform_params;
         uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};

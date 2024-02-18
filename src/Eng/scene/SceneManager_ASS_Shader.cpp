@@ -10,8 +10,6 @@
 #include <glslang/Public/resource_limits_c.h>
 #include <glslx/glslx.h>
 
-#include "../renderer/shaders/Renderer_GL_Defines.inl"
-
 #define _AS_STR(x) #x
 #define AS_STR(x) _AS_STR(x)
 
@@ -21,9 +19,9 @@ void Eng::SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string
     std::call_once(constants_initialized, [&]() {
         // Shadow properties
         if (strcmp(ctx.platform, "pc") == 0) {
-            shader_constants.Insert("$ShadRes", AS_STR(REN_SHAD_RES_PC));
+            shader_constants.Insert("$ShadRes", AS_STR(SHADOWMAP_RES_PC));
         } else if (strcmp(ctx.platform, "android") == 0) {
-            shader_constants.Insert("$ShadRes", AS_STR(REN_SHAD_RES_ANDROID));
+            shader_constants.Insert("$ShadRes", AS_STR(SHADOWMAP_RES_ANDROID));
         } else {
             ctx.log->Error("Unknown platform %s", ctx.platform);
             return;

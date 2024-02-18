@@ -8,7 +8,7 @@
 
 #include "_fs_common.glsl"
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform mediump sampler2DMS g_tex;
+layout(binding = BIND_BASE0_TEX) uniform mediump sampler2DMS g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {

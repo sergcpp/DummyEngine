@@ -14,19 +14,19 @@
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-layout(binding = REN_MAT_TEX0_SLOT) uniform sampler2D g_diff_tex;
-layout(binding = REN_MAT_TEX1_SLOT) uniform sampler2D g_norm_tex;
-layout(binding = REN_MAT_TEX2_SLOT) uniform sampler2D g_spec_tex;
-layout(binding = REN_SHAD_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = REN_DECAL_TEX_SLOT) uniform sampler2D g_decals_tex;
-layout(binding = REN_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
-layout(binding = REN_LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
-layout(binding = REN_DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
-layout(binding = REN_CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
-layout(binding = REN_ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
-layout(binding = REN_INST_BUF_SLOT) uniform sampler2D g_noise_tex;
+layout(binding = BIND_MAT_TEX0) uniform sampler2D g_diff_tex;
+layout(binding = BIND_MAT_TEX1) uniform sampler2D g_norm_tex;
+layout(binding = BIND_MAT_TEX2) uniform sampler2D g_spec_tex;
+layout(binding = BIND_SHAD_TEX) uniform sampler2DShadow g_shadow_tex;
+layout(binding = BIND_DECAL_TEX) uniform sampler2D g_decals_tex;
+layout(binding = BIND_SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
+layout(binding = BIND_LIGHT_BUF) uniform highp samplerBuffer g_lights_buf;
+layout(binding = BIND_DECAL_BUF) uniform mediump samplerBuffer g_decals_buf;
+layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
+layout(binding = BIND_INST_BUF) uniform sampler2D g_noise_tex;
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
@@ -44,9 +44,9 @@ in mediump vec3 g_vtx_tangent;
 in highp vec3 g_vtx_sh_uvs[4];
 #endif
 
-layout(location = REN_OUT_COLOR_INDEX) out vec4 g_out_color;
-layout(location = REN_OUT_NORM_INDEX) out vec4 g_out_normal;
-layout(location = REN_OUT_SPEC_INDEX) out vec4 g_out_specular;
+layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
+layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
+layout(location = LOC_OUT_SPEC) out vec4 g_out_specular;
 
 void main(void) {
     vec3 lo_freq_bend_dir = 0.5 * texture(g_noise_tex, g_shrd_data.wind_scroll.xy +

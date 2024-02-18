@@ -41,9 +41,9 @@ out mediump vec3 g_vtx_tangent;
 out highp vec3 g_vtx_sh_uvs[4];
 #endif
 
-layout(binding = REN_MAT_TEX3_SLOT) uniform sampler2D g_bump_tex;
+layout(binding = BIND_MAT_TEX3) uniform sampler2D g_bump_tex;
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 

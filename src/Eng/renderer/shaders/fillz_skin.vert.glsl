@@ -16,25 +16,25 @@ PERM @OUTPUT_VELOCITY;TRANSPARENT_PERM
 PERM @MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM
 */
 
-layout(location = REN_VTX_POS_LOC) in vec3 g_in_vtx_pos_curr;
+layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos_curr;
 #ifdef TRANSPARENT_PERM
-layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 #ifdef OUTPUT_VELOCITY
-layout(location = REN_VTX_PRE_LOC) in vec3 g_in_vtx_pos_prev;
+layout(location = VTX_PRE_LOC) in vec3 g_in_vtx_pos_prev;
 #endif
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
+layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
 
-layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndices {
+layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
+layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 

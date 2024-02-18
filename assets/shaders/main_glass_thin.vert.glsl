@@ -9,24 +9,24 @@
 #include "internal/_vs_instance_index_emu.glsl"
 #include "internal/_texturing.glsl"
 
-layout(location = REN_VTX_POS_LOC) in vec3 g_in_vtx_pos;
-layout(location = REN_VTX_NOR_LOC) in vec4 g_in_vtx_normal;
-layout(location = REN_VTX_TAN_LOC) in vec2 g_in_vtx_tangent;
-layout(location = REN_VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
-layout(location = REN_VTX_AUX_LOC) in uint g_vtx_unused;
+layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
+layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;
+layout(location = VTX_TAN_LOC) in vec2 g_in_vtx_tangent;
+layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
+layout(location = VTX_AUX_LOC) in uint g_vtx_unused;
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_INST_INDICES_BUF_SLOT, std430) readonly buffer InstanceIndices {
+layout(binding = BIND_INST_NDX_BUF, std430) readonly buffer InstanceIndices {
     ivec2 g_instance_indices[];
 };
 
-layout(binding = REN_INST_BUF_SLOT) uniform samplerBuffer g_instances_buf;
-layout(binding = REN_NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
+layout(binding = BIND_INST_BUF) uniform samplerBuffer g_instances_buf;
+layout(binding = BIND_NOISE_TEX) uniform sampler2D g_noise_tex;
 
-layout(binding = REN_MATERIALS_SLOT, std430) readonly buffer Materials {
+layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 

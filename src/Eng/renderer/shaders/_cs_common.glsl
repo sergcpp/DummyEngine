@@ -5,10 +5,10 @@
 
 #if defined(VULKAN)
 #define GetCellIndex(ix, iy, slice, res) \
-    (slice * REN_GRID_RES_X * REN_GRID_RES_Y + ((int(res.y) - 1 - iy) * REN_GRID_RES_Y / int(res.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(res.x))
+    (slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + ((int(res.y) - 1 - iy) * ITEM_GRID_RES_Y / int(res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(res.x))
 #else
 #define GetCellIndex(ix, iy, slice, res) \
-    (slice * REN_GRID_RES_X * REN_GRID_RES_Y + (iy * REN_GRID_RES_Y / int(res.y)) * REN_GRID_RES_X + ix * REN_GRID_RES_X / int(res.x))
+    (slice * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + (iy * ITEM_GRID_RES_Y / int(res.y)) * ITEM_GRID_RES_X + ix * ITEM_GRID_RES_X / int(res.x))
 #endif
 
 // Rounds value to the nearest multiple of 8

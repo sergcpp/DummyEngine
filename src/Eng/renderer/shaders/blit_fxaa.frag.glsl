@@ -7,11 +7,11 @@
 
 #include "_fs_common.glsl"
 
-layout (binding = REN_UB_SHARED_DATA_LOC, std140) uniform SharedDataBlock {
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = REN_BASE0_TEX_SLOT) uniform sampler2D g_tex;
+layout(binding = BIND_BASE0_TEX) uniform sampler2D g_tex;
 
 #if defined(VULKAN)
 layout(push_constant) uniform PushConstants {

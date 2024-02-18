@@ -101,7 +101,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     builder.rast_state() = rast_state;
 
     { // prepare coc buffer
-        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_2x_tex.ref};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *down_depth_2x_tex.ref};
 
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}},
@@ -113,13 +113,13 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // blur coc buffer
-        Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *coc1_tex.ref};
+        Ren::Binding binding = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *coc1_tex.ref};
 
         PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}, {1, 0.0f}};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&blur_fb_[1], 0}, blit_gauss_prog_.get(), &binding, 1, uniforms, 2);
 
-        binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *blur2_4x_tex.ref};
+        binding = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *blur2_4x_tex.ref};
 
         uniforms[0] = {0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}};
         uniforms[1] = {1, 1.0f};
@@ -129,8 +129,8 @@ void RpDOF::Execute(RpBuilder &builder) {
 
     { // downsample depth (once more)
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_2x_tex.ref},
-            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
+            {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *down_depth_2x_tex.ref},
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
 
         const PrimDraw::Uniform uniforms[2] = {{0, Ren::Vec4f{0.0f, 0.0f, float(hres_w), float(hres_h)}}, {1, 0.0f}};
 
@@ -140,8 +140,8 @@ void RpDOF::Execute(RpBuilder &builder) {
 
     { // calc near coc
         // TODO: hdr buf is unnecessary here
-        const Ren::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *coc1_tex.ref},
-                                          {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *coc2_tex.ref}};
+        const Ren::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *coc1_tex.ref},
+                                          {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, *coc2_tex.ref}};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}};
 
@@ -150,7 +150,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // apply 3x3 blur to coc
-        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *blur2_4x_tex.ref};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *blur2_4x_tex.ref};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}};
 
@@ -161,8 +161,8 @@ void RpDOF::Execute(RpBuilder &builder) {
     { // blur color buffer
         glUseProgram(blit_dof_bilateral_prog_->id());
 
-        Ren::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_depth_4x_tex.ref},
-                                    {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *down_buf_4x_}};
+        Ren::Binding bindings[2] = {{Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *down_depth_4x_tex.ref},
+                                    {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, *down_buf_4x_}};
 
         PrimDraw::Uniform uniforms[3] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}, {1, 0.0f}, {2, draw_cam_->focus_distance}};
@@ -170,7 +170,7 @@ void RpDOF::Execute(RpBuilder &builder) {
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&blur_fb_[0], 0}, blit_dof_bilateral_prog_.get(), bindings, 2,
                             uniforms, 2);
 
-        bindings[1] = {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *blur1_4x_tex.ref};
+        bindings[1] = {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, *blur1_4x_tex.ref};
 
         uniforms[0] = {0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}};
         uniforms[1] = {1, 1.0f};
@@ -180,7 +180,7 @@ void RpDOF::Execute(RpBuilder &builder) {
     }
 
     { // apply 3x3 blur to color
-        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *down_buf_4x_};
+        const Ren::Binding binding = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *down_buf_4x_};
 
         const PrimDraw::Uniform uniforms[] = {{0, Ren::Vec4f{0.0f, 0.0f, float(qres_w), float(qres_h)}}};
 
@@ -216,9 +216,9 @@ void RpDOF::Execute(RpBuilder &builder) {
 
         Ren::Binding bindings[6];
 
-        bindings[0] = {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock),
+        bindings[0] = {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock),
                        *unif_shared_data_buf.ref};
-        bindings[1] = {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *color_tex.ref};
+        bindings[1] = {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *color_tex.ref};
 
         if (view_state_->is_multisampled) {
             bindings[2] = {Ren::eBindTarget::Tex2DMs, 3, *depth_tex.ref};
@@ -226,8 +226,8 @@ void RpDOF::Execute(RpBuilder &builder) {
             bindings[2] = {Ren::eBindTarget::Tex2D, 3, *depth_tex.ref};
         }
 
-        bindings[3] = {Ren::eBindTarget::Tex2D, REN_BASE1_TEX_SLOT, *blur1_4x_tex.ref};
-        bindings[4] = {Ren::eBindTarget::Tex2D, REN_BASE2_TEX_SLOT, *blur2_4x_tex.ref};
+        bindings[3] = {Ren::eBindTarget::Tex2D, BIND_BASE1_TEX, *blur1_4x_tex.ref};
+        bindings[4] = {Ren::eBindTarget::Tex2D, BIND_BASE2_TEX, *blur2_4x_tex.ref};
         bindings[5] = {Ren::eBindTarget::Tex2D, 4, *coc1_tex.ref};
 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&dof_fb_, 0}, dof_combine_prog, bindings, 6, uniforms, 4);

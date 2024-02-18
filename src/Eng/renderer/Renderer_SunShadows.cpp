@@ -130,7 +130,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             }
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowClassify::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowClassify::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::SBuf, RTShadowClassify::TILE_COUNTER_SLOT, *tile_counter_buf.ref},
@@ -372,7 +372,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             RpAllocTex &out_moments_img = builder.GetWriteTexture(data->out_moments_img);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::VELOCITY_TEX_SLOT, *velocity_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
@@ -447,7 +447,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             RpAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
@@ -512,7 +512,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             RpAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
@@ -577,7 +577,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
             RpAllocTex &out_history_img = builder.GetWriteTexture(data->out_history_img);
 
             const Ren::Binding bindings[] = {
-                {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
@@ -645,7 +645,7 @@ void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, c
         RpAllocTex &out_shadow_tex = builder.GetWriteTexture(data->out_shadow_tex);
 
         const Ren::Binding bindings[] = {
-            {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, *shared_data_buf.ref},
+            {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},

@@ -36,7 +36,6 @@ extern "C" {
 #include "passes/RpUpdateAccBuffers.h"
 
 #include "Renderer_DrawList.h"
-#include "shaders/Renderer_GL_Defines.inl"
 
 namespace Sys {
 template <typename T> class MonoAlloc;
@@ -183,9 +182,9 @@ class Renderer {
     DynArray<ShadReg> allocated_shadow_regions_;
 
 #if defined(__ANDROID__)
-    static const int SHADOWMAP_WIDTH = REN_SHAD_RES_ANDROID;
+    static const int SHADOWMAP_WIDTH = SHADOWMAP_RES_ANDROID;
 #else
-    static const int SHADOWMAP_WIDTH = REN_SHAD_RES_PC;
+    static const int SHADOWMAP_WIDTH = SHADOWMAP_RES_PC;
 #endif
     static const int SHADOWMAP_HEIGHT = SHADOWMAP_WIDTH / 2;
     // Sun shadow occupies half of atlas

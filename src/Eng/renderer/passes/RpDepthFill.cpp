@@ -123,7 +123,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
 
         { // VAO for solid depth-fill pass (uses position attribute only)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
             if (!vi_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_solid_ init failed!");
             }
@@ -131,8 +131,8 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
 
         { // VAO for solid depth-fill pass of vegetation (uses position and color attributes only)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
             if (!vi_vege_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_vege_solid_ init failed!");
             }
@@ -140,8 +140,8 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
 
         { // VAO for alpha-tested depth-fill pass (uses position and uv attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)}};
             if (!vi_transp_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_transp_ init failed!");
             }
@@ -149,9 +149,9 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
 
         { // VAO for alpha-tested depth-fill pass of vegetation (uses position, uvs and color attributes)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                {vtx_buf2.ref, REN_VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf2.ref, VTX_AUX_LOC, 1, Ren::eType::Uint32, buf2_stride, 6 * sizeof(uint16_t)}};
             if (!vi_vege_transp_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_vege_transp_vao_ init failed!");
             }
@@ -159,8 +159,8 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
 
         { // VAO for depth-fill pass of skinned solid meshes (with velocity output)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, REN_MAX_SKIN_VERTICES_TOTAL * 16}};
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, MAX_SKIN_VERTICES_TOTAL * 16}};
             if (!vi_skin_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_skin_solid_vao_ init failed!");
             }
@@ -168,9 +168,9 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
 
         { // VAO for depth-fill pass of skinned transparent meshes (with velocity output)
             const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, REN_VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
-                {vtx_buf1.ref, REN_VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
-                {vtx_buf1.ref, REN_VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, REN_MAX_SKIN_VERTICES_TOTAL * 16}};
+                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0},
+                {vtx_buf1.ref, VTX_UV1_LOC, 2, Ren::eType::Float16, buf1_stride, 3 * sizeof(float)},
+                {vtx_buf1.ref, VTX_PRE_LOC, 3, Ren::eType::Float32, buf1_stride, MAX_SKIN_VERTICES_TOTAL * 16}};
             if (!vi_skin_transp_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: depth_pass_skin_transp_vao_ init failed!");
             }

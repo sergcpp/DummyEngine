@@ -45,8 +45,8 @@ void RpFXAA::Execute(RpBuilder &builder) {
     Ren::Program *blit_prog = blit_fxaa_prog_.get();
 
     const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::Tex2D, REN_BASE0_TEX_SLOT, *color_tex.ref},
-        {Ren::eBindTarget::UBuf, REN_UB_SHARED_DATA_LOC, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
+        {Ren::eBindTarget::Tex2D, BIND_BASE0_TEX, *color_tex.ref},
+        {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_shared_data_buf.ref}};
 
     const PrimDraw::Uniform uniforms[] = {
         {0, Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f}},
