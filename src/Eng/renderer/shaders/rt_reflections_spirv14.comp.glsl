@@ -1,5 +1,6 @@
 #version 460
 #extension GL_EXT_ray_query : require
+#extension GL_EXT_control_flow_attributes : require
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -58,7 +59,7 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
     light_item_t g_lights[];
 };
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
-layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts[8];
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 layout(std430, binding = RAY_COUNTER_SLOT) readonly buffer RayCounter {
     uint g_ray_counter[];
@@ -287,33 +288,16 @@ void main() {
 
             // Approximation of FH (using shading normal)
             const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
-
             const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
-            //
-            // Fetch LTC data
-            //
-
-            const vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
-            const vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
-
-            ltc_params_t ltc;
-            ltc.diff_t1 = textureLod(g_ltc_luts[0], ltc_uv, 0.0);
-            ltc.diff_t2 = textureLod(g_ltc_luts[1], ltc_uv, 0.0).xy;
-            ltc.sheen_t1 = textureLod(g_ltc_luts[2], ltc_uv, 0.0);
-            ltc.sheen_t2 = textureLod(g_ltc_luts[3], ltc_uv, 0.0).xy;
-            ltc.spec_t1 = textureLod(g_ltc_luts[4], ltc_uv, 0.0);
-            ltc.spec_t2 = textureLod(g_ltc_luts[5], ltc_uv, 0.0).xy;
-            ltc.coat_t1 = textureLod(g_ltc_luts[6], coat_ltc_uv, 0.0);
-            ltc.coat_t2 = textureLod(g_ltc_luts[7], coat_ltc_uv, 0.0).xy;
+            const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
             vec3 light_total = vec3(0.0);
 
             for (int li = 0; li < int(g_shrd_data.item_counts.x); ++li) {
                 light_item_t litem = g_lights[li];
 
-                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc,
-                                                              g_ltc_luts[1], g_ltc_luts[3], g_ltc_luts[5], g_ltc_luts[7],
+                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;

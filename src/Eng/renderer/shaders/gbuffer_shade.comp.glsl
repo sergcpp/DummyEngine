@@ -37,7 +37,7 @@ layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
 layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
 layout(binding = SUN_SHADOW_TEX_SLOT) uniform sampler2D g_sun_shadow_tex;
-layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts[8];
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 #ifdef HQ_HDR
 layout(binding = OUT_COLOR_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
@@ -136,29 +136,13 @@ void main() {
     const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
     const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
-    //
-    // Fetch LTC data
-    //
-
-    const vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
-    const vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
-
-    ltc_params_t ltc;
-    ltc.diff_t1 = textureLod(g_ltc_luts[0], ltc_uv, 0.0);
-    ltc.diff_t2 = textureLod(g_ltc_luts[1], ltc_uv, 0.0).xy;
-    ltc.sheen_t1 = textureLod(g_ltc_luts[2], ltc_uv, 0.0);
-    ltc.sheen_t2 = textureLod(g_ltc_luts[3], ltc_uv, 0.0).xy;
-    ltc.spec_t1 = textureLod(g_ltc_luts[4], ltc_uv, 0.0);
-    ltc.spec_t2 = textureLod(g_ltc_luts[5], ltc_uv, 0.0).xy;
-    ltc.coat_t1 = textureLod(g_ltc_luts[6], coat_ltc_uv, 0.0);
-    ltc.coat_t2 = textureLod(g_ltc_luts[7], coat_ltc_uv, 0.0).xy;
+    const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
     //
     // Evaluate lights
     //
 
     vec3 additional_light = vec3(0.0);
-
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
@@ -170,8 +154,7 @@ void main() {
         litem.u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
         litem.v_and_unused = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
 
-        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc,
-                                                      g_ltc_luts[1], g_ltc_luts[3], g_ltc_luts[5], g_ltc_luts[7],
+        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                       sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         if (all(equal(light_contribution, vec3(0.0)))) {
             continue;

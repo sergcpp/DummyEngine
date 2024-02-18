@@ -206,83 +206,39 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
-    {
+    { // LTC LUTs
+        auto combined_data = std::make_unique<float[]>(8 * 4 * 64 * 64);
+        float *_combined_data = combined_data.get();
+        for (int y = 0; y < 64; ++y) {
+            memcpy(_combined_data, &__ltc_diff_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_diff_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_sheen_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_sheen_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_specular_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_specular_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_clearcoat_tex1[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+            memcpy(_combined_data, &__ltc_clearcoat_tex2[y * 4 * 64], 4 * 64 * sizeof(float));
+            _combined_data += 4 * 64;
+        }
+
         Ren::Tex2DParams p;
-        p.w = p.h = __ltc_diff_size;
+        p.w = 8 * 64;
+        p.h = 64;
         p.format = Ren::eTexFormat::RawRGBA32F;
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        ltc_lut_[eLTCLut::Diffuse][0] =
-            ctx_.LoadTexture2D("ltc_diff_mat", &__ltc_diff_tex1[0], sizeof(__ltc_diff_tex1), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-
-        ltc_lut_[eLTCLut::Diffuse][1] =
-            ctx_.LoadTexture2D("ltc_diff_amp", &__ltc_diff_tex2[0], sizeof(__ltc_diff_tex2), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-    }
-
-    {
-        Ren::Tex2DParams p;
-        p.w = p.h = __ltc_sheen_size;
-        p.format = Ren::eTexFormat::RawRGBA32F;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        Ren::eTexLoadStatus status;
-        ltc_lut_[eLTCLut::Sheen][0] =
-            ctx_.LoadTexture2D("ltc_sheen_mat", &__ltc_sheen_tex1[0], sizeof(__ltc_sheen_tex1), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-
-        ltc_lut_[eLTCLut::Sheen][1] =
-            ctx_.LoadTexture2D("ltc_sheen_amp", &__ltc_sheen_tex2[0], sizeof(__ltc_sheen_tex2), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-    }
-
-    {
-        Ren::Tex2DParams p;
-        p.w = p.h = __ltc_specular_size;
-        p.format = Ren::eTexFormat::RawRGBA32F;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        Ren::eTexLoadStatus status;
-        ltc_lut_[eLTCLut::Specular][0] =
-            ctx_.LoadTexture2D("ltc_spec_mat", &__ltc_specular_tex1[0], sizeof(__ltc_specular_tex1), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-
-        ltc_lut_[eLTCLut::Specular][1] =
-            ctx_.LoadTexture2D("ltc_spec_amp", &__ltc_specular_tex2[0], sizeof(__ltc_specular_tex2), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-    }
-
-    {
-        Ren::Tex2DParams p;
-        p.w = p.h = __ltc_clearcoat_size;
-        p.format = Ren::eTexFormat::RawRGBA32F;
-        p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
-        p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-        p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-        Ren::eTexLoadStatus status;
-        ltc_lut_[eLTCLut::Clearcoat][0] =
-            ctx_.LoadTexture2D("ltc_coat_mat", &__ltc_clearcoat_tex1[0], sizeof(__ltc_clearcoat_tex1), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
-        assert(status == Ren::eTexLoadStatus::CreatedFromData);
-
-        ltc_lut_[eLTCLut::Clearcoat][1] =
-            ctx_.LoadTexture2D("ltc_coat_amp", &__ltc_clearcoat_tex2[0], sizeof(__ltc_clearcoat_tex2), p,
-                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        ltc_luts_ = ctx_.LoadTexture2D("LTS LUTs", combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float), p,
+                                       ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -1098,14 +1054,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights_res, stages);
 
             data->shadowmap_tex = debug_rt.AddTextureInput(shadow_map_tex_, stages);
-            data->ltc_luts_tex[0] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], stages);
-            data->ltc_luts_tex[1] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], stages);
-            data->ltc_luts_tex[2] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], stages);
-            data->ltc_luts_tex[3] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], stages);
-            data->ltc_luts_tex[4] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], stages);
-            data->ltc_luts_tex[5] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], stages);
-            data->ltc_luts_tex[6] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], stages);
-            data->ltc_luts_tex[7] = debug_rt.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], stages);
+            data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stages);
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;

@@ -19,14 +19,7 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
-    RpAllocTex &ltc_lut_tex0 = builder.GetReadTexture(pass_data_->ltc_luts_tex[0]);
-    RpAllocTex &ltc_lut_tex1 = builder.GetReadTexture(pass_data_->ltc_luts_tex[1]);
-    RpAllocTex &ltc_lut_tex2 = builder.GetReadTexture(pass_data_->ltc_luts_tex[2]);
-    RpAllocTex &ltc_lut_tex3 = builder.GetReadTexture(pass_data_->ltc_luts_tex[3]);
-    RpAllocTex &ltc_lut_tex4 = builder.GetReadTexture(pass_data_->ltc_luts_tex[4]);
-    RpAllocTex &ltc_lut_tex5 = builder.GetReadTexture(pass_data_->ltc_luts_tex[5]);
-    RpAllocTex &ltc_lut_tex6 = builder.GetReadTexture(pass_data_->ltc_luts_tex[6]);
-    RpAllocTex &ltc_lut_tex7 = builder.GetReadTexture(pass_data_->ltc_luts_tex[7]);
+    RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
         if (pass_data_->lm_tex[i]) {
@@ -60,11 +53,7 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
         const VkDescriptorImageInfo env_info = {env_tex.ref->handle().sampler, env_tex.ref->handle().views[0],
                                                 VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}; // environment texture
         const VkDescriptorImageInfo shadowmap_tex_info = shadowmap_tex.ref->vk_desc_image_info();
-        const VkDescriptorImageInfo ltc_luts_tex[8] = {
-            ltc_lut_tex0.ref->vk_desc_image_info(), ltc_lut_tex1.ref->vk_desc_image_info(),
-            ltc_lut_tex2.ref->vk_desc_image_info(), ltc_lut_tex3.ref->vk_desc_image_info(),
-            ltc_lut_tex4.ref->vk_desc_image_info(), ltc_lut_tex5.ref->vk_desc_image_info(),
-            ltc_lut_tex6.ref->vk_desc_image_info(), ltc_lut_tex7.ref->vk_desc_image_info()};
+        const VkDescriptorImageInfo ltc_luts_tex_info = ltc_luts_tex.ref->vk_desc_image_info();
         const VkDescriptorBufferInfo geo_data_info = {geo_data_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo mat_data_info = {materials_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo vtx_buf1_info = {vtx_buf1.ref->vk_handle(), 0, VK_WHOLE_SIZE};
@@ -196,8 +185,8 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             descr_write.dstBinding = RTDebug::LTC_LUTS_TEX_SLOT;
             descr_write.dstArrayElement = 0;
             descr_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descr_write.descriptorCount = 8;
-            descr_write.pImageInfo = ltc_luts_tex;
+            descr_write.descriptorCount = 1;
+            descr_write.pImageInfo = &ltc_luts_tex_info;
         }
         { // lightmap
             auto &descr_write = descr_writes.emplace_back();

@@ -115,17 +115,18 @@ void ClipQuadToHorizon(inout vec3 L[5], out int n) {
     }
 }
 
-vec2 LTC_Coords(float cosTheta, float roughness) {
-    float theta = sqrt(1.0 - saturate(cosTheta));
+vec2 LTC_Coords(float cos_theta, float roughness) {
+    float theta = sqrt(1.0 - saturate(cos_theta));
     vec2 coords = vec2(max(roughness, LTC_LUT_MIN_ROUGHNESS), theta);
 
     // scale and bias coordinates, for correct filtered lookup
     coords = coords * LTC_LUT_SCALE + LTC_LUT_BIAS;
+    coords.x /= 8.0;
 
     return coords;
 }
 
-vec3 LTC_Evaluate_Rect(sampler2D ltc_2, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
+vec3 LTC_Evaluate_Rect(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
     // construct orthonormal basis around N
     vec3 T1, T2;
     T1 = normalize(V - N * dot(V, N));
@@ -180,6 +181,7 @@ vec3 LTC_Evaluate_Rect(sampler2D ltc_2, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, v
 
     vec2 uv = vec2(z * 0.5 + 0.5, len);
     uv = uv * LTC_LUT_SCALE + LTC_LUT_BIAS;
+    uv.x = (uv.x / 8.0) + u_offset;
 
     float scale = textureLod(ltc_2, uv, 0.0).w;
 
@@ -305,7 +307,7 @@ vec3 SolveCubic(vec4 Coefficient) {
     return Root;
 }
 
-vec3 LTC_Evaluate_Disk(sampler2D ltc_2, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
+vec3 LTC_Evaluate_Disk(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, vec3 points[4], bool two_sided) {
     // construct orthonormal basis around N
     vec3 T1, T2;
     T1 = normalize(V - N * dot(V, N));
@@ -419,6 +421,7 @@ vec3 LTC_Evaluate_Disk(sampler2D ltc_2, vec3 N, vec3 V, vec3 P, vec4 t1_fetch, v
     // use tabulated horizon-clipped sphere
     vec2 uv = vec2(avgDir.z * 0.5 + 0.5, formFactor);
     uv = uv * LTC_LUT_SCALE + LTC_LUT_BIAS;
+    uv.x = (uv.x / 8.0) + u_offset;
 
     float scale = textureLod(ltc_2, uv, 0.0).w;
 

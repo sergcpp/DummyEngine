@@ -821,7 +821,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpResRef cells_buf, items_buf, lights_buf, decals_buf;
         RpResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
         RpResRef depth_tex, albedo_tex, normal_tex, spec_tex;
-        RpResRef ltc_luts_tex[8];
+        RpResRef ltc_luts_tex;
         RpResRef output_tex;
     };
 
@@ -847,14 +847,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     data->normal_tex = gbuf_shade.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
     data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
 
-    data->ltc_luts_tex[0] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], Stg::ComputeShader);
-    data->ltc_luts_tex[1] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], Stg::ComputeShader);
-    data->ltc_luts_tex[2] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], Stg::ComputeShader);
-    data->ltc_luts_tex[3] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], Stg::ComputeShader);
-    data->ltc_luts_tex[4] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], Stg::ComputeShader);
-    data->ltc_luts_tex[5] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], Stg::ComputeShader);
-    data->ltc_luts_tex[6] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], Stg::ComputeShader);
-    data->ltc_luts_tex[7] = gbuf_shade.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], Stg::ComputeShader);
+    data->ltc_luts_tex = gbuf_shade.AddTextureInput(ltc_luts_, Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
         gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
@@ -876,14 +869,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
         RpAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
 
-        RpAllocTex &ltc_luts_tex0 = builder.GetReadTexture(data->ltc_luts_tex[0]);
-        RpAllocTex &ltc_luts_tex1 = builder.GetReadTexture(data->ltc_luts_tex[1]);
-        RpAllocTex &ltc_luts_tex2 = builder.GetReadTexture(data->ltc_luts_tex[2]);
-        RpAllocTex &ltc_luts_tex3 = builder.GetReadTexture(data->ltc_luts_tex[3]);
-        RpAllocTex &ltc_luts_tex4 = builder.GetReadTexture(data->ltc_luts_tex[4]);
-        RpAllocTex &ltc_luts_tex5 = builder.GetReadTexture(data->ltc_luts_tex[5]);
-        RpAllocTex &ltc_luts_tex6 = builder.GetReadTexture(data->ltc_luts_tex[6]);
-        RpAllocTex &ltc_luts_tex7 = builder.GetReadTexture(data->ltc_luts_tex[7]);
+        RpAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts_tex);
 
         RpAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
@@ -901,14 +887,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::Tex2D, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 0, *ltc_luts_tex0.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 1, *ltc_luts_tex1.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 2, *ltc_luts_tex2.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 3, *ltc_luts_tex3.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 4, *ltc_luts_tex4.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 5, *ltc_luts_tex5.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 6, *ltc_luts_tex6.ref},
-            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, 7, *ltc_luts_tex7.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
             {Ren::eBindTarget::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

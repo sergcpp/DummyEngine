@@ -363,14 +363,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights_res, stage);
 
             data->shadowmap_tex = rt_refl.AddTextureInput(shadow_map_tex_, stage);
-            data->ltc_luts_tex[0] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][0], stage);
-            data->ltc_luts_tex[1] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Diffuse][1], stage);
-            data->ltc_luts_tex[2] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Sheen][0], stage);
-            data->ltc_luts_tex[3] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Sheen][1], stage);
-            data->ltc_luts_tex[4] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Specular][0], stage);
-            data->ltc_luts_tex[5] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Specular][1], stage);
-            data->ltc_luts_tex[6] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][0], stage);
-            data->ltc_luts_tex[7] = rt_refl.AddTextureInput(ltc_lut_[eLTCLut::Clearcoat][1], stage);
+            data->ltc_luts_tex = rt_refl.AddTextureInput(ltc_luts_, stage);
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
@@ -804,7 +797,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
                 // TODO: get rid of global binding slots
                 const Ren::Binding bindings[] = {
-                    {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref},
+                    {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock),
+                     *unif_sh_data_buf.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},

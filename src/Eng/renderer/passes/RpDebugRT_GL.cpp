@@ -28,14 +28,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
-    RpAllocTex &ltc_lut_tex0 = builder.GetReadTexture(pass_data_->ltc_luts_tex[0]);
-    RpAllocTex &ltc_lut_tex1 = builder.GetReadTexture(pass_data_->ltc_luts_tex[1]);
-    RpAllocTex &ltc_lut_tex2 = builder.GetReadTexture(pass_data_->ltc_luts_tex[2]);
-    RpAllocTex &ltc_lut_tex3 = builder.GetReadTexture(pass_data_->ltc_luts_tex[3]);
-    RpAllocTex &ltc_lut_tex4 = builder.GetReadTexture(pass_data_->ltc_luts_tex[4]);
-    RpAllocTex &ltc_lut_tex5 = builder.GetReadTexture(pass_data_->ltc_luts_tex[5]);
-    RpAllocTex &ltc_lut_tex6 = builder.GetReadTexture(pass_data_->ltc_luts_tex[6]);
-    RpAllocTex &ltc_lut_tex7 = builder.GetReadTexture(pass_data_->ltc_luts_tex[7]);
+    RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
         if (pass_data_->lm_tex[i]) {
@@ -110,14 +103,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::SBuf, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 0, *ltc_lut_tex0.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 1, *ltc_lut_tex1.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 2, *ltc_lut_tex2.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 3, *ltc_lut_tex3.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 4, *ltc_lut_tex4.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 5, *ltc_lut_tex5.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 6, *ltc_lut_tex6.ref},
-        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, 7, *ltc_lut_tex7.ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::Tex2D, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Image, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
 

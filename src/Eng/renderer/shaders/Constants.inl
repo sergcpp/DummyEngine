@@ -89,6 +89,12 @@ const float SHADOWMAP_CASCADE3_DIST = 96.0f;
 const int SHADOWMAP_CASCADE3_SAMPLES = 4;
 const int SHADOWMAP_CASCADE_SOFT = 1;
 
+const int LTC_LUT_DIFF = 0;
+const int LTC_LUT_SHEEN = 1;
+const int LTC_LUT_SPEC = 2;
+const int LTC_LUT_COAT = 3;
+const int LTC_LUT_COUNT = 4;
+
 const int MAX_OBJ_COUNT = 4194304;
 const int MAX_TEX_COUNT = 262144;
 
