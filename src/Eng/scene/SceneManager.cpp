@@ -1337,7 +1337,7 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(const char *name) {
     }
 
     { // Initialize stage buffer
-        uint8_t *stage_data = stage_buf.buf->Map(Ren::BufMapWrite);
+        uint8_t *stage_data = stage_buf.buf->Map(Ren::eBufMap::Write);
         if (!stage_data) {
             ren_ctx_.log()->Error("Failed to map buffer!");
             return Ren::Vec4f{};
@@ -1500,7 +1500,7 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
     const uint32_t total_data_to_update = sizeof(InstanceData) * (obj_end - obj_beg + 1);
     Ren::BufferRef temp_stage_buf =
         ren_ctx_.LoadBuffer("Instance Update Stage Buf", Ren::eBufType::Stage, total_data_to_update);
-    auto *instance_stage = (InstanceData *)temp_stage_buf->Map(Ren::BufMapWrite);
+    auto *instance_stage = (InstanceData *)temp_stage_buf->Map(Ren::eBufMap::Write);
 
     for (uint32_t i = obj_beg; i <= obj_end; ++i) {
         SceneObject &obj = scene_data_.objects[i];

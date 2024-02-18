@@ -61,11 +61,11 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
                                          (update_range.second - update_range.first) * TexSizePerMaterial);
     }
 
-    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::BufMapWrite));
+    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::eBufMap::Write));
     GLuint64 *texture_data = nullptr;
     GLuint64 white_tex_handle = 0, error_tex_handle = 0;
     if (ren_ctx_.capabilities.bindless_texture) {
-        texture_data = reinterpret_cast<GLuint64 *>(textures_stage_buf.Map(Ren::BufMapWrite));
+        texture_data = reinterpret_cast<GLuint64 *>(textures_stage_buf.Map(Ren::eBufMap::Write));
 
         white_tex_handle = glGetTextureHandleARB(white_tex_->id());
         if (!glIsTextureHandleResidentARB(white_tex_handle)) {

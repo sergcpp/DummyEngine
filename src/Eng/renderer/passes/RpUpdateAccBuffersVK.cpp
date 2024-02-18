@@ -12,7 +12,7 @@ void Eng::RpUpdateAccBuffersExecutor::Execute_HWRT(RpBuilder &builder) {
 
     if (rt_obj_instances.count) {
         uint8_t *stage_mem = rt_obj_instances_stage_buf->MapRange(
-            Ren::BufMapWrite, ctx.backend_frame() * HWRTObjInstancesBufChunkSize, HWRTObjInstancesBufChunkSize);
+            Ren::eBufMap::Write, ctx.backend_frame() * HWRTObjInstancesBufChunkSize, HWRTObjInstancesBufChunkSize);
         const uint32_t rt_obj_instances_mem_size = rt_obj_instances.count * sizeof(VkAccelerationStructureInstanceKHR);
         if (stage_mem) {
             auto *out_instances = reinterpret_cast<VkAccelerationStructureInstanceKHR *>(stage_mem);

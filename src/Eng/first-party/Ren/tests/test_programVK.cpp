@@ -184,7 +184,7 @@ void main(void) {
         auto stage_buf = Ren::Buffer{"stage_buf", test.api_ctx(), Ren::eBufType::Stage, sizeof(AttribData) * 128};
 
         {
-            auto *data = reinterpret_cast<AttribData *>(stage_buf.Map(Ren::BufMapWrite));
+            auto *data = reinterpret_cast<AttribData *>(stage_buf.Map(Ren::eBufMap::Write));
             for (int i = 0; i < 128; i++) {
                 data[i] = _data[i];
             }

@@ -47,7 +47,7 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
 void Ren::TextureRegion::Init(const void *data, int size, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
                               Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (!data) {
-        uint8_t *out_col = stage_buf.Map(BufMapWrite);
+        uint8_t *out_col = stage_buf.Map(eBufMap::Write);
         out_col[0] = 0;
         out_col[1] = out_col[2] = out_col[3] = 255;
 
@@ -98,7 +98,7 @@ void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, vo
 
 void Ren::TextureRegion::InitFromTGAFile(const void *data, const int /*size*/, Buffer &stage_buf, void *cmd_buf,
                                          const Tex2DParams &p, TextureAtlasArray *atlas) {
-    uint8_t *img_stage = stage_buf.Map(BufMapWrite);
+    uint8_t *img_stage = stage_buf.Map(eBufMap::Write);
     uint32_t img_size = stage_buf.size();
 
     int w = 0, h = 0;
@@ -123,7 +123,7 @@ void Ren::TextureRegion::InitFromPNGFile(const void *data, const int size, Buffe
     int w, h, channels;
     unsigned char *const image_data = stbi_load_from_memory((const uint8_t *)data, size, &w, &h, &channels, 0);
     if (image_data) {
-        uint8_t *img_stage = stage_buf.Map(BufMapWrite);
+        uint8_t *img_stage = stage_buf.Map(eBufMap::Write);
         memcpy(img_stage, image_data, w * h * channels);
         stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(w * h * channels));
         stage_buf.Unmap();

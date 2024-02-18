@@ -71,7 +71,8 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 
         { // update instances buf
             uint8_t *stage_mem = rt_obj_instances_stage_buf->MapRange(
-                Ren::BufMapWrite, ctx.backend_frame() * SWRTObjInstancesBufChunkSize, SWRTObjInstancesBufChunkSize);
+                Ren::eBufMap::Write, ctx.backend_frame() * SWRTObjInstancesBufChunkSize,
+                SWRTObjInstancesBufChunkSize);
             const uint32_t rt_obj_instances_mem_size = uint32_t(mesh_instances.size()) * sizeof(gpu_mesh_instance_t);
             if (stage_mem) {
                 memcpy(stage_mem, mesh_instances.data(), rt_obj_instances_mem_size);
@@ -89,7 +90,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 
         { // update nodes buf
             uint8_t *stage_mem = rt_tlas_stage_buf->MapRange(
-                Ren::BufMapWrite, ctx.backend_frame() * SWRTTLASNodesBufChunkSize, SWRTTLASNodesBufChunkSize);
+                Ren::eBufMap::Write, ctx.backend_frame() * SWRTTLASNodesBufChunkSize, SWRTTLASNodesBufChunkSize);
             const uint32_t rt_nodes_mem_size = uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t);
             if (stage_mem) {
                 memcpy(stage_mem, nodes.data(), rt_nodes_mem_size);

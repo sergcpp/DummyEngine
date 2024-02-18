@@ -78,7 +78,7 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
 
             Ren::StageBufRef sb = ctx.default_stage_bufs().GetNextBuffer();
 
-            uint8_t *stage_data = sb.buf->Map(Ren::BufMapWrite);
+            uint8_t *stage_data = sb.buf->Map(Ren::eBufMap::Write);
 
             const int img_data_size = 4 * img_data_w * img_data_h;
             if (!in_file.Read((char *)stage_data, img_data_size)) {

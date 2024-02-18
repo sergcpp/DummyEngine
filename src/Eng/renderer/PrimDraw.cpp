@@ -38,7 +38,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                                        192);
 
             { // copy quad vertices
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::BufMapWrite);
+                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
                 memcpy(mapped_ptr, fs_quad_positions, sizeof(fs_quad_positions));
                 memcpy(mapped_ptr + sizeof(fs_quad_positions), fs_quad_norm_uvs, sizeof(fs_quad_norm_uvs));
                 temp_stage_buf.FlushMappedRange(
@@ -55,7 +55,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
             Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Stage, 6 * sizeof(uint16_t), 192);
 
             { // copy quad indices
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::BufMapWrite);
+                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
                 memcpy(mapped_ptr, fs_quad_indices, 6 * sizeof(uint16_t));
                 temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(6 * sizeof(uint16_t)));
                 temp_stage_buf.Unmap();
@@ -68,7 +68,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
             Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Stage, SphereVerticesSize, 192);
 
             { // copy sphere positions
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::BufMapWrite);
+                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
                 memcpy(mapped_ptr, __sphere_positions, sizeof(__sphere_positions));
                 temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(SphereVerticesSize));
                 temp_stage_buf.Unmap();
@@ -86,7 +86,7 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
                                        192);
 
             { // copy sphere indices
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::BufMapWrite);
+                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
                 memcpy(mapped_ptr, __sphere_indices, sizeof(__sphere_indices));
                 temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(sizeof(__sphere_indices)));
                 temp_stage_buf.Unmap();

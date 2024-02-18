@@ -79,8 +79,8 @@ void GSVideoTest::InitVideoTextures() {
             y_sbuf_[tx] = Ren::Buffer{"Y Stage Buf", ren_ctx_->api_ctx(), Ren::eBufType::Stage, y_buf_size};
             uv_sbuf_[tx] = Ren::Buffer{"UV Stage Buf", ren_ctx_->api_ctx(), Ren::eBufType::Stage, uv_buf_size};
             if (ren_ctx_->capabilities.persistent_buf_mapping) {
-                y_sbuf_[tx].Map(Ren::BufMapWrite, true /* persistent */);
-                uv_sbuf_[tx].Map(Ren::BufMapWrite, true /* persistent */);
+                y_sbuf_[tx].Map(Ren::eBufMap::Write, true /* persistent */);
+                uv_sbuf_[tx].Map(Ren::eBufMap::Write, true /* persistent */);
             }
         }
 #endif

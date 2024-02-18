@@ -2,6 +2,7 @@
 
 #include <vector>
 
+#include "Bitmask.h"
 #include "Fence.h"
 #include "FreelistAlloc.h"
 #include "Resource.h"
@@ -43,8 +44,7 @@ enum class eBufType : uint8_t {
     _Count
 };
 
-const uint8_t BufMapRead = (1u << 0u);
-const uint8_t BufMapWrite = (1u << 1u);
+enum class eBufMap : uint8_t { Read, Write };
 
 struct BufHandle {
 #if defined(USE_VK_RENDER)
@@ -143,8 +143,8 @@ class Buffer : public RefCounter {
 
     uint32_t AlignMapOffset(uint32_t offset);
 
-    uint8_t *Map(const uint8_t dir, const bool persistent = false) { return MapRange(dir, 0, size_, persistent); }
-    uint8_t *MapRange(uint8_t dir, uint32_t offset, uint32_t size, bool persistent = false);
+    uint8_t *Map(const Bitmask<eBufMap> dir, const bool persistent = false) { return MapRange(dir, 0, size_, persistent); }
+    uint8_t *MapRange(Bitmask<eBufMap> dir, uint32_t offset, uint32_t size, bool persistent = false);
     void FlushMappedRange(uint32_t offset, uint32_t size);
     void Unmap();
 

@@ -162,7 +162,7 @@ void RpDebugTextures::Execute(RpBuilder &builder) {
         Ren::BufferRef temp_stage_buf =
             builder.ctx().LoadBuffer("Nodes stage buf", Ren::eBufType::Stage, buf_size);
 
-        auto *stage_nodes = reinterpret_cast<bvh_node_t *>(temp_stage_buf->Map(Ren::BufMapWrite));
+        auto *stage_nodes = reinterpret_cast<bvh_node_t *>(temp_stage_buf->Map(Ren::eBufMap::Write));
         memcpy(stage_nodes, nodes_, buf_size);
         temp_stage_buf->FlushMappedRange(0, buf_size);
         temp_stage_buf->Unmap();

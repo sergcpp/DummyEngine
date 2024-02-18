@@ -43,7 +43,7 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                     Ren::Buffer("Temp stage buf", nullptr, Ren::eBufType::Stage, sizeof(Skinning::Params), 16);
                 {
                     Skinning::Params *stage_data =
-                        reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map(Ren::BufMapWrite));
+                        reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map(Ren::eBufMap::Write));
 
                     stage_data->uSkinParams =
                         Ren::Vec4u{sr.in_vtx_offset, non_shapekeyed_vertex_count, sr.xform_offset, sr.out_vtx_offset};
@@ -66,7 +66,7 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                     Ren::Buffer("Temp stage buf", nullptr, Ren::eBufType::Stage, sizeof(Skinning::Params), 16);
                 {
                     Skinning::Params *stage_data =
-                        reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map(Ren::BufMapWrite));
+                        reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map(Ren::eBufMap::Write));
 
                     stage_data->uSkinParams =
                         Ren::Vec4u{sr.in_vtx_offset + non_shapekeyed_vertex_count, sr.shape_keyed_vertex_count,

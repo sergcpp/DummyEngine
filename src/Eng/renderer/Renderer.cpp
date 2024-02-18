@@ -337,7 +337,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                         sobol_seq_buf_->size());
 
         { // init stage buf
-            uint8_t *mapped_ptr = sobol_seq_buf_stage.Map(Ren::BufMapWrite);
+            uint8_t *mapped_ptr = sobol_seq_buf_stage.Map(Ren::eBufMap::Write);
             memcpy(mapped_ptr, g_sobol_256spp_256d, 256 * 256 * sizeof(int));
             sobol_seq_buf_stage.Unmap();
         }
@@ -351,7 +351,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                               scrambling_tile_1spp_buf_->size());
 
         { // init stage buf
-            uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map(Ren::BufMapWrite);
+            uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map(Ren::eBufMap::Write);
             memcpy(mapped_ptr, g_scrambling_tile_1spp, 128 * 128 * 8 * sizeof(int));
             scrambling_tile_buf_stage.Unmap();
         }
@@ -366,7 +366,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                            ranking_tile_1spp_buf_->size());
 
         { // init stage buf
-            uint8_t *mapped_ptr = ranking_tile_buf_stage.Map(Ren::BufMapWrite);
+            uint8_t *mapped_ptr = ranking_tile_buf_stage.Map(Ren::eBufMap::Write);
             memcpy(mapped_ptr, g_ranking_tile_1spp, 128 * 128 * 8 * sizeof(int));
             ranking_tile_buf_stage.Unmap();
         }

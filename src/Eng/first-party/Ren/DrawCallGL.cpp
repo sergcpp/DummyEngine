@@ -56,7 +56,7 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
         temp_unif_buffer = Buffer("Temp uniform buf", nullptr, eBufType::Uniform, uniform_data_len, 16);
         temp_stage_buffer = Buffer("Temp stage buf", nullptr, eBufType::Stage, uniform_data_len, 16);
         {
-            uint8_t *stage_data = temp_stage_buffer.Map(BufMapWrite);
+            uint8_t *stage_data = temp_stage_buffer.Map(eBufMap::Write);
             memcpy(stage_data, uniform_data, uniform_data_len);
 
             temp_stage_buffer.FlushMappedRange(0, uniform_data_len);
@@ -100,7 +100,7 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
         temp_unif_buffer = Buffer("Temp uniform buf", nullptr, eBufType::Uniform, uniform_data_len, 16);
         temp_stage_buffer = Buffer("Temp stage buf", nullptr, eBufType::Stage, uniform_data_len, 16);
         {
-            uint8_t *stage_data = temp_stage_buffer.Map(BufMapWrite);
+            uint8_t *stage_data = temp_stage_buffer.Map(eBufMap::Write);
             memcpy(stage_data, uniform_data, uniform_data_len);
 
             temp_stage_buffer.FlushMappedRange(0, uniform_data_len);

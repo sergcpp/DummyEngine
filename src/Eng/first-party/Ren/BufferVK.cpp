@@ -329,7 +329,8 @@ uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) {
     return offset - (offset % align_to);
 }
 
-uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const uint32_t size, const bool persistent) {
+uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset, const uint32_t size,
+                               const bool persistent) {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
     assert(type_ == eBufType::Stage);
@@ -353,7 +354,7 @@ uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const u
         api_ctx_->vkMapMemory(api_ctx_->device, mem_, VkDeviceSize(offset), VkDeviceSize(size), 0, &mapped);
     assert(res == VK_SUCCESS && "Failed to map memory!");
 
-    if (dir & BufMapRead) {
+    if (dir & eBufMap::Read) {
         VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
         range.memory = mem_;
         range.offset = VkDeviceSize(offset);

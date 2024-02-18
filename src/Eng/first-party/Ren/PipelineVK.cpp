@@ -499,7 +499,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
             hit_region_.deviceAddress = sbt_address + rgen_region_.size + miss_region_.size;
 
             { // Init staging buffer
-                uint8_t *p_sbt_stage = sbt_stage_buf.Map(BufMapWrite);
+                uint8_t *p_sbt_stage = sbt_stage_buf.Map(eBufMap::Write);
                 uint8_t *p_dst = p_sbt_stage;
                 int handle_ndx = 0;
                 // Copy raygen

@@ -195,7 +195,7 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
     Ren::Buffer materials_stage_buf("Materials Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
                                     (update_range.second - update_range.first) * sizeof(MaterialData));
-    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::BufMapWrite));
+    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::eBufMap::Write));
 
     Ren::SmallVector<VkDescriptorImageInfo, 256> img_infos;
     Ren::SmallVector<Ren::TransitionInfo, 256> img_transitions;
@@ -641,7 +641,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
                                    uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
 
     {
-        uint8_t *geo_data_stage = geo_data_stage_buf.Map(Ren::BufMapWrite);
+        uint8_t *geo_data_stage = geo_data_stage_buf.Map(Ren::eBufMap::Write);
         memcpy(geo_data_stage, geo_instances.data(), geo_instances.size() * sizeof(RTGeoInstance));
         geo_data_stage_buf.Unmap();
     }
@@ -653,7 +653,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
     //                                uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
 
     /*{
-        uint8_t *instance_stage = instance_stage_buf.Map(Ren::BufMapWrite);
+        uint8_t *instance_stage = instance_stage_buf.Map(Ren::eBufMap::Write);
         memcpy(instance_stage, tlas_instances.data(),
                tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR));
         instance_stage_buf.Unmap();

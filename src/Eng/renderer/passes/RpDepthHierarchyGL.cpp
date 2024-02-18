@@ -38,7 +38,7 @@ void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
         Ren::Buffer("Temp stage buf", nullptr, Ren::eBufType::Stage, sizeof(DepthHierarchy::Params), 16);
     {
         DepthHierarchy::Params *stage_data =
-            reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map(Ren::BufMapWrite));
+            reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map(Ren::eBufMap::Write));
         stage_data->depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1],
                                             output_tex.ref->params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;

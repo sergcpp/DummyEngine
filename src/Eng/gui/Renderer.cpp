@@ -110,8 +110,8 @@ bool Gui::Renderer::Init() {
 
     if (ctx_.capabilities.persistent_buf_mapping) {
         // map stage buffers directly
-        vtx_stage_data_ = reinterpret_cast<vertex_t *>(vertex_stage_buf_->Map(Ren::BufMapWrite, true /* persistent */));
-        ndx_stage_data_ = reinterpret_cast<uint16_t *>(index_stage_buf_->Map(Ren::BufMapWrite, true /* persistent */));
+        vtx_stage_data_ = reinterpret_cast<vertex_t *>(vertex_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
+        ndx_stage_data_ = reinterpret_cast<uint16_t *>(index_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
     } else {
         // use temporary storage
         stage_vtx_data_ = std::make_unique<vertex_t[]>(MaxVerticesPerRange * Ren::MaxFramesInFlight);

@@ -308,7 +308,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     std::unique_ptr<uint8_t[]> mask_data_u8(new uint8_t[ref_w * ref_h * 3]);
     memset(&mask_data_u8[0], 0, ref_w * ref_h * 3);
 
-    const uint8_t *img_data = stage_buf->Map(Ren::BufMapRead);
+    const uint8_t *img_data = stage_buf->Map(Ren::eBufMap::Read);
     SCOPE_EXIT({ stage_buf->Unmap(); })
 
     double mse = 0.0;

@@ -251,7 +251,7 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     const uint32_t total_mem_required = attribs_buf1_.size + indices_buf_.size;
     assert(stage_buf.size() >= total_mem_required);
 
-    auto *_vtx_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(BufMapWrite));
+    auto *_vtx_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(eBufMap::Write));
 
     bbox_min_ =
         Vec3f{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
@@ -407,7 +407,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
     assert(stage_buf.size() >= total_mem_required);
 
-    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(BufMapWrite));
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(eBufMap::Write));
     auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
     assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
@@ -520,7 +520,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
     const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
     assert(stage_buf.size() >= total_mem_required);
 
-    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(BufMapWrite));
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(eBufMap::Write));
     auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
     assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
@@ -667,7 +667,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         skel_.bones[i].dirty = true;
     }
 
-    uint8_t *stage_buf_ptr = stage_buf.Map(BufMapWrite);
+    uint8_t *stage_buf_ptr = stage_buf.Map(eBufMap::Write);
     uint32_t stage_buf_off = 0;
 
     uint32_t delta_buf_off = 0;

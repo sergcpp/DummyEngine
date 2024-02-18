@@ -6,7 +6,7 @@ bool Ren::UpdateBuffer(Buffer &dst, uint32_t dst_offset, uint32_t data_size, con
         return true;
     }
 
-    uint8_t *stage_mem = stage.MapRange(Ren::BufMapWrite, map_offset, map_size);
+    uint8_t *stage_mem = stage.MapRange(eBufMap::Write, map_offset, map_size);
     if (stage_mem) {
         memcpy(stage_mem, data, data_size);
         stage.FlushMappedRange(0, stage.AlignMapOffset(data_size));

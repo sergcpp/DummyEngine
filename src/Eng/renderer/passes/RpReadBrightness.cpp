@@ -23,7 +23,7 @@ void Eng::RpReadBrightness::Execute(RpBuilder &builder) {
 
     { // Retrieve result of readback from previous frame
         auto *reduced_pixels =
-            (float *)output_buf.ref->MapRange(Ren::BufMapRead, read_size * ctx.backend_frame(), read_size);
+            (float *)output_buf.ref->MapRange(Ren::eBufMap::Read, read_size * ctx.backend_frame(), read_size);
         if (reduced_pixels) {
             for (int i = 0; i < input_tex.desc.w * input_tex.desc.h; ++i) {
                 if (!std::isnan(reduced_pixels[i])) {

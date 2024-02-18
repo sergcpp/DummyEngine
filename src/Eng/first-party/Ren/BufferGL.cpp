@@ -167,7 +167,7 @@ void Ren::Buffer::Free() {
     }
 }
 
-uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const uint32_t size, const bool persistent) {
+uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset, const uint32_t size, const bool persistent) {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
 
@@ -189,14 +189,14 @@ uint8_t *Ren::Buffer::MapRange(const uint8_t dir, const uint32_t offset, const u
         buf_map_range_flags |= GLbitfield(GL_MAP_PERSISTENT_BIT);
     }
 
-    if (dir & BufMapRead) {
+    if (dir & eBufMap::Read) {
         buf_map_range_flags |= GLbitfield(GL_MAP_READ_BIT);
     }
 
-    if (dir & BufMapWrite) {
+    if (dir & eBufMap::Write) {
         buf_map_range_flags |= GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_WRITE_BIT) |
                                GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
-        if ((dir & BufMapRead) == 0) {
+        if ((dir & eBufMap::Read) == 0) {
             // write only case
             buf_map_range_flags |= GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT);
         }
