@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = build_assets
-	commit = 4fe023395387e99be87062314efe5bc0cc106e10
+	branch = ltc_lut_combined
+	commit = 08e0d4a2f700cf450665168222eed263476abc36
 	method = merge
 	cmdver = 0.4.6
-	parent = a8c65183af9393957c5a879bb3999a66e67d1137
+	parent = dbbcfbfd2e236a9ee4ea0c8bddf81303a5040cdb
