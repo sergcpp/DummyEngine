@@ -152,8 +152,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), 0, nullptr, params, log_));
     }
 
-    texture_atlas_ = TextureAtlasArray{api_ctx_.get(),     TextureAtlasWidth,       TextureAtlasHeight,
-                                       TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
+    texture_atlas_ =
+        TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",         TextureAtlasWidth,           TextureAtlasHeight,
+                          TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
 
     return true;
 }

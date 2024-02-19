@@ -8,7 +8,7 @@ namespace Ren {
 extern const uint32_t g_gl_min_filter[];
 extern const uint32_t g_gl_mag_filter[];
 extern const uint32_t g_gl_wrap_mode[];
-}
+} // namespace Ren
 
 Ren::TextureAtlas::TextureAtlas(ApiContext *api_ctx, const int w, const int h, const int min_res,
                                 const eTexFormat formats[], const eTexFlags flags[], eTexFilter filter, ILog *log)
@@ -194,9 +194,9 @@ void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, int w, int h, int layer_count, const eTexFormat format,
-                                          eTexFilter filter)
-    : api_ctx_(api_ctx), layer_count_(layer_count), format_(format), filter_(filter) {
+Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string_view name, int w, int h,
+                                          int layer_count, const eTexFormat format, eTexFilter filter)
+    : api_ctx_(api_ctx), name_(name), layer_count_(layer_count), format_(format), filter_(filter) {
     GLuint tex_id;
     ren_glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &tex_id);
 

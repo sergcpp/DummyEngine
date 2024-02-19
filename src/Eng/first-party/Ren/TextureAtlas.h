@@ -77,7 +77,8 @@ class TextureAtlasArray {
     static const int MaxTextureCount = 8;
 
     TextureAtlasArray() = default;
-    TextureAtlasArray(ApiContext *api_ctx, int w, int h, int layer_count, eTexFormat format, eTexFilter filter);
+    TextureAtlasArray(ApiContext *api_ctx, std::string_view name, int w, int h, int layer_count, eTexFormat format,
+                      eTexFilter filter);
     ~TextureAtlasArray();
 
     TextureAtlasArray(const TextureAtlasArray &rhs) = delete;
@@ -108,6 +109,7 @@ class TextureAtlasArray {
     eResState resource_state = eResState::Undefined;
 #endif
   private:
+    std::string name_;
     ApiContext *api_ctx_ = nullptr;
     int mip_count_ = 0;
     int layer_count_ = 0;

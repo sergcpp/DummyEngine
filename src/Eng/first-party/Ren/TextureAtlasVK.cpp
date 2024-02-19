@@ -288,9 +288,9 @@ void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, const int h, const int layer_count,
-                                          const eTexFormat format, eTexFilter filter)
-    : layer_count_(layer_count), format_(format), filter_(filter), api_ctx_(api_ctx) {
+Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const std::string_view name, const int w, const int h,
+                                          const int layer_count, const eTexFormat format, eTexFilter filter)
+    : api_ctx_(api_ctx), name_(name), layer_count_(layer_count), format_(format), filter_(filter) {
 
     mip_count_ = Ren::CalcMipCount(w, h, 1, filter);
 
@@ -314,6 +314,14 @@ Ren::TextureAtlasArray::TextureAtlasArray(ApiContext *api_ctx, const int w, cons
         if (res != VK_SUCCESS) {
             throw std::runtime_error("Failed to create image!");
         }
+
+#ifdef ENABLE_OBJ_LABELS
+        VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+        name_info.objectType = VK_OBJECT_TYPE_IMAGE;
+        name_info.objectHandle = uint64_t(img_);
+        name_info.pObjectName = name_.c_str();
+        api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
 
         VkMemoryRequirements img_tex_mem_req = {};
         api_ctx_->vkGetImageMemoryRequirements(api_ctx_->device, img_, &img_tex_mem_req);
@@ -453,8 +461,8 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.buffer = sbuf.vk_handle();
-                new_barrier.offset = VkDeviceSize(data_off);
-                new_barrier.size = VkDeviceSize(data_len);
+                new_barrier.offset = 0; //VkDeviceSize(data_off);
+                new_barrier.size = VK_WHOLE_SIZE; // VkDeviceSize(data_len);
 
                 src_stages |= VKPipelineStagesForState(sbuf.resource_state);
                 dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
@@ -495,7 +503,7 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, int data_off, int data_
             this->resource_state = eResState::CopyDst;
 
             VkBufferImageCopy region = {};
-            region.bufferOffset = 0;
+            region.bufferOffset = VkDeviceSize(data_off);
             region.bufferRowLength = 0;
             region.bufferImageHeight = 0;
 

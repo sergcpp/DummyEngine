@@ -216,8 +216,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
 
     InitDefaultBuffers();
 
-    texture_atlas_ = TextureAtlasArray{api_ctx_.get(),     TextureAtlasWidth,       TextureAtlasHeight,
-                                       TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
+    texture_atlas_ =
+        TextureAtlasArray{api_ctx_.get(),     "Texture Atlas",         TextureAtlasWidth,           TextureAtlasHeight,
+                          TextureAtlasLayers, eTexFormat::RawRGBA8888, eTexFilter::BilinearNoMipmap};
 
     for (size_t i = 0; i < api_ctx_->present_images.size(); ++i) {
         char name_buf[24];
