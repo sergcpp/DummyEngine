@@ -10,13 +10,9 @@
 
 #include "../shaders/rt_gi_interface.h"
 
-void Eng::RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
-    // TODO: software fallback for raytracing
-}
+void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
-void Eng::RpRTGI::ExecuteRTInline(RpBuilder &builder) {
-    // TODO: software fallback for raytracing
-}
+void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) { assert(false && "Not implemented!"); }
 
 void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {

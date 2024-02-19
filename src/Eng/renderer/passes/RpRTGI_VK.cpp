@@ -9,7 +9,7 @@
 #include "../Renderer_Structs.h"
 #include "../shaders/rt_gi_interface.h"
 
-void Eng::RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
+void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);
@@ -89,7 +89,7 @@ void Eng::RpRTGI::ExecuteRTPipeline(RpBuilder &builder) {
                                        pi_rt_gi_.call_table(), indir_args_buf.ref->vk_device_address());
 }
 
-void Eng::RpRTGI::ExecuteRTInline(RpBuilder &builder) {
+void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     RpAllocBuf &geo_data_buf = builder.GetReadBuffer(pass_data_->geo_data);

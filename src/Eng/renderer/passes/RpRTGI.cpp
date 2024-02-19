@@ -10,8 +10,8 @@
 
 void Eng::RpRTGI::Execute(RpBuilder &builder) {
     if (builder.ctx().capabilities.ray_query) {
-        ExecuteRTInline(builder);
+        Execute_HWRT_Inline(builder);
     } else {
-        ExecuteRTPipeline(builder);
+        Execute_HWRT_Pipeline(builder);
     }
 }

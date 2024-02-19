@@ -51,8 +51,8 @@ class RpRTGI : public RpExecutor {
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
-    void ExecuteRTPipeline(RpBuilder &builder);
-    void ExecuteRTInline(RpBuilder &builder);
+    void Execute_HWRT_Pipeline(RpBuilder &builder);
+    void Execute_HWRT_Inline(RpBuilder &builder);
 
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,

@@ -11,15 +11,15 @@
 #include <Sys/Time_.h>
 #include <optick/optick.h>
 
-#include "FlowControl.h"
-#include "ViewerStateManager.h"
 #include "Log.h"
+#include "ViewerStateManager.h"
 #include "gui/BaseElement.h"
 #include "gui/Renderer.h"
 #include "renderer/Renderer.h"
 #include "scene/PhysicsManager.h"
 #include "scene/SceneManager.h"
 #include "utils/Cmdline.h"
+#include "utils/FlowControl.h"
 #include "utils/Random.h"
 #include "utils/ShaderLoader.h"
 
@@ -68,8 +68,7 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
         using namespace std::placeholders;
 
         path_config_t paths;
-        scene_manager_ =
-            std::make_unique<SceneManager>(*ren_ctx_, *shader_loader_, snd_ctx_.get(), *threads_, paths);
+        scene_manager_ = std::make_unique<SceneManager>(*ren_ctx_, *shader_loader_, snd_ctx_.get(), *threads_, paths);
         scene_manager_->SetPipelineInitializer(
             std::bind(&Renderer::InitPipelinesForProgram, renderer(), _1, _2, _3, _4));
     }

@@ -58,8 +58,6 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 set(SOURCE_FILES Config.h
-                 FlowControl.h
-                 FlowControl.cpp
                  FrameInfo.h
                  Log.h
                  Log.cpp
@@ -295,6 +293,8 @@ set(UTILS_SOURCES utils/BVHSplit.h
                   utils/BVHSplit.cpp
                   utils/Cmdline.h
                   utils/Cmdline.cpp
+                  utils/FlowControl.h
+                  utils/FlowControl.cpp
                   utils/FreeCamController.h
                   utils/FreeCamController.cpp
                   utils/Load.h
