@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = ltc_lut_combined
-	commit = 08e0d4a2f700cf450665168222eed263476abc36
+	branch = master
+	commit = e1a504235e7d3741dca01615ba444cfeeb721492
 	method = merge
 	cmdver = 0.4.6
-	parent = dbbcfbfd2e236a9ee4ea0c8bddf81303a5040cdb
+	parent = c0709858565a52e9d77a9e0045bbbc525c137eb7
