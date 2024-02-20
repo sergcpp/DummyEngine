@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = e1a504235e7d3741dca01615ba444cfeeb721492
+	branch = gi_swrt
+	commit = 6b8b5f2439871ca9ff2ae5ddb70020386faa43b9
 	method = merge
 	cmdver = 0.4.6
-	parent = c0709858565a52e9d77a9e0045bbbc525c137eb7
+	parent = ef67f4e3672c25fed981b06ce16deed200dbe6f3
