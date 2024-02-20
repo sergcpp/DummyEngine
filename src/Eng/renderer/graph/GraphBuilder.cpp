@@ -717,6 +717,9 @@ void Eng::RpBuilder::Reset() {
     subpass_data_.clear();
     alloc_.Reset();
 
+    name_to_buffer_.clear();
+    name_to_texture_.clear();
+
     //
     // Reset resources
     //
