@@ -20,13 +20,14 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                                     FrameTextures &frame_textures) {
+                                     RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
     // GI settings
     static const int SamplesPerQuad = 4;
     static const bool VarianceGuided = false;
+    static const bool EnableBlur = false;
 
     RpResRef flat_normals_tex;
 
@@ -321,7 +322,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    if (ctx_.capabilities.raytracing && env_map) {
+    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -362,7 +363,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             auto *data = rt_gi.AllocPassData<RpRTGIData>();
 
-            const auto stage = ctx_.capabilities.ray_query ? Stg::ComputeShader : Stg::RayTracingShader;
+            const auto stage = ctx_.capabilities.ray_query
+                                   ? Stg::ComputeShader
+                                   : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
 
             data->geo_data = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
             data->materials = rt_gi.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -379,6 +382,22 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             data->ray_list = rt_gi.AddStorageReadonlyInput(ray_rt_list, stage);
             data->indir_args = rt_gi.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
+            data->lights_buf = rt_gi.AddStorageReadonlyInput(common_buffers.lights_res, stage);
+            data->shadowmap_tex = rt_gi.AddTextureInput(shadow_map_tex_, stage);
+            data->ltc_luts_tex = rt_gi.AddTextureInput(ltc_luts_, stage);
+
+            if (!ctx_.capabilities.raytracing) {
+                data->swrt.root_node = persistent_data.swrt.rt_root_node;
+                data->swrt.rt_blas_buf = rt_gi.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stage);
+                data->swrt.prim_ndx_buf =
+                    rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
+                data->swrt.meshes_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
+                data->swrt.mesh_instances_buf = rt_gi.AddStorageReadonlyInput(rt_obj_instances_res, stage);
+
+#if defined(USE_GL_RENDER)
+                data->swrt.textures_buf = rt_gi.AddStorageReadonlyInput(bindless.textures_buf, stage);
+#endif
+            }
 
             if (lm_direct) {
                 data->lm_tex[0] = rt_gi.AddTextureInput(lm_direct, stage);
@@ -431,7 +450,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->velocity_tex = gi_reproject.AddTextureInput(frame_textures.velocity, Stg::ComputeShader);
         data->depth_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.depth, Stg::ComputeShader);
         data->norm_hist_tex = gi_reproject.AddHistoryTextureInput(frame_textures.normal, Stg::ComputeShader);
-        data->gi_hist_tex = gi_reproject.AddHistoryTextureInput("GI Diffuse 3", Stg::ComputeShader);
+        if (EnableBlur) {
+            data->gi_hist_tex = gi_reproject.AddHistoryTextureInput("GI Diffuse 3", Stg::ComputeShader);
+        } else {
+            data->gi_hist_tex = gi_reproject.AddHistoryTextureInput("GI Diffuse", Stg::ComputeShader);
+        }
         data->variance_hist_tex = gi_reproject.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
         data->gi_tex = gi_reproject.AddTextureInput(gi_tex, Stg::ComputeShader);
 
@@ -843,5 +866,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         });
     }
 
-    frame_textures.gi = gi_diffuse3_tex;
+    if (EnableBlur) {
+        frame_textures.gi = gi_diffuse3_tex;
+    } else {
+        frame_textures.gi = gi_diffuse_tex;
+    }
 }

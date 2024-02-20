@@ -334,7 +334,7 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             sh.LoadProgram(ctx, "rt_reflections_swrt", "internal/rt_reflections_swrt.comp.glsl");
         assert(rt_reflections_swrt_prog->ready());
 
-        if (!pi_rt_reflections_swrt_.Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
+        if (!pi_rt_reflections_swrt_.Init(ctx.api_ctx(), std::move(rt_reflections_swrt_prog), ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 

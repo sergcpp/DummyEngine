@@ -251,7 +251,9 @@ void main() {
     //vec3 gi = vec3(textureLod(g_gi_tex, px_uvs, 0.0).a * 0.01);
     //float ao = (gi.a * 0.01);
     vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
-                                       gi.rgb /*+ ao * indirect_col +*/) + additional_light;
+                                       lobe_weights.diffuse_mul * gi.rgb /*+ ao * indirect_col +*/) + additional_light;
+
+    //diffuse_color = lobe_weights.diffuse_mul * gi.rgb;
 
     //float ambient_occlusion = textureLod(g_ao_tex, px_uvs, 0.0).r;
     //vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +

@@ -128,7 +128,7 @@ void main() {
     // TODO: use flat normal here
     ray_origin_ws.xyz += 0.001 * normal_ws;//offset_ray(ray_origin_ws.xyz, normal_ws);
 
-    const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
+    const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.0;
     const float t_max = 100.0;
 
@@ -144,14 +144,14 @@ void main() {
 
         rayQueryEXT rq;
         rayQueryInitializeEXT(rq,               // rayQuery
-                            g_tlas,           // topLevel
-                            ray_flags,        // rayFlags
-                            0xff,             // cullMask
-                            ray_origin_ws.xyz,// origin
-                            t_min,            // tMin
-                            gi_ray_ws.xyz,    // direction
-                            t_max             // tMax
-                            );
+                              g_tlas,           // topLevel
+                              ray_flags,        // rayFlags
+                              0xff,             // cullMask
+                              ray_origin_ws.xyz,// origin
+                              t_min,            // tMin
+                              gi_ray_ws.xyz,    // direction
+                              t_max             // tMax
+                             );
         while(rayQueryProceedEXT(rq)) {
             if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
                 // perform alpha test

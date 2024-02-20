@@ -108,7 +108,7 @@ class Renderer {
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap /*| EnableBloom*/ | EnableTaa /*| EnableTaaStatic*/ |
          EnableTimers | EnableDOF // | EnableRTShadows
-         | EnableDeferred | EnableHQ_HDR);
+         | EnableGI | EnableDeferred | EnableHQ_HDR);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
          EnableTonemap | EnableDOF | EnableTimers);
@@ -294,7 +294,7 @@ class Renderer {
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
                           const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                          FrameTextures &frame_textures);
+                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,

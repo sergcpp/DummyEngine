@@ -138,8 +138,8 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, con
             if (old_state == eResState::Undefined) {
                 // take state from resource itself
                 old_state = tr.p_tex->resource_state;
-                if (old_state != eResState::Undefined && old_state == tr.new_state &&
-                    old_state != eResState::UnorderedAccess) {
+                if (old_state == tr.new_state && old_state != eResState::UnorderedAccess &&
+                    old_state != eResState::CopyDst) {
                     // transition is not needed
                     continue;
                 }

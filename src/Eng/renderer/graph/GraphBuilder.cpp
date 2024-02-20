@@ -742,6 +742,8 @@ void Eng::RpBuilder::Reset() {
         tex.written_in_passes.clear();
         if (tex.ref) {
             tex.used_in_stages = Ren::StageBitsForState(tex.ref->resource_state);
+            // Needed to clear the texture initially
+            tex.used_in_stages |= Ren::eStageBits::Transfer;
         }
     }
     temp_samplers.clear();
@@ -1336,6 +1338,8 @@ void Eng::RpBuilder::Execute() {
         tex.used_in_stages = Ren::eStageBits::None;
         if (tex.ref) {
             tex.used_in_stages = Ren::StageBitsForState(tex.ref->resource_state);
+            // Needed to clear the texture initially
+            tex.used_in_stages |= Ren::eStageBits::Transfer;
         }
     }
 
@@ -1458,7 +1462,8 @@ void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
         }
 
         if (tex->ref->resource_state != res.desired_state ||
-            tex->ref->resource_state == Ren::eResState::UnorderedAccess) {
+            tex->ref->resource_state == Ren::eResState::UnorderedAccess ||
+            tex->ref->resource_state == Ren::eResState::CopyDst) {
             src_stages |= tex->used_in_stages;
             dst_stages |= res.stages;
             tex->used_in_stages = Ren::eStageBits::None;

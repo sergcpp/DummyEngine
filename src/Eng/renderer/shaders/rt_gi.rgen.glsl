@@ -88,7 +88,7 @@ void main() {
     g_pld.cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
     { // trace through bvh tree
-        const uint ray_flags = gl_RayFlagsCullBackFacingTrianglesEXT;
+        const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
         const float t_min = 0.001;
         const float t_max = 100.0;
 

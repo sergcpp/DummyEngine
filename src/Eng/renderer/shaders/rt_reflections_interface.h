@@ -35,8 +35,8 @@ const int TLAS_BUF_SLOT = 18;
 const int NOISE_TEX_SLOT = 19;
 const int LIGHTS_BUF_SLOT = 20;
 const int SHADOW_TEX_SLOT = 21;
+const int LTC_LUTS_TEX_SLOT = 22;
 const int LMAP_TEX_SLOTS = 25;
-const int LTC_LUTS_TEX_SLOT = 30;
 
 const int OUT_REFL_IMG_SLOT = 1;
 const int OUT_RAYLEN_IMG_SLOT = 2;

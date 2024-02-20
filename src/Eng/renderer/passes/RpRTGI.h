@@ -23,6 +23,9 @@ struct RpRTGIData {
     // RpResRef flat_normal_tex;
     RpResRef env_tex;
     RpResRef lm_tex[5];
+    RpResRef lights_buf;
+    RpResRef shadowmap_tex;
+    RpResRef ltc_luts_tex;
     RpResRef dummy_black;
     RpResRef ray_counter;
     RpResRef ray_list;
@@ -30,6 +33,15 @@ struct RpRTGIData {
     RpResRef tlas_buf; // fake read for now
 
     Ren::IAccStructure *tlas = nullptr;
+
+    struct {
+        uint32_t root_node;
+        RpResRef rt_blas_buf;
+        RpResRef prim_ndx_buf;
+        RpResRef meshes_buf;
+        RpResRef mesh_instances_buf;
+        RpResRef textures_buf;
+    } swrt;
 
     bool two_bounce = false;
 
@@ -42,6 +54,7 @@ class RpRTGI : public RpExecutor {
     // lazily initialized data
     Ren::Pipeline pi_rt_gi_;
     Ren::Pipeline pi_rt_gi_inline_, pi_rt_gi_2bounce_inline_;
+    Ren::Pipeline pi_rt_gi_swrt_, pi_rt_gi_2bounce_swrt_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
@@ -53,6 +66,8 @@ class RpRTGI : public RpExecutor {
 
     void Execute_HWRT_Pipeline(RpBuilder &builder);
     void Execute_HWRT_Inline(RpBuilder &builder);
+
+    void Execute_SWRT(RpBuilder &builder);
 
   public:
     void Setup(RpBuilder &builder, const ViewState *view_state, const BindlessTextureData *bindless_tex,

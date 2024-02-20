@@ -142,57 +142,56 @@ void main() {
 
     Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
                                  ray_origin_ws.xyz + 0.001 * refl_ray_ws.xyz, refl_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
-
     if (inter.mask == 0) {
         final_color = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
     } else {
-        bool is_backfacing = (inter.prim_index < 0);
-        int tri_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
+        const bool is_backfacing = (inter.prim_index < 0);
+        const int tri_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
         int i = inter.geo_index;
         for (; i < inter.geo_index + inter.geo_count; ++i) {
-            int tri_start = int(g_geometries[i].indices_start) / 3;
+            const int tri_start = int(g_geometries[i].indices_start) / 3;
             if (tri_start > tri_index) {
                 break;
             }
         }
 
-        int geo_index = i - 1;
+        const int geo_index = i - 1;
 
-        RTGeoInstance geo = g_geometries[geo_index];
-        MaterialData mat = g_materials[geo.material_index];
+        const RTGeoInstance geo = g_geometries[geo_index];
+        const MaterialData mat = g_materials[geo.material_index];
 
-        uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
-        uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
-        uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+        const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+        const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+        const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
 
-        vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-        vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-        vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+        const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+        const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+        const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
 
-        vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-        vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-        vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+        const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+        const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+        const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
-        vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
+        const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
-        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(5 * inter.obj_index + 2)),
-                                                texelFetch(g_mesh_instances, int(5 * inter.obj_index + 3)),
-                                                texelFetch(g_mesh_instances, int(5 * inter.obj_index + 4))));
-        vec3 direction_obj_space = (inv_transform * vec4(refl_ray_ws.xyz, 0.0)).xyz;
+        const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(5 * inter.obj_index + 2)),
+                                                      texelFetch(g_mesh_instances, int(5 * inter.obj_index + 3)),
+                                                      texelFetch(g_mesh_instances, int(5 * inter.obj_index + 4))));
+        const vec3 direction_obj_space = (inv_transform * vec4(refl_ray_ws.xyz, 0.0)).xyz;
 
-        float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
+        const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
-        vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
-        float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
+        const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
+        const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
         vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
-        float pa = length(tri_normal);
+        const float pa = length(tri_normal);
         tri_normal /= pa;
 
         float cone_width = g_params.pixel_spread_angle * inter.t;
 
-        float tex_lod = 0.5 * log2(ta/pa);
+        float tex_lod = 0.5 * log2(ta / pa);
         tex_lod += log2(cone_width);
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
@@ -205,15 +204,16 @@ void main() {
 #endif
 
         if ((geo.flags & RTGeoLightmappedBit) != 0u) {
-            vec2 lm_uv0 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).w);
-            vec2 lm_uv1 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).w);
-            vec2 lm_uv2 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).w);
+            const vec2 lm_uv0 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).w);
+            const vec2 lm_uv1 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).w);
+            const vec2 lm_uv2 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).w);
 
             vec2 lm_uv = lm_uv0 * (1.0 - inter.u - inter.v) + lm_uv1 * inter.u + lm_uv2 * inter.v;
             lm_uv = geo.lmap_transform.xy + geo.lmap_transform.zw * lm_uv;
 
-            vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
-            vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
+            const vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
+            const vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
+
             final_color = base_color * (direct_lm + indirect_lm);
         } else {
             const uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;

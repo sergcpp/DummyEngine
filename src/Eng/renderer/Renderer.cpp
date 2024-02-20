@@ -986,7 +986,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             // GI
             AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_, (list.render_flags & DebugGIDenoise) != 0,
                              list.probe_storage, common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                             depth_hierarchy_tex, frame_textures);
+                             depth_hierarchy_tex, rt_obj_instances_res, frame_textures);
 
             // GBuffer shading pass
             AddDeferredShadingPass(common_buffers, frame_textures, (list.render_flags & EnableGI));

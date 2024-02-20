@@ -344,7 +344,9 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
             auto *data = rt_refl.AllocPassData<RpRTReflectionsData>();
 
-            const auto stage = ctx_.capabilities.ray_query ? Stg::ComputeShader : Stg::RayTracingShader;
+            const auto stage = ctx_.capabilities.ray_query
+                                   ? Stg::ComputeShader
+                                   : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
 
             data->geo_data = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
             data->materials = rt_refl.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
@@ -361,7 +363,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
             data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights_res, stage);
-
             data->shadowmap_tex = rt_refl.AddTextureInput(shadow_map_tex_, stage);
             data->ltc_luts_tex = rt_refl.AddTextureInput(ltc_luts_, stage);
 
