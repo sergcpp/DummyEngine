@@ -34,6 +34,9 @@ void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
             lm_tex[i] = &dummy_black;
         }
     }
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
+    RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
 
     RpAllocTex &out_gi_tex = builder.GetWriteTexture(pass_data_->out_gi_tex);
 
@@ -62,6 +65,9 @@ void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
                                      {Ren::eBindTarget::Tex2D, RTGI::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
+                                     {Ren::eBindTarget::SBuf, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
+                                     {Ren::eBindTarget::Tex2D, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+                                     {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
                                      {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
@@ -112,6 +118,9 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
             lm_tex[i] = &dummy_black;
         }
     }
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
+    RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
 
     RpAllocTex &out_gi_tex = builder.GetWriteTexture(pass_data_->out_gi_tex);
 
@@ -141,6 +150,9 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
                                      {Ren::eBindTarget::Tex2D, RTGI::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
+                                     {Ren::eBindTarget::SBuf, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
+                                     {Ren::eBindTarget::Tex2D, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+                                     {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
                                      {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     const Ren::Pipeline &pi = pass_data_->two_bounce ? pi_rt_gi_2bounce_inline_ : pi_rt_gi_inline_;

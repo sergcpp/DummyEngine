@@ -7,8 +7,11 @@
 #endif
 
 #include "_rt_common.glsl"
+#include "_fs_common.glsl"
 #include "_texturing.glsl"
+#include "_principled.glsl"
 #include "gi_common.glsl"
+
 #include "rt_gi_interface.h"
 
 /*
@@ -56,6 +59,12 @@ layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
 };
 
 layout(binding = LMAP_TEX_SLOTS) uniform sampler2D g_lm_textures[5];
+
+layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
+    light_item_t g_lights[];
+};
+layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 layout(std430, binding = RAY_COUNTER_SLOT) readonly buffer RayCounter {
     uint g_ray_counter[];
@@ -134,7 +143,7 @@ void main() {
 
     float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
-    vec3 col = vec3(0.0);
+    vec3 final_color = vec3(0.0);
     float first_ray_len = t_max;
     vec3 throughput = vec3(1.0);
 
@@ -180,34 +189,35 @@ void main() {
         }
 
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-            col = throughput * clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws, 4.0)), vec3(0.0), vec3(8.0)); // clamp is temporary workaround
+            final_color = throughput * clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws, 4.0)), vec3(0.0), vec3(8.0)); // clamp is temporary workaround
             break;
         } else {
-            int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
-            int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
-            float hit_t = rayQueryGetIntersectionTEXT(rq, true);
-            int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, true);
-            vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, true);
+            const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
+            const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
+            const float hit_t = rayQueryGetIntersectionTEXT(rq, true);
+            const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, true);
+            const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, true);
+            const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
 
             RTGeoInstance geo = g_geometries[custom_index + geo_index];
             MaterialData mat = g_materials[geo.material_index];
 
-            uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
-            uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
-            uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
+            const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
+            const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
+            const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-            vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
-            vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
-            vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+            const vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
+            const vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
+            const vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
 
-            vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-            vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-            vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
+            const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
+            const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
+            const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
-            vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
+            const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
-            vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
-            float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
+            const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
+            const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
             tri_normal = cross(p1 - p0, p2 - p0);
             float pa = length(tri_normal);
@@ -215,11 +225,12 @@ void main() {
 
             float cone_width = _cone_width + g_params.pixel_spread_angle * hit_t;
 
-            float tex_lod = 0.5 * log2(ta/pa);
+            float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
             tex_lod -= log2(abs(dot(rayQueryGetIntersectionObjectRayDirectionEXT(rq, true), tri_normal)));
-            throughput *= SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
+            vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
+            throughput *= base_color;
 
             if ((geo.flags & RTGeoLightmappedBit) != 0u) {
                 vec2 lm_uv0 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i0].w);
@@ -232,31 +243,105 @@ void main() {
                 vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
                 vec3 indirect = vec3(0.0);//2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
 
-                #if 0 // fake
-                    vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
-                    vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
-                    vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
-
-                    vec3 normal = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
-
-                    indirect += 0.1 * EvalSHIrradiance_NonLinear(normal,
-                                                g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
-                                                g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
-                                                g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2]);
-                #endif
-
-                col = throughput * (direct_lm + indirect);
+                final_color += throughput * (direct_lm + indirect);
             } else {
-                vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
-                vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
-                vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
+                const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
+                const vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x),
+                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
+                const vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x),
+                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
 
-                vec3 normal = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
+                vec3 N = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
+                if (backfacing) {
+                    N = -N;
+                }
 
-                col *= 0.0; /*EvalSHIrradiance_NonLinear(normal,
-                                                g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[0],
-                                                g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[1],
-                                                g_shrd_data.probes[geo.flags & RTGeoProbeBits].sh_coeffs[2])*/;
+                const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * hit_t;
+                const vec3 I = -gi_ray_ws.xyz;
+                const float N_dot_V = saturate(dot(N, I));
+
+                vec3 tint_color = vec3(0.0);
+
+                const float base_color_lum = lum(base_color);
+                if (base_color_lum > 0.0) {
+                    tint_color = base_color / base_color_lum;
+                }
+
+                const float roughness = mat.params[0].w * textureLod(SAMPLER2D(mat.texture_indices[2]), uv, tex_lod).r;
+                const float sheen = mat.params[1].x;
+                const float sheen_tint = mat.params[1].y;
+                const float specular = mat.params[1].z;
+                const float specular_tint = mat.params[1].w;
+                const float metallic = mat.params[2].x * textureLod(SAMPLER2D(mat.texture_indices[3]), uv, tex_lod).r;
+                const float transmission = mat.params[2].y;
+                const float clearcoat = mat.params[2].z;
+                const float clearcoat_roughness = mat.params[2].w;
+
+                vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
+                spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
+
+                const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+                const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+
+                // Approximation of FH (using shading normal)
+                const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+
+                const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+                const float spec_color_lum = lum(approx_spec_col);
+
+                const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular,
+                                                                    metallic, transmission, clearcoat);
+
+                const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
+
+                const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+                const float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
+                const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+
+                // Approximation of FH (using shading normal)
+                const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
+                const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
+
+                const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
+
+                vec3 light_total = vec3(0.0);
+
+                for (int li = 0; li < int(g_shrd_data.item_counts.x); ++li) {
+                    light_item_t litem = g_lights[li];
+
+                    vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                    if (all(equal(light_contribution, vec3(0.0)))) {
+                        continue;
+                    }
+
+                    int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
+                    if (shadowreg_index != -1) {
+                        vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
+                        shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_unused.xyz));
+                        vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+                        vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+                        pp /= pp.w;
+
+                        #if defined(VULKAN)
+                            pp.xy = pp.xy * 0.5 + vec2(0.5);
+                        #else // VULKAN
+                            pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+                        #endif // VULKAN
+                        pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+                        #if defined(VULKAN)
+                            pp.y = 1.0 - pp.y;
+                        #endif // VULKAN
+
+                        light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+                    }
+
+                    light_total += light_contribution;
+                }
+
+                final_color += throughput * light_total;
             }
 
             ray_len = hit_t;
@@ -271,19 +356,19 @@ void main() {
         gi_ray_ws = SampleDiffuseVector(tri_normal, icoord, 1);
     }
 
-    imageStore(g_out_color_img, icoord, vec4(col, first_ray_len));
+    imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
-        imageStore(g_out_color_img, copy_coords, vec4(col, first_ray_len));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
     }
     if (copy_vertical) {
         ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, vec4(col, first_ray_len));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
     }
     if (copy_diagonal) {
         ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, vec4(col, first_ray_len));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, first_ray_len));
     }
 }

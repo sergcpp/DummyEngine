@@ -12,6 +12,7 @@
 #include "_texturing.glsl"
 #include "_principled.glsl"
 #include "ssr_common.glsl"
+
 #include "rt_reflections_interface.h"
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -175,62 +176,62 @@ void main() {
     }
 
     float ray_len = 0.0;
-    vec3 col;
+    vec3 final_color;
 
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-        col = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
+        final_color = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
     } else {
-        int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
-        int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
-        float hit_t = rayQueryGetIntersectionTEXT(rq, true);
-        int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, true);
-        vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, true);
-        bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
+        const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
+        const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
+        const float hit_t = rayQueryGetIntersectionTEXT(rq, true);
+        const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, true);
+        const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, true);
+        const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
 
-        RTGeoInstance geo = g_geometries[custom_index + geo_index];
-        MaterialData mat = g_materials[geo.material_index];
+        const RTGeoInstance geo = g_geometries[custom_index + geo_index];
+        const MaterialData mat = g_materials[geo.material_index];
 
-        uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
-        uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
-        uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
+        const uint i0 = g_indices[geo.indices_start + 3 * prim_id + 0];
+        const uint i1 = g_indices[geo.indices_start + 3 * prim_id + 1];
+        const uint i2 = g_indices[geo.indices_start + 3 * prim_id + 2];
 
-        vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
-        vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
-        vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
+        const vec3 p0 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i0].xyz);
+        const vec3 p1 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i1].xyz);
+        const vec3 p2 = uintBitsToFloat(g_vtx_data0[geo.vertices_start + i2].xyz);
 
-        vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
-        vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
-        vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
+        const vec2 uv0 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i0].w);
+        const vec2 uv1 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i1].w);
+        const vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
-        vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
+        const vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
 
-        vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
-        float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
+        const vec2 tex_res = textureSize(SAMPLER2D(mat.texture_indices[0]), 0).xy;
+        const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
         vec3 tri_normal = cross(p1 - p0, p2 - p0);
-        float pa = length(tri_normal);
+        const float pa = length(tri_normal);
         tri_normal /= pa;
 
-        float cone_width = _cone_width + g_params.pixel_spread_angle * hit_t;
+        const float cone_width = _cone_width + g_params.pixel_spread_angle * hit_t;
 
-        float tex_lod = 0.5 * log2(ta/pa);
+        float tex_lod = 0.5 * log2(ta / pa);
         tex_lod += log2(cone_width);
         tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
         tex_lod -= log2(abs(dot(rayQueryGetIntersectionObjectRayDirectionEXT(rq, true), tri_normal)));
         vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
 
         if ((geo.flags & RTGeoLightmappedBit) != 0u) {
-            vec2 lm_uv0 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i0].w);
-            vec2 lm_uv1 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i1].w);
-            vec2 lm_uv2 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i2].w);
+            const vec2 lm_uv0 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i0].w);
+            const vec2 lm_uv1 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i1].w);
+            const vec2 lm_uv2 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i2].w);
 
             vec2 lm_uv = lm_uv0 * (1.0 - bary_coord.x - bary_coord.y) + lm_uv1 * bary_coord.x + lm_uv2 * bary_coord.y;
             lm_uv = geo.lmap_transform.xy + geo.lmap_transform.zw * lm_uv;
 
-            vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
-            vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
+            const vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
+            const vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
 
-            col = base_color * (direct_lm + indirect_lm);
+            final_color = base_color * (direct_lm + indirect_lm);
         } else {
             const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
                                       unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
@@ -328,29 +329,29 @@ void main() {
                 light_total += light_contribution;
             }
 
-            col = light_total;
+            final_color = light_total;
         }
 
         ray_len = hit_t;
     }
 
-    imageStore(g_out_color_img, icoord, vec4(col, 1.0));
+    imageStore(g_out_color_img, icoord, vec4(final_color, 1.0));
     imageStore(g_out_raylen_img, icoord, vec4(ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
-        imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
         imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_vertical) {
         ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
         imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
     if (copy_diagonal) {
         ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, vec4(col, 0.0));
+        imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
         imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
     }
 }
