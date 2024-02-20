@@ -748,7 +748,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpResRef albedo_tex;
             RpResRef spec_tex;
             RpResRef refl_tex;
-            RpResRef brdf_lut;
+            RpResRef ltc_luts;
 
             RpResRef output_tex;
         };
@@ -767,7 +767,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
         } else {
             data->refl_tex = ssr_compose.AddTextureInput(gi_specular_tex, Stg::FragmentShader);
         }
-        data->brdf_lut = ssr_compose.AddTextureInput(brdf_lut_, Stg::FragmentShader);
+        data->ltc_luts = ssr_compose.AddTextureInput(ltc_luts_, Stg::FragmentShader);
         frame_textures.color = data->output_tex = ssr_compose.AddColorOutput(frame_textures.color);
 
         ssr_compose.set_execute_cb([this, data](RpBuilder &builder) {
@@ -777,7 +777,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocTex &albedo_tex = builder.GetReadTexture(data->albedo_tex);
             RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
             RpAllocTex &refl_tex = builder.GetReadTexture(data->refl_tex);
-            RpAllocTex &brdf_lut = builder.GetReadTexture(data->brdf_lut);
+            RpAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts);
 
             RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
 
@@ -805,7 +805,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::BRDF_TEX_SLOT, *brdf_lut.ref},
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}
                 };
 
                 SSRComposeNew::Params uniform_params;

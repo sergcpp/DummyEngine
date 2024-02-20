@@ -14,7 +14,7 @@ const int SPEC_TEX_SLOT = 1;
 const int DEPTH_TEX_SLOT = 2;
 const int NORM_TEX_SLOT = 3;
 const int REFL_TEX_SLOT = 4;
-const int BRDF_TEX_SLOT = 5;
+const int LTC_LUTS_TEX_SLOT = 5;
 
 INTERFACE_END
 

@@ -21,7 +21,7 @@ layout(binding = SPEC_TEX_SLOT) uniform highp usampler2D g_spec_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 layout(binding = REFL_TEX_SLOT) uniform highp sampler2D g_refl_tex;
-layout(binding = BRDF_TEX_SLOT) uniform sampler2D g_brdf_lut_tex;
+layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
 #if defined(VULKAN) || defined(GL_SPIRV)
 layout(location = 0) in vec2 g_vtx_uvs;
@@ -49,14 +49,14 @@ void main() {
     pos_ws /= pos_ws.w;
     pos_ws.xyz += g_shrd_data.cam_pos_and_gamma.xyz;
 
-    vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
-    uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).r;
-    vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0));
+    const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
+    const uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).r;
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0));
 
-    vec3 P = pos_ws.xyz;
-    vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
-    vec3 N = normal.xyz;
-    float N_dot_V = saturate(dot(N, I));
+    const vec3 P = pos_ws.xyz;
+    const vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
+    const vec3 N = normal.xyz;
+    const float N_dot_V = saturate(dot(N, I));
 
     vec3 tint_color = vec3(0.0);
 
@@ -68,37 +68,38 @@ void main() {
     vec4 mat_params0, mat_params1;
     UnpackMaterialParams(packed_mat_params, mat_params0, mat_params1);
 
-    float roughness = normal.w;
-    float sheen = mat_params0.x;
-    float sheen_tint = mat_params0.y;
-    float specular = mat_params0.z;
-    float specular_tint = mat_params0.w;
-    float metallic = mat_params1.x;
-    float transmission = mat_params1.y;
-    float clearcoat = mat_params1.z;
-    float clearcoat_roughness = mat_params1.w;
+    const float roughness = normal.w;
+    const float sheen = mat_params0.x;
+    const float sheen_tint = mat_params0.y;
+    const float specular = mat_params0.z;
+    const float specular_tint = mat_params0.w;
+    const float metallic = mat_params1.x;
+    const float transmission = mat_params1.y;
+    const float clearcoat = mat_params1.z;
+    const float clearcoat_roughness = mat_params1.w;
 
     vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
     spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
 
-    float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
-    float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+    const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+    const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
 
     // Approximation of FH (using shading normal)
-    float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+    const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
 
-    vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
-    float spec_color_lum = lum(approx_spec_col);
+    const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+    const float spec_color_lum = lum(approx_spec_col);
 
-    lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+    const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
-    vec3 refl_color = texelFetch(g_refl_tex, icoord, 0).rgb;
+    const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+    const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
+
+    const vec3 refl_color = texelFetch(g_refl_tex, icoord, 0).rgb;
     vec3 final_color = vec3(0.0);
 
     if (lobe_weights.specular > 0.0) {
-        vec3 kS = FresnelSchlickRoughness(N_dot_V, approx_spec_col, roughness);
-        vec2 brdf = texture(g_brdf_lut_tex, vec2(N_dot_V, roughness)).xy;
-        final_color += (kS * brdf.x + brdf.y) * refl_color;
+        final_color += refl_color * (approx_spec_col * ltc.spec_t2.x + (1.0 - approx_spec_col) * ltc.spec_t2.y);
     }
 
     /*if (lobe_weights.clearcoat > 0.0) {
