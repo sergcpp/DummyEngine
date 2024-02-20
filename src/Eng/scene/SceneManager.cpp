@@ -794,6 +794,13 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     cam_.Perspective(fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
+    const float ExtendedFrustumOffset = 100.0f;
+    const float ExtendedFrustumFrontOffset = 200.0f;
+
+    ext_cam_.SetupView(origin - ExtendedFrustumOffset * cam_.fwd(), origin, cam_.up());
+    ext_cam_.Perspective(cam_.angle(), cam_.aspect(), 1.0f, ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
+    ext_cam_.UpdatePlanes();
+
     cam_.autoexposure = autoexposure;
     cam_.max_exposure = max_exposure;
 

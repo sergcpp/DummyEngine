@@ -361,7 +361,8 @@ void GSBaseState::Enter() {
         if (shrd_this) {
             // TODO: refactor this
             char buf[1024];
-            snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(argv[1].str.length()), argv[1].str.data());
+            snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(argv[1].str.length()),
+                     argv[1].str.data());
             shrd_this->LoadScene(buf);
         }
         return true;
@@ -1120,7 +1121,8 @@ void GSBaseState::UpdateFrame(int list_index) {
                                                     Eng::EnableLights | Eng::EnableDecals | Eng::EnableShadows |
                                                     Eng::EnableProbes;
 
-                renderer_->PrepareDrawList(scene_manager_->scene_data(), temp_probe_cam_, temp_probe_lists_[i]);
+                renderer_->PrepareDrawList(scene_manager_->scene_data(), temp_probe_cam_, temp_probe_cam_,
+                                           temp_probe_lists_[i]);
             }
 
             probe_to_render_ = probe;
@@ -1131,7 +1133,8 @@ void GSBaseState::UpdateFrame(int list_index) {
 
         list.render_flags = render_flags_;
 
-        renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), list);
+        renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), scene_manager_->ext_cam(),
+                                   list);
 
         scene_manager_->UpdateTexturePriorities(list.visible_textures.data, list.visible_textures.count,
                                                 list.desired_textures.data, list.desired_textures.count);

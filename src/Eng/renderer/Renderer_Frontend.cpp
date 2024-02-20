@@ -95,7 +95,8 @@ __itt_string_handle *itt_proc_occluders_str = __itt_string_handle_create("Proces
 #define _CROSS(x, y)                                                                                                   \
     { (x)[1] * (y)[2] - (x)[2] * (y)[1], (x)[2] * (y)[0] - (x)[0] * (y)[2], (x)[0] * (y)[1] - (x)[1] * (y)[0] }
 
-void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
+void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam,
+                                    DrawList &list) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -106,6 +107,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     list.frame_index = frame_index_;
     list.draw_cam = cam;
+    list.ext_cam = ext_cam;
     list.env = EnvironmentWeak{scene.env};
 
     list.materials = &scene.materials;
@@ -190,14 +192,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     }
     memset(proc_objects_.get(), 0xff, sizeof(ProcessedObjData) * scene.objects.size());
 
-    const float ExtendedFrustumOffset = 100.0f;
-    const float ExtendedFrustumFrontOffset = 200.0f;
-
-    Ren::Camera ext_cam(list.draw_cam.world_position() - ExtendedFrustumOffset * list.draw_cam.fwd(),
-                        list.draw_cam.world_position(), list.draw_cam.up());
-    ext_cam.Perspective(list.draw_cam.angle(), list.draw_cam.aspect(), 1.0f,
-                        ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
-    ext_cam.UpdatePlanes();
+    Ren::Frustum rt_z_frustums[ITEM_GRID_RES_Z];
+    list.ext_cam.ExtractSubFrustums(1, 1, ITEM_GRID_RES_Z, rt_z_frustums);
 
     // retrieve pointers to components for fast access
     const auto *transforms = (Transform *)scene.comp_store[CompTransform]->SequentialData();
@@ -329,9 +325,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                           list.draw_cam.world_position(), clip_from_identity, CompMask, &cull_ctx_,
                                           0b00000001, proc_objects_.get(), std::ref(temp_visible_objects_));
         }
-
-        Ren::Frustum rt_z_frustums[ITEM_GRID_RES_Z];
-        ext_cam.ExtractSubFrustums(1, 1, ITEM_GRID_RES_Z, rt_z_frustums);
 
         const uint64_t RTCompMask = CompAccStructureBit;
         for (auto it = temp_rt_visible_objects_.begin(); it != temp_rt_visible_objects_.end(); ++it) {

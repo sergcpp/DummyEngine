@@ -62,7 +62,7 @@ class Renderer {
     void InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags, Ren::PipelineStorage &storage,
                                  Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const;
 
-    void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
+    void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
     void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
                          const Ren::Tex2DRef target = {});
 
@@ -305,7 +305,7 @@ class Renderer {
 
     void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 
-    void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, DrawList &list);
+    void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 
     void InitPipelines();
     void InitRendererInternal();

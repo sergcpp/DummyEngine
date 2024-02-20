@@ -85,7 +85,7 @@ struct EnvironmentWeak {
 struct DrawList {
     uint64_t render_flags = 0;
     uint32_t frame_index = 0;
-    Ren::Camera draw_cam;
+    Ren::Camera draw_cam, ext_cam;
     EnvironmentWeak env;
     FrontendInfo frontend_info;
     DynArray<Ren::Vec2i> instance_indices;

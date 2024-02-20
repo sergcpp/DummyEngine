@@ -103,6 +103,7 @@ class SceneManager {
 
     const Ren::Camera &main_cam() const { return cam_; }
     Ren::Camera &main_cam() { return cam_; }
+    Ren::Camera &ext_cam() { return ext_cam_; }
     Ren::Mesh *cam_rig() { return cam_rig_.get(); }
     Eng::SceneData &scene_data() { return scene_data_; }
     bool load_complete() const { return scene_texture_load_counter_ == 0; }
@@ -231,7 +232,7 @@ class SceneManager {
     // std::unique_ptr<Ray::SceneBase> ray_scene_;
     path_config_t paths_;
 
-    Ren::Camera cam_;
+    Ren::Camera cam_, ext_cam_;
     Ren::Vec3f last_cam_pos_;
     double last_cam_time_s_ = 0.0;
     Snd::Source amb_sound_;

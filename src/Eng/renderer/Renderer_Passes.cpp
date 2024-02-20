@@ -416,14 +416,14 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             shrd_data.view_matrix = p_list_->draw_cam.view_matrix();
             shrd_data.proj_matrix = p_list_->draw_cam.proj_matrix();
 
-            shrd_data.uTaaInfo[0] = p_list_->draw_cam.px_offset()[0];
+            shrd_data.taa_info[0] = p_list_->draw_cam.px_offset()[0];
 #if defined(USE_VK_RENDER)
-            shrd_data.uTaaInfo[1] = -p_list_->draw_cam.px_offset()[1];
+            shrd_data.taa_info[1] = -p_list_->draw_cam.px_offset()[1];
 #else
-            shrd_data.uTaaInfo[1] = p_list_->draw_cam.px_offset()[1];
+            shrd_data.taa_info[1] = p_list_->draw_cam.px_offset()[1];
 #endif
-            shrd_data.uTaaInfo[2] = reinterpret_cast<const float &>(view_state_.frame_index);
-            shrd_data.uTaaInfo[3] = std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f);
+            memcpy(&shrd_data.taa_info[2], &view_state_.frame_index, sizeof(float));
+            shrd_data.taa_info[3] = std::tan(0.5f * p_list_->draw_cam.angle() * Ren::Pi<float>() / 180.0f);
 
             { // Ray Tracing Gems II, Listing 49-1
                 const Ren::Plane &l = p_list_->draw_cam.frustum_plane_vs(Ren::eCamPlane::Left);
@@ -437,15 +437,15 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 const float y1 = t.n[2] / t.n[1];
 
                 // View space position from screen space uv [0, 1]
-                //  ray.xy = (uFrustumInfo.zw * uv + uFrustumInfo.xy) * mix(zDistanceNeg, -1.0, bIsOrtho)
+                //  ray.xy = (frustum_info.zw * uv + frustum_info.xy) * mix(zDistanceNeg, -1.0, bIsOrtho)
                 //  ray.z = 1.0 * zDistanceNeg
 
-                shrd_data.uFrustumInfo[0] = -x0;
-                shrd_data.uFrustumInfo[1] = -y0;
-                shrd_data.uFrustumInfo[2] = x0 - x1;
-                shrd_data.uFrustumInfo[3] = y0 - y1;
+                shrd_data.frustum_info[0] = -x0;
+                shrd_data.frustum_info[1] = -y0;
+                shrd_data.frustum_info[2] = x0 - x1;
+                shrd_data.frustum_info[3] = y0 - y1;
 
-                view_state_.frustum_info = shrd_data.uFrustumInfo;
+                view_state_.frustum_info = shrd_data.frustum_info;
 
                 auto ReconstructViewPosition = [](const Ren::Vec2f uv, const Ren::Vec4f &cam_frustum,
                                                   const float view_z, const float is_ortho) {

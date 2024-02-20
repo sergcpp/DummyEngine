@@ -470,8 +470,9 @@ Eng::Renderer::~Renderer() {
     swCullCtxDestroy(&cull_ctx_);
 }
 
-void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, DrawList &list) {
-    GatherDrawables(scene, cam, list);
+void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam,
+                                    DrawList &list) {
+    GatherDrawables(scene, cam, ext_cam, list);
 }
 
 void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,

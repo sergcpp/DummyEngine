@@ -202,7 +202,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
                    rt_sh_tlas_nodes_stage_buf);
     draw_list.render_flags = renderer.render_flags();
 
-    renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), draw_list);
+    renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);
     scene_manager.UpdateTexturePriorities(draw_list.visible_textures.data, draw_list.visible_textures.count,
                                           draw_list.desired_textures.data, draw_list.desired_textures.count);
 
@@ -307,7 +307,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 
     for (int i = 0; i < RendererInternal::TaaSampleCountStatic; ++i) {
         draw_list.Clear();
-        renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), draw_list);
+        renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);
 
         begin_frame();
         renderer.ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
