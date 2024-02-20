@@ -182,6 +182,7 @@ struct SharedData {
     vec4 res_and_fres, transp_params_and_time;
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
+    vec4 ambient_hack;
     ProbeItem probes[MAX_PROBES_TOTAL];
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL];
 };

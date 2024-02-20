@@ -51,6 +51,7 @@ struct EnvironmentWeak {
     Ren::WeakTex2DRef env_map;
     Ren::WeakTex2DRef lm_direct, lm_indir, lm_indir_sh[4];
     float sun_shadow_bias[2] = {4.0f, 8.0f};
+    Ren::Vec3f ambient_hack;
 
     Ren::String env_map_name, env_map_name_pt;
 
@@ -73,7 +74,7 @@ struct EnvironmentWeak {
         }
         sun_shadow_bias[0] = env.sun_shadow_bias[0];
         sun_shadow_bias[1] = env.sun_shadow_bias[1];
-
+        ambient_hack = env.ambient_hack;
         env_map_name = env.env_map_name;
         env_map_name_pt = env.env_map_name_pt;
     }

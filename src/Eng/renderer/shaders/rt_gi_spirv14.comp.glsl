@@ -230,7 +230,6 @@ void main() {
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
             tex_lod -= log2(abs(dot(rayQueryGetIntersectionObjectRayDirectionEXT(rq, true), tri_normal)));
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
-            throughput *= base_color;
 
             if ((geo.flags & RTGeoLightmappedBit) != 0u) {
                 vec2 lm_uv0 = unpackHalf2x16(g_vtx_data1[geo.vertices_start + i0].w);
@@ -342,8 +341,11 @@ void main() {
                 }
 
                 final_color += throughput * light_total;
+                if (j == NUM_BOUNCES - 1) {
+                    final_color += lobe_weights.diffuse_mul * throughput * base_color * g_shrd_data.ambient_hack.rgb;
+                }
             }
-
+            throughput *= base_color;
             ray_len = hit_t;
             if (j == 0) {
                 first_ray_len = ray_len;

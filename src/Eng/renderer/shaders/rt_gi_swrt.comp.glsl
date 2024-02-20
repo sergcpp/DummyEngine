@@ -216,7 +216,6 @@ void main() {
             tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
 
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
-            throughput *= base_color;
 #else
             // TODO: Fallback to shared texture atlas
             vec3 base_color = vec3(1.0);
@@ -340,9 +339,12 @@ void main() {
                     light_total += light_contribution;
                 }
 
-                final_color += light_total;
+                final_color += throughput * light_total;
+                if (j == NUM_BOUNCES - 1) {
+                    final_color += lobe_weights.diffuse_mul * throughput * base_color * g_shrd_data.ambient_hack.rgb;
+                }
             }
-
+            throughput *= base_color;
             ray_len = inter.t;
             if (j == 0) {
                 first_ray_len = ray_len;

@@ -286,6 +286,7 @@ void main() {
             }
 
             final_color = light_total;
+            final_color += lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
         }
     }
 

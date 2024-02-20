@@ -536,6 +536,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                            p_list_->env.prev_wind_scroll_hf[0], p_list_->env.prev_wind_scroll_hf[1]};
 
             shrd_data.item_counts = Ren::Vec4u{p_list_->lights.count, p_list_->decals.count, 0, 0};
+            shrd_data.ambient_hack = Ren::Vec4f{p_list_->env.ambient_hack[0], p_list_->env.ambient_hack[1],
+                                                p_list_->env.ambient_hack[2], 0.0f};
 
             memcpy(&shrd_data.probes[0], p_list_->probes.data, sizeof(ProbeItem) * p_list_->probes.count);
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data, sizeof(EllipsItem) * p_list_->ellipsoids.count);

@@ -142,7 +142,7 @@ void main() {
     // Evaluate lights
     //
 
-    vec3 additional_light = vec3(0.0);
+    vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
         const int li = int(bitfieldExtract(item_data, 0, 12));
@@ -182,7 +182,7 @@ void main() {
             light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
         }
 
-        additional_light += light_contribution;
+        artificial_light += light_contribution;
     }
 
     //
@@ -250,16 +250,15 @@ void main() {
     vec4 gi = textureLod(g_gi_tex, px_uvs, 0.0);
     //vec3 gi = vec3(textureLod(g_gi_tex, px_uvs, 0.0).a * 0.01);
     //float ao = (gi.a * 0.01);
-    vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
-                                       lobe_weights.diffuse_mul * gi.rgb /*+ ao * indirect_col +*/) + additional_light;
-
-    //diffuse_color = lobe_weights.diffuse_mul * gi.rgb;
+    vec3 final_color = base_color * g_shrd_data.sun_col.xyz * lambert * visibility;
+    final_color += artificial_light;
+    final_color += lobe_weights.diffuse_mul * base_color * gi.rgb;
 
     //float ambient_occlusion = textureLod(g_ao_tex, px_uvs, 0.0).r;
     //vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
     //                                   ambient_occlusion * ambient_occlusion * indirect_col +
-    //                                   additional_light);
+    //                                   artificial_light);
 
-    imageStore(g_out_color_img, icoord, vec4(diffuse_color, 0.0));
+    imageStore(g_out_color_img, icoord, vec4(final_color, 0.0));
     //imageStore(g_out_color_img, icoord, vec4(N * 0.5 + vec3(0.5), 0.0));
 }

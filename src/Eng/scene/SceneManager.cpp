@@ -221,8 +221,8 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         static const uint8_t data[4] = {255, 255, 255, 255};
 
         Ren::eTexLoadStatus status;
-        white_tex_ = ren_ctx_.LoadTexture2D("White Tex", data, sizeof(data), p,
-                                            ren_ctx_.default_stage_bufs(), ren_ctx_.default_mem_allocs(), &status);
+        white_tex_ = ren_ctx_.LoadTexture2D("White Tex", data, sizeof(data), p, ren_ctx_.default_stage_bufs(),
+                                            ren_ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -501,6 +501,14 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.sun_shadow_bias[0] = 4.0f;
             scene_data_.env.sun_shadow_bias[1] = 8.0f;
         }
+        if (js_env.Has("ambient_hack")) {
+            const JsArrayP &js_ambient_hack = js_env.at("ambient_hack").as_arr();
+            scene_data_.env.ambient_hack[0] = float(js_ambient_hack.at(0).as_num().val);
+            scene_data_.env.ambient_hack[1] = float(js_ambient_hack.at(1).as_num().val);
+            scene_data_.env.ambient_hack[2] = float(js_ambient_hack.at(2).as_num().val);
+        } else {
+            scene_data_.env.ambient_hack[0] = scene_data_.env.ambient_hack[1] = scene_data_.env.ambient_hack[2] = 0.0f;
+        }
     } else {
         scene_data_.env = {};
     }
@@ -559,6 +567,23 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
         { // write env map names
             js_env.Push("env_map", JsStringP{scene_data_.env.env_map_name.c_str(), alloc});
             js_env.Push("env_map_pt", JsStringP{scene_data_.env.env_map_name_pt.c_str(), alloc});
+        }
+
+        { // write sun shadow bias
+            JsArrayP js_sun_shadow_bias(alloc);
+            js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[0]));
+            js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[1]));
+
+            js_env.Push("sun_shadow_bias", std::move(js_sun_shadow_bias));
+        }
+
+        { // write ambient hack
+            JsArrayP js_ambient_hack(alloc);
+            js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[0]));
+            js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[1]));
+            js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[2]));
+
+            js_env.Push("ambient_hack", std::move(js_ambient_hack));
         }
 
         js_scene.Push("environment", std::move(js_env));

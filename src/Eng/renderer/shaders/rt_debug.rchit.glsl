@@ -191,7 +191,7 @@ void main() {
             light_total += light_contribution;
         }
 
-        g_pld.col = light_total;
+        g_pld.col = light_total + lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
     }
 }
 
