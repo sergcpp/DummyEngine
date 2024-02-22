@@ -41,6 +41,9 @@ layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
     light_item_t g_lights[];
 };
 
+layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
+
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
@@ -157,7 +160,26 @@ void main() {
 
         vec3 light_total = vec3(0.0);
 
-        for (int li = 0; li < int(g_shrd_data.item_counts.x); ++li) {
+        vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
+        projected_p /= projected_p[3];
+        projected_p.xy = projected_p.xy * 0.5 + 0.5;
+
+        const highp float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
+        const highp float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
+        const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
+                  tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
+                  tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+
+        const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+
+        const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+        const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+        const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+
+        for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
+            const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+            const int li = int(bitfieldExtract(item_data, 0, 12));
+
             light_item_t litem = g_lights[li];
 
             vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,

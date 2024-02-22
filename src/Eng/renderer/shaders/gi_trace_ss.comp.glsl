@@ -83,7 +83,7 @@ void main() {
     vec3 normal_ws = UnpackNormalAndRoughness(normal_fetch).xyz;
     float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
 
-    vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
+    vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
     vec3 ray_origin_ss = vec3(norm_uvs, depth);
     vec4 ray_origin_cs = vec4(ray_origin_ss, 1.0);
@@ -94,7 +94,7 @@ void main() {
     ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - 1.0;
 #endif // VULKAN
 
-    vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);

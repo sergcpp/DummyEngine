@@ -24,11 +24,11 @@ void main() {
     vec2 d = in_uv * 2.0 - 1.0;
     d.y = -d.y;
 
-    vec4 origin = g_shrd_data.inv_view_matrix * vec4(0, 0, 0, 1);
+    vec4 origin = g_shrd_data.world_from_view * vec4(0, 0, 0, 1);
     origin /= origin.w;
-    vec4 target = g_shrd_data.inv_proj_matrix * vec4(d.xy, 1, 1);
+    vec4 target = g_shrd_data.view_from_clip * vec4(d.xy, 1, 1);
     target /= target.w;
-    vec4 direction = g_shrd_data.inv_view_matrix * vec4(normalize(target.xyz), 0);
+    vec4 direction = g_shrd_data.world_from_view * vec4(normalize(target.xyz), 0);
 
     const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
     const float t_min = 0.001;

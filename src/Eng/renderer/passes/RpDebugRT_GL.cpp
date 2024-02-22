@@ -37,6 +37,8 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
             lm_tex[i] = &dummy_black;
         }
     }
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
     RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
@@ -104,6 +106,8 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Tex2D, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::Image, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
 

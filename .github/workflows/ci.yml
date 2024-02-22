@@ -312,5 +312,5 @@ jobs:
           path: linux-x86_64-vk-nv-output/
       - name: Analyze Output
         run: |
-          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt
+          python src/Eng/scripts/analyze_output.py windows-x86_64-vk-nv-output/test_Eng_output.txt windows-x86_64-vk-amd-output/test_Eng_output.txt windows-x86_64-vk-arc-output/test_Eng_output.txt linux-x86_64-vk-nv-output/test_Eng_output.txt linux-x86_64-vk-amd-output/test_Eng_output.txt
         shell: bash

@@ -80,8 +80,12 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
                                                                Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef cells_stage_buf =
         ren_ctx_->LoadBuffer("Cells (Stage)", Ren::eBufType::Stage, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_cells_stage_buf =
+        ren_ctx_->LoadBuffer("RT Cells (Stage)", Ren::eBufType::Stage, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef items_stage_buf =
         ren_ctx_->LoadBuffer("Items (Stage)", Ren::eBufType::Stage, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_items_stage_buf =
+        ren_ctx_->LoadBuffer("RT Items (Stage)", Ren::eBufType::Stage, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef lights_stage_buf =
         ren_ctx_->LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
@@ -114,9 +118,10 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     //
     for (int i = 0; i < 2; i++) {
         main_view_lists_[i].Init(shared_data_stage_buf, instances_stage_buf, instance_indices_stage_buf,
-                                 skin_transforms_stage_buf, shape_keys_stage_buf, cells_stage_buf, items_stage_buf,
-                                 lights_stage_buf, decals_stage_buf, rt_obj_instances_stage_buf,
-                                 rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf);
+                                 skin_transforms_stage_buf, shape_keys_stage_buf, cells_stage_buf, rt_cells_stage_buf,
+                                 items_stage_buf, rt_items_stage_buf, lights_stage_buf, decals_stage_buf,
+                                 rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
+                                 rt_sh_tlas_nodes_stage_buf);
     }
 }
 
@@ -955,9 +960,9 @@ void GSBaseState::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
         long)back_dur);*/
 
         Eng::ItemsInfo items_info;
-        items_info.lights_count = main_view_lists_[back_list].lights.count;
-        items_info.decals_count = main_view_lists_[back_list].decals.count;
-        items_info.probes_count = main_view_lists_[back_list].probes.count;
+        items_info.lights_count = uint32_t(main_view_lists_[back_list].lights.size());
+        items_info.decals_count = uint32_t(main_view_lists_[back_list].decals.size());
+        items_info.probes_count = uint32_t(main_view_lists_[back_list].probes.size());
         items_info.items_total = main_view_lists_[back_list].items.count;
 
         debug_ui_->UpdateInfo(front_info, back_info, items_info, render_flags);

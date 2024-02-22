@@ -116,13 +116,13 @@ void main() {
         vec4 ray_origin_cs = vec4(g_vtx_uvs.xy / g_shrd_data.res_and_fres.xy, 2.0 * depth - 1.0, 1.0);
         ray_origin_cs.xy = 2.0 * ray_origin_cs.xy - 1.0;
 
-        vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+        vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
         ray_origin_vs /= ray_origin_vs.w;
 
-        vec3 view_ray_ws = normalize((g_shrd_data.inv_view_matrix * vec4(ray_origin_vs.xyz, 0.0)).xyz);
+        vec3 view_ray_ws = normalize((g_shrd_data.world_from_view * vec4(ray_origin_vs.xyz, 0.0)).xyz);
         vec3 refl_ray_ws = reflect(view_ray_ws, normal);
 
-        vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
+        vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;
 
         highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];

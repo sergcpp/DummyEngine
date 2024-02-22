@@ -130,10 +130,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         return;
     }
 
-    list.lights.count = 0;
-    list.decals.count = 0;
-    list.probes.count = 0;
-    list.ellipsoids.count = 0;
+    list.lights.clear();
+    list.decals.clear();
+    list.probes.clear();
+    list.ellipsoids.clear();
 
     list.instance_indices.count = 0;
     list.shadow_batches.count = 0;
@@ -326,7 +326,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                           0b00000001, proc_objects_.get(), std::ref(temp_visible_objects_));
         }
 
-        const uint64_t RTCompMask = CompAccStructureBit;
+        const uint64_t RTCompMask = (CompAccStructureBit | CompLightSourceBit);
         for (auto it = temp_rt_visible_objects_.begin(); it != temp_rt_visible_objects_.end(); ++it) {
             it->val.objects.clear();
             it->val.count = 0;
@@ -450,7 +450,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
                         litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
-                        LightItem &ls = list.lights.data[list.lights.count++];
+                        proc_objects_[i.index].li_index = int32_t(list.lights.size());
+                        LightItem &ls = list.lights.emplace_back();
 
                         ls.col[0] = light.col[0] / light.area;
                         ls.col[1] = light.col[1] / light.area;
@@ -496,7 +497,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                     const Mat4f clip_from_world_transposed = Transpose(clip_from_world);
 
-                    DecalItem &de = list.decals.data[list.decals.count++];
+                    DecalItem &de = list.decals.emplace_back();
                     memcpy(&de.mat[0][0], &clip_from_world_transposed[0][0], 12 * sizeof(float));
                     memcpy(&de.mask[0], &decal.mask[0], 4 * sizeof(float));
                     memcpy(&de.diff[0], &decal.diff[0], 4 * sizeof(float));
@@ -504,7 +505,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     memcpy(&de.spec[0], &decal.spec[0], 4 * sizeof(float));
                 }
             }
-            if ((it->key & CompProbeBit) && list.probes.count < MAX_PROBES_TOTAL) {
+            if ((it->key & CompProbeBit) && list.probes.size() < MAX_PROBES_TOTAL) {
                 for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
                     const SceneObject &obj = scene.objects[i.index];
 
@@ -515,7 +516,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
-                    ProbeItem &pr = list.probes.data[list.probes.count++];
+                    ProbeItem &pr = list.probes.emplace_back();
                     pr.layer = float(probe.layer_index);
                     pr.radius = probe.radius;
                     memcpy(&pr.position[0], &pos[0], 3 * sizeof(float));
@@ -532,7 +533,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             futures[i].wait();
         }
 
-        VisObjStorage &rt_objects = temp_rt_visible_objects_[RTCompMask];
+        VisObjStorage &rt_objects = temp_rt_visible_objects_[CompAccStructureBit];
         if (rt_objects.count > MAX_RT_OBJ_INSTANCES) {
             OPTICK_EVENT("SORT RT INSTANCES");
 
@@ -550,7 +551,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         rt_objects.objects.resize(std::min(rt_objects.count.load(), MAX_RT_OBJ_INSTANCES));
 
-        for (const VisObj i : rt_objects.objects) {
+        for (const VisObj i : Ren::Span<VisObj>{rt_objects.objects.data(), rt_objects.count.load()}) {
             const SceneObject &obj = scene.objects[i.index];
 
             const Transform &tr = transforms[obj.components[CompTransform]];
@@ -564,6 +565,47 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             new_instance.mask = 0xff;
             memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
             new_instance.blas_ref = acc;
+        }
+
+        if (lighting_enabled) {
+            VisObjStorage &rt_lights = temp_rt_visible_objects_[CompLightSourceBit];
+            for (const VisObj i : Ren::Span<VisObj>{rt_lights.objects.data(), rt_lights.count.load()}) {
+                const SceneObject &obj = scene.objects[i.index];
+
+                const Transform &tr = transforms[obj.components[CompTransform]];
+                const LightSource &light = lights_src[obj.components[CompLightSource]];
+
+                if (proc_objects_[i.index].li_index != -1) {
+                    continue;
+                }
+
+                if (light.col[0] > 0.0f || light.col[1] > 0.0f || light.col[2] > 0.0f) {
+                    auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
+                    pos = tr.world_from_object * pos;
+                    pos /= pos[3];
+
+                    auto dir = Vec4f{-light.dir[0], -light.dir[1], -light.dir[2], 0.0f};
+                    dir = tr.world_from_object * dir;
+
+                    const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
+                    const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
+
+                    litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
+                    LightItem &ls = list.lights.emplace_back();
+
+                    ls.col[0] = light.col[0] / light.area;
+                    ls.col[1] = light.col[1] / light.area;
+                    ls.col[2] = light.col[2] / light.area;
+                    ls.type = int(light.type);
+                    memcpy(ls.pos, &pos[0], 3 * sizeof(float));
+                    ls.radius = light.radius;
+                    memcpy(ls.dir, &dir[0], 3 * sizeof(float));
+                    ls.spot = light.spot;
+                    memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
+                    ls.shadowreg_index = -1;
+                    memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
+                }
+            }
         }
     }
 
@@ -995,8 +1037,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     const Vec3f cam_pos = cam.world_position();
 
-    for (int i = 0; i < int(list.lights.count) && shadows_enabled; i++) {
-        LightItem &l = list.lights.data[i];
+    for (int i = 0; i < int(list.lights.size()) && shadows_enabled; i++) {
+        LightItem &l = list.lights[i];
         const LightSource *ls = litem_to_lsource_.data[i];
 
         if (!ls->cast_shadow) {
@@ -1525,22 +1567,44 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     OPTICK_PUSH("ASSIGNING");
     const uint64_t items_assignment_start = Sys::GetTimeUs();
 
-    if (list.lights.count || list.decals.count || list.probes.count) {
-        list.draw_cam.ExtractSubFrustums(ITEM_GRID_RES_X, ITEM_GRID_RES_Y, ITEM_GRID_RES_Z, temp_sub_frustums_.data);
+    if (!list.lights.empty() || !list.decals.empty() || !list.probes.empty()) {
+        { // main frustum
+            list.draw_cam.ExtractSubFrustums(ITEM_GRID_RES_X, ITEM_GRID_RES_Y, ITEM_GRID_RES_Z,
+                                             temp_sub_frustums_.data);
 
-        std::future<void> futures[ITEM_GRID_RES_Z];
-        std::atomic_int a_items_count = {};
+            std::future<void> futures[ITEM_GRID_RES_Z];
+            std::atomic_int items_count = {};
 
-        for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
-            futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
-                                          litem_to_lsource_.data, std::ref(list), std::ref(a_items_count));
+            for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
+                futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
+                                              litem_to_lsource_.data, std::ref(list), list.cells.data, list.items.data,
+                                              std::ref(items_count));
+            }
+
+            for (std::future<void> &fut : futures) {
+                fut.wait();
+            }
+
+            list.items.count = std::min(items_count.load(), MAX_ITEMS_TOTAL);
         }
+        { // rt frustum
+            list.ext_cam.ExtractSubFrustums(ITEM_GRID_RES_X, ITEM_GRID_RES_Y, ITEM_GRID_RES_Z, temp_sub_frustums_.data);
 
-        for (std::future<void> &fut : futures) {
-            fut.wait();
+            std::future<void> futures[ITEM_GRID_RES_Z];
+            std::atomic_int items_count = {};
+
+            for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
+                futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
+                                              litem_to_lsource_.data, std::ref(list), list.rt_cells.data,
+                                              list.rt_items.data, std::ref(items_count));
+            }
+
+            for (std::future<void> &fut : futures) {
+                fut.wait();
+            }
+
+            list.rt_items.count = std::min(items_count.load(), MAX_ITEMS_TOTAL);
         }
-
-        list.items.count = std::min(a_items_count.load(), MAX_ITEMS_TOTAL);
     } else {
         CellData _dummy = {};
         std::fill(list.cells.data, list.cells.data + ITEM_CELLS_COUNT, _dummy);
@@ -1708,7 +1772,8 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
 
 void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
                                               const BBox *decals_boxes, const LightSource *const *litem_to_lsource,
-                                              DrawList &list, std::atomic_int &items_count) {
+                                              const DrawList &list, CellData out_cells[], ItemData out_items[],
+                                              std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
 
@@ -1722,14 +1787,14 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
     // Reset cells information for slice
     for (int s = 0; s < frustums_per_slice; s++) {
-        list.cells.data[base_index + s] = {};
+        out_cells[base_index + s] = {};
     }
 
     // Gather to local list first
     ItemData local_items[ITEM_GRID_RES_X * ITEM_GRID_RES_Y][MAX_ITEMS_PER_CELL];
 
-    for (int j = 0; j < int(list.lights.count); j++) {
-        const LightItem &l = list.lights.data[j];
+    for (int j = 0; j < int(list.lights.size()); j++) {
+        const LightItem &l = list.lights[j];
         const float radius = litem_to_lsource[j]->radius;
         const float cull_radius = litem_to_lsource[j]->cull_radius;
         const float cap_radius = litem_to_lsource[j]->cap_radius;
@@ -1741,7 +1806,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
             const float *p_n = ValuePtr(first_sf->planes[k].n);
             const float p_d = first_sf->planes[k].d;
 
-            float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
+            const float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
             if (dist < -cull_radius) {
                 visible_to_slice = eVisResult::Invisible;
             } else if (l.spot > epsilon) {
@@ -1773,7 +1838,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
                 const float *p_n = ValuePtr(first_line_sf->planes[k].n);
                 const float p_d = first_line_sf->planes[k].d;
 
-                float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
+                const float dist = p_n[0] * l.pos[0] + p_n[1] * l.pos[1] + p_n[2] * l.pos[2] + p_d;
                 if (dist < -cull_radius) {
                     visible_to_line = eVisResult::Invisible;
                 } else if (l.spot > epsilon) {
@@ -1826,7 +1891,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                 if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = list.cells.data[index];
+                    CellData &cell = out_cells[index];
                     if (cell.light_count < MAX_LIGHTS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.light_count].light_index = uint16_t(j);
                         cell.light_count++;
@@ -1836,8 +1901,8 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
         }
     }
 
-    for (int j = 0; j < int(list.decals.count); j++) {
-        const DecalItem &de = list.decals.data[j];
+    for (int j = 0; j < int(list.decals.size()); j++) {
+        const DecalItem &de = list.decals[j];
 
         const float bbox_points[8][3] = {BBOX_POINTS(decals_boxes[j].bmin, decals_boxes[j].bmax)};
 
@@ -1922,7 +1987,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                 if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = list.cells.data[index];
+                    CellData &cell = out_cells[index];
                     if (cell.decal_count < MAX_DECALS_PER_CELL) {
                         local_items[row_offset + col_offset][cell.decal_count].decal_index = uint16_t(j);
                         cell.decal_count++;
@@ -1932,8 +1997,8 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
         }
     }
 
-    for (int j = 0; j < int(list.probes.count); j++) {
-        const ProbeItem &p = list.probes.data[j];
+    for (int j = 0; j < int(list.probes.size()); j++) {
+        const ProbeItem &p = list.probes[j];
         const float *p_pos = &p.position[0];
 
         eVisResult visible_to_slice = eVisResult::FullyVisible;
@@ -1988,7 +2053,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                 if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = list.cells.data[index];
+                    CellData &cell = out_cells[index];
                     if (cell.probe_count < MAX_PROBES_PER_CELL) {
                         local_items[row_offset + col_offset][cell.probe_count].probe_index = uint16_t(j);
                         cell.probe_count++;
@@ -2000,8 +2065,8 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
     const float EllipsoidInfluence = 3.0f;
 
-    for (int j = 0; j < int(list.ellipsoids.count); j++) {
-        const EllipsItem &e = list.ellipsoids.data[j];
+    for (int j = 0; j < int(list.ellipsoids.size()); j++) {
+        const EllipsItem &e = list.ellipsoids[j];
         const float *p_pos = &e.position[0];
 
         eVisResult visible_to_slice = eVisResult::FullyVisible;
@@ -2056,7 +2121,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                 if (res != eVisResult::Invisible) {
                     const int index = base_index + row_offset + col_offset;
-                    CellData &cell = list.cells.data[index];
+                    CellData &cell = out_cells[index];
                     if (cell.ellips_count < MAX_ELLIPSES_PER_CELL) {
                         local_items[row_offset + col_offset][cell.ellips_count].ellips_index = uint16_t(j);
                         cell.ellips_count++;
@@ -2068,9 +2133,9 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
     // Pack gathered local item data to total list
     for (int s = 0; s < frustums_per_slice; s++) {
-        CellData &cell = list.cells.data[base_index + s];
+        CellData &cell = out_cells[base_index + s];
 
-        int local_items_count =
+        const int local_items_count =
             int(std::max(cell.light_count, std::max(cell.decal_count, std::max(cell.probe_count, cell.ellips_count))));
 
         if (local_items_count) {
@@ -2086,7 +2151,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
                 cell.probe_count = std::min(int(cell.probe_count), free_items_left);
                 cell.ellips_count = std::min(int(cell.ellips_count), free_items_left);
 
-                memcpy(&list.items.data[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
+                memcpy(&out_items[cell.item_offset], &local_items[s][0], local_items_count * sizeof(ItemData));
             }
         }
     }
@@ -2094,7 +2159,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
 void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object,
                                          Eng::DrawList &list) {
-    if (list.ellipsoids.count + dr.ellipsoids_count > Eng::MAX_ELLIPSES_TOTAL) {
+    if (list.ellipsoids.size() + dr.ellipsoids_count > Eng::MAX_ELLIPSES_TOTAL) {
         return;
     }
 
@@ -2102,7 +2167,7 @@ void RendererInternal::__push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat
 
     for (int i = 0; i < dr.ellipsoids_count; i++) {
         const Eng::Drawable::Ellipsoid &e = dr.ellipsoids[i];
-        Eng::EllipsItem &ei = list.ellipsoids.data[list.ellipsoids.count++];
+        Eng::EllipsItem &ei = list.ellipsoids.emplace_back();
 
         auto pos = Ren::Vec4f{e.offset[0], e.offset[1], e.offset[2], 1.0f},
              axis = Ren::Vec4f{-e.axis[0], -e.axis[1], -e.axis[2], 0.0f};

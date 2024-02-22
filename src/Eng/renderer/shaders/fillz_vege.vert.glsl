@@ -97,7 +97,7 @@ void main() {
 #endif // TRANSPARENT_PERM
 
     vec3 vtx_pos_ws = (model_matrix_curr * vec4(vtx_pos_ls, 1.0)).xyz;
-    gl_Position = g_shrd_data.view_proj_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif
@@ -119,7 +119,7 @@ void main() {
 #endif // MOVING_PERM
 
     g_vtx_pos_cs_curr = gl_Position.xyw;
-    g_vtx_pos_cs_prev = (g_shrd_data.prev_view_proj_no_translation * vec4(vtx_pos_ws_prev - g_shrd_data.prev_cam_pos.xyz, 1.0)).xyw;
+    g_vtx_pos_cs_prev = (g_shrd_data.prev_clip_from_world_no_translation * vec4(vtx_pos_ws_prev - g_shrd_data.prev_cam_pos.xyz, 1.0)).xyw;
 #if defined(VULKAN)
     g_vtx_pos_cs_prev.y = -g_vtx_pos_cs_prev.y;
 #endif // VULKAN

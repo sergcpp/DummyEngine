@@ -174,11 +174,12 @@ struct EllipsItem {
 };
 
 struct SharedData {
-    mat4 view_matrix, proj_matrix, view_proj_no_translation, prev_view_proj_no_translation;
-    mat4 inv_view_matrix, inv_proj_matrix, inv_view_proj_no_translation, delta_matrix;
+    mat4 view_from_world, clip_from_view, clip_from_world_no_translation, prev_clip_from_world_no_translation;
+    mat4 world_from_view, view_from_clip, world_from_clip_no_translation, delta_matrix;
+    mat4 rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, taa_info, frustum_info;
-    vec4 clip_info, cam_pos_and_gamma, prev_cam_pos;
+    vec4 clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;

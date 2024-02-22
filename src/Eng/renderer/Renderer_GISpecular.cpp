@@ -365,6 +365,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights_res, stage);
             data->shadowmap_tex = rt_refl.AddTextureInput(shadow_map_tex_, stage);
             data->ltc_luts_tex = rt_refl.AddTextureInput(ltc_luts_, stage);
+            data->cells_buf = rt_refl.AddStorageReadonlyInput(common_buffers.rt_cells_res, stage);
+            data->items_buf = rt_refl.AddStorageReadonlyInput(common_buffers.rt_items_res, stage);
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;

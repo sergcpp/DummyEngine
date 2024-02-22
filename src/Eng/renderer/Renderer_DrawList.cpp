@@ -3,7 +3,8 @@
 void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _instances_stage_buf,
                          Ren::BufferRef _instance_indices_stage_buf, Ren::BufferRef _skin_transforms_stage_buf,
                          Ren::BufferRef _shape_keys_stage_buf, Ren::BufferRef _cells_stage_buf,
-                         Ren::BufferRef _items_stage_buf, Ren::BufferRef _lights_stage_buf,
+                         Ren::BufferRef _rt_cells_stage_buf, Ren::BufferRef _items_stage_buf,
+                         Ren::BufferRef _rt_items_stage_buf, Ren::BufferRef _lights_stage_buf,
                          Ren::BufferRef _decals_stage_buf, Ren::BufferRef _rt_obj_instances_stage_buf,
                          Ren::BufferRef _rt_sh_obj_instances_stage_buf, Ren::BufferRef _rt_tlas_nodes_stage_buf,
                          Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
@@ -22,19 +23,20 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
     skin_regions.realloc(MAX_SKIN_REGIONS_TOTAL);
     shape_keys_data.realloc(MAX_SHAPE_KEYS_TOTAL);
     shape_keys_stage_buf = std::move(_shape_keys_stage_buf);
-    lights.realloc(MAX_LIGHTS_TOTAL);
     lights_stage_buf = std::move(_lights_stage_buf);
-    decals.realloc(MAX_DECALS_TOTAL);
     decals_stage_buf = std::move(_decals_stage_buf);
-    probes.realloc(MAX_PROBES_TOTAL);
-    ellipsoids.realloc(MAX_ELLIPSES_TOTAL);
 
     cells.realloc(ITEM_CELLS_COUNT);
     cells.count = ITEM_CELLS_COUNT;
     cells_stage_buf = std::move(_cells_stage_buf);
+    rt_cells.realloc(ITEM_CELLS_COUNT);
+    rt_cells.count = ITEM_CELLS_COUNT;
+    rt_cells_stage_buf = std::move(_rt_cells_stage_buf);
 
     items.realloc(MAX_ITEMS_TOTAL);
     items_stage_buf = std::move(_items_stage_buf);
+    rt_items.realloc(MAX_ITEMS_TOTAL);
+    rt_items_stage_buf = std::move(_rt_items_stage_buf);
 
     rt_geo_instances.realloc(MAX_RT_GEO_INSTANCES);
     for (int i = 0; i < 2; ++i) {
@@ -66,12 +68,13 @@ void Eng::DrawList::Clear() {
     skin_transforms.count = 0;
     skin_regions.count = 0;
     shape_keys_data.count = 0;
-    lights.count = 0;
-    decals.count = 0;
-    probes.count = 0;
-    ellipsoids.count = 0;
+    lights.clear();
+    decals.clear();
+    probes.clear();
+    ellipsoids.clear();
 
     items.count = 0;
+    rt_items.count = 0;
 
     visible_textures.count = 0;
     desired_textures.count = 0;

@@ -59,6 +59,10 @@ layout(binding = LMAP_TEX_SLOTS) uniform sampler2D g_lm_textures[5];
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
     light_item_t g_lights[];
 };
+
+layout(binding = CELLS_BUF_SLOT) uniform highp usamplerBuffer g_cells_buf;
+layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
+
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
@@ -108,7 +112,7 @@ void main() {
     float depth = texelFetch(g_depth_tex, icoord, 0).r;
     vec4 normal_roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0));
     vec3 normal_ws = normal_roughness.xyz;
-    vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
+    vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
     float roughness = normal_roughness.w * normal_roughness.w;
 
@@ -122,14 +126,14 @@ void main() {
     vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
 #endif // VULKAN
 
-    vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, icoord);
-    vec3 refl_ray_ws = (g_shrd_data.inv_view_matrix * vec4(refl_ray_vs.xyz, 0.0)).xyz;
+    vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 
-    vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
     const uint ray_flags = 0;//gl_RayFlagsCullBackFacingTrianglesEXT;
@@ -295,8 +299,31 @@ void main() {
 
             vec3 light_total = vec3(0.0);
 
-            for (int li = 0; li < int(g_shrd_data.item_counts.x); ++li) {
-                light_item_t litem = g_lights[li];
+            vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
+            projected_p /= projected_p[3];
+            #if defined(VULKAN)
+                projected_p.xy = projected_p.xy * 0.5 + 0.5;
+            #else // VULKAN
+                projected_p.xyz = projected_p.xyz * 0.5 + 0.5;
+            #endif // VULKAN
+
+            const highp float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
+            const highp float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
+            const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
+                      tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
+                      tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+
+            const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+
+            const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+            const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+            const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+
+            for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
+                const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+                const int li = int(bitfieldExtract(item_data, 0, 12));
+
+                const light_item_t litem = g_lights[li];
 
                 vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

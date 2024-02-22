@@ -121,6 +121,8 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
 
     RpAllocTex &out_gi_tex = builder.GetWriteTexture(pass_data_->out_gi_tex);
 
@@ -153,6 +155,8 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
                                      {Ren::eBindTarget::SBuf, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+                                     {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+                                     {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
                                      {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     const Ren::Pipeline &pi = pass_data_->two_bounce ? pi_rt_gi_2bounce_inline_ : pi_rt_gi_inline_;
@@ -210,6 +214,8 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
 
     RpAllocTex &out_gi_tex = builder.GetWriteTexture(pass_data_->out_gi_tex);
 
@@ -286,6 +292,8 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     const Ren::Pipeline &pi = pass_data_->two_bounce ? pi_rt_gi_2bounce_swrt_ : pi_rt_gi_swrt_;

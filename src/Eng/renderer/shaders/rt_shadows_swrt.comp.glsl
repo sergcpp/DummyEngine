@@ -71,7 +71,7 @@ void main() {
     if (is_active) {
         float depth = texelFetch(g_depth_tex, icoord, 0).r;
         vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
-        vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
+        vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
         vec2 px_center = vec2(icoord) + 0.5;
         vec2 in_uv = px_center / vec2(g_params.img_size);
@@ -83,7 +83,7 @@ void main() {
         vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
 #endif // VULKAN
 
-        vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+        vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
         ray_origin_vs /= ray_origin_vs.w;
 
         vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
@@ -92,7 +92,7 @@ void main() {
         vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).rg;
         shadow_ray_ws = MapToCone(u, shadow_ray_ws, 0.01);
 
-        vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
+        vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;
 
         // Bias to avoid self-intersection

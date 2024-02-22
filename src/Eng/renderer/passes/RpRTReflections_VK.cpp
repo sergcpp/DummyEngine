@@ -119,6 +119,8 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
 
     RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex);
     RpAllocTex &out_raylen_tex = builder.GetWriteTexture(pass_data_->out_raylen_tex);
@@ -152,6 +154,8 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
 
@@ -207,6 +211,8 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
 
     RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex);
     RpAllocTex &out_raylen_tex = builder.GetWriteTexture(pass_data_->out_raylen_tex);
@@ -283,6 +289,8 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
 

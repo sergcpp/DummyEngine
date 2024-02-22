@@ -67,7 +67,7 @@ void main() {
     float depth = texelFetch(g_depth_tex, icoord, 0).r;
     vec4 normal_roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0));
     vec3 normal_ws = normal_roughness.xyz;
-    vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
+    vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
     float roughness = normal_roughness.w;
 
@@ -81,14 +81,14 @@ void main() {
     vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
 #endif // VULKAN
 
-    vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, icoord);
-    vec3 refl_ray_ws = (g_shrd_data.inv_view_matrix * vec4(refl_ray_vs.xyz, 0.0)).xyz;
+    vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 
-    vec4 ray_origin_ws = g_shrd_data.inv_view_matrix * ray_origin_vs;
+    vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
     g_pld.cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);

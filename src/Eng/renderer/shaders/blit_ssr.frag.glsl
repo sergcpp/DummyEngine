@@ -56,8 +56,8 @@ bool IntersectRay(vec3 ray_origin_vs, vec3 ray_dir_vs, float jitter, out vec2 hi
     vec3 ray_end_vs = ray_origin_vs + ray_length * ray_dir_vs;
 
     // Project into screen space
-    vec4 H0 = g_shrd_data.proj_matrix * vec4(ray_origin_vs, 1.0),
-         H1 = g_shrd_data.proj_matrix * vec4(ray_end_vs, 1.0);
+    vec4 H0 = g_shrd_data.clip_from_view * vec4(ray_origin_vs, 1.0),
+         H1 = g_shrd_data.clip_from_view * vec4(ray_end_vs, 1.0);
     float k0 = 1.0 / H0.w, k1 = 1.0 / H1.w;
 
 #if defined(VULKAN)
@@ -192,7 +192,7 @@ void main() {
     float depth = DelinearizeDepth(texelFetch(g_depth_tex, pix_uvs, 0).r, g_shrd_data.clip_info);
 
     vec3 normal_ws = normal_roughness.xyz;
-    vec3 normal_vs = (g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz;
+    vec3 normal_vs = (g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz;
 
     vec4 ray_origin_cs = vec4(norm_uvs, depth, 1.0);
 #if defined(VULKAN)
@@ -202,7 +202,7 @@ void main() {
     ray_origin_cs.xyz = 2.0 * ray_origin_cs.xyz - vec3(1.0);
 #endif // VULKAN
 
-    vec4 ray_origin_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+    vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);

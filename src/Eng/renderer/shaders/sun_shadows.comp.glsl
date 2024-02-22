@@ -33,7 +33,7 @@ void main() {
     highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
     highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
     vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
-    vec3 normal_vs = normalize((g_shrd_data.view_matrix * vec4(normal_ws, 0.0)).xyz);
+    vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
     vec2 px_center = vec2(icoord) + 0.5;
     vec2 in_uv = px_center / vec2(g_params.img_size);
@@ -45,13 +45,13 @@ void main() {
     vec4 ray_origin_cs = vec4(2.0 * vec3(in_uv, depth) - 1.0, 1.0);
 #endif // VULKAN
 
-    vec4 pos_vs = g_shrd_data.inv_proj_matrix * ray_origin_cs;
+    vec4 pos_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     pos_vs /= pos_vs.w;
 
     vec3 view_ray_vs = normalize(pos_vs.xyz);
     vec3 shadow_ray_ws = g_shrd_data.sun_dir.xyz;
 
-    vec4 pos_ws = g_shrd_data.inv_view_matrix * pos_vs;
+    vec4 pos_ws = g_shrd_data.world_from_view * pos_vs;
     pos_ws /= pos_ws.w;
 
     float lambert = clamp(dot(normal_ws, g_shrd_data.sun_dir.xyz), 0.0, 1.0);

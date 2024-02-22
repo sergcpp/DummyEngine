@@ -28,6 +28,8 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             lm_tex[i] = &dummy_black;
         }
     }
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
     RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
@@ -60,6 +62,8 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
         const VkDescriptorBufferInfo vtx_buf2_info = {vtx_buf2.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo ndx_buf_info = {ndx_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
         const VkDescriptorBufferInfo lights_buf_info = {lights_buf.ref->vk_handle(), 0, VK_WHOLE_SIZE};
+        const VkBufferView cells_buf_view = cells_buf.tbos[0]->view();
+        const VkBufferView items_buf_view = items_buf.tbos[0]->view();
         const VkDescriptorImageInfo lm_infos[] = {
             lm_tex[0]->ref->vk_desc_image_info(), lm_tex[1]->ref->vk_desc_image_info(),
             lm_tex[2]->ref->vk_desc_image_info(), lm_tex[3]->ref->vk_desc_image_info(),
@@ -168,6 +172,26 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
             descr_write.descriptorCount = 1;
             descr_write.pBufferInfo = &lights_buf_info;
         }
+        { // cells_buf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            descr_write.dstSet = descr_sets[0];
+            descr_write.dstBinding = RTDebug::CELLS_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &cells_buf_view;
+        }
+        { // items_buf
+            auto &descr_write = descr_writes.emplace_back();
+            descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            descr_write.dstSet = descr_sets[0];
+            descr_write.dstBinding = RTDebug::ITEMS_BUF_SLOT;
+            descr_write.dstArrayElement = 0;
+            descr_write.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+            descr_write.descriptorCount = 1;
+            descr_write.pTexelBufferView = &items_buf_view;
+        }
         { // shadowmap_tex
             auto &descr_write = descr_writes.emplace_back();
             descr_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -237,6 +261,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &vtx_buf1 = builder.GetReadBuffer(pass_data_->vtx_buf1);
     RpAllocBuf &vtx_buf2 = builder.GetReadBuffer(pass_data_->vtx_buf2);
     RpAllocBuf &ndx_buf = builder.GetReadBuffer(pass_data_->ndx_buf);
+    RpAllocBuf &lights_buf = builder.GetReadBuffer(pass_data_->lights_buf);
     RpAllocBuf &rt_blas_buf = builder.GetReadBuffer(pass_data_->swrt.rt_blas_buf);
     RpAllocBuf &rt_tlas_buf = builder.GetReadBuffer(pass_data_->swrt.rt_tlas_buf);
     RpAllocBuf &prim_ndx_buf = builder.GetReadBuffer(pass_data_->swrt.prim_ndx_buf);
@@ -245,6 +270,8 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
     RpAllocTex &env_tex = builder.GetReadTexture(pass_data_->env_tex);
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
+    RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
+    RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
     RpAllocTex *lm_tex[5];
     for (int i = 0; i < 5; ++i) {
         if (pass_data_->lm_tex[i]) {
@@ -253,6 +280,8 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
             lm_tex[i] = &dummy_black;
         }
     }
+    RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
+    RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
     RpAllocTex *output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
 
     Ren::Context &ctx = builder.ctx();
@@ -311,12 +340,17 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
+        {Ren::eBindTarget::SBuf, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
         {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
         {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
         {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
         {Ren::eBindTarget::Tex2D, RTDebug::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::Tex2D, RTDebug::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2D, RTDebug::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::TBuf, RTDebug::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
+        {Ren::eBindTarget::TBuf, RTDebug::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image, RTDebug::OUT_IMG_SLOT, *output_tex->ref}};
 
     const auto grp_count =

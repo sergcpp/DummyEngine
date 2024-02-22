@@ -1053,9 +1053,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             data->vtx_buf2 = debug_rt.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stages);
             data->ndx_buf = debug_rt.AddStorageReadonlyInput(ctx_.default_indices_buf(), stages);
             data->lights_buf = debug_rt.AddStorageReadonlyInput(common_buffers.lights_res, stages);
-
             data->shadowmap_tex = debug_rt.AddTextureInput(shadow_map_tex_, stages);
             data->ltc_luts_tex = debug_rt.AddTextureInput(ltc_luts_, stages);
+            data->cells_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_cells_res, stages);
+            data->items_buf = debug_rt.AddStorageReadonlyInput(common_buffers.rt_items_res, stages);
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;

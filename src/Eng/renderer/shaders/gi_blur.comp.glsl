@@ -210,7 +210,7 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     float center_depth_lin = LinearizeDepth(center_depth, g_shrd_data.clip_info);
 
     vec3 center_normal_ws = UnpackNormalAndRoughness(texelFetch(g_normal_tex, dispatch_thread_id, 0)).xyz;
-    vec3 center_normal_vs = normalize((g_shrd_data.view_matrix * vec4(center_normal_ws, 0.0)).xyz);
+    vec3 center_normal_vs = normalize((g_shrd_data.view_from_world * vec4(center_normal_ws, 0.0)).xyz);
 
     //vec3 center_normal_vs;
     //center_normal_vs.xy = texelFetch(g_flat_normal_tex, dispatch_thread_id, 0).xy;
@@ -246,7 +246,7 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 
     for (int i = 0; i < 8; ++i) {
         vec3 offset = g_Poisson8[i];
-        vec2 uv = GetKernelSampleCoordinates(g_shrd_data.proj_matrix, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
+        vec2 uv = GetKernelSampleCoordinates(g_shrd_data.clip_from_view, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
 
         float neighbor_depth = LinearizeDepth(textureLod(g_depth_tex, uv, 0.0).x, g_shrd_data.clip_info);
         vec3 neighbor_normal_ws = UnpackNormalAndRoughness(textureLod(g_normal_tex, uv, 0.0)).xyz;

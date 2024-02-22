@@ -64,7 +64,7 @@ void main(void) {
     g_spec_tex = GET_HANDLE(mat.texture_indices[2]);
 #endif // GL_ARB_bindless_texture
 
-    gl_Position = g_shrd_data.view_proj_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

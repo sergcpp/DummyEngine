@@ -27,5 +27,5 @@ void main() {
     vec3 vertex_position_ws = (g_mmatrix * vec4(g_in_vtx_pos, 1.0)).xyz;
     g_vtx_pos = vertex_position_ws;
 
-    gl_Position = g_shrd_data.view_proj_no_translation * g_mmatrix * vec4(g_in_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world_no_translation * g_mmatrix * vec4(g_in_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
 }

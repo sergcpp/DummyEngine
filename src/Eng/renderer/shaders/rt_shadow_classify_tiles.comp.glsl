@@ -173,7 +173,7 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
         clip_space /= clip_space.w; // perspective divide
 
         // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
-        vec4 homogeneous = g_shrd_data.inv_proj_matrix * vec4(ndc, depth, 1.0);
+        vec4 homogeneous = g_shrd_data.view_from_clip * vec4(ndc, depth, 1.0);
         vec3 world_position = homogeneous.xyz / homogeneous.w;  // perspective divide
         vec3 view_direction = normalize(g_shrd_data.cam_pos_and_gamma.xyz - world_position);
         float z_alignment = 1.0 - dot(view_direction, normal);

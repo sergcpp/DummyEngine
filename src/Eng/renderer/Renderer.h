@@ -121,6 +121,7 @@ class Renderer {
     struct ProcessedObjData {
         uint32_t base_vertex;
         int32_t rt_sh_index;
+        int32_t li_index;
         std::atomic_uint8_t visited_mask;
     };
     std::unique_ptr<ProcessedObjData[]> proc_objects_;
@@ -236,8 +237,8 @@ class Renderer {
         blit_down_depth_prog_, blit_ssr_compose_prog_;
 
     struct CommonBuffers {
-        RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, lights_res, decals_res,
-            items_res, shared_data_res, atomic_cnt_res;
+        RpResRef skin_transforms_res, shape_keys_res, instance_indices_res, cells_res, rt_cells_res, lights_res,
+            decals_res, items_res, rt_items_res, shared_data_res, atomic_cnt_res;
     };
 
     struct FrameTextures {
@@ -318,8 +319,8 @@ class Renderer {
                                            ProcessedObjData proc_objects[],
                                            Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
-                                          const LightSource *const *litem_to_lsource, DrawList &list,
-                                          std::atomic_int &items_count);
+                                          const LightSource *const *litem_to_lsource, const DrawList &list,
+                                          CellData out_cells[], ItemData out_items[], std::atomic_int &items_count);
 
     // Generate auxiliary textures
     static std::unique_ptr<uint16_t[]> Generate_BRDF_LUT(int res, std::string &out_c_header);

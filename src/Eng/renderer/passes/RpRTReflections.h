@@ -25,6 +25,8 @@ struct RpRTReflectionsData {
     RpResRef lights_buf;
     RpResRef shadowmap_tex;
     RpResRef ltc_luts_tex;
+    RpResRef cells_buf;
+    RpResRef items_buf;
     RpResRef dummy_black;
     RpResRef ray_counter;
     RpResRef ray_list;

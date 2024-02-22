@@ -105,16 +105,16 @@ struct DrawList {
     DynArray<ShapeKeyData> shape_keys_data;
     mutable Ren::BufferRef shape_keys_stage_buf;
     uint32_t skin_vertices_count = 0;
-    DynArray<LightItem> lights;
+    std::vector<LightItem> lights;
     mutable Ren::BufferRef lights_stage_buf;
-    DynArray<DecalItem> decals;
+    std::vector<DecalItem> decals;
     mutable Ren::BufferRef decals_stage_buf;
-    DynArray<ProbeItem> probes;
-    DynArray<EllipsItem> ellipsoids;
-    DynArray<CellData> cells;
-    mutable Ren::BufferRef cells_stage_buf;
-    DynArray<ItemData> items;
-    mutable Ren::BufferRef items_stage_buf;
+    std::vector<ProbeItem> probes;
+    std::vector<EllipsItem> ellipsoids;
+    DynArray<CellData> cells, rt_cells;
+    mutable Ren::BufferRef cells_stage_buf, rt_cells_stage_buf;
+    DynArray<ItemData> items, rt_items;
+    mutable Ren::BufferRef items_stage_buf, rt_items_stage_buf;
 
     DynArray<RTGeoInstance> rt_geo_instances;
     DynArray<RTObjInstance> rt_obj_instances[int(eTLASIndex::_Count)];
@@ -143,10 +143,11 @@ struct DrawList {
 
     void Init(Ren::BufferRef shared_data_stage_buf, Ren::BufferRef instances_stage_buf,
               Ren::BufferRef instance_indices_stage_buf, Ren::BufferRef skin_transforms_stage_buf,
-              Ren::BufferRef shape_keys_stage_buf, Ren::BufferRef cells_stage_buf, Ren::BufferRef items_stage_buf,
-              Ren::BufferRef lights_stage_buf, Ren::BufferRef decals_stage_buf,
-              Ren::BufferRef rt_obj_instances_stage_buf, Ren::BufferRef rt_sh_obj_instances_stage_buf,
-              Ren::BufferRef rt_tlas_nodes_stage_buf, Ren::BufferRef rt_sh_tlas_nodes_stage_buf);
+              Ren::BufferRef shape_keys_stage_buf, Ren::BufferRef cells_stage_buf, Ren::BufferRef rt_cells_stage_buf,
+              Ren::BufferRef items_stage_buf, Ren::BufferRef rt_items_stage_buf, Ren::BufferRef lights_stage_buf,
+              Ren::BufferRef decals_stage_buf, Ren::BufferRef rt_obj_instances_stage_buf,
+              Ren::BufferRef rt_sh_obj_instances_stage_buf, Ren::BufferRef rt_tlas_nodes_stage_buf,
+              Ren::BufferRef rt_sh_tlas_nodes_stage_buf);
     void Clear();
 };
 } // namespace Eng
