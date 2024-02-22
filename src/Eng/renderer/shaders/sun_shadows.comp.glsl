@@ -17,7 +17,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 
 layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform writeonly restrict image2D g_out_shadow_img;
@@ -32,7 +32,7 @@ void main() {
 
     highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
     highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
-    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
+    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).r).xyz;
     vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
     vec2 px_center = vec2(icoord) + 0.5;

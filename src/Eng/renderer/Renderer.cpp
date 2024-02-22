@@ -831,6 +831,11 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 
         if (deferred_shading) {
+            // 4-component world-space normal (alpha or z is roughness)
+            frame_textures.normal_params.w = view_state_.scr_res[0];
+            frame_textures.normal_params.h = view_state_.scr_res[1];
+            frame_textures.normal_params.format = Ren::eTexFormat::RawR32UI;
+            frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             // packed material params
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
@@ -839,6 +844,16 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
         } else {
+            // 4-component world-space normal (alpha or z is roughness)
+            frame_textures.normal_params.w = view_state_.scr_res[0];
+            frame_textures.normal_params.h = view_state_.scr_res[1];
+#if USE_OCT_PACKED_NORMALS == 1
+            frame_textures.normal_params.format = Ren::eTexFormat::RawRGB10_A2;
+#else
+            frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;
+#endif
+            frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            frame_textures.normal_params.samples = view_state_.is_multisampled ? 4 : 1;
             // 4-component specular (alpha is roughness)
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
@@ -847,17 +862,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
         }
-
-        // 4-component world-space normal (alpha or z is roughness)
-        frame_textures.normal_params.w = view_state_.scr_res[0];
-        frame_textures.normal_params.h = view_state_.scr_res[1];
-#if USE_OCT_PACKED_NORMALS == 1
-        frame_textures.normal_params.format = Ren::eTexFormat::RawRGB10_A2;
-#else
-        frame_textures.normal_params.format = Ren::eTexFormat::RawRGBA8888;
-#endif
-        frame_textures.normal_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-        frame_textures.normal_params.samples = view_state_.is_multisampled ? 4 : 1;
 
         // 4-component albedo (alpha is unused)
         frame_textures.albedo_params.w = view_state_.scr_res[0];

@@ -38,7 +38,7 @@ uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = AVG_REFL_TEX_SLOT) uniform sampler2D g_avg_refl_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = REPROJ_REFL_TEX_SLOT) uniform sampler2D g_reproj_refl_tex;
@@ -215,7 +215,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
 
     /* mediump */ vec3 center_radiance = LoadFromGroupSharedMemory(group_thread_id);
     /* mediump */ vec3 new_signal = center_radiance;
-    /* mediump */ float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0)).w;
+    /* mediump */ float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x).w;
     /* mediump */ float new_variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
 
     if (IsGlossyReflection(roughness)) {

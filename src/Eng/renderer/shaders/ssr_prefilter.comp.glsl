@@ -19,7 +19,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = AVG_REFL_TEX_SLOT) uniform sampler2D g_avg_refl_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
@@ -74,7 +74,7 @@ void LoadWithOffset(ivec2 dispatch_thread_id, ivec2 _offset,
     dispatch_thread_id += _offset;
     radiance = texelFetch(g_refl_tex, dispatch_thread_id, 0).rgb;
     variance = texelFetch(g_variance_tex, dispatch_thread_id, 0).x;
-    normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0));
+    normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, dispatch_thread_id, 0).x);
     depth = texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
 }
 

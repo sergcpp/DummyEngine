@@ -16,7 +16,7 @@
 //
 // https://github.com/GPUOpen-Effects/FidelityFX-SSSR
 //
-bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out vec3 out_hit_point) {
+bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp usampler2D norm_tex, out vec3 out_hit_point) {
     vec4 ray_offsetet_ss = g_shrd_data.clip_from_view * vec4(ray_origin_vs + ray_dir_vs, 1.0);
     ray_offsetet_ss.xyz /= ray_offsetet_ss.w;
 
@@ -96,7 +96,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, out v
     }
 
     // Reject if we hit surface from the back
-    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(g_norm_tex, cur_pos_ss.xy, 0.0)).xyz;
+    vec3 hit_normal_ws = UnpackNormalAndRoughness(textureLod(norm_tex, cur_pos_ss.xy, 0.0).x).xyz;
     vec3 hit_normal_vs = (g_shrd_data.view_from_world * vec4(hit_normal_ws, 0.0)).xyz;
     if (dot(hit_normal_vs, ray_dir_vs) > 0.0) {
         return false;

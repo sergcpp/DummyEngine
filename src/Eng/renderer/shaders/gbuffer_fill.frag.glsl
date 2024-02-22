@@ -47,7 +47,7 @@ LAYOUT(location = 9) in flat vec4 g_mat_params0;
 LAYOUT(location = 10) in flat vec4 g_mat_params1;
 
 layout(location = LOC_OUT_ALBEDO) out vec4 g_out_albedo;
-layout(location = LOC_OUT_NORM) out vec4 g_out_normal;
+layout(location = LOC_OUT_NORM) out uint g_out_normal;
 layout(location = LOC_OUT_SPEC) out uint g_out_specular;
 
 void main(void) {
@@ -133,6 +133,6 @@ void main(void) {
 
     // TODO: try to get rid of explicit srgb conversion
     g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, 1.0);
-    g_out_normal = PackNormalAndRoughness(normal, roug_color * g_base_color.w);
+    g_out_normal = PackNormalAndRoughnessNew(normal, roug_color * g_base_color.w);
     g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1 * vec4(metl_color, 1.0, 1.0, 1.0));
 }

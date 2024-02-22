@@ -26,7 +26,7 @@ LAYOUT_PARAMS uniform UniformParams {
 
 layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORMAL_TEX_SLOT) uniform sampler2D g_normal_tex;
+layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SPECULAR_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
@@ -80,7 +80,7 @@ void main() {
     pos_ws.xyz += g_shrd_data.cam_pos_and_gamma.xyz;
 
     const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0));
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
     const uint packed_mat_params = texelFetch(g_specular_tex, icoord, 0).r;
 
     //
@@ -253,6 +253,8 @@ void main() {
     vec3 final_color = base_color * g_shrd_data.sun_col.xyz * lambert * visibility;
     final_color += artificial_light;
     final_color += lobe_weights.diffuse_mul * base_color * gi.rgb;
+
+    //final_color = normal.xyz;
 
     //float ambient_occlusion = textureLod(g_ao_tex, px_uvs, 0.0).r;
     //vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +

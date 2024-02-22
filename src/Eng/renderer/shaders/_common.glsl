@@ -73,6 +73,16 @@ vec4 PackNormalAndRoughness(vec3 N, float roughness) {
     return p;
 }
 
+uint PackNormalAndRoughnessNew(vec3 N, float roughness) {
+    vec3 p;
+
+    p.xy = PackUnitVector(N);
+    p.z = roughness;
+    p *= vec3(4095.0, 4095.0, 255.0);
+
+    return uint(p.z) | (uint(p.y) << 8) | (uint(p.x) << 20);
+}
+
 vec4 UnpackNormalAndRoughness(vec4 p) {
     vec4 r;
 
@@ -84,6 +94,21 @@ vec4 UnpackNormalAndRoughness(vec4 p) {
     r.xyz = p.xyz;
     r.w = p.w;
 #endif
+    r.xyz = normalize(r.xyz);
+
+    return r;
+}
+
+vec4 UnpackNormalAndRoughness(uint f) {
+    vec3 p;
+    p.x = float((f >> 20) & 4095u);
+    p.y = float((f >> 8) & 4095u);
+    p.z = float((f >> 0) & 255u);
+    p /= vec3(4095.0, 4095.0, 255.0);
+
+    vec4 r;
+    r.xyz = UnpackUnitVector(p.xy);
+    r.w = p.z;
     r.xyz = normalize(r.xyz);
 
     return r;
@@ -101,8 +126,8 @@ uint PackMaterialParams(vec4 params0, vec4 params1) {
 }
 
 void UnpackMaterialParams(uint _packed, out vec4 params0, out vec4 params1) {
-    uvec4 uparams0 = uvec4(_packed >> 0u, _packed >> 4u, _packed >> 8u, _packed >> 12u) & uvec4(0xF);
-    uvec4 uparams1 = uvec4(_packed >> 16u, _packed >> 20u, _packed >> 24u, _packed >> 28u) & uvec4(0xF);
+    const uvec4 uparams0 = uvec4(_packed >> 0u, _packed >> 4u, _packed >> 8u, _packed >> 12u) & uvec4(0xF);
+    const uvec4 uparams1 = uvec4(_packed >> 16u, _packed >> 20u, _packed >> 24u, _packed >> 28u) & uvec4(0xF);
 
     params0 = vec4(uparams0) / 15.0;
     params1 = vec4(uparams1) / 15.0;
@@ -196,6 +221,33 @@ struct MaterialData {
 
 vec3 RGBMDecode(vec4 rgbm) {
     return 4.0 * rgbm.rgb * rgbm.a;
+}
+
+uint ReverseBits4(uint x) {
+    x = ((x & 0x5u) << 1u) | (( x & 0xAu) >> 1u);
+    x = ((x & 0x3u) << 2u) | (( x & 0xCu) >> 2u);
+    return x;
+}
+
+// https://en.wikipedia.org/wiki/Ordered_dithering
+// RESULT: [0; 15]
+uint Bayer4x4ui(uvec2 sample_pos, uint frame) {
+    uvec2 sample_pos_wrap = sample_pos & 3;
+    uint a = 2068378560u * (1u - (sample_pos_wrap.x >> 1u)) + 1500172770u * (sample_pos_wrap.x >> 1u);
+    uint b = (sample_pos_wrap.y + ((sample_pos_wrap.x & 1u) << 2u)) << 2u;
+
+    uint sampleOffset = frame;
+#if 1 // BAYER_REVERSEBITS
+    sampleOffset = ReverseBits4(sampleOffset);
+#endif
+
+    return ((a >> b) + sampleOffset) & 0xFu;
+}
+
+// RESULT: [0; 1)
+float Bayer4x4(uvec2 sample_pos, uint frame) {
+    uint bayer = Bayer4x4ui(sample_pos, frame);
+    return float(bayer) / 16.0;
 }
 
 #if defined(VULKAN) || defined(GL_SPIRV)

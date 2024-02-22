@@ -19,7 +19,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 layout(binding = ALBEDO_TEX_SLOT) uniform sampler2D g_albedo_tex;
 layout(binding = SPEC_TEX_SLOT) uniform highp usampler2D g_spec_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform highp usampler2D g_norm_tex;
 layout(binding = REFL_TEX_SLOT) uniform highp sampler2D g_refl_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
 
@@ -51,7 +51,7 @@ void main() {
 
     const vec3 base_color = texelFetch(g_albedo_tex, icoord, 0).rgb;
     const uint packed_mat_params = texelFetch(g_spec_tex, icoord, 0).r;
-    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0));
+    const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x);
 
     const vec3 P = pos_ws.xyz;
     const vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);

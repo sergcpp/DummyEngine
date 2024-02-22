@@ -114,31 +114,4 @@ uvec2 RemapLane8x8(uint lane) {
                  bitfieldInsert(bitfieldExtract(lane, 3, 3), bitfieldExtract(lane, 1, 2), 0, 2));
 }
 
-uint ReverseBits4(uint x) {
-    x = ((x & 0x5u) << 1u) | (( x & 0xAu) >> 1u);
-    x = ((x & 0x3u) << 2u) | (( x & 0xCu) >> 2u);
-    return x;
-}
-
-// https://en.wikipedia.org/wiki/Ordered_dithering
-// RESULT: [0; 15]
-uint Bayer4x4ui(uvec2 sample_pos, uint frame) {
-    uvec2 sample_pos_wrap = sample_pos & 3;
-    uint a = 2068378560u * (1u - (sample_pos_wrap.x >> 1u)) + 1500172770u * (sample_pos_wrap.x >> 1u);
-    uint b = (sample_pos_wrap.y + ((sample_pos_wrap.x & 1u) << 2u)) << 2u;
-
-    uint sampleOffset = frame;
-#if 1 // BAYER_REVERSEBITS
-    sampleOffset = ReverseBits4(sampleOffset);
-#endif
-
-    return ((a >> b) + sampleOffset) & 0xFu;
-}
-
-// RESULT: [0; 1)
-float Bayer4x4(uvec2 sample_pos, uint frame) {
-    uint bayer = Bayer4x4ui(sample_pos, frame);
-    return float(bayer) / 16.0;
-}
-
 #endif // _CS_COMMON_GLSL

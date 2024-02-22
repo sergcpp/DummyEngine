@@ -859,7 +859,7 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 }
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                                           bool enable_gi) {
+                                           const bool enable_gi) {
     using Stg = Ren::eStageBits;
 
     auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");

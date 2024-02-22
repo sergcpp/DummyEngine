@@ -30,7 +30,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_tex;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform highp usampler2D g_norm_tex;
 layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
 
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
@@ -76,11 +76,9 @@ void main() {
 
     ivec2 pix_uvs = ivec2(ray_coords);
     if (pix_uvs.x >= g_params.resolution.x || pix_uvs.y >= g_params.resolution.y) return;
-
     vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_fetch = texelFetch(g_norm_tex, pix_uvs, 0);
-    vec3 normal_ws = UnpackNormalAndRoughness(normal_fetch).xyz;
+    vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).r).xyz;
     float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
 
     vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
@@ -101,7 +99,7 @@ void main() {
     vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
 
     vec3 hit_point;
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, hit_point);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_norm_tex, hit_point);
 
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {

@@ -30,7 +30,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
 
 layout(std430, binding = RAY_COUNTER_SLOT) coherent buffer RayCounter {
@@ -240,7 +240,7 @@ void main() {
         return;
     }
 
-    float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0)).w;
+    float roughness = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).w;
     ClassifyTiles(dispatch_thread_id, group_thread_id, roughness, g_params.img_size,
                   g_params.samples_and_guided.x, g_params.samples_and_guided.y != 0u);
 }

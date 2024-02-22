@@ -23,9 +23,9 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = DEPTH_HIST_TEX_SLOT) uniform sampler2D g_depth_hist_tex;
-layout(binding = NORM_HIST_TEX_SLOT) uniform sampler2D g_norm_hist_tex;
+layout(binding = NORM_HIST_TEX_SLOT) uniform usampler2D g_norm_hist_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = RAYLEN_TEX_SLOT) uniform sampler2D g_raylen_tex;
 layout(binding = REFL_HIST_TEX_SLOT) uniform sampler2D g_refl_hist_tex;
@@ -215,7 +215,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
 
     vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
-    /* mediump */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0)).xyz;
+    /* mediump */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     /* mediump */ vec3 history_normal;
     float history_linear_depth;
 
@@ -227,8 +227,8 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
         /* mediump */ vec3 surf_history = textureLod(g_refl_hist_tex, surf_repr_uv, 0.0).xyz;
         /* mediump */ vec3 hit_history = textureLod(g_refl_hist_tex, hit_repr_uv, 0.0).xyz;
 
-        /* mediump */ vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0));
-        /* mediump */ vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0));
+        /* mediump */ vec4 surf_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x);
+        /* mediump */ vec4 hit_fetch = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, hit_repr_uv, 0.0).x);
 
         /* mediump */ vec3 surf_normal = surf_fetch.xyz, hit_normal = hit_fetch.xyz;
         /* mediump */ float surf_roughness = surf_fetch.w, hit_roughness = hit_fetch.w;
@@ -280,7 +280,7 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             for (int y = -SearchRadius; y <= SearchRadius; ++y) {
                 for (int x = -SearchRadius; x <= SearchRadius; ++x) {
                     vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                    /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0)).xyz;
+                    /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
                     float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
                     float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
                     /* mediump */ float weight = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
@@ -307,10 +307,10 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
             /* mediump */ vec3 reprojection01 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).rgb;
             /* mediump */ vec3 reprojection11 = texelFetch(g_refl_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).rgb;
 
-            /* mediump */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0)).xyz;
-            /* mediump */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0)).xyz;
-            /* mediump */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0)).xyz;
-            /* mediump */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0)).xyz;
+            /* mediump */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
+            /* mediump */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
+            /* mediump */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
+            /* mediump */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
 
             float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
             float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
@@ -355,7 +355,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     /* mediump */ float sample_count = 0.0;
     /* mediump */ float roughness;
     vec3 normal;
-    vec4 fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0));
+    vec4 fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
     normal = fetch.xyz;
     roughness = fetch.w;
     /* mediump */ vec3 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0).xyz;

@@ -30,7 +30,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = COLOR_TEX_SLOT) uniform highp sampler2D color_tex;
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform highp usampler2D g_norm_tex;
 layout(binding = NOISE_TEX_SLOT) uniform lowp sampler2D g_noise_tex;
 
 layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
@@ -84,8 +84,7 @@ void main() {
     ivec2 pix_uvs = ivec2(ray_coords);
     vec2 norm_uvs = (vec2(pix_uvs) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    vec4 normal_fetch = texelFetch(g_norm_tex, pix_uvs, 0);
-    vec4 norm_rough = UnpackNormalAndRoughness(normal_fetch);
+    vec4 norm_rough = UnpackNormalAndRoughness(texelFetch(g_norm_tex, pix_uvs, 0).x);
     float roughness = norm_rough.w * norm_rough.w;
 
     float depth = texelFetch(g_depth_tex, pix_uvs, 0).r;
@@ -110,7 +109,7 @@ void main() {
 
     vec3 hit_point;
     vec3 out_color = vec3(0.0);
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, hit_point);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_norm_tex, hit_point);
     if (hit_found) {
         vec2 uv = hit_point.xy;
 #if defined(VULKAN)
