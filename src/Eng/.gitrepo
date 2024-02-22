@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = rt_clustered
-	commit = 89133d2081fde87bc23f0e25c1665a1d0306895e
+	branch = precise_normals
+	commit = d423327aaadc65845d7c2a6b2f8e0bbd65b0adc9
 	method = merge
 	cmdver = 0.4.6
-	parent = 99398d28afed4da847a65a09defd797561c3bcd4
+	parent = 363120fa23e5c7f3f94adcd913df54ef8f88ab53
