@@ -120,6 +120,10 @@ void main() {
 #endif
 
     col = mix(col, vec3(0.0), g_params.fade);
-    g_out_color = vec4(col, 1.0);
+
+    const vec3 dither = vec3(Bayer4x4(uvec2(gl_FragCoord.xy), 0),
+                             Bayer4x4(uvec2(gl_FragCoord.xy), 1),
+                             Bayer4x4(uvec2(gl_FragCoord.xy), 2));
+    g_out_color = vec4(col + dither / 255.0, 1.0);
 }
 
