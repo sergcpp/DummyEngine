@@ -131,8 +131,14 @@ void main(void) {
         normal = -normal;
     }
 
+    vec2 dither = vec2(0.0);
+    if (dot(fwidth(normal), fwidth(normal)) > 1e-7) {
+        dither = vec2(Bayer4x4(uvec2(ix, iy), 0), Bayer4x4(uvec2(ix, iy), 1));
+        dither = fract(dither + float(floatBitsToUint(g_shrd_data.taa_info.z) & 0xFFu) * GOLDEN_RATIO) - 0.5;
+    }
+
     // TODO: try to get rid of explicit srgb conversion
     g_out_albedo = vec4(SRGBToLinear(diff_color) * g_base_color.rgb, 1.0);
-    g_out_normal = PackNormalAndRoughnessNew(normal, roug_color * g_base_color.w);
+    g_out_normal = PackNormalAndRoughnessNew(normal, roug_color * g_base_color.w, dither);
     g_out_specular = PackMaterialParams(g_mat_params0, g_mat_params1 * vec4(metl_color, 1.0, 1.0, 1.0));
 }

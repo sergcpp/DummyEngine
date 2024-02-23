@@ -30,22 +30,22 @@
 // Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
 // https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
 // [Cigolle 2014, "A Survey of Efficient Representations for Independent Unit Vectors"]
-vec2 PackUnitVector(vec3 v) {
-    vec3 t = v / (abs(v.x) + abs(v.y) + abs(v.z));
-    vec2 _sign = vec2(t.x >= 0.0 ? 1.0 : -1.0,
-                      t.y >= 0.0 ? 1.0 : -1.0);
+vec2 PackUnitVector(const vec3 v) {
+    const vec3 t = v / (abs(v.x) + abs(v.y) + abs(v.z));
+    const vec2 _sign = vec2(t.x >= 0.0 ? 1.0 : -1.0,
+                            t.y >= 0.0 ? 1.0 : -1.0);
     vec2 a = t.z >= 0.0 ? t.xy : (vec2(1.0) - abs(t.yx)) * _sign;
     a = saturate(a * 0.5 + vec2(0.5));
 
     return a.xy;
 }
 
-vec3 UnpackUnitVector(vec2 p) {
-    vec2 t = p * 2.0 - vec2(1.0);
+vec3 UnpackUnitVector(const vec2 p) {
+    const vec2 t = p * 2.0 - vec2(1.0);
 
     // https://twitter.com/Stubbesaurus/status/937994790553227264
     vec3 n = vec3(t.x, t.y, 1.0 - abs(t.x) - abs(t.y));
-    float a = saturate(-n.z);
+    const float a = saturate(-n.z);
     n.x += n.x >= 0.0 ? -a : a;
     n.y += n.y >= 0.0 ? -a : a;
 
@@ -63,7 +63,7 @@ vec4 PackNormalAndRoughness(vec3 N, float roughness) {
     p.xyz = N;
 
     // Best fit
-    float m = max(abs(N.x), max(abs(N.y), abs(N.z)));
+    const float m = max(abs(N.x), max(abs(N.y), abs(N.z)));
     p.xyz *= positive_rcp(m);
 
     p.xyz = p.xyz * 0.5 + 0.5;
@@ -73,14 +73,19 @@ vec4 PackNormalAndRoughness(vec3 N, float roughness) {
     return p;
 }
 
-uint PackNormalAndRoughnessNew(vec3 N, float roughness) {
+uint PackNormalAndRoughnessNew(const vec3 N, const float roughness, const vec2 rand) {
     vec3 p;
 
     p.xy = PackUnitVector(N);
     p.z = roughness;
     p *= vec3(4095.0, 4095.0, 255.0);
+    p.xy += rand;
 
     return uint(p.z) | (uint(p.y) << 8) | (uint(p.x) << 20);
+}
+
+uint PackNormalAndRoughnessNew(const vec3 N, const float roughness) {
+    return PackNormalAndRoughnessNew(N, roughness, vec2(0.0));
 }
 
 vec4 UnpackNormalAndRoughness(vec4 p) {
@@ -99,7 +104,7 @@ vec4 UnpackNormalAndRoughness(vec4 p) {
     return r;
 }
 
-vec4 UnpackNormalAndRoughness(uint f) {
+vec4 UnpackNormalAndRoughness(const uint f) {
     vec3 p;
     p.x = float((f >> 20) & 4095u);
     p.y = float((f >> 8) & 4095u);
@@ -134,10 +139,10 @@ void UnpackMaterialParams(uint _packed, out vec4 params0, out vec4 params1) {
 }
 
 vec3 YCoCg_to_RGB(vec4 col) {
-    float scale = (col.b * (255.0 / 8.0)) + 1.0;
-    float Y = col.a;
-    float Co = (col.r - (0.5 * 256.0 / 255.0)) / scale;
-    float Cg = (col.g - (0.5 * 256.0 / 255.0)) / scale;
+    const float scale = (col.b * (255.0 / 8.0)) + 1.0;
+    const float Y = col.a;
+    const float Co = (col.r - (0.5 * 256.0 / 255.0)) / scale;
+    const float Cg = (col.g - (0.5 * 256.0 / 255.0)) / scale;
 
     vec3 col_rgb;
     col_rgb.r = Y + Co - Cg;
@@ -231,17 +236,17 @@ uint ReverseBits4(uint x) {
 
 // https://en.wikipedia.org/wiki/Ordered_dithering
 // RESULT: [0; 15]
-uint Bayer4x4ui(uvec2 sample_pos, uint frame) {
-    uvec2 sample_pos_wrap = sample_pos & 3;
-    uint a = 2068378560u * (1u - (sample_pos_wrap.x >> 1u)) + 1500172770u * (sample_pos_wrap.x >> 1u);
-    uint b = (sample_pos_wrap.y + ((sample_pos_wrap.x & 1u) << 2u)) << 2u;
+uint Bayer4x4ui(const uvec2 sample_pos, const uint frame) {
+    const uvec2 sample_pos_wrap = sample_pos & 3u;
+    const uint a = 2068378560u * (1u - (sample_pos_wrap.x >> 1u)) + 1500172770u * (sample_pos_wrap.x >> 1u);
+    const uint b = (sample_pos_wrap.y + ((sample_pos_wrap.x & 1u) << 2u)) << 2u;
 
-    uint sampleOffset = frame;
+    uint sample_offset = frame;
 #if 1 // BAYER_REVERSEBITS
-    sampleOffset = ReverseBits4(sampleOffset);
+    sample_offset = ReverseBits4(sample_offset);
 #endif
 
-    return ((a >> b) + sampleOffset) & 0xFu;
+    return ((a >> b) + sample_offset) & 0xFu;
 }
 
 // RESULT: [0; 1)
