@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = normals_dithering
-	commit = db6371822ec4d3bc66a8e4de5c0e10da51ac5419
+	branch = color_dithering
+	commit = 77bc9d848a7774c93763cc504d1f501e4c2f85d5
 	method = merge
 	cmdver = 0.4.6
-	parent = bea80853f257be7c0fcef8667651af3f7581a5d9
+	parent = 2f8b917cfa3ba6db1c8bcd642683f074ddfc2ffa
