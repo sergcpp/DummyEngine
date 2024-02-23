@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = precise_normals
-	commit = d423327aaadc65845d7c2a6b2f8e0bbd65b0adc9
+	branch = normals_dithering
+	commit = db6371822ec4d3bc66a8e4de5c0e10da51ac5419
 	method = merge
 	cmdver = 0.4.6
-	parent = 363120fa23e5c7f3f94adcd913df54ef8f88ab53
+	parent = bea80853f257be7c0fcef8667651af3f7581a5d9
