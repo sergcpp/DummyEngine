@@ -210,7 +210,7 @@ void main() {
     vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
 
     float lambert = clamp(dot(normal.xyz, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
-    float visibility = 0.0;
+    float sun_visibility = 0.0;
 #if 0
     if (lambert > 0.00001) {
         vec4 g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2;
@@ -239,18 +239,18 @@ void main() {
             g_vtx_sh_uvs2[i] = shadow_uvs[2];
         }
 
-        visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
+        sun_visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
 #else
     if (lambert > 0.00001) {
-        visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
+        sun_visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
     }
 #endif
 
     vec4 gi = textureLod(g_gi_tex, px_uvs, 0.0);
     //vec3 gi = vec3(textureLod(g_gi_tex, px_uvs, 0.0).a * 0.01);
     //float ao = (gi.a * 0.01);
-    vec3 final_color = base_color * g_shrd_data.sun_col.xyz * lambert * visibility;
+    vec3 final_color = base_color * g_shrd_data.sun_col.xyz * lambert * sun_visibility;
     final_color += artificial_light;
     final_color += lobe_weights.diffuse_mul * base_color * gi.rgb;
 

@@ -354,19 +354,19 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = SkinTransformsBufChunkSize;
-        common_buffers.skin_transforms_res = update_bufs.AddTransferOutput(SKIN_TRANSFORMS_BUF, desc);
+        common_buffers.skin_transforms_res = update_bufs.AddTransferOutput("Skin Transforms Buf", desc);
     }
     { // create shape keys buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = ShapeKeysBufChunkSize;
-        common_buffers.shape_keys_res = update_bufs.AddTransferOutput(SHAPE_KEYS_BUF, desc);
+        common_buffers.shape_keys_res = update_bufs.AddTransferOutput("Shape Keys Buf", desc);
     }
     { // create instance indices buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Texture;
         desc.size = InstanceIndicesBufChunkSize;
-        common_buffers.instance_indices_res = update_bufs.AddTransferOutput(INSTANCE_INDICES_BUF, desc);
+        common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices Buf", desc);
     }
     { // create uniform buffer
         RpBufDesc desc;
@@ -378,7 +378,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         RpBufDesc desc;
         desc.type = Ren::eBufType::Storage;
         desc.size = sizeof(uint32_t);
-        common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput(ATOMIC_CNT_BUF, desc);
+        common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter Buf", desc);
     }
 
     update_bufs.set_execute_cb([this, &common_buffers](RpBuilder &builder) {
