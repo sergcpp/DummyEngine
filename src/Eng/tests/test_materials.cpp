@@ -214,6 +214,9 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     // Render image
     //
 
+    // NOTE: Temporarily placed here
+    std::lock_guard<std::mutex> _(g_stbi_mutex);
+
     Ren::Tex2DParams params;
     params.w = ref_w;
     params.h = ref_h;
@@ -379,7 +382,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 
     const double test_duration_ms = duration<double>(high_resolution_clock::now() - start_time).count() * 1000.0;
 
-    std::lock_guard<std::mutex> _(g_stbi_mutex);
+    //std::lock_guard<std::mutex> _(g_stbi_mutex);
 
     printf("Test %s%-12s (PSNR: %.2f/%.2f dB, Fireflies: %i/%i, Time: %.2fms)\n", test_name, test_postfix, psnr,
            min_psnr, error_pixels, pix_thres, test_duration_ms);

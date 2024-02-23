@@ -128,7 +128,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-gl"
           out-dir: "windows-x86_64-gl-output"
-          test-args: "-j1"
+          test-args: "-j2"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -151,7 +151,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-amd-output"
-          test-args: "-j1 --device AMD --nocpu"
+          test-args: "-j2 --device AMD --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -174,7 +174,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-nv-output"
-          test-args: "-j1 --device NV --nocpu"
+          test-args: "-j2 --device NV --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -197,7 +197,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-arc-output"
-          test-args: "-j1 --device Arc --nocpu"
+          test-args: "-j2 --device Arc --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -220,7 +220,7 @@ jobs:
         with:
           bin-dir: "windows-x86_64-vk"
           out-dir: "windows-x86_64-vk-xe-output"
-          test-args: "-j1 --device Xe --validation_level 1 --nocpu"
+          test-args: "-j2 --device Xe --validation_level 1 --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -243,7 +243,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-amd-output"
-          test-args: "-j1 --device AMD --nocpu"
+          test-args: "-j2 --device AMD --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
@@ -266,7 +266,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-nv-output"
-          test-args: "-j1 --device NV --nocpu"
+          test-args: "-j2 --device NV --nocpu"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
