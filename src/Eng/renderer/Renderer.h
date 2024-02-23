@@ -107,7 +107,7 @@ class Renderer {
 #if !defined(__ANDROID__)
         (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
          EnableDecals | EnableShadows | EnableTonemap /*| EnableBloom*/ | EnableTaa /*| EnableTaaStatic*/ |
-         EnableTimers | EnableDOF // | EnableRTShadows
+         EnableTimers | EnableDOF //| EnableRTShadows
          | EnableGI | EnableDeferred | EnableHQ_HDR);
 #else
         (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
@@ -302,7 +302,7 @@ class Renderer {
                                RpResRef rt_obj_instances_res, FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               FrameTextures &frame_textures);
+                               bool enabled, FrameTextures &frame_textures);
 
     void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 

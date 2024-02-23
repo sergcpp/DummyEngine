@@ -23,7 +23,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 
 layout(binding = INPUT_TEX_SLOT) uniform sampler2D g_input_tex;
 
@@ -68,7 +68,7 @@ void LoadWithOffset(ivec2 did, ivec2 offset, out /* mediump */ vec3 normals, out
     did += offset;
 
     ivec2 p = clamp(did, ivec2(0, 0), ivec2(g_params.img_size) - ivec2(1));
-    normals = UnpackNormalAndRoughness(texelFetch(g_norm_tex, p, 0)).xyz;
+    normals = UnpackNormalAndRoughness(texelFetch(g_norm_tex, p, 0).x).xyz;
     input_ = texelFetch(g_input_tex, p, 0).rg;
     depth = texelFetch(g_depth_tex, p, 0).r;
 }

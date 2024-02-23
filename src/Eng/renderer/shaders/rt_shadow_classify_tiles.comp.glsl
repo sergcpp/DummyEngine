@@ -35,7 +35,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = HISTORY_TEX_SLOT) uniform sampler2D g_hist_tex;
 layout(binding = PREV_DEPTH_TEX_SLOT) uniform sampler2D g_prev_depth_tex;
 layout(binding = PREV_MOMENTS_TEX_SLOT) uniform sampler2D g_prev_moments_tex;
@@ -167,7 +167,7 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
     bool is_disoccluded = true;
     if (all(greaterThan(previous_uv, vec2(0.0))) && all(lessThan(previous_uv, vec2(1.0)))) {
         // Read the center values
-        vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(did), 0)).xyz;
+        vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(did), 0).x).xyz;
 
         vec4 clip_space = g_shrd_data.delta_matrix * vec4(ndc, depth, 1.0);
         clip_space /= clip_space.w; // perspective divide

@@ -105,7 +105,7 @@ const int MAX_STACK_SIZE = 64;
 
 struct Environment {
     Ren::Vec3f sun_dir, sun_col;
-    float sun_softness = 0.0f;
+    float sun_angle = 0.0f;
     Ren::Vec3f wind_vec;
     float wind_turbulence = 0.0f;
     Ren::Vec2f prev_wind_scroll_lf, prev_wind_scroll_hf;

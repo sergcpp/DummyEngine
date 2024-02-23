@@ -7,6 +7,7 @@ INTERFACE_START(SunShadows)
 
 struct Params {
     UVEC2_TYPE img_size;
+    VEC2_TYPE enabled;
 };
 
 struct RayPayload {

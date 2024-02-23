@@ -950,7 +950,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 params.sampling.filter = Ren::eTexFilter::NearestMipmap;
 
                 depth_hierarchy_tex =
-                    depth_hierarchy.AddStorageImageOutput(DEPTH_HIERARCHY_TEX, params, Ren::eStageBits::ComputeShader);
+                    depth_hierarchy.AddStorageImageOutput("Depth Hierarchy", params, Ren::eStageBits::ComputeShader);
             }
 
             rp_depth_hierarchy_.Setup(rp_builder_, &view_state_, depth_tex, atomic_buf, depth_hierarchy_tex);
@@ -985,7 +985,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                       rt_sh_obj_instances_res, frame_textures,
                                       (list.render_flags & DebugShadowDenoise) != 0);
             } else {
-                AddLQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex, frame_textures);
+                AddLQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                                      (list.render_flags & EnableShadows), frame_textures);
             }
 
             // GI

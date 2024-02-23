@@ -11,7 +11,7 @@
 			2.5,
 			2.25
 		],
-		"sun_softness" : 0.1,
+		"sun_angle" : 0.1,
         "sun_shadow_bias" : [ 3.0, 0.0 ],
 		"env_map" : "env/noon_grass",
 		"env_map_pt" : "env/noon_grass_2k.hdr"

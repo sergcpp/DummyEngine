@@ -499,7 +499,7 @@ void Eng::SceneManager::InitScene_PT(bool _override) {
 
         memcpy(&sun_desc.color[0], &scene_data_.env.sun_col[0], 3 * sizeof(float));
 
-        sun_desc.angle = scene_data_.env.sun_softness;
+        sun_desc.angle = scene_data_.env.sun_angle;
 
         ray_scene_->AddLight(sun_desc);
     }

@@ -415,9 +415,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             scene_data_.env.sun_col = Ren::Vec3f{float(r), float(g), float(b)};
         }
-        if (js_env.Has("sun_softness")) {
-            const JsNumber &js_sun_softness = js_env.at("sun_softness").as_num();
-            scene_data_.env.sun_softness = float(js_sun_softness.val);
+        if (js_env.Has("sun_angle")) {
+            const JsNumber &js_sun_softness = js_env.at("sun_angle").as_num();
+            scene_data_.env.sun_angle = float(js_sun_softness.val);
         }
         if (js_env.Has("env_map")) {
             const JsStringP &js_env_map = js_env.at("env_map").as_str();
@@ -561,7 +561,7 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
         }
 
         { // write sun softness
-            js_env.Push("sun_softness", JsNumber(scene_data_.env.sun_softness));
+            js_env.Push("sun_angle", JsNumber(scene_data_.env.sun_angle));
         }
 
         { // write env map names

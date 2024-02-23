@@ -3,7 +3,7 @@
     "environment" : {
         "sun_dir" : [ 0.54, -0.54, -0.54 ],
         "sun_col" : [ 1.0, 1.0, 1.0 ],
-        "sun_softness" : 0.1,
+        "sun_angle" : 0.1,
         "env_col1" : [ 0.05, 0.075, 0.1 ],
         "env_map" : "env/stars",
         "env_map_pt" : "env/studio_small_03_2k.hdr"

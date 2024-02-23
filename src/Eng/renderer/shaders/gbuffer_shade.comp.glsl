@@ -139,9 +139,8 @@ void main() {
     const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
     //
-    // Evaluate lights
+    // Evaluate artifitial lights
     //
-
     vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
@@ -209,58 +208,20 @@ void main() {
 
     vec2 px_uvs = (vec2(ix, iy) + 0.5) / g_shrd_data.res_and_fres.zw;
 
-    float lambert = clamp(dot(normal.xyz, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
-    float sun_visibility = 0.0;
-#if 0
-    if (lambert > 0.00001) {
-        vec4 g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2;
+    //float lambert = clamp(dot(normal.xyz, g_shrd_data.sun_dir.xyz), 0.0, 1.0);
 
-        const vec2 offsets[4] = vec2[4](
-            vec2(0.0, 0.0),
-            vec2(0.25, 0.0),
-            vec2(0.0, 0.5),
-            vec2(0.25, 0.5)
-        );
+    vec3 final_color = vec3(0.0);//base_color * g_shrd_data.sun_col.xyz * lambert * sun_visibility;
 
-        /*[[unroll]]*/ for (int i = 0; i < 4; i++) {
-            vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[i].clip_from_world * vec4(P, 1.0)).xyz;
-    #if defined(VULKAN)
-            shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
-    #else // VULKAN
-            shadow_uvs = 0.5 * shadow_uvs + 0.5;
-    #endif // VULKAN
-            shadow_uvs.xy *= vec2(0.25, 0.5);
-            shadow_uvs.xy += offsets[i];
-    #if defined(VULKAN)
-            shadow_uvs.y = 1.0 - shadow_uvs.y;
-    #endif // VULKAN
-            g_vtx_sh_uvs0[i] = shadow_uvs[0];
-            g_vtx_sh_uvs1[i] = shadow_uvs[1];
-            g_vtx_sh_uvs2[i] = shadow_uvs[2];
+    if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
+        const float sun_visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
+        if (sun_visibility > 0.0) {
+            final_color += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                                                             sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         }
-
-        sun_visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
     }
-#else
-    if (lambert > 0.00001) {
-        sun_visibility = texelFetch(g_sun_shadow_tex, ivec2(ix, iy), 0).r;
-    }
-#endif
 
-    vec4 gi = textureLod(g_gi_tex, px_uvs, 0.0);
-    //vec3 gi = vec3(textureLod(g_gi_tex, px_uvs, 0.0).a * 0.01);
-    //float ao = (gi.a * 0.01);
-    vec3 final_color = base_color * g_shrd_data.sun_col.xyz * lambert * sun_visibility;
     final_color += artificial_light;
-    final_color += lobe_weights.diffuse_mul * base_color * gi.rgb;
-
-    //final_color = normal.xyz;
-
-    //float ambient_occlusion = textureLod(g_ao_tex, px_uvs, 0.0).r;
-    //vec3 diffuse_color = base_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
-    //                                   ambient_occlusion * ambient_occlusion * indirect_col +
-    //                                   artificial_light);
+    final_color += lobe_weights.diffuse_mul * base_color * textureLod(g_gi_tex, px_uvs, 0.0).rgb;
 
     imageStore(g_out_color_img, icoord, vec4(final_color, 0.0));
-    //imageStore(g_out_color_img, icoord, vec4(N * 0.5 + vec3(0.5), 0.0));
 }

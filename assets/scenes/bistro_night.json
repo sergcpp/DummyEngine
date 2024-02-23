@@ -3,7 +3,7 @@
     "environment" : {
         "sun_dir" : [ 0.35, -0.707, -0.3 ],
         "sun_col" : [ 0.0, 0.0, 0.0 ],
-        "sun_softness" : 0.1,
+        "sun_angle" : 0.1,
         "env_map" : "env/satara_night_no_lamps",
         "env_map_pt" : "env/satara_night_no_lamps_2k.hdr"
     },

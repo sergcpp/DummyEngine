@@ -11,7 +11,7 @@
 			2,
 			1.7
 		],
-		"sun_softness" : 0.1,
+		"sun_angle" : 0.1,
 		"env_map" : "env/room_env_mix",
 		"env_map_pt" : "env/room_env_mix_2k.hdr"
 	},

@@ -33,7 +33,7 @@ LAYOUT_PARAMS uniform UniformParams {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 
 layout(std430, binding = TILE_COUNTER_SLOT) coherent buffer TileCounter {
     uint g_tile_counter[];
@@ -57,7 +57,7 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
     bool is_active_lane = is_in_viewport && (depth < 1.0);
 
     if (use_normal && is_active_lane) {
-        vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(px_coord), 0)).xyz;
+        vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(px_coord), 0).x).xyz;
 
         bool is_facing_sun = dot(normal, g_shrd_data.sun_dir.xyz) > 0.0;
         is_active_lane = is_active_lane && is_facing_sun;

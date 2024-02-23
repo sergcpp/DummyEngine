@@ -483,10 +483,15 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                        sizeof(ShadowMapRegion) * p_list_->shadow_regions.count);
             }
 
-            shrd_data.sun_dir =
-                Ren::Vec4f{p_list_->env.sun_dir[0], p_list_->env.sun_dir[1], p_list_->env.sun_dir[2], 0.0f};
+            const float tan_angle = tanf(p_list_->env.sun_angle * Ren::Pi<float>() / 360.0f);
+            shrd_data.sun_dir = Ren::Vec4f{p_list_->env.sun_dir[0], p_list_->env.sun_dir[1], p_list_->env.sun_dir[2], tan_angle};
             shrd_data.sun_col =
                 Ren::Vec4f{p_list_->env.sun_col[0], p_list_->env.sun_col[1], p_list_->env.sun_col[2], 0.0f};
+            if (p_list_->env.sun_angle != 0.0f) {
+                const float radius = tan_angle;
+                const float mul = 2.0f / (Ren::Pi<float>() * radius * radius);
+                shrd_data.sun_col *= mul;
+            }
 
             // actual resolution and full resolution
             shrd_data.res_and_fres = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
@@ -978,7 +983,7 @@ void Eng::Renderer::AddSSAOPasses(const RpResRef depth_down_2x, const RpResRef _
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            ssao_raw = data->output_tex = ssao.AddColorOutput(SSAO_RAW, params);
+            ssao_raw = data->output_tex = ssao.AddColorOutput("SSAO RAW", params);
         }
 
         ssao.set_execute_cb([this, data](RpBuilder &builder) {

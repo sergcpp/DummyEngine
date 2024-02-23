@@ -119,13 +119,13 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
                          sampler2D ltc_luts, float sheen, vec3 base_color, vec3 sheen_color, vec3 spec_color, vec3 clearcoat_color) {
     const bool TwoSided = false;
 
-    vec3 ret = vec3(0.0);
-
-    int type = floatBitsToInt(litem.col_and_type.w);
-    vec3 to_light = normalize(pos_ws - litem.pos_and_radius.xyz);
+    const int type = floatBitsToInt(litem.col_and_type.w);
+    const vec3 to_light = normalize(pos_ws - litem.pos_and_radius.xyz);
     if (type != LIGHT_TYPE_SPHERE && type != LIGHT_TYPE_LINE && dot(to_light, litem.dir_and_spot.xyz) > 0.0) {
-        return ret;
+        return vec3(0.0);
     }
+
+    vec3 ret = vec3(0.0);
 
     if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
         // TODO: simplify this!
@@ -276,6 +276,63 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
 
             ret += 0.25 * litem.col_and_type.xyz * coat / 4.0;
         }
+    }
+
+    return ret;
+}
+
+vec3 EvaluateSunLight(vec3 light_color, vec3 light_dir, float light_radius, vec3 pos_ws, vec3 I, vec3 N, lobe_weights_t lobe_weights, ltc_params_t ltc,
+                      sampler2D ltc_luts, float sheen, vec3 base_color, vec3 sheen_color, vec3 spec_color, vec3 clearcoat_color) {
+    //if (dot(N, light_dir) < 0.0) {
+    //    return vec3(0.0);
+    //}
+
+    vec3 ret = vec3(0.0);
+
+    vec3 u;
+    if (abs(light_dir.y) < 0.999) {
+        u = vec3(0.0, 1.0, 0.0);
+    } else {
+        u = vec3(1.0, 0.0, 0.0);
+    }
+
+    vec3 v = normalize(cross(u, N));
+    u = cross(N, v);
+
+    vec3 points[4];
+    points[0] = pos_ws + light_dir + light_radius * u + light_radius * v;
+    points[1] = pos_ws + light_dir + light_radius * u - light_radius * v;
+    points[2] = pos_ws + light_dir - light_radius * u - light_radius * v;
+    points[3] = pos_ws + light_dir - light_radius * u + light_radius * v;
+
+    if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
+        vec3 dcol = base_color;
+
+        vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, false);
+        diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
+
+        if (sheen > 0.0 && ENABLE_SHEEN != 0) {
+            vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, false);
+            diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
+        }
+
+        ret += lobe_weights.diffuse_mul * light_color * diff;
+    }
+    if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
+        vec3 scol = spec_color;
+
+        vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, false);
+        spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
+
+        ret += light_color * spec;
+    }
+    if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
+        vec3 ccol = clearcoat_color;
+
+        vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, false);
+        coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
+
+        ret += 0.25 * light_color * coat;
     }
 
     return ret;

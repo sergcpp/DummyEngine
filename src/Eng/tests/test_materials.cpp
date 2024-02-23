@@ -29,7 +29,7 @@ namespace {
 std::mutex g_stbi_mutex;
 }
 
-enum eImgTest { NoShadow, NoGI, NoDiffuseGI, Full };
+enum eImgTest { NoShadow, NoGI, NoGI_RTShadow, NoDiffuseGI, Full };
 
 void run_image_test(const char *test_name, const char *device_name, int validation_level, const double min_psnr,
                     const int pix_thres, const eImgTest img_test = eImgTest::NoShadow) {
@@ -42,6 +42,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         test_postfix = "_noshadow";
     } else if (img_test == eImgTest::NoGI) {
         test_postfix = "_nogi";
+    } else if (img_test == eImgTest::NoGI_RTShadow) {
+        test_postfix = "_nogirt";
     } else if (img_test == eImgTest::NoDiffuseGI) {
         test_postfix = "_nodiffusegi";
     }
@@ -77,6 +79,11 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         render_flags &= ~Eng::EnableSSR;
         render_flags &= ~Eng::EnableSSR_HQ;
         render_flags &= ~Eng::EnableGI;
+    } else if (img_test == eImgTest::NoGI_RTShadow) {
+        render_flags &= ~Eng::EnableSSR;
+        render_flags &= ~Eng::EnableSSR_HQ;
+        render_flags &= ~Eng::EnableGI;
+        render_flags |= Eng::EnableRTShadows;
     } else if (img_test == eImgTest::NoDiffuseGI) {
         render_flags &= ~Eng::EnableGI;
     }
@@ -382,7 +389,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 
     const double test_duration_ms = duration<double>(high_resolution_clock::now() - start_time).count() * 1000.0;
 
-    //std::lock_guard<std::mutex> _(g_stbi_mutex);
+    // std::lock_guard<std::mutex> _(g_stbi_mutex);
 
     printf("Test %s%-12s (PSNR: %.2f/%.2f dB, Fireflies: %i/%i, Time: %.2fms)\n", test_name, test_postfix, psnr,
            min_psnr, error_pixels, pix_thres, test_duration_ms);
@@ -408,7 +415,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 34.69, 1325, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 31.38, 1865, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 29.59, 2770, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 28.71, 4395, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 28.71, 4400, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 34.31, 820, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 31.65, 1275, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 30.26, 1975, NoDiffuseGI));
@@ -417,6 +424,12 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 31.76, 1470, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 26.87, 7280, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 21.06, 19080, Full));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 31.51, 2740, NoShadow));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 18.89, 28060, NoGI));
+        //futures.push_back(
+        //    threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 28.80, 5316, NoGI_RTShadow));
 
         for (auto &f : futures) {
             f.wait();

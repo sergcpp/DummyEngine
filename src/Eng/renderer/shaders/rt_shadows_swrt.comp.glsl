@@ -25,7 +25,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = NOISE_TEX_SLOT) uniform sampler2D g_noise_tex;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth_tex;
-layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
+layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 
 layout(binding = BLAS_BUF_SLOT) uniform samplerBuffer g_blas_nodes;
 layout(binding = TLAS_BUF_SLOT) uniform samplerBuffer g_tlas_nodes;
@@ -70,7 +70,7 @@ void main() {
     bool is_active = ((1u << bit_index) & mask) != 0u;
     if (is_active) {
         float depth = texelFetch(g_depth_tex, icoord, 0).r;
-        vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0)).xyz;
+        vec3 normal_ws = UnpackNormalAndRoughness(texelFetch(g_norm_tex, icoord, 0).x).xyz;
         vec3 normal_vs = normalize((g_shrd_data.view_from_world * vec4(normal_ws, 0.0)).xyz);
 
         vec2 px_center = vec2(icoord) + 0.5;
@@ -90,7 +90,7 @@ void main() {
         vec3 shadow_ray_ws = g_shrd_data.sun_dir.xyz;
 
         vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).rg;
-        shadow_ray_ws = MapToCone(u, shadow_ray_ws, 0.01);
+        shadow_ray_ws = MapToCone(u, shadow_ray_ws, g_shrd_data.sun_dir.w);
 
         vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
         ray_origin_ws /= ray_origin_ws.w;

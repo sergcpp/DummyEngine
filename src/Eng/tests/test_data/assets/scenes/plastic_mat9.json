@@ -11,7 +11,7 @@
             0,
             0
         ],
-        "sun_softness" : 0.1,
+        "sun_angle" : 0.1,
         "env_map" : "env/black",
         "env_map_pt" : "env/noon_grass_2k.hdr",
         "ambient_hack" : [

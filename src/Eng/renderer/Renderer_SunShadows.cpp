@@ -605,7 +605,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
 void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                           const AccelerationStructureData &acc_struct_data,
-                                          const BindlessTextureData &bindless, FrameTextures &frame_textures) {
+                                          const BindlessTextureData &bindless, const bool enabled, FrameTextures &frame_textures) {
     auto &sun_shadows = rp_builder_.AddPass("SUN SHADOWS");
 
     struct RpShadowsData {
@@ -637,7 +637,7 @@ void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, c
             sun_shadows.AddStorageImageOutput("Sun Shadows", params, Ren::eStageBits::ComputeShader);
     }
 
-    sun_shadows.set_execute_cb([this, data](RpBuilder &builder) {
+    sun_shadows.set_execute_cb([this, data, enabled](RpBuilder &builder) {
         RpAllocBuf &shared_data_buf = builder.GetReadBuffer(data->shared_data);
         RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
         RpAllocTex &norm_tex = builder.GetReadTexture(data->normal_tex);
@@ -657,6 +657,7 @@ void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
         SunShadows::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+        uniform_params.enabled[0] = enabled ? 1.0f : 0.0f;
 
         Ren::DispatchCompute(pi_sun_shadows_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                              builder.ctx().default_descr_alloc(), builder.ctx().log());
