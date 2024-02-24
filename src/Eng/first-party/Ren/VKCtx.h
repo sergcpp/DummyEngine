@@ -59,6 +59,8 @@ struct ApiContext {
 
     bool renderpass_loadstore_none_supported = false;
 
+    bool subgroup_size_control_supported = false;
+
     uint32_t supported_stages_mask = 0xffffffff;
 
     // resources scheduled for deferred destruction
@@ -160,6 +162,7 @@ struct ApiContext {
     PFN_vkDeviceWaitIdle vkDeviceWaitIdle = {};
 
     PFN_vkGetPhysicalDeviceProperties2KHR vkGetPhysicalDeviceProperties2KHR = {};
+    PFN_vkGetPhysicalDeviceFeatures2KHR vkGetPhysicalDeviceFeatures2KHR = {};
     PFN_vkGetBufferDeviceAddressKHR vkGetBufferDeviceAddressKHR = {};
 
     PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = {};

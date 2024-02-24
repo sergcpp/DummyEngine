@@ -16,7 +16,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
     return true;
 }
 
-bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
+bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int>) {
     Destroy();
 
     type_ = ePipelineType::Compute;

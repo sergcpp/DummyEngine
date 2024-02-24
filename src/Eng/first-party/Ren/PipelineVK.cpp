@@ -341,12 +341,16 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
                 subpass_index, log);
 }
 
-bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
+bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int> subgroup_size) {
     Destroy();
 
     ePipelineType type = ePipelineType::Undefined;
 
     SmallVector<VkPipelineShaderStageCreateInfo, int(eShaderType::_Count)> shader_stage_create_info;
+    VkPipelineShaderStageRequiredSubgroupSizeCreateInfoEXT subgroup_size_info = {
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_REQUIRED_SUBGROUP_SIZE_CREATE_INFO};
+    subgroup_size_info.requiredSubgroupSize = subgroup_size.value_or(0);
+
     int hit_group_index = -1;
     for (int i = 0; i < int(eShaderType::_Count); ++i) {
         const ShaderRef &sh = prog->shader(eShaderType(i));
@@ -414,6 +418,10 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log) {
         stage_info.module = prog->shader(eShaderType(i))->module();
         stage_info.pName = "main";
         stage_info.pSpecializationInfo = nullptr;
+
+        if (api_ctx->subgroup_size_control_supported && subgroup_size.has_value()) {
+            stage_info.pNext = &subgroup_size_info;
+        }
     }
 
     if (type == ePipelineType::Undefined) {

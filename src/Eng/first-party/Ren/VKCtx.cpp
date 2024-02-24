@@ -258,6 +258,7 @@ bool Ren::ApiContext::LoadInstanceFunctions(ILog *log) {
     LOAD_INSTANCE_FUN(vkDeviceWaitIdle)
 
     LOAD_INSTANCE_FUN(vkGetPhysicalDeviceProperties2KHR)
+    LOAD_INSTANCE_FUN(vkGetPhysicalDeviceFeatures2KHR)
     LOAD_INSTANCE_FUN(vkGetBufferDeviceAddressKHR)
 
     LOAD_INSTANCE_FUN(vkCreateRayTracingPipelinesKHR)
@@ -507,6 +508,10 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
         device_extensions.push_back(VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME);
     }
 
+    if (this->subgroup_size_control_supported) {
+        device_extensions.push_back(VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME);
+    }
+
     device_info.enabledExtensionCount = uint32_t(device_extensions.size());
     device_info.ppEnabledExtensionNames = device_extensions.cdata();
 
@@ -568,10 +573,17 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamic_rendering_features = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR};
     dynamic_rendering_features.dynamicRendering = VK_TRUE;
-
     if (this->dynamic_rendering_supported) {
         (*pp_next) = &dynamic_rendering_features;
         pp_next = &dynamic_rendering_features.pNext;
+    }
+
+    VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroup_size_control_features = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
+    subgroup_size_control_features.subgroupSizeControl = VK_TRUE;
+    if (this->subgroup_size_control_supported) {
+        (*pp_next) = &subgroup_size_control_features;
+        pp_next = &subgroup_size_control_features.pNext;
     }
 
 #if defined(VK_USE_PLATFORM_MACOS_MVK)
@@ -605,7 +617,8 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
         vkGetPhysicalDeviceProperties(physical_devices[i], &device_properties);
 
         bool acc_struct_supported = false, raytracing_supported = false, ray_query_supported = false,
-             dynamic_rendering_supported = false, renderpass_loadstore_none_supported = false;
+             dynamic_rendering_supported = false, renderpass_loadstore_none_supported = false,
+             subgroup_size_control_supported = false;
 
         { // check for swapchain support
             uint32_t extension_count;
@@ -632,6 +645,8 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                     // dynamic_rendering_supported = true;
                 } else if (strcmp(ext.extensionName, VK_EXT_LOAD_STORE_OP_NONE_EXTENSION_NAME) == 0) {
                     renderpass_loadstore_none_supported = true;
+                } else if (strcmp(ext.extensionName, VK_EXT_SUBGROUP_SIZE_CONTROL_EXTENSION_NAME) == 0) {
+                    subgroup_size_control_supported = true;
                 }
             }
 
@@ -713,6 +728,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                 this->ray_query_supported = ray_query_supported;
                 this->dynamic_rendering_supported = dynamic_rendering_supported;
                 this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;
+                this->subgroup_size_control_supported = subgroup_size_control_supported;
                 if (!this->raytracing_supported) {
                     supported_stages_mask &= ~VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
                 }

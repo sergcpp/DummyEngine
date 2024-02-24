@@ -170,6 +170,18 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         api_ctx_->raytracing_supported = api_ctx_->ray_query_supported = false;
     }
 
+    if (api_ctx_->subgroup_size_control_supported) {
+        VkPhysicalDeviceSubgroupSizeControlFeaturesEXT subgroup_size_control_features = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SUBGROUP_SIZE_CONTROL_FEATURES_EXT};
+
+        VkPhysicalDeviceFeatures2 feat2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+        feat2.pNext = &subgroup_size_control_features;
+
+        api_ctx_->vkGetPhysicalDeviceFeatures2KHR(api_ctx_->physical_device, &feat2);
+
+        api_ctx_->subgroup_size_control_supported &= (subgroup_size_control_features.subgroupSizeControl == VK_TRUE);
+    }
+
     if (api_ctx_->present_family_index != 0xffffffff && !api_ctx_->InitSwapChain(w, h, log)) {
         return false;
     }

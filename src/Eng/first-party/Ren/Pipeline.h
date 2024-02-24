@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include "Buffer.h"
 #include "Fwd.h"
 #include "Program.h"
@@ -94,7 +96,7 @@ class Pipeline : public RefCounter {
     bool Init(ApiContext *api_ctx, const RastState &rast_state, ProgramRef prog, const VertexInput *vtx_input,
               Span<const RenderTarget> color_attachments, RenderTarget depth_attachment, uint32_t subpass_index,
               ILog *log);
-    bool Init(ApiContext *api_ctx, ProgramRef prog, ILog *log);
+    bool Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::optional<int> subgroup_size = {});
 };
 
 using PipelineRef = StrongRef<Pipeline, SparseArray<Pipeline>>;
