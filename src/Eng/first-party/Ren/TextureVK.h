@@ -193,6 +193,39 @@ class Texture1D : public RefCounter {
     void Init(BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
 };
 
+class Texture3D : public RefCounter {
+    String name_;
+    ApiContext *api_ctx_ = nullptr;
+    TexHandle handle_;
+    MemAllocation alloc_;
+
+    void Free();
+
+  public:
+    Tex3DParams params;
+    mutable eResState resource_state = eResState::Undefined;
+
+    Texture3D() = default;
+    Texture3D(const char *name, ApiContext *ctx, const Tex3DParams &params, MemoryAllocators *mem_allocs, ILog *log);
+    Texture3D(const Texture3D &rhs) = delete;
+    Texture3D(Texture3D &&rhs) noexcept { (*this) = std::move(rhs); }
+    ~Texture3D();
+
+    Texture3D &operator=(const Texture3D &rhs) = delete;
+    Texture3D &operator=(Texture3D &&rhs) noexcept;
+
+    const String &name() const { return name_; }
+    ApiContext *api_ctx() const { return api_ctx_; }
+    const TexHandle &handle() const { return handle_; }
+    TexHandle &handle() { return handle_; }
+    VkSampler vk_sampler() const { return handle_.sampler; }
+
+    void Init(const Tex3DParams &params, MemoryAllocators *mem_allocs, ILog *log);
+
+    void SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez, eTexFormat format,
+                     const Buffer &sbuf, void *_cmd_buf, int data_off, int data_len);
+};
+
 VkFormat VKFormatFromTexFormat(eTexFormat format);
 
 } // namespace Ren

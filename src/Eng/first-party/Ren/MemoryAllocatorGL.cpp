@@ -15,7 +15,7 @@ Ren::MemoryAllocator::~MemoryAllocator() = default;
 
 bool Ren::MemoryAllocator::AllocateNewPool(const uint32_t size) { return true; }
 
-Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t size, const uint32_t alignment, const char *tag) {
+Ren::MemAllocation Ren::MemoryAllocator::Allocate(const uint32_t alignment, const uint32_t size) {
     return {};
 }
 

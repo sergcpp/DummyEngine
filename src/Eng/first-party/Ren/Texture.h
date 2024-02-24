@@ -27,6 +27,10 @@ int BlockLenFromGLInternalFormat(uint32_t gl_internal_format);
 #endif
 
 namespace Ren {
+using Tex3DRef = StrongRef<Texture3D>;
+using WeakTex3DRef = WeakRef<Texture3D>;
+using Texture3DStorage = Storage<Texture3D>;
+
 using Tex2DRef = StrongRef<Texture2D>;
 using WeakTex2DRef = WeakRef<Texture2D>;
 using Texture2DStorage = Storage<Texture2D>;

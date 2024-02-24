@@ -140,6 +140,7 @@ class Buffer : public RefCounter {
 
     void Resize(uint32_t new_size, bool keep_content = true);
     void Free();
+    void FreeImmediate();
 
     uint32_t AlignMapOffset(uint32_t offset);
 

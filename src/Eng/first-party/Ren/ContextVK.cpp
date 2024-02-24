@@ -253,9 +253,9 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         params.usage = eTexUsageBits::RenderTarget;
         params.flags |= eTexFlagBits::NoOwnership;
 
-        api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i],
-                                                                api_ctx_->present_image_views[i], VkSampler{}, params,
-                                                                log_));
+        api_ctx_->present_image_refs.emplace_back(
+            textures_2D_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i], api_ctx_->present_image_views[i],
+                             VkSampler{}, params, log_));
     }
 
     for (int i = 0; i < MaxFramesInFlight; ++i) {
@@ -330,14 +330,14 @@ void Ren::Context::Resize(const int w, const int h) {
         params.usage = eTexUsageBits::RenderTarget;
         params.flags |= eTexFlagBits::NoOwnership;
 
-        Tex2DRef ref = textures_.FindByName(name_buf);
+        Tex2DRef ref = textures_2D_.FindByName(name_buf);
         if (ref) {
             ref->Init(api_ctx_->present_images[i], api_ctx_->present_image_views[i], VkSampler{}, params, log_);
             api_ctx_->present_image_refs.emplace_back(std::move(ref));
         } else {
             api_ctx_->present_image_refs.emplace_back(
-                textures_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i], api_ctx_->present_image_views[i],
-                              VkSampler{}, params, log_));
+                textures_2D_.Add(name_buf, api_ctx_.get(), api_ctx_->present_images[i],
+                                 api_ctx_->present_image_views[i], VkSampler{}, params, log_));
         }
     }
 }

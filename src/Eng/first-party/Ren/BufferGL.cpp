@@ -167,7 +167,10 @@ void Ren::Buffer::Free() {
     }
 }
 
-uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset, const uint32_t size, const bool persistent) {
+void Ren::Buffer::FreeImmediate() { Free(); }
+
+uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset, const uint32_t size,
+                               const bool persistent) {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
 

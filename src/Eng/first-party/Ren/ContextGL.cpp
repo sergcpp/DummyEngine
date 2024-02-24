@@ -149,7 +149,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
         params.flags = eTexFlagBits::NoOwnership;
         params.usage = eTexUsageBits::RenderTarget;
 
-        api_ctx_->present_image_refs.emplace_back(textures_.Add(name_buf, api_ctx_.get(), 0, nullptr, params, log_));
+        api_ctx_->present_image_refs.emplace_back(textures_2D_.Add(name_buf, api_ctx_.get(), 0, nullptr, params, log_));
     }
 
     texture_atlas_ =

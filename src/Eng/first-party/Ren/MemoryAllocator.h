@@ -41,6 +41,8 @@ struct MemAllocation {
         return (*this);
     }
 
+    operator bool() const { return owner != nullptr; }
+
     ~MemAllocation() { Release(); }
 
     void Release();
@@ -81,7 +83,7 @@ class MemoryAllocator {
 #endif
     uint32_t mem_type_index() const { return mem_type_index_; }
 
-    MemAllocation Allocate(uint32_t size, uint32_t alignment, const char *tag);
+    MemAllocation Allocate(uint32_t alignment, uint32_t size);
     void Free(uint32_t block);
 
     void Print(ILog *log) const {
@@ -107,25 +109,10 @@ class MemoryAllocators {
         strcpy(name_, name);
     }
 
-    MemAllocation Allocate(uint32_t size, uint32_t alignment, uint32_t mem_type_index, const char *tag) {
-        int alloc_index = -1;
-        for (int i = 0; i < int(allocators_.size()); ++i) {
-            if (allocators_[i].mem_type_index() == mem_type_index) {
-                alloc_index = i;
-                break;
-            }
-        }
-
-        if (alloc_index == -1) {
-            char name[32];
-            snprintf(name, sizeof(name), "%s (type %i)", name_, int(mem_type_index));
-            alloc_index = int(allocators_.size());
-            allocators_.emplace_back(name, api_ctx_, initial_block_size_, mem_type_index, growth_factor_,
-                                     max_pool_size_);
-        }
-
-        return allocators_[alloc_index].Allocate(size, alignment, tag);
-    }
+    MemAllocation Allocate(uint32_t alignment, uint32_t size, uint32_t mem_type_index);
+#if defined(USE_VK_RENDER)
+    MemAllocation Allocate(const VkMemoryRequirements &mem_req, VkMemoryPropertyFlags desired_mem_flags);
+#endif
 
     void Print(ILog *log);
 };

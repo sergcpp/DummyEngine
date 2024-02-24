@@ -47,8 +47,8 @@ VkMemoryPropertyFlags GetVkMemoryPropertyFlags(const eBufType type) {
                                      : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
-uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, uint32_t mem_type_bits,
-                        VkMemoryPropertyFlags desired_mem_flags);
+uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProperties *mem_properties,
+                        uint32_t mem_type_bits, VkMemoryPropertyFlags desired_mem_flags, VkDeviceSize desired_size);
 } // namespace Ren
 
 int Ren::Buffer::g_GenCounter = 0;
@@ -269,8 +269,8 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
 
     VkMemoryAllocateInfo buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     buf_alloc_info.allocationSize = memory_requirements.size;
-    buf_alloc_info.memoryTypeIndex =
-        FindMemoryType(&api_ctx_->mem_properties, memory_requirements.memoryTypeBits, GetVkMemoryPropertyFlags(type_));
+    buf_alloc_info.memoryTypeIndex = FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits,
+                                                    GetVkMemoryPropertyFlags(type_), buf_alloc_info.allocationSize);
 
     VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
     additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
@@ -321,6 +321,17 @@ void Ren::Buffer::Free() {
         handle_ = {};
         size_ = 0;
         // LinearAlloc::Clear();
+    }
+}
+
+void Ren::Buffer::FreeImmediate() {
+    assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
+    if (handle_.buf != VK_NULL_HANDLE) {
+        api_ctx_->vkDestroyBuffer(api_ctx_->device, handle_.buf, nullptr);
+        api_ctx_->vkFreeMemory(api_ctx_->device, mem_, nullptr);
+
+        handle_ = {};
+        size_ = 0;
     }
 }
 

@@ -223,11 +223,26 @@ void Ren::Context::ReleasePrograms() {
     programs_.clear();
 }
 
+Ren::Tex3DRef Ren::Context::LoadTexture3D(const char *name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
+                       eTexLoadStatus *load_status) {
+    Tex3DRef ref = textures_3D_.FindByName(name);
+    if (!ref) {
+        ref = textures_3D_.Add(name, api_ctx_.get(), p, mem_allocs, log_);
+        (*load_status) = eTexLoadStatus::CreatedDefault;
+    } else if (ref->params != p) {
+        ref->Init(p, mem_allocs, log_);
+        (*load_status) = eTexLoadStatus::Reinitialized;
+    } else {
+        (*load_status) = eTexLoadStatus::Found;
+    }
+    return ref;
+}
+
 Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
-    Tex2DRef ref = textures_.FindByName(name);
+    Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
-        ref = textures_.Add(name, api_ctx_.get(), p, mem_allocs, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), p, mem_allocs, log_);
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else if (ref->params != p) {
         ref->Init(p, mem_allocs, log_);
@@ -241,10 +256,10 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p
 Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, int size, const Tex2DParams &p,
                                           StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
-    Tex2DRef ref = textures_.FindByName(name);
+    Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = textures_.Add(name, api_ctx_.get(), data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
     } else {
         (*load_status) = eTexLoadStatus::Found;
         if (!ref->ready() && data) {
@@ -259,10 +274,10 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, in
 Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6], const int size[6],
                                             const Tex2DParams &p, StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
                                             eTexLoadStatus *load_status) {
-    Tex2DRef ref = textures_.FindByName(name);
+    Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = textures_.Add(name, api_ctx_.get(), data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
@@ -276,7 +291,7 @@ Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6
 }
 
 void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback) {
-    for (Texture2D &tex : textures_) {
+    for (Texture2D &tex : textures_2D_) {
         if (bool(tex.params.flags & mask)) {
             callback(tex);
         }
@@ -284,19 +299,19 @@ void Ren::Context::VisitTextures(eTexFlags mask, const std::function<void(Textur
 }
 
 int Ren::Context::NumTexturesNotReady() {
-    return (int)std::count_if(textures_.begin(), textures_.end(), [](const Texture2D &t) { return !t.ready(); });
+    return (int)std::count_if(textures_2D_.begin(), textures_2D_.end(), [](const Texture2D &t) { return !t.ready(); });
 }
 
 void Ren::Context::Release2DTextures() {
-    if (textures_.empty()) {
+    if (textures_2D_.empty()) {
         return;
     }
     log_->Error("---------REMAINING 2D TEXTURES--------");
-    for (const Texture2D &t : textures_) {
+    for (const Texture2D &t : textures_2D_) {
         log_->Error("%s", t.name().c_str());
     }
     log_->Error("-----------------------------------");
-    textures_.clear();
+    textures_2D_.clear();
 }
 
 Ren::Tex1DRef Ren::Context::CreateTexture1D(const char *name, BufferRef buf, const eTexFormat format,

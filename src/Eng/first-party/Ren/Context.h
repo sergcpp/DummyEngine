@@ -72,7 +72,8 @@ class Context {
     ProgramStorage programs_;
     PipelineStorage pipelines_;
     ShaderStorage shaders_;
-    Texture2DStorage textures_;
+    Texture3DStorage textures_3D_;
+    Texture2DStorage textures_2D_;
     Texture1DStorage textures_1D_;
     TextureRegionStorage texture_regions_;
     SamplerStorage samplers_;
@@ -117,7 +118,8 @@ class Context {
 
     ILog *log() const { return log_; }
 
-    Texture2DStorage &textures() { return textures_; }
+    Texture3DStorage &textures3D() { return textures_3D_; }
+    Texture2DStorage &textures2D() { return textures_2D_; }
     Texture1DStorage &textures1D() { return textures_1D_; }
     MaterialStorage &materials() { return materials_; }
     ProgramStorage &programs() { return programs_; }
@@ -187,7 +189,11 @@ class Context {
     int NumProgramsNotReady();
     void ReleasePrograms();
 
-    /*** Texture ***/
+    /*** Texture 3D ***/
+    Tex3DRef LoadTexture3D(const char *name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
+                           eTexLoadStatus *load_status);
+
+    /*** Texture 2D ***/
     Tex2DRef LoadTexture2D(const char *name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
     Tex2DRef LoadTexture2D(const char *name, const void *data, int size, const Tex2DParams &p, StageBufs &stage_bufs,

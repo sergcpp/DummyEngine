@@ -5,8 +5,8 @@
 #include "VKCtx.h"
 
 namespace Ren {
-uint32_t FindMemoryType(const VkPhysicalDeviceMemoryProperties *mem_properties, uint32_t mem_type_bits,
-                        VkMemoryPropertyFlags desired_mem_flags);
+uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProperties *mem_properties,
+                        uint32_t mem_type_bits, VkMemoryPropertyFlags desired_mem_flags, VkDeviceSize desired_size);
 } // namespace Ren
 
 Ren::ProbeStorage::ProbeStorage() = default;
@@ -57,10 +57,13 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         VkMemoryRequirements tex_mem_req;
         api_ctx->vkGetImageMemoryRequirements(api_ctx->device, handle_.img, &tex_mem_req);
 
-        alloc_ = mem_allocs->Allocate(
-            uint32_t(tex_mem_req.size), uint32_t(tex_mem_req.alignment),
-            FindMemoryType(&api_ctx->mem_properties, tex_mem_req.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT),
-            "Probe Storage");
+        VkMemoryPropertyFlags img_tex_desired_mem_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        alloc_ = mem_allocs->Allocate(tex_mem_req, img_tex_desired_mem_flags);
+        if (!alloc_) {
+            log->Warning("Not enough device memory, falling back to CPU RAM!");
+            img_tex_desired_mem_flags &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            alloc_ = mem_allocs->Allocate(tex_mem_req, img_tex_desired_mem_flags);
+        }
 
         res = api_ctx->vkBindImageMemory(api_ctx->device, handle_.img, alloc_.owner->mem(alloc_.pool), alloc_.offset);
         if (res != VK_SUCCESS) {

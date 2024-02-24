@@ -503,6 +503,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_SHADER                       0x82E1
 #define GL_PROGRAM                      0x82E2
 
+#define GL_UNSIGNED_INT_2_10_10_10_REV  33640
+
 #ifndef APIENTRY
 #if defined(_WIN32)
 #define WINAPI      __stdcall

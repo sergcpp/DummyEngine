@@ -13,6 +13,7 @@ const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D,             // Tex2D
     GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
     GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
+    GL_TEXTURE_3D,             // Tex3D
     GL_TEXTURE_BUFFER,         // TBuf
     GL_UNIFORM_BUFFER,         // UBuf
     GL_SHADER_STORAGE_BUFFER,  // SBuf
@@ -29,8 +30,7 @@ int g_param_buf_binding;
 uint32_t Ren::GLBindTarget(const eBindTarget binding) { return gl_binding_targets[size_t(binding)]; }
 
 void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<const Binding> bindings,
-                          const void *uniform_data, int uniform_data_len,
-                          DescrMultiPoolAlloc *descr_alloc, ILog *log) {
+                          const void *uniform_data, int uniform_data_len, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
@@ -78,6 +78,8 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
+        } else if (b.trg == eBindTarget::Tex3D) {
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
             if (b.offset) {
                 assert(b.size != 0);

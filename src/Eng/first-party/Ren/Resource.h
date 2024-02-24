@@ -75,9 +75,11 @@ eStageBits StageBitsForState(eResState state);
 
 class Buffer;
 class Texture2D;
+class Texture3D;
 
 struct TransitionInfo {
     const Texture2D *p_tex = nullptr;
+    const Texture3D *p_3dtex = nullptr;
     const Buffer *p_buf = nullptr;
 
     eResState old_state = eResState::Undefined;
@@ -90,6 +92,8 @@ struct TransitionInfo {
         : p_buf(_p_buf), new_state(_new_state), update_internal_state(true) {}
     TransitionInfo(const Texture2D *_p_tex, eResState _new_state)
         : p_tex(_p_tex), new_state(_new_state), update_internal_state(true) {}
+    TransitionInfo(const Texture3D *_p_tex, eResState _new_state)
+        : p_3dtex(_p_tex), new_state(_new_state), update_internal_state(true) {}
 };
 
 void TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, eStageBits src_stages_mask,

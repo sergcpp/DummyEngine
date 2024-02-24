@@ -40,6 +40,19 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << (b.loc + b.offset))) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << (b.loc + b.offset));
+        } else if (b.trg == eBindTarget::Tex3D) {
+            auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
+            info.sampler = b.handle.tex3d->handle().sampler;
+            info.imageView = b.handle.tex3d->handle().views[0];
+            info.imageLayout = VKImageLayoutForState(b.handle.tex3d->resource_state);
+
+            auto &new_write = descr_writes.emplace_back();
+            new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            new_write.dstBinding = b.loc;
+            new_write.dstArrayElement = b.offset;
+            new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            new_write.descriptorCount = 1;
+            new_write.pImageInfo = &info;
         } else if (b.trg == eBindTarget::UBuf) {
             auto &ubuf = ubuf_infos[descr_sizes.ubuf_count++];
             ubuf.buffer = b.handle.buf->vk_handle();

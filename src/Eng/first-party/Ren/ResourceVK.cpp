@@ -173,6 +173,40 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, con
             if (tr.update_internal_state) {
                 tr.p_tex->resource_state = tr.new_state;
             }
+        } else if (tr.p_3dtex) {
+            eResState old_state = tr.old_state;
+            if (old_state == eResState::Undefined) {
+                // take state from resource itself
+                old_state = tr.p_3dtex->resource_state;
+                if (old_state != eResState::Undefined && old_state == tr.new_state &&
+                    old_state != eResState::UnorderedAccess) {
+                    // transition is not needed
+                    continue;
+                }
+            }
+
+            auto &new_barrier = img_barriers.emplace_back();
+            new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
+            new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
+            new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
+            new_barrier.oldLayout = VKImageLayoutForState(old_state);
+            new_barrier.newLayout = VKImageLayoutForState(tr.new_state);
+            new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+            new_barrier.image = tr.p_3dtex->handle().img;
+            new_barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            // transition whole image for now
+            new_barrier.subresourceRange.baseMipLevel = 0;
+            new_barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+            new_barrier.subresourceRange.baseArrayLayer = 0;
+            new_barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+
+            src_stages |= VKPipelineStagesForState(old_state);
+            dst_stages |= VKPipelineStagesForState(tr.new_state);
+
+            if (tr.update_internal_state) {
+                tr.p_3dtex->resource_state = tr.new_state;
+            }
         } else if (tr.p_buf) {
             eResState old_state = tr.old_state;
             if (old_state == eResState::Undefined) {
