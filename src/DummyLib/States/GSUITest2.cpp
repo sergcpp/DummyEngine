@@ -8,7 +8,6 @@
 #include <Eng/gui/EditBox.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>
-#include <Eng/gui/Renderer.h>
 #include <Eng/gui/Utils.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>

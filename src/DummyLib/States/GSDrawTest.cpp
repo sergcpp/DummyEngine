@@ -5,7 +5,6 @@
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Renderer.h>
 #include <Eng/Log.h>
-#include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/ShaderLoader.h>
