@@ -239,7 +239,7 @@ void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             sh.LoadProgram(ctx, "rt_shadows_swrt", "internal/rt_shadows_swrt.comp.glsl");
         assert(rt_shadows_swrt_prog->ready());
 
-        if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log())) {
+        if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log(), 32)) {
             ctx.log()->Error("RpRTShadows: Failed to initialize pipeline!");
         }
 

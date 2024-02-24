@@ -416,7 +416,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 31.38, 1865, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 29.59, 2770, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 28.71, 4400, Full));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 34.31, 820, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 34.31, 825, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 31.65, 1275, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 30.26, 1975, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat1", device_name, vl, 29.53, 3095, Full));
@@ -428,8 +428,8 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
             threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 31.51, 2740, NoShadow));
         futures.push_back(
             threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 18.89, 28060, NoGI));
-        //futures.push_back(
-        //    threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 28.80, 5316, NoGI_RTShadow));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 28.74, 5430, NoGI_RTShadow));
 
         for (auto &f : futures) {
             f.wait();

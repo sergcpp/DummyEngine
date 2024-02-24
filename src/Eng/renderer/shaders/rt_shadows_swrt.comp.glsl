@@ -53,7 +53,13 @@ layout(binding = OUT_SHADOW_IMG_SLOT, r32ui) uniform restrict uimage2D g_out_sha
 
 layout (local_size_x = TILE_SIZE_X, local_size_y = TILE_SIZE_Y, local_size_z = 1) in;
 
+shared uint g_shared_mask;
+
 void main() {
+    if (gl_LocalInvocationIndex == 0) {
+        g_shared_mask = 0;
+    }
+
     uvec2 group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
     uvec4 tile = g_tile_list[gl_WorkGroupID.x];
 
@@ -119,6 +125,12 @@ void main() {
 
     uint new_mask = uint(is_in_shadow) << bit_index;
     new_mask = subgroupOr(new_mask);
+    /*if (gl_SubgroupSize != 32)*/ {
+        groupMemoryBarrier(); barrier();
+        atomicOr(g_shared_mask, new_mask);
+        groupMemoryBarrier(); barrier();
+        new_mask = g_shared_mask;
+    }
     if (gl_LocalInvocationIndex == 0) {
         uint old_mask = imageLoad(g_out_shadow_img, ivec2(tile_coord)).r;
         imageStore(g_out_shadow_img, ivec2(tile_coord), uvec4(old_mask & new_mask));

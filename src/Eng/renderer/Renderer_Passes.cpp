@@ -270,7 +270,7 @@ void Eng::Renderer::InitPipelines() {
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "sun_rt_sh_classify", "internal/rt_shadow_classify.comp.glsl");
         assert(prog->ready());
 
-        if (!pi_shadow_classify_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        if (!pi_shadow_classify_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), 32)) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -287,7 +287,7 @@ void Eng::Renderer::InitPipelines() {
             sh_.LoadProgram(ctx_, "rt_shadow_prepare_mask", "internal/rt_shadow_prepare_mask.comp.glsl");
         assert(prog->ready());
 
-        if (!pi_shadow_prepare_mask_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        if (!pi_shadow_prepare_mask_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), 32)) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
@@ -296,7 +296,7 @@ void Eng::Renderer::InitPipelines() {
             sh_.LoadProgram(ctx_, "rt_shadow_classify_tiles", "internal/rt_shadow_classify_tiles.comp.glsl");
         assert(prog->ready());
 
-        if (!pi_shadow_classify_tiles_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+        if (!pi_shadow_classify_tiles_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), 32)) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
