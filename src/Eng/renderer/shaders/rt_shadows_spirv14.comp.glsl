@@ -154,8 +154,9 @@ void main() {
     }
 
     uint new_mask = uint(is_in_shadow) << bit_index;
-    new_mask = subgroupOr(new_mask);
-    /*if (gl_SubgroupSize != 32)*/ {
+    if (gl_NumSubgroups == 1) {
+        new_mask = subgroupOr(new_mask);
+    } else {
         groupMemoryBarrier(); barrier();
         atomicOr(g_shared_mask, new_mask);
         groupMemoryBarrier(); barrier();
