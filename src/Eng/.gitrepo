@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = color_dithering
-	commit = 77bc9d848a7774c93763cc504d1f501e4c2f85d5
+	branch = sun_light
+	commit = 8b816793380b3ccf662847cd1fd744556a655f58
 	method = merge
 	cmdver = 0.4.6
-	parent = 2f8b917cfa3ba6db1c8bcd642683f074ddfc2ffa
+	parent = b03d0eb245075b0a1f31cc5933dc1f5cad47bc49
