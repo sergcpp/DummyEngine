@@ -61,6 +61,12 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     require_return(!device_name || Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, device_name));
 #endif
 
+    if (img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI && !ren_ctx.capabilities.raytracing &&
+        !ren_ctx.capabilities.swrt) {
+        printf("Test %s%-12s ...skipped\n", test_name, test_postfix);
+        return;
+    }
+
     Eng::ShaderLoader shader_loader;
     Eng::Random rand(0);
     Sys::ThreadPool threads(1);
