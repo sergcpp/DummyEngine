@@ -61,7 +61,7 @@ uint16_t f32_to_f16(float value);
 inline int16_t f32_to_s16(const float value) { return int16_t(value * 32767); }
 inline uint16_t f32_to_u16(const float value) { return uint16_t(value * 65535); }
 
-void ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> index_groups[], int groups_count);
+void ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> index_groups[], int groups_count);
 
 struct KTXHeader { // NOLINT
     char identifier[12] = {'\xAB', 'K', 'T', 'X', ' ', '1', '1', '\xBB', '\r', '\n', '\x1A', '\n'};

@@ -1020,7 +1020,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
             vertices[i].index = i;
         }
 
-        Ren::ComputeTextureBasis(vertices, &indices[0], int(indices.size()));
+        Ren::ComputeTangentBasis(vertices, &indices[0], int(indices.size()));
 
         tangents.resize(vertices.size() * 3);
 
@@ -1917,7 +1917,7 @@ Ren::Tex2DRef ModlApp::OnTextureNeeded(const char *name) {
         p.sampling.filter = Ren::eTexFilter::Trilinear;
 
         Ren::eTexLoadStatus status;
-        ctx_->LoadTexture2D(name, in_file_data.data(), in_file_data.size(), p, ctx_->default_stage_bufs(),
+        ctx_->LoadTexture2D(name, in_file_data.data(), int(in_file_data.size()), p, ctx_->default_stage_bufs(),
                             ctx_->default_mem_allocs(), &status);
         printf("Texture %s loaded", name);
     }

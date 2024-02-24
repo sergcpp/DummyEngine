@@ -1017,7 +1017,7 @@ void Ren::ReorderTriangleIndices(const uint32_t *indices, const uint32_t indices
     }
 }
 
-void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> index_groups[],
+void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint32_t> index_groups[],
                               const int groups_count) {
     const float flt_eps = 0.0000001f;
 
@@ -1049,16 +1049,25 @@ void Ren::ComputeTextureBasis(std::vector<vertex_t> &vertices, std::vector<uint3
                 binormal = (dp2 * dt1[0] - dp1 * dt2[0]) * inv_det;
             } else {
                 const Vec3f plane_N = Cross(dp1, dp2);
+
+                int w = 2;
                 tangent = Vec3f{0.0f, 1.0f, 0.0f};
                 if (std::abs(plane_N[0]) <= std::abs(plane_N[1]) && std::abs(plane_N[0]) <= std::abs(plane_N[2])) {
                     tangent = Vec3f{1.0f, 0.0f, 0.0f};
+                    w = 1;
                 } else if (std::abs(plane_N[2]) <= std::abs(plane_N[0]) &&
                            std::abs(plane_N[2]) <= std::abs(plane_N[1])) {
                     tangent = Vec3f{0.0f, 0.0f, 1.0f};
+                    w = 0;
                 }
 
-                binormal = Normalize(Cross(Vec3f(plane_N), tangent));
-                tangent = Normalize(Cross(Vec3f(plane_N), binormal));
+                if (fabsf(plane_N[w] > flt_eps)) {
+                    binormal = Normalize(Cross(Vec3f(plane_N), tangent));
+                    tangent = Normalize(Cross(Vec3f(plane_N), binormal));
+                } else {
+                    binormal = {};
+                    tangent = {};
+                }
             }
 
             int i1 = (v0->b[0] * tangent[0] + v0->b[1] * tangent[1] + v0->b[2] * tangent[2]) < 0;
