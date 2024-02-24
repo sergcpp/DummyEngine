@@ -15,9 +15,6 @@
 #include <Eng/utils/FreeCamController.h>
 #include <Eng/utils/ScriptedDialog.h>
 #include <Eng/utils/ScriptedSequence.h>
-#include <Ren/Context.h>
-#include <Ren/GL.h>
-#include <Ren/Utils.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/MemBuf.h>
