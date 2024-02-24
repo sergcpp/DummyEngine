@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = sun_light
-	commit = 8b816793380b3ccf662847cd1fd744556a655f58
+	branch = subgroup_size
+	commit = 00fd8dc4a67a0d255fde4cb5bf02b76a0d0e308e
 	method = merge
 	cmdver = 0.4.6
-	parent = b03d0eb245075b0a1f31cc5933dc1f5cad47bc49
+	parent = 09e500cb095eca7bd4e214237b753858e73c5f92
