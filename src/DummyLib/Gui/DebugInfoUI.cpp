@@ -10,14 +10,14 @@ DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const Ba
     : BaseElement(pos, size, parent), parent_(parent), font_(std::move(font)) {}
 
 void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
-                             const Eng::ItemsInfo &items_info, uint64_t render_flags) {
+                             const Eng::ItemsInfo &items_info, const bool debug_items) {
     const float alpha = 0.98f;
     const float k = (1.0f - alpha);
 
     auto us_to_ms = [](uint64_t v) -> float { return 0.001f * v; };
     auto ns_to_ms = [](uint64_t v) -> float { return float(0.000001 * double(v)); };
 
-    render_flags_ = render_flags;
+    debug_items_ = debug_items;
 
     front_info_smooth_.occluders_time_ms *= alpha;
     front_info_smooth_.occluders_time_ms += k * us_to_ms(frontend_info.occluders_time_us);
@@ -157,7 +157,7 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
-    if (render_flags_ & (Eng::DebugLights | Eng::DebugDecals)) {
+    if (debug_items_) {
         vertical_offset -= font_height;
         font_->DrawText(r, delimiter, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
 
@@ -190,8 +190,8 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
         font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
     }
 
-    if (render_flags_ & Eng::DebugTimings) {
-        /*if (prev_timing_info_.front_end_timepoint_us) {
+    /*if (render_flags_ & Eng::DebugTimings) {
+        if (prev_timing_info_.front_end_timepoint_us) {
             auto prev_front_start = double(prev_timing_info_.front_start_timepoint_us),
                  prev_front_end = double(prev_timing_info_.front_end_timepoint_us),
                  prev_back_cpu_start = double(prev_timing_info_.back_cpu_start_timepoint_us),
@@ -308,6 +308,6 @@ void DebugInfoUI::Draw(Gui::Renderer *r) {
 
             vertical_offset -= font_height;
             font_->DrawText(r, text_buffer, Ren::Vec2f{-1.0f, vertical_offset}, text_color, parent_);
-        }*/
-    }
+        }
+    }*/
 }

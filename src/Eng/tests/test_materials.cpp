@@ -72,28 +72,25 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     Sys::ThreadPool threads(1);
     Eng::Renderer renderer(ren_ctx, shader_loader, rand, threads);
 
-    uint64_t render_flags = Eng::EnableZFill | Eng::EnableCulling | Eng::EnableSSAO | Eng::EnableLightmap |
-                            Eng::EnableLights | Eng::EnableDecals | Eng::EnableTaa | Eng::EnableTaaStatic |
-                            Eng::EnableTimers | Eng::EnableDOF | Eng::EnableDeferred | Eng::EnableHQ_HDR |
-                            Eng::EnableShadows | Eng::EnableSSR | Eng::EnableSSR_HQ | Eng::EnableGI;
+    renderer.settings.enable_bloom = false;
+    renderer.settings.taa_mode = Eng::eTAAMode::Static;
+    // TODO: fix this!
+    renderer.settings.tonemap_mode = Eng::eTonemapMode::Off;
+
     if (img_test == eImgTest::NoShadow) {
-        render_flags &= ~Eng::EnableShadows;
-        render_flags &= ~Eng::EnableSSR;
-        render_flags &= ~Eng::EnableSSR_HQ;
-        render_flags &= ~Eng::EnableGI;
+        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer.settings.shadows_quality = Eng::eShadowsQuality::Off;
+        renderer.settings.gi_quality = Eng::eGIQuality::Off;
     } else if (img_test == eImgTest::NoGI) {
-        render_flags &= ~Eng::EnableSSR;
-        render_flags &= ~Eng::EnableSSR_HQ;
-        render_flags &= ~Eng::EnableGI;
+        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer.settings.gi_quality = Eng::eGIQuality::Off;
     } else if (img_test == eImgTest::NoGI_RTShadow) {
-        render_flags &= ~Eng::EnableSSR;
-        render_flags &= ~Eng::EnableSSR_HQ;
-        render_flags &= ~Eng::EnableGI;
-        render_flags |= Eng::EnableRTShadows;
+        renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
+        renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer.settings.gi_quality = Eng::eGIQuality::Off;
     } else if (img_test == eImgTest::NoDiffuseGI) {
-        render_flags &= ~Eng::EnableGI;
+        renderer.settings.gi_quality = Eng::eGIQuality::Off;
     }
-    renderer.set_render_flags(render_flags);
 
     Eng::path_config_t paths;
     Eng::SceneManager scene_manager(ren_ctx, shader_loader, nullptr, threads, paths);
@@ -217,7 +214,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
                    shape_keys_stage_buf, cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf,
                    lights_stage_buf, decals_stage_buf, rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf,
                    rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf);
-    draw_list.render_flags = renderer.render_flags();
+    draw_list.render_settings = renderer.settings;
 
     renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);
     scene_manager.UpdateTexturePriorities(draw_list.visible_textures.data, draw_list.visible_textures.count,

@@ -45,13 +45,11 @@ class ThreadPool;
 namespace Eng {
 class Random;
 class ShaderLoader;
+
 class Renderer {
   public:
     Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
     ~Renderer();
-
-    uint64_t render_flags() const { return render_flags_; }
-    void set_render_flags(const uint64_t f) { render_flags_ = f; }
 
     void reset_accumulation() { accumulated_frames_ = 0; }
 
@@ -77,6 +75,8 @@ class Renderer {
     void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
     bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
 
+    render_settings_t settings = {};
+
   private:
     Ren::Context &ctx_;
     ShaderLoader &sh_;
@@ -95,25 +95,14 @@ class Renderer {
     Ren::Tex2DRef shadow_map_tex_;
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
-    bool taa_enabled_ = false, taa_static_enabled_ = false, dof_enabled_ = false;
+    eTAAMode taa_mode_ = eTAAMode::Off;
+    bool dof_enabled_ = false;
 
     Ren::VertexInput draw_pass_vi_;
     Ren::RenderPass rp_main_draw_;
     Ren::RastState rast_states_[int(eFwdPipeline::_Count)];
 
     Ren::TextureSplitter shadow_splitter_;
-
-    static const uint64_t DefaultFlags =
-#if !defined(__ANDROID__)
-        (EnableZFill | EnableCulling | EnableSSR | EnableSSR_HQ | EnableSSAO | EnableLightmap | EnableLights |
-         EnableDecals | EnableShadows | EnableTonemap /*| EnableBloom*/ | EnableTaa /*| EnableTaaStatic*/ |
-         EnableTimers | EnableDOF //| EnableRTShadows
-         | EnableGI | EnableDeferred | EnableHQ_HDR);
-#else
-        (EnableZFill | EnableCulling | EnableSSR | EnableLightmap | EnableLights | EnableDecals | EnableShadows |
-         EnableTonemap | EnableDOF | EnableTimers);
-#endif
-    uint64_t render_flags_ = DefaultFlags;
 
     DynArray<const LightSource *> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
@@ -184,7 +173,7 @@ class Renderer {
     static const int SUN_SHADOW_RES = SHADOWMAP_WIDTH / 2;
 
     RpBuilder rp_builder_;
-    uint64_t cached_render_flags_ = 0;
+    std::optional<render_settings_t> cached_settings_;
     Ren::WeakTex2DRef env_map_;
     Ren::WeakTex2DRef lm_direct_, lm_indir_, lm_indir_sh_[4];
     const DrawList *p_list_;

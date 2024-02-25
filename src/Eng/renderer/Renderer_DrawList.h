@@ -83,7 +83,7 @@ struct EnvironmentWeak {
 
 // TODO: use persistent mapping of stage buffers
 struct DrawList {
-    uint64_t render_flags = 0;
+    render_settings_t render_settings = {};
     uint32_t frame_index = 0;
     Ren::Camera draw_cam, ext_cam;
     EnvironmentWeak env;

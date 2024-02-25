@@ -33,7 +33,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
-    if ((*p_list_)->render_flags & DebugWireframe) {
+    if ((*p_list_)->render_settings.debug_wireframe) {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
     } else {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
@@ -94,7 +94,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
     ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_BRDF_LUT, brdf_lut.ref->id());
 
-    if (((*p_list_)->render_flags & EnableLightmap) && (*p_list_)->env.lm_direct) {
+    if ((*p_list_)->render_settings.enable_lightmap && (*p_list_)->env.lm_direct) {
         for (int sh_l = 0; sh_l < 4; sh_l++) {
             ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, BIND_LMAP_SH + sh_l, (*p_list_)->env.lm_indir_sh[sh_l]->id());
         }

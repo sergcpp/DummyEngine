@@ -283,7 +283,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -386,7 +386,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -446,7 +446,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -502,7 +502,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -558,7 +558,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -618,7 +618,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -679,7 +679,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -737,7 +737,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -795,7 +795,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();
@@ -857,7 +857,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         rp_begin_info.clearValueCount = 1;
 
         Ren::Pipeline *pipeline_onesided = nullptr, *pipeline_twosided = nullptr;
-        if (((*p_list_)->render_flags & EnableTaa) != 0) {
+        if ((*p_list_)->render_settings.taa_mode != eTAAMode::Off) {
             // Write depth and velocity
             rp_begin_info.renderPass = rp_depth_velocity_[rp_index].handle();
             rp_begin_info.framebuffer = depth_fill_vel_fb_[ctx.backend_frame()][fb_to_use_].handle();

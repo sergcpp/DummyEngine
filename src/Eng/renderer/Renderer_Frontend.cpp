@@ -114,10 +114,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     list.decals_atlas = &scene.decals_atlas;
     list.probe_storage = &scene.probe_storage;
 
-    // mask render flags with what renderer itself is capable of
-    list.render_flags &= render_flags_;
+    // mask render settings with what renderer itself is capable of
+    list.render_settings &= settings;
 
-    if (list.render_flags & DebugBVH) {
+    if (list.render_settings.debug_bvh) {
         // copy nodes list for debugging
         list.temp_nodes = scene.nodes;
         list.root_index = scene.root_node;
@@ -126,7 +126,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         list.temp_nodes = {};
     }
 
-    if (list.render_flags & DebugFreezeFrontend) {
+    if (list.render_settings.debug_freeze) {
         return;
     }
 
@@ -156,11 +156,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     list.visible_textures.count = 0;
     list.desired_textures.count = 0;
 
-    const bool culling_enabled = (list.render_flags & EnableCulling) != 0;
-    const bool lighting_enabled = (list.render_flags & EnableLights) != 0;
-    const bool decals_enabled = (list.render_flags & EnableDecals) != 0;
-    const bool shadows_enabled = (list.render_flags & EnableShadows) != 0;
-    const bool rt_shadows_enabled = (list.render_flags & EnableRTShadows) != 0;
+    const bool culling_enabled = list.render_settings.enable_culling;
+    const bool lighting_enabled = list.render_settings.enable_lights;
+    const bool decals_enabled = list.render_settings.enable_decals;
+    const bool shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Off);
+    const bool rt_shadows_enabled = (list.render_settings.shadows_quality != eShadowsQuality::Raytraced);
 
     if (!lighting_enabled) {
         list.env.sun_col = {};
@@ -169,15 +169,15 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const uint32_t render_mask = list.draw_cam.render_mask();
 
     int pipeline_index = int(eFwdPipeline::FrontfaceDraw);
-    if ((list.render_flags & DebugWireframe) != 0) {
+    if (list.render_settings.debug_wireframe) {
         pipeline_index = int(eFwdPipeline::Wireframe);
     }
 
-    if ((list.render_flags & EnableLightmap) == 0) {
+    if (!list.render_settings.enable_lightmap) {
         pipeline_index += int(eFwdPipeline::_Count);
     }
 
-    const bool deferred_shading = (list.render_flags & EnableDeferred) && !(list.render_flags & DebugWireframe);
+    const bool deferred_shading = list.render_settings.render_mode == eRenderMode::Deferred && !list.render_settings.debug_wireframe;
 
     litem_to_lsource_.count = 0;
     ditem_to_decal_.count = 0;
@@ -1312,7 +1312,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
     }
 
-    if (shadows_enabled && (list.render_flags & DebugShadow)) {
+    if (shadows_enabled && list.render_settings.debug_shadows) {
         list.cached_shadow_regions.count = 0;
         for (int i = 0; i < int(allocated_shadow_regions_.count); i++) {
             const ShadReg &r = allocated_shadow_regions_.data[i];
@@ -1611,7 +1611,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         list.items.count = 0;
     }
 
-    if ((list.render_flags & (EnableCulling | DebugCulling)) == (EnableCulling | DebugCulling)) {
+    if (list.render_settings.enable_culling && list.render_settings.debug_culling) {
         list.depth_w = cull_ctx_.w;
         list.depth_h = cull_ctx_.h;
 
@@ -1635,7 +1635,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     uint64_t iteration_end = Sys::GetTimeUs();
 
-    if (list.render_flags & EnableTimers) {
+    if (list.render_settings.enable_timers) {
         list.frontend_info.start_timepoint_us = iteration_start;
         list.frontend_info.end_timepoint_us = iteration_end;
         list.frontend_info.occluders_time_us = uint32_t(main_gather_start - occluders_start);

@@ -74,7 +74,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
     RpResRef ray_list, tile_list;
     RpResRef refl_tex, noise_tex;
 
-    const bool hq_hdr = (render_flags_ & EnableHQ_HDR) != 0;
+    const bool hq_hdr = (settings.hdr_quality == eHDRQuality::High);
 
     { // Classify pixel quads
         auto &ssr_classify = rp_builder_.AddPass("SSR CLASSIFY");

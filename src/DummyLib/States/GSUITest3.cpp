@@ -140,8 +140,8 @@ void GSUITest3::Enter() {
     }*/
 
     // disable bloom and fxaa, they make fonts look bad
-    render_flags_ &= ~Eng::EnableBloom;
-    render_flags_ &= ~Eng::EnableFxaa;
+    //render_flags_ &= ~Eng::EnableBloom;
+    //render_flags_ &= ~Eng::EnableFxaa;
 }
 
 void GSUITest3::OnPostloadScene(JsObjectP &js_scene) {

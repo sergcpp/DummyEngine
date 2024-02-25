@@ -484,7 +484,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             }
 
             const float tan_angle = tanf(p_list_->env.sun_angle * Ren::Pi<float>() / 360.0f);
-            shrd_data.sun_dir = Ren::Vec4f{p_list_->env.sun_dir[0], p_list_->env.sun_dir[1], p_list_->env.sun_dir[2], tan_angle};
+            shrd_data.sun_dir =
+                Ren::Vec4f{p_list_->env.sun_dir[0], p_list_->env.sun_dir[1], p_list_->env.sun_dir[2], tan_angle};
             shrd_data.sun_col =
                 Ren::Vec4f{p_list_->env.sun_col[0], p_list_->env.sun_col[1], p_list_->env.sun_col[2], 0.0f};
             if (p_list_->env.sun_angle != 0.0f) {
@@ -501,14 +502,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 const float time_s = 0.001f * Sys::GetTimeMs();
                 const float transparent_near = near;
                 const float transparent_far = 16.0f;
-                const int transparent_mode =
-#if (OIT_MODE == OIT_MOMENT_BASED)
-                    (render_flags_ & EnableOIT) ? 2 : 0;
-#elif (OIT_MODE == OIT_WEIGHTED_BLENDED)
-                    (render_flags_ & EnableOIT) ? 1 : 0;
-#else
-                    0;
-#endif
+                const int transparent_mode = 0;
 
                 shrd_data.transp_params_and_time =
                     Ren::Vec4f{std::log(transparent_near), std::log(transparent_far) - std::log(transparent_near),
@@ -950,7 +944,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         GBufferShade::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
-        const Ren::Pipeline &pi = (render_flags_ & EnableHQ_HDR) ? pi_gbuf_shade_hq_ : pi_gbuf_shade_;
+        const Ren::Pipeline &pi = (settings.hdr_quality == eHDRQuality::High) ? pi_gbuf_shade_hq_ : pi_gbuf_shade_;
         Ren::DispatchCompute(pi, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                              builder.ctx().default_descr_alloc(), builder.ctx().log());
     });
@@ -1356,7 +1350,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
-            if (render_flags_ & EnableHQ_HDR) {
+            if (settings.hdr_quality == eHDRQuality::High) {
                 params.format = Ren::eTexFormat::RawRGBA16F;
             } else {
                 params.format = Ren::eTexFormat::RawRG11F_B10F;

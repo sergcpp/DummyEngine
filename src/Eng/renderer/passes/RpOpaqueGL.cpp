@@ -130,14 +130,14 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-    if ((*p_list_)->render_flags & DebugWireframe) {
+    if ((*p_list_)->render_settings.debug_wireframe) {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Line);
     } else {
         rast_state.poly.mode = uint8_t(Ren::ePolygonMode::Fill);
     }
 
     rast_state.depth.test_enabled = true;
-    if (((*p_list_)->render_flags & (EnableZFill | DebugWireframe)) == EnableZFill) {
+    if ((*p_list_)->render_settings.enable_zfill && !(*p_list_)->render_settings.debug_wireframe) {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::Equal);
     } else {
         rast_state.depth.compare_op = unsigned(Ren::eCompareOp::LEqual);

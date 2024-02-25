@@ -9,7 +9,7 @@ namespace Eng {
 struct BackendInfo;
 struct FrontendInfo;
 struct ItemsInfo;
-};
+}; // namespace Eng
 
 class DebugInfoUI : public Gui::BaseElement {
     const Gui::BaseElement *parent_;
@@ -18,7 +18,7 @@ class DebugInfoUI : public Gui::BaseElement {
     uint64_t last_frame_time_ = 0;
     double cur_frame_dur_ = 0.0;
 
-    uint64_t render_flags_ = 0;
+    bool debug_items_ = false;
 
     struct {
         float occluders_time_ms = 0.0f, main_gather_time_ms = 0.0f, shadow_gather_time_ms = 0.0f,
@@ -55,7 +55,7 @@ class DebugInfoUI : public Gui::BaseElement {
                 std::shared_ptr<Gui::BitmapFont> font);
 
     void UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
-                    const Eng::ItemsInfo &items_info, uint64_t render_flags);
+                    const Eng::ItemsInfo &items_info, bool debug_items);
 
     void Draw(Gui::Renderer *r) override;
 };

@@ -32,13 +32,8 @@ void Eng::RpTransparent::DrawTransparent(RpBuilder &builder, RpAllocTex &color_t
     RpAllocTex &shad_tex = builder.GetReadTexture(shad_tex_);
     RpAllocTex &ssao_tex = builder.GetReadTexture(ssao_tex_);
 
-#if (OIT_MODE == OIT_MOMENT_BASED)
-    DrawTransparent_Moments(builder);
-#elif (OIT_MODE == OIT_WEIGHTED_BLENDED)
-#else
     DrawTransparent_Simple(builder, instances_buf, instance_indices_buf, unif_shared_data_buf, materials_buf, cells_buf,
                            items_buf, lights_buf, decals_buf, shad_tex, color_tex, ssao_tex);
-#endif
 }
 
 void Eng::RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,

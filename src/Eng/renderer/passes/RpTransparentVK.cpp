@@ -45,7 +45,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
         const VkDescriptorImageInfo shad_info = shad_tex.ref->vk_desc_image_info();
         VkDescriptorImageInfo lm_infos[4];
 
-        if (((*p_list_)->render_flags & EnableLightmap) && (*p_list_)->env.lm_direct) {
+        if ((*p_list_)->render_settings.enable_lightmap && (*p_list_)->env.lm_direct) {
             for (int sh_l = 0; sh_l < 4; sh_l++) {
                 lm_infos[sh_l] = lm_tex[sh_l]->ref->vk_desc_image_info();
             }

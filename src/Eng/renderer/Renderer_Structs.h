@@ -217,49 +217,95 @@ struct ShapeKeyData {
     uint16_t shape_weight;
 };
 
-enum eRenderFlags : uint64_t {
-    EnableZFill = (1ull << 0u),
-    EnableCulling = (1ull << 1u),
-    EnableSSR = (1ull << 2u),
-    EnableSSR_HQ = (1ull << 3u),
-    EnableSSAO = (1ull << 4u),
-    EnableLightmap = (1ull << 5u),
-    EnableLights = (1ull << 6u),
-    EnableDecals = (1ull << 7u),
-    EnableProbes = (1ull << 8u),
-    EnableDOF = (1ull << 9u),
-    EnableShadows = (1ull << 10u),
-    EnableOIT = (1ull << 11u),
-    EnableTonemap = (1ull << 12u),
-    EnableBloom = (1ull << 13u),
-    EnableMsaa = (1ull << 14u),
-    EnableTaa = (1ull << 15u),
-    EnableTaaStatic = (1ull << 16u),
-    EnableFxaa = (1ull << 17u),
-    EnableTimers = (1ull << 18u),
-    EnableDeferred = (1ull << 19u),
-    EnableRTShadows = (1ull << 20u),
-    EnableGI = (1ull << 21u),
-    EnableHQ_HDR = (1ull << 22u),
-    DebugWireframe = (1ull << 31u),
-    DebugCulling = (1ull << 32u),
-    DebugShadow = (1ull << 33u),
-    DebugLights = (1ull << 34u),
-    DebugDeferred = (1ull << 35u),
-    DebugBlur = (1ull << 36u),
-    DebugDecals = (1ull << 37u),
-    DebugSSAO = (1ull << 38u),
-    DebugTimings = (1ull << 39u),
-    DebugBVH = (1ull << 40u),
-    DebugProbes = (1ull << 41u),
-    DebugEllipsoids = (1ull << 42u),
-    DebugRT = (1ull << 43u),
-    DebugRTShadow = (1ull << 44u),
-    DebugReflDenoise = (1ull << 45u),
-    DebugGIDenoise = (1ull << 46u),
-    DebugShadowDenoise = (1ull << 47u),
-    DebugFreezeFrontend = (1ull << 48u),
-    DebugMotionVectors = (1ull << 49u)
+enum class eRenderMode : uint8_t { Forward, Deferred };
+
+enum class eReflectionsQuality : uint8_t { Off, Low, High, Raytraced };
+
+enum class eShadowsQuality : uint8_t { Off, High, Raytraced };
+
+enum class eTonemapMode : uint8_t { Off, Standard, LUT };
+
+enum class eTAAMode : uint8_t { Off, Dynamic, Static };
+
+enum class eHDRQuality : uint8_t { Medium, High };
+
+enum class eGIQuality : uint8_t { Off, High };
+
+enum class eDebugRT : uint8_t { Off, Main, Shadow };
+
+enum class eDebugDenoise : uint8_t { Off, Reflection, GI, Shadow };
+
+struct render_settings_t {
+    union {
+        struct {
+            bool enable_zfill : 1;
+            bool enable_culling : 1;
+            bool enable_ssao : 1;
+            bool enable_lightmap : 1;
+            bool enable_lights : 1;
+            bool enable_decals : 1;
+            bool enable_probes : 1;
+            bool enable_dof : 1;
+            bool enable_bloom : 1;
+            bool enable_timers : 1;
+        };
+        uint32_t flags = 0xffffffff;
+    };
+
+    union {
+        struct {
+            bool debug_culling : 1;
+            bool debug_wireframe : 1;
+            bool debug_ssao : 1;
+            bool debug_shadows : 1;
+            bool debug_lights : 1;
+            bool debug_decals : 1;
+            bool debug_deferred : 1;
+            bool debug_blur : 1;
+            bool debug_timings : 1;
+            bool debug_bvh : 1;
+            bool debug_probes : 1;
+            bool debug_ellipsoids : 1;
+            bool debug_freeze : 1;
+            bool debug_motion : 1;
+        };
+        uint32_t debug_flags = 0;
+    };
+
+    eRenderMode render_mode = eRenderMode::Deferred;
+    eReflectionsQuality reflections_quality = eReflectionsQuality::Raytraced;
+    eShadowsQuality shadows_quality = eShadowsQuality::High;
+    eTonemapMode tonemap_mode = eTonemapMode::Standard;
+    eTAAMode taa_mode = eTAAMode::Dynamic;
+    eHDRQuality hdr_quality = eHDRQuality::High;
+    eGIQuality gi_quality = eGIQuality::High;
+
+    eDebugRT debug_rt = eDebugRT::Off;
+    eDebugDenoise debug_denoise = eDebugDenoise::Off;
+
+    bool operator==(const render_settings_t &rhs) {
+        return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
+               shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
+               hdr_quality == rhs.hdr_quality && gi_quality == rhs.gi_quality && debug_rt == rhs.debug_rt &&
+               debug_denoise == rhs.debug_denoise;
+    }
+    bool operator!=(const render_settings_t &rhs) { return !operator==(rhs); }
+
+    render_settings_t &operator&=(const render_settings_t &rhs) {
+        flags &= rhs.flags;
+        debug_flags &= rhs.debug_flags;
+
+        render_mode = eRenderMode(std::min(uint8_t(render_mode), uint8_t(rhs.render_mode)));
+        reflections_quality =
+            eReflectionsQuality(std::min(uint8_t(reflections_quality), uint8_t(rhs.reflections_quality)));
+        shadows_quality = eShadowsQuality(std::min(uint8_t(shadows_quality), uint8_t(rhs.shadows_quality)));
+        tonemap_mode = eTonemapMode(std::min(uint8_t(tonemap_mode), uint8_t(rhs.tonemap_mode)));
+        taa_mode = eTAAMode(std::min(uint8_t(taa_mode), uint8_t(rhs.taa_mode)));
+        hdr_quality = eHDRQuality(std::min(uint8_t(hdr_quality), uint8_t(rhs.hdr_quality)));
+        gi_quality = eGIQuality(std::min(uint8_t(gi_quality), uint8_t(rhs.gi_quality)));
+
+        return (*this);
+    }
 };
 
 struct FrontendInfo {
