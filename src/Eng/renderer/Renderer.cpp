@@ -850,7 +850,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
             frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
-            frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
+            //frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
         }
@@ -859,7 +859,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.albedo_params.w = view_state_.scr_res[0];
         frame_textures.albedo_params.h = view_state_.scr_res[1];
         frame_textures.albedo_params.format = Ren::eTexFormat::RawRGBA8888;
-        frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
+        //frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         if (!deferred_shading) {
@@ -1257,11 +1257,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 }
             }
 
-            float gamma = 1.0f;
-            if (list.render_settings.tonemap_mode != eTonemapMode::Off && !list.render_settings.debug_lights) {
-                gamma = 2.2f;
-            }
-
             const bool tonemap = (list.render_settings.tonemap_mode != eTonemapMode::Off);
             const float reduced_average = rp_read_brightness_.reduced_average();
 
@@ -1302,10 +1297,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 } else {
                     rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
                 }
-
-                rp_combine_data_.tonemap = tonemap;
-                rp_combine_data_.gamma = gamma;
-                rp_combine_data_.exposure = exposure;
+                rp_combine_data_.lut_tex = tonemap_lut_;
+                rp_combine_data_.tonemap_mode = int(list.render_settings.tonemap_mode);
+                rp_combine_data_.inv_gamma = 1.0f;
+                rp_combine_data_.exposure = powf(2.0f, exposure);
                 rp_combine_data_.fade = list.draw_cam.fade;
 
                 backbuffer_sources_.push_back(rp_combine_data_.output_tex);
@@ -1395,6 +1390,53 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     backend_gpu_end_ = ctx_.WriteTimestamp(false);
 
     __itt_task_end(__g_itt_domain);
+}
+
+void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, Ren::Span<const uint8_t> data) {
+    assert(format == Ren::eTexFormat::RawRGB10_A2);
+
+    if (data.empty()) {
+        // free texture;
+        tonemap_lut_ = {};
+    }
+
+    if (!tonemap_lut_) {
+        Ren::Tex3DParams params = {};
+        params.w = params.h = params.d = res;
+        params.usage = Ren::eTexUsage::Sampled | Ren::eTexUsage::Transfer;
+        params.format = Ren::eTexFormat::RawRGB10_A2;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eTexLoadStatus status;
+        tonemap_lut_ = ctx_.LoadTexture3D("Tonemap LUT", params, ctx_.default_mem_allocs(), &status);
+    }
+
+    void *cmd_buf = ctx_.BegTempSingleTimeCommands();
+
+    const uint32_t data_len = res * res * res * sizeof(uint32_t);
+    Ren::Buffer temp_upload_buf{"Temp tonemap LUT upload", ctx_.api_ctx(), Ren::eBufType::Stage, data_len};
+    { // update stage buffer
+        uint32_t *mapped_ptr = reinterpret_cast<uint32_t *>(temp_upload_buf.Map(Ren::eBufMap::Write));
+        memcpy(mapped_ptr, data.data(), data_len);
+        temp_upload_buf.Unmap();
+    }
+
+    { // update texture
+        const Ren::TransitionInfo res_transitions1[] = {{&temp_upload_buf, Ren::eResState::CopySrc},
+                                                       {tonemap_lut_.get(), Ren::eResState::CopyDst}};
+        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
+
+        tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RawRGB10_A2, temp_upload_buf, cmd_buf, 0,
+                                  data_len);
+
+        const Ren::TransitionInfo res_transitions2[] = {{tonemap_lut_.get(), Ren::eResState::ShaderResource}};
+        Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions2);
+
+        ctx_.EndTempSingleTimeCommands(cmd_buf);
+    }
+
+    temp_upload_buf.FreeImmediate();
 }
 
 void Eng::Renderer::InitBackendInfo() {

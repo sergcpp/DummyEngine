@@ -34,28 +34,35 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
     }
 
     BlitCombine::Params uniform_params;
-    uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])};
+    uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
     uniform_params.tex_size = Ren::Vec2f{float(view_state_->scr_res[0]), float(view_state_->scr_res[1])};
-    uniform_params.tonemap = pass_data_->tonemap ? 1.0f : 0.0f;
-    uniform_params.gamma = pass_data_->gamma;
-    uniform_params.exposure = pass_data_->tonemap ? pass_data_->exposure : 1.0f;
+    uniform_params.tonemap_mode = float(pass_data_->tonemap_mode);
+    uniform_params.inv_gamma = pass_data_->inv_gamma;
+    uniform_params.exposure = pass_data_->exposure;
     uniform_params.fade = pass_data_->fade;
 
-    const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
-                                     {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
+    Ren::SmallVector<Ren::Binding, 8> bindings = {
+        {Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
+        {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
+    if (pass_data_->tonemap_mode == 2) {
+        bindings.emplace_back(Ren::eBindTarget::Tex3D, BlitCombine::LUT_TEX_SLOT, *pass_data_->lut_tex);
+    }
 
     const Ren::WeakTex2DRef output = output_tex ? output_tex->ref : Ren::WeakTex2DRef(builder.ctx().backbuffer_ref());
     const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_combine_prog_, render_targets, {}, rast_state, builder.rast_state(),
-                        bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_combine_prog_[pass_data_->tonemap_mode == 2], render_targets, {},
+                        rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
 }
 
 void Eng::RpCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex) {
     if (!initialized) {
-        blit_combine_prog_ =
-            sh.LoadProgram(ctx, "blit_combine2", "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");
-        assert(blit_combine_prog_->ready());
+        blit_combine_prog_[0] =
+            sh.LoadProgram(ctx, "blit_combine", "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");
+        assert(blit_combine_prog_[0]->ready());
+        blit_combine_prog_[1] = sh.LoadProgram(ctx, "blit_combine_lut", "internal/blit_combine.vert.glsl",
+                                               "internal/blit_combine.frag.glsl@LUT");
+        assert(blit_combine_prog_[1]->ready());
 
         initialized = true;
     }

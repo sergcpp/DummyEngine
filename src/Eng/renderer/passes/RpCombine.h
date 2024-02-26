@@ -14,8 +14,10 @@ struct RpCombineData {
     RpResRef exposure_tex;
     RpResRef output_tex;
 
-    bool tonemap = false;
-    float gamma = 1.0f, exposure = 1.0f, fade = 0.0f;
+    Ren::WeakTex3DRef lut_tex;
+
+    int tonemap_mode = 1;
+    float inv_gamma = 1.0f, exposure = 1.0f, fade = 0.0f;
 };
 
 class RpCombine : public RpExecutor {
@@ -23,7 +25,7 @@ class RpCombine : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::ProgramRef blit_combine_prog_;
+    Ren::ProgramRef blit_combine_prog_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

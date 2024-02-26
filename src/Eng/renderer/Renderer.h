@@ -64,6 +64,8 @@ class Renderer {
     void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
                          const Ren::Tex2DRef target = {});
 
+    void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
+
     void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
     void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
     // void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count,
@@ -88,6 +90,7 @@ class Renderer {
 
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
+    Ren::Tex3DRef tonemap_lut_;
     Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
 

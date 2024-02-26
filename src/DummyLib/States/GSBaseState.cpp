@@ -30,6 +30,19 @@
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 
+namespace Ray {
+extern const int LUT_DIMS;
+extern const uint32_t __filmic_very_low_contrast[];
+extern const uint32_t __filmic_low_contrast[];
+extern const uint32_t __filmic_med_low_contrast[];
+extern const uint32_t __filmic_med_contrast[];
+extern const uint32_t __filmic_med_high_contrast[];
+extern const uint32_t __filmic_high_contrast[];
+extern const uint32_t __filmic_very_high_contrast[];
+
+extern const uint32_t *transform_luts[];
+} // namespace Ray
+
 namespace GSBaseStateInternal {
 const int MAX_CMD_LINES = 8;
 const bool USE_TWO_THREADS = true;
@@ -214,6 +227,22 @@ void GSBaseState::Enter() {
                     shrd_this->renderer_->settings.taa_mode = Eng::eTAAMode::Dynamic;
                 } else {
                     shrd_this->renderer_->settings.taa_mode = Eng::eTAAMode::Off;
+                }
+            }
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_tonemap", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        auto shrd_this = weak_this.lock();
+        if (shrd_this) {
+            if (argc > 1) {
+                if (argv[1].val > 1.5) {
+                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                } else if (argv[1].val > 0.5) {
+                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
+                } else {
+                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
                 }
             }
         }
@@ -628,6 +657,11 @@ bool GSBaseState::LoadScene(const char *name) {
 void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {}
 
 void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
+    renderer_->SetTonemapLUT(Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                             Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(Ray::transform_luts[4]),
+                                                      reinterpret_cast<const uint8_t *>(Ray::transform_luts[4]) +
+                                                          4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+
     // trigger probes update
     probes_dirty_ = false;
 }

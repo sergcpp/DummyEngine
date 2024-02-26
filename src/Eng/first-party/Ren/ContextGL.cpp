@@ -110,14 +110,14 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 #endif
 
-    const bool srgb_framebuffer = IsExtensionSupported("GL_ARB_framebuffer_sRGB") ||
+    /*const bool srgb_framebuffer = IsExtensionSupported("GL_ARB_framebuffer_sRGB") ||
                                   IsExtensionSupported("GLX_ARB_framebuffer_sRGB") ||
                                   IsExtensionSupported("WGL_ARB_framebuffer_sRGB");
     if (srgb_framebuffer) {
         glEnable(GL_FRAMEBUFFER_SRGB);
     } else {
         log->Warning("SRGB framebuffer is not supported!");
-    }
+    }*/
 
     capabilities.spirv = IsExtensionSupported("GL_ARB_gl_spirv");
     capabilities.persistent_buf_mapping = IsExtensionSupported("GL_ARB_buffer_storage");

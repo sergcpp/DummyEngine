@@ -8,14 +8,15 @@ INTERFACE_START(BlitCombine)
 struct Params {
     VEC4_TYPE transform;
     VEC2_TYPE tex_size;
-    float tonemap;
-    float gamma;
+    float tonemap_mode;
+    float inv_gamma;
     float exposure;
     float fade;
 };
 
 const int HDR_TEX_SLOT = 0;
 const int BLURED_TEX_SLOT = 1;
+const int LUT_TEX_SLOT = 2;
 
 INTERFACE_END
 
