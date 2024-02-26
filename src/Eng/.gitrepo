@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = multi_compile
-	commit = cac065c44ae86ab6e4e6ebcc64a789e19f2303b3
+	branch = version_string
+	commit = 1182bd47459f0c36cc9538b02036899d3f446f2b
 	method = merge
 	cmdver = 0.4.6
-	parent = 3a6e116c60ffba985127089b94b989ea14cd3299
+	parent = 534f6966ece3ccfd8dc397fae08b48a733f67c66
