@@ -109,7 +109,7 @@ void main() {
 
     vec3 hit_point;
     vec3 out_color = vec3(0.0);
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_norm_tex, hit_point);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point);
     if (hit_found) {
         vec2 uv = hit_point.xy;
 #if defined(VULKAN)

@@ -99,7 +99,7 @@ void main() {
     vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
 
     vec3 hit_point;
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_norm_tex, hit_point);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point);
 
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {
