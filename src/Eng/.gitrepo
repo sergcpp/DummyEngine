@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = subgroup_size
-	commit = 00fd8dc4a67a0d255fde4cb5bf02b76a0d0e308e
+	branch = lut_tonemap
+	commit = 7c8c0bf771212454e593c0a4afcf4e90e895177a
 	method = merge
 	cmdver = 0.4.6
-	parent = 09e500cb095eca7bd4e214237b753858e73c5f92
+	parent = 80c46fc3d622c01129b4b472afcf256da2f9717e
