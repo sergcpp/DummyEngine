@@ -58,6 +58,8 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 set(SOURCE_FILES Config.h
+                 Eng.h
+                 Eng.cpp
                  FrameInfo.h
                  Log.h
                  Log.cpp

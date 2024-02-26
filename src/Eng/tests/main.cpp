@@ -8,6 +8,7 @@
 #include <vtune/ittnotify.h>
 __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
+#include "../Eng.h"
 #include "../scene/SceneManager.h"
 #include "test_common.h"
 
@@ -42,7 +43,7 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
 
-    // printf("Eng Version: %s\n", Eng::Version());
+    printf("Eng Version: %s\n", Eng::Version());
     puts(" ---------------");
 
     const char *device_name = nullptr;
