@@ -9,15 +9,7 @@
 
 #include "_fs_common.glsl"
 
-/*
-PERM @MSAA_4
-*/
-
-#if defined(MSAA_4)
-layout(binding = BIND_BASE0_TEX) uniform mediump sampler2DMS g_tex;
-#else
 layout(binding = BIND_BASE0_TEX) uniform mediump sampler2D g_tex;
-#endif
 layout(binding = BIND_CELLS_BUF) uniform highp usamplerBuffer g_cells_buf;
 layout(binding = BIND_ITEMS_BUF) uniform highp usamplerBuffer g_items_buf;
 

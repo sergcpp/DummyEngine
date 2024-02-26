@@ -10,9 +10,7 @@
 #include "ssr_common.glsl"
 #include "ssr_prefilter_interface.h"
 
-/*
-PERM @HQ_HDR
-*/
+#pragma multi_compile _ HQ_HDR
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

@@ -11,11 +11,8 @@
 #include "_fs_common.glsl"
 #include "_texturing.glsl"
 
-/*
-PERM @TRANSPARENT_PERM
-PERM @OUTPUT_VELOCITY
-PERM @OUTPUT_VELOCITY;TRANSPARENT_PERM
-*/
+#pragma multi_compile _ OUTPUT_VELOCITY
+#pragma multi_compile _ TRANSPARENT_PERM
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;

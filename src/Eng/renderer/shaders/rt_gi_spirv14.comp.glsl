@@ -14,9 +14,7 @@
 
 #include "rt_gi_interface.h"
 
-/*
-PERM @TWO_BOUNCES
-*/
+#pragma multi_compile _ TWO_BOUNCES
 
 #if defined(TWO_BOUNCES)
 #define NUM_BOUNCES 2

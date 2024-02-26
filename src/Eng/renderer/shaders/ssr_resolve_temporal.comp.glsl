@@ -15,11 +15,8 @@
 #include "taa_common.glsl"
 #include "ssr_resolve_temporal_interface.h"
 
-/*
-PERM @HQ_HDR
-PERM @NO_SUBGROUP_EXTENSIONS
-PERM @HQ_HDR;NO_SUBGROUP_EXTENSIONS
-*/
+#pragma multi_compile _ HQ_HDR
+#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
 
 #if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_arithmetic))
 #define NO_SUBGROUP_EXTENSIONS

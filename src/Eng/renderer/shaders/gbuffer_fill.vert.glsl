@@ -11,9 +11,7 @@
 #include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
-/*
-PERM @VEGETATION
-*/
+#pragma multi_compile _ VEGETATION
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 layout(location = VTX_NOR_LOC) in vec4 g_in_vtx_normal;

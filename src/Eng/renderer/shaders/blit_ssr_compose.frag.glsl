@@ -11,11 +11,8 @@
 #include "_fs_common.glsl"
 #include "blit_ssr_compose_interface.h"
 
-/*
-PERM @MSAA_4
-PERM @HALFRES
-PERM @HALFRES;MSAA_4
-*/
+#pragma multi_compile _ MSAA_4
+#pragma multi_compile _ HALFRES
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;

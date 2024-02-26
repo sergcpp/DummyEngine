@@ -9,14 +9,9 @@
 #include "_texturing.glsl"
 #include "_vegetation.glsl"
 
-/*
-PERM @TRANSPARENT_PERM
-PERM @MOVING_PERM
-PERM @OUTPUT_VELOCITY
-PERM @OUTPUT_VELOCITY;TRANSPARENT_PERM
-PERM @MOVING_PERM;OUTPUT_VELOCITY
-PERM @MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM
-*/
+#pragma multi_compile _ MOVING_PERM
+#pragma multi_compile _ OUTPUT_VELOCITY
+#pragma multi_compile _ TRANSPARENT_PERM
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef TRANSPARENT_PERM

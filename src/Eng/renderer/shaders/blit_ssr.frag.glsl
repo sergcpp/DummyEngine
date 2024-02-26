@@ -10,10 +10,6 @@
 #include "_fs_common.glsl"
 #include "blit_ssr_interface.h"
 
-/*
-PERM @MSAA_4
-*/
-
 #define Z_THICKNESS 0.05
 #define STRIDE 0.0125
 #define MAX_STEPS 48.0
@@ -24,11 +20,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-#if defined(MSAA_4)
-layout(binding = NORM_TEX_SLOT) uniform highp sampler2DMS g_norm_tex;
-#else
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
-#endif
 
 LAYOUT(location = 0) in vec2 g_vtx_uvs;
 

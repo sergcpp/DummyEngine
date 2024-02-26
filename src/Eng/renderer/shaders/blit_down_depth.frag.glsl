@@ -9,15 +9,7 @@
 #include "_fs_common.glsl"
 #include "blit_down_depth_interface.h"
 
-/*
-PERM @MSAA_4
-*/
-
-#if defined(MSAA_4)
-layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2DMS g_depth_tex;
-#else
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
-#endif
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;

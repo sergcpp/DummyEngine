@@ -11,11 +11,8 @@
 #include "_cs_common.glsl"
 #include "depth_hierarchy_interface.h"
 
-/*
-PERM @MIPS_7
-PERM @NO_SUBGROUP_EXTENSIONS
-PERM @MIPS_7;NO_SUBGROUP_EXTENSIONS
-*/
+#pragma multi_compile _ MIPS_7
+#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
 
 #if !defined(NO_SUBGROUP_EXTENSIONS) && !defined(GL_KHR_shader_subgroup_quad)
 #define NO_SUBGROUP_EXTENSIONS

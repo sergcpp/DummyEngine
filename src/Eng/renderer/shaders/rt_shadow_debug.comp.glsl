@@ -16,9 +16,7 @@
 #include "rt_shadow_debug_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
-/*
-PERM @NO_SUBGROUP_EXTENSIONS
-*/
+#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
 
 #if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
 #define NO_SUBGROUP_EXTENSIONS

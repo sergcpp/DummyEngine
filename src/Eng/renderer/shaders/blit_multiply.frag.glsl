@@ -7,10 +7,6 @@
     precision mediump float;
 #endif
 
-/*
-PERM @MSAA_4
-*/
-
 #include "_fs_common.glsl"
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -18,15 +14,9 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 };
 
 layout(binding = BIND_REFL_SSR_TEX) uniform sampler2D g_tex;
-#if defined(MSAA_4)
-layout(binding = BIND_REFL_SPEC_TEX) uniform mediump sampler2DMS s_mul_tex;
-layout(binding = BIND_REFL_DEPTH_TEX) uniform mediump sampler2DMS g_depth_tex;
-layout(binding = BIND_REFL_NORM_TEX) uniform mediump sampler2DMS g_norm_tex;
-#else
 layout(binding = BIND_REFL_SPEC_TEX) uniform mediump sampler2D s_mul_tex;
 layout(binding = BIND_REFL_DEPTH_TEX) uniform mediump sampler2DMS g_depth_tex;
 layout(binding = BIND_REFL_NORM_TEX) uniform mediump sampler2D g_norm_tex;
-#endif
 layout(binding = BIND_REFL_PREV_TEX) uniform mediump sampler2D g_prev_tex;
 layout(binding = BIND_REFL_BRDF_TEX) uniform sampler2D g_brdf_lut_tex;
 layout(binding = BIND_ENV_TEX) uniform mediump samplerCubeArray g_env_tex;
@@ -47,14 +37,7 @@ float LinearDepthTexelFetch(ivec2 hit_pixel) {
 }
 
 void main() {
-#if defined(MSAA_4)
-    vec4 specular = 0.25 * (texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 0) +
-                            texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 1) +
-                            texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 2) +
-                            texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 3));
-#else
     vec4 specular = texelFetch(s_mul_tex, ivec2(g_vtx_uvs), 0);
-#endif
     if ((specular.r + specular.g + specular.b) < 0.0001) return;
 
     ivec2 pix_uvs = ivec2(g_vtx_uvs / 2.0) * 2;

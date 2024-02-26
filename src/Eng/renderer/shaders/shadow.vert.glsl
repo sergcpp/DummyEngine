@@ -10,9 +10,7 @@
 
 #include "shadow_interface.h"
 
-/*
-PERM @TRANSPARENT_PERM
-*/
+#pragma multi_compile _ TRANSPARENT_PERM
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef TRANSPARENT_PERM

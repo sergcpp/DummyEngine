@@ -8,13 +8,9 @@
 #include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
-/*
-PERM @TRANSPARENT_PERM
-PERM @OUTPUT_VELOCITY
-PERM @MOVING_PERM;OUTPUT_VELOCITY
-PERM @OUTPUT_VELOCITY;TRANSPARENT_PERM
-PERM @MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM
-*/
+#pragma multi_compile _ MOVING_PERM
+#pragma multi_compile _ OUTPUT_VELOCITY
+#pragma multi_compile _ TRANSPARENT_PERM
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos_curr;
 #ifdef TRANSPARENT_PERM

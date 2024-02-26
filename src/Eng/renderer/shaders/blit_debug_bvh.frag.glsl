@@ -8,19 +8,11 @@
 
 #include "_fs_common.glsl"
 
-/*
-PERM @MSAA_4
-*/
-
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-#if defined(MSAA_4)
-layout(binding = 0) uniform mediump sampler2DMS g_depth_tex;
-#else
 layout(binding = 0) uniform mediump sampler2D g_depth_tex;
-#endif
 layout(binding = 1) uniform highp samplerBuffer g_nodes_buf;
 
 #if defined(VULKAN)

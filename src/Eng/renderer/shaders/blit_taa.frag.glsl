@@ -9,17 +9,11 @@
 #include "taa_common.glsl"
 #include "blit_taa_interface.h"
 
-/*
-PERM @USE_CLIPPING
-PERM @USE_ROUNDED_NEIBOURHOOD
-PERM @USE_TONEMAP
-PERM @USE_YCoCg
-PERM @USE_CLIPPING;USE_TONEMAP
-PERM @USE_CLIPPING;USE_TONEMAP;USE_YCoCg
-PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD
-PERM @USE_CLIPPING;USE_ROUNDED_NEIBOURHOOD;USE_TONEMAP;USE_YCoCg
-PERM @USE_STATIC_ACCUMULATION
-*/
+#pragma multi_compile _ USE_CLIPPING
+#pragma multi_compile _ USE_ROUNDED_NEIBOURHOOD
+#pragma multi_compile _ USE_TONEMAP
+#pragma multi_compile _ USE_YCoCg
+#pragma multi_compile _ USE_STATIC_ACCUMULATION
 
 layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D g_color_curr;
 layout(binding = HIST_TEX_SLOT) uniform mediump sampler2D g_color_hist;

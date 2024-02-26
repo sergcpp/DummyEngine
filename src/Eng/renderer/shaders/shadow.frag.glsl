@@ -11,9 +11,7 @@
 #include "_fs_common.glsl"
 #include "_texturing.glsl"
 
-/*
-PERM @TRANSPARENT_PERM
-*/
+#pragma multi_compile _ TRANSPARENT_PERM
 
 #ifdef TRANSPARENT_PERM
 #if !defined(BINDLESS_TEXTURES)

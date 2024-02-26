@@ -9,10 +9,7 @@
 #include "rt_shadow_filter_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
-/*
-PERM @PASS_0
-PERM @PASS_1
-*/
+#pragma multi_compile _ PASS_0 PASS_1
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;

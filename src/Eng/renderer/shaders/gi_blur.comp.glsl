@@ -12,9 +12,7 @@
 #include "gi_common.glsl"
 #include "gi_blur_interface.h"
 
-/*
-PERM @PER_PIXEL_KERNEL_ROTATION
-*/
+#pragma multi_compile _ PER_PIXEL_KERNEL_ROTATION
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;

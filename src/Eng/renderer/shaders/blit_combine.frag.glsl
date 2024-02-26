@@ -9,9 +9,8 @@
 #include "_fs_common.glsl"
 #include "blit_combine_interface.h"
 
-/*
-PERM @LUT
-*/
+#pragma multi_compile _ LUT
+
 
 layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D g_tex;
 layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_tex;

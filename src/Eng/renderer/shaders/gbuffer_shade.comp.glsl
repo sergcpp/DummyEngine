@@ -12,9 +12,7 @@
 
 #define LIGHT_ATTEN_CUTOFF 0.004
 
-/*
-PERM @HQ_HDR
-*/
+#pragma multi_compile _ HQ_HDR
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;

@@ -8,9 +8,7 @@
 #include "_fs_common.glsl"
 #include "skydome_interface.h"
 
-/*
-PERM @COLOR_ONLY
-*/
+#pragma multi_compile _ COLOR_ONLY
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;

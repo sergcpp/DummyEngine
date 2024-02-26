@@ -145,11 +145,43 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 }
 
                 dst_stream << "\r\n#line " << (line_counter + 2) << "\r\n";
-            } else if (line.find("PERM ") == 0) { // NOLINT
-                dst_stream << line << "\r\n";
-                permutations.emplace_back(line.substr(5));
-                if (permutations.back().back() == '\r') {
-                    permutations.back().pop_back();
+            } else if (line.find("#pragma multi_compile ") == 0) {
+                std::vector<std::string> new_permutations;
+                line = line.substr(22);
+
+                size_t pos = 0;
+                std::string token;
+                while ((pos = line.find(' ')) != std::string::npos) {
+                    token = line.substr(0, pos);
+                    new_permutations.push_back(token);
+                    line.erase(0, pos + 1);
+                }
+                new_permutations.push_back(line);
+
+                const int old_count = int(permutations.size());
+                for (const std::string &new_perm : new_permutations) {
+                    bool all_underscores = true;
+                    for (const char c : new_perm) {
+                        all_underscores &= (c == '_');
+                    }
+
+                    if (all_underscores) {
+                        continue;
+                    }
+
+                    for (int i = 0; i < old_count; ++i) {
+                        std::string perm = permutations[i];
+                        if (!perm.empty()) {
+                            perm += ";";
+                        } else {
+                            perm += "@";
+                        }
+                        perm += new_perm;
+                        if (perm.back() == '\r') {
+                            perm.pop_back();
+                        }
+                        permutations.emplace_back(std::move(perm));
+                    }
                 }
             } else {
                 InlineShaderConstants(ctx, line);

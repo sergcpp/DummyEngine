@@ -12,9 +12,7 @@
 #include "ssr_common.glsl"
 #include "ssr_trace_hq_interface.h"
 
-/*
-PERM @NO_SUBGROUP_EXTENSIONS
-*/
+#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
 
 #if !defined(GL_KHR_shader_subgroup_ballot) && !defined(NO_SUBGROUP_EXTENSIONS)
 #define NO_SUBGROUP_EXTENSIONS
