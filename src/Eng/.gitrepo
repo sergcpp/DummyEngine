@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = lut_tonemap
-	commit = 7c8c0bf771212454e593c0a4afcf4e90e895177a
+	branch = master
+	commit = 1fbaf98af0a9f6d1fbecab2ed8547c59036a8055
 	method = merge
 	cmdver = 0.4.6
-	parent = 80c46fc3d622c01129b4b472afcf256da2f9717e
+	parent = f8c50459a7d5aff136689789a1ba6ad26df212f2
