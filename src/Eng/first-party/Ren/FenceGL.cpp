@@ -12,9 +12,9 @@ Ren::SyncFence::~SyncFence() {
     }
 }
 
-Ren::SyncFence::SyncFence(SyncFence &&rhs) : sync_(std::exchange(rhs.sync_, nullptr)) {}
+Ren::SyncFence::SyncFence(SyncFence &&rhs) noexcept : sync_(std::exchange(rhs.sync_, nullptr)) {}
 
-Ren::SyncFence &Ren::SyncFence::operator=(SyncFence &&rhs) {
+Ren::SyncFence &Ren::SyncFence::operator=(SyncFence &&rhs) noexcept {
     if (sync_) {
         auto sync = reinterpret_cast<GLsync>(std::exchange(sync_, nullptr));
         glDeleteSync(sync);

@@ -12,7 +12,7 @@ struct Descr {
 #if defined(USE_VK_RENDER)
     VkDescriptorType desc_type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
     int set = 0, count = 0;
-    bool unbounded_array;
+    bool unbounded_array = false;
     VkFormat format = VK_FORMAT_UNDEFINED;
 #endif
 };

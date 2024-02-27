@@ -36,7 +36,7 @@ struct ApiContext {
     VkQueue present_queue = {}, graphics_queue = {};
 
     VkCommandPool command_pool = {}, temp_command_pool = {};
-    VkCommandBuffer setup_cmd_buf, draw_cmd_buf[MaxFramesInFlight];
+    VkCommandBuffer setup_cmd_buf = {}, draw_cmd_buf[MaxFramesInFlight] = {};
 
     VkSemaphore image_avail_semaphores[MaxFramesInFlight] = {};
     VkSemaphore render_finished_semaphores[MaxFramesInFlight] = {};

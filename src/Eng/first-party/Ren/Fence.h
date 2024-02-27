@@ -27,9 +27,9 @@ class SyncFence {
     ~SyncFence();
 
     SyncFence(const SyncFence &rhs) = delete;
-    SyncFence(SyncFence &&rhs);
+    SyncFence(SyncFence &&rhs) noexcept;
     SyncFence &operator=(const SyncFence &rhs) = delete;
-    SyncFence &operator=(SyncFence &&rhs);
+    SyncFence &operator=(SyncFence &&rhs) noexcept;
 
 #if defined(USE_VK_RENDER)
     operator bool() const { return fence_ != VK_NULL_HANDLE; }

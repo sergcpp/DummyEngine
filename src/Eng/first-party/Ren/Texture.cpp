@@ -193,86 +193,103 @@ Ren::eTexFormat Ren::FormatFromGLInternalFormat(const uint32_t gl_internal_forma
     switch (gl_internal_format) {
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_S3TC_DXT1_EXT:
         (*block) = eTexBlock::_4x4;
         return eTexFormat::BC1;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_S3TC_DXT3_EXT:
         (*block) = eTexBlock::_4x4;
         return eTexFormat::BC2;
     case GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_S3TC_DXT5_EXT:
         (*block) = eTexBlock::_4x4;
         return eTexFormat::BC3;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_4x4_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_4x4_KHR:
         (*block) = eTexBlock::_4x4;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x4_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_5x4_KHR:
         (*block) = eTexBlock::_5x4;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_5x5_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_5x5_KHR:
         (*block) = eTexBlock::_5x5;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x5_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_6x5_KHR:
         (*block) = eTexBlock::_6x5;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_6x6_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_6x6_KHR:
         (*block) = eTexBlock::_6x6;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x5_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_8x5_KHR:
         (*block) = eTexBlock::_8x5;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x6_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_8x6_KHR:
         (*block) = eTexBlock::_8x6;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_8x8_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_8x8_KHR:
         (*block) = eTexBlock::_8x8;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x5_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x5_KHR:
         (*block) = eTexBlock::_10x5;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x6_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x6_KHR:
         (*block) = eTexBlock::_10x6;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x8_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x8_KHR:
         (*block) = eTexBlock::_10x8;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_10x10_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_10x10_KHR:
         (*block) = eTexBlock::_10x10;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x10_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_12x10_KHR:
         (*block) = eTexBlock::_12x10;
         return eTexFormat::ASTC;
     case GL_COMPRESSED_SRGB8_ALPHA8_ASTC_12x12_KHR:
         (*is_srgb) = true;
+        [[fallthrough]];
     case GL_COMPRESSED_RGBA_ASTC_12x12_KHR:
         (*block) = eTexBlock::_12x12;
         return eTexFormat::ASTC;

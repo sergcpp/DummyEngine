@@ -40,11 +40,11 @@ struct StageBufRef {
 };
 
 struct StageBufs {
-    Context *ctx;
+    Context *ctx = nullptr;
     BufferRef bufs[StageBufferCount];
     SyncFence fences[StageBufferCount];
-    void *cmd_bufs[StageBufferCount];
-    bool is_in_use[StageBufferCount];
+    void *cmd_bufs[StageBufferCount] = {};
+    bool is_in_use[StageBufferCount] = {};
 
   private:
     int cur = 0;
