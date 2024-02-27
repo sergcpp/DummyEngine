@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = version_string
-	commit = 1182bd47459f0c36cc9538b02036899d3f446f2b
+	branch = global_shadow
+	commit = 7d39d9b63254592ec923b2cd4f3f3406b68b5614
 	method = merge
 	cmdver = 0.4.6
-	parent = 534f6966ece3ccfd8dc397fae08b48a733f67c66
+	parent = dd9ded18221c6e6c1c3e73c190a1702e0507d8cf
