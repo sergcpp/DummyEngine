@@ -41,6 +41,8 @@ enum eImgTest {
     NoGI_RTShadow_Filmic,
     NoDiffuseGI,
     NoDiffuseGI_Filmic,
+    NoDiffuseGI_RTShadow,
+    NoDiffuseGI_RTShadow_Filmic,
     Full,
     Full_Filmic
 };
@@ -60,6 +62,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         test_postfix = "_nogirt";
     } else if (img_test == eImgTest::NoDiffuseGI || img_test == eImgTest::NoDiffuseGI_Filmic) {
         test_postfix = "_nodiffusegi";
+    } else if (img_test == eImgTest::NoDiffuseGI_RTShadow || img_test == eImgTest::NoDiffuseGI_RTShadow_Filmic) {
+        test_postfix = "_nodiffusegirt";
     }
     const std::string ref_name =
         std::string("assets_pc/references/") + test_name + "/ref" + test_postfix + ".uncompressed.png";
@@ -102,11 +106,14 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
     } else if (img_test == eImgTest::NoDiffuseGI || img_test == eImgTest::NoDiffuseGI_Filmic) {
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+    } else if (img_test == eImgTest::NoDiffuseGI_RTShadow || img_test == eImgTest::NoDiffuseGI_RTShadow_Filmic) {
+        renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer.settings.gi_quality = Eng::eGIQuality::Off;
     }
 
     if (img_test == eImgTest::NoShadow_Filmic || img_test == eImgTest::NoGI_Filmic ||
         img_test == eImgTest::NoGI_RTShadow_Filmic || img_test == eImgTest::NoDiffuseGI_Filmic ||
-        img_test == eImgTest::Full_Filmic) {
+        img_test == eImgTest::NoDiffuseGI_RTShadow_Filmic || img_test == eImgTest::Full_Filmic) {
         renderer.settings.tonemap_mode = Eng::eTonemapMode::LUT;
         renderer.SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
                                Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__filmic_med_contrast),
@@ -450,11 +457,15 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 26.87, 7280, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 21.06, 19080, Full));
         futures.push_back(
-            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 30.24, 4177, NoShadow_Filmic));
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 30.18, 4280, NoShadow_Filmic));
         futures.push_back(
-            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 19.23, 25468, NoGI_Filmic));
-        futures.push_back(
-            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 28.47, 4980, NoGI_RTShadow_Filmic));
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 16.50, 22445, NoGI_Filmic));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 28.45, 4990,
+                                          NoGI_RTShadow_Filmic));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 14.79, 45090,
+                                          NoDiffuseGI_Filmic));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 19.58, 25190,
+                                          NoDiffuseGI_RTShadow_Filmic));
 
         for (auto &f : futures) {
             f.wait();

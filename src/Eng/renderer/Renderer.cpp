@@ -1091,11 +1091,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             frame_textures.color = data->output_tex = debug_rt.AddStorageImageOutput(frame_textures.color, stages);
 
-            const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
-            if (list.render_settings.debug_rt != eDebugRT::Off) {
-                tlas_to_debug = acc_struct_data.rt_tlases[int(eTLASIndex::Shadow)];
-            }
-
+            const Ren::IAccStructure *tlas_to_debug = acc_struct_data.rt_tlases[int(list.render_settings.debug_rt) - 1];
             rp_debug_rt_.Setup(rp_builder_, &view_state_, tlas_to_debug, &bindless_tex, data);
             debug_rt.set_executor(&rp_debug_rt_);
         }

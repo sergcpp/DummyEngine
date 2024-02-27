@@ -357,6 +357,33 @@ void main() {
             }
 
             final_color = light_total;
+
+            if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
+                vec4 pos_ws = vec4(P, 1.0);
+
+                const vec2 shadow_offsets = get_shadow_offsets(saturate(dot(N, g_shrd_data.sun_dir.xyz)));
+                pos_ws.xyz += 0.01 * shadow_offsets.x * N;
+                pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
+
+                vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
+        #if defined(VULKAN)
+                shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+        #else // VULKAN
+                shadow_uvs = 0.5 * shadow_uvs + 0.5;
+        #endif // VULKAN
+                shadow_uvs.xy *= vec2(0.25, 0.5);
+                shadow_uvs.xy += vec2(0.25, 0.5);
+        #if defined(VULKAN)
+                shadow_uvs.y = 1.0 - shadow_uvs.y;
+        #endif // VULKAN
+
+                const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
+                if (sun_visibility > 0.0) {
+                    final_color += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                                                                     sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                }
+            }
+
             final_color += lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
         }
 

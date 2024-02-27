@@ -24,14 +24,6 @@ layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform writeonly restrict image2D g_o
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-// http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
-vec2 get_shadow_offsets(const float dot_N_L) {
-    const float cos_alpha = saturate(dot_N_L);
-    const float offset_scale_N = sqrt(1.0 - cos_alpha * cos_alpha); // sin(acos(L·N))
-    const float offset_scale_L = offset_scale_N / cos_alpha;        // tan(acos(L·N))
-    return vec2(offset_scale_N, min(2.0, offset_scale_L));
-}
-
 void main() {
     ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     if (icoord.x >= g_params.img_size.x || icoord.y >= g_params.img_size.y) {
@@ -77,7 +69,7 @@ void main() {
             vec2(0.25, 0.5)
         );
 
-        vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
+        const vec2 shadow_offsets = get_shadow_offsets(dot_N_L);
         pos_ws.xyz += 0.01 * shadow_offsets.x * normal_ws;
         pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
 

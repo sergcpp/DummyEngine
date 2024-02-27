@@ -16,9 +16,9 @@
         "env_map" : "env/black",
         "env_map_pt" : "env/noon_grass_2k.hdr",
         "ambient_hack" : [
-            0.1,
-            0.1,
-            0.1
+            0.01,
+            0.01,
+            0.01
         ]
     },
     "objects" : [
@@ -168,7 +168,7 @@
                     0,
                     0
                 ],
-                "radius" : 150,
+                "radius" : 0.1,
                 "sh_coeffs" : [
                     [
                         0.0,

@@ -289,14 +289,12 @@ vec3 EvaluateSunLight(vec3 light_color, vec3 light_dir, float light_radius, vec3
 
     vec3 ret = vec3(0.0);
 
-    vec3 u;
+    vec3 u = vec3(1.0, 0.0, 0.0);
     if (abs(light_dir.y) < 0.999) {
         u = vec3(0.0, 1.0, 0.0);
-    } else {
-        u = vec3(1.0, 0.0, 0.0);
     }
 
-    vec3 v = normalize(cross(u, N));
+    vec3 v = normalize(cross(u, light_dir));
     u = cross(N, v);
 
     vec3 points[4];

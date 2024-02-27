@@ -1,5 +1,7 @@
 #include "Renderer.h"
 
+#include <cfloat>
+
 #include <Ren/Context.h>
 #include <Ren/Utils.h>
 #include <Sys/ThreadPool.h>
@@ -59,11 +61,35 @@ static const Ren::Vec4f ClipFrustumPoints[] = {
     Ren::Vec4f{1.0f, 1.0f, 1.0f, 1.0f},    Ren::Vec4f{-1.0f, 1.0f, 1.0f, 1.0f}};
 #endif
 
+Ren::Vec3f FindSupport(const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max, const Ren::Vec3f &dir) {
+    const Ren::Vec3f points[8] = {bbox_min,
+                                  Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_max[2]},
+                                  Ren::Vec3f{bbox_min[0], bbox_max[1], bbox_min[2]},
+                                  Ren::Vec3f{bbox_min[0], bbox_max[1], bbox_max[2]},
+                                  Ren::Vec3f{bbox_max[0], bbox_min[1], bbox_min[2]},
+                                  Ren::Vec3f{bbox_max[0], bbox_min[1], bbox_max[2]},
+                                  Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_min[2]},
+                                  bbox_max};
+
+    Ren::Vec3f ret = points[0];
+    float max_dist = Ren::Dot(dir, bbox_max);
+
+    for (int i = 1; i < 8; ++i) {
+        const float dist = Dot(dir, points[i]);
+        if (dist > max_dist) {
+            max_dist = dist;
+            ret = points[i];
+        }
+    }
+
+    return ret;
+}
+
 static const uint8_t SunShadowUpdatePattern[4] = {
     0b11111111, // update cascade 0 every frame
     0b11111111, // update cascade 1 every frame
     0b01010101, // update cascade 2 once in two frames
-    0b00100010  // update cascade 3 once in four frames
+    0b00000010  // update cascade 3 once in eight frames
 };
 
 static const bool EnableSunCulling = true;
@@ -177,7 +203,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         pipeline_index += int(eFwdPipeline::_Count);
     }
 
-    const bool deferred_shading = list.render_settings.render_mode == eRenderMode::Deferred && !list.render_settings.debug_wireframe;
+    const bool deferred_shading =
+        list.render_settings.render_mode == eRenderMode::Deferred && !list.render_settings.debug_wireframe;
 
     litem_to_lsource_.count = 0;
     ditem_to_decal_.count = 0;
@@ -619,7 +646,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const uint64_t shadow_gather_start = Sys::GetTimeUs();
 
     if (lighting_enabled && scene.root_node != 0xffffffff && shadows_enabled && Length2(list.env.sun_dir) > 0.9f &&
-        Length2(list.env.sun_col) > std::numeric_limits<float>::epsilon()) {
+        Length2(list.env.sun_col) > FLT_EPSILON) {
         // Reserve space for sun shadow
         int sun_shadow_pos[2] = {0, 0};
         int sun_shadow_res[2];
@@ -636,9 +663,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         // Planes, that define shadow map splits
         const float far_planes[] = {float(SHADOWMAP_CASCADE0_DIST), float(SHADOWMAP_CASCADE1_DIST),
-                                    float(SHADOWMAP_CASCADE2_DIST), float(SHADOWMAP_CASCADE3_DIST)};
-        const float near_planes[] = {list.draw_cam.near(), 0.9f * far_planes[0], 0.9f * far_planes[1],
-                                     0.9f * far_planes[2]};
+                                    float(SHADOWMAP_CASCADE2_DIST)};
+        const float near_planes[] = {list.draw_cam.near(), 0.9f * far_planes[0], 0.9f * far_planes[1]};
 
         // Reserved positions for sun shadowmap
         const int OneCascadeRes = SUN_SHADOW_RES / 2;
@@ -646,36 +672,47 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         // Choose up vector for shadow camera
         const Vec3f &light_dir = list.env.sun_dir;
-        auto cam_up = Vec3f{0.0f, 0.0, 1.0f};
-        if (std::abs(light_dir[0]) <= std::abs(light_dir[1]) && std::abs(light_dir[0]) <= std::abs(light_dir[2])) {
-            cam_up = Vec3f{1.0f, 0.0, 0.0f};
-        } else if (std::abs(light_dir[1]) <= std::abs(light_dir[0]) &&
-                   std::abs(light_dir[1]) <= std::abs(light_dir[2])) {
-            cam_up = Vec3f{0.0f, 1.0, 0.0f};
+        auto cam_up = Vec3f{1.0f, 0.0f, 0.0f};
+        if (fabsf(light_dir[1]) < 0.999f) {
+            cam_up = Vec3f{0.0f, 1.0f, 0.0f};
         }
+
         // Calculate side vector of shadow camera
         const Vec3f cam_side = Normalize(Cross(light_dir, cam_up));
         cam_up = Cross(cam_side, light_dir);
 
         const Vec3f scene_dims = scene.nodes[scene.root_node].bbox_max - scene.nodes[scene.root_node].bbox_min;
-        const float max_dist = Length(scene_dims);
+        const float max_dist = Distance(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max);
 
         const Vec3f view_dir = list.draw_cam.view_dir();
 
         // Gather drawables for each cascade
-        for (int casc = 0; casc < 4; casc++) {
-            Camera temp_cam = list.draw_cam;
-            temp_cam.Perspective(list.draw_cam.angle(), list.draw_cam.aspect(), near_planes[casc], far_planes[casc]);
-            temp_cam.UpdatePlanes();
-
-            const Mat4f &tmp_cam_view_from_world = temp_cam.view_matrix(),
-                        &tmp_cam_clip_from_view = temp_cam.proj_matrix();
-
-            const Mat4f tmp_cam_clip_from_world = tmp_cam_clip_from_view * tmp_cam_view_from_world;
-            const Mat4f tmp_cam_world_from_clip = Inverse(tmp_cam_clip_from_world);
-
+        for (int casc = 0; casc < 4; ++casc) {
+            Mat4f tmp_cam_world_from_clip;
             Vec3f bounding_center;
-            const float bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
+            float bounding_radius;
+            if (casc == 3) {
+                bounding_center = 0.5f * (scene.nodes[0].bbox_min + scene.nodes[0].bbox_max);
+                bounding_radius = 0.5f * max_dist;
+            } else {
+                Camera temp_cam = list.draw_cam;
+                temp_cam.Perspective(list.draw_cam.angle(), list.draw_cam.aspect(), near_planes[casc],
+                                     far_planes[casc]);
+                temp_cam.UpdatePlanes();
+
+                const Mat4f &tmp_cam_view_from_world = temp_cam.view_matrix(),
+                            &tmp_cam_clip_from_view = temp_cam.proj_matrix();
+
+                const Mat4f tmp_cam_clip_from_world = tmp_cam_clip_from_view * tmp_cam_view_from_world;
+                tmp_cam_world_from_clip = Inverse(tmp_cam_clip_from_world);
+
+                bounding_radius = temp_cam.GetBoundingSphere(bounding_center);
+                if (casc == 0 && bounding_radius > 0.5f * max_dist) {
+                    // scene is very small, just use the whole bounds
+                    bounding_center = 0.5f * (scene.nodes[0].bbox_min + scene.nodes[0].bbox_max);
+                    bounding_radius = 0.5f * max_dist;
+                }
+            }
             float object_dim_thres = 0.0f;
 
             Vec3f cam_target = bounding_center;
@@ -700,12 +737,15 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 object_dim_thres = 2.0f * move_step;
             }
 
-            const Vec3f cam_center = cam_target + max_dist * light_dir;
+            const Vec3f cam_support1 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, light_dir);
+            const Vec3f cam_support2 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, -light_dir);
+            const Vec3f cam_center = cam_target + fabsf(Dot(cam_support1 - cam_target, light_dir)) * light_dir;
+            const float cam_extents = fabsf(Dot(cam_center, light_dir) - Dot(cam_support2, light_dir));
 
             Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
             shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f,
-                                    max_dist + bounding_radius);
+                                    2 * bounding_radius);
             shadow_cam.UpdatePlanes();
 
             const Mat4f sh_clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
@@ -724,8 +764,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             sh_list.bias[1] = scene.env.sun_shadow_bias[1];
 
             Frustum sh_clip_frustum;
+            if (casc == 3) {
+                sh_clip_frustum = shadow_cam.frustum();
 
-            { // Construct shadow clipping frustum
+                sh_list.scissor_test_pos[0] = sh_list.shadow_map_pos[0];
+                sh_list.scissor_test_pos[1] = sh_list.shadow_map_pos[1];
+                sh_list.scissor_test_size[0] = sh_list.shadow_map_size[0];
+                sh_list.scissor_test_size[1] = sh_list.shadow_map_size[1];
+            } else {
                 Vec4f frustum_points[8] = {REN_UNINITIALIZE_X8(Vec4f)};
 
                 for (int k = 0; k < 8; k++) {
@@ -780,7 +826,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
 
                         const float x_diff0 = (fr_points_proj[k1][0] - fr_points_proj[k2][0]);
-                        const bool is_vertical0 = std::abs(x_diff0) < std::numeric_limits<float>::epsilon();
+                        const bool is_vertical0 = std::abs(x_diff0) < FLT_EPSILON;
                         const float slope0 =
                                         is_vertical0 ? 0.0f : (fr_points_proj[k1][1] - fr_points_proj[k2][1]) / x_diff0,
                                     b0 = is_vertical0 ? fr_points_proj[k1][0]
@@ -792,7 +838,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                             const float x_diff1 =
                                 (fr_points_proj[frustum_edges[j][0]][0] - fr_points_proj[frustum_edges[j][1]][0]);
-                            const bool is_vertical1 = std::abs(x_diff1) < std::numeric_limits<float>::epsilon();
+                            const bool is_vertical1 = std::abs(x_diff1) < FLT_EPSILON;
                             const float slope1 = is_vertical1 ? 0.0f
                                                               : (fr_points_proj[frustum_edges[j][0]][1] -
                                                                  fr_points_proj[frustum_edges[j][1]][1]) /
@@ -881,7 +927,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const uint8_t pattern_bit = (1u << uint8_t(frame_index_ % 8));
             bool should_update = rt_shadows_enabled || (pattern_bit & SunShadowUpdatePattern[casc]) != 0;
 
-            if (EnableSunCulling && casc > 0 && should_update) {
+            if (EnableSunCulling && casc != 0 && casc != 3 && should_update) {
                 // Check if cascade is visible to main camera
 
                 const float p_min[2] = {-1.0f, -1.0f};
@@ -907,8 +953,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const int ZSliceCount = (casc + 1) * 6;
             Ren::Frustum z_frustums[24];
 
-            const float z_beg = -sh_clip_frustum.planes[6].d;
-            const float z_end = sh_clip_frustum.planes[7].d;
+            const float z_beg = -sh_clip_frustum.planes[int(eCamPlane::Near)].d;
+            const float z_end = sh_clip_frustum.planes[int(eCamPlane::Far)].d;
 
             for (int i = 0; i < ZSliceCount; ++i) {
                 z_frustums[i] = sh_clip_frustum;
@@ -916,8 +962,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 const float k_near = float(i) / ZSliceCount;
                 const float k_far = float(i + 1) / ZSliceCount;
 
-                z_frustums[i].planes[6].d = -(z_beg + k_near * (z_end - z_beg));
-                z_frustums[i].planes[7].d = z_beg + k_far * (z_end - z_beg);
+                z_frustums[i].planes[int(eCamPlane::Near)].d = -(z_beg + k_near * (z_end - z_beg));
+                z_frustums[i].planes[int(eCamPlane::Far)].d = z_beg + k_far * (z_end - z_beg);
             }
 
             std::future<void> futures[24];
@@ -975,7 +1021,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         }
                     }
 
-                    if (proc_objects_[i.index].rt_sh_index == -1 && (obj.comp_mask & CompAccStructureBit)) {
+                    if (casc != 3 && proc_objects_[i.index].rt_sh_index == -1 &&
+                        (obj.comp_mask & CompAccStructureBit)) {
                         proc_objects_[i.index].rt_sh_index = list.rt_obj_instances[1].count;
 
                         const Ren::IAccStructure *acc = acc_structs[obj.components[CompAccStructure]].mesh->blas.get();
