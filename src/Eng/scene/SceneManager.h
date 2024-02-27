@@ -155,10 +155,9 @@ class SceneManager {
 
     void UpdateObjects();
 
-    void UpdateTexturePriorities(const Eng::TexEntry visible_textures[], int visible_count,
-                                 const Eng::TexEntry desired_textures[], int desired_count);
-    void TexturesGCIteration(const Eng::TexEntry visible_textures[], int visible_count,
-                             const Eng::TexEntry desired_textures[], int desired_count);
+    void UpdateTexturePriorities(Ren::Span<const TexEntry> visible_textures,
+                                 Ren::Span<const TexEntry> desired_textures);
+    void TexturesGCIteration(Ren::Span<const TexEntry> visible_textures, Ren::Span<const TexEntry> desired_textures);
 
     void StartTextureLoader();
     void StopTextureLoader();

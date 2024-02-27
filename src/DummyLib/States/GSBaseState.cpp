@@ -1091,8 +1091,7 @@ void GSBaseState::UpdateFrame(int list_index) {
         renderer_->PrepareDrawList(scene_manager_->scene_data(), scene_manager_->main_cam(), scene_manager_->ext_cam(),
                                    list);
 
-        scene_manager_->UpdateTexturePriorities(list.visible_textures.data, list.visible_textures.count,
-                                                list.desired_textures.data, list.desired_textures.count);
+        scene_manager_->UpdateTexturePriorities(list.visible_textures, list.desired_textures);
     }
 
     if (ui_enabled_) {

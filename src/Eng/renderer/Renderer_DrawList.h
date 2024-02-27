@@ -88,20 +88,20 @@ struct DrawList {
     Ren::Camera draw_cam, ext_cam;
     EnvironmentWeak env;
     FrontendInfo frontend_info;
-    DynArray<Ren::Vec2i> instance_indices;
+    std::vector<Ren::Vec2i> instance_indices;
     mutable Ren::BufferRef instance_indices_stage_buf;
-    DynArray<BasicDrawBatch> shadow_batches;
-    DynArray<uint32_t> shadow_batch_indices;
+    std::vector<BasicDrawBatch> shadow_batches;
+    std::vector<uint32_t> shadow_batch_indices;
     DynArray<ShadowList> shadow_lists;
     DynArray<ShadowMapRegion> shadow_regions;
-    DynArray<BasicDrawBatch> basic_batches;
-    DynArray<uint32_t> basic_batch_indices;
-    DynArray<CustomDrawBatch> custom_batches;
-    DynArray<uint32_t> custom_batch_indices;
+    std::vector<BasicDrawBatch> basic_batches;
+    std::vector<uint32_t> basic_batch_indices;
+    std::vector<CustomDrawBatch> custom_batches;
+    std::vector<uint32_t> custom_batch_indices;
     int alpha_blend_start_index = -1;
-    DynArray<SkinTransform> skin_transforms;
+    std::vector<SkinTransform> skin_transforms;
     mutable Ren::BufferRef skin_transforms_stage_buf;
-    DynArray<SkinRegion> skin_regions;
+    std::vector<SkinRegion> skin_regions;
     DynArray<ShapeKeyData> shape_keys_data;
     mutable Ren::BufferRef shape_keys_stage_buf;
     uint32_t skin_vertices_count = 0;
@@ -125,8 +125,8 @@ struct DrawList {
 
     mutable Ren::BufferRef shared_data_stage_buf;
 
-    DynArray<TexEntry> visible_textures;
-    DynArray<TexEntry> desired_textures;
+    std::vector<TexEntry> visible_textures;
+    std::vector<TexEntry> desired_textures;
 
     const Ren::MaterialStorage *materials = nullptr;
     const Ren::TextureAtlas *decals_atlas = nullptr;

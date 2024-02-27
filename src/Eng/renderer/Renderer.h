@@ -107,7 +107,7 @@ class Renderer {
 
     Ren::TextureSplitter shadow_splitter_;
 
-    DynArray<uint32_t> litem_to_lsource_;
+    std::vector<uint32_t> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
 
     struct ProcessedObjData {
@@ -138,8 +138,8 @@ class Renderer {
     Ren::Vec4f prev_wind_scroll_;
 
     DynArray<Ren::Frustum> temp_sub_frustums_;
-    DynArray<SortSpan32> temp_sort_spans_32_[2];
-    DynArray<SortSpan64> temp_sort_spans_64_[2];
+    std::vector<SortSpan32> temp_sort_spans_32_[2];
+    std::vector<SortSpan64> temp_sort_spans_64_[2];
 
     std::vector<float> temp_depth;
 
@@ -312,7 +312,7 @@ class Renderer {
                                            Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
                                           const LightSource *const light_sources,
-                                          const uint32_t *const litem_to_lsource, const DrawList &list,
+                                          Ren::Span<const uint32_t> litem_to_lsource, const DrawList &list,
                                           CellData out_cells[], ItemData out_items[], std::atomic_int &items_count);
 
     // Generate auxiliary textures

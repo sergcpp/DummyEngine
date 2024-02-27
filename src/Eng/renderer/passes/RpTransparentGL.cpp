@@ -128,8 +128,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
     BackendInfo backend_info;
 
-    for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
-        const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
+    for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+        const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
         if (!batch.alpha_blend_bit || !batch.two_sided_bit) {
             continue;
         }
@@ -176,8 +176,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
     rast_state.ApplyChanged(builder.rast_state());
     builder.rast_state() = rast_state;
 
-    for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
-        const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
+    for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+        const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
         if (!batch.instance_count) {
             continue;
         }

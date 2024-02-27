@@ -8,19 +8,10 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
                          Ren::BufferRef _decals_stage_buf, Ren::BufferRef _rt_obj_instances_stage_buf,
                          Ren::BufferRef _rt_sh_obj_instances_stage_buf, Ren::BufferRef _rt_tlas_nodes_stage_buf,
                          Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
-    instance_indices.realloc(MAX_INSTANCES_TOTAL);
     instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
-    shadow_batches.realloc(MAX_SHADOW_BATCHES);
-    shadow_batch_indices.realloc(MAX_SHADOW_BATCHES);
     shadow_lists.realloc(MAX_SHADOWMAPS_TOTAL);
     shadow_regions.realloc(MAX_SHADOWMAPS_TOTAL);
-    basic_batches.realloc(MAX_MAIN_BATCHES);
-    basic_batch_indices.realloc(MAX_MAIN_BATCHES);
-    custom_batches.realloc(MAX_MAIN_BATCHES);
-    custom_batch_indices.realloc(MAX_MAIN_BATCHES);
-    skin_transforms.realloc(MAX_SKIN_XFORMS_TOTAL);
     skin_transforms_stage_buf = std::move(_skin_transforms_stage_buf);
-    skin_regions.realloc(MAX_SKIN_REGIONS_TOTAL);
     shape_keys_data.realloc(MAX_SHAPE_KEYS_TOTAL);
     shape_keys_stage_buf = std::move(_shape_keys_stage_buf);
     lights_stage_buf = std::move(_lights_stage_buf);
@@ -49,24 +40,21 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
 
     shared_data_stage_buf = std::move(_shared_data_stage_buf);
 
-    visible_textures.realloc(MAX_TEX_COUNT);
-    desired_textures.realloc(MAX_TEX_COUNT);
-
     cached_shadow_regions.realloc(MAX_SHADOWMAPS_TOTAL);
 }
 
 void Eng::DrawList::Clear() {
-    instance_indices.count = 0;
-    shadow_batches.count = 0;
-    shadow_batch_indices.count = 0;
+    instance_indices.clear();
+    shadow_batches.clear();
+    shadow_batch_indices.clear();
     shadow_lists.count = 0;
     shadow_regions.count = 0;
-    basic_batches.count = 0;
-    basic_batch_indices.count = 0;
-    custom_batches.count = 0;
-    custom_batch_indices.count = 0;
-    skin_transforms.count = 0;
-    skin_regions.count = 0;
+    basic_batches.clear();
+    basic_batch_indices.clear();
+    custom_batches.clear();
+    custom_batch_indices.clear();
+    skin_transforms.clear();
+    skin_regions.clear();
     shape_keys_data.count = 0;
     lights.clear();
     decals.clear();
@@ -76,8 +64,8 @@ void Eng::DrawList::Clear() {
     items.count = 0;
     rt_items.count = 0;
 
-    visible_textures.count = 0;
-    desired_textures.count = 0;
+    visible_textures.clear();
+    desired_textures.clear();
 
     materials = nullptr;
     decals_atlas = nullptr;

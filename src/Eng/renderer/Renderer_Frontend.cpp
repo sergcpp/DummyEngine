@@ -100,8 +100,8 @@ static const uint32_t IndexBits = ~SkipFrustumCheckBit;
 void __push_ellipsoids(const Eng::Drawable &dr, const Ren::Mat4f &world_from_object, Eng::DrawList &list);
 uint32_t __push_skeletal_mesh(uint32_t skinned_buf_vtx_offset, const Eng::AnimState &as, const Ren::Mesh *mesh,
                               Eng::DrawList &list);
-uint32_t __record_texture(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex, int prio, uint16_t distance);
-void __record_textures(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Material *mat, bool is_animated,
+uint32_t __record_texture(std::vector<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex, int prio, uint16_t distance);
+void __record_textures(std::vector<Eng::TexEntry> &storage, const Ren::Material *mat, bool is_animated,
                        uint16_t distance);
 
 __itt_string_handle *itt_gather_str = __itt_string_handle_create("GatherDrawables");
@@ -161,16 +161,16 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     list.probes.clear();
     list.ellipsoids.clear();
 
-    list.instance_indices.count = 0;
-    list.shadow_batches.count = 0;
-    list.basic_batches.count = 0;
-    list.custom_batches.count = 0;
+    list.instance_indices.clear();
+    list.shadow_batches.clear();
+    list.basic_batches.clear();
+    list.custom_batches.clear();
 
     list.shadow_lists.count = 0;
     list.shadow_regions.count = 0;
 
-    list.skin_transforms.count = 0;
-    list.skin_regions.count = 0;
+    list.skin_transforms.clear();
+    list.skin_regions.clear();
     list.shape_keys_data.count = 0;
     list.skin_vertices_count = 0;
 
@@ -179,8 +179,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         rt.count = 0;
     }
 
-    list.visible_textures.count = 0;
-    list.desired_textures.count = 0;
+    list.visible_textures.clear();
+    list.desired_textures.clear();
 
     const bool culling_enabled = list.render_settings.enable_culling;
     const bool lighting_enabled = list.render_settings.enable_lights;
@@ -206,7 +206,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const bool deferred_shading =
         list.render_settings.render_mode == eRenderMode::Deferred && !list.render_settings.debug_wireframe;
 
-    litem_to_lsource_.count = 0;
+    litem_to_lsource_.clear();
     ditem_to_decal_.count = 0;
     decals_boxes_.count = 0;
 
@@ -409,7 +409,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                         if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
                             (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
-                            CustomDrawBatch &fwd_batch = list.custom_batches.data[list.custom_batches.count++];
+                            CustomDrawBatch &fwd_batch = list.custom_batches.emplace_back();
 
                             fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
                             fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
@@ -434,7 +434,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
                             ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
                              (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
-                            BasicDrawBatch &base_batch = list.basic_batches.data[list.basic_batches.count++];
+                            BasicDrawBatch &base_batch = list.basic_batches.emplace_back();
 
                             base_batch.type_bits = BasicDrawBatch::TypeSimple;
 
@@ -458,7 +458,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
                 }
             }
-            if (lighting_enabled && (it->key & CompLightSourceBit) && litem_to_lsource_.count < MAX_LIGHTS_TOTAL) {
+            if (lighting_enabled && (it->key & CompLightSourceBit) && litem_to_lsource_.size() < MAX_LIGHTS_TOTAL) {
                 for (const VisObj i : Ren::Span<VisObj>{it->val.objects.data(), it->val.count.load()}) {
                     const SceneObject &obj = scene.objects[i.index];
 
@@ -476,7 +476,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
                         const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
-                        litem_to_lsource_.data[litem_to_lsource_.count++] = obj.components[CompLightSource];
+                        litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                         proc_objects_[i.index].li_index = int32_t(list.lights.size());
                         LightItem &ls = list.lights.emplace_back();
 
@@ -617,7 +617,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
                     const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
-                    litem_to_lsource_.data[litem_to_lsource_.count++] = obj.components[CompLightSource];
+                    litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                     LightItem &ls = list.lights.emplace_back();
 
                     ls.col[0] = light.col[0] / light.area;
@@ -756,7 +756,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             sh_list.shadow_map_pos[1] = map_positions[casc][1];
             sh_list.shadow_map_size[0] = OneCascadeRes;
             sh_list.shadow_map_size[1] = OneCascadeRes;
-            sh_list.shadow_batch_start = list.shadow_batches.count;
+            sh_list.shadow_batch_start = uint32_t(list.shadow_batches.size());
             sh_list.shadow_batch_count = 0;
             sh_list.cam_near = shadow_cam.near();
             sh_list.cam_far = shadow_cam.far();
@@ -1052,7 +1052,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
                             }
 
-                            BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                            BasicDrawBatch &batch = list.shadow_batches.emplace_back();
 
                             batch.type_bits = BasicDrawBatch::TypeSimple;
 
@@ -1078,7 +1078,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 }
             }
 
-            sh_list.shadow_batch_count = list.shadow_batches.count - sh_list.shadow_batch_start;
+            sh_list.shadow_batch_count = uint32_t(list.shadow_batches.size()) - sh_list.shadow_batch_start;
         }
     }
 
@@ -1086,7 +1086,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     for (int i = 0; i < int(list.lights.size()) && shadows_enabled; i++) {
         LightItem &l = list.lights[i];
-        const uint32_t lsource_index = litem_to_lsource_.data[i];
+        const uint32_t lsource_index = litem_to_lsource_[i];
         const LightSource *ls = &lights_src[lsource_index];
 
         if (!ls->cast_shadow) {
@@ -1220,7 +1220,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     // set to half of a region
                     sh_list.scissor_test_size[1] /= 2;
                 }
-                sh_list.shadow_batch_start = list.shadow_batches.count;
+                sh_list.shadow_batch_start = uint32_t(list.shadow_batches.size());
                 sh_list.shadow_batch_count = 0;
                 sh_list.view_frustum_outline_count = 0;
                 sh_list.bias[0] = ls->shadow_bias[0];
@@ -1298,7 +1298,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                         __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
                                     }
 
-                                    BasicDrawBatch &batch = list.shadow_batches.data[list.shadow_batches.count++];
+                                    BasicDrawBatch &batch = list.shadow_batches.emplace_back();
 
                                     batch.type_bits = BasicDrawBatch::TypeSimple;
 
@@ -1346,13 +1346,13 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 if (!light_sees_dynamic_objects && region->last_update != 0xffffffff &&
                     (scene.update_counter - region->last_update > 2)) {
                     // nothing was changed within the last two frames, discard added batches
-                    list.shadow_batches.count = sh_list.shadow_batch_start;
+                    list.shadow_batches.resize(sh_list.shadow_batch_start);
                     sh_list.shadow_batch_count = 0;
                 } else {
                     if (light_sees_dynamic_objects || region->last_update == 0xffffffff) {
                         region->last_update = scene.update_counter;
                     }
-                    sh_list.shadow_batch_count = list.shadow_batches.count - sh_list.shadow_batch_start;
+                    sh_list.shadow_batch_count = uint32_t(list.shadow_batches.size()) - sh_list.shadow_batch_start;
                 }
 
                 region->last_visible = scene.update_counter;
@@ -1380,52 +1380,50 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     const uint64_t drawables_sort_start = Sys::GetTimeUs();
 
     { // Sort drawables to optimize state switches
-        temp_sort_spans_32_[0].count = list.basic_batches.count;
-        temp_sort_spans_32_[1].count = list.basic_batches.count;
-        list.basic_batch_indices.count = list.basic_batches.count;
+        temp_sort_spans_32_[0].resize(list.basic_batches.size());
+        temp_sort_spans_32_[1].resize(list.basic_batches.size());
+        list.basic_batch_indices.resize(list.basic_batches.size());
         uint32_t spans_count = 0;
 
         // compress batches into spans with indentical key values (makes sorting faster)
-        for (uint32_t start = 0, end = 1; end <= list.basic_batches.count; end++) {
-            if (end == list.basic_batches.count ||
-                (list.basic_batches.data[start].sort_key != list.basic_batches.data[end].sort_key)) {
-                temp_sort_spans_32_[0].data[spans_count].key = list.basic_batches.data[start].sort_key;
-                temp_sort_spans_32_[0].data[spans_count].base = start;
-                temp_sort_spans_32_[0].data[spans_count++].count = end - start;
+        for (uint32_t start = 0, end = 1; end <= uint32_t(list.basic_batches.size()); end++) {
+            if (end == list.basic_batches.size() ||
+                (list.basic_batches[start].sort_key != list.basic_batches[end].sort_key)) {
+                temp_sort_spans_32_[0][spans_count].key = list.basic_batches[start].sort_key;
+                temp_sort_spans_32_[0][spans_count].base = start;
+                temp_sort_spans_32_[0][spans_count++].count = end - start;
                 start = end;
             }
         }
 
-        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count,
-                                  temp_sort_spans_32_[1].data);
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data(), temp_sort_spans_32_[0].data() + spans_count,
+                                  temp_sort_spans_32_[1].data());
 
         // decompress sorted spans
         size_t counter = 0;
         for (uint32_t i = 0; i < spans_count; i++) {
-            for (uint32_t j = 0; j < temp_sort_spans_32_[0].data[i].count; j++) {
-                list.basic_batch_indices.data[counter++] = temp_sort_spans_32_[0].data[i].base + j;
+            for (uint32_t j = 0; j < temp_sort_spans_32_[0][i].count; j++) {
+                list.basic_batch_indices[counter++] = temp_sort_spans_32_[0][i].base + j;
             }
         }
 
         // Merge similar batches
-        for (uint32_t start = 0, end = 1; end <= list.basic_batch_indices.count; end++) {
-            if (end == list.basic_batch_indices.count ||
-                list.basic_batches.data[list.basic_batch_indices.data[start]].sort_key !=
-                    list.basic_batches.data[list.basic_batch_indices.data[end]].sort_key) {
+        for (uint32_t start = 0, end = 1; end <= uint32_t(list.basic_batch_indices.size()); end++) {
+            if (end == list.basic_batch_indices.size() ||
+                list.basic_batches[list.basic_batch_indices[start]].sort_key !=
+                    list.basic_batches[list.basic_batch_indices[end]].sort_key) {
 
-                BasicDrawBatch &b1 = list.basic_batches.data[list.basic_batch_indices.data[start]];
-                b1.instance_start = list.instance_indices.count;
+                BasicDrawBatch &b1 = list.basic_batches[list.basic_batch_indices[start]];
+                b1.instance_start = uint32_t(list.instance_indices.size());
                 for (uint32_t j = 0; j < b1.instance_count; ++j) {
-                    list.instance_indices.data[list.instance_indices.count++] =
-                        Ren::Vec2i{b1.instance_index, b1.material_index};
+                    list.instance_indices.emplace_back(b1.instance_index, b1.material_index);
                 }
 
                 for (uint32_t i = start + 1; i < end; i++) {
-                    BasicDrawBatch &b2 = list.basic_batches.data[list.basic_batch_indices.data[i]];
-                    b2.instance_start = list.instance_indices.count;
+                    BasicDrawBatch &b2 = list.basic_batches[list.basic_batch_indices[i]];
+                    b2.instance_start = uint32_t(list.instance_indices.size());
                     for (uint32_t j = 0; j < b2.instance_count; ++j) {
-                        list.instance_indices.data[list.instance_indices.count++] =
-                            Ren::Vec2i{b2.instance_index, b2.material_index};
+                        list.instance_indices.emplace_back(b2.instance_index, b2.material_index);
                     }
 
                     if (b1.base_vertex == b2.base_vertex) {
@@ -1439,53 +1437,51 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
     }
 
-    temp_sort_spans_64_[0].count = list.custom_batches.count;
-    temp_sort_spans_64_[1].count = list.custom_batches.count;
-    list.custom_batch_indices.count = list.custom_batches.count;
+    temp_sort_spans_64_[0].resize(uint32_t(list.custom_batches.size()));
+    temp_sort_spans_64_[1].resize(uint32_t(list.custom_batches.size()));
+    list.custom_batch_indices.resize(uint32_t(list.custom_batches.size()));
     uint32_t spans_count = 0;
 
     // compress batches into spans with indentical key values (makes sorting faster)
-    for (uint32_t start = 0, end = 1; end <= list.custom_batches.count; end++) {
-        if (end == list.custom_batches.count ||
-            (list.custom_batches.data[start].sort_key != list.custom_batches.data[end].sort_key)) {
-            temp_sort_spans_64_[0].data[spans_count].key = list.custom_batches.data[start].sort_key;
-            temp_sort_spans_64_[0].data[spans_count].base = start;
-            temp_sort_spans_64_[0].data[spans_count++].count = end - start;
+    for (uint32_t start = 0, end = 1; end <= uint32_t(list.custom_batches.size()); end++) {
+        if (end == list.custom_batches.size() ||
+            (list.custom_batches[start].sort_key != list.custom_batches[end].sort_key)) {
+            temp_sort_spans_64_[0][spans_count].key = list.custom_batches[start].sort_key;
+            temp_sort_spans_64_[0][spans_count].base = start;
+            temp_sort_spans_64_[0][spans_count++].count = end - start;
             start = end;
         }
     }
 
-    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data, temp_sort_spans_64_[0].data + spans_count,
-                              temp_sort_spans_64_[1].data);
+    RadixSort_LSB<SortSpan64>(temp_sort_spans_64_[0].data(), temp_sort_spans_64_[0].data() + spans_count,
+                              temp_sort_spans_64_[1].data());
 
     // decompress sorted spans
     size_t counter = 0;
     for (uint32_t i = 0; i < spans_count; i++) {
-        for (uint32_t j = 0; j < temp_sort_spans_64_[0].data[i].count; j++) {
-            list.custom_batch_indices.data[counter++] = temp_sort_spans_64_[0].data[i].base + j;
+        for (uint32_t j = 0; j < temp_sort_spans_64_[0][i].count; j++) {
+            list.custom_batch_indices[counter++] = temp_sort_spans_64_[0][i].base + j;
         }
     }
 
     list.alpha_blend_start_index = -1;
 
     // Merge similar batches
-    for (uint32_t start = 0, end = 1; end <= list.custom_batch_indices.count; end++) {
-        if (end == list.custom_batch_indices.count ||
-            list.custom_batches.data[list.custom_batch_indices.data[start]].sort_key !=
-                list.custom_batches.data[list.custom_batch_indices.data[end]].sort_key) {
+    for (uint32_t start = 0, end = 1; end <= uint32_t(list.custom_batch_indices.size()); end++) {
+        if (end == list.custom_batch_indices.size() ||
+            list.custom_batches[list.custom_batch_indices[start]].sort_key !=
+                list.custom_batches[list.custom_batch_indices[end]].sort_key) {
 
-            CustomDrawBatch &b1 = list.custom_batches.data[list.custom_batch_indices.data[start]];
-            b1.instance_start = list.instance_indices.count;
+            CustomDrawBatch &b1 = list.custom_batches[list.custom_batch_indices[start]];
+            b1.instance_start = uint32_t(list.instance_indices.size());
             for (uint32_t j = 0; j < b1.instance_count; ++j) {
-                list.instance_indices.data[list.instance_indices.count++] =
-                    Ren::Vec2i{b1.instance_index, b1.material_index};
+                list.instance_indices.emplace_back(b1.instance_index, b1.material_index);
             }
             for (uint32_t i = start + 1; i < end; i++) {
-                CustomDrawBatch &b2 = list.custom_batches.data[list.custom_batch_indices.data[i]];
-                b2.instance_start = list.instance_indices.count;
+                CustomDrawBatch &b2 = list.custom_batches[list.custom_batch_indices[i]];
+                b2.instance_start = uint32_t(list.instance_indices.size());
                 for (uint32_t j = 0; j < b2.instance_count; ++j) {
-                    list.instance_indices.data[list.instance_indices.count++] =
-                        Ren::Vec2i{b2.instance_index, b2.material_index};
+                    list.instance_indices.emplace_back(b2.instance_index, b2.material_index);
                 }
 
                 if (b1.base_vertex == b2.base_vertex) {
@@ -1502,7 +1498,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         }
     }
 
-    list.shadow_batch_indices.count = list.shadow_batches.count;
+    list.shadow_batch_indices.resize(uint32_t(list.shadow_batches.size()));
 
     uint32_t sh_batch_indices_counter = 0;
 
@@ -1511,29 +1507,28 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
         const uint32_t shadow_batch_end = sh_list.shadow_batch_start + sh_list.shadow_batch_count;
 
-        temp_sort_spans_32_[0].count = sh_list.shadow_batch_count;
-        temp_sort_spans_32_[1].count = sh_list.shadow_batch_count;
+        temp_sort_spans_32_[0].resize(sh_list.shadow_batch_count);
+        temp_sort_spans_32_[1].resize(sh_list.shadow_batch_count);
         uint32_t spans_count = 0;
 
         // compress batches into spans with indentical key values (makes sorting faster)
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end;
              end++) {
-            if (end == shadow_batch_end ||
-                (list.shadow_batches.data[start].sort_key != list.shadow_batches.data[end].sort_key)) {
-                temp_sort_spans_32_[0].data[spans_count].key = list.shadow_batches.data[start].sort_key;
-                temp_sort_spans_32_[0].data[spans_count].base = start;
-                temp_sort_spans_32_[0].data[spans_count++].count = end - start;
+            if (end == shadow_batch_end || (list.shadow_batches[start].sort_key != list.shadow_batches[end].sort_key)) {
+                temp_sort_spans_32_[0][spans_count].key = list.shadow_batches[start].sort_key;
+                temp_sort_spans_32_[0][spans_count].base = start;
+                temp_sort_spans_32_[0][spans_count++].count = end - start;
                 start = end;
             }
         }
 
-        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data, temp_sort_spans_32_[0].data + spans_count,
-                                  temp_sort_spans_32_[1].data);
+        RadixSort_LSB<SortSpan32>(temp_sort_spans_32_[0].data(), temp_sort_spans_32_[0].data() + spans_count,
+                                  temp_sort_spans_32_[1].data());
 
         // decompress sorted spans
         for (uint32_t i = 0; i < spans_count; i++) {
-            for (uint32_t j = 0; j < temp_sort_spans_32_[0].data[i].count; j++) {
-                list.shadow_batch_indices.data[sh_batch_indices_counter++] = temp_sort_spans_32_[0].data[i].base + j;
+            for (uint32_t j = 0; j < temp_sort_spans_32_[0][i].count; j++) {
+                list.shadow_batch_indices[sh_batch_indices_counter++] = temp_sort_spans_32_[0][i].base + j;
             }
         }
         assert(sh_batch_indices_counter == shadow_batch_end);
@@ -1541,22 +1536,20 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         // Merge similar batches
         for (uint32_t start = sh_list.shadow_batch_start, end = sh_list.shadow_batch_start + 1; end <= shadow_batch_end;
              end++) {
-            if (end == shadow_batch_end || list.shadow_batches.data[list.shadow_batch_indices.data[start]].sort_key !=
-                                               list.shadow_batches.data[list.shadow_batch_indices.data[end]].sort_key) {
+            if (end == shadow_batch_end || list.shadow_batches[list.shadow_batch_indices[start]].sort_key !=
+                                               list.shadow_batches[list.shadow_batch_indices[end]].sort_key) {
 
-                BasicDrawBatch &b1 = list.shadow_batches.data[list.shadow_batch_indices.data[start]];
-                b1.instance_start = list.instance_indices.count;
+                BasicDrawBatch &b1 = list.shadow_batches[list.shadow_batch_indices[start]];
+                b1.instance_start = uint32_t(list.instance_indices.size());
                 for (uint32_t j = 0; j < b1.instance_count; ++j) {
-                    list.instance_indices.data[list.instance_indices.count++] =
-                        Ren::Vec2i{b1.instance_index, b1.material_index};
+                    list.instance_indices.emplace_back(b1.instance_index, b1.material_index);
                 }
 
                 for (uint32_t i = start + 1; i < end; i++) {
-                    BasicDrawBatch &b2 = list.shadow_batches.data[list.shadow_batch_indices.data[i]];
-                    b2.instance_start = list.instance_indices.count;
+                    BasicDrawBatch &b2 = list.shadow_batches[list.shadow_batch_indices[i]];
+                    b2.instance_start = uint32_t(list.instance_indices.size());
                     for (uint32_t j = 0; j < b2.instance_count; ++j) {
-                        list.instance_indices.data[list.instance_indices.count++] =
-                            Ren::Vec2i{b2.instance_index, b2.material_index};
+                        list.instance_indices.emplace_back(b2.instance_index, b2.material_index);
                     }
 
                     if (b1.base_vertex == b2.base_vertex) {
@@ -1603,7 +1596,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         volatile int ii = 0;
     }*/
 
-    std::sort(list.desired_textures.data, list.desired_textures.data + list.desired_textures.count,
+    std::sort(list.desired_textures.data(), list.desired_textures.data() + list.desired_textures.size(),
               [](const TexEntry &t1, const TexEntry &t2) { return t1.sort_key < t2.sort_key; });
 
     OPTICK_POP();
@@ -1625,7 +1618,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
                 futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
-                                              lights_src, litem_to_lsource_.data, std::ref(list), list.cells.data,
+                                              lights_src, litem_to_lsource_, std::ref(list), list.cells.data,
                                               list.items.data, std::ref(items_count));
             }
 
@@ -1643,7 +1636,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
                 futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
-                                              lights_src, litem_to_lsource_.data, std::ref(list), list.rt_cells.data,
+                                              lights_src, litem_to_lsource_, std::ref(list), list.rt_cells.data,
                                               list.rt_items.data, std::ref(items_count));
             }
 
@@ -1820,7 +1813,7 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
 
 void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
                                               const BBox *decals_boxes, const LightSource *const light_sources,
-                                              const uint32_t *const litem_to_lsource, const DrawList &list,
+                                              Ren::Span<const uint32_t> litem_to_lsource, const DrawList &list,
                                               CellData out_cells[], ItemData out_items[],
                                               std::atomic_int &items_count) {
     using namespace RendererInternal;
@@ -2250,9 +2243,9 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
                                                 const Ren::Mesh *mesh, Eng::DrawList &list) {
     const Ren::Skeleton *skel = mesh->skel();
 
-    const auto palette_start = uint16_t(list.skin_transforms.count / 2);
-    Eng::SkinTransform *out_matr_palette = &list.skin_transforms.data[list.skin_transforms.count];
-    list.skin_transforms.count += uint32_t(2 * skel->bones_count);
+    const auto palette_start = uint16_t(list.skin_transforms.size() / 2);
+    list.skin_transforms.resize(list.skin_transforms.size() + 2 * skel->bones_count);
+    Eng::SkinTransform *out_matr_palette = &list.skin_transforms[2 * palette_start];
 
     for (int i = 0; i < skel->bones_count; i++) {
         const Ren::Mat4f matr_curr_trans = Transpose(as.matr_palette_curr[i]);
@@ -2270,7 +2263,7 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
 
     const uint32_t curr_out_offset = skinned_buf_vtx_offset + list.skin_vertices_count;
 
-    Eng::SkinRegion &sr = list.skin_regions.data[list.skin_regions.count++];
+    Eng::SkinRegion &sr = list.skin_regions.emplace_back();
     sr.in_vtx_offset = vertex_beg;
     sr.out_vtx_offset = curr_out_offset;
     sr.delta_offset = deltas_offset;
@@ -2300,28 +2293,23 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     return curr_out_offset;
 }
 
-uint32_t RendererInternal::__record_texture(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex,
+uint32_t RendererInternal::__record_texture(std::vector<Eng::TexEntry> &storage, const Ren::Tex2DRef &tex,
                                             const int prio, const uint16_t distance) {
     const uint32_t index = tex.index();
 
-    Eng::TexEntry *beg = storage.data;
-    Eng::TexEntry *end = storage.data + storage.count;
-
-    Eng::TexEntry *entry =
-        std::lower_bound(beg, end, index, [](const Eng::TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
-    if (entry == end || entry->index != index) {
-        ++storage.count;
-        std::copy_backward(entry, end, end + 1);
-        entry->index = index;
+    auto entry = std::lower_bound(storage.begin(), storage.end(), index,
+                                  [](const Eng::TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
+    if (entry == storage.end() || entry->index != index) {
+        entry = storage.insert(entry, {index});
     }
 
     entry->prio = prio;
     entry->cam_dist = std::min(entry->cam_dist, uint32_t(distance));
 
-    return uint32_t(entry - beg);
+    return uint32_t(std::distance(storage.begin(), entry));
 }
 
-void RendererInternal::__record_textures(Eng::DynArray<Eng::TexEntry> &storage, const Ren::Material *mat,
+void RendererInternal::__record_textures(std::vector<Eng::TexEntry> &storage, const Ren::Material *mat,
                                          const bool is_animated, const uint16_t distance) {
     static const int TexPriorities[] = {0, 1, 2, 0, 4, 5, 6, 7};
     for (int i = 0; i < int(mat->textures.size()); ++i) {

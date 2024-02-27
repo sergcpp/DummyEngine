@@ -99,10 +99,8 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         glClear(GL_STENCIL_BUFFER_BIT);
     }
 
-    const Ren::Span<const BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches.data,
-                                                           (*p_list_)->basic_batches.count};
-    const Ren::Span<const uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices.data,
-                                                           (*p_list_)->basic_batch_indices.count};
+    const Ren::Span<const BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices};
 
     int draws_count = 0;
     uint32_t i = 0;

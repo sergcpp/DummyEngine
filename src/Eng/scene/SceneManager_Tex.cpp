@@ -555,11 +555,11 @@ void Eng::SceneManager::RebuildMaterialTextureGraph() {
     }
 }
 
-void Eng::SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[], const int visible_count,
-                                                const TexEntry desired_textures[], const int desired_count) {
+void Eng::SceneManager::UpdateTexturePriorities(const Ren::Span<const TexEntry> visible_textures,
+                                                const Ren::Span<const TexEntry> desired_textures) {
     OPTICK_EVENT();
 
-    TexturesGCIteration(visible_textures, visible_count, desired_textures, desired_count);
+    TexturesGCIteration(visible_textures, desired_textures);
 
     { // Update requested textures
         std::unique_lock<std::mutex> lock(tex_requests_lock_);
@@ -569,8 +569,8 @@ void Eng::SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[
             const TexEntry *found_entry = nullptr;
 
             { // search among visible textures first
-                const TexEntry *beg = visible_textures;
-                const TexEntry *end = visible_textures + visible_count;
+                const TexEntry *beg = visible_textures.begin();
+                const TexEntry *end = visible_textures.end();
 
                 const TexEntry *entry = std::lower_bound(
                     beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
@@ -581,8 +581,8 @@ void Eng::SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[
             }
 
             if (!found_entry) { // search among surrounding textures
-                const TexEntry *beg = desired_textures;
-                const TexEntry *end = desired_textures + desired_count;
+                const TexEntry *beg = desired_textures.begin();
+                const TexEntry *end = desired_textures.end();
 
                 const TexEntry *entry = std::lower_bound(
                     beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
@@ -604,8 +604,8 @@ void Eng::SceneManager::UpdateTexturePriorities(const TexEntry visible_textures[
     }
 }
 
-void Eng::SceneManager::TexturesGCIteration(const TexEntry visible_textures[], const int visible_count,
-                                            const TexEntry desired_textures[], const int desired_count) {
+void Eng::SceneManager::TexturesGCIteration(const Ren::Span<const TexEntry> visible_textures,
+                                            const Ren::Span<const TexEntry> desired_textures) {
     using namespace SceneManagerConstants;
 
     OPTICK_EVENT();
@@ -628,8 +628,8 @@ void Eng::SceneManager::TexturesGCIteration(const TexEntry visible_textures[], c
         const TexEntry *found_entry = nullptr;
 
         { // search among visible textures first
-            const TexEntry *beg = visible_textures;
-            const TexEntry *end = visible_textures + visible_count;
+            const TexEntry *beg = visible_textures.begin();
+            const TexEntry *end = visible_textures.end();
 
             const TexEntry *entry = std::lower_bound(
                 beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });
@@ -640,8 +640,8 @@ void Eng::SceneManager::TexturesGCIteration(const TexEntry visible_textures[], c
         }
 
         if (!found_entry) { // search among surrounding textures
-            const TexEntry *beg = desired_textures;
-            const TexEntry *end = desired_textures + desired_count;
+            const TexEntry *beg = desired_textures.begin();
+            const TexEntry *end = desired_textures.end();
 
             const TexEntry *entry = std::lower_bound(
                 beg, end, it->ref.index(), [](const TexEntry &t1, const uint32_t t2) { return t1.index < t2; });

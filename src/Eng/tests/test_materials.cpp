@@ -246,8 +246,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     draw_list.render_settings = renderer.settings;
 
     renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);
-    scene_manager.UpdateTexturePriorities(draw_list.visible_textures.data, draw_list.visible_textures.count,
-                                          draw_list.desired_textures.data, draw_list.desired_textures.count);
+    scene_manager.UpdateTexturePriorities(draw_list.visible_textures, draw_list.desired_textures);
 
     //
     // Render image

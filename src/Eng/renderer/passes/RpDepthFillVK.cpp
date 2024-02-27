@@ -220,9 +220,8 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         api_ctx->vkUpdateDescriptorSets(api_ctx->device, uint32_t(std::size(descr_writes)), descr_writes, 0, nullptr);
     }
 
-    const Ren::Span<BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};
-    const Ren::Span<uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices.data,
-                                                     (*p_list_)->basic_batch_indices.count};
+    const Ren::Span<const BasicDrawBatch> zfill_batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const uint32_t> zfill_batch_indices = {(*p_list_)->basic_batch_indices};
 
     int draws_count = 0;
 

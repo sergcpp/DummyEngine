@@ -274,8 +274,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
         draw_pass_vi_.BindBuffers(api_ctx, cmd_buf, 0, VK_INDEX_TYPE_UINT32);
 
-        for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
-            const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
+        for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+            const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
             if (!batch.alpha_blend_bit || !batch.two_sided_bit) {
                 continue;
             }
@@ -319,8 +319,8 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
         cur_mat_id = 0xffffffffffffffff;
 
-        for (int j = int((*p_list_)->custom_batch_indices.count) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
-            const auto &batch = (*p_list_)->custom_batches.data[(*p_list_)->custom_batch_indices.data[j]];
+        for (int j = int((*p_list_)->custom_batch_indices.size()) - 1; j >= (*p_list_)->alpha_blend_start_index; j--) {
+            const auto &batch = (*p_list_)->custom_batches[(*p_list_)->custom_batch_indices[j]];
             if (!batch.instance_count) {
                 continue;
             }

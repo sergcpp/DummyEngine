@@ -2,7 +2,6 @@
 #include <atomic>
 #include <cstdio>
 
-#include <Sys/AssetFileIO.h>
 #include <Sys/ThreadPool.h>
 
 #include <vtune/ittnotify.h>
@@ -72,7 +71,6 @@ int main(int argc, char *argv[]) {
 #endif
 
     Sys::ThreadPool mt_run_pool(threads_count);
-    Sys::InitWorker();
 
     // test_object_pool();
     test_cmdline();
@@ -80,8 +78,6 @@ int main(int argc, char *argv[]) {
     test_widgets();
     puts(" ---------------");
     test_materials(mt_run_pool, device_name, validation_level);
-
-    Sys::StopWorker();
 
     return g_tests_success ? 0 : -1;
 }

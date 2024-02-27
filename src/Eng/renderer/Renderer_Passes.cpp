@@ -390,10 +390,10 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(common_buffers.shared_data_res);
         RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
 
-        Ren::UpdateBuffer(*skin_transforms_buf.ref, 0, p_list_->skin_transforms.count * sizeof(SkinTransform),
-                          p_list_->skin_transforms.data, *p_list_->skin_transforms_stage_buf,
-                          ctx.backend_frame() * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize,
-                          ctx.current_cmd_buf());
+        Ren::UpdateBuffer(
+            *skin_transforms_buf.ref, 0, uint32_t(p_list_->skin_transforms.size() * sizeof(SkinTransform)),
+            p_list_->skin_transforms.data(), *p_list_->skin_transforms_stage_buf,
+            ctx.backend_frame() * SkinTransformsBufChunkSize, SkinTransformsBufChunkSize, ctx.current_cmd_buf());
 
         Ren::UpdateBuffer(*shape_keys_buf.ref, 0, p_list_->shape_keys_data.count * sizeof(ShapeKeyData),
                           p_list_->shape_keys_data.data, *p_list_->shape_keys_stage_buf,
@@ -405,8 +405,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                                     InstanceIndicesBufChunkSize);
         }
 
-        Ren::UpdateBuffer(*instance_indices_buf.ref, 0, p_list_->instance_indices.count * sizeof(Ren::Vec2i),
-                          p_list_->instance_indices.data, *p_list_->instance_indices_stage_buf,
+        Ren::UpdateBuffer(*instance_indices_buf.ref, 0, uint32_t(p_list_->instance_indices.size() * sizeof(Ren::Vec2i)),
+                          p_list_->instance_indices.data(), *p_list_->instance_indices_stage_buf,
                           ctx.backend_frame() * InstanceIndicesBufChunkSize, InstanceIndicesBufChunkSize,
                           ctx.current_cmd_buf());
 

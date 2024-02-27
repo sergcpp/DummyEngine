@@ -228,10 +228,8 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
     ren_glBindTextureUnit_Comp(GL_TEXTURE_BUFFER, BIND_INST_BUF, GLuint(instances_buf.tbos[0]->id()));
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_INST_NDX_BUF, GLuint(instance_indices_buf.ref->id()));
 
-    const Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches.data,
-                                                      (*p_list_)->custom_batches.count};
-    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices.data,
-                                                     (*p_list_)->custom_batch_indices.count};
+    const Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches};
+    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};
     const auto &materials = *(*p_list_)->materials;
 
     BackendInfo _dummy = {};

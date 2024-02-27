@@ -170,9 +170,8 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
-    const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches.data, (*p_list_)->basic_batches.count};
-    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices.data,
-                                                     (*p_list_)->basic_batch_indices.count};
+    const Ren::Span<const BasicDrawBatch> batches = {(*p_list_)->basic_batches};
+    const Ren::Span<const uint32_t> batch_indices = {(*p_list_)->basic_batch_indices};
 
     int draws_count = 0;
     uint32_t i = 0;

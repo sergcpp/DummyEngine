@@ -359,9 +359,8 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
 
     const uint32_t materials_per_descriptor = api_ctx->max_combined_image_samplers / MAX_TEX_PER_MATERIAL;
 
-    Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches.data, (*p_list_)->custom_batches.count};
-    Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices.data,
-                                               (*p_list_)->custom_batch_indices.count};
+    Ren::Span<const CustomDrawBatch> batches = {(*p_list_)->custom_batches};
+    Ren::Span<const uint32_t> batch_indices = {(*p_list_)->custom_batch_indices};
 
     BackendInfo _dummy = {};
 

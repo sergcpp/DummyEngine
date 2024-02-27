@@ -27,7 +27,7 @@ Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level
     : width(w), height(h) {
     terminated = false;
 
-    Sys::InitWorker();
+    //Sys::InitWorker();
 
     log_ =
 #if !defined(__ANDROID__)
