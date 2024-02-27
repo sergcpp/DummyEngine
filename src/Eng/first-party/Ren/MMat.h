@@ -517,26 +517,6 @@ void PerspectiveProjection(Mat<T, 4, 4> &m, const T fov, const T aspect, const T
 template <typename T>
 void OrthographicProjection(Mat<T, 4, 4> &m, const T left, const T right, const T bottom, const T top, const T nnear,
                             const T ffar) {
-    /*T r_width = T(1) / (right - left);
-    T r_height = T(1) / (top - bottom);
-    T r_depth = T(1) / (nnear - ffar);
-    T x = T(2) * (nnear * r_width);
-    T y = T(2) * (nnear * r_height);
-    T A = ((right + left) * r_width);
-    T B = (top + bottom) * r_height;
-    T C = (ffar + nnear) * r_depth;
-    T D = T(2) * (ffar * nnear * r_depth);
-
-    m = Mat<T, 4, 4>{ T(0) };
-
-    m[0][0] = x;
-    m[1][1] = y;
-    m[2][0] = A;
-    m[2][1] = B;
-    m[2][2] = C;
-    m[3][2] = D;
-    m[2][3] = -T(1);*/
-
     T r_width = T(1) / (right - left);
     T r_height = T(1) / (top - bottom);
     T r_depth = T(1) / (ffar - nnear);
