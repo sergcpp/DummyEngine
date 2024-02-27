@@ -1,13 +1,12 @@
 #include "Renderer_DrawList.h"
 
-void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _instances_stage_buf,
-                         Ren::BufferRef _instance_indices_stage_buf, Ren::BufferRef _skin_transforms_stage_buf,
-                         Ren::BufferRef _shape_keys_stage_buf, Ren::BufferRef _cells_stage_buf,
-                         Ren::BufferRef _rt_cells_stage_buf, Ren::BufferRef _items_stage_buf,
-                         Ren::BufferRef _rt_items_stage_buf, Ren::BufferRef _lights_stage_buf,
-                         Ren::BufferRef _decals_stage_buf, Ren::BufferRef _rt_obj_instances_stage_buf,
-                         Ren::BufferRef _rt_sh_obj_instances_stage_buf, Ren::BufferRef _rt_tlas_nodes_stage_buf,
-                         Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
+void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _instance_indices_stage_buf,
+                         Ren::BufferRef _skin_transforms_stage_buf, Ren::BufferRef _shape_keys_stage_buf,
+                         Ren::BufferRef _cells_stage_buf, Ren::BufferRef _rt_cells_stage_buf,
+                         Ren::BufferRef _items_stage_buf, Ren::BufferRef _rt_items_stage_buf,
+                         Ren::BufferRef _lights_stage_buf, Ren::BufferRef _decals_stage_buf,
+                         Ren::BufferRef _rt_obj_instances_stage_buf, Ren::BufferRef _rt_sh_obj_instances_stage_buf,
+                         Ren::BufferRef _rt_tlas_nodes_stage_buf, Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
     instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
     shadow_lists.realloc(MAX_SHADOWMAPS_TOTAL);
     shadow_regions.realloc(MAX_SHADOWMAPS_TOTAL);

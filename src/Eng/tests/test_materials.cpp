@@ -194,8 +194,6 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     //
     // Create required staging buffers
     //
-    Ren::BufferRef instances_stage_buf = ren_ctx.LoadBuffer("Instances (Stage)", Ren::eBufType::Stage,
-                                                            Eng::InstanceDataBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef instance_indices_stage_buf = ren_ctx.LoadBuffer(
         "Instance Indices (Stage)", Ren::eBufType::Stage, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef skin_transforms_stage_buf = ren_ctx.LoadBuffer(
@@ -239,10 +237,10 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     // Initialize draw list
     //
     Eng::DrawList draw_list;
-    draw_list.Init(shared_data_stage_buf, instances_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf,
-                   shape_keys_stage_buf, cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf,
-                   lights_stage_buf, decals_stage_buf, rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf,
-                   rt_tlas_nodes_stage_buf, rt_sh_tlas_nodes_stage_buf);
+    draw_list.Init(shared_data_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf, shape_keys_stage_buf,
+                   cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf, lights_stage_buf,
+                   decals_stage_buf, rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
+                   rt_sh_tlas_nodes_stage_buf);
     draw_list.render_settings = renderer.settings;
 
     renderer.PrepareDrawList(scene_manager.scene_data(), scene_manager.main_cam(), scene_manager.ext_cam(), draw_list);

@@ -141,13 +141,12 @@ struct DrawList {
     int depth_w, depth_h;
     std::vector<uint8_t> depth_pixels;
 
-    void Init(Ren::BufferRef shared_data_stage_buf, Ren::BufferRef instances_stage_buf,
-              Ren::BufferRef instance_indices_stage_buf, Ren::BufferRef skin_transforms_stage_buf,
-              Ren::BufferRef shape_keys_stage_buf, Ren::BufferRef cells_stage_buf, Ren::BufferRef rt_cells_stage_buf,
-              Ren::BufferRef items_stage_buf, Ren::BufferRef rt_items_stage_buf, Ren::BufferRef lights_stage_buf,
-              Ren::BufferRef decals_stage_buf, Ren::BufferRef rt_obj_instances_stage_buf,
-              Ren::BufferRef rt_sh_obj_instances_stage_buf, Ren::BufferRef rt_tlas_nodes_stage_buf,
-              Ren::BufferRef rt_sh_tlas_nodes_stage_buf);
+    void Init(Ren::BufferRef shared_data_stage_buf, Ren::BufferRef instance_indices_stage_buf,
+              Ren::BufferRef skin_transforms_stage_buf, Ren::BufferRef shape_keys_stage_buf,
+              Ren::BufferRef cells_stage_buf, Ren::BufferRef rt_cells_stage_buf, Ren::BufferRef items_stage_buf,
+              Ren::BufferRef rt_items_stage_buf, Ren::BufferRef lights_stage_buf, Ren::BufferRef decals_stage_buf,
+              Ren::BufferRef rt_obj_instances_stage_buf, Ren::BufferRef rt_sh_obj_instances_stage_buf,
+              Ren::BufferRef rt_tlas_nodes_stage_buf, Ren::BufferRef rt_sh_tlas_nodes_stage_buf);
     void Clear();
 };
 } // namespace Eng

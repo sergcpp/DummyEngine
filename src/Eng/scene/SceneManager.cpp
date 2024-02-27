@@ -250,8 +250,8 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
         }
     }
 
-    requested_textures_.reserve(262144);
-    finished_textures_.reserve(262144);
+    requested_textures_.reserve(16384);
+    finished_textures_.reserve(16384);
 
     for (int i = 0; i < MaxSimultaneousRequests; i++) {
         io_pending_tex_[i].buf = std::make_unique<TextureUpdateFileBuf>(ren_ctx_.api_ctx());
