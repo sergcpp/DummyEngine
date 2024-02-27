@@ -107,7 +107,7 @@ class Renderer {
 
     Ren::TextureSplitter shadow_splitter_;
 
-    DynArray<const LightSource *> litem_to_lsource_;
+    DynArray<uint32_t> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
 
     struct ProcessedObjData {
@@ -311,7 +311,8 @@ class Renderer {
                                            ProcessedObjData proc_objects[],
                                            Ren::HashMap32<uint32_t, VisObjStorage> &out_visible_objects2);
     static void ClusterItemsForZSlice_Job(int slice, const Ren::Frustum *sub_frustums, const BBox *decals_boxes,
-                                          const LightSource *const *litem_to_lsource, const DrawList &list,
+                                          const LightSource *const light_sources,
+                                          const uint32_t *const litem_to_lsource, const DrawList &list,
                                           CellData out_cells[], ItemData out_items[], std::atomic_int &items_count);
 
     // Generate auxiliary textures

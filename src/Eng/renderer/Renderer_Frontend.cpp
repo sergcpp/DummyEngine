@@ -476,7 +476,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
                         const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
-                        litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
+                        litem_to_lsource_.data[litem_to_lsource_.count++] = obj.components[CompLightSource];
                         proc_objects_[i.index].li_index = int32_t(list.lights.size());
                         LightItem &ls = list.lights.emplace_back();
 
@@ -617,7 +617,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const auto u = tr.world_from_object * Vec4f{0.5f * light.width, 0.0f, 0.0f, 0.0f};
                     const auto v = tr.world_from_object * Vec4f{0.0f, 0.0f, 0.5f * light.height, 0.0f};
 
-                    litem_to_lsource_.data[litem_to_lsource_.count++] = &light;
+                    litem_to_lsource_.data[litem_to_lsource_.count++] = obj.components[CompLightSource];
                     LightItem &ls = list.lights.emplace_back();
 
                     ls.col[0] = light.col[0] / light.area;
@@ -1086,7 +1086,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
     for (int i = 0; i < int(list.lights.size()) && shadows_enabled; i++) {
         LightItem &l = list.lights[i];
-        const LightSource *ls = litem_to_lsource_.data[i];
+        const uint32_t lsource_index = litem_to_lsource_.data[i];
+        const LightSource *ls = &lights_src[lsource_index];
 
         if (!ls->cast_shadow) {
             continue;
@@ -1114,7 +1115,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
                 ShadReg &reg = allocated_shadow_regions_.data[j];
-                if (reg.ls_index == i && reg.reg_index == r) {
+                if (reg.ls_index == lsource_index && reg.reg_index == r) {
                     if (reg.size[0] != ShadowResolutions[res_index][0] ||
                         reg.size[1] != ShadowResolutions[res_index][1]) {
                         // free and reallocate region
@@ -1154,7 +1155,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 }
                 if (node != -1) {
                     regions[r] = &allocated_shadow_regions_.data[allocated_shadow_regions_.count++];
-                    regions[r]->ls_index = i;
+                    regions[r]->ls_index = lsource_index;
                     regions[r]->reg_index = r;
                     regions[r]->pos[0] = pos[0];
                     regions[r]->pos[1] = pos[1];
@@ -1624,8 +1625,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
                 futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
-                                              litem_to_lsource_.data, std::ref(list), list.cells.data, list.items.data,
-                                              std::ref(items_count));
+                                              lights_src, litem_to_lsource_.data, std::ref(list), list.cells.data,
+                                              list.items.data, std::ref(items_count));
             }
 
             for (std::future<void> &fut : futures) {
@@ -1642,7 +1643,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
             for (int i = 0; i < ITEM_GRID_RES_Z; i++) {
                 futures[i] = threads_.Enqueue(ClusterItemsForZSlice_Job, i, temp_sub_frustums_.data, decals_boxes_.data,
-                                              litem_to_lsource_.data, std::ref(list), list.rt_cells.data,
+                                              lights_src, litem_to_lsource_.data, std::ref(list), list.rt_cells.data,
                                               list.rt_items.data, std::ref(items_count));
             }
 
@@ -1818,8 +1819,9 @@ void Eng::Renderer::GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, cons
 }
 
 void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustum *sub_frustums,
-                                              const BBox *decals_boxes, const LightSource *const *litem_to_lsource,
-                                              const DrawList &list, CellData out_cells[], ItemData out_items[],
+                                              const BBox *decals_boxes, const LightSource *const light_sources,
+                                              const uint32_t *const litem_to_lsource, const DrawList &list,
+                                              CellData out_cells[], ItemData out_items[],
                                               std::atomic_int &items_count) {
     using namespace RendererInternal;
     using namespace Ren;
@@ -1842,9 +1844,10 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
     for (int j = 0; j < int(list.lights.size()); j++) {
         const LightItem &l = list.lights[j];
-        const float radius = litem_to_lsource[j]->radius;
-        const float cull_radius = litem_to_lsource[j]->cull_radius;
-        const float cap_radius = litem_to_lsource[j]->cap_radius;
+        const LightSource *ls = &light_sources[litem_to_lsource[j]];
+        const float radius = ls->radius;
+        const float cull_radius = ls->cull_radius;
+        const float cap_radius = ls->cap_radius;
 
         eVisResult visible_to_slice = eVisResult::FullyVisible;
 
