@@ -35,6 +35,7 @@ VKAPI_ATTR VkBool32 VKAPI_ATTR DebugReportCallback(const VkDebugReportFlagsEXT f
 
     bool ignore = ignore_optick_errors && (location == 0x45e90123 || location == 0xffffffff9cacd67a);
     ignore |= (location == 0x0000000079de34d4); // dynamic rendering support is incomplete
+    ignore |= (location == 0x00000000804d79d3); // requiredSubgroupSizeStages is ignored
     if (!ignore) {
         ctx->log()->Error("%s: %s\n", pLayerPrefix, pMessage);
     }
