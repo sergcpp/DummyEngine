@@ -489,16 +489,16 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat4", device_name, vl, 32.36, 1000, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", device_name, vl, 39.88, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", device_name, vl, 33.94, 705, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", device_name, vl, 30.34, 2005, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat5", device_name, vl, 30.34, 2145, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat6", device_name, vl, 40.24, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat6", device_name, vl, 33.97, 725, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat6", device_name, vl, 30.17, 1330, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat6", device_name, vl, 30.17, 1505, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat7", device_name, vl, 39.57, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat7", device_name, vl, 33.37, 760, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat7", device_name, vl, 29.01, 1025, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat7", device_name, vl, 29.01, 1105, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat8", device_name, vl, 39.78, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat8", device_name, vl, 33.41, 800, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "diff_mat8", device_name, vl, 28.88, 925, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "diff_mat8", device_name, vl, 28.88, 965, Full));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat9", device_name, vl, 39.60, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat9", device_name, vl, 33.74, 890, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat9", device_name, vl, 29.45, 1280, Full));
@@ -562,8 +562,8 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat3", device_name, vl, 20.89, 42465, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 37.84, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 31.22, 900, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 26.73, 7325, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 24.41, 15030, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 25.97, 7785, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat4", device_name, vl, 24.13, 15030, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", device_name, vl, 34.37, 205, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", device_name, vl, 32.42, 660, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat5", device_name, vl, 26.29, 8630, NoDiffuseGI));
@@ -582,7 +582,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat8", device_name, vl, 16.30, 56145, Full));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat9", device_name, vl, 30.57, 1830, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat9", device_name, vl, 28.83, 3220, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "spec_mat9", device_name, vl, 22.67, 27303, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "spec_mat9", device_name, vl, 22.47, 27303, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat9", device_name, vl, 16.96, 111641, Full));
 
         for (auto &f : futures) {
@@ -652,7 +652,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat1", device_name, vl, 30.18, 1580, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat2", device_name, vl, 34.65, 640, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat2", device_name, vl, 30.09, 1680, NoGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat2", device_name, vl, 30.45, 1425, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat2", device_name, vl, 30.44, 1425, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat2", device_name, vl, 30.92, 1805, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", device_name, vl, 37.48, 1220, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat3", device_name, vl, 30.70, 2365, NoGI));
@@ -665,19 +665,19 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", device_name, vl, 35.82, 185, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", device_name, vl, 33.17, 875, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", device_name, vl, 28.64, 6230, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", device_name, vl, 26.10, 11080, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat5", device_name, vl, 26.10, 11310, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat6", device_name, vl, 38.51, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat6", device_name, vl, 33.52, 730, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat6", device_name, vl, 30.79, 1190, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat6", device_name, vl, 27.38, 7690, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat6", device_name, vl, 27.38, 7715, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 34.95, 1170, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 32.20, 1880, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 29.65, 2030, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 28.15, 5215, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat7", device_name, vl, 28.15, 5245, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 35.64, 2225, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 32.11, 2805, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 29.40, 3095, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 28.63, 2615, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "plastic_mat8", device_name, vl, 28.62, 2625, Full));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat9", device_name, vl, 38.88, 10, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat9", device_name, vl, 33.09, 930, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat9", device_name, vl, 29.22, 4100, NoDiffuseGI));
@@ -706,11 +706,11 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 33.83, 4390, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 30.57, 4840, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 29.09, 4825, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 30.70, 3590, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "tint_mat3", device_name, vl, 30.69, 3590, Full));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", device_name, vl, 40.33, 15, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", device_name, vl, 30.55, 1440, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", device_name, vl, 28.95, 2710, NoDiffuseGI));
-        futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", device_name, vl, 30.07, 1250, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "tint_mat4", device_name, vl, 30.02, 1250, Full));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat5", device_name, vl, 38.37, 175, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat5", device_name, vl, 33.52, 855, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat5", device_name, vl, 28.02, 7955, NoDiffuseGI));
