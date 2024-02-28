@@ -55,7 +55,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp
     }
 
     int iter = 0;
-    while (iter++ < MAX_STEPS && cur_mip >= MOST_DETAILED_MIP) {
+    while (cur_mip >= MOST_DETAILED_MIP && iter++ < MAX_STEPS) {
         vec2 cur_pos_px = cur_mip_res * cur_pos_ss.xy;
         float surf_z = texelFetch(depth_tex, clamp(ivec2(cur_pos_px), ivec2(0), ivec2(cur_mip_res - 1)), cur_mip).r;
         bool increment_mip = cur_mip < LEAST_DETAILED_MIP;
@@ -85,7 +85,7 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp
         cur_mip_res_inv *= increment_mip ? 2.0 : 0.5;
     }
 
-    if (iter > MAX_STEPS) {
+    if (iter < 2 || iter > MAX_STEPS) {
         // Intersection was not found
         return false;
     }
