@@ -9,11 +9,11 @@
 #include "taa_common.glsl"
 #include "blit_taa_interface.h"
 
-#pragma multi_compile _ USE_CLIPPING
-#pragma multi_compile _ USE_ROUNDED_NEIBOURHOOD
-#pragma multi_compile _ USE_TONEMAP
-#pragma multi_compile _ USE_YCoCg
-#pragma multi_compile _ USE_STATIC_ACCUMULATION
+#pragma multi_compile _ CLIPPING
+#pragma multi_compile _ ROUNDED_NEIBOURHOOD
+#pragma multi_compile _ TONEMAP
+#pragma multi_compile _ YCoCg
+#pragma multi_compile _ STATIC_ACCUMULATION
 
 layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D g_color_curr;
 layout(binding = HIST_TEX_SLOT) uniform mediump sampler2D g_color_hist;
@@ -32,7 +32,7 @@ layout(location = 1) out vec3 g_out_history;
 
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
-#if defined(USE_TONEMAP)
+#if defined(TONEMAP)
     c *= g_params.exposure;
     return c * rcp(max3(c.r, c.g, c.b) + 1.0);
 #else
@@ -41,7 +41,7 @@ vec3 Tonemap(in vec3 c) {
 }
 
 vec3 TonemapInvert(in vec3 c) {
-#if defined(USE_TONEMAP)
+#if defined(TONEMAP)
     return (c / max(g_params.exposure, 0.001)) * rcp(1.0 - max3(c.r, c.g, c.b));
 #else
     return c;
@@ -49,7 +49,7 @@ vec3 TonemapInvert(in vec3 c) {
 }
 
 vec3 FetchColor(sampler2D s, ivec2 icoord) {
-#if defined(USE_YCoCg)
+#if defined(YCoCg)
     return RGB_to_YCoCg(Tonemap(texelFetch(s, icoord, 0).rgb));
 #else
     return Tonemap(texelFetch(s, icoord, 0).rgb);
@@ -57,7 +57,7 @@ vec3 FetchColor(sampler2D s, ivec2 icoord) {
 }
 
 vec3 SampleColor(sampler2D s, vec2 uvs) {
-#if defined(USE_YCoCg)
+#if defined(YCoCg)
     return RGB_to_YCoCg(Tonemap(textureLod(s, uvs, 0.0).rgb));
 #else
     return Tonemap(textureLod(s, uvs, 0.0).rgb);
@@ -65,7 +65,7 @@ vec3 SampleColor(sampler2D s, vec2 uvs) {
 }
 
 float Luma(vec3 col) {
-#if defined(USE_YCoCg)
+#if defined(YCoCg)
     return col.r;
 #else
     return dot(col, vec3(0.2125, 0.7154, 0.0721));
@@ -110,13 +110,13 @@ void main() {
 
     vec3 col_curr = FetchColor(g_color_curr, uvs_px);
 
-#if defined(USE_STATIC_ACCUMULATION)
+#if defined(STATIC_ACCUMULATION)
     vec3 col_hist = FetchColor(g_color_hist, uvs_px);
     vec3 col = mix(col_hist, col_curr, g_params.mix_factor);
 
     g_out_color = TonemapInvert(col);
     g_out_history = g_out_color;
-#else // USE_STATIC_ACCUMULATION
+#else // STATIC_ACCUMULATION
     float min_depth = texelFetch(g_depth, uvs_px, 0).r;
 
     const ivec2 offsets[8] = ivec2[8](
@@ -125,7 +125,7 @@ void main() {
         ivec2(-1, -1),  ivec2(1, -1),   ivec2(1, -1)
     );
 
-#if !defined(USE_YCoCg) && !defined(USE_ROUNDED_NEIBOURHOOD)
+#if !defined(YCoCg) && !defined(ROUNDED_NEIBOURHOOD)
     vec3 col_avg = col_curr, col_var = col_curr * col_curr;
     ivec2 closest_frag = ivec2(0, 0);
 
@@ -169,7 +169,7 @@ void main() {
 
     vec3 col_avg = (col_tl + col_tc + col_tr + col_ml + col_mc + col_mr + col_bl + col_bc + col_br) / 9.0;
 
-    #if defined(USE_ROUNDED_NEIBOURHOOD)
+    #if defined(ROUNDED_NEIBOURHOOD)
         vec3 col_min5 = min(col_tc, min(col_ml, min(col_mc, min(col_mr, col_bc))));
         vec3 col_max5 = max(col_tc, max(col_ml, max(col_mc, max(col_mr, col_bc))));
         vec3 col_avg5 = (col_tc + col_ml + col_mc + col_mr + col_bc) / 5.0;
@@ -178,7 +178,7 @@ void main() {
         col_avg = 0.5 * (col_avg + col_avg5);
     #endif
 
-    #if defined(USE_YCoCg)
+    #if defined(YCoCg)
         vec2 chroma_extent = vec2(0.25 * 0.5 * (col_max.r - col_min.r));
         vec2 chroma_center = col_curr.gb;
         col_min.yz = chroma_center - chroma_extent;
@@ -192,7 +192,7 @@ void main() {
 
     vec3 col_hist = SampleColor(g_color_hist, norm_uvs - closest_vel);
 
-#if defined(USE_CLIPPING)
+#if defined(CLIPPING)
     col_hist = clip_aabb(col_min, col_max, col_hist);
 #else
     col_hist = clamp(col_hist, col_min, col_max);
@@ -210,10 +210,10 @@ void main() {
     float history_weight = mix(HistoryWeightMin, HistoryWeightMax, unbiased_weight_sqr);
 
     vec3 col = mix(col_curr, col_hist, history_weight);
-#if defined(USE_YCoCg)
+#if defined(YCoCg)
     col = YCoCg_to_RGB(col);
 #endif
     g_out_color = TonemapInvert(col);
     g_out_history = g_out_color;
-#endif // USE_STATIC_ACCUMULATION
+#endif // STATIC_ACCUMULATION
 }

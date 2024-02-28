@@ -159,11 +159,11 @@ void Eng::Renderer::InitPipelines() {
     assert(blit_bilateral_prog_->ready());
 
     blit_taa_prog_ = sh_.LoadProgram(ctx_, "blit_taa_prog", "internal/blit_taa.vert.glsl",
-                                     "internal/blit_taa.frag.glsl@USE_CLIPPING;USE_TONEMAP");
+                                     "internal/blit_taa.frag.glsl@CLIPPING;TONEMAP");
     assert(blit_taa_prog_->ready());
 
     blit_taa_static_prog_ = sh_.LoadProgram(ctx_, "blit_taa_static_prog", "internal/blit_taa.vert.glsl",
-                                            "internal/blit_taa.frag.glsl@USE_STATIC_ACCUMULATION");
+                                            "internal/blit_taa.frag.glsl@STATIC_ACCUMULATION");
     assert(blit_taa_static_prog_->ready());
 
     blit_ssr_prog_ = sh_.LoadProgram(ctx_, "blit_ssr", "internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
