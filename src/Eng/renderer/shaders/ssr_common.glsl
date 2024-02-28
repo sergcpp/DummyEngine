@@ -81,6 +81,22 @@ mat3 CreateTBN(vec3 N) {
     return transpose(TBN);
 }
 
+vec3 SampleReflectionVector(const vec3 view_direction, const vec3 normal, const float roughness, const vec2 u) {
+    const mat3 tbn_transform = CreateTBN(normal);
+    const vec3 view_direction_tbn = tbn_transform * (-view_direction);
+
+    vec3 sampled_normal_tbn = Sample_GGX_VNDF_Hemisphere(view_direction_tbn, roughness, u.x, u.y);
+#ifdef PERFECT_REFLECTIONS
+    sampled_normal_tbn = vec3(0.0, 0.0, 1.0); // Overwrite normal sample to produce perfect reflection.
+#endif
+
+    const vec3 reflected_direction_tbn = reflect(-view_direction_tbn, sampled_normal_tbn);
+
+    // Transform reflected_direction back to the initial space.
+    const mat3 inv_tbn_transform = transpose(tbn_transform);
+    return (inv_tbn_transform * reflected_direction_tbn);
+}
+
 /* mediump */ float Luminance(/* mediump */ vec3 color) { return max(dot(color, vec3(0.299, 0.587, 0.114)), 0.001); }
 
 /* mediump */ float ComputeTemporalVariance(/* mediump */ vec3 history_radiance, /* mediump */ vec3 radiance) {
