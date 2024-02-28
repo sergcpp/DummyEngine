@@ -16,7 +16,8 @@
 //
 // https://github.com/GPUOpen-Effects/FidelityFX-SSSR
 //
-bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp sampler2D depth_tex, highp usampler2D norm_tex, out vec3 out_hit_point) {
+bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp sampler2D depth_tex, highp usampler2D norm_tex,
+                  out vec3 out_hit_point_cs, out vec3 out_hit_point_vs) {
     vec4 ray_offsetet_ss = g_shrd_data.clip_from_view * vec4(ray_origin_vs + ray_dir_vs, 1.0);
     ray_offsetet_ss.xyz /= ray_offsetet_ss.w;
 
@@ -110,10 +111,12 @@ bool IntersectRay(vec3 ray_origin_ss, vec3 ray_origin_vs, vec3 ray_dir_vs, highp
     hit_point_cs.xyz = 2.0 * hit_point_cs.xyz - 1.0;
 #endif // VULKAN
 
-    out_hit_point = hit_point_cs.xyz;
+    out_hit_point_cs = hit_point_cs.xyz;
 
     vec4 hit_point_vs = g_shrd_data.view_from_clip * vec4(hit_point_cs, 1.0);
     hit_point_vs.xyz /= hit_point_vs.w;
+
+    out_hit_point_vs = hit_point_vs.xyz;
 
     float hit_depth_fetch = texelFetch(depth_tex, ivec2(cur_pos_ss.xy * g_params.resolution.xy), 0).r;
     vec4 hit_surf_cs = vec4(hit_point_cs.xy, hit_depth_fetch, 1.0);

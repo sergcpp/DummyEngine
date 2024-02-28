@@ -96,18 +96,18 @@ void main() {
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 refl_ray_vs = SampleDiffuseVector(normal_vs, pix_uvs);
 
-    vec3 hit_point;
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point);
+    vec3 hit_point_cs, hit_point_vs;
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs);
 
     vec4 out_color = vec4(0.0, 0.0, 0.0, 100.0);
     if (hit_found) {
-        vec2 uv = hit_point.xy;
+        vec2 uv = hit_point_cs.xy;
 #if defined(VULKAN)
         uv.y = -uv.y;
 #endif // VULKAN
         uv.xy = 0.5 * uv.xy + 0.5;
 
-        out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point, ray_origin_vs.xyz));
+        out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point_cs, ray_origin_vs.xyz));
     }
 
     { // schedule rt rays

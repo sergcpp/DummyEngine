@@ -105,11 +105,11 @@ void main() {
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, pix_uvs);
 
-    vec3 hit_point;
+    vec3 hit_point_cs, hit_point_vs;
     vec3 out_color = vec3(0.0);
-    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point);
+    bool hit_found = IntersectRay(ray_origin_ss, ray_origin_vs.xyz, refl_ray_vs, g_depth_tex, g_norm_tex, hit_point_cs, hit_point_vs);
     if (hit_found) {
-        vec2 uv = hit_point.xy;
+        vec2 uv = hit_point_cs.xy;
 #if defined(VULKAN)
         uv.y = -uv.y;
 #endif // VULKAN
@@ -142,7 +142,7 @@ void main() {
 #endif
     }
 
-    float ray_len = hit_found ? distance(hit_point, ray_origin_vs.xyz) : 0.0;
+    float ray_len = hit_found ? distance(hit_point_vs, ray_origin_vs.xyz) : 0.0;
 
     imageStore(g_out_color_img, pix_uvs, vec4(out_color, 0.0));
     imageStore(g_out_raylen_img, pix_uvs, vec4(ray_len));
