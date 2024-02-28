@@ -466,20 +466,20 @@ void Ren::Context::ReleaseBuffers() {
 
 void Ren::Context::InitDefaultBuffers() {
     default_vertex_buf1_ =
-        buffers_.Add("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 64 * 1024 * 1024, 768);
+        buffers_.Add("default_vtx_buf1", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
     default_vertex_buf2_ =
-        buffers_.Add("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 64 * 1024 * 1024, 768);
+        buffers_.Add("default_vtx_buf2", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
     default_skin_vertex_buf_ =
-        buffers_.Add("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 64 * 1024 * 1024, 768);
+        buffers_.Add("default_skin_vtx_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
     default_delta_buf_ =
-        buffers_.Add("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 64 * 1024 * 1024, 768);
+        buffers_.Add("default_delta_buf", api_ctx_.get(), eBufType::VertexAttribs, 16 * 1024 * 1024, 768);
     default_indices_buf_ =
-        buffers_.Add("default_ndx_buf2", api_ctx_.get(), eBufType::VertexIndices, 64 * 1024 * 1024, 768);
+        buffers_.Add("default_ndx_buf2", api_ctx_.get(), eBufType::VertexIndices, 16 * 1024 * 1024, 768);
 
     default_stage_bufs_.ctx = this;
     for (int i = 0; i < StageBufferCount; ++i) {
         const std::string name = "default_stage_buf_" + std::to_string(i);
-        default_stage_bufs_.bufs[i] = buffers_.Add(name, api_ctx_.get(), eBufType::Stage, 32 * 1024 * 1024, 192);
+        default_stage_bufs_.bufs[i] = buffers_.Add(name, api_ctx_.get(), eBufType::Stage, 8 * 1024 * 1024, 192);
 #if defined(USE_VK_RENDER)
         VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
         fence_info.flags = VK_FENCE_CREATE_SIGNALED_BIT;

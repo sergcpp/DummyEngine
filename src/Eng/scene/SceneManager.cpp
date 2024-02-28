@@ -33,11 +33,11 @@ namespace SceneManagerConstants {
 const float NEAR_CLIP = 0.05f;
 const float FAR_CLIP = 10000.0f;
 
-extern const int DECALS_ATLAS_RESX = 4096, DECALS_ATLAS_RESY = 2048;
+extern const int DECALS_ATLAS_RESX = 4096 / 4, DECALS_ATLAS_RESY = 2048 / 4;
 extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
 const int PROBE_RES = 512;
-const int PROBE_COUNT = 16;
+const int PROBE_COUNT = 1;
 
 __itt_string_handle *itt_load_scene_str = __itt_string_handle_create("SceneManager::LoadScene");
 __itt_string_handle *itt_serve_str = __itt_string_handle_create("SceneManager::Serve");
