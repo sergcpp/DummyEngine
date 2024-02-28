@@ -127,7 +127,7 @@ class Renderer {
         std::atomic_int count = 0;
 
         VisObjStorage() = default;
-        VisObjStorage(VisObjStorage &&rhs) noexcept : objects(rhs.objects), count(rhs.count.load()) {}
+        VisObjStorage(VisObjStorage &&rhs) noexcept : objects(std::move(rhs.objects)), count(rhs.count.load()) {}
     };
     Ren::HashMap32<uint32_t, VisObjStorage> temp_visible_objects_, temp_rt_visible_objects_;
     DynArray<BBox> decals_boxes_;

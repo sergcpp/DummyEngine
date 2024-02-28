@@ -129,7 +129,8 @@ void test_json() {
             require(a2[1].as_num().val == Approx(2));
             require(a2[2].as_str() == JsString{ "qwe123" });
 
-            require_throws(a2.at(3));
+            JsType _unused;
+            require_throws(_unused = a2.at(3).type());
 
             // check equality
             JsArray a3, a4, a5;
@@ -166,7 +167,8 @@ void test_json() {
             require(a2[1].as_num().val == Approx(2));
             require(a2[2].as_str() == JsStringP("qwe123", my_alloc));
 
-            require_throws(a2.at(3));
+            JsType _unused;
+            require_throws(_unused = a2.at(3).type());
 
             // check equality
             JsArrayP a3(my_alloc), a4(my_alloc), a5(my_alloc);
@@ -196,7 +198,8 @@ void test_json() {
             require(_obj["123"].as_num().val == Approx(46));
             require(_obj["asdf"].as_str() == JsString{ "asdfsdf" });
 
-            require_throws(_obj.at("non exists"));
+            JsType _unused;
+            require_throws(_unused = _obj.at("non exists").type());
 
             // check equality
             JsObject obj1, obj2, obj3;
@@ -228,7 +231,8 @@ void test_json() {
             require(_obj["123"].as_num().val == Approx(46));
             require(_obj["asdf"].as_str() == JsStringP("asdfsdf", my_alloc));
 
-            require_throws(_obj.at("non exists"));
+            JsType _unused;
+            require_throws(_unused = _obj.at("non exists").type());
 
             // check equality
             JsObjectP obj1(my_alloc), obj2(my_alloc), obj3(my_alloc);
@@ -261,139 +265,142 @@ void test_json() {
         }
 
         { // JsElement
+            JsType _unused;
+
             JsElement _el1(16);
             const JsElement &el1 = _el1;
-            require_nothrow(_el1.as_num());
-            require_nothrow(el1.as_num());
-            require_throws(_el1.as_str());
-            require_throws(el1.as_str());
-            require_throws(_el1.as_arr());
-            require_throws(el1.as_arr());
-            require_throws(_el1.as_obj());
-            require_throws(el1.as_obj());
-            require_throws(_el1.as_lit());
-            require_throws(el1.as_lit());
+            require_nothrow(_unused = _el1.as_num().type;);
+            require_nothrow(_unused = el1.as_num().type;);
+            require_throws(_unused = _el1.as_str().type);
+            require_throws(_unused = el1.as_str().type);
+            require_throws(_unused = _el1.as_arr().type);
+            require_throws(_unused = el1.as_arr().type);
+            require_throws(_unused = _el1.as_obj().type);
+            require_throws(_unused = el1.as_obj().type);
+            require_throws(_unused = _el1.as_lit().type);
+            require_throws(_unused = el1.as_lit().type);
 
             JsElement _el2("my string");
             const JsElement &el2 = _el2;
-            require_nothrow(_el2.as_str());
-            require_nothrow(el2.as_str());
-            require_throws(_el2.as_num());
-            require_throws(el2.as_num());
-            require_throws(_el2.as_arr());
-            require_throws(el2.as_arr());
-            require_throws(_el2.as_obj());
-            require_throws(el2.as_obj());
-            require_throws(_el2.as_lit());
-            require_throws(el2.as_lit());
+            require_nothrow(_unused = _el2.as_str().type);
+            require_nothrow(_unused = el2.as_str().type);
+            require_throws(_unused = _el2.as_num().type);
+            require_throws(_unused = el2.as_num().type);
+            require_throws(_unused = _el2.as_arr().type);
+            require_throws(_unused = el2.as_arr().type);
+            require_throws(_unused = _el2.as_obj().type);
+            require_throws(_unused = el2.as_obj().type);
+            require_throws(_unused = _el2.as_lit().type);
+            require_throws(_unused = el2.as_lit().type);
 
             JsElement _el3(JsType::Array);
             const JsElement &el3 = _el3;
-            require_nothrow(_el3.as_arr());
-            require_nothrow(el3.as_arr());
-            require_throws(_el3.as_num());
-            require_throws(el3.as_num());
-            require_throws(_el3.as_str());
-            require_throws(el3.as_str());
-            require_throws(_el3.as_obj());
-            require_throws(el3.as_obj());
-            require_throws(_el3.as_lit());
-            require_throws(el3.as_lit());
+            require_nothrow(_unused = _el3.as_arr().type);
+            require_nothrow(_unused = el3.as_arr().type);
+            require_throws(_unused = _el3.as_num().type);
+            require_throws(_unused = el3.as_num().type);
+            require_throws(_unused = _el3.as_str().type);
+            require_throws(_unused = el3.as_str().type);
+            require_throws(_unused = _el3.as_obj().type);
+            require_throws(_unused = el3.as_obj().type);
+            require_throws(_unused = _el3.as_lit().type);
+            require_throws(_unused = el3.as_lit().type);
 
             JsElement _el4(JsType::Object);
             const JsElement &el4 = _el4;
-            require_nothrow(_el4.as_obj());
-            require_nothrow(el4.as_obj());
-            require_throws(_el4.as_num());
-            require_throws(el4.as_num());
-            require_throws(_el4.as_str());
-            require_throws(el4.as_str());
-            require_throws(_el4.as_arr());
-            require_throws(el4.as_arr());
-            require_throws(_el4.as_lit());
-            require_throws(el4.as_lit());
+            require_nothrow(_unused = _el4.as_obj().type);
+            require_nothrow(_unused = el4.as_obj().type);
+            require_throws(_unused = _el4.as_num().type);
+            require_throws(_unused = el4.as_num().type);
+            require_throws(_unused = _el4.as_str().type);
+            require_throws(_unused = el4.as_str().type);
+            require_throws(_unused = _el4.as_arr().type);
+            require_throws(_unused = el4.as_arr().type);
+            require_throws(_unused = _el4.as_lit().type);
+            require_throws(_unused = el4.as_lit().type);
 
             JsElement _el5(JsLiteralType::Null);
             const JsElement &el5 = _el5;
-            require_nothrow(_el5.as_lit());
-            require_nothrow(el5.as_lit());
-            require_throws(_el5.as_num());
-            require_throws(el5.as_num());
-            require_throws(_el5.as_str());
-            require_throws(el5.as_str());
-            require_throws(_el5.as_arr());
-            require_throws(el5.as_arr());
-            require_throws(_el5.as_obj());
-            require_throws(el5.as_obj());
+            require_nothrow(_unused = _el5.as_lit().type);
+            require_nothrow(_unused = el5.as_lit().type);
+            require_throws(_unused = _el5.as_num().type);
+            require_throws(_unused = el5.as_num().type);
+            require_throws(_unused = _el5.as_str().type);
+            require_throws(_unused = el5.as_str().type);
+            require_throws(_unused = _el5.as_arr().type);
+            require_throws(_unused = el5.as_arr().type);
+            require_throws(_unused = _el5.as_obj().type);
+            require_throws(_unused = el5.as_obj().type);
         }
 
         { // JsElement pooled
             Sys::MultiPoolAllocator<char> my_alloc(32, 512);
+            JsType _unused;
 
             JsElementP _el1(16);
             const JsElementP &el1 = _el1;
-            require_nothrow(_el1.as_num());
-            require_nothrow(el1.as_num());
-            require_throws(_el1.as_str());
-            require_throws(el1.as_str());
-            require_throws(_el1.as_arr());
-            require_throws(el1.as_arr());
-            require_throws(_el1.as_obj());
-            require_throws(el1.as_obj());
-            require_throws(_el1.as_lit());
-            require_throws(el1.as_lit());
+            require_nothrow(_unused = _el1.as_num().type);
+            require_nothrow(_unused = el1.as_num().type);
+            require_throws(_unused = _el1.as_str().type);
+            require_throws(_unused = el1.as_str().type);
+            require_throws(_unused = _el1.as_arr().type);
+            require_throws(_unused = el1.as_arr().type);
+            require_throws(_unused = _el1.as_obj().type);
+            require_throws(_unused = el1.as_obj().type);
+            require_throws(_unused = _el1.as_lit().type);
+            require_throws(_unused = el1.as_lit().type);
 
             JsElementP _el2("my string", my_alloc);
             const JsElementP &el2 = _el2;
-            require_nothrow(_el2.as_str());
-            require_nothrow(el2.as_str());
-            require_throws(_el2.as_num());
-            require_throws(el2.as_num());
-            require_throws(_el2.as_arr());
-            require_throws(el2.as_arr());
-            require_throws(_el2.as_obj());
-            require_throws(el2.as_obj());
-            require_throws(_el2.as_lit());
-            require_throws(el2.as_lit());
+            require_nothrow(_unused = _el2.as_str().type);
+            require_nothrow(_unused = el2.as_str().type);
+            require_throws(_unused = _el2.as_num().type);
+            require_throws(_unused = el2.as_num().type);
+            require_throws(_unused = _el2.as_arr().type);
+            require_throws(_unused = el2.as_arr().type);
+            require_throws(_unused = _el2.as_obj().type);
+            require_throws(_unused = el2.as_obj().type);
+            require_throws(_unused = _el2.as_lit().type);
+            require_throws(_unused = el2.as_lit().type);
 
             JsElementP _el3(JsType::Array, my_alloc);
             const JsElementP &el3 = _el3;
-            require_nothrow(_el3.as_arr());
-            require_nothrow(el3.as_arr());
-            require_throws(_el3.as_num());
-            require_throws(el3.as_num());
-            require_throws(_el3.as_str());
-            require_throws(el3.as_str());
-            require_throws(_el3.as_obj());
-            require_throws(el3.as_obj());
-            require_throws(_el3.as_lit());
-            require_throws(el3.as_lit());
+            require_nothrow(_unused = _el3.as_arr().type);
+            require_nothrow(_unused = el3.as_arr().type);
+            require_throws(_unused = _el3.as_num().type);
+            require_throws(_unused = el3.as_num().type);
+            require_throws(_unused = _el3.as_str().type);
+            require_throws(_unused = el3.as_str().type);
+            require_throws(_unused = _el3.as_obj().type);
+            require_throws(_unused = el3.as_obj().type);
+            require_throws(_unused = _el3.as_lit().type);
+            require_throws(_unused = el3.as_lit().type);
 
             JsElementP _el4(JsType::Object, my_alloc);
             const JsElementP &el4 = _el4;
-            require_nothrow(_el4.as_obj());
-            require_nothrow(el4.as_obj());
-            require_throws(_el4.as_num());
-            require_throws(el4.as_num());
-            require_throws(_el4.as_str());
-            require_throws(el4.as_str());
-            require_throws(_el4.as_arr());
-            require_throws(el4.as_arr());
-            require_throws(_el4.as_lit());
-            require_throws(el4.as_lit());
+            require_nothrow(_unused = _el4.as_obj().type);
+            require_nothrow(_unused = el4.as_obj().type);
+            require_throws(_unused = _el4.as_num().type);
+            require_throws(_unused = el4.as_num().type);
+            require_throws(_unused = _el4.as_str().type);
+            require_throws(_unused = el4.as_str().type);
+            require_throws(_unused = _el4.as_arr().type);
+            require_throws(_unused = el4.as_arr().type);
+            require_throws(_unused = _el4.as_lit().type);
+            require_throws(_unused = el4.as_lit().type);
 
             JsElement _el5(JsLiteralType::Null);
             const JsElement &el5 = _el5;
-            require_nothrow(_el5.as_lit());
-            require_nothrow(el5.as_lit());
-            require_throws(_el5.as_num());
-            require_throws(el5.as_num());
-            require_throws(_el5.as_str());
-            require_throws(el5.as_str());
-            require_throws(_el5.as_arr());
-            require_throws(el5.as_arr());
-            require_throws(_el5.as_obj());
-            require_throws(el5.as_obj());
+            require_nothrow(_unused = _el5.as_lit().type);
+            require_nothrow(_unused = el5.as_lit().type);
+            require_throws(_unused = _el5.as_num().type);
+            require_throws(_unused = el5.as_num().type);
+            require_throws(_unused = _el5.as_str().type);
+            require_throws(_unused = el5.as_str().type);
+            require_throws(_unused = _el5.as_arr().type);
+            require_throws(_unused = el5.as_arr().type);
+            require_throws(_unused = _el5.as_obj().type);
+            require_throws(_unused = el5.as_obj().type);
         }
     }
 

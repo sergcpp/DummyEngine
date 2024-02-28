@@ -109,12 +109,12 @@ template <typename Alloc> struct JsArrayT {
     JsElementT<Alloc> &operator[](size_t i);
     const JsElementT<Alloc> &operator[](size_t i) const;
 
-    const JsElementT<Alloc> &at(size_t i) const;
+    [[nodiscard]] const JsElementT<Alloc> &at(size_t i) const;
 
     bool operator==(const JsArrayT &rhs) const;
     bool operator!=(const JsArrayT &rhs) const { return !operator==(rhs); }
 
-    size_t Size() const { return elements.size(); }
+    [[nodiscard]] size_t Size() const { return elements.size(); }
 
     void Push(const JsElementT<Alloc> &el) { elements.push_back(el); }
 
@@ -141,21 +141,21 @@ template <typename Alloc> struct JsObjectT {
     JsElementT<Alloc> &operator[](const StdString<Alloc> &s);
     JsElementT<Alloc> &operator[](const char *s);
 
-    const JsElementT<Alloc> &at(const char *s) const;
-    JsElementT<Alloc> &at(const char *s);
-    const JsElementT<Alloc> &at(const StdString<Alloc> &s) const;
-    JsElementT<Alloc> &at(const StdString<Alloc> &s);
+    [[nodiscard]] const JsElementT<Alloc> &at(const char *s) const;
+    [[nodiscard]] JsElementT<Alloc> &at(const char *s);
+    [[nodiscard]] const JsElementT<Alloc> &at(const StdString<Alloc> &s) const;
+    [[nodiscard]] JsElementT<Alloc> &at(const StdString<Alloc> &s);
 
     bool operator==(const JsObjectT<Alloc> &rhs) const;
     bool operator!=(const JsObjectT<Alloc> &rhs) const { return !operator==(rhs); }
 
-    bool Has(const char *s) const { return IndexOf(s) < Size(); }
-    bool Has(const StdString<Alloc> &s) const { return IndexOf(s) < Size(); }
+    [[nodiscard]] bool Has(const char *s) const { return IndexOf(s) < Size(); }
+    [[nodiscard]] bool Has(const StdString<Alloc> &s) const { return IndexOf(s) < Size(); }
 
-    size_t IndexOf(const char *s) const;
-    size_t IndexOf(const StdString<Alloc> &s) const;
+    [[nodiscard]] size_t IndexOf(const char *s) const;
+    [[nodiscard]] size_t IndexOf(const StdString<Alloc> &s) const;
 
-    size_t Size() const { return elements.size(); }
+    [[nodiscard]] size_t Size() const { return elements.size(); }
 
     size_t Push(const StdString<Alloc> &s, const JsElementT<Alloc> &el);
     size_t Push(const char *s, const JsElementT<Alloc> &el) {
@@ -206,23 +206,23 @@ template <typename Alloc> struct JsElementT {
     explicit JsElementT(JsStringT<Alloc> &&rhs);
     explicit JsElementT(JsArrayT<Alloc> &&rhs);
     explicit JsElementT(JsObjectT<Alloc> &&rhs);
-    explicit JsElementT(JsElementT &&rhs) noexcept;
+    JsElementT(JsElementT &&rhs) noexcept;
 
     ~JsElementT();
 
-    JsType type() const { return type_; }
+    [[nodiscard]] JsType type() const { return type_; }
 
-    JsLiteral &as_lit();
-    JsNumber &as_num();
-    JsStringT<Alloc> &as_str();
-    JsArrayT<Alloc> &as_arr();
-    JsObjectT<Alloc> &as_obj();
+    [[nodiscard]] JsLiteral &as_lit();
+    [[nodiscard]] JsNumber &as_num();
+    [[nodiscard]] JsStringT<Alloc> &as_str();
+    [[nodiscard]] JsArrayT<Alloc> &as_arr();
+    [[nodiscard]] JsObjectT<Alloc> &as_obj();
 
-    const JsLiteral &as_lit() const;
-    const JsNumber &as_num() const;
-    const JsStringT<Alloc> &as_str() const;
-    const JsArrayT<Alloc> &as_arr() const;
-    const JsObjectT<Alloc> &as_obj() const;
+    [[nodiscard]] const JsLiteral &as_lit() const;
+    [[nodiscard]] const JsNumber &as_num() const;
+    [[nodiscard]] const JsStringT<Alloc> &as_str() const;
+    [[nodiscard]] const JsArrayT<Alloc> &as_arr() const;
+    [[nodiscard]] const JsObjectT<Alloc> &as_obj() const;
 
     JsElementT &operator=(JsElementT &&rhs) noexcept;
     JsElementT &operator=(const JsElementT &rhs);
