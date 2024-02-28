@@ -1,7 +1,8 @@
 #include "BVHSplit.h"
 
+#include <cfloat>
+
 #include <algorithm>
-#include <limits>
 
 namespace {
 const int BinningThreshold = 1024;
@@ -11,8 +12,7 @@ const float FLT_EPS = 0.0000001f;
 } // namespace
 
 struct bbox_t {
-    Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
-               max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
+    Ren::Vec3f min = Ren::Vec3f{FLT_MAX}, max = Ren::Vec3f{-FLT_MAX};
     bbox_t() {}
     bbox_t(const Ren::Vec3f &_min, const Ren::Vec3f &_max) : min(_min), max(_max) {}
 

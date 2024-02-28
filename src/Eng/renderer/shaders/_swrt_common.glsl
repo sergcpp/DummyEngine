@@ -2,8 +2,6 @@
 #include "_cs_common.glsl"
 
 #define MAX_DIST 3.402823466e+30
-
-#define FLT_EPS 0.0000001
 #define FLT_MAX 3.402823466e+38
 
 #define IGNORE_BACKFACING 0
@@ -15,7 +13,7 @@ int IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out flo
     vec3 pvec = cross(d, e20);
     float det = dot(e10, pvec);
 #if IGNORE_BACKFACING
-    if (det < FLT_EPS) {
+    if (det < 0.000000005) {
         return 0;
     }
 
@@ -41,7 +39,7 @@ int IntersectTri(vec3 o, vec3 d, vec3 v0, vec3 v1, vec3 v2, out float t, out flo
 
     return 1;
 #else
-    if (det > -FLT_EPS && det < FLT_EPS) {
+    if (det > -0.000000005 && det < 0.000000005) {
         return 0;
     }
 
