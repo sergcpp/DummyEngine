@@ -1650,6 +1650,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         CellData _dummy = {};
         std::fill(list.cells.data, list.cells.data + ITEM_CELLS_COUNT, _dummy);
         list.items.count = 0;
+        std::fill(list.rt_cells.data, list.rt_cells.data + ITEM_CELLS_COUNT, _dummy);
+        list.rt_items.count = 0;
     }
 
     if (list.render_settings.enable_culling && list.render_settings.debug_culling) {
