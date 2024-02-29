@@ -1293,12 +1293,13 @@ void Ren::Texture1D::Init(BufferRef buf, const eTexFormat format, const uint32_t
     Free();
 
     GLuint tex_id;
-    glGenTextures(1, &tex_id);
+    glCreateTextures(GL_TEXTURE_BUFFER, 1, &tex_id);
+#ifdef ENABLE_OBJ_LABELS
+    glObjectLabel(GL_TEXTURE, tex_id, -1, name_.c_str());
+#endif
     glBindTexture(GL_TEXTURE_BUFFER, tex_id);
-
     glTexBufferRange(GL_TEXTURE_BUFFER, GLInternalFormatFromTexFormat(format, false /* is_srgb */), GLuint(buf->id()),
                      offset, size);
-
     glBindTexture(GL_TEXTURE_BUFFER, 0);
 
     handle_ = {uint32_t(tex_id), TextureHandleCounter++};

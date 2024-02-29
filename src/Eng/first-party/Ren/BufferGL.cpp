@@ -133,6 +133,9 @@ void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
     GLuint gl_buffer;
     glGenBuffers(1, &gl_buffer);
     glBindBuffer(g_gl_buf_targets[int(type_)], gl_buffer);
+#ifdef ENABLE_OBJ_LABELS
+    glObjectLabel(GL_BUFFER, gl_buffer, -1, name_.c_str());
+#endif
 #if !defined(__ANDROID__)
     glBufferStorage(g_gl_buf_targets[int(type_)], size_, nullptr, GetGLBufStorageFlags(type_));
 #else

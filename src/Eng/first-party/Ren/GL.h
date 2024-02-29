@@ -413,8 +413,10 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_TEXTURE_BASE_LEVEL 0x813C
 #define GL_TEXTURE_MAX_LEVEL 0x813D
 
-#define GL_TEXTURE_BUFFER                 0x8C2A
-#define GL_MAX_TEXTURE_BUFFER_SIZE        0x8C2B
+#define GL_BUFFER                           0x82e0
+
+#define GL_TEXTURE_BUFFER                   0x8C2A
+#define GL_MAX_TEXTURE_BUFFER_SIZE          0x8C2B
 
 #define GL_PIXEL_PACK_BUFFER        0x88eb
 #define GL_PIXEL_UNPACK_BUFFER      0x88ec
@@ -989,6 +991,7 @@ typedef void (APIENTRY* PFNGLSAMPLERPARAMETERF)(GLuint sampler, GLenum pname, GL
 
 #define glTexBuffer                 ren_glTexBuffer
 #define glTexBufferRange            ren_glTexBufferRange
+#define glTextureBufferRange        ren_glTextureBufferRange
 
 #define glGenQueries                ren_glGenQueries
 #define glDeleteQueries             ren_glDeleteQueries
