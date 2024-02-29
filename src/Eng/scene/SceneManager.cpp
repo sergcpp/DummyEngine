@@ -1479,7 +1479,7 @@ bool Eng::SceneManager::Serve(const int texture_budget, const bool animate_textu
     EstimateTextureMemory(texture_budget);
     bool finished = ProcessPendingTextures(texture_budget, animate_texture_lod);
 
-    UpdateMaterialsBuffer();
+    finished &= UpdateMaterialsBuffer();
     finished &= UpdateInstanceBuffer();
 
     __itt_task_end(__g_itt_domain);

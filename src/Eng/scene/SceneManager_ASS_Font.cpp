@@ -16,7 +16,7 @@ bool Eng::SceneManager::HConvTTFToFont(assets_context_t &ctx, const char *in_fil
                                        Ren::SmallVectorImpl<std::string> &) {
     using namespace Ren;
 
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+    ctx.log->Info("Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     if (!src_stream) {

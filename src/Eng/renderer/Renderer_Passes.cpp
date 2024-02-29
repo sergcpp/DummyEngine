@@ -715,6 +715,7 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
 #endif
 
     const RpResRef noise_tex = gbuf_fill.AddTextureInput(noise_tex_, Stg::VertexShader | Stg::FragmentShader);
+    const RpResRef dummy_white = gbuf_fill.AddTextureInput(dummy_white_, Stg::FragmentShader);
     const RpResRef dummy_black = gbuf_fill.AddTextureInput(dummy_black_, Stg::FragmentShader);
 
     const RpResRef instances_buf = gbuf_fill.AddStorageReadonlyInput(
@@ -735,9 +736,9 @@ void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, cons
     frame_textures.depth = gbuf_fill.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
     rp_gbuffer_fill_.Setup(&p_list_, &view_state_, vtx_buf1, vtx_buf2, ndx_buf, materials_buf, textures_buf, &bindless,
-                           noise_tex, dummy_black, instances_buf, instances_indices_buf, shared_data_buf, cells_buf,
-                           items_buf, decals_buf, frame_textures.albedo, frame_textures.normal, frame_textures.specular,
-                           frame_textures.depth);
+                           noise_tex, dummy_white, dummy_black, instances_buf, instances_indices_buf, shared_data_buf,
+                           cells_buf, items_buf, decals_buf, frame_textures.albedo, frame_textures.normal,
+                           frame_textures.specular, frame_textures.depth);
     gbuf_fill.set_executor(&rp_gbuffer_fill_);
 }
 

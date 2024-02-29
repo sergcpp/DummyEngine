@@ -13,7 +13,7 @@ namespace SceneManagerConstants {} // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {} // namespace SceneManagerInternal
 
-void Eng::SceneManager::UpdateMaterialsBuffer() {
+bool Eng::SceneManager::UpdateMaterialsBuffer() {
     const uint32_t max_mat_count = scene_data_.materials.capacity();
     const uint32_t req_mat_buf_size = std::max(1u, max_mat_count) * sizeof(MaterialData);
 
@@ -48,7 +48,11 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
     auto &update_range = scene_data_.mat_update_ranges[ren_ctx_.backend_frame()];
     if (update_range.second <= update_range.first) {
-        return;
+        bool finished = true;
+        for (int j = 0; j < Ren::MaxFramesInFlight; ++j) {
+            finished &= (scene_data_.mat_update_ranges[j].second <= scene_data_.mat_update_ranges[j].first);
+        }
+        return finished;
     }
 
     const size_t TexSizePerMaterial = MAX_TEX_PER_MATERIAL * sizeof(GLuint64);
@@ -132,6 +136,8 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
         materials_stage_buf);
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
+
+    return false;
 }
 
 void Eng::SceneManager::InitHWRTAccStructures() {

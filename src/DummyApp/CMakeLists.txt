@@ -61,12 +61,13 @@ endif()
 
 target_link_libraries(DummyApp DummyLib ${LIBS})
 
-add_custom_command(TARGET DummyApp
-                   POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DummyApp> ${WORKING_DIRECTORY})
-
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_ASAN ${BIN_NAME}-asan)
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_DEBUG ${BIN_NAME}-dbg)
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_RELWITHDEBINFO ${BIN_NAME}-dev)
 set_target_properties(DummyApp PROPERTIES OUTPUT_NAME_RELEASE ${BIN_NAME})
+
+add_custom_command(TARGET DummyApp
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:DummyApp> ${WORKING_DIRECTORY})
+
 set_target_properties(DummyApp PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${WORKING_DIRECTORY}")

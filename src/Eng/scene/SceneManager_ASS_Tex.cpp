@@ -745,7 +745,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
                                    Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+    ctx.log->Info("Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     if (!src_stream) {
@@ -882,7 +882,7 @@ bool Eng::SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, 
                                     Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+    ctx.log->Info("Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     if (!src_stream) {
@@ -971,7 +971,7 @@ bool Eng::SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_fil
                                        Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+    ctx.log->Info("Conv %s", out_file);
 
     int width, height;
     const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
@@ -984,7 +984,7 @@ bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file
                                       Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+    ctx.log->Info("Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     if (!src_stream) {
@@ -1036,7 +1036,7 @@ bool Eng::SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_fil
                                        Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
-    ctx.log->Info("[PrepareAssets] Conv %s", out_file);
+    ctx.log->Info("Conv %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
     if (!src_stream) {

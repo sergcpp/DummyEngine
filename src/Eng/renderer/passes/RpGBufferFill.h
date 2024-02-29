@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../graph/SubPass.h"
 #include "../Renderer_DrawList.h"
+#include "../graph/SubPass.h"
 
 #include <Ren/VertexInput.h>
 
@@ -45,6 +45,7 @@ class RpGBufferFill : public RpExecutor {
     RpResRef lights_buf_;
     RpResRef decals_buf_;
     RpResRef noise_tex_;
+    RpResRef dummy_white_;
     RpResRef dummy_black_;
 
     RpResRef out_albedo_tex_;
@@ -65,10 +66,11 @@ class RpGBufferFill : public RpExecutor {
 
     void Setup(const DrawList **p_list, const ViewState *view_state, const RpResRef vtx_buf1, const RpResRef vtx_buf2,
                const RpResRef ndx_buf, const RpResRef materials_buf, const RpResRef textures_buf,
-               const BindlessTextureData *bindless_tex, const RpResRef noise_tex, const RpResRef dummy_black,
-               const RpResRef instances_buf, const RpResRef instance_indices_buf, const RpResRef shared_data_buf,
-               const RpResRef cells_buf, const RpResRef items_buf, const RpResRef decals_buf, const RpResRef out_albedo,
-               const RpResRef out_normals, const RpResRef out_spec, const RpResRef out_depth) {
+               const BindlessTextureData *bindless_tex, const RpResRef noise_tex, const RpResRef dummy_white,
+               const RpResRef dummy_black, const RpResRef instances_buf, const RpResRef instance_indices_buf,
+               const RpResRef shared_data_buf, const RpResRef cells_buf, const RpResRef items_buf,
+               const RpResRef decals_buf, const RpResRef out_albedo, const RpResRef out_normals,
+               const RpResRef out_spec, const RpResRef out_depth) {
         view_state_ = view_state;
         bindless_tex_ = bindless_tex;
 
@@ -86,6 +88,7 @@ class RpGBufferFill : public RpExecutor {
         materials_buf_ = materials_buf;
 
         noise_tex_ = noise_tex;
+        dummy_white_ = dummy_white;
         dummy_black_ = dummy_black;
 
         textures_buf_ = textures_buf;

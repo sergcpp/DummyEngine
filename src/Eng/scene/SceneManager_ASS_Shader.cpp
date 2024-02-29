@@ -228,7 +228,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 }
             }
 
-            ctx.log->Info("[PrepareAssets] Prep %s", output_file.c_str());
+            ctx.log->Info("Prep %s", output_file.c_str());
             std::remove(output_file.c_str());
 
             const bool TestShaderRewrite = true;
@@ -323,14 +323,14 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 glslx::Preprocessor preprocessor(glsl_file_data);
                 std::string preprocessed = preprocessor.Process();
                 if (!preprocessor.error().empty()) {
-                    ctx.log->Error("[PrepareAssets] GLSL preprocessing failed %s", out_file);
+                    ctx.log->Error("GLSL preprocessing failed %s", out_file);
                     ctx.log->Error("%s", preprocessor.error().data());
                 }
 
                 glslx::Parser parser(preprocessed, out_file);
                 std::unique_ptr<glslx::TrUnit> ast = parser.Parse(unit_type);
                 if (!ast) {
-                    ctx.log->Error("[PrepareAssets] GLSL parsing failed %s", out_file);
+                    ctx.log->Error("GLSL parsing failed %s", out_file);
                     ctx.log->Error("%s", parser.error());
 #if !defined(NDEBUG) && defined(_WIN32)
                     __debugbreak();
@@ -426,7 +426,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 }
 
                 if (!glslang_shader_preprocess(shader, &glslang_input)) {
-                    ctx.log->Error("[PrepareAssets] GLSL preprocessing failed %s", out_file);
+                    ctx.log->Error("GLSL preprocessing failed %s", out_file);
 
                     ctx.log->Error("%s", glslang_shader_get_info_log(shader));
                     ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
@@ -439,7 +439,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 }
 
                 if (!glslang_shader_parse(shader, &glslang_input)) {
-                    ctx.log->Error("[PrepareAssets] GLSL parsing failed %s", out_file);
+                    ctx.log->Error("GLSL parsing failed %s", out_file);
                     ctx.log->Error("%s", glslang_shader_get_info_log(shader));
                     ctx.log->Error("%s", glslang_shader_get_info_debug_log(shader));
                     // ctx.log->Error("%s", glslang_shader_get_preprocessed_code(shader));

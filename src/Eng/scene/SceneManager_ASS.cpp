@@ -205,7 +205,7 @@ uint32_t HashFile(const std::filesystem::path &in_file, Ren::ILog *log) {
     const size_t HashChunkSize = 8 * 1024;
     uint8_t in_file_buf[HashChunkSize];
 
-    log->Info("[PrepareAssets] Hashing %s", in_file.generic_string().c_str());
+    log->Info("Hashing %s", in_file.generic_string().c_str());
 
     uint32_t hash = 0;
 
@@ -595,7 +595,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
         Handler *handler = g_asset_handlers.Find(ext);
         if (!handler) {
-            ctx.log->Info("[PrepareAssets] No handler found for %s", in_file.generic_string().c_str());
+            ctx.log->Info("No handler found for %s", in_file.generic_string().c_str());
             return;
         }
 
@@ -610,7 +610,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         std::error_code ec;
         std::filesystem::create_directories(out_file.parent_path());
         if (ec) {
-            ctx.log->Info("[PrepareAssets] Failed to create directories for %s", out_file.generic_string().c_str());
+            ctx.log->Info("Failed to create directories for %s", out_file.generic_string().c_str());
             return;
         }
 
@@ -742,13 +742,13 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
 bool Eng::SceneManager::HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
                               Ren::SmallVectorImpl<std::string> &) {
-    ctx.log->Info("[PrepareAssets] Skip %s", out_file);
+    ctx.log->Info("Skip %s", out_file);
     return true;
 }
 
 bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
                               Ren::SmallVectorImpl<std::string> &) {
-    ctx.log->Info("[PrepareAssets] Copy %s", out_file);
+    ctx.log->Info("Copy %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
     if (!src_stream) {
@@ -769,7 +769,7 @@ bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const 
 
 bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
                                             Ren::SmallVectorImpl<std::string> &out_dependencies) {
-    ctx.log->Info("[PrepareAssets] Prep %s", out_file);
+    ctx.log->Info("Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
     if (!src_stream) {
@@ -804,7 +804,7 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
                     memcpy(average_color, cached_color, 4);
                 } else {
                     if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(), average_color)) {
-                        ctx.log->Error("[PrepareAssets] Failed to get average color of %s", tex_name.c_str());
+                        ctx.log->Error("Failed to get average color of %s", tex_name.c_str());
                     } else {
                         std::lock_guard<std::mutex> _(ctx.cache_mtx);
                         ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
@@ -832,7 +832,7 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
                                         Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
-    ctx.log->Info("[PrepareAssets] Prep %s", out_file);
+    ctx.log->Info("Prep %s", out_file);
 
     std::ifstream src_stream(in_file, std::ios::binary);
     if (!src_stream) {

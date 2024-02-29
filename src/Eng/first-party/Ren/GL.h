@@ -242,7 +242,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_MAX_VERTEX_ATTRIBS               0x8869
 #define GL_MAX_VERTEX_OUTPUT_COMPONENTS     0x9122
 
-#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 0x8b4d
+#define GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS 0x8B4D
 
 #define GL_FRAGMENT_SHADER                  0x8B30
 #define GL_VERTEX_SHADER                    0x8B31
@@ -301,8 +301,8 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_WRITE_ONLY                       0x88B9
 #define GL_READ_WRITE                       0x88BA
 
-#define GL_COPY_READ_BUFFER                 0x8f36
-#define GL_COPY_WRITE_BUFFER                0x8f37
+#define GL_COPY_READ_BUFFER                 0x8F36
+#define GL_COPY_WRITE_BUFFER                0x8F37
 
 #define GL_DEPTH_COMPONENT16                0x81A5
 #define GL_DEPTH_COMPONENT24                0x81A6
@@ -316,13 +316,13 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_COLOR_ATTACHMENT3                0x8CE3
 #define GL_DEPTH_ATTACHMENT                 0x8D00
 #define GL_STENCIL_ATTACHMENT               0x8D20
-#define GL_DEPTH_STENCIL_ATTACHMENT         0x821a
+#define GL_DEPTH_STENCIL_ATTACHMENT         0x821A
 
 #define GL_FRAMEBUFFER                      0x8D40
 #define GL_RENDERBUFFER                     0x8D41
 
-#define GL_READ_FRAMEBUFFER                 0x8ca8
-#define GL_DRAW_FRAMEBUFFER                 0x8ca9
+#define GL_READ_FRAMEBUFFER                 0x8CA8
+#define GL_DRAW_FRAMEBUFFER                 0x8CA9
 
 #define GL_FRAMEBUFFER_COMPLETE             0x8CD5
 
@@ -339,57 +339,57 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_DYNAMIC_STORAGE_BIT              0x0100
 #define GL_CLIENT_STORAGE_BIT               0x0200
 
-#define GL_COMPRESSED_RED       0x8225
-#define GL_COMPRESSED_RG        0x8226
-#define GL_RG                   0x8227
-#define GL_RG_INTEGER           0x8228
-#define GL_R8                   0x8229
-#define GL_R16                  0x822A
-#define GL_RG8                  0x822B
-#define GL_RG16                 0x822C
-#define GL_R16F                 0x822D
-#define GL_R32F                 0x822E
-#define GL_RG16F                0x822F
-#define GL_RG32F                0x8230
-#define GL_R8I                  0x8231
-#define GL_R8UI                 0x8232
-#define GL_R16I                 0x8233
-#define GL_R16UI                0x8234
-#define GL_R32I                 0x8235
-#define GL_R32UI                0x8236
-#define GL_RG8I                 0x8237
-#define GL_RG8UI                0x8238
-#define GL_RG16I                0x8239
-#define GL_RG16UI               0x823A
-#define GL_RG32I                0x823B
-#define GL_RG32UI               0x823C
+#define GL_COMPRESSED_RED                   0x8225
+#define GL_COMPRESSED_RG                    0x8226
+#define GL_RG                               0x8227
+#define GL_RG_INTEGER                       0x8228
+#define GL_R8                               0x8229
+#define GL_R16                              0x822A
+#define GL_RG8                              0x822B
+#define GL_RG16                             0x822C
+#define GL_R16F                             0x822D
+#define GL_R32F                             0x822E
+#define GL_RG16F                            0x822F
+#define GL_RG32F                            0x8230
+#define GL_R8I                              0x8231
+#define GL_R8UI                             0x8232
+#define GL_R16I                             0x8233
+#define GL_R16UI                            0x8234
+#define GL_R32I                             0x8235
+#define GL_R32UI                            0x8236
+#define GL_RG8I                             0x8237
+#define GL_RG8UI                            0x8238
+#define GL_RG16I                            0x8239
+#define GL_RG16UI                           0x823A
+#define GL_RG32I                            0x823B
+#define GL_RG32UI                           0x823C
 
 // _EXT prefix is added for compatibility with opengl es
-#define GL_SRGB8                0x8C40
-#define GL_SRGB8_ALPHA8         0x8C43
-#define GL_RGB8_SNORM           0x8F96
-#define GL_RGBA8_SNORM          0x8F97
-#define GL_RG16_EXT             0x822C
-#define GL_RG16_SNORM_EXT       0x8F99
+#define GL_SRGB8                            0x8C41
+#define GL_SRGB8_ALPHA8                     0x8C43
+#define GL_RGB8_SNORM                       0x8F96
+#define GL_RGBA8_SNORM                      0x8F97
+#define GL_RG16_EXT                         0x822C
+#define GL_RG16_SNORM_EXT                   0x8F99
 
-#define GL_RGBA32F              0x8814
-#define GL_RGBA32UI             0x8D70
-#define GL_RGB32F               0x8815
+#define GL_RGBA32F                          0x8814
+#define GL_RGBA32UI                         0x8D70
+#define GL_RGB32F                           0x8815
 
-#define GL_RGB16F               0x881B
-#define GL_RGBA16F              0x881A
+#define GL_RGB16F                           0x881B
+#define GL_RGBA16F                          0x881A
 
-#define GL_RGB10_A2             0x8059
-#define GL_R11F_G11F_B10F       0x8C3A
+#define GL_RGB10_A2                         0x8059
+#define GL_R11F_G11F_B10F                   0x8C3A
 
-#define GL_HALF_FLOAT   0x140B
+#define GL_HALF_FLOAT                       0x140B
 
-#define GL_MULTISAMPLE  0x809D
+#define GL_MULTISAMPLE                      0x809D
 
-#define GL_TEXTURE_2D_ARRAY       0x8C1A
-#define GL_TEXTURE_2D_MULTISAMPLE 0x9100
+#define GL_TEXTURE_2D_ARRAY                 0x8C1A
+#define GL_TEXTURE_2D_MULTISAMPLE           0x9100
 
-#define GL_TEXTURE_3D           0x806F
+#define GL_TEXTURE_3D                       0x806F
 
 #define GL_VERTEX_ATTRIB_ARRAY_BARRIER_BIT  0x00000001
 #define GL_ELEMENT_ARRAY_BARRIER_BIT        0x00000002
@@ -403,39 +403,39 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_FRAMEBUFFER_BARRIER_BIT          0x00000400
 #define GL_TRANSFORM_FEEDBACK_BARRIER_BIT   0x00000800
 #define GL_ATOMIC_COUNTER_BARRIER_BIT       0x00001000
-#define GL_SHADER_STORAGE_BARRIER_BIT       0x2000
+#define GL_SHADER_STORAGE_BARRIER_BIT       0x00002000
 #define GL_ALL_BARRIER_BITS                 0xFFFFFFFF
 
-#define GL_TEXTURE_COMPARE_MODE     0x884C
-#define GL_TEXTURE_COMPARE_FUNC     0x884D
-#define GL_COMPARE_REF_TO_TEXTURE   0x884E
+#define GL_TEXTURE_COMPARE_MODE             0x884C
+#define GL_TEXTURE_COMPARE_FUNC             0x884D
+#define GL_COMPARE_REF_TO_TEXTURE           0x884E
 
-#define GL_TEXTURE_BASE_LEVEL 0x813C
-#define GL_TEXTURE_MAX_LEVEL 0x813D
+#define GL_TEXTURE_BASE_LEVEL               0x813C
+#define GL_TEXTURE_MAX_LEVEL                0x813D
 
 #define GL_BUFFER                           0x82e0
 
 #define GL_TEXTURE_BUFFER                   0x8C2A
 #define GL_MAX_TEXTURE_BUFFER_SIZE          0x8C2B
 
-#define GL_PIXEL_PACK_BUFFER        0x88eb
-#define GL_PIXEL_UNPACK_BUFFER      0x88ec
+#define GL_PIXEL_PACK_BUFFER                0x88EB
+#define GL_PIXEL_UNPACK_BUFFER              0x88EC
 
 #define GL_TIMESTAMP 0x8E28
 
 #define GL_QUERY_RESULT	                            0x8866
 #define GL_QUERY_RESULT_NO_WAIT                     0x9194
 
-#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT             33776
-#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT            33777
-#define	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT            33778
-#define	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT            33779
+#define GL_COMPRESSED_RGB_S3TC_DXT1_EXT             0x83F0
+#define GL_COMPRESSED_RGBA_S3TC_DXT1_EXT            0x83F1
+#define	GL_COMPRESSED_RGBA_S3TC_DXT3_EXT            0x83F2
+#define	GL_COMPRESSED_RGBA_S3TC_DXT5_EXT            0x83F3
 #define GL_COMPRESSED_RED_RGTC1_EXT                 0x8DBB
 #define GL_COMPRESSED_RED_GREEN_RGTC2_EXT           0x8DBD
 
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT      35917
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT      35918
-#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT      35919
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT      0x8C4D
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT      0x8C4E
+#define GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT      0x8C4F
 
 #define GL_COMPRESSED_RGBA_ASTC_4x4_KHR            0x93B0
 #define GL_COMPRESSED_RGBA_ASTC_5x4_KHR            0x93B1
@@ -471,7 +471,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_TEXTURE_LOD_BIAS                 0x8501
 #define GL_TEXTURE_MIN_LOD                  0x813A
-#define GL_TEXTURE_MAX_LOD                  0x813B              
+#define GL_TEXTURE_MAX_LOD                  0x813B
 
 
 #define GL_TEXTURE_COMPRESSED_IMAGE_SIZE    0x86A0
@@ -489,7 +489,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_ALREADY_SIGNALED               0x911A
 #define GL_TIMEOUT_EXPIRED                0x911B
 #define GL_CONDITION_SATISFIED            0x911C
-#define GL_TIMEOUT_IGNORED                -1l
+#define GL_TIMEOUT_IGNORED                0xFFFFFFFFFFFFFFFFull
 
 #define GL_SHADER_BINARY_FORMAT_SPIR_V_ARB  0x9551
 #define GL_SPIR_V_BINARY_ARB                0x9552
@@ -505,7 +505,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_SHADER                       0x82E1
 #define GL_PROGRAM                      0x82E2
 
-#define GL_UNSIGNED_INT_2_10_10_10_REV  33640
+#define GL_UNSIGNED_INT_2_10_10_10_REV  0x8368
 
 #ifndef APIENTRY
 #if defined(_WIN32)

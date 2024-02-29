@@ -209,7 +209,7 @@ class SceneManager {
                        Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)>
         init_pipelines_;
 
-    void UpdateMaterialsBuffer();
+    bool UpdateMaterialsBuffer();
     bool UpdateInstanceBuffer();
     void UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end);
     void InitHWRTAccStructures();

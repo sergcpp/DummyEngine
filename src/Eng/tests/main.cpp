@@ -91,7 +91,6 @@ extern "C" {
 __declspec(dllexport) int32_t NvOptimusEnablement = 1;                  // Nvidia
 __declspec(dllexport) int32_t AmdPowerXpressRequestHighPerformance = 1; // AMD
 }
-
 bool InitAndDestroyFakeGLContext() {
     HWND fake_window = ::CreateWindowEx(NULL, NULL, "FakeWindow", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT,
                                         256, 256, nullptr, nullptr, GetModuleHandle(nullptr), nullptr);
@@ -125,5 +124,10 @@ bool InitAndDestroyFakeGLContext() {
     DestroyWindow(fake_window);
 
     return true;
+}
+#else
+extern "C" {
+__attribute__((visibility("default"))) int32_t NvOptimusEnablement = 1;                  // Nvidia
+__attribute__((visibility("default"))) int32_t AmdPowerXpressRequestHighPerformance = 1; // AMD
 }
 #endif

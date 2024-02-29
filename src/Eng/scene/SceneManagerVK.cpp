@@ -39,7 +39,7 @@ void to_khr_xform(const Ren::Mat4f &xform, float matrix[3][4]) {
 
 } // namespace SceneManagerInternal
 
-void Eng::SceneManager::UpdateMaterialsBuffer() {
+bool Eng::SceneManager::UpdateMaterialsBuffer() {
     using namespace SceneManagerInternal;
 
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
@@ -190,7 +190,11 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
 
     auto &update_range = scene_data_.mat_update_ranges[ren_ctx_.backend_frame()];
     if (update_range.second <= update_range.first) {
-        return;
+        bool finished = true;
+        for (int j = 0; j < Ren::MaxFramesInFlight; ++j) {
+            finished &= (scene_data_.mat_update_ranges[j].second <= scene_data_.mat_update_ranges[j].first);
+        }
+        return finished;
     }
 
     Ren::Buffer materials_stage_buf("Materials Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
@@ -296,6 +300,8 @@ void Eng::SceneManager::UpdateMaterialsBuffer() {
         materials_stage_buf, 0, ren_ctx_.current_cmd_buf());
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
+
+    return false;
 }
 
 void Eng::SceneManager::InitHWRTAccStructures() {
