@@ -284,10 +284,6 @@ jobs:
           sparse-checkout: src/Eng/scripts/analyze_output.py
       - uses: actions/download-artifact@v3
         with:
-          name: windows-x86_64-gl-output
-          path: windows-x86_64-gl-output/
-      - uses: actions/download-artifact@v3
-        with:
           name: windows-x86_64-vk-nv-output
           path: windows-x86_64-vk-nv-output/
       - uses: actions/download-artifact@v3
