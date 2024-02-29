@@ -190,6 +190,7 @@ Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
         new_tex.used_in_stages = Ren::eStageBits::None;
         new_tex.name = ref->name().c_str();
         new_tex.desc = ref->params;
+        new_tex.external = true;
 
         ret.index = textures_.emplace(new_tex);
         name_to_texture_[new_tex.name] = ret.index;
