@@ -275,7 +275,7 @@ jobs:
           path: linux-x86_64-vk-nv-output/
   analyze-output:
     runs-on: [ linux ]
-    needs: [ test-windows-x86_64-gl, test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
+    needs: [ test-windows-x86_64-vk-amd, test-windows-x86_64-vk-nv, test-windows-x86_64-vk-arc, test-windows-x86_64-vk-xe, test-linux-x86_64-vk-amd, test-linux-x86_64-vk-nv ]
     if: always()
     steps:
       - name: Checkout Workflows

@@ -12,7 +12,7 @@ runs:
     - run: |
         $WORK_DIR = Get-Location
         cd ../../builds/DummyEngine
-        #python src/Ray/scripts/update_version_string.py src/DemoApp/DemoApp.cpp
+        python src/Eng/scripts/update_version_string.py src/DummyApp/DummyApp.cpp
         function Invoke-Environment {
           param
           (

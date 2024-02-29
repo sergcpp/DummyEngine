@@ -21,7 +21,8 @@ else()
 	set(LIBS android log)
 endif()
 
-set(SOURCE_FILES    DummyApp.h)
+set(SOURCE_FILES    DummyApp.h
+                    DummyApp.cpp)
 
 if(WIN32)
     if(${RENDERER} STREQUAL "GL")
