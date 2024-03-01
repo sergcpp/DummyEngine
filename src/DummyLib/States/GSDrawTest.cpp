@@ -2,9 +2,9 @@
 
 #include <memory>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Renderer.h>
-#include <Eng/Log.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Ren/Context.h>
@@ -13,8 +13,8 @@
 #include "../Gui/FontStorage.h"
 #include "../Viewer.h"
 
-#include <stb/stb_image.h>
 #include <optick/optick.h>
+#include <stb/stb_image.h>
 
 namespace GSDrawTestInternal {
 #if defined(__ANDROID__)
@@ -23,8 +23,8 @@ const char SCENE_NAME[] = "assets/scenes/"
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           "mat_test.json";
-                          //"test_skin.json";
-                          //"living_room_gumroad.json";
+//"test_skin.json";
+//"living_room_gumroad.json";
 //"bistro.json";
 //"pbr_test.json";
 //"zenith.json";
@@ -51,16 +51,9 @@ void GSDrawTest::Enter() {
 
     GSBaseState::Enter();
 
-    std::weak_ptr<GSDrawTest> weak_this = std::dynamic_pointer_cast<GSDrawTest>(state_manager_->Peek());
-
-    cmdline_->RegisterCommand("r_printCam", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->log_->Info("View Origin: { %f, %f, %f }", shrd_this->view_origin_[0], shrd_this->view_origin_[1],
-                                  shrd_this->view_origin_[2]);
-            shrd_this->log_->Info("View Direction: { %f, %f, %f }", shrd_this->view_dir_[0], shrd_this->view_dir_[1],
-                                  shrd_this->view_dir_[2]);
-        }
+    cmdline_->RegisterCommand("r_printCam", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        log_->Info("View Origin: { %f, %f, %f }", view_origin_[0], view_origin_[1], view_origin_[2]);
+        log_->Info("View Direction: { %f, %f, %f }", view_dir_[0], view_dir_[1], view_dir_[2]);
         return true;
     });
 
@@ -585,7 +578,7 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 

@@ -4,26 +4,26 @@
 #include <vector>
 
 #include "input/InputManager.h"
+#include "ViewerState.h"
 
 namespace Eng {
-class ViewerState;
 class ViewerStateManager {
-    std::vector<std::shared_ptr<ViewerState>> states_;
+    std::vector<std::unique_ptr<ViewerState>> states_;
 
     bool pop_later_ = false;
 
   public:
     virtual ~ViewerStateManager();
 
-    std::shared_ptr<ViewerState> Peek();
+    ViewerState *Peek();
 
-    void Push(const std::shared_ptr<ViewerState> &state);
+    void Push(std::unique_ptr<ViewerState> &&state);
 
-    std::shared_ptr<ViewerState> Pop();
+    std::unique_ptr<ViewerState> Pop();
 
     void PopLater();
 
-    std::shared_ptr<ViewerState> Switch(const std::shared_ptr<ViewerState> &state);
+    ViewerState *Switch(std::unique_ptr<ViewerState> &&state);
 
     void Clear();
 

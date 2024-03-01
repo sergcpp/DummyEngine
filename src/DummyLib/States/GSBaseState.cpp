@@ -46,7 +46,6 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
 
     cmdline_ = viewer->cmdline();
 
-    state_manager_ = viewer->state_manager();
     ren_ctx_ = viewer->ren_ctx();
     snd_ctx_ = viewer->snd_ctx();
     log_ = viewer->log();
@@ -149,429 +148,327 @@ void GSBaseState::Enter() {
 
     cmdline_history_.emplace_back();
 
-    std::weak_ptr<GSBaseState> weak_this = std::dynamic_pointer_cast<GSBaseState>(state_manager_->Peek());
-
-    cmdline_->RegisterCommand("r_wireframe", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_wireframe = !shrd_this->renderer_->settings.debug_wireframe;
-        }
+    cmdline_->RegisterCommand("r_wireframe", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_wireframe = !renderer_->settings.debug_wireframe;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_culling", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.enable_culling = !shrd_this->renderer_->settings.enable_culling;
-        }
+    cmdline_->RegisterCommand("r_culling", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.enable_culling = !renderer_->settings.enable_culling;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lightmap", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.enable_lightmap = !shrd_this->renderer_->settings.enable_lightmap;
-        }
+    cmdline_->RegisterCommand("r_lightmap", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.enable_lightmap = !renderer_->settings.enable_lightmap;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lights", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.enable_lights = !shrd_this->renderer_->settings.enable_lights;
-        }
+    cmdline_->RegisterCommand("r_lights", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.enable_lights = !renderer_->settings.enable_lights;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_decals", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.enable_decals = !shrd_this->renderer_->settings.enable_decals;
-        }
+    cmdline_->RegisterCommand("r_decals", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.enable_decals = !renderer_->settings.enable_decals;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_shadows", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argc > 1) {
-                if (argv[1].val > 1.5) {
-                    shrd_this->renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
-                } else if (argv[1].val > 0.5) {
-                    shrd_this->renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
-                } else {
-                    shrd_this->renderer_->settings.shadows_quality = Eng::eShadowsQuality::Off;
-                }
-            }
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_taa", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argc > 1) {
-                if (argv[1].val > 1.5) {
-                    shrd_this->renderer_->settings.taa_mode = Eng::eTAAMode::Static;
-                } else if (argv[1].val > 0.5) {
-                    shrd_this->renderer_->settings.taa_mode = Eng::eTAAMode::Dynamic;
-                } else {
-                    shrd_this->renderer_->settings.taa_mode = Eng::eTAAMode::Off;
-                }
-            }
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_tonemap", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argc > 1) {
-                if (argv[1].val > 2.5) {
-                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                    shrd_this->renderer_->SetTonemapLUT(
-                        Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                        Ren::Span<const uint8_t>(
-                            reinterpret_cast<const uint8_t *>(
-                                Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
-                            reinterpret_cast<const uint8_t *>(
-                                Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]) +
-                                4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-                } else if (argv[1].val > 1.5) {
-                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
-                    shrd_this->renderer_->SetTonemapLUT(
-                        Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                        Ren::Span<const uint8_t>(
-                            reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
-                            reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
-                                4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-                } else if (argv[1].val > 0.5) {
-                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
-                } else {
-                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
-                }
-            }
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_pt", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->use_pt_ = !shrd_this->use_pt_;
-            if (shrd_this->use_pt_) {
-                // shrd_this->scene_manager_->InitScene_PT();
-                shrd_this->invalidate_view_ = true;
-            }
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_lm", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->use_lm_ = !shrd_this->use_lm_;
-            if (shrd_this->use_lm_) {
-                // shrd_this->scene_manager_->InitScene_PT();
-                // shrd_this->scene_manager_->ResetLightmaps_PT();
-                shrd_this->invalidate_view_ = true;
-            }
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_zfill", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.enable_zfill = !shrd_this->renderer_->settings.enable_zfill;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_mode", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argv[1].val > 0.5) {
-                shrd_this->renderer_->settings.render_mode = Eng::eRenderMode::Forward;
+    cmdline_->RegisterCommand("r_shadows", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc > 1) {
+            if (argv[1].val > 1.5) {
+                renderer_->settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+            } else if (argv[1].val > 0.5) {
+                renderer_->settings.shadows_quality = Eng::eShadowsQuality::High;
             } else {
-                shrd_this->renderer_->settings.render_mode = Eng::eRenderMode::Deferred;
+                renderer_->settings.shadows_quality = Eng::eShadowsQuality::Off;
             }
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("r_gi", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argv[1].val > 0.5) {
-                shrd_this->renderer_->settings.gi_quality = Eng::eGIQuality::High;
+    cmdline_->RegisterCommand("r_taa", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc > 1) {
+            if (argv[1].val > 1.5) {
+                renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+            } else if (argv[1].val > 0.5) {
+                renderer_->settings.taa_mode = Eng::eTAAMode::Dynamic;
             } else {
-                shrd_this->renderer_->settings.gi_quality = Eng::eGIQuality::Off;
+                renderer_->settings.taa_mode = Eng::eTAAMode::Off;
             }
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("r_updateProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            Eng::SceneData &scene_data = shrd_this->scene_manager_->scene_data();
-
-            const int res = scene_data.probe_storage.res(), capacity = scene_data.probe_storage.capacity();
-            const bool result = scene_data.probe_storage.Resize(
-                shrd_this->ren_ctx_->api_ctx(), shrd_this->ren_ctx_->default_mem_allocs(), Ren::eTexFormat::RawRGBA8888,
-                res, capacity, shrd_this->ren_ctx_->log());
-            assert(result);
-
-            shrd_this->update_all_probes_ = true;
+    cmdline_->RegisterCommand("r_tonemap", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc > 1) {
+            if (argv[1].val > 2.5) {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
+                                             reinterpret_cast<const uint8_t *>(
+                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]) +
+                                                 4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (argv[1].val > 1.5) {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(
+                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
+                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
+                            4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (argv[1].val > 0.5) {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
+            } else {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
+            }
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("r_cacheProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            const Eng::SceneData &scene_data = shrd_this->scene_manager_->scene_data();
-
-            const Eng::CompStorage *lprobes = scene_data.comp_store[Eng::CompProbe];
-            Eng::SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
-                                               scene_data.probe_storage, lprobes, shrd_this->ren_ctx_->log());
-
-            // probe textures were written, convert them
-            Viewer::PrepareAssets("pc");
+    cmdline_->RegisterCommand("r_pt", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        use_pt_ = !use_pt_;
+        if (use_pt_) {
+            // shrd_this->scene_manager_->InitScene_PT();
+            invalidate_view_ = true;
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("map", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    cmdline_->RegisterCommand("r_lm", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        use_lm_ = !use_lm_;
+        if (use_lm_) {
+            // shrd_this->scene_manager_->InitScene_PT();
+            // shrd_this->scene_manager_->ResetLightmaps_PT();
+            invalidate_view_ = true;
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_zfill", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.enable_zfill = !renderer_->settings.enable_zfill;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_mode", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argv[1].val > 0.5) {
+            renderer_->settings.render_mode = Eng::eRenderMode::Forward;
+        } else {
+            renderer_->settings.render_mode = Eng::eRenderMode::Deferred;
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_gi", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argv[1].val > 0.5) {
+            renderer_->settings.gi_quality = Eng::eGIQuality::High;
+        } else {
+            renderer_->settings.gi_quality = Eng::eGIQuality::Off;
+        }
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_updateProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        Eng::SceneData &scene_data = scene_manager_->scene_data();
+
+        const int res = scene_data.probe_storage.res(), capacity = scene_data.probe_storage.capacity();
+        const bool result =
+            scene_data.probe_storage.Resize(ren_ctx_->api_ctx(), ren_ctx_->default_mem_allocs(),
+                                            Ren::eTexFormat::RawRGBA8888, res, capacity, ren_ctx_->log());
+        assert(result);
+
+        update_all_probes_ = true;
+
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_cacheProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        const Eng::SceneData &scene_data = scene_manager_->scene_data();
+
+        const Eng::CompStorage *lprobes = scene_data.comp_store[Eng::CompProbe];
+        Eng::SceneManager::WriteProbeCache("assets/textures/probes_cache", scene_data.name.c_str(),
+                                           scene_data.probe_storage, lprobes, ren_ctx_->log());
+
+        // probe textures were written, convert them
+        Viewer::PrepareAssets("pc");
+
+        return true;
+    });
+
+    cmdline_->RegisterCommand("map", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         if (argc != 2 || argv[1].type != Eng::Cmdline::eArgType::ArgString) {
             return false;
         }
 
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            // TODO: refactor this
-            char buf[1024];
-            snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(argv[1].str.length()),
-                     argv[1].str.data());
-            shrd_this->LoadScene(buf);
-        }
+        // TODO: refactor this
+        char buf[1024];
+        snprintf(buf, sizeof(buf), "%s/scenes/%.*s", ASSETS_BASE_PATH, int(argv[1].str.length()), argv[1].str.data());
+        LoadScene(buf);
+
         return true;
     });
 
-    cmdline_->RegisterCommand("save", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            Sys::MultiPoolAllocator<char> alloc(32, 512);
-            JsObjectP out_scene(alloc);
+    cmdline_->RegisterCommand("save", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        Sys::MultiPoolAllocator<char> alloc(32, 512);
+        JsObjectP out_scene(alloc);
 
-            shrd_this->SaveScene(out_scene);
+        SaveScene(out_scene);
 
-            { // Write output file
-                std::string name_str;
+        { // Write output file
+            std::string name_str;
 
-                { // get scene file name
-                    const Eng::SceneData &scene_data = shrd_this->scene_manager_->scene_data();
-                    name_str = scene_data.name.c_str();
-                }
+            { // get scene file name
+                const Eng::SceneData &scene_data = scene_manager_->scene_data();
+                name_str = scene_data.name.c_str();
+            }
 
-                { // rotate backup files
-                    for (int i = 7; i > 0; i--) {
-                        const std::string name1 = "assets/scenes/" + name_str + ".json" + std::to_string(i),
-                                          name2 = "assets/scenes/" + name_str + ".json" + std::to_string(i + 1);
-                        if (!std::ifstream(name1).good()) {
-                            continue;
-                        }
+            { // rotate backup files
+                for (int i = 7; i > 0; i--) {
+                    const std::string name1 = "assets/scenes/" + name_str + ".json" + std::to_string(i),
+                                      name2 = "assets/scenes/" + name_str + ".json" + std::to_string(i + 1);
+                    if (!std::ifstream(name1).good()) {
+                        continue;
+                    }
 
-                        if (i == 7 && std::ifstream(name2).good()) {
-                            const int ret = std::remove(name2.c_str());
-                            if (ret) {
-                                shrd_this->ren_ctx_->log()->Error("Failed to remove file %s", name2.c_str());
-                                return false;
-                            }
-                        }
-
-                        const int ret = std::rename(name1.c_str(), name2.c_str());
+                    if (i == 7 && std::ifstream(name2).good()) {
+                        const int ret = std::remove(name2.c_str());
                         if (ret) {
-                            shrd_this->ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                            ren_ctx_->log()->Error("Failed to remove file %s", name2.c_str());
                             return false;
                         }
                     }
-                }
-
-                { // write scene file
-                    const std::string name1 = "assets/scenes/" + name_str + ".json",
-                                      name2 = "assets/scenes/" + name_str + ".json1";
 
                     const int ret = std::rename(name1.c_str(), name2.c_str());
                     if (ret) {
-                        shrd_this->ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                        ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
                         return false;
                     }
-
-                    std::ofstream out_file(name1, std::ios::binary);
-                    out_file.precision(std::numeric_limits<double>::max_digits10);
-                    out_scene.Write(out_file);
                 }
             }
 
-            // scene file was written, copy it to assets_pc folder
-            Viewer::PrepareAssets("pc");
-        }
-        return true;
-    });
+            { // write scene file
+                const std::string name1 = "assets/scenes/" + name_str + ".json",
+                                  name2 = "assets/scenes/" + name_str + ".json1";
 
-    cmdline_->RegisterCommand("r_reloadTextures", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->scene_manager_->ForceTextureReload();
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showCull", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_culling = !shrd_this->renderer_->settings.debug_culling;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showShadows", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_shadows = !shrd_this->renderer_->settings.debug_shadows;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showLights", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_lights = !shrd_this->renderer_->settings.debug_lights;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showDecals", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_decals = !shrd_this->renderer_->settings.debug_decals;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showDeferred", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_deferred = !shrd_this->renderer_->settings.debug_deferred;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showBlur", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_blur = !shrd_this->renderer_->settings.debug_blur;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showSSAO", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_ssao = !shrd_this->renderer_->settings.debug_ssao;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showTimings", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_timings = !shrd_this->renderer_->settings.debug_timings;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showBVH", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_bvh = !shrd_this->renderer_->settings.debug_bvh;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showProbes", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_probes = !shrd_this->renderer_->settings.debug_probes;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showEllipsoids", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_ellipsoids = !shrd_this->renderer_->settings.debug_ellipsoids;
-        }
-        return true;
-    });
-
-    cmdline_->RegisterCommand("r_showRT", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argc > 1) {
-                if (argv[1].val > 0.5) {
-                    shrd_this->renderer_->settings.debug_rt = Eng::eDebugRT::Shadow;
-                } else {
-                    shrd_this->renderer_->settings.debug_rt = Eng::eDebugRT::Main;
+                const int ret = std::rename(name1.c_str(), name2.c_str());
+                if (ret) {
+                    ren_ctx_->log()->Error("Failed to rename file %s", name1.c_str());
+                    return false;
                 }
+
+                std::ofstream out_file(name1, std::ios::binary);
+                out_file.precision(std::numeric_limits<double>::max_digits10);
+                out_scene.Write(out_file);
+            }
+        }
+
+        // scene file was written, copy it to assets_pc folder
+        Viewer::PrepareAssets("pc");
+
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_reloadTextures", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        scene_manager_->ForceTextureReload();
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showCull", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_culling = !renderer_->settings.debug_culling;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showShadows", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_shadows = !renderer_->settings.debug_shadows;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showLights", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_lights = !renderer_->settings.debug_lights;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showDecals", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_decals = !renderer_->settings.debug_decals;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showDeferred", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_deferred = !renderer_->settings.debug_deferred;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showBlur", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_blur = !renderer_->settings.debug_blur;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showSSAO", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_ssao = !renderer_->settings.debug_ssao;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showTimings", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_timings = !renderer_->settings.debug_timings;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showBVH", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_bvh = !renderer_->settings.debug_bvh;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_probes = !renderer_->settings.debug_probes;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showEllipsoids", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_ellipsoids = !renderer_->settings.debug_ellipsoids;
+        return true;
+    });
+
+    cmdline_->RegisterCommand("r_showRT", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc > 1) {
+            if (argv[1].val > 0.5) {
+                renderer_->settings.debug_rt = Eng::eDebugRT::Shadow;
             } else {
-                shrd_this->renderer_->settings.debug_rt = Eng::eDebugRT::Off;
+                renderer_->settings.debug_rt = Eng::eDebugRT::Main;
             }
+        } else {
+            renderer_->settings.debug_rt = Eng::eDebugRT::Off;
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showDenoise", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            if (argc > 1) {
-                if (argv[1].val < 0.5) {
-                    shrd_this->renderer_->settings.debug_denoise = Eng::eDebugDenoise::Reflection;
-                } else if (argv[1].val < 1.5) {
-                    shrd_this->renderer_->settings.debug_denoise = Eng::eDebugDenoise::GI;
-                } else if (argv[2].val < 2.5) {
-                    shrd_this->renderer_->settings.debug_denoise = Eng::eDebugDenoise::Shadow;
-                }
-            } else {
-                shrd_this->renderer_->settings.debug_denoise = Eng::eDebugDenoise::Off;
+    cmdline_->RegisterCommand("r_showDenoise", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc > 1) {
+            if (argv[1].val < 0.5) {
+                renderer_->settings.debug_denoise = Eng::eDebugDenoise::Reflection;
+            } else if (argv[1].val < 1.5) {
+                renderer_->settings.debug_denoise = Eng::eDebugDenoise::GI;
+            } else if (argv[2].val < 2.5) {
+                renderer_->settings.debug_denoise = Eng::eDebugDenoise::Shadow;
             }
+        } else {
+            renderer_->settings.debug_denoise = Eng::eDebugDenoise::Off;
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showMotion", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_motion = !shrd_this->renderer_->settings.debug_motion;
-        }
+    cmdline_->RegisterCommand("r_showMotion", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_motion = !renderer_->settings.debug_motion;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_showUI", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->ui_enabled_ = !shrd_this->ui_enabled_;
-        }
+    cmdline_->RegisterCommand("r_showUI", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        ui_enabled_ = !ui_enabled_;
         return true;
     });
 
-    cmdline_->RegisterCommand("r_freeze", [weak_this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->renderer_->settings.debug_freeze = !shrd_this->renderer_->settings.debug_freeze;
-        }
+    cmdline_->RegisterCommand("r_freeze", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        renderer_->settings.debug_freeze = !renderer_->settings.debug_freeze;
         return true;
     });
 

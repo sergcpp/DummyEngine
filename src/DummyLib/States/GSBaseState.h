@@ -41,7 +41,6 @@ class Context;
 class GSBaseState : public Eng::ViewerState {
   protected:
     Eng::ViewerBase *viewer_;
-    Eng::ViewerStateManager *state_manager_ = nullptr;
     Eng::Cmdline *cmdline_ = nullptr;
     Ren::Context *ren_ctx_ = nullptr;
     Snd::Context *snd_ctx_ = nullptr;

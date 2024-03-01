@@ -1,34 +1,30 @@
 #include "ViewerStateManager.h"
 
-#include "ViewerState.h"
-
 #include <stdexcept>
 
-Eng::ViewerStateManager::~ViewerStateManager() {
-    Clear();
-}
+Eng::ViewerStateManager::~ViewerStateManager() { Clear(); }
 
-std::shared_ptr<Eng::ViewerState> Eng::ViewerStateManager::Peek() {
+Eng::ViewerState *Eng::ViewerStateManager::Peek() {
     if (states_.empty()) {
         return {};
     } else {
-        return states_.back();
+        return states_.back().get();
     }
 }
 
-void Eng::ViewerStateManager::Push(const std::shared_ptr<ViewerState> &state) {
+void Eng::ViewerStateManager::Push(std::unique_ptr<ViewerState> &&state) {
     if (!states_.empty()) {
         states_.back()->Exit();
     }
-    states_.emplace_back(state)->Enter();
+    states_.emplace_back(std::move(state))->Enter();
 }
 
-std::shared_ptr<Eng::ViewerState> Eng::ViewerStateManager::Pop() {
+std::unique_ptr<Eng::ViewerState> Eng::ViewerStateManager::Pop() {
     if (states_.empty()) {
         throw std::runtime_error("Attempted to pop from an empty game state stack");
     }
 
-    auto popped = states_.back();
+    auto popped = std::move(states_.back());
     popped->Exit();
     states_.pop_back();
     if (!states_.empty()) {
@@ -38,16 +34,14 @@ std::shared_ptr<Eng::ViewerState> Eng::ViewerStateManager::Pop() {
     return popped;
 }
 
-void Eng::ViewerStateManager::PopLater() {
-    pop_later_ = true;
-}
+void Eng::ViewerStateManager::PopLater() { pop_later_ = true; }
 
-std::shared_ptr<Eng::ViewerState> Eng::ViewerStateManager::Switch(const std::shared_ptr<ViewerState> &state) {
-    std::shared_ptr<ViewerState> current_state = Peek();
+Eng::ViewerState *Eng::ViewerStateManager::Switch(std::unique_ptr<ViewerState> &&state) {
+    ViewerState *current_state = Peek();
     if (current_state) {
         Pop();
     }
-    Push(state);
+    Push(std::move(state));
     return current_state;
 }
 
@@ -62,22 +56,17 @@ void Eng::ViewerStateManager::UpdateFixed(uint64_t dt_us) {
         Pop();
         pop_later_ = false;
     }
-
-    std::shared_ptr<ViewerState> &st = states_.back();
-    st->UpdateFixed(dt_us);
+    states_.back()->UpdateFixed(dt_us);
 }
 
 void Eng::ViewerStateManager::UpdateAnim(uint64_t dt_us) {
-    std::shared_ptr<ViewerState> &st = states_.back();
-    st->UpdateAnim(dt_us);
+    states_.back()->UpdateAnim(dt_us);
 }
 
 void Eng::ViewerStateManager::Draw() {
-    std::shared_ptr<ViewerState> &st = states_.back();
-    st->Draw();
+    states_.back()->Draw();
 }
 
 void Eng::ViewerStateManager::HandleInput(Eng::InputManager::Event &evt) {
-    std::shared_ptr<ViewerState> &st = states_.back();
-    st->HandleInput(evt);
+    states_.back()->HandleInput(evt);
 }

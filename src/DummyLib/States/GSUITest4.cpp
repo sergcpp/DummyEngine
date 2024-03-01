@@ -88,13 +88,8 @@ void GSUITest4::Enter() {
 
     GSBaseState::Enter();
 
-    std::weak_ptr<GSUITest4> weak_this = std::dynamic_pointer_cast<GSUITest4>(state_manager_->Peek());
-
-    cmdline_->RegisterCommand("dialog", [weak_this](int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        auto shrd_this = weak_this.lock();
-        if (shrd_this) {
-            shrd_this->LoadDialog(argv[1].str.data());
-        }
+    cmdline_->RegisterCommand("dialog", [this](int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        LoadDialog(argv[1].str.data());
         return true;
     });
 

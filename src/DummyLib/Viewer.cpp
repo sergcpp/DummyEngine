@@ -106,7 +106,7 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
 
     dictionary_ = std::make_unique<Dictionary>();
 
-    state_manager_->Push(std::make_shared<GSDrawTest>(this));
+    state_manager_->Push(std::make_unique<GSDrawTest>(this));
 }
 
 Viewer::~Viewer() { state_manager_ = {}; }
