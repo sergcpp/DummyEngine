@@ -84,6 +84,7 @@ class RpSubpass {
     RpResRef AddDepthOutput(const Ren::WeakTex2DRef &tex);
 
     // TODO: try to get rid of this
+    RpResRef ReplaceTransferInput(int slot_index, const Ren::WeakBufferRef &buf);
     RpResRef ReplaceColorOutput(int slot_index, const Ren::WeakTex2DRef &tex);
 
     RpResRef AddUniformBufferInput(RpResRef handle, Ren::eStageBits stages);

@@ -12,7 +12,7 @@ struct Drawable {
     enum class eDrVisibility { VisShadow = (1 << 0), VisProbes = (1 << 1) };
 
     uint32_t flags = 0, vis_mask = 0xffffffff;
-    Ren::MeshRef mesh, pt_mesh;
+    Ren::MeshRef mesh;
     Ren::String mesh_file;
 
     // TODO: allocate this dynamically (from pool)

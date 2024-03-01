@@ -23,27 +23,20 @@
 #include "utils/Random.h"
 #include "utils/ShaderLoader.h"
 
-Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const char *device_name)
-    : width(w), height(h) {
+Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, ILog *log, const char *device_name)
+    : log_(log), width(w), height(h) {
     terminated = false;
 
     //Sys::InitWorker();
 
-    log_ =
-#if !defined(__ANDROID__)
-        std::make_unique<LogStdout>();
-#else
-        std::make_unique<LogAndroid>("APP_JNI");
-#endif
-
     ren_ctx_ = std::make_unique<Ren::Context>();
-    if (!ren_ctx_->Init(w, h, log_.get(), validation_level, device_name)) {
+    if (!ren_ctx_->Init(w, h, log_, validation_level, device_name)) {
         throw std::runtime_error("Initialization failed!");
     }
     InitOptickGPUProfiler();
 
     snd_ctx_ = std::make_unique<Snd::Context>();
-    snd_ctx_->Init(log_.get());
+    snd_ctx_->Init(log_);
 
 #if !defined(__EMSCRIPTEN__)
     unsigned int num_threads = std::max(std::thread::hardware_concurrency(), 1u);

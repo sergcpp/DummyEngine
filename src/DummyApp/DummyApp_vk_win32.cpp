@@ -19,6 +19,7 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
 #include <Windows.h>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerBase.h>
 #include <Eng/input/InputManager.h>
 #include <Sys/DynLib.h>
@@ -179,7 +180,8 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
     try {
         Viewer::PrepareAssets("pc");
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, device_name);
+        log_ = std::make_unique<LogStdout>();
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, log_.get(), device_name);
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());

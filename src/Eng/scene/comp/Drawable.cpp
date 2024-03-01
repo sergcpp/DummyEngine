@@ -70,11 +70,6 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
                                            alloc});
     }
 
-    if (dr.pt_mesh) {
-        const Ren::String &mesh_name = dr.pt_mesh->name();
-        js_out.Push("pt_mesh_file", JsStringP{mesh_name.c_str(), alloc});
-    }
-
     if (dr.flags & uint32_t(eDrFlags::DrMaterialOverride)) {
         JsArrayP js_material_override(alloc);
 

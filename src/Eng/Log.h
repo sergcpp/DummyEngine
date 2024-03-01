@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdio>
+
 #include <Ren/Log.h>
 #include <Snd/Log.h>
 
@@ -11,6 +13,8 @@ class ILog : public Ren::ILog, public Snd::ILog {
     void Error(const char *fmt, ...) override {}
 };
 class LogStdout : public ILog {
+  protected:
+    void TimedOutput(FILE *dst, const char *fmt, va_list args);
   public:
     void Info(const char *fmt, ...) override;
     void Warning(const char *fmt, ...) override;

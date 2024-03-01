@@ -41,7 +41,7 @@ struct TimeInterval {
 };
 class ViewerBase {
   protected:
-    std::unique_ptr<ILog> log_;
+    ILog *log_;
     std::unique_ptr<Ren::Context> ren_ctx_;
     std::unique_ptr<Snd::Context> snd_ctx_;
     std::unique_ptr<Sys::ThreadPool> threads_;
@@ -61,10 +61,10 @@ class ViewerBase {
     void InitOptickGPUProfiler();
 
   public:
-    ViewerBase(int w, int h, int validation_level, const char *device_name);
+    ViewerBase(int w, int h, int validation_level, ILog *log, const char *device_name);
     virtual ~ViewerBase();
 
-    ILog *log() { return log_.get(); }
+    ILog *log() { return log_; }
     Ren::Context *ren_ctx() { return ren_ctx_.get(); }
     Snd::Context *snd_ctx() { return snd_ctx_.get(); }
     Sys::ThreadPool *threads() { return threads_.get(); }

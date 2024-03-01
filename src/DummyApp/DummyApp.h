@@ -6,6 +6,8 @@
 
 #include <Eng/input/InputManager.h>
 
+#include <DummyLib/Utils/Log.h>
+
 #if !defined(__ANDROID__)
 #if defined(_WIN32)
 #ifndef _WINDEF_
@@ -31,8 +33,9 @@ struct SDL_Window;
 #endif
 
 namespace Eng {
+class ILog;
 class ViewerBase;
-}
+} // namespace Eng
 
 class DummyApp {
     bool fullscreen_ = false, minimized_ = false, quit_ = false;
@@ -62,6 +65,7 @@ class DummyApp {
     void PollEvents();
 #endif
 
+    std::unique_ptr<LogStdout> log_;
     std::unique_ptr<Eng::ViewerBase> viewer_;
     Eng::InputManager *input_manager_ = nullptr;
 

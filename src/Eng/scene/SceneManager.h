@@ -145,14 +145,6 @@ class SceneManager {
         init_pipelines_ = std::move(f);
     }
 
-    // void InitScene_PT(bool _override = false);
-    // void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
-    // const float *Draw_PT(int *w, int *h);
-    // void Clear_PT();
-
-    // void ResetLightmaps_PT();
-    // bool PrepareLightmaps_PT(const float **preview_pixels, int *w, int *h);
-
     void UpdateObjects();
 
     void UpdateTexturePriorities(Ren::Span<const TexEntry> visible_textures,

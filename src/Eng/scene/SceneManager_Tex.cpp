@@ -64,7 +64,7 @@ void CaptureMaterialTextureChange(Ren::Context &ctx, Eng::SceneData &scene_data,
         const size_t ndx =
             std::distance(mat.textures.begin(), std::find(mat.textures.begin(), mat.textures.end(), ref));
         Ren::eSamplerLoadStatus status;
-        mat.samplers[ndx] = ctx.LoadSampler(ref->sampling(), &status);
+        mat.samplers[ndx] = ctx.LoadSampler(ref->params.sampling, &status);
         tex_user = mat.next_texture_user[ndx];
     }
 }

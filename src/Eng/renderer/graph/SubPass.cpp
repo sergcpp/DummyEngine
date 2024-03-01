@@ -96,6 +96,10 @@ Eng::RpResRef Eng::RpSubpass::AddDepthOutput(const Ren::WeakTex2DRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
+Eng::RpResRef Eng::RpSubpass::ReplaceTransferInput(const int slot_index, const Ren::WeakBufferRef &buf) {
+    return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this, slot_index);
+}
+
 Eng::RpResRef Eng::RpSubpass::ReplaceColorOutput(const int slot_index, const Ren::WeakTex2DRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this,
                                  slot_index);

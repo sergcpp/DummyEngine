@@ -152,8 +152,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     { // Brightness readback buffer
         readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Stage,
                                        rp_sample_brightness_.res()[0] * rp_sample_brightness_.res()[1] * sizeof(float) *
-                                           Ren::MaxFramesInFlight,
-                                       16);
+                                           Ren::MaxFramesInFlight);
     }
 
     { // cone/sphere intersection LUT
@@ -409,7 +408,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     // Compile built-in shaders etc.
     InitPipelines();
-    InitRendererInternal();
 
     { // shadow map texture
         Ren::Tex2DParams params;
@@ -460,7 +458,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
 Eng::Renderer::~Renderer() {
     prim_draw_.CleanUp();
-    DestroyRendererInternal();
     swCullCtxDestroy(&cull_ctx_);
 }
 
@@ -603,11 +600,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
         !std::equal(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
     const bool probe_storage_changed = (list.probe_storage != probe_storage_);
-    const bool rebuild_renderpasses = !cached_settings_.has_value() ||
-                                      (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
-                                      !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
+    const bool rebuild_renderpasses =
+        !cached_settings_.has_value() || (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
+        !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed || cached_rp_index_ != 0;
 
     cached_settings_ = list.render_settings;
+    cached_rp_index_ = 0;
     env_map_ = list.env.env_map;
     lm_direct_ = list.env.lm_direct;
     lm_indir_ = list.env.lm_indir;
@@ -844,7 +842,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             frame_textures.specular_params.w = view_state_.scr_res[0];
             frame_textures.specular_params.h = view_state_.scr_res[1];
             frame_textures.specular_params.format = Ren::eTexFormat::RawRGBA8888;
-            //frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
+            // frame_textures.specular_params.flags = Ren::eTexFlagBits::SRGB;
             frame_textures.specular_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
             frame_textures.specular_params.samples = view_state_.is_multisampled ? 4 : 1;
         }
@@ -853,7 +851,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         frame_textures.albedo_params.w = view_state_.scr_res[0];
         frame_textures.albedo_params.h = view_state_.scr_res[1];
         frame_textures.albedo_params.format = Ren::eTexFormat::RawRGBA8888;
-        //frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
+        // frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         if (!deferred_shading) {
@@ -1097,8 +1095,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         const bool use_taa = list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe;
         if (use_taa) {
-            AddTaaPass(common_buffers, frame_textures, list.draw_cam.max_exposure,
-                       list.render_settings.taa_mode == eTAAMode::Static, resolved_color);
+            AddTaaPass(common_buffers, frame_textures, 0.0f, list.render_settings.taa_mode == eTAAMode::Static,
+                       resolved_color);
         } else {
             resolved_color = frame_textures.color;
         }
@@ -1350,7 +1348,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             exposure = std::min(exposure, list.draw_cam.max_exposure);
         }
 
-        rp_combine_data_.exposure = exposure;
+        rp_combine_data_.exposure = powf(2.0f, exposure);
         rp_combine_data_.fade = list.draw_cam.fade;
 
         rp_combine_.Setup(&view_state_, &rp_combine_data_);
@@ -1414,7 +1412,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
 
     { // update texture
         const Ren::TransitionInfo res_transitions1[] = {{&temp_upload_buf, Ren::eResState::CopySrc},
-                                                       {tonemap_lut_.get(), Ren::eResState::CopyDst}};
+                                                        {tonemap_lut_.get(), Ren::eResState::CopyDst}};
         Ren::TransitionResourceStates(ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, res_transitions1);
 
         tonemap_lut_->SetSubImage(0, 0, 0, res, res, res, Ren::eTexFormat::RawRGB10_A2, temp_upload_buf, cmd_buf, 0,
@@ -1491,6 +1489,97 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const u
 
         out_pipelines.emplace_back(&storage, new_index);
     }
+}
+
+void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
+                                      const Ren::eTexFormat format, const float exposure) {
+    const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
+    Ren::ILog *log = ctx_.log();
+
+    if (!cur_scr_w || !cur_scr_h) {
+        // view is minimized?
+        return;
+    }
+
+    if (!prim_draw_.LazyInit(ctx_)) {
+        log->Error("[Renderer] Failed to initialize primitive drawing!");
+    }
+
+    const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
+                                      !rp_builder_.ready() || cached_rp_index_ != 1;
+    cached_settings_ = settings;
+    cached_rp_index_ = 1;
+
+    assert(format == Ren::eTexFormat::RawRGBA32F);
+
+    Ren::BufferRef temp_stage_buf = ctx_.LoadBuffer("Image stage buf", Ren::eBufType::Stage, 4 * w * h * sizeof(float));
+    uint8_t *stage_data = temp_stage_buf->Map(Ren::eBufMap::Write);
+    for (int y = 0; y < h; ++y) {
+        memcpy(&stage_data[y * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)], 4 * w * sizeof(float));
+    }
+    temp_stage_buf->Unmap();
+
+    if (rebuild_renderpasses) {
+        const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
+
+        rp_builder_.Reset();
+        backbuffer_sources_.clear();
+
+        auto &update_image = rp_builder_.AddPass("UPDATE IMAGE");
+
+        RpResRef stage_buf_res = update_image.AddTransferInput(temp_stage_buf);
+
+        RpResRef output_tex_res;
+        { // output image
+            Ren::Tex2DParams params;
+            params.w = cur_scr_w;
+            params.h = cur_scr_h;
+            params.format = format;
+            output_tex_res = update_image.AddTransferImageOutput("Temp Image", params);
+        }
+
+        update_image.set_execute_cb([this, stage_buf_res, output_tex_res](RpBuilder &builder) {
+            RpAllocBuf &stage_buf = builder.GetReadBuffer(stage_buf_res);
+            RpAllocTex &output_image = builder.GetWriteTexture(output_tex_res);
+
+            const int w = output_image.ref->params.w;
+            const int h = output_image.ref->params.h;
+
+            output_image.ref->SetSubImage(0, 0, 0, w, h, Ren::eTexFormat::RawRGBA32F, *stage_buf.ref,
+                                          builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
+        });
+
+        auto &combine = rp_builder_.AddPass("COMBINE");
+
+        rp_combine_data_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
+        rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
+        rp_combine_data_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
+        rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+
+        rp_combine_data_.lut_tex = tonemap_lut_;
+        rp_combine_data_.tonemap_mode = int(settings.tonemap_mode);
+        rp_combine_data_.inv_gamma = 1.0f;
+        rp_combine_data_.exposure = powf(2.0f, exposure);
+        rp_combine_data_.fade = 0.0f;
+
+        backbuffer_sources_.push_back(rp_combine_data_.output_tex);
+
+        rp_combine_.Setup(&view_state_, &rp_combine_data_);
+        combine.set_executor(&rp_combine_);
+
+        rp_builder_.Compile();
+
+        const uint64_t rp_setup_end_us = Sys::GetTimeUs();
+        ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
+    } else {
+        auto *update_image = rp_builder_.FindPass("UPDATE IMAGE");
+        update_image->ReplaceTransferInput(0, temp_stage_buf);
+
+        auto *combine = rp_builder_.FindPass("COMBINE");
+        rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+    }
+
+    rp_builder_.Execute();
 }
 
 #undef BBOX_POINTS

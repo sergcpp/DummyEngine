@@ -32,7 +32,6 @@
             },
             "drawable" : {
                 "mesh_file" : "lmap_test2/hydrant0_hi.mesh",
-				"pt_mesh_file" : "lmap_test2/hydrant0.mesh"
             },
             "lightmap" : {
                 "res" : 512
@@ -44,7 +43,6 @@
             },
             "drawable" : {
                 "mesh_file" : "lmap_test2/hydrant1_hi.mesh",
-				"pt_mesh_file" : "lmap_test2/hydrant1.mesh"
             },
             "lightmap" : {
                 "res" : 256

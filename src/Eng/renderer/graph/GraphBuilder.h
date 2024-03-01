@@ -148,7 +148,7 @@ class RpBuilder {
 
     RpResRef ReadBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
-                        RpSubpass &pass);
+                        RpSubpass &pass, int slot_index = -1);
     RpResRef ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::WeakTex1DRef &tbo, Ren::eResState desired_state,
                         Ren::eStageBits stages, RpSubpass &pass);
 

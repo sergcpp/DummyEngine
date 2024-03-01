@@ -3,6 +3,8 @@
 #include <cctype>
 
 #include <fstream>
+#include <future>
+#include <map>
 #include <memory>
 
 #include <optick/optick.h>
@@ -24,6 +26,7 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/MemBuf.h>
+#include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 #undef GetObject
 
@@ -54,6 +57,7 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     scene_manager_ = viewer->scene_manager();
     physics_manager_ = viewer->physics_manager();
     shader_loader_ = viewer->shader_loader();
+    threads_ = viewer->threads();
 
     ui_renderer_ = viewer->ui_renderer();
     ui_root_ = viewer->ui_root();
@@ -230,13 +234,14 @@ void GSBaseState::Enter() {
     cmdline_->RegisterCommand("r_pt", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         use_pt_ = !use_pt_;
         if (use_pt_) {
-            // shrd_this->scene_manager_->InitScene_PT();
+            InitRenderer_PT();
+            InitScene_PT();
             invalidate_view_ = true;
         }
         return true;
     });
 
-    cmdline_->RegisterCommand("r_lm", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+    /*cmdline_->RegisterCommand("r_lm", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         use_lm_ = !use_lm_;
         if (use_lm_) {
             // shrd_this->scene_manager_->InitScene_PT();
@@ -244,7 +249,7 @@ void GSBaseState::Enter() {
             invalidate_view_ = true;
         }
         return true;
-    });
+    });*/
 
     cmdline_->RegisterCommand("r_zfill", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         renderer_->settings.enable_zfill = !renderer_->settings.enable_zfill;
@@ -632,7 +637,7 @@ void GSBaseState::Draw() {
                     if (ch == '-') {
                         ch = '_';
                     } else {
-                        ch = std::toupper(ch);
+                        ch = toupper(ch);
                     }
                 }
                 cmdline_history_.back() += ch;
@@ -668,24 +673,27 @@ void GSBaseState::Draw() {
                     // LoadScene(SCENE_NAME);
                     // Switch back to normal mode
                     use_lm_ = false;
-                }
+                }*/
 
-                back_list = -1;*/
+                back_list = -1;
             } else if (use_pt_) {
-                /*const Ren::Camera &cam = scene_manager_->main_cam();
-                scene_manager_->SetupView_PT(cam.world_position(), (cam.world_position() - cam.view_dir()),
-                                             Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle());
+                const Ren::Camera &cam = scene_manager_->main_cam();
+                SetupView_PT(cam.world_position(), (cam.world_position() - cam.view_dir()),
+                             Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle());
                 if (invalidate_view_) {
-                    scene_manager_->Clear_PT();
+                    Clear_PT();
                     invalidate_view_ = false;
                 }
-                int w, h;
+
+                Draw_PT();
+
+                /*int w, h;
                 const float *preview_pixels = scene_manager_->Draw_PT(&w, &h);
                 if (preview_pixels) {
                     renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::eTexFormat::RawRGBA32F);
-                }
+                }*/
 
-                back_list = -1;*/
+                back_list = -1;
             } else {
                 back_list = front_list_;
                 front_list_ = (front_list_ + 1) % 2;
@@ -699,9 +707,9 @@ void GSBaseState::Draw() {
                 const Eng::SceneData &scene_data = scene_manager_->scene_data();
 
                 if (probe_to_update_sh_) {
-                    const bool done =
-                        renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
-                                                 probe_sh_update_iteration_, *probe_to_update_sh_);
+                    const bool done = false;
+                    // renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
+                    //                          probe_sh_update_iteration_, *probe_to_update_sh_);
                     probe_sh_update_iteration_++;
 
                     if (done) {
@@ -995,4 +1003,266 @@ void GSBaseState::UpdateFrame(int list_index) {
     if (ui_enabled_) {
         DrawUI(ui_renderer_, ui_root_);
     }
+}
+
+void GSBaseState::InitRenderer_PT() {
+    if (!ray_renderer_) {
+        Ray::settings_t s;
+        s.w = ren_ctx_->w();
+        s.h = ren_ctx_->h();
+        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
+    }
+}
+
+void GSBaseState::InitScene_PT() {
+    ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
+    { // Setup environment
+        Ray::environment_desc_t env_desc;
+        env_desc.env_col[0] = env_desc.back_col[0] = 0.5f;
+        env_desc.env_col[1] = env_desc.back_col[1] = 0.0f;
+        env_desc.env_col[2] = env_desc.back_col[2] = 0.0f;
+        ray_scene_->SetEnvironment(env_desc);
+    }
+    { // Add main camera
+        Ray::camera_desc_t cam_desc;
+        cam_desc.type = Ray::eCamType::Persp;
+        cam_desc.view_transform = Ray::eViewTransform::Standard;
+        cam_desc.filter = Ray::ePixelFilter::BlackmanHarris;
+        cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
+        cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
+        cam_desc.fwd[2] = -1.0f;
+        cam_desc.fov = scene_manager_->main_cam().angle();
+        ray_scene_->AddCamera(cam_desc);
+    }
+
+    // Add default material
+    Ray::principled_mat_desc_t default_mat_desc;
+    default_mat_desc.base_color[0] = default_mat_desc.base_color[1] = default_mat_desc.base_color[2] = 0.5f;
+    Ray::MaterialHandle default_mat = ray_scene_->AddMaterial(default_mat_desc);
+
+    std::map<std::string, Ray::MeshHandle> loaded_meshes;
+    std::map<std::string, Ray::MaterialHandle> loaded_materials;
+    std::map<std::string, Ray::TextureHandle> loaded_textures;
+
+    auto load_texture = [&](const Ren::Texture2D &tex, bool is_srgb = false, bool is_YCoCg = false) {
+        if (tex.name() == "default_basecolor.dds" || tex.name() == "default_normalmap.dds" ||
+            tex.name() == "default_roughness.dds" || tex.name() == "default_metallic.dds") {
+            return Ray::InvalidTextureHandle;
+        }
+        auto tex_it = loaded_textures.find(tex.name().c_str());
+        if (tex_it == loaded_textures.end()) {
+            const int data_len = GetMipDataLenBytes(tex.params.w, tex.params.h, tex.params.format, tex.params.block);
+            Ren::Buffer temp_stage_buf("Temp staging buf", ren_ctx_->api_ctx(), Ren::eBufType::Stage, data_len);
+            void *cmd_buf = ren_ctx_->BegTempSingleTimeCommands();
+            tex.CopyTextureData(temp_stage_buf, cmd_buf, 0);
+            const Ren::TransitionInfo transitions[] = {{&tex, Ren::eResState::ShaderResource}};
+            Ren::TransitionResourceStates(ren_ctx_->api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+            ren_ctx_->EndTempSingleTimeCommands(cmd_buf);
+
+            Ray::tex_desc_t tex_desc;
+            switch (tex.params.format) {
+            case Ren::eTexFormat::BC1:
+                tex_desc.format = Ray::eTextureFormat::BC1;
+                break;
+            case Ren::eTexFormat::BC3:
+                tex_desc.format = Ray::eTextureFormat::BC3;
+                break;
+            case Ren::eTexFormat::BC4:
+                tex_desc.format = Ray::eTextureFormat::BC4;
+                break;
+            case Ren::eTexFormat::BC5:
+                tex_desc.format = Ray::eTextureFormat::BC5;
+                break;
+            default:
+                assert(false);
+            }
+            tex_desc.w = tex.params.w;
+            tex_desc.h = tex.params.h;
+            tex_desc.name = tex.name().c_str();
+            tex_desc.is_srgb = is_srgb;
+            tex_desc.is_YCoCg = is_YCoCg;
+
+            const uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Read);
+            tex_desc.data = {mapped_ptr, temp_stage_buf.size()};
+
+            const Ray::TextureHandle new_tex = ray_scene_->AddTexture(tex_desc);
+            tex_it = loaded_textures.emplace(tex.name().c_str(), new_tex).first;
+
+            temp_stage_buf.Unmap();
+            temp_stage_buf.FreeImmediate();
+        }
+        return tex_it->second;
+    };
+
+    const Eng::SceneData &scene_data = scene_manager_->scene_data();
+
+    const auto *transforms = (Eng::Transform *)scene_data.comp_store[Eng::CompTransform]->SequentialData();
+    const auto *drawables = (Eng::Drawable *)scene_data.comp_store[Eng::CompDrawable]->SequentialData();
+    const auto *lights_src = (Eng::LightSource *)scene_data.comp_store[Eng::CompLightSource]->SequentialData();
+
+    for (const Eng::SceneObject &obj : scene_data.objects) {
+        const uint32_t drawable_flags = Eng::CompDrawableBit | Eng::CompTransformBit;
+        if ((obj.comp_mask & drawable_flags) == drawable_flags) {
+            const Eng::Drawable &dr = drawables[obj.components[Eng::CompDrawable]];
+            const Ren::Mesh *mesh = dr.mesh.get();
+            assert(mesh->type() == Ren::eMeshType::Simple);
+            const float *attribs = reinterpret_cast<const float *>(mesh->attribs());
+            const int vtx_count = int(mesh->attribs_buf1().size / 16);
+            const uint32_t *indices = reinterpret_cast<const uint32_t *>(mesh->indices());
+            const int ndx_count = int(mesh->indices_buf().size / sizeof(uint32_t));
+
+            auto mesh_it = loaded_meshes.find(mesh->name().c_str());
+            if (mesh_it == loaded_meshes.end()) {
+                Ray::mesh_desc_t mesh_desc;
+                mesh_desc.name = mesh->name().c_str();
+                mesh_desc.prim_type = Ray::ePrimType::TriangleList;
+                mesh_desc.vtx_positions = {{attribs, 13 * vtx_count}, 0, 13};
+                mesh_desc.vtx_normals = {{attribs, 13 * vtx_count}, 3, 13};
+                mesh_desc.vtx_binormals = {{attribs, 13 * vtx_count}, 6, 13};
+                mesh_desc.vtx_uvs = {{attribs, 13 * vtx_count}, 9, 13};
+                mesh_desc.vtx_indices = {indices, ndx_count};
+
+                std::vector<Ray::mat_group_desc_t> groups;
+                for (const Ren::TriGroup &grp : mesh->groups()) {
+                    const Ren::Material *mat = grp.mat.get();
+                    const char *mat_name = mat->name().c_str();
+
+                    auto mat_it = loaded_materials.find(mat_name);
+                    if (mat_it == loaded_materials.end()) {
+                        Ray::principled_mat_desc_t mat_desc;
+                        memcpy(mat_desc.base_color, ValuePtr(mat->params[0]), 3 * sizeof(float));
+                        mat_desc.base_texture = load_texture(*mat->textures[0], true, true);
+                        mat_desc.roughness = mat->params[0][3];
+                        mat_desc.roughness_texture = load_texture(*mat->textures[2]);
+                        mat_desc.specular = 0.0f;
+                        if (mat->params.size() > 1) {
+                            mat_desc.sheen = mat->params[1][0];
+                            mat_desc.sheen_tint = mat->params[1][1];
+                            mat_desc.specular = mat->params[1][2];
+                            mat_desc.specular_tint = mat->params[1][3];
+                        }
+                        if (mat->params.size() > 2) {
+                            mat_desc.metallic = mat->params[2][0];
+                            mat_desc.metallic_texture = load_texture(*mat->textures[3]);
+                            mat_desc.transmission = mat->params[2][1];
+                            mat_desc.clearcoat = mat->params[2][2];
+                            mat_desc.clearcoat_roughness = mat->params[2][3];
+                        }
+                        mat_desc.normal_map = load_texture(*mat->textures[1]);
+
+                        const Ray::MaterialHandle new_mat = ray_scene_->AddMaterial(mat_desc);
+                        mat_it = loaded_materials.emplace(mat_name, new_mat).first;
+                    }
+
+                    groups.emplace_back(mat_it->second, size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
+                }
+                mesh_desc.groups = groups;
+
+                const Ray::MeshHandle new_mesh = ray_scene_->AddMesh(mesh_desc);
+                mesh_it = loaded_meshes.emplace(mesh->name().c_str(), new_mesh).first;
+            }
+
+            const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
+            const Ray::MeshInstanceHandle new_mi =
+                ray_scene_->AddMeshInstance(mesh_it->second, ValuePtr(tr.world_from_object));
+        }
+
+        const uint32_t lightsource_flags = Eng::CompLightSourceBit | Eng::CompTransformBit;
+        if ((obj.comp_mask & lightsource_flags) == lightsource_flags) {
+            const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
+            const Eng::LightSource &ls = lights_src[obj.components[Eng::CompLightSource]];
+            if (ls.col[0] > 0.0f || ls.col[1] > 0.0f || ls.col[2] > 0.0f) {
+                if (ls.type == Eng::eLightType::Sphere) {
+                    auto pos = Ren::Vec4f{ls.offset[0], ls.offset[1], ls.offset[2], 1.0f};
+                    pos = tr.world_from_object * pos;
+                    pos /= pos[3];
+
+                    Ray::sphere_light_desc_t sphere_light_desc;
+                    memcpy(sphere_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    memcpy(sphere_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
+                    sphere_light_desc.radius = ls.radius;
+                    const Ray::LightHandle new_light = ray_scene_->AddLight(sphere_light_desc);
+                } else if (ls.type == Eng::eLightType::Rect) {
+                    Ray::rect_light_desc_t rect_light_desc;
+                    memcpy(rect_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    rect_light_desc.width = ls.width;
+                    rect_light_desc.height = ls.height;
+                    const Ray::LightHandle new_light =
+                        ray_scene_->AddLight(rect_light_desc, ValuePtr(tr.world_from_object));
+                } else if (ls.type == Eng::eLightType::Disk) {
+                    Ray::disk_light_desc_t disk_light_desc;
+                    memcpy(disk_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    disk_light_desc.size_x = ls.width;
+                    disk_light_desc.size_y = ls.height;
+                    const Ray::LightHandle new_light =
+                        ray_scene_->AddLight(disk_light_desc, ValuePtr(tr.world_from_object));
+                } else if (ls.type == Eng::eLightType::Line) {
+                    Ray::line_light_desc_t line_light_desc;
+                    memcpy(line_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    line_light_desc.radius = ls.radius;
+                    line_light_desc.height = ls.height;
+                    const Ray::LightHandle new_light =
+                        ray_scene_->AddLight(line_light_desc, ValuePtr(tr.world_from_object));
+                }
+            }
+        }
+    }
+    ray_scene_->Finalize();
+}
+
+void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
+                               const float fov) {
+    Ray::camera_desc_t cam_desc;
+    ray_scene_->GetCamera(Ray::CameraHandle{0}, cam_desc);
+
+    const Ren::Vec3f fwd = Normalize(target - origin);
+    memcpy(&cam_desc.origin[0], ValuePtr(origin), 3 * sizeof(float));
+    memcpy(&cam_desc.fwd[0], ValuePtr(fwd), 3 * sizeof(float));
+    memcpy(&cam_desc.up[0], ValuePtr(up), 3 * sizeof(float));
+    cam_desc.fov = fov;
+
+    ray_scene_->SetCamera(Ray::CameraHandle{0}, cam_desc);
+}
+
+void GSBaseState::Clear_PT() {
+    for (Ray::RegionContext &c : ray_reg_ctx_) {
+        c.Clear();
+    }
+    ray_renderer_->Clear({});
+}
+
+void GSBaseState::Draw_PT() {
+    auto [res_x, res_y] = ray_renderer_->size();
+    if (ray_reg_ctx_.empty()) {
+        if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
+            static const int TILE_SIZE = 64;
+            for (int y = 0; y < res_y + TILE_SIZE - 1; y += TILE_SIZE) {
+                for (int x = 0; x < res_x + TILE_SIZE - 1; x += TILE_SIZE) {
+                    auto rect = Ray::rect_t{x, y, std::min(TILE_SIZE, res_x - x), std::min(TILE_SIZE, res_y - y)};
+                    if (rect.w > 0 && rect.h > 0) {
+                        ray_reg_ctx_.emplace_back(rect);
+                    }
+                }
+            }
+        } else {
+            ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, res_x, res_y});
+        }
+    }
+
+    if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
+        auto render_task = [this](const int i) { ray_renderer_->RenderScene(ray_scene_.get(), ray_reg_ctx_[i]); };
+        std::vector<std::future<void>> ev(ray_reg_ctx_.size());
+        for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
+            ev[i] = threads_->Enqueue(render_task, i);
+        }
+        for (const std::future<void> &e : ev) {
+            e.wait();
+        }
+    } else {
+        ray_renderer_->RenderScene(ray_scene_.get(), ray_reg_ctx_[0]);
+    }
+
+    const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
+    renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
+                                 Ren::eTexFormat::RawRGBA32F, 0.0f);
 }

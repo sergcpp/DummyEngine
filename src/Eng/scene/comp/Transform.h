@@ -15,7 +15,6 @@ struct Transform {
     Ren::Vec3f bbox_max;
     Ren::Vec3f bbox_min_ws, bbox_max_ws;
     Ren::Vec3f euler_angles_rad, scale;
-    uint32_t pt_mi;
 
     void UpdateBBox();
     void UpdateInvMatrix();

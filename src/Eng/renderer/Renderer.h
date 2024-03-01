@@ -66,17 +66,7 @@ class Renderer {
 
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
-    void BlitPixels(const void *data, int w, int h, Ren::eTexFormat format);
-    void BlitPixelsTonemap(const void *data, int w, int h, Ren::eTexFormat format);
-    // void BlitBuffer(float px, float py, float sx, float sy, const FrameBuf &buf, int first_att, int att_count,
-    //                 float multiplier = 1.0f);
-    void BlitTexture(float px, float py, float sx, float sy, const Ren::Tex2DRef &tex, float multiplier = 1.0f,
-                     bool is_ms = false);
-
-    // void BlitToTempProbeFace(const FrameBuf &src_buf, const Ren::ProbeStorage &dst_store, int face);
-    void BlitPrefilterFromTemp(const Ren::ProbeStorage &dst_store, int probe_index);
-    bool BlitProjectSH(const Ren::ProbeStorage &store, int probe_index, int iteration, LightProbe &probe);
-
+    void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float exposure);
     render_settings_t settings = {};
 
   private:
@@ -134,7 +124,6 @@ class Renderer {
     BackendInfo backend_info_;
     uint64_t backend_cpu_start_ = 0, backend_cpu_end_ = 0;
     int backend_gpu_start_ = -1, backend_gpu_end_ = -1;
-    float reduced_average_ = 0.0f;
     Ren::Vec4f prev_wind_scroll_;
 
     DynArray<Ren::Frustum> temp_sub_frustums_;
@@ -153,17 +142,6 @@ class Renderer {
 
     Ren::SubAllocation temp_buf1_vtx_, temp_buf2_vtx_, temp_buf_ndx_, skinned_buf1_vtx_, skinned_buf2_vtx_;
 
-#if defined(USE_GL_RENDER)
-    Ren::Tex2DRef temp_tex_;
-
-    uint32_t temp_framebuf_ = 0;
-
-    // uint32_t unif_shared_data_block_[FrameSyncWindow];
-    Ren::VertexInput temp_vtx_input_;
-    //::Tex1DRef lights_tbo_[FrameSyncWindow], decals_tbo_[FrameSyncWindow];
-    uint32_t /*reduce_pbo_[FrameSyncWindow], */ probe_sample_pbo_;
-#endif
-
     DynArray<ShadReg> allocated_shadow_regions_;
 
 #if defined(__ANDROID__)
@@ -177,6 +155,7 @@ class Renderer {
 
     RpBuilder rp_builder_;
     std::optional<render_settings_t> cached_settings_;
+    int cached_rp_index_ = 0;
     Ren::WeakTex2DRef env_map_;
     Ren::WeakTex2DRef lm_direct_, lm_indir_, lm_indir_sh_[4];
     const DrawList *p_list_;
@@ -301,8 +280,7 @@ class Renderer {
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 
     void InitPipelines();
-    void InitRendererInternal();
-    void DestroyRendererInternal();
+    // void InitRendererInternal();
 
     // Parallel Jobs
     static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,

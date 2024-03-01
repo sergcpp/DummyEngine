@@ -108,7 +108,8 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
 
     try {
         Viewer::PrepareAssets("pc");
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nullptr);
+        log_ = std::make_unique<LogStdout>();
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, log_.get(), nullptr);
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());

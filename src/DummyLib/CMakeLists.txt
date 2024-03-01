@@ -46,7 +46,9 @@ set(STATES_SOURCES  States/GSBaseState.h
 set(UTILS_SOURCES   Utils/DialogController.h
                     Utils/DialogController.cpp
                     Utils/Dictionary.h
-                    Utils/Dictionary.cpp)
+                    Utils/Dictionary.cpp
+                    Utils/Log.h
+                    Utils/Log.cpp)
 
 
 if(${RENDERER} STREQUAL "GL")

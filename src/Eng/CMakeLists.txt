@@ -142,7 +142,6 @@ set(SCENE_SOURCES   scene/__cam_rig.inl
                     scene/SceneManager_ASS_Shader.cpp
                     scene/SceneManager_ASS_Tex.cpp
                     scene/SceneManager_BVH.cpp
-                    scene/SceneManager_PT.cpp
                     scene/SceneManager_Tex.cpp
                     scene/TexUpdateFileBuf.h)
 
@@ -193,8 +192,7 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
 
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        renderer/PrimDrawGL.cpp
-                        renderer/RendererGL.cpp)
+                        renderer/PrimDrawGL.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         scene/SceneManagerGL.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} renderer/graph/GraphBuilderGL.cpp)
@@ -225,8 +223,7 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpUpdateAccBuffersGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        renderer/PrimDrawVK.cpp
-                        renderer/RendererVK.cpp)
+                        renderer/PrimDrawVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
                         scene/SceneManagerVK.cpp)
     set(GRAPH_SOURCES ${GRAPH_SOURCES} renderer/graph/GraphBuilderVK.cpp)

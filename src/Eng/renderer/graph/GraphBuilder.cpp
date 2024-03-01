@@ -52,7 +52,7 @@ Eng::RpResRef Eng::RpBuilder::ReadBuffer(const RpResRef handle, const Ren::eResS
 }
 
 Eng::RpResRef Eng::RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Ren::eResState desired_state,
-                                         const Ren::eStageBits stages, RpSubpass &pass) {
+                                         const Ren::eStageBits stages, RpSubpass &pass, const int slot_index) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -82,12 +82,30 @@ Eng::RpResRef Eng::RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     ++buf.read_count;
     ++pass.ref_count_;
 
+    if (slot_index == -1) {
 #ifndef NDEBUG
-    for (size_t i = 0; i < pass.input_.size(); i++) {
-        assert(pass.input_[i].type != eRpResType::Buffer || pass.input_[i].index != ret.index);
-    }
+        for (size_t i = 0; i < pass.input_.size(); i++) {
+            assert(pass.input_[i].type != eRpResType::Buffer || pass.input_[i].index != ret.index);
+        }
 #endif
-    pass.input_.push_back(ret);
+        pass.input_.push_back(ret);
+    } else {
+        // Replace existing input
+        RpAllocBuf &prev_buf = buffers_[pass.input_[slot_index].index];
+        --prev_buf.write_count;
+        --pass.ref_count_;
+        for (size_t i = 0; i < prev_buf.written_in_passes.size();) {
+            if (prev_buf.written_in_passes[i].pass_index == pass.index_) {
+                prev_buf.written_in_passes.erase(prev_buf.written_in_passes.begin() + i);
+            } else {
+                ++i;
+            }
+        }
+        if (pass.input_[slot_index].index == ret.index) {
+            --ret.write_count;
+        }
+        pass.input_[slot_index] = ret;
+    }
 
     return ret;
 }

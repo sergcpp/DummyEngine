@@ -34,13 +34,19 @@ class Image9Patch;
 class Renderer;
 } // namespace Gui
 
+namespace Ray {
+class RegionContext;
+class RendererBase;
+class SceneBase;
+}
+
 namespace Snd {
 class Context;
 }
 
 class GSBaseState : public Eng::ViewerState {
   protected:
-    Eng::ViewerBase *viewer_;
+    Viewer *viewer_;
     Eng::Cmdline *cmdline_ = nullptr;
     Ren::Context *ren_ctx_ = nullptr;
     Snd::Context *snd_ctx_ = nullptr;
@@ -50,6 +56,10 @@ class GSBaseState : public Eng::ViewerState {
     Eng::PhysicsManager *physics_manager_ = nullptr;
     Eng::Random *random_ = nullptr;
     Eng::ShaderLoader *shader_loader_ = nullptr;
+    std::unique_ptr<Ray::RendererBase> ray_renderer_;
+    std::unique_ptr<Ray::SceneBase> ray_scene_;
+    std::vector<Ray::RegionContext> ray_reg_ctx_;
+    Sys::ThreadPool *threads_ = nullptr;
 
     Gui::Renderer *ui_renderer_ = nullptr;
     Gui::BaseElement *ui_root_ = nullptr;
@@ -106,6 +116,12 @@ class GSBaseState : public Eng::ViewerState {
     void UpdateFrame(int list_index);
 
     virtual void DrawUI(Gui::Renderer *r, Gui::BaseElement *root);
+
+    void InitRenderer_PT();
+    void InitScene_PT();
+    void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov);
+    void Clear_PT();
+    void Draw_PT();
 
   public:
     explicit GSBaseState(Viewer *viewer);

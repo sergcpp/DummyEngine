@@ -13,11 +13,13 @@
 
 namespace EngInternal {
 std::mutex g_log_mtx;
-void TimedOutput(FILE *dst, const char *fmt, va_list args) {
+} // namespace EngInternal
+
+void Eng::LogStdout::TimedOutput(FILE *dst, const char *fmt, va_list args) {
     auto tp = std::chrono::system_clock::now();
     time_t now = std::chrono::system_clock::to_time_t(tp); // time(nullptr);
 
-    std::lock_guard<std::mutex> _(g_log_mtx);
+    std::lock_guard<std::mutex> _(EngInternal::g_log_mtx);
 
     char buff[32];
     strftime(buff, sizeof(buff), "%Y-%m-%d %H:%M:%S", localtime(&now));
@@ -28,26 +30,25 @@ void TimedOutput(FILE *dst, const char *fmt, va_list args) {
     vfprintf(dst, fmt, args);
     putc('\n', dst);
 }
-} // namespace EngInternal
 
 void Eng::LogStdout::Info(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
-    EngInternal::TimedOutput(stdout, fmt, vl);
+    TimedOutput(stdout, fmt, vl);
     va_end(vl);
 }
 
 void Eng::LogStdout::Warning(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
-    EngInternal::TimedOutput(stdout, fmt, vl);
+    TimedOutput(stdout, fmt, vl);
     va_end(vl);
 }
 
 void Eng::LogStdout::Error(const char *fmt, ...) {
     va_list vl;
     va_start(vl, fmt);
-    EngInternal::TimedOutput(stderr, fmt, vl);
+    TimedOutput(stderr, fmt, vl);
     va_end(vl);
 }
 

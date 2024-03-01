@@ -47,7 +47,6 @@ extern const bool VerboseLogging;
 #endif
 
 GSVideoTest::GSVideoTest(Viewer *viewer) : GSBaseState(viewer) {
-    threads_ = viewer->threads();
     //aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
     //decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }

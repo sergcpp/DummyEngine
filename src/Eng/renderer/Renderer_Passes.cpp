@@ -1386,9 +1386,9 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                     {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 // exposure from previous frame
-                float exposure =
-                    reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
-                exposure = std::min(exposure, max_exposure);
+                //float exposure =
+                //    reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
+                //exposure = std::min(exposure, max_exposure);
 
                 const Ren::Binding bindings[] = {
                     {Ren::eBindTarget::Tex2D, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
@@ -1399,7 +1399,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 TempAA::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
                 uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
-                uniform_params.exposure = exposure;
+                uniform_params.exposure = powf(2.0f, max_exposure);
                 if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
                     uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
                 } else {

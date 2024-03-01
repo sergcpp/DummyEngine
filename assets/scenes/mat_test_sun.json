@@ -205,6 +205,6 @@
         "fwd_speed" : 0.005,
         "fov" : 18.1806,
         "autoexposure" : false,
-        "max_exposure" : 1
+        "max_exposure" : 0
     }
 }

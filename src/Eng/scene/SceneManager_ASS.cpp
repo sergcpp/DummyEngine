@@ -138,25 +138,6 @@ std::vector<float> FlushSeams(const float *pixels, int width, int height, float 
     return temp_pixels1;
 }
 
-std::unique_ptr<uint8_t[]> GetTextureData(const Ren::Tex2DRef &tex_ref, const bool flip_y) {
-    const Ren::Tex2DParams &params = tex_ref->params;
-
-    std::unique_ptr<uint8_t[]> tex_data(new uint8_t[4 * params.w * params.h]);
-#if defined(__ANDROID__)
-    Sys::AssetFile in_file((std::string("assets/textures/") + tex_ref->name().c_str()).c_str());
-    SceneManagerInternal::LoadTGA(in_file, params.w, params.h, &tex_data[0]);
-#else
-    tex_ref->DownloadTextureData(Ren::eTexFormat::RawRGBA8888, (void *)&tex_data[0]);
-#endif
-
-    for (int y = 0; y < params.h / 2 && flip_y; y++) {
-        std::swap_ranges(&tex_data[4 * y * params.w], &tex_data[4 * (y + 1) * params.w],
-                         &tex_data[4 * (params.h - y - 1) * params.w]);
-    }
-
-    return tex_data;
-}
-
 void ReadAllFiles_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
                     const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback) {
     if (!std::filesystem::exists(in_folder)) {

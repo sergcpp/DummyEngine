@@ -46,7 +46,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-windows-ninja
         with:
-          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DENABLE_SIMD_IMPL=OFF -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-vk"
       - name: Prepare assets
@@ -100,7 +100,7 @@ jobs:
       - name: Compile the code
         uses: ./.github/actions/build-linux
         with:
-          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DENABLE_SIMD_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-vk"
       - name: Prepare assets

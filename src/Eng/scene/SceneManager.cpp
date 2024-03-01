@@ -860,31 +860,6 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
         assert(false && "Not supported anymore, update scene file!");
     }
 
-    if (js_comp_obj.Has("pt_mesh_file")) {
-        const JsStringP &js_pt_mesh_file_name = js_comp_obj.at("pt_mesh_file").as_str();
-
-        Ren::eMeshLoadStatus status;
-        dr->pt_mesh = LoadMesh(js_pt_mesh_file_name.val.c_str(), nullptr, nullptr, &status);
-
-        if (status != Ren::eMeshLoadStatus::Found) {
-            const std::string mesh_path = std::string(paths_.models_path) + js_pt_mesh_file_name.val.c_str();
-
-            Sys::AssetFile in_file(mesh_path.c_str());
-            size_t in_file_size = in_file.size();
-
-            std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
-            in_file.Read((char *)&in_file_data[0], in_file_size);
-
-            Sys::MemBuf mem = {&in_file_data[0], in_file_size};
-            std::istream in_file_stream(&mem);
-
-            using namespace std::placeholders;
-            dr->pt_mesh = LoadMesh(js_pt_mesh_file_name.val.c_str(), &in_file_stream,
-                                   std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
-            assert(status == Ren::eMeshLoadStatus::CreatedFromData);
-        }
-    }
-
     if (js_comp_obj.Has("material_override")) {
         const JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
 

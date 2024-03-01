@@ -6,7 +6,6 @@
 #include <fstream>
 #include <sstream>
 
-#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
@@ -36,9 +35,11 @@ extern bool ignore_optick_errors;
 #include "Gui/FontStorage.h"
 #include "States/GSDrawTest.h"
 #include "Utils/Dictionary.h"
+#include "Utils/Log.h"
 
-Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const char *device_name)
-    : ViewerBase(w, h, validation_level, device_name) {
+Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, ILog *log,
+               const char *device_name)
+    : ViewerBase(w, h, validation_level, log, device_name), log_(log) {
     JsObject main_config;
 
     {
@@ -86,11 +87,6 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
     debug_ui_ = std::make_unique<DebugInfoUI>(Ren::Vec2f{-1.0f, -1.0f}, Ren::Vec2f{2.0f, 2.0f}, ui_root_.get(),
                                               font_storage_->FindFont("main_font"));
 
-    // Ray::settings_t s;
-    // s.w = w;
-    // s.h = h;
-    // ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s));
-
 #if defined(__ANDROID__)
     auto input_manager = GetComponent<InputManager>(INPUT_MANAGER_KEY);
     const Ren::Context *p_ctx = ren_ctx.get();
@@ -110,6 +106,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
 }
 
 Viewer::~Viewer() { state_manager_ = {}; }
+
+Ray::ILog *Viewer::ray_log() { return log_; }
 
 void Viewer::Frame() {
     Ren::ApiContext *api_ctx = ren_ctx()->api_ctx();
