@@ -12,10 +12,10 @@ runs:
           cd Eng
           git remote set-url origin $REPO_URL
           git fetch --all
+          git fetch --tags
           git checkout -f ${{ env.GITHUB_REF_NAME }}
           git reset --hard origin/${{ env.GITHUB_REF_NAME }}
           git clean -fdx
-          git fetch --tags
         else
           echo "Clone new repository"
           git clone $REPO_URL -b ${{ env.GITHUB_REF_NAME }}

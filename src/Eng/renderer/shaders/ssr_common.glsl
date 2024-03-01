@@ -31,36 +31,62 @@ void UnpackRayCoords(uint packed_ray, out uvec2 ray_coord, out bool copy_horizon
 }
 
 // http://jcgt.org/published/0007/04/01/paper.pdf
-// Input Ve: view direction
-// Input alpha_x, alpha_y: roughness parameters
-// Input U1, U2: uniform random numbers
-// Output Ne: normal sampled with PDF D_Ve(Ne) = G1(Ve) * max(0, dot(Ve, Ne)) * D(Ne) / Ve.z
-vec3 SampleGGXVNDF(vec3 Ve, float alpha_x, float alpha_y, float U1, float U2) {
-    // Section 3.2: transforming the view direction to the hemisphere configuration
-    vec3 Vh = normalize(vec3(alpha_x * Ve.x, alpha_y * Ve.y, Ve.z));
+vec3 SampleGGXVNDF_CrossSect(const vec3 Vh, const float U1, const float U2) {
     // Section 4.1: orthonormal basis (with special case if cross product is zero)
-    float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
-    vec3 T1 = lensq > 0 ? vec3(-Vh.y, Vh.x, 0) * inversesqrt(lensq) : vec3(1, 0, 0);
-    vec3 T2 = cross(Vh, T1);
+    const float lensq = Vh.x * Vh.x + Vh.y * Vh.y;
+    const vec3 T1 = lensq > 0.0 ? vec3(-Vh.y, Vh.x, 0) * inversesqrt(lensq) : vec3(1.0, 0.0, 0.0);
+    const vec3 T2 = cross(Vh, T1);
     // Section 4.2: parameterization of the projected area
-    float r = sqrt(U1);
-    float phi = 2.0 * M_PI * U2;
-    float t1 = r * cos(phi);
+    const float r = sqrt(U1);
+    const float phi = 2.0 * M_PI * U2;
+    const float t1 = r * cos(phi);
     float t2 = r * sin(phi);
-    float s = 0.5 * (1.0 + Vh.z);
+    const float s = 0.5 * (1.0 + Vh.z);
     t2 = (1.0 - s) * sqrt(1.0 - t1 * t1) + s * t2;
     // Section 4.3: reprojection onto hemisphere
-    vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * Vh;
-    // Section 3.4: transforming the normal back to the ellipsoid configuration
-    vec3 Ne = normalize(vec3(alpha_x * Nh.x, alpha_y * Nh.y, max(0.0, Nh.z)));
+    const vec3 Nh = t1 * T1 + t2 * T2 + sqrt(max(0.0, 1.0 - t1 * t1 - t2 * t2)) * Vh;
+    return Nh;
+}
+
+// https://arxiv.org/pdf/2306.05044.pdf
+vec3 SampleVNDF_Hemisphere_SphCap(const vec3 Vh, const float U1, const float U2) {
+    // sample a spherical cap in (-Vh.z, 1]
+    const float phi = 2.0f * M_PI * U1;
+    const float z = fma(1.0 - U2, 1.0 + Vh.z, -Vh.z);
+    const float sin_theta = sqrt(saturate(1.0 - z * z));
+    const float x = sin_theta * cos(phi);
+    const float y = sin_theta * sin(phi);
+    const vec3 c = vec3(x, y, z);
+    // normalization will be done later
+    return c + Vh;
+}
+
+// https://gpuopen.com/download/publications/Bounded_VNDF_Sampling_for_Smith-GGX_Reflections.pdf
+vec3 SampleVNDF_Hemisphere_SphCap_Bounded(const vec3 Ve, const vec3 Vh, const vec2 alpha, const float U1, const float U2) {
+    // sample a spherical cap in (-Vh.z, 1]
+    const float phi = 2.0 * M_PI * U1;
+    const float a = saturate(min(alpha.x, alpha.y));
+    const float s = 1.0 + length(Ve.xy);
+    const float a2 = a * a, s2 = s * s;
+    const float k = (1.0 - a2) * s2 / (s2 + a2 * Ve.z * Ve.z);
+    const float b = (Ve.z > 0.0) ? k * Vh.z : Vh.z;
+    const float z = fma(1.0 - U2, 1.0f + b, -b);
+    const float sin_theta = sqrt(saturate(1.0 - z * z));
+    const float x = sin_theta * cos(phi);
+    const float y = sin_theta * sin(phi);
+    const vec3 c = vec3(x, y, z);
+    // normalization will be done later
+    return c + Vh;
+}
+
+vec3 Sample_GGX_VNDF_Ellipsoid(const vec3 Ve, const float alpha_x, const float alpha_y, const float U1, const float U2) {
+    const vec3 Vh = normalize(vec3(alpha_x * Ve.x, alpha_y * Ve.y, Ve.z));
+    const vec3 Nh = SampleVNDF_Hemisphere_SphCap_Bounded(Ve, Vh, vec2(alpha_x, alpha_y), U1, U2);
+    const vec3 Ne = normalize(vec3(alpha_x * Nh[0], alpha_y * Nh[1], max(0.0, Nh[2])));
     return Ne;
 }
 
-vec3 Sample_GGX_VNDF_Ellipsoid(vec3 Ve, float alpha_x, float alpha_y, float U1, float U2) {
-    return SampleGGXVNDF(Ve, alpha_x, alpha_y, U1, U2);
-}
-
-vec3 Sample_GGX_VNDF_Hemisphere(vec3 Ve, float alpha, float U1, float U2) {
+vec3 Sample_GGX_VNDF_Hemisphere(const vec3 Ve, const float alpha, const float U1, const float U2) {
     return Sample_GGX_VNDF_Ellipsoid(Ve, alpha, alpha, U1, U2);
 }
 
