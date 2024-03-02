@@ -19,6 +19,7 @@
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/Random.h>
+#include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -32,14 +33,6 @@
 
 namespace Ray {
 extern const int LUT_DIMS;
-extern const uint32_t __filmic_very_low_contrast[];
-extern const uint32_t __filmic_low_contrast[];
-extern const uint32_t __filmic_med_low_contrast[];
-extern const uint32_t __filmic_med_contrast[];
-extern const uint32_t __filmic_med_high_contrast[];
-extern const uint32_t __filmic_high_contrast[];
-extern const uint32_t __filmic_very_high_contrast[];
-
 extern const uint32_t *transform_luts[];
 } // namespace Ray
 
@@ -234,8 +227,24 @@ void GSBaseState::Enter() {
         auto shrd_this = weak_this.lock();
         if (shrd_this) {
             if (argc > 1) {
-                if (argv[1].val > 1.5) {
+                if (argv[1].val > 2.5) {
                     shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                    shrd_this->renderer_->SetTonemapLUT(
+                        Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                        Ren::Span<const uint8_t>(
+                            reinterpret_cast<const uint8_t *>(
+                                Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
+                            reinterpret_cast<const uint8_t *>(
+                                Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]) +
+                                4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+                } else if (argv[1].val > 1.5) {
+                    shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                    shrd_this->renderer_->SetTonemapLUT(
+                        Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                        Ren::Span<const uint8_t>(
+                            reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
+                            reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
+                                4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
                 } else if (argv[1].val > 0.5) {
                     shrd_this->renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
                 } else {
@@ -654,11 +663,6 @@ bool GSBaseState::LoadScene(const char *name) {
 void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {}
 
 void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
-    renderer_->SetTonemapLUT(Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                             Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(Ray::transform_luts[4]),
-                                                      reinterpret_cast<const uint8_t *>(Ray::transform_luts[4]) +
-                                                          4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
-
     // trigger probes update
     probes_dirty_ = false;
 }

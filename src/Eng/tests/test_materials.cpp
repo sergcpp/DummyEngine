@@ -27,24 +27,18 @@ extern const int TaaSampleCountStatic;
 
 namespace {
 const int LUT_DIMS = 48;
-#include "__filmic_med_contrast.inl"
+#include "__agx.inl"
 
 std::mutex g_stbi_mutex;
 } // namespace
 
 enum eImgTest {
     NoShadow,
-    NoShadow_Filmic,
     NoGI,
-    NoGI_Filmic,
     NoGI_RTShadow,
-    NoGI_RTShadow_Filmic,
     NoDiffuseGI,
-    NoDiffuseGI_Filmic,
     NoDiffuseGI_RTShadow,
-    NoDiffuseGI_RTShadow_Filmic,
     Full,
-    Full_Filmic
 };
 
 void run_image_test(const char *test_name, const char *device_name, int validation_level, const double min_psnr,
@@ -54,15 +48,15 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     const auto start_time = high_resolution_clock::now();
 
     const char *test_postfix = "";
-    if (img_test == eImgTest::NoShadow || img_test == eImgTest::NoShadow_Filmic) {
+    if (img_test == eImgTest::NoShadow) {
         test_postfix = "_noshadow";
-    } else if (img_test == eImgTest::NoGI || img_test == eImgTest::NoGI_Filmic) {
+    } else if (img_test == eImgTest::NoGI) {
         test_postfix = "_nogi";
-    } else if (img_test == eImgTest::NoGI_RTShadow || img_test == eImgTest::NoGI_RTShadow_Filmic) {
+    } else if (img_test == eImgTest::NoGI_RTShadow) {
         test_postfix = "_nogirt";
-    } else if (img_test == eImgTest::NoDiffuseGI || img_test == eImgTest::NoDiffuseGI_Filmic) {
+    } else if (img_test == eImgTest::NoDiffuseGI) {
         test_postfix = "_nodiffusegi";
-    } else if (img_test == eImgTest::NoDiffuseGI_RTShadow || img_test == eImgTest::NoDiffuseGI_RTShadow_Filmic) {
+    } else if (img_test == eImgTest::NoDiffuseGI_RTShadow) {
         test_postfix = "_nodiffusegirt";
     }
     const std::string ref_name =
@@ -93,32 +87,22 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     renderer.settings.enable_bloom = false;
     renderer.settings.taa_mode = Eng::eTAAMode::Static;
 
-    if (img_test == eImgTest::NoShadow || img_test == eImgTest::NoShadow_Filmic) {
+    if (img_test == eImgTest::NoShadow) {
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Off;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
-    } else if (img_test == eImgTest::NoGI || img_test == eImgTest::NoGI_Filmic) {
+    } else if (img_test == eImgTest::NoGI) {
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
-    } else if (img_test == eImgTest::NoGI_RTShadow || img_test == eImgTest::NoGI_RTShadow_Filmic) {
+    } else if (img_test == eImgTest::NoGI_RTShadow) {
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
-    } else if (img_test == eImgTest::NoDiffuseGI || img_test == eImgTest::NoDiffuseGI_Filmic) {
+    } else if (img_test == eImgTest::NoDiffuseGI) {
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
-    } else if (img_test == eImgTest::NoDiffuseGI_RTShadow || img_test == eImgTest::NoDiffuseGI_RTShadow_Filmic) {
+    } else if (img_test == eImgTest::NoDiffuseGI_RTShadow) {
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
-    }
-
-    if (img_test == eImgTest::NoShadow_Filmic || img_test == eImgTest::NoGI_Filmic ||
-        img_test == eImgTest::NoGI_RTShadow_Filmic || img_test == eImgTest::NoDiffuseGI_Filmic ||
-        img_test == eImgTest::NoDiffuseGI_RTShadow_Filmic || img_test == eImgTest::Full_Filmic) {
-        renderer.settings.tonemap_mode = Eng::eTonemapMode::LUT;
-        renderer.SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
-                               Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__filmic_med_contrast),
-                                                        reinterpret_cast<const uint8_t *>(__filmic_med_contrast) +
-                                                            4 * LUT_DIMS * LUT_DIMS * LUT_DIMS));
     }
 
     Eng::path_config_t paths;
@@ -174,9 +158,20 @@ void run_image_test(const char *test_name, const char *device_name, int validati
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure = float(js_max_exposure.val);
         }
+
+        if (js_cam.Has("view_transform")) {
+            const JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
+            if (js_view_transform.val == "agx") {
+                renderer.settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer.SetTonemapLUT(LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                                       Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(__agx),
+                                                                reinterpret_cast<const uint8_t *>(__agx) +
+                                                                    4 * LUT_DIMS * LUT_DIMS * LUT_DIMS));
+            }
+        }
     }
 
-    if (img_test == eImgTest::NoDiffuseGI || img_test == eImgTest::NoDiffuseGI_Filmic) {
+    if (img_test == eImgTest::NoDiffuseGI) {
         if (js_scene.Has("environment")) {
             JsObjectP &js_env = js_scene.at("environment").as_obj();
             if (js_env.Has("ambient_hack")) {
@@ -454,22 +449,22 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 26.87, 7280, NoDiffuseGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2", device_name, vl, 21.06, 19080, Full));
         futures.push_back(
-            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 30.18, 4280, NoShadow_Filmic));
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 30.15, 5185, NoShadow));
         futures.push_back(
-            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 16.50, 22445, NoGI_Filmic));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 28.45, 4990,
-                                          NoGI_RTShadow_Filmic));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 14.79, 45090,
-                                          NoDiffuseGI_Filmic));
-        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 19.58, 25190,
-                                          NoDiffuseGI_RTShadow_Filmic));
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 16.93, 22130, NoGI));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 29.23, 4890, NoGI_RTShadow));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 15.0, 42660, NoDiffuseGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 19.45, 23135,
+                                          NoDiffuseGI_RTShadow));
 
         for (auto &f : futures) {
             f.wait();
         }
     }
     puts(" ---------------");
-    { // diffuse material
+    if (g_tests_success) { // diffuse material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "diff_mat0", device_name, vl, 38.51, 10, NoShadow));
@@ -508,7 +503,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         }
     }
     puts(" ---------------");
-    { // sheen material
+    if (g_tests_success) { // sheen material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "sheen_mat0", device_name, vl, 38.95, 10, NoShadow));
@@ -541,7 +536,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         }
     }
     puts(" ---------------");
-    { // specular material
+    if (g_tests_success) { // specular material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "spec_mat0", device_name, vl, 33.36, 455, NoShadow));
@@ -590,7 +585,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         }
     }
     puts(" ---------------");
-    { // metal material
+    if (g_tests_success) { // metal material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "metal_mat0", device_name, vl, 31.36, 1570, NoShadow));
@@ -639,7 +634,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         }
     }
     puts(" ---------------");
-    { // plastic material
+    if (g_tests_success) { // plastic material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "plastic_mat0", device_name, vl, 37.54, 475, NoShadow));
@@ -688,7 +683,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         }
     }
     puts(" ---------------");
-    { // tint material
+    if (g_tests_success) { // tint material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "tint_mat0", device_name, vl, 40.44, 385, NoShadow));
@@ -737,7 +732,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         }
     }
     puts(" ---------------");
-    { // clearcoat material
+    if (g_tests_success) { // clearcoat material
         std::vector<std::future<void>> futures;
 
         futures.push_back(threads.Enqueue(run_image_test, "coat_mat0", device_name, vl, 37.53, 450, NoShadow));
