@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = vndf_update
-	commit = 89ab000cee69130d1febd2d12ec7d1357a45856e
+	branch = agx_tonemap
+	commit = cfe018533af48ac9d15becd45fc538fe095f5342
 	method = merge
 	cmdver = 0.4.6
-	parent = 10613fb85eba126bc0e503d847456bec7615bef4
+	parent = 5e53424875a8ff64f97330e15878a107de92898c
