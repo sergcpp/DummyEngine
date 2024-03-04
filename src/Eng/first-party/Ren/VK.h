@@ -1,12 +1,17 @@
 #pragma once
 
 #define VK_NO_PROTOTYPES
-#define VK_ENABLE_BETA_EXTENSIONS
+// #define VK_ENABLE_BETA_EXTENSIONS
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <vulkan/vulkan.h>
+
 #undef far
 #undef near
-#undef max
-#undef min
 #undef Convex
 #undef False
 #undef None

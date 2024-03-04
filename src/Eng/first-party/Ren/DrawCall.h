@@ -2,21 +2,12 @@
 
 #include <cstdint>
 
+#include "Fwd.h"
 #include "MVec.h"
 #include "Span.h"
 
-#if defined(USE_VK_RENDER)
-struct VkDescriptorSet_T;
-typedef VkDescriptorSet_T *VkDescriptorSet;
-struct VkDescriptorSetLayout_T;
-typedef VkDescriptorSetLayout_T *VkDescriptorSetLayout;
-#endif
-
 namespace Ren {
-#if defined(USE_VK_RENDER)
-class AccStructureVK;
 struct ApiContext;
-#endif
 class Buffer;
 class DescrMultiPoolAlloc;
 class ILog;

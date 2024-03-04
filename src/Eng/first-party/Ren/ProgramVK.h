@@ -8,6 +8,7 @@
 
 #include "Shader.h"
 #include "SmallVector.h"
+#include "Span.h"
 #include "Storage.h"
 #include "String.h"
 
@@ -54,13 +55,15 @@ class Program : public RefCounter {
 
     uint32_t flags() const { return flags_; }
     bool ready() const {
-        return (shaders_[int(eShaderType::Vert)] && shaders_[int(eShaderType::Frag)]) ||
-               shaders_[int(eShaderType::Comp)] ||
+        return (shaders_[int(eShaderType::Vertex)] && shaders_[int(eShaderType::Fragment)]) ||
+               shaders_[int(eShaderType::Compute)] ||
                (shaders_[int(eShaderType::RayGen)] &&
                 (shaders_[int(eShaderType::ClosestHit)] || shaders_[int(eShaderType::AnyHit)]) &&
                 shaders_[int(eShaderType::Miss)]);
     }
-    bool has_tessellation() const { return shaders_[int(eShaderType::Tesc)] && shaders_[int(eShaderType::Tese)]; }
+    bool has_tessellation() const {
+        return shaders_[int(eShaderType::TesselationControl)] && shaders_[int(eShaderType::TesselationEvaluation)];
+    }
     const String &name() const { return name_; }
 
     const Attribute &attribute(const int i) const { return attributes_[i]; }
@@ -87,11 +90,8 @@ class Program : public RefCounter {
 
     const ShaderRef &shader(eShaderType type) const { return shaders_[int(type)]; }
 
-    uint32_t descr_set_layouts_count() const { return uint32_t(descr_set_layouts_.size()); }
-    const VkDescriptorSetLayout *descr_set_layouts() const { return descr_set_layouts_.cdata(); }
-
-    uint32_t pc_range_count() const { return uint32_t(pc_ranges_.size()); }
-    const VkPushConstantRange *pc_ranges() const { return pc_ranges_.data(); }
+    Span<const VkDescriptorSetLayout> descr_set_layouts() const { return descr_set_layouts_; }
+    Span<const VkPushConstantRange> pc_ranges() const { return pc_ranges_; }
 
     void Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref, eProgLoadStatus *status,
               ILog *log);

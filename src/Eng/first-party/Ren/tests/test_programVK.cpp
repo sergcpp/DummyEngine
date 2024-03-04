@@ -159,7 +159,7 @@ void main(void) {
 
         Ren::eShaderLoadStatus sh_status;
         Ren::ShaderRef cs_ref =
-            test.LoadShaderSPIRV("sample_cs", cs_spirv, sizeof(cs_spirv), Ren::eShaderType::Comp, &sh_status);
+            test.LoadShaderSPIRV("sample_cs", cs_spirv, sizeof(cs_spirv), Ren::eShaderType::Compute, &sh_status);
         require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
         Ren::eProgLoadStatus status;

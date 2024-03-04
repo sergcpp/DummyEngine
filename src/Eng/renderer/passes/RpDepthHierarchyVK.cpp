@@ -3,6 +3,7 @@
 #include <Ren/Context.h>
 #include <Ren/DescriptorPool.h>
 #include <Ren/Program.h>
+#include <Ren/VKCtx.h>
 
 #include "../../utils/ShaderLoader.h"
 #include "../Renderer_Structs.h"

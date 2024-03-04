@@ -5,6 +5,7 @@
 #include "Log.h"
 #include "Pipeline.h"
 #include "ProbeStorage.h"
+#include "VKCtx.h"
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
                                           Span<const Binding> bindings, DescrMultiPoolAlloc *descr_alloc, ILog *log) {
@@ -28,7 +29,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             } else {
                 info.imageView = b.handle.tex->handle().views[0];
             }
-            info.imageLayout = VKImageLayoutForState(b.handle.tex->resource_state);
+            info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex->resource_state));
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -44,7 +45,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             info.sampler = b.handle.tex3d->handle().sampler;
             info.imageView = b.handle.tex3d->handle().views[0];
-            info.imageLayout = VKImageLayoutForState(b.handle.tex3d->resource_state);
+            info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex3d->resource_state));
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -102,7 +103,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             info.sampler = b.handle.cube_arr->handle().sampler;
             info.imageView = b.handle.cube_arr->handle().views[0];
-            info.imageLayout = VKImageLayoutForState(b.handle.cube_arr->resource_state);
+            info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.cube_arr->resource_state));
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};

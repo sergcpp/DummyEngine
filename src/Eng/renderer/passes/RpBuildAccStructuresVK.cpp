@@ -1,6 +1,7 @@
 #include "RpBuildAccStructures.h"
 
 #include <Ren/Context.h>
+#include <Ren/VKCtx.h>
 
 void Eng::RpBuildAccStructuresExecutor::Execute_HWRT(RpBuilder &builder) {
     RpAllocBuf &rt_obj_instances_buf = builder.GetReadBuffer(rt_obj_instances_buf_);

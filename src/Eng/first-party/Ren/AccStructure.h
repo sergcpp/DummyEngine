@@ -2,11 +2,12 @@
 
 #include <cstdint>
 
-#if defined(USE_VK_RENDER)
-#include "VKCtx.h"
-#endif
+#include "Fwd.h"
+#include "Resource.h"
 
 namespace Ren {
+struct ApiContext;
+
 class IAccStructure {
   public:
     virtual ~IAccStructure() {}
@@ -17,7 +18,7 @@ class IAccStructure {
 #if defined(USE_VK_RENDER)
 class AccStructureVK : public IAccStructure {
     ApiContext *api_ctx_ = nullptr;
-    VkAccelerationStructureKHR handle_ = VK_NULL_HANDLE;
+    VkAccelerationStructureKHR handle_ = {};
 
     void Destroy();
 

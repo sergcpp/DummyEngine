@@ -14,15 +14,15 @@ const char *SHADERS_PATH = "./assets_pc/shaders/";
 Ren::eShaderType ShaderTypeFromName(const char *name, const int len) {
     Ren::eShaderType type;
     if (std::strncmp(name + len - 10, ".vert.glsl", 10) == 0) {
-        type = Ren::eShaderType::Vert;
+        type = Ren::eShaderType::Vertex;
     } else if (std::strncmp(name + len - 10, ".frag.glsl", 10) == 0) {
-        type = Ren::eShaderType::Frag;
+        type = Ren::eShaderType::Fragment;
     } else if (std::strncmp(name + len - 10, ".tesc.glsl", 10) == 0) {
-        type = Ren::eShaderType::Tesc;
+        type = Ren::eShaderType::TesselationControl;
     } else if (std::strncmp(name + len - 10, ".tese.glsl", 10) == 0) {
-        type = Ren::eShaderType::Tese;
+        type = Ren::eShaderType::TesselationEvaluation;
     } else if (std::strncmp(name + len - 10, ".comp.glsl", 10) == 0) {
-        type = Ren::eShaderType::Comp;
+        type = Ren::eShaderType::Compute;
     } else if (std::strncmp(name + len - 10, ".rgen.glsl", 10) == 0) {
         type = Ren::eShaderType::RayGen;
     } else if (std::strncmp(name + len - 11, ".rchit.glsl", 11) == 0) {

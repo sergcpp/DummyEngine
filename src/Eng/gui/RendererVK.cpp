@@ -192,8 +192,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
         new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(atlas.resource_state);
         new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::ShaderResource);
-        new_barrier.oldLayout = Ren::VKImageLayoutForState(atlas.resource_state);
-        new_barrier.newLayout = Ren::VKImageLayoutForState(Ren::eResState::ShaderResource);
+        new_barrier.oldLayout = VkImageLayout(Ren::VKImageLayoutForState(atlas.resource_state));
+        new_barrier.newLayout = VkImageLayout(Ren::VKImageLayoutForState(Ren::eResState::ShaderResource));
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.image = atlas.img();

@@ -2,9 +2,7 @@
 
 #include <cstdint>
 
-#if defined(USE_VK_RENDER)
-#include "VK.h"
-#endif
+#include "Fwd.h"
 
 namespace Ren {
 struct ApiContext;
@@ -12,7 +10,7 @@ enum class WaitResult { Success, Timeout, Fail };
 class SyncFence {
 #if defined(USE_VK_RENDER)
     ApiContext *api_ctx_ = nullptr;
-    VkFence fence_ = VK_NULL_HANDLE;
+    VkFence fence_ = {};
 #elif defined(USE_GL_RENDER)
     void *sync_ = nullptr;
 #endif
@@ -32,7 +30,7 @@ class SyncFence {
     SyncFence &operator=(SyncFence &&rhs) noexcept;
 
 #if defined(USE_VK_RENDER)
-    operator bool() const { return fence_ != VK_NULL_HANDLE; }
+    operator bool() const { return fence_ != VkFence{}; }
     VkFence fence() { return fence_; }
 
     bool signaled() const;

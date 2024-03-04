@@ -51,7 +51,7 @@ bool Gui::Renderer::Init() {
 #else
                                              ui_vert_spv_ogl, ui_vert_spv_ogl_size,
 #endif
-                                             eShaderType::Vert, &sh_status);
+                                             eShaderType::Vertex, &sh_status);
             if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile vertex shader!");
                 return false;
@@ -62,19 +62,19 @@ bool Gui::Renderer::Init() {
 #else
                                              ui_frag_spv_ogl, ui_frag_spv_ogl_size,
 #endif
-                                             eShaderType::Frag, &sh_status);
+                                             eShaderType::Fragment, &sh_status);
             if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile fragment shader!");
                 return false;
             }
         } else {
             eShaderLoadStatus sh_status;
-            ui_vs_ref = ctx_.LoadShaderGLSL("__ui_vs__", vs_source, eShaderType::Vert, &sh_status);
+            ui_vs_ref = ctx_.LoadShaderGLSL("__ui_vs__", vs_source, eShaderType::Vertex, &sh_status);
             if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile vertex shader!");
                 return false;
             }
-            ui_fs_ref = ctx_.LoadShaderGLSL("__ui_fs__", fs_source, eShaderType::Frag, &sh_status);
+            ui_fs_ref = ctx_.LoadShaderGLSL("__ui_fs__", fs_source, eShaderType::Fragment, &sh_status);
             if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
                 ctx_.log()->Error("[Gui::Renderer::Init]: Failed to compile fragment shader!");
                 return false;
@@ -110,8 +110,10 @@ bool Gui::Renderer::Init() {
 
     if (ctx_.capabilities.persistent_buf_mapping) {
         // map stage buffers directly
-        vtx_stage_data_ = reinterpret_cast<vertex_t *>(vertex_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
-        ndx_stage_data_ = reinterpret_cast<uint16_t *>(index_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
+        vtx_stage_data_ =
+            reinterpret_cast<vertex_t *>(vertex_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
+        ndx_stage_data_ =
+            reinterpret_cast<uint16_t *>(index_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
     } else {
         // use temporary storage
         stage_vtx_data_ = std::make_unique<vertex_t[]>(MaxVerticesPerRange * Ren::MaxFramesInFlight);

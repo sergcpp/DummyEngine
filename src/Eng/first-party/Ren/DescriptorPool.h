@@ -2,8 +2,8 @@
 
 #include <utility>
 
+#include "Fwd.h"
 #include "SmallVector.h"
-#include "VK.h"
 
 namespace Ren {
 struct ApiContext;
@@ -31,8 +31,8 @@ struct DescrSizes {
 };
 
 class DescrPool {
-    ApiContext *api_ctx_ = nullptr;
-    VkDescriptorPool handle_ = VK_NULL_HANDLE;
+    ApiContext *api_ctx_ = {};
+    VkDescriptorPool handle_ = {};
     uint32_t sets_count_ = 0, next_free_ = 0;
 
     uint32_t descr_counts_[int(eDescrType::_Count)] = {};

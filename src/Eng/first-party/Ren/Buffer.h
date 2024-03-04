@@ -10,10 +10,6 @@
 #include "Storage.h"
 #include "String.h"
 
-#if defined(USE_VK_RENDER)
-#include "VK.h"
-#endif
-
 namespace Ren {
 class ILog;
 struct ApiContext;
@@ -48,7 +44,7 @@ enum class eBufMap : uint8_t { Read, Write };
 
 struct BufHandle {
 #if defined(USE_VK_RENDER)
-    VkBuffer buf = VK_NULL_HANDLE;
+    VkBuffer buf = {};
 #elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
     uint32_t id = 0;
 #endif
@@ -56,7 +52,7 @@ struct BufHandle {
 
     operator bool() const {
 #if defined(USE_VK_RENDER)
-        return buf != VK_NULL_HANDLE;
+        return buf != VkBuffer{};
 #elif defined(USE_GL_RENDER) || defined(USE_SW_RENDER)
         return id != 0;
 #endif
@@ -91,7 +87,7 @@ class Buffer : public RefCounter {
     String name_;
     std::unique_ptr<FreelistAlloc> alloc_;
 #if defined(USE_VK_RENDER)
-    VkDeviceMemory mem_ = VK_NULL_HANDLE;
+    VkDeviceMemory mem_ = {};
 #endif
     eBufType type_ = eBufType::Undefined;
     uint32_t size_ = 0, suballoc_align_ = 1;

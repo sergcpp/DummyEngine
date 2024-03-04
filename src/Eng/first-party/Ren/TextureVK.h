@@ -7,6 +7,10 @@
 #include "MemoryAllocator.h"
 #include "TextureParams.h"
 
+#if defined(USE_VK_RENDER)
+#include "VK.h"
+#endif
+
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)
@@ -17,20 +21,20 @@ class ILog;
 class MemoryAllocators;
 
 struct TexHandle {
-    VkImage img = VK_NULL_HANDLE;
+    VkImage img = {};
     SmallVector<VkImageView, 1> views;
-    VkSampler sampler = VK_NULL_HANDLE;
+    VkSampler sampler = {};
     uint32_t generation = 0; // used to identify unique texture (name can be reused)
 
-    TexHandle() { views.push_back(VK_NULL_HANDLE); }
+    TexHandle() { views.push_back({}); }
     TexHandle(VkImage _img, VkImageView _view0, VkImageView _view1, VkSampler _sampler, uint32_t _generation)
         : img(_img), sampler(_sampler), generation(_generation) {
-        assert(_view0 != VK_NULL_HANDLE);
+        assert(_view0 != VkImageView{});
         views.push_back(_view0);
         views.push_back(_view1);
     }
 
-    explicit operator bool() const { return img != VK_NULL_HANDLE; }
+    explicit operator bool() const { return img != VkImage{}; }
 };
 static_assert(sizeof(TexHandle) == 56, "!");
 inline bool operator==(const TexHandle &lhs, const TexHandle &rhs) {

@@ -4,6 +4,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
+#include <Ren/GL.h>
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {

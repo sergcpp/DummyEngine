@@ -6,7 +6,9 @@
 
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
-#if defined(USE_GL_RENDER)
+#if defined(USE_VK_RENDER)
+#include <Ren/VKCtx.h>
+#elif defined(USE_GL_RENDER)
 #include <Ren/GLCtx.h>
 #endif
 #include <Snd/Context.h>

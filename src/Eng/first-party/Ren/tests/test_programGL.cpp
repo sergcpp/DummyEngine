@@ -6,7 +6,7 @@
 
 void test_program() {
     printf("Test program            | ");
-    
+
     { // Load glsl program
         TestContext test;
 
@@ -59,9 +59,9 @@ void main(void) {
         require(p->ready() == false);
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = test.LoadShaderGLSL("constant_vs", vs_src, Ren::eShaderType::Vert, &sh_status);
+        Ren::ShaderRef vs_ref = test.LoadShaderGLSL("constant_vs", vs_src, Ren::eShaderType::Vertex, &sh_status);
         require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-        Ren::ShaderRef fs_ref = test.LoadShaderGLSL("constant_fs", fs_src, Ren::eShaderType::Frag, &sh_status);
+        Ren::ShaderRef fs_ref = test.LoadShaderGLSL("constant_fs", fs_src, Ren::eShaderType::Fragment, &sh_status);
         require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
         test.LoadProgram("constant", vs_ref, fs_ref, {}, {}, &status);
@@ -112,7 +112,7 @@ void main() {
 })";
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef cs_ref = test.LoadShaderGLSL("sample_cs", cs_source, Ren::eShaderType::Comp, &sh_status);
+        Ren::ShaderRef cs_ref = test.LoadShaderGLSL("sample_cs", cs_source, Ren::eShaderType::Compute, &sh_status);
         require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
         Ren::eProgLoadStatus status;
@@ -361,10 +361,10 @@ void main() {
 
             Ren::eShaderLoadStatus sh_status;
             Ren::ShaderRef vs_ref =
-                test.LoadShaderSPIRV("simple_vs", vert_spv, vert_spv_size, Ren::eShaderType::Vert, &sh_status);
+                test.LoadShaderSPIRV("simple_vs", vert_spv, vert_spv_size, Ren::eShaderType::Vertex, &sh_status);
             require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
             Ren::ShaderRef fs_ref =
-                test.LoadShaderSPIRV("simple_fs", frag_spv, frag_spv_size, Ren::eShaderType::Frag, &sh_status);
+                test.LoadShaderSPIRV("simple_fs", frag_spv, frag_spv_size, Ren::eShaderType::Fragment, &sh_status);
             require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
             Ren::eProgLoadStatus status;
@@ -385,6 +385,6 @@ void main() {
             printf("Could not test spirv loading!\n");
         }
     }
-    
+
     printf("OK\n");
 }

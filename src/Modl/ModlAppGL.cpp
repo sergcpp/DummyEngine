@@ -61,8 +61,7 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
 
     Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
 
-    Mat4f view_from_object = view_from_world * world_from_object,
-          proj_from_object = proj_from_view * view_from_object;
+    Mat4f view_from_object = view_from_world * world_from_object, proj_from_object = proj_from_view * view_from_object;
 
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
@@ -80,8 +79,7 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
         }
         BindTexture(NORMALMAP_SLOT, mat->textures[1]->id());
 
-        glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT,
-                       reinterpret_cast<void *>(uintptr_t(grp.offset)));
+        glDrawElements(GL_TRIANGLES, grp.num_indices, GL_UNSIGNED_INT, reinterpret_cast<void *>(uintptr_t(grp.offset)));
     }
 
     Ren::CheckError("", &log_);
@@ -231,20 +229,16 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
         const Ren::BufferRange &sk_attribs_buf = m->sk_attribs_buf();
         const Ren::BufferRange &sk_deltas_buf = m->sk_deltas_buf();
 
-        const int vertex_offset = int(sk_attribs_buf.sub.offset) / 48,
-                  vertex_count = int(sk_attribs_buf.size) / 48;
-        const int delta_offset = int(sk_deltas_buf.sub.offset) / 24,
-                  delta_count = int(sk_deltas_buf.size) / 24;
+        const int vertex_offset = int(sk_attribs_buf.sub.offset) / 48, vertex_count = int(sk_attribs_buf.size) / 48;
+        const int delta_offset = int(sk_deltas_buf.sub.offset) / 24, delta_count = int(sk_deltas_buf.size) / 24;
 
         if (skel->shapes_count && (shape_key_index_ != -1 || !skel->anims.empty())) {
             // assume all shape keys have same vertex count
             const int shapekeyed_vertex_count = skel->shapes[0].delta_count;
-            const int non_shapekeyed_vertex_count =
-                vertex_count - shapekeyed_vertex_count;
+            const int non_shapekeyed_vertex_count = vertex_count - shapekeyed_vertex_count;
 
             { // transform simple vertices
-                glUniform4i(0, vertex_offset, non_shapekeyed_vertex_count,
-                            0 /* offset to out buffers */, delta_offset);
+                glUniform4i(0, vertex_offset, non_shapekeyed_vertex_count, 0 /* offset to out buffers */, delta_offset);
                 glUniform1i(1, 0);
 
                 const int group_count = (non_shapekeyed_vertex_count + 63) / 64;
@@ -252,10 +246,8 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
             }
 
             { // transform shapekeyed vertices
-                glUniform4i(0, vertex_offset + non_shapekeyed_vertex_count,
-                            shapekeyed_vertex_count,
-                            non_shapekeyed_vertex_count /* offset to out buffers */,
-                            delta_offset);
+                glUniform4i(0, vertex_offset + non_shapekeyed_vertex_count, shapekeyed_vertex_count,
+                            non_shapekeyed_vertex_count /* offset to out buffers */, delta_offset);
 
                 uint16_t shape_palette[256];
 
@@ -284,8 +276,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
                 glDispatchCompute(group_count, 1, 1);
             }
         } else {
-            glUniform4i(0, vertex_offset, vertex_count, 0 /* offset to out buffers */,
-                        delta_offset);
+            glUniform4i(0, vertex_offset, vertex_count, 0 /* offset to out buffers */, delta_offset);
             glUniform1i(1, 0);
 
             const int group_count = (vertex_count + 63) / 64;
@@ -308,8 +299,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
 
     Mat4f view_from_world = cam_.view_matrix(), proj_from_view = cam_.proj_matrix();
 
-    Mat4f view_from_object = view_from_world * world_from_object,
-          proj_from_object = proj_from_view * view_from_object;
+    Mat4f view_from_object = view_from_world * world_from_object, proj_from_object = proj_from_view * view_from_object;
 
     glUniformMatrix4fv(U_MVP_MATR, 1, GL_FALSE, ValuePtr(proj_from_object));
     glUniformMatrix4fv(U_M_MATR, 1, GL_FALSE, ValuePtr(world_from_object));
@@ -346,21 +336,18 @@ void ModlApp::ClearColorAndDepth(const float r, const float g, const float b, co
 }
 
 void ModlApp::CheckInitVAOs() {
-    Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(),
-                   vtx_buf2 = ctx_->default_vertex_buf2();
+    Ren::BufferRef vtx_buf1 = ctx_->default_vertex_buf1(), vtx_buf2 = ctx_->default_vertex_buf2();
     Ren::BufferRef skin_vtx_buf = ctx_->default_skin_vertex_buf();
     Ren::BufferRef delta_buf = ctx_->default_delta_buf();
     Ren::BufferRef ndx_buf = ctx_->default_indices_buf();
 
-    const auto gl_vertex_buf1 = GLuint(vtx_buf1->id()),
-               gl_vertex_buf2 = GLuint(vtx_buf2->id()),
-               gl_skin_vertex_buf = GLuint(skin_vtx_buf->id()),
-               gl_delta_buf = GLuint(delta_buf->id()),
+    const auto gl_vertex_buf1 = GLuint(vtx_buf1->id()), gl_vertex_buf2 = GLuint(vtx_buf2->id()),
+               gl_skin_vertex_buf = GLuint(skin_vtx_buf->id()), gl_delta_buf = GLuint(delta_buf->id()),
                gl_indices_buf = GLuint(ndx_buf->id());
 
     if (gl_vertex_buf1 != last_vertex_buf1_ || gl_vertex_buf2 != last_vertex_buf2_ ||
-        gl_skin_vertex_buf != last_skin_vertex_buffer_ ||
-        gl_delta_buf != last_delta_buffer_ || gl_indices_buf != last_index_buffer_) {
+        gl_skin_vertex_buf != last_skin_vertex_buffer_ || gl_delta_buf != last_delta_buffer_ ||
+        gl_indices_buf != last_index_buffer_) {
 
         if (last_vertex_buf1_) {
             auto simple_mesh_vao = GLuint(simple_vao_);
@@ -386,8 +373,7 @@ void ModlApp::CheckInitVAOs() {
             glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, buf1_stride, (void *)0);
 
             glEnableVertexAttribArray(A_UVS1);
-            glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride,
-                                  (void *)(3 * sizeof(float)));
+            glVertexAttribPointer(A_UVS1, 2, GL_HALF_FLOAT, GL_FALSE, buf1_stride, (void *)(3 * sizeof(float)));
         }
 
         { // Assign attributes from buf2
@@ -397,12 +383,10 @@ void ModlApp::CheckInitVAOs() {
             glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, buf2_stride, (void *)0);
 
             glEnableVertexAttribArray(A_TANGENT);
-            glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, buf2_stride,
-                                  (void *)(4 * sizeof(uint16_t)));
+            glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, buf2_stride, (void *)(4 * sizeof(uint16_t)));
 
             glEnableVertexAttribArray(A_ATTRIB);
-            glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride,
-                                   (void *)(6 * sizeof(uint16_t)));
+            glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride, (void *)(6 * sizeof(uint16_t)));
         }
 
         glBindVertexArray(0);
@@ -421,8 +405,7 @@ void ModlApp::CheckInitVAOs() {
         glVertexAttribPointer(A_POS, 3, GL_FLOAT, GL_FALSE, stride_skin_buf, (void *)0);
 
         glEnableVertexAttribArray(A_NORMAL);
-        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride_skin_buf,
-                              (void *)(3 * sizeof(float)));
+        glVertexAttribPointer(A_NORMAL, 4, GL_SHORT, GL_TRUE, stride_skin_buf, (void *)(3 * sizeof(float)));
 
         glEnableVertexAttribArray(A_TANGENT);
         glVertexAttribPointer(A_TANGENT, 2, GL_SHORT, GL_TRUE, stride_skin_buf,
@@ -433,18 +416,15 @@ void ModlApp::CheckInitVAOs() {
                               (void *)(3 * sizeof(float) + 6 * sizeof(int16_t)));
 
         glEnableVertexAttribArray(A_ATTRIB);
-        glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride,
-                               (void *)(6 * sizeof(uint16_t)));
+        glVertexAttribIPointer(A_ATTRIB, 1, GL_UNSIGNED_INT, buf2_stride, (void *)(6 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_INDICES);
-        glVertexAttribPointer(
-            A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride_skin_buf,
-            (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
+        glVertexAttribPointer(A_INDICES, 4, GL_UNSIGNED_SHORT, GL_FALSE, stride_skin_buf,
+                              (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 4 * sizeof(uint16_t)));
 
         glEnableVertexAttribArray(A_WEIGHTS);
-        glVertexAttribPointer(
-            A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride_skin_buf,
-            (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
+        glVertexAttribPointer(A_WEIGHTS, 4, GL_UNSIGNED_SHORT, GL_TRUE, stride_skin_buf,
+                              (void *)(3 * sizeof(float) + 6 * sizeof(int16_t) + 8 * sizeof(uint16_t)));
 
         glBindVertexArray(0);
 
@@ -611,27 +591,23 @@ void main(void) {
 )";
 
     Ren::eShaderLoadStatus sh_status;
-    Ren::ShaderRef diag_vs_ref =
-        ctx_->LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vert, &sh_status);
+    Ren::ShaderRef diag_vs_ref = ctx_->LoadShaderGLSL("__diag_vs", diag_vs, Ren::eShaderType::Vertex, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-    Ren::ShaderRef diag_colored_vs_ref = ctx_->LoadShaderGLSL(
-        "__diag_colored_vs", diag_colored_vs, Ren::eShaderType::Vert, &sh_status);
+    Ren::ShaderRef diag_colored_vs_ref =
+        ctx_->LoadShaderGLSL("__diag_colored_vs", diag_colored_vs, Ren::eShaderType::Vertex, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-    Ren::ShaderRef diag_skinned_vs_ref = ctx_->LoadShaderGLSL(
-        "__diag_skinned_vs", diag_skinned_vs, Ren::eShaderType::Vert, &sh_status);
+    Ren::ShaderRef diag_skinned_vs_ref =
+        ctx_->LoadShaderGLSL("__diag_skinned_vs", diag_skinned_vs, Ren::eShaderType::Vertex, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-    Ren::ShaderRef diag_fs_ref =
-        ctx_->LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Frag, &sh_status);
+    Ren::ShaderRef diag_fs_ref = ctx_->LoadShaderGLSL("__diag_fs", diag_fs, Ren::eShaderType::Fragment, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
     Ren::eProgLoadStatus status;
     diag_prog_ = ctx_->LoadProgram("__diag", diag_vs_ref, diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_colored_prog_ = ctx_->LoadProgram("__diag_colored", diag_colored_vs_ref,
-                                           diag_fs_ref, {}, {}, &status);
+    diag_colored_prog_ = ctx_->LoadProgram("__diag_colored", diag_colored_vs_ref, diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
-    diag_skinned_prog_ = ctx_->LoadProgram("__diag_skinned", diag_skinned_vs_ref,
-                                           diag_fs_ref, {}, {}, &status);
+    diag_skinned_prog_ = ctx_->LoadProgram("__diag_skinned", diag_skinned_vs_ref, diag_fs_ref, {}, {}, &status);
     assert(status == Ren::eProgLoadStatus::CreatedFromData);
 
     static const char skinning_cs[] = R"(
@@ -762,7 +738,7 @@ void main(void) {
         )";
 
     Ren::ShaderRef skinning_cs_ref =
-        ctx_->LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Comp, &sh_status);
+        ctx_->LoadShaderGLSL("__skin_cs", skinning_cs, Ren::eShaderType::Compute, &sh_status);
     assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
     skinning_prog_ = ctx_->LoadProgram("__skin", skinning_cs_ref, &status);

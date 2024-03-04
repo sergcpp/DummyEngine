@@ -1,5 +1,7 @@
 #include "AccStructure.h"
 
+#include "VKCtx.h"
+
 void Ren::AccStructureVK::Destroy() {
     if (handle_) {
         api_ctx_->acc_structs_to_destroy[api_ctx_->backend_frame].push_back(handle_);

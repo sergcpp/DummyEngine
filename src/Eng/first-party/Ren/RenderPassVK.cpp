@@ -60,11 +60,9 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
                            ILog *log) {
     Destroy();
 
-    SmallVector<VkAttachmentDescription, MaxRTAttachments> pass_attachments;
-    VkAttachmentReference color_attachment_refs[MaxRTAttachments];
-    for (int i = 0; i < MaxRTAttachments; i++) {
-        color_attachment_refs[i] = {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
-    }
+    SmallVector<VkAttachmentDescription, 4> pass_attachments;
+    SmallVector<VkAttachmentReference, 4> color_attachment_refs(_color_rts.size(),
+                                                                {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED});
     VkAttachmentReference depth_attachment_ref = {VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED};
 
     color_rts.resize(_color_rts.size());
@@ -89,7 +87,8 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
             att_desc.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
         }
         att_desc.stencilStoreOp = vk_store_ops[int(_depth_rt.stencil_store)];
-        if (att_desc.stencilStoreOp == VK_ATTACHMENT_STORE_OP_NONE_EXT && !api_ctx->renderpass_loadstore_none_supported) {
+        if (att_desc.stencilStoreOp == VK_ATTACHMENT_STORE_OP_NONE_EXT &&
+            !api_ctx->renderpass_loadstore_none_supported) {
             att_desc.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE;
         }
         att_desc.initialLayout = VkImageLayout(_depth_rt.layout);
@@ -148,7 +147,7 @@ bool Ren::RenderPass::Init(ApiContext *api_ctx, Span<const RenderTargetInfo> _co
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = uint32_t(_color_rts.size());
-    subpass.pColorAttachments = color_attachment_refs;
+    subpass.pColorAttachments = color_attachment_refs.data();
     if (depth_attachment_ref.attachment != VK_ATTACHMENT_UNUSED) {
         subpass.pDepthStencilAttachment = &depth_attachment_ref;
     }
@@ -212,7 +211,7 @@ bool Ren::RenderPass::Setup(ApiContext *api_ctx, Span<const RenderTarget> _color
         return true;
     }
 
-    SmallVector<RenderTargetInfo, MaxRTAttachments> infos;
+    SmallVector<RenderTargetInfo, 4> infos;
     for (int i = 0; i < _color_rts.size(); ++i) {
         infos.emplace_back(_color_rts[i]);
     }

@@ -132,6 +132,7 @@ void _swUpdateTileAccurate(SWztile *tile, const uint32_t coverage_mask,
             z_tri[j] = z_subtile_min[j];
         }
     }
+    (void)t0;
 
     // test if incoming triangle overwrites layer 0 or 1 completely
     uint32_t layer0_mask = (~tri_mask & ~mask);

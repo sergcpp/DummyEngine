@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/Texture.h>
+#include <Ren/VKCtx.h>
 
 #include "../../utils/ShaderLoader.h"
 #include "../PrimDraw.h"

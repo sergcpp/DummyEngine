@@ -5,7 +5,6 @@
 #include "Shader.h"
 #include "SmallVector.h"
 #include "Storage.h"
-#include "VK.h"
 
 namespace Ren {
 class ILog;
@@ -18,7 +17,7 @@ struct Range {
 
 class Shader : public RefCounter {
     ApiContext *api_ctx_ = nullptr;
-    VkShaderModule module_ = VK_NULL_HANDLE;
+    VkShaderModule module_ = {};
     eShaderType type_ = eShaderType::_Count;
     String name_;
 
@@ -41,7 +40,7 @@ class Shader : public RefCounter {
     Shader &operator=(const Shader &rhs) = delete;
     Shader &operator=(Shader &&rhs) noexcept;
 
-    bool ready() const { return module_ != VK_NULL_HANDLE; }
+    bool ready() const { return module_ != VkShaderModule{}; }
     VkShaderModule module() const { return module_; }
     eShaderType type() const { return type_; }
     const String &name() const { return name_; }

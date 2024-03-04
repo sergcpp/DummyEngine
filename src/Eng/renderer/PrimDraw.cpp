@@ -174,7 +174,7 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
                                                                Ren::RenderTarget stencil_target) {
     int w = -1, h = -1;
 
-    Ren::SmallVector<Ren::WeakTex2DRef, Ren::MaxRTAttachments> color_refs;
+    Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;
     for (const auto &rt : color_targets) {
         color_refs.push_back(rt.ref);
         if (w == -1 && rt.ref) {

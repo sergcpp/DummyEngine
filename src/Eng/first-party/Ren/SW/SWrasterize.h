@@ -109,6 +109,7 @@ sw_inline void _swProcessLine(SWprogram *p, SWframebuffer *f,
             error2 -= dx * 2;
         }
     }
+    (void)t;
 }
 
 void _swProcessCurveRecursive(SWprogram *p, SWframebuffer *f,
@@ -537,6 +538,9 @@ sw_inline void _swProcessTriangle_nocorrect(SWprogram *p, SWframebuffer *f,
 
                     Cy1 += d01[0];
                     Cy3 += d20[0];
+
+                    (void)Cx1;
+                    (void)Cx3;
                 }
             } else {
                 SWint ix, iy;

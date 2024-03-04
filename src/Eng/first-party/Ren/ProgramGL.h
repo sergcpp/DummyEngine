@@ -62,7 +62,9 @@ class Program : public RefCounter {
     uint32_t id() const { return id_; }
     uint32_t flags() const { return flags_; }
     bool ready() const { return id_ != 0; }
-    bool has_tessellation() const { return shaders_[int(eShaderType::Tesc)] && shaders_[int(eShaderType::Tese)]; }
+    bool has_tessellation() const {
+        return shaders_[int(eShaderType::TesselationControl)] && shaders_[int(eShaderType::TesselationEvaluation)];
+    }
     const String &name() const { return name_; }
 
     const Attribute &attribute(const int i) const { return attributes_[i]; }

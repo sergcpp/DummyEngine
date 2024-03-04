@@ -777,11 +777,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
     scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
         "TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
 
-#if defined(USE_VK_RENDER)
-    VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
-#else
-    void *cmd_buf = nullptr;
-#endif
+    void *cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
     Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.rt_blas_buf, 0, total_nodes_size,
                             cmd_buf);
@@ -794,9 +790,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
     Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
                             total_geo_instances_size, cmd_buf);
 
-#if defined(USE_VK_RENDER)
-    api_ctx->EndSingleTimeCommands(cmd_buf);
-#endif
+    ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 }
 
 uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,

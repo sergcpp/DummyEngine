@@ -3,6 +3,7 @@
 #include <ctime>
 #include <istream>
 
+#include "Pipeline.h"
 #include "Utils.h"
 
 #if defined(USE_GL_RENDER)

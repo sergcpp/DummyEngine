@@ -3,12 +3,9 @@
 #include "Fwd.h"
 #include "Span.h"
 #include "Texture.h"
-#include "VK.h"
 
 namespace Ren {
 struct ApiContext;
-
-const int MaxRTAttachments = 4;
 
 enum class eImageLayout : uint8_t {
     Undefined,
@@ -116,14 +113,14 @@ inline bool operator!=(const RenderTargetInfo &lhs, const RenderTarget &rhs) {
 class RenderPass {
     ApiContext *api_ctx_ = nullptr;
 #if defined(USE_VK_RENDER)
-    VkRenderPass handle_ = VK_NULL_HANDLE;
+    VkRenderPass handle_ = {};
 #endif
 
     bool Init(ApiContext *api_ctx, Span<const RenderTargetInfo> rts, RenderTargetInfo depth_rt, ILog *log);
     void Destroy();
 
   public:
-    SmallVector<RenderTargetInfo, MaxRTAttachments> color_rts;
+    SmallVector<RenderTargetInfo, 4> color_rts;
     RenderTargetInfo depth_rt;
 
     RenderPass() = default;

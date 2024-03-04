@@ -100,10 +100,10 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
 
     id_ = uint32_t(program);
     // store shaders
-    shaders_[int(eShaderType::Vert)] = std::move(vs_ref);
-    shaders_[int(eShaderType::Frag)] = std::move(fs_ref);
-    shaders_[int(eShaderType::Tesc)] = std::move(tcs_ref);
-    shaders_[int(eShaderType::Tese)] = std::move(tes_ref);
+    shaders_[int(eShaderType::Vertex)] = std::move(vs_ref);
+    shaders_[int(eShaderType::Fragment)] = std::move(fs_ref);
+    shaders_[int(eShaderType::TesselationControl)] = std::move(tcs_ref);
+    shaders_[int(eShaderType::TesselationEvaluation)] = std::move(tes_ref);
 
     InitBindings(log);
 
@@ -147,7 +147,7 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
 
     id_ = uint32_t(program);
     // store shader
-    shaders_[int(eShaderType::Comp)] = std::move(cs_ref);
+    shaders_[int(eShaderType::Compute)] = std::move(cs_ref);
 
     InitBindings(log);
 

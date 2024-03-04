@@ -106,6 +106,7 @@ if(${RENDERER} STREQUAL "GL")
     set(SOURCE_FILES ${SOURCE_FILES}
                      BufferGL.cpp
                      ContextGL.cpp
+                     DebugMarkerGL.cpp
                      DrawCallGL.cpp
                      FramebufferGL.cpp
                      GL.h
@@ -150,6 +151,7 @@ elseif(${RENDERER} STREQUAL "VK")
                      AccStructureVK.cpp
                      BufferVK.cpp
                      ContextVK.cpp
+                     DebugMarkerVK.cpp
                      DescriptorPoolVK.cpp
                      DrawCallVK.cpp
                      FenceVK.cpp
@@ -197,8 +199,12 @@ if(MSVC)
     if(NOT CMAKE_CL_64)
         set_source_files_properties(Utils_SSE2.cpp PROPERTIES COMPILE_FLAGS /arch:SSE2)
     endif()
-    set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
-
+    if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+        set_source_files_properties(Utils_SSE2.cpp PROPERTIES COMPILE_FLAGS -msse4.1)
+        set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS "-mavx2 -mfma")
+    else()
+        set_source_files_properties(Utils_AVX.cpp PROPERTIES COMPILE_FLAGS /arch:AVX)
+    endif()
     list(APPEND REN_SOURCE_FILES _CustomTypes.natvis)
 else(MSVC)
     set_source_files_properties(Utils_SSE2.cpp PROPERTIES COMPILE_FLAGS -msse2)

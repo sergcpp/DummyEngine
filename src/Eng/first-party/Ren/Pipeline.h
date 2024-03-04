@@ -41,8 +41,8 @@ class Pipeline : public RefCounter {
     ProgramRef prog_;
     const VertexInput *vtx_input_ = nullptr;
 #if defined(USE_VK_RENDER)
-    VkPipelineLayout layout_ = VK_NULL_HANDLE;
-    VkPipeline handle_ = VK_NULL_HANDLE;
+    VkPipelineLayout layout_ = {};
+    VkPipeline handle_ = {};
 
     SmallVector<VkRayTracingShaderGroupCreateInfoKHR, 4> rt_shader_groups_;
 
@@ -77,7 +77,7 @@ class Pipeline : public RefCounter {
     const ProgramRef &prog() const { return prog_; }
     const VertexInput *vtx_input() const { return vtx_input_; }
 
-    const SmallVectorImpl<eTexFormat> &color_formats() const { return color_formats_; }
+    Span<const eTexFormat> color_formats() const { return color_formats_; }
     eTexFormat depth_format() const { return depth_format_; }
 
 

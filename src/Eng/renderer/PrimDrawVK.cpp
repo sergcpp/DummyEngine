@@ -45,7 +45,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
                 new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
                 new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(rt.ref->resource_state);
                 new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::RenderTarget);
-                new_barrier.oldLayout = Ren::VKImageLayoutForState(rt.ref->resource_state);
+                new_barrier.oldLayout = VkImageLayout(Ren::VKImageLayoutForState(rt.ref->resource_state));
                 new_barrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
                 new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
                 new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -70,8 +70,8 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = Ren::VKAccessFlagsForState(depth_rt.ref->resource_state);
             new_barrier.dstAccessMask = Ren::VKAccessFlagsForState(Ren::eResState::DepthWrite);
-            new_barrier.oldLayout = Ren::VKImageLayoutForState(depth_rt.ref->resource_state);
-            new_barrier.newLayout = Ren::VKImageLayoutForState(Ren::eResState::DepthWrite);
+            new_barrier.oldLayout = VkImageLayout(Ren::VKImageLayoutForState(depth_rt.ref->resource_state));
+            new_barrier.newLayout = VkImageLayout(Ren::VKImageLayoutForState(Ren::eResState::DepthWrite));
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.image = depth_rt.ref->handle().img;
@@ -101,12 +101,12 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         const Ren::Pipeline *pipeline = FindOrCreatePipeline(p, nullptr, color_rts, depth_rt, &new_rast_state);
         assert(pipeline);
 
-        Ren::SmallVector<VkRenderingAttachmentInfoKHR, Ren::MaxRTAttachments> color_attachments;
+        Ren::SmallVector<VkRenderingAttachmentInfoKHR, 4> color_attachments;
         for (const auto &rt : color_rts) {
             auto &col_att = color_attachments.emplace_back();
             col_att = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
             col_att.imageView = rt.ref->handle().views[0];
-            col_att.imageLayout = VKImageLayoutForState(rt.ref->resource_state);
+            col_att.imageLayout = VkImageLayout(VKImageLayoutForState(rt.ref->resource_state));
             col_att.loadOp = Ren::vk_load_ops[int(rt.load)];
             col_att.storeOp = Ren::vk_store_ops[int(rt.store)];
         }
@@ -114,7 +114,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         VkRenderingAttachmentInfoKHR depth_attachment = {VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR};
         if (depth_rt) {
             depth_attachment.imageView = depth_rt.ref->handle().views[0];
-            depth_attachment.imageLayout = VKImageLayoutForState(depth_rt.ref->resource_state);
+            depth_attachment.imageLayout = VkImageLayout(VKImageLayoutForState(depth_rt.ref->resource_state));
             depth_attachment.loadOp = Ren::vk_load_ops[int(depth_rt.load)];
             depth_attachment.storeOp = Ren::vk_store_ops[int(depth_rt.store)];
         }
@@ -144,7 +144,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
                                          0, nullptr);
 
-        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags,
+        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
                                     uniform_data_offset, uniform_data_len, uniform_data);
 
         if (prim == ePrim::Quad) {
@@ -182,7 +182,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->layout(), 0, 1, &descr_set,
                                          0, nullptr);
 
-        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()->stageFlags,
+        api_ctx->vkCmdPushConstants(cmd_buf, pipeline->layout(), pipeline->prog()->pc_ranges()[0].stageFlags,
                                     uniform_data_offset, uniform_data_len, uniform_data);
 
         if (prim == ePrim::Quad) {

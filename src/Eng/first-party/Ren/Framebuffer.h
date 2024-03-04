@@ -8,16 +8,12 @@
 #include "Texture.h"
 #include "TextureParams.h"
 
-#if defined(USE_VK_RENDER)
-#include "VK.h"
-#endif
-
 namespace Ren {
 class Framebuffer {
     ApiContext *api_ctx_ = nullptr;
 #if defined(USE_VK_RENDER)
-    VkFramebuffer handle_ = VK_NULL_HANDLE;
-    VkRenderPass renderpass_ = VK_NULL_HANDLE;
+    VkFramebuffer handle_ = {};
+    VkRenderPass renderpass_ = {};
 #elif defined(USE_GL_RENDER)
     uint32_t id_ = 0;
 #endif
@@ -31,7 +27,7 @@ class Framebuffer {
   public:
     int w = -1, h = -1;
 
-    SmallVector<Attachment, MaxRTAttachments> color_attachments;
+    SmallVector<Attachment, 4> color_attachments;
     Attachment depth_attachment, stencil_attachment;
 
     Framebuffer() = default;

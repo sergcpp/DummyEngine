@@ -2,9 +2,6 @@
 
 #include <cstdint>
 
-#if defined(USE_VK_RENDER)
-#include "VK.h"
-#endif
 #include "Span.h"
 
 namespace Ren {
@@ -67,7 +64,7 @@ enum class eResState : uint8_t {
 };
 
 #if defined(USE_VK_RENDER)
-VkImageLayout VKImageLayoutForState(eResState state);
+int VKImageLayoutForState(eResState state);
 uint32_t VKAccessFlagsForState(eResState state);
 uint32_t VKPipelineStagesForState(eResState state);
 #endif

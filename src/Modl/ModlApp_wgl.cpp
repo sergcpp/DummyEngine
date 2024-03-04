@@ -1955,9 +1955,9 @@ void ModlApp::OnPipelinesNeeded(const char *prog_name, uint32_t flags, const cha
         fs_file.Read((char *)fs_src.data(), fs_size);
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vert, &sh_status);
+        Ren::ShaderRef vs_ref = ctx_->LoadShaderGLSL(vs_shader, vs_src.c_str(), Ren::eShaderType::Vertex, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
-        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Frag, &sh_status);
+        Ren::ShaderRef fs_ref = ctx_->LoadShaderGLSL(fs_shader, fs_src.c_str(), Ren::eShaderType::Fragment, &sh_status);
         assert(sh_status == Ren::eShaderLoadStatus::CreatedFromData || sh_status == Ren::eShaderLoadStatus::Found);
 
         prog = ctx_->LoadProgram(prog_name, vs_ref, fs_ref, {}, {}, &status);

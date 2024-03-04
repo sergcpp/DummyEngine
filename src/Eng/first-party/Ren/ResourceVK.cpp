@@ -118,7 +118,7 @@ const VkPipelineStageFlags g_pipeline_stages_per_state_vk[] = {
 static_assert(std::size(g_pipeline_stages_per_state_vk) == int(eResState::_Count), "!");
 } // namespace Ren
 
-VkImageLayout Ren::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)]; }
+int Ren::VKImageLayoutForState(const eResState state) { return g_image_layout_per_state_vk[int(state)]; }
 
 uint32_t Ren::VKAccessFlagsForState(const eResState state) { return g_access_flags_per_state_vk[int(state)]; }
 
@@ -149,8 +149,8 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, con
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
             new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
-            new_barrier.oldLayout = VKImageLayoutForState(old_state);
-            new_barrier.newLayout = VKImageLayoutForState(tr.new_state);
+            new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(old_state));
+            new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(tr.new_state));
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.image = tr.p_tex->handle().img;
@@ -189,8 +189,8 @@ void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, con
             new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
             new_barrier.srcAccessMask = VKAccessFlagsForState(old_state);
             new_barrier.dstAccessMask = VKAccessFlagsForState(tr.new_state);
-            new_barrier.oldLayout = VKImageLayoutForState(old_state);
-            new_barrier.newLayout = VKImageLayoutForState(tr.new_state);
+            new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(old_state));
+            new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(tr.new_state));
             new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
             new_barrier.image = tr.p_3dtex->handle().img;

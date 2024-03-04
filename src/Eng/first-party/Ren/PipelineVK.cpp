@@ -139,10 +139,10 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
 
     { // create pipeline layout
         VkPipelineLayoutCreateInfo layout_create_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-        layout_create_info.setLayoutCount = prog->descr_set_layouts_count();
-        layout_create_info.pSetLayouts = prog->descr_set_layouts();
-        layout_create_info.pushConstantRangeCount = prog->pc_range_count();
-        layout_create_info.pPushConstantRanges = prog->pc_ranges();
+        layout_create_info.setLayoutCount = uint32_t(prog->descr_set_layouts().size());
+        layout_create_info.pSetLayouts = prog->descr_set_layouts().data();
+        layout_create_info.pushConstantRangeCount = uint32_t(prog->pc_ranges().size());
+        layout_create_info.pPushConstantRanges = prog->pc_ranges().data();
 
         const VkResult res = api_ctx->vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
         if (res != VK_SUCCESS) {
@@ -231,16 +231,17 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         depth_state_ci.minDepthBounds = 0.0f;
         depth_state_ci.maxDepthBounds = 1.0f;
 
-        VkPipelineColorBlendAttachmentState color_blend_attachment_states[Ren::MaxRTAttachments] = {};
+        SmallVector<VkPipelineColorBlendAttachmentState, 4> color_blend_attachment_states;
         for (int i = 0; i < int(color_attachments.size()); ++i) {
-            color_blend_attachment_states[i].blendEnable = rast_state.blend.enabled ? VK_TRUE : VK_FALSE;
-            color_blend_attachment_states[i].colorBlendOp = VK_BLEND_OP_ADD;
-            color_blend_attachment_states[i].srcColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.src)];
-            color_blend_attachment_states[i].dstColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst)];
-            color_blend_attachment_states[i].alphaBlendOp = VK_BLEND_OP_ADD;
-            color_blend_attachment_states[i].srcAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.src)];
-            color_blend_attachment_states[i].dstAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst)];
-            color_blend_attachment_states[i].colorWriteMask = 0xf;
+            auto &new_state = color_blend_attachment_states.emplace_back();
+            new_state.blendEnable = rast_state.blend.enabled ? VK_TRUE : VK_FALSE;
+            new_state.colorBlendOp = VK_BLEND_OP_ADD;
+            new_state.srcColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.src)];
+            new_state.dstColorBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst)];
+            new_state.alphaBlendOp = VK_BLEND_OP_ADD;
+            new_state.srcAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.src)];
+            new_state.dstAlphaBlendFactor = g_blend_factor_vk[int(rast_state.blend.dst)];
+            new_state.colorWriteMask = 0xf;
         }
 
         VkPipelineColorBlendStateCreateInfo color_blend_state_ci = {
@@ -248,7 +249,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         color_blend_state_ci.logicOpEnable = VK_FALSE;
         color_blend_state_ci.logicOp = VK_LOGIC_OP_CLEAR;
         color_blend_state_ci.attachmentCount = uint32_t(color_attachments.size());
-        color_blend_state_ci.pAttachments = color_blend_attachment_states;
+        color_blend_state_ci.pAttachments = color_blend_attachment_states.data();
         color_blend_state_ci.blendConstants[0] = 0.0f;
         color_blend_state_ci.blendConstants[1] = 0.0f;
         color_blend_state_ci.blendConstants[2] = 0.0f;
@@ -286,7 +287,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
         VkPipelineRenderingCreateInfoKHR pipeline_rendering_create_info{
             VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR};
 
-        SmallVector<VkFormat, MaxRTAttachments> color_attachment_formats;
+        SmallVector<VkFormat, 4> color_attachment_formats;
         if (!render_pass) {
             for (const auto &att : color_attachments) {
                 color_formats_.push_back(att.format);
@@ -332,7 +333,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, const RastState &rast_state, Progr
                          const VertexInput *vtx_input, Span<const RenderTarget> color_attachments,
                          RenderTarget depth_attachment, uint32_t subpass_index, ILog *log) {
 
-    SmallVector<RenderTargetInfo, MaxRTAttachments> color_infos;
+    SmallVector<RenderTargetInfo, 4> color_infos;
     for (int i = 0; i < color_attachments.size(); ++i) {
         color_infos.emplace_back(color_attachments[i]);
     }
@@ -358,7 +359,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::o
             continue;
         }
 
-        if (eShaderType(i) == eShaderType::Comp) {
+        if (eShaderType(i) == eShaderType::Compute) {
             assert(type == ePipelineType::Undefined);
             type = ePipelineType::Compute;
         } else if (eShaderType(i) == eShaderType::RayGen) {
@@ -430,10 +431,10 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::o
 
     { // create pipeline layout
         VkPipelineLayoutCreateInfo layout_create_info = {VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO};
-        layout_create_info.setLayoutCount = prog->descr_set_layouts_count();
-        layout_create_info.pSetLayouts = prog->descr_set_layouts();
-        layout_create_info.pushConstantRangeCount = prog->pc_range_count();
-        layout_create_info.pPushConstantRanges = prog->pc_ranges();
+        layout_create_info.setLayoutCount = uint32_t(prog->descr_set_layouts().size());
+        layout_create_info.pSetLayouts = prog->descr_set_layouts().data();
+        layout_create_info.pushConstantRangeCount = uint32_t(prog->pc_ranges().size());
+        layout_create_info.pPushConstantRanges = prog->pc_ranges().data();
 
         const VkResult res = api_ctx->vkCreatePipelineLayout(api_ctx->device, &layout_create_info, nullptr, &layout_);
         if (res != VK_SUCCESS) {

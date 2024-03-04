@@ -135,8 +135,8 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
         new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
-        new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
-        new_barrier.newLayout = VKImageLayoutForState(eResState::CopyDst);
+        new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(this->resource_state));
+        new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(eResState::CopyDst));
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.image = handle_.img;
@@ -278,8 +278,8 @@ bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int
         new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::CopyDst);
-        new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
-        new_barrier.newLayout = VKImageLayoutForState(eResState::CopyDst);
+        new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(this->resource_state));
+        new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(eResState::CopyDst));
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.image = handle_.img;
@@ -371,8 +371,8 @@ void Ren::ProbeStorage::Finalize() {
         new_barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
         new_barrier.srcAccessMask = VKAccessFlagsForState(this->resource_state);
         new_barrier.dstAccessMask = VKAccessFlagsForState(eResState::ShaderResource);
-        new_barrier.oldLayout = VKImageLayoutForState(this->resource_state);
-        new_barrier.newLayout = VKImageLayoutForState(eResState::ShaderResource);
+        new_barrier.oldLayout = VkImageLayout(VKImageLayoutForState(this->resource_state));
+        new_barrier.newLayout = VkImageLayout(VKImageLayoutForState(eResState::ShaderResource));
         new_barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.image = handle_.img;

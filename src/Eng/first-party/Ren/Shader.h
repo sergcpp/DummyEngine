@@ -17,11 +17,24 @@ struct Descr {
 #endif
 };
 inline bool operator==(const Descr &lhs, const Descr &rhs) { return lhs.loc == rhs.loc && lhs.name == rhs.name; }
-typedef Descr Attribute;
-typedef Descr Uniform;
-typedef Descr UniformBlock;
 
-enum class eShaderType : uint8_t { Vert, Frag, Tesc, Tese, Comp, RayGen, Miss, ClosestHit, AnyHit, Intersection, _Count };
+using Attribute = Descr;
+using Uniform = Descr;
+using UniformBlock = Descr;
+
+enum class eShaderType : uint8_t {
+    Vertex,
+    Fragment,
+    TesselationControl,
+    TesselationEvaluation,
+    Compute,
+    RayGen,
+    Miss,
+    ClosestHit,
+    AnyHit,
+    Intersection,
+    _Count
+};
 enum class eShaderSource : uint8_t { GLSL, SPIRV, _Count };
 enum class eShaderLoadStatus { Found, SetToDefault, CreatedFromData, Error };
 } // namespace Ren

@@ -63,7 +63,7 @@ bool Ren::Framebuffer::Setup(ApiContext *api_ctx, const RenderPass &render_pass,
         return true;
     }
 
-    SmallVector<RenderTarget, MaxRTAttachments> color_targets;
+    SmallVector<RenderTarget, 4> color_targets;
     for (int i = 0; i < _color_attachments.size(); ++i) {
         color_targets.emplace_back(_color_attachments[i], eLoadOp::DontCare, eStoreOp::DontCare);
     }

@@ -6,10 +6,6 @@
 #include "FreelistAlloc.h"
 #include "SmallVector.h"
 
-#if defined(USE_VK_RENDER)
-#include "VK.h"
-#endif
-
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4996)

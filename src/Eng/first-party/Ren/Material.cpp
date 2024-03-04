@@ -2,6 +2,7 @@
 
 #include <cstdlib>
 
+#include "Pipeline.h"
 #include "SamplingParams.h"
 
 #ifdef _MSC_VER

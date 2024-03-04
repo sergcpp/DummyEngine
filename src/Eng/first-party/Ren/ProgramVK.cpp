@@ -71,10 +71,10 @@ void Ren::Program::Init(ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, S
     }
 
     // store shaders
-    shaders_[int(eShaderType::Vert)] = std::move(vs_ref);
-    shaders_[int(eShaderType::Frag)] = std::move(fs_ref);
-    shaders_[int(eShaderType::Tesc)] = std::move(tcs_ref);
-    shaders_[int(eShaderType::Tese)] = std::move(tes_ref);
+    shaders_[int(eShaderType::Vertex)] = std::move(vs_ref);
+    shaders_[int(eShaderType::Fragment)] = std::move(fs_ref);
+    shaders_[int(eShaderType::TesselationControl)] = std::move(tcs_ref);
+    shaders_[int(eShaderType::TesselationEvaluation)] = std::move(tes_ref);
 
     if (!InitDescrSetLayouts(log)) {
         log->Error("Failed to initialize descriptor set layouts! (%s)", name_.c_str());
@@ -91,7 +91,7 @@ void Ren::Program::Init(ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
     }
 
     // store shader
-    shaders_[int(eShaderType::Comp)] = std::move(cs_ref);
+    shaders_[int(eShaderType::Compute)] = std::move(cs_ref);
 
     if (!InitDescrSetLayouts(log)) {
         log->Error("Failed to initialize descriptor set layouts! (%s)", name_.c_str());
@@ -228,8 +228,8 @@ void Ren::Program::InitBindings(ILog *log) {
         }
     }
 
-    if (shaders_[int(eShaderType::Vert)]) {
-        for (const Descr &a : shaders_[int(eShaderType::Vert)]->attr_bindings) {
+    if (shaders_[int(eShaderType::Vertex)]) {
+        for (const Descr &a : shaders_[int(eShaderType::Vertex)]->attr_bindings) {
             attributes_.emplace_back(a);
         }
     }
