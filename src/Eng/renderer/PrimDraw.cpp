@@ -14,8 +14,8 @@ extern const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0
 #endif
 extern const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 const int TempBufSize = 256;
-#include "__skydome_mesh.inl"
-#include "__sphere_mesh.inl"
+#include "precomputed/__skydome_mesh.inl"
+#include "precomputed/__sphere_mesh.inl"
 
 extern const int SphereIndicesCount = __sphere_indices_count;
 

@@ -60,13 +60,13 @@ const Ren::Vec2f HaltonSeq23[64] = {Ren::Vec2f{0.0000000000f, 0.0000000000f}, Re
 extern const int TaaSampleCountNormal = 8;
 extern const int TaaSampleCountStatic = 64;
 
-#include "__brdf_lut.inl"
-#include "__cone_rt_lut.inl"
-#include "__ltc_clearcoat.inl"
-#include "__ltc_diffuse.inl"
-#include "__ltc_sheen.inl"
-#include "__ltc_specular.inl"
-#include "__noise.inl"
+#include "precomputed/__brdf_lut.inl"
+#include "precomputed/__cone_rt_lut.inl"
+#include "precomputed/__ltc_clearcoat.inl"
+#include "precomputed/__ltc_diffuse.inl"
+#include "precomputed/__ltc_sheen.inl"
+#include "precomputed/__ltc_specular.inl"
+#include "precomputed/__noise.inl"
 
 extern const int g_sobol_256spp_256d[];
 extern const int g_scrambling_tile_1spp[];

@@ -128,16 +128,7 @@ renderer/PrimDraw.cpp
                         renderer/Renderer_Names.h
                         renderer/Renderer_Passes.cpp
                         renderer/Renderer_Structs.h
-                        renderer/Renderer_SunShadows.cpp
-                        renderer/__brdf_lut.inl
-                        renderer/__cone_rt_lut.inl
-                        renderer/__ltc_clearcoat.inl
-                        renderer/__ltc_diffuse.inl
-                        renderer/__ltc_sheen.inl
-                        renderer/__ltc_specular.inl
-                        renderer/__noise.inl
-                        renderer/__skydome_mesh.inl
-                        renderer/__sphere_mesh.inl)
+                        renderer/Renderer_SunShadows.cpp)
 
 set(SCENE_SOURCES   scene/__cam_rig.inl
                     scene/PhysicsManager.h
