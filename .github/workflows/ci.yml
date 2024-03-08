@@ -243,7 +243,7 @@ jobs:
         with:
           bin-dir: "linux-x86_64-vk"
           out-dir: "linux-x86_64-vk-amd-output"
-          test-args: "-j2 --device AMD --nocpu"
+          test-args: "-j2 --device AMD --nocpu --nohwrt"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         if: always()
