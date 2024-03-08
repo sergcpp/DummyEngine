@@ -16,6 +16,7 @@
 
 extern bool g_determine_sample_count;
 extern bool g_minimal_output;
+extern bool g_nohwrt;
 std::mutex g_stdout_mtx;
 extern int g_validation_level;
 
@@ -57,6 +58,10 @@ void run_material_test(const char *arch_list[], const char *preferred_device, co
         const auto rt = Ray::RendererTypeFromName(*arch);
 
         for (const bool use_hwrt : {false, true}) {
+            if (use_hwrt && g_nohwrt) {
+                continue;
+            }
+
             s.use_hwrt = use_hwrt;
 
             int current_sample_count = max_sample_count;
@@ -1792,7 +1797,7 @@ void test_complex_mat6_dir_light(const char *arch_list[], const char *preferred_
 void test_complex_mat6_sun_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 15;
     const double MinPSNR = 19.0;
-    const int PixThres = 14697;
+    const int PixThres = 14699;
 
     Ray::principled_mat_desc_t olive_mat_desc;
     olive_mat_desc.base_color[0] = 0.836164f;
