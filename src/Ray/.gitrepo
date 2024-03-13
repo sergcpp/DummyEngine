@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Ray
-	branch = ycocg_load
-	commit = a2c9a03ba32478c7df681421ca53cd67b803485d
-	parent = 45de341c5efe7dd1e10c80d49c367fa5c188358b
+	branch = master
+	commit = 1915d00b1b9ebab2ffff7c5d8a550c61e6ec47a8
+	parent = 09e3363aae944402ce0085876b7427d81df6b170
 	method = merge
 	cmdver = 0.4.6
