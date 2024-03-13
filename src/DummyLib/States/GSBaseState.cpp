@@ -870,8 +870,7 @@ bool GSBaseState::HandleInput(const Eng::InputManager::Event &evt) {
         if (evt.key_code == Eng::KeyLeftShift || evt.key_code == Eng::KeyRightShift) {
             shift_down_ = false;
         }
-    }
-    case Eng::RawInputEv::Resize:
+    } break;
     default:
         break;
     }
@@ -1233,6 +1232,14 @@ void GSBaseState::Clear_PT() {
 
 void GSBaseState::Draw_PT() {
     auto [res_x, res_y] = ray_renderer_->size();
+
+    if (res_x != ren_ctx_->w() || res_y != ren_ctx_->h()) {
+        ray_reg_ctx_.clear();
+        ray_renderer_->Resize(ren_ctx_->w(), ren_ctx_->h());
+        res_x = ren_ctx_->w();
+        res_y = ren_ctx_->h();
+    }
+
     if (ray_reg_ctx_.empty()) {
         if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
             static const int TILE_SIZE = 64;

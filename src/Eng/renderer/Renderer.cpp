@@ -496,7 +496,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1] ||
         cur_msaa_enabled != view_state_.is_multisampled || list.render_settings.taa_mode != taa_mode_ ||
-        cur_dof_enabled != dof_enabled_) {
+        cur_dof_enabled != dof_enabled_ || cached_rp_index_ != 0) {
         rendertarget_changed = true;
 
         if (list.render_settings.taa_mode != eTAAMode::Off) {
@@ -602,7 +602,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     const bool probe_storage_changed = (list.probe_storage != probe_storage_);
     const bool rebuild_renderpasses =
         !cached_settings_.has_value() || (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
-        !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed || cached_rp_index_ != 0;
+        !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
 
     cached_settings_ = list.render_settings;
     cached_rp_index_ = 0;
@@ -1505,8 +1505,14 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         log->Error("[Renderer] Failed to initialize primitive drawing!");
     }
 
+    bool resolution_changed = false;
+    if (cur_scr_w != view_state_.scr_res[0] || cur_scr_h != view_state_.scr_res[1]) {
+        resolution_changed = true;
+        view_state_.scr_res = Ren::Vec2i{cur_scr_w, cur_scr_h};
+    }
+
     const bool rebuild_renderpasses = !cached_settings_.has_value() || (cached_settings_.value() != settings) ||
-                                      !rp_builder_.ready() || cached_rp_index_ != 1;
+                                      !rp_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
     cached_settings_ = settings;
     cached_rp_index_ = 1;
 
