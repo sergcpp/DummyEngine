@@ -8,4 +8,4 @@ texture: default_roughness.png
 texture: default_metallic.png
 param: 0.0 0.0 0.0 0.0      // base color, roughness
 param: 0.0 0.0 0.0 0.0      // sheen, sheen_tint, specular, spec_tint
-param: 0.0 0.0 1.0 0.5      // metallic, transmission, clearcoat, clearcoat_roughness
+param: 0.0 0.0 1.0 1.0      // metallic, transmission, clearcoat, clearcoat_roughness

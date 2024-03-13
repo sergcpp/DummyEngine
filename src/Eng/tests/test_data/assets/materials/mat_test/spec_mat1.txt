@@ -6,6 +6,6 @@ texture: default_basecolor.png
 texture: default_normalmap.png
 texture: default_roughness.png
 texture: default_metallic.png
-param: 1.0 1.0 1.0 0.25     // base color, roughness
+param: 1.0 1.0 1.0 0.5      // base color, roughness
 param: 0.0 0.0 0.5 0.0      // sheen, sheen_tint, specular, spec_tint
 param: 1.0 0.0 0.0 0.0      // metallic, transmission, clearcoat, clearcoat_roughness
