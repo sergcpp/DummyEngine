@@ -1894,34 +1894,6 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 }
 
 void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
-                                 const int sizey, const eTexFormat format, const void *data, const int data_len) {
-    assert(format == params.format);
-    assert(params.samples == 1);
-    assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
-    assert(offsety >= 0 && offsety + sizey <= std::max(params.h >> level, 1));
-
-#if 0
-    if (IsCompressedFormat(format)) {
-        ren_glCompressedTextureSubImage2D_Comp(
-            GL_TEXTURE_2D, GLuint(handle_.id), GLint(level), GLint(offsetx),
-            GLint(offsety), GLsizei(sizex), GLsizei(sizey),
-            GLInternalFormatFromTexFormat(format, (params_.flags & TexSRGB) != 0),
-            GLsizei(data_len), data);
-    } else {
-        ren_glTextureSubImage2D_Comp(GL_TEXTURE_2D, GLuint(handle_.id), level, offsetx,
-                                     offsety, sizex, sizey, GLFormatFromTexFormat(format),
-                                     GLTypeFromTexFormat(format), data);
-    }
-#endif
-
-    if (offsetx == 0 && offsety == 0 && sizex == std::max(params.w >> level, 1) &&
-        sizey == std::max(params.h >> level, 1)) {
-        // consider this level initialized
-        initialized_mips_ |= (1u << level);
-    }
-}
-
-void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
                                  const int sizey, const eTexFormat format, const Buffer &sbuf, void *_cmd_buf,
                                  const int data_off, const int data_len) {
     assert(format == params.format);
@@ -2035,23 +2007,7 @@ void Ren::Texture2D::SetSampling(const SamplingParams s) {
     params.sampling = s;
 }
 
-void Ren::Texture2D::DownloadTextureData(const eTexFormat format, void *out_data) const {
-#if defined(__ANDROID__)
-#else
-#if 0
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, GLuint(handle_.id));
-
-    if (format == eTexFormat::RawRGBA8888) {
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, out_data);
-    }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-#endif
-#endif
-}
-
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) {
+void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) const {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;

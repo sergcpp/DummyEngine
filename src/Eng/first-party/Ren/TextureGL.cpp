@@ -1221,21 +1221,7 @@ Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, c
     return MakeFence();
 }
 
-void Ren::Texture2D::DownloadTextureData(const eTexFormat format, void *out_data) const {
-#if defined(__ANDROID__)
-#else
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, GLuint(handle_.id));
-
-    if (format == eTexFormat::RawRGBA8888) {
-        glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, out_data);
-    }
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-#endif
-}
-
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) {
+void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) const {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, GLuint(handle_.id));
 

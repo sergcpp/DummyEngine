@@ -99,8 +99,6 @@ class Texture2D : public RefCounter {
     uint32_t generation() const { return handle_.generation; }
     uint16_t initialized_mips() const { return initialized_mips_; }
 
-    const SamplingParams &sampling() const { return params.sampling; }
-
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
@@ -111,9 +109,7 @@ class Texture2D : public RefCounter {
                      const void *data, int data_len);
     SyncFence SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, Ren::eTexFormat format,
                           const Buffer &sbuf, void *_cmd_buf, int data_off, int data_len);
-
-    void DownloadTextureData(eTexFormat format, void *out_data) const;
-    void CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off);
+    void CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) const;
 
     mutable eResState resource_state = eResState::Undefined;
 };

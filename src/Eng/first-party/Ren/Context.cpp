@@ -440,11 +440,10 @@ void Ren::Context::ReleaseAnims() {
     anims_.clear();
 }
 
-Ren::BufferRef Ren::Context::LoadBuffer(const char *name, const eBufType type, const uint32_t initial_size,
-                                        const uint32_t suballoc_align) {
+Ren::BufferRef Ren::Context::LoadBuffer(const char *name, const eBufType type, const uint32_t initial_size) {
     Ren::BufferRef ref = buffers_.FindByName(name);
     if (!ref) {
-        ref = buffers_.Add(name, api_ctx_.get(), type, initial_size, suballoc_align);
+        ref = buffers_.Add(name, api_ctx_.get(), type, initial_size);
     } else if (ref->size() < initial_size) {
         assert(ref->type() == type);
         ref->Resize(initial_size, false /* keep_content */);

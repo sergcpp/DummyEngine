@@ -20,8 +20,6 @@ namespace Ren {
 const int TextureAtlasWidth = 1024, TextureAtlasHeight = 512, TextureAtlasLayers = 4;
 const int StageBufferCount = 2;
 
-const uint32_t DefaultSubAllocAlign = 768;
-
 struct ApiContext;
 class DescrMultiPoolAlloc;
 
@@ -227,8 +225,7 @@ class Context {
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef LoadBuffer(const char *name, eBufType type, uint32_t initial_size,
-                         uint32_t suballoc_align = DefaultSubAllocAlign);
+    BufferRef LoadBuffer(const char *name, eBufType type, uint32_t initial_size);
     void ReleaseBuffers();
 
     void InitDefaultBuffers();

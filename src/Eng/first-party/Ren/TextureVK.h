@@ -156,12 +156,8 @@ class Texture2D : public RefCounter {
     void ApplySampling(SamplingParams sampling, ILog *log) { SetSampling(sampling); }
 
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, Ren::eTexFormat format,
-                     const void *data, int data_len);
-    void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, Ren::eTexFormat format,
                      const Buffer &sbuf, void *_cmd_buf, int data_off, int data_len);
-
-    void DownloadTextureData(eTexFormat format, void *out_data) const;
-    void CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off);
+    void CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) const;
 };
 
 void CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
