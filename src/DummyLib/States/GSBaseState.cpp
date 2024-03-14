@@ -1142,10 +1142,15 @@ void GSBaseState::InitScene_PT() {
                         }
                         if (mat->params.size() > 2) {
                             mat_desc.metallic = mat->params[2][0];
-                            mat_desc.metallic_texture = load_texture(*mat->textures[3]);
                             mat_desc.transmission = mat->params[2][1];
                             mat_desc.clearcoat = mat->params[2][2];
                             mat_desc.clearcoat_roughness = mat->params[2][3];
+                        }
+                        if (mat->textures.size() > 3) {
+                            mat_desc.metallic_texture = load_texture(*mat->textures[3]);
+                        }
+                        if (mat->textures.size() > 4) {
+                            mat_desc.alpha_texture = load_texture(*mat->textures[4]);
                         }
                         mat_desc.normal_map = load_texture(*mat->textures[1]);
 

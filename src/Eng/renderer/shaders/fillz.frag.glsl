@@ -13,6 +13,7 @@
 
 #pragma multi_compile _ OUTPUT_VELOCITY
 #pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ HASHED_TRANSPARENCY
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
@@ -20,24 +21,21 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 #ifdef TRANSPARENT_PERM
     #if !defined(BINDLESS_TEXTURES)
-        layout(binding = BIND_MAT_TEX3) uniform sampler2D g_alpha_tex;
+        layout(binding = BIND_MAT_TEX4) uniform sampler2D g_alpha_tex;
     #endif // BINDLESS_TEXTURES
-    #ifdef HASHED_TRANSPARENCY
-        layout(location = 3) uniform float hash_scale;
-    #endif // HASHED_TRANSPARENCY
 #endif // TRANSPARENT_PERM
 
 #ifdef OUTPUT_VELOCITY
-    LAYOUT(location = 0) in highp vec3 g_vtx_pos_cs_curr;
-    LAYOUT(location = 1) in highp vec3 g_vtx_pos_cs_prev;
+    layout(location = 0) in highp vec3 g_vtx_pos_cs_curr;
+    layout(location = 1) in highp vec3 g_vtx_pos_cs_prev;
 #endif // OUTPUT_VELOCITY
 #ifdef TRANSPARENT_PERM
-    LAYOUT(location = 2) in highp vec2 g_vtx_uvs0;
+    layout(location = 2) in highp vec2 g_vtx_uvs0;
     #ifdef HASHED_TRANSPARENCY
-        LAYOUT(location = 3) in highp vec3 g_vtx_pos_ls;
+        layout(location = 3) in highp vec3 g_vtx_pos_ls;
     #endif // HASHED_TRANSPARENCY
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 4) in flat highp TEX_HANDLE g_alpha_tex;
+        layout(location = 4) in flat highp TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
@@ -60,7 +58,8 @@ void main() {
     if (tx_alpha < 0.9) discard;
 #else // HASHED_TRANSPARENCY
     float max_deriv = max(length(dFdx(g_vtx_pos_ls)), length(dFdy(g_vtx_pos_ls)));
-    float pix_scale = 1.0 / (hash_scale * max_deriv);
+    const float HashScale = 0.1;
+    float pix_scale = 1.0 / (HashScale * max_deriv);
 
     vec2 pix_scales = vec2(exp2(floor(log2(pix_scale))), exp2(ceil(log2(pix_scale))));
 

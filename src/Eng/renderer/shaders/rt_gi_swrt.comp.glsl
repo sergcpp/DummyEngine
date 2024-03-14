@@ -152,6 +152,7 @@ void main() {
         float ray_len = t_max;
         vec3 tri_normal, albedo;
 
+        vec3 ro = ray_origin_ws.xyz + 0.001 * gi_ray_ws.xyz;
         vec3 inv_d = safe_invert(gi_ray_ws.xyz);
 
         hit_data_t inter;
@@ -161,8 +162,54 @@ void main() {
         inter.t = t_max;
         inter.u = inter.v = 0.0;
 
-        Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                     ray_origin_ws.xyz + 0.001 * gi_ray_ws.xyz, gi_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
+        int transp_depth = 0;
+        while (transp_depth++ < 4) {
+            Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
+                                         ro, gi_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
+            if (inter.mask != 0) {
+                // perform alpha test
+                const bool is_backfacing = (inter.prim_index < 0);
+                const int tri_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
+
+                int i = inter.geo_index;
+                for (; i < inter.geo_index + inter.geo_count; ++i) {
+                    const int tri_start = int(g_geometries[i].indices_start) / 3;
+                    if (tri_start > tri_index) {
+                        break;
+                    }
+                }
+
+                const int geo_index = i - 1;
+
+                const RTGeoInstance geo = g_geometries[geo_index];
+                const MaterialData mat = g_materials[geo.material_index];
+
+                const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+                const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+                const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+
+                const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+                const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+                const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+
+                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+
+                const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
+    #if defined(BINDLESS_TEXTURES)
+                const float alpha = textureLod(SAMPLER2D(mat.texture_indices[4]), uv, 0.0).r;
+                if (alpha < 0.5) {
+                    ro += (inter.t + 0.001) * gi_ray_ws.xyz;
+                    inter.mask = 0;
+                    inter.t = 1000.0;
+                    continue;
+                }
+    #endif
+            }
+            break;
+        }
+
         if (inter.mask == 0) {
             final_color += throughput * clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws, 4.0)), vec3(0.0), vec3(8.0)); // clamp is temporary workaround
             break;

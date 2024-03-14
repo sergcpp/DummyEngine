@@ -38,10 +38,10 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-LAYOUT(location = 1) in vec2 g_vtx_uvs;
-LAYOUT(location = 2) in mediump vec3 g_vtx_normal;
+layout(location = 1) in vec2 g_vtx_uvs;
+layout(location = 2) in mediump vec3 g_vtx_normal;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 8) in flat TEX_HANDLE g_diff_tex;
+    layout(location = 8) in flat TEX_HANDLE g_diff_tex;
 #endif // BINDLESS_TEXTURES
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;

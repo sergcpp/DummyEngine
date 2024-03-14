@@ -16,7 +16,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
-LAYOUT(location = 0) in highp vec3 g_vtx_pos;
+layout(location = 0) in highp vec3 g_vtx_pos;
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 #if !defined(COLOR_ONLY)

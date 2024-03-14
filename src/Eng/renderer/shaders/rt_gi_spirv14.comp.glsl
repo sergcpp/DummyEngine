@@ -163,7 +163,9 @@ void main() {
                               gi_ray_ws.xyz,    // direction
                               t_max             // tMax
                              );
-        while(rayQueryProceedEXT(rq)) {
+
+        int transp_depth = 0;
+        while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
             if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
                 // perform alpha test
                 int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
@@ -183,7 +185,7 @@ void main() {
                 vec2 uv2 = unpackHalf2x16(g_vtx_data0[geo.vertices_start + i2].w);
 
                 vec2 uv = uv0 * (1.0 - bary_coord.x - bary_coord.y) + uv1 * bary_coord.x + uv2 * bary_coord.y;
-                float alpha = textureLod(SAMPLER2D(mat.texture_indices[3]), uv, 0.0).r;
+                float alpha = textureLod(SAMPLER2D(mat.texture_indices[4]), uv, 0.0).r;
                 if (alpha >= 0.5) {
                     rayQueryConfirmIntersectionEXT(rq);
                 }

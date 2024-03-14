@@ -14,7 +14,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-LAYOUT(location = 0) in vec2 g_vtx_uvs;
+layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 g_out_color;
 

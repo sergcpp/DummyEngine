@@ -22,7 +22,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 layout(binding = NORM_TEX_SLOT) uniform highp sampler2D g_norm_tex;
 
-LAYOUT(location = 0) in vec2 g_vtx_uvs;
+layout(location = 0) in vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 out_color;
 

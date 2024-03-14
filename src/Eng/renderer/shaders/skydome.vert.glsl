@@ -17,7 +17,7 @@ layout(push_constant) uniform PushConstants {
 layout(location = U_M_MATRIX_LOC) uniform mat4 g_mmatrix;
 #endif
 
-LAYOUT(location = 0) out vec3 g_vtx_pos;
+layout(location = 0) out vec3 g_vtx_pos;
 
 void main() {
     vec3 vertex_position_ws = (g_mmatrix * vec4(g_in_vtx_pos, 1.0)).xyz;

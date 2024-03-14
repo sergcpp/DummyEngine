@@ -48,9 +48,9 @@ layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
 
 #ifdef TRANSPARENT_PERM
-    LAYOUT(location = 0) out vec2 g_vtx_uvs0;
+    layout(location = 0) out vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 1) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 1) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
@@ -82,7 +82,7 @@ void main() {
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
 #if defined(BINDLESS_TEXTURES)
-    g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 

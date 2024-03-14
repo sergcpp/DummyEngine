@@ -36,9 +36,9 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
 };
 
 #ifdef TRANSPARENT_PERM
-    LAYOUT(location = 0) out vec2 g_vtx_uvs0;
+    layout(location = 0) out vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 1) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 1) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
@@ -51,7 +51,7 @@ void main() {
 
 #if defined(BINDLESS_TEXTURES)
     MaterialData mat = g_materials[instance.y];
-    g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
 #endif
 

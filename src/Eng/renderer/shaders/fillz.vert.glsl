@@ -10,6 +10,7 @@
 
 #pragma multi_compile _ MOVING_PERM
 #pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ HASHED_TRANSPARENCY
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
 #ifdef TRANSPARENT_PERM
@@ -31,16 +32,16 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
 };
 
 #ifdef MOVING_PERM
-    LAYOUT(location = 0) out vec3 g_vtx_pos_cs_curr;
-    LAYOUT(location = 1) out vec3 g_vtx_pos_cs_prev;
+    layout(location = 0) out vec3 g_vtx_pos_cs_curr;
+    layout(location = 1) out vec3 g_vtx_pos_cs_prev;
 #endif // MOVING_PERM
 #ifdef TRANSPARENT_PERM
-    LAYOUT(location = 2) out vec2 g_vtx_uvs0;
+    layout(location = 2) out vec2 g_vtx_uvs0;
     #ifdef HASHED_TRANSPARENCY
-        LAYOUT(location = 3) out vec3 g_vtx_pos_ls;
+        layout(location = 3) out vec3 g_vtx_pos_ls;
     #endif // HASHED_TRANSPARENCY
     #if defined(BINDLESS_TEXTURES)
-        LAYOUT(location = 4) out flat TEX_HANDLE g_alpha_tex;
+        layout(location = 4) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
 #endif // TRANSPARENT_PERM
 
@@ -59,7 +60,7 @@ void main() {
 
     MaterialData mat = g_materials[instance.y];
 #if defined(BINDLESS_TEXTURES)
-    g_alpha_tex = GET_HANDLE(mat.texture_indices[3]);
+    g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
 #ifdef HASHED_TRANSPARENCY
     g_vtx_pos_ls = g_in_vtx_pos;

@@ -31,16 +31,16 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-LAYOUT(location = 0) out highp vec3 g_vtx_pos;
-LAYOUT(location = 1) out mediump vec2 g_vtx_uvs;
-LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
-LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
-LAYOUT(location = 4) out mediump vec4 aVertexOcclusion_;
-LAYOUT(location = 5) out highp vec3 g_vtx_sh_uvs[4];
+layout(location = 0) out highp vec3 g_vtx_pos;
+layout(location = 1) out mediump vec2 g_vtx_uvs;
+layout(location = 2) out mediump vec3 g_vtx_normal;
+layout(location = 3) out mediump vec3 g_vtx_tangent;
+layout(location = 4) out mediump vec4 aVertexOcclusion_;
+layout(location = 5) out highp vec3 g_vtx_sh_uvs[4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 9) out flat TEX_HANDLE g_diff_tex;
-    LAYOUT(location = 10) out flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 11) out flat TEX_HANDLE g_spec_tex;
+    layout(location = 9) out flat TEX_HANDLE g_diff_tex;
+    layout(location = 10) out flat TEX_HANDLE g_norm_tex;
+    layout(location = 11) out flat TEX_HANDLE g_spec_tex;
 #endif // BINDLESS_TEXTURES
 
 invariant gl_Position;

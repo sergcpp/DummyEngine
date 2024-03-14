@@ -10,7 +10,7 @@ LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
 
-LAYOUT(location = 0) out vec2 g_vtx_uvs;
+layout(location = 0) out vec2 g_vtx_uvs;
 
 void main() {
     g_vtx_uvs = g_params.transform.xy + g_in_vtx_uvs * g_params.transform.zw;

@@ -8,11 +8,11 @@
 #include <Ren/RastState.h>
 
 namespace RpSharedInternal {
-void _bind_texture3_and_sampler3(Ren::Context &ctx, const Ren::Material &mat,
+void _bind_texture4_and_sampler4(Ren::Context &ctx, const Ren::Material &mat,
                                  Ren::SmallVectorImpl<Ren::SamplerRef> &temp_samplers) {
     assert(mat.textures.size() >= 1 && mat.samplers.size() >= 1);
-    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, Eng::BIND_MAT_TEX3, mat.textures[3]->id());
-    glBindSampler(Eng::BIND_MAT_TEX3, mat.samplers[3]->id());
+    ren_glBindTextureUnit_Comp(GL_TEXTURE_2D, Eng::BIND_MAT_TEX4, mat.textures[4]->id());
+    glBindSampler(Eng::BIND_MAT_TEX4, mat.samplers[4]->id());
 }
 uint32_t _draw_range(Ren::Span<const uint32_t> zfill_batch_indices, Ren::Span<const Eng::BasicDrawBatch> zfill_batches,
                      uint32_t i, uint32_t mask, int *draws_count) {
@@ -53,7 +53,7 @@ uint32_t _draw_range_ext(Eng::RpBuilder &builder, const Ren::MaterialStorage *ma
 
         if (!ctx.capabilities.bindless_texture && batch.material_index != cur_mat_id) {
             const Ren::Material &mat = materials->at(batch.material_index);
-            _bind_texture3_and_sampler3(builder.ctx(), mat, builder.temp_samplers);
+            _bind_texture4_and_sampler4(builder.ctx(), mat, builder.temp_samplers);
             cur_mat_id = batch.material_index;
         }
 

@@ -35,7 +35,10 @@ bool InitAndDestroyFakeGLContext();
 
 int main(int argc, char *argv[]) {
     Eng::LogStdout log;
-    Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
+    { // PrepareAssets
+        Sys::ThreadPool prep_threads(4);
+        Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", &prep_threads, &log);
+    }
     puts(" ---------------");
     for (int i = 0; i < argc; ++i) {
         printf("%s ", argv[i]);
@@ -51,7 +54,8 @@ int main(int argc, char *argv[]) {
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--prepare_assets") == 0) {
-            Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", nullptr, &log);
+            Sys::ThreadPool prep_threads(4);
+            Eng::SceneManager::PrepareAssets("assets", "assets_pc", "pc", &prep_threads, &log);
             return 0;
         } else if ((strcmp(argv[i], "--device") == 0 || strcmp(argv[i], "-d") == 0) && (++i != argc)) {
             device_name = argv[i];

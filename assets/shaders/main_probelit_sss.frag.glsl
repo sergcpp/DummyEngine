@@ -40,19 +40,19 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-LAYOUT(location = 0) in highp vec3 g_vtx_pos;
-LAYOUT(location = 1) in mediump vec3 aVertexUVAndCurvature_;
-LAYOUT(location = 2) in mediump vec3 g_vtx_normal;
-LAYOUT(location = 3) in mediump vec3 g_vtx_tangent;
-LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs[4];
+layout(location = 0) in highp vec3 g_vtx_pos;
+layout(location = 1) in mediump vec3 aVertexUVAndCurvature_;
+layout(location = 2) in mediump vec3 g_vtx_normal;
+layout(location = 3) in mediump vec3 g_vtx_tangent;
+layout(location = 4) in highp vec3 g_vtx_sh_uvs[4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 8) in flat TEX_HANDLE g_diff_tex;
-    LAYOUT(location = 9) in flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 10) in flat TEX_HANDLE g_spec_tex;
-    LAYOUT(location = 11) in flat TEX_HANDLE g_sss_tex;
-    LAYOUT(location = 12) in flat TEX_HANDLE g_norm_detail_tex;
+    layout(location = 8) in flat TEX_HANDLE g_diff_tex;
+    layout(location = 9) in flat TEX_HANDLE g_norm_tex;
+    layout(location = 10) in flat TEX_HANDLE g_spec_tex;
+    layout(location = 11) in flat TEX_HANDLE g_sss_tex;
+    layout(location = 12) in flat TEX_HANDLE g_norm_detail_tex;
 #endif // BINDLESS_TEXTURES
-LAYOUT(location = 13) in flat vec4 material_params;
+layout(location = 13) in flat vec4 material_params;
 
 layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 layout(location = LOC_OUT_NORM) out vec4 g_out_normal;

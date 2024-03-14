@@ -12,21 +12,21 @@
 layout(triangles, fractional_odd_spacing, ccw) in;
 //layout(triangles, equal_spacing, ccw) in;
 
-LAYOUT(location = 0) in highp vec3 g_vtx_pos_es[];
-LAYOUT(location = 1) in mediump vec2 g_vtx_uvs_es[];
-LAYOUT(location = 2) in mediump vec3 g_vtx_norm_es[];
-LAYOUT(location = 3) in mediump vec3 g_vtx_tangent_es[];
-LAYOUT(location = 4) in highp vec3 g_vtx_sh_uvs_es[][4];
+layout(location = 0) in highp vec3 g_vtx_pos_es[];
+layout(location = 1) in mediump vec2 g_vtx_uvs_es[];
+layout(location = 2) in mediump vec3 g_vtx_norm_es[];
+layout(location = 3) in mediump vec3 g_vtx_tangent_es[];
+layout(location = 4) in highp vec3 g_vtx_sh_uvs_es[][4];
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 12) out flat TEX_HANDLE g_bump_tex;
+    layout(location = 12) out flat TEX_HANDLE g_bump_tex;
 #endif // BINDLESS_TEXTURES
 
-LAYOUT(location = 0) out highp vec3 g_vtx_pos;
-LAYOUT(location = 1) out mediump vec2 g_vtx_uvs;
-LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
-LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
-LAYOUT(location = 4) out highp vec3 g_vtx_sh_uvs[4];
-LAYOUT(location = 8) out lowp float g_tex_height;
+layout(location = 0) out highp vec3 g_vtx_pos;
+layout(location = 1) out mediump vec2 g_vtx_uvs;
+layout(location = 2) out mediump vec3 g_vtx_normal;
+layout(location = 3) out mediump vec3 g_vtx_tangent;
+layout(location = 4) out highp vec3 g_vtx_sh_uvs[4];
+layout(location = 8) out lowp float g_tex_height;
 
 #if !defined(BINDLESS_TEXTURES)
 layout(binding = BIND_MAT_TEX3) uniform sampler2D g_bump_tex;

@@ -254,9 +254,3 @@ float Bayer4x4(uvec2 sample_pos, uint frame) {
     uint bayer = Bayer4x4ui(sample_pos, frame);
     return float(bayer) / 16.0;
 }
-
-#if defined(VULKAN) || defined(GL_SPIRV)
-#define LAYOUT(x) layout(x)
-#else
-#define LAYOUT(x)
-#endif

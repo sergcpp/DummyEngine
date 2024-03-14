@@ -14,7 +14,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = DEPTH_TEX_SLOT) uniform highp sampler2D g_depth_tex;
 
-LAYOUT(location = 0) in highp vec2 g_vtx_uvs;
+layout(location = 0) in highp vec2 g_vtx_uvs;
 
 layout(location = 0) out highp vec2 g_out_velocity;
 

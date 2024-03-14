@@ -41,19 +41,19 @@ layout(binding = BIND_MAT_TEX4) uniform sampler2D g_pp_pos_tex;
 layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
 
-LAYOUT(location = 0) out highp vec3 g_vtx_pos;
-LAYOUT(location = 1) out mediump vec2 g_vtx_uvs;
-LAYOUT(location = 2) out mediump vec3 g_vtx_normal;
-LAYOUT(location = 3) out mediump vec3 g_vtx_tangent;
+layout(location = 0) out highp vec3 g_vtx_pos;
+layout(location = 1) out mediump vec2 g_vtx_uvs;
+layout(location = 2) out mediump vec3 g_vtx_normal;
+layout(location = 3) out mediump vec3 g_vtx_tangent;
 #if defined(BINDLESS_TEXTURES)
-    LAYOUT(location = 4) out flat TEX_HANDLE g_base_tex;
-    LAYOUT(location = 5) out flat TEX_HANDLE g_norm_tex;
-    LAYOUT(location = 6) out flat TEX_HANDLE g_roug_tex;
-    LAYOUT(location = 7) out flat TEX_HANDLE g_metl_tex;
+    layout(location = 4) out flat TEX_HANDLE g_base_tex;
+    layout(location = 5) out flat TEX_HANDLE g_norm_tex;
+    layout(location = 6) out flat TEX_HANDLE g_roug_tex;
+    layout(location = 7) out flat TEX_HANDLE g_metl_tex;
 #endif // BINDLESS_TEXTURES
-LAYOUT(location = 8) out flat vec4 g_base_color;
-LAYOUT(location = 9) out flat vec4 g_mat_params0;
-LAYOUT(location = 10) out flat vec4 g_mat_params1;
+layout(location = 8) out flat vec4 g_base_color;
+layout(location = 9) out flat vec4 g_mat_params0;
+layout(location = 10) out flat vec4 g_mat_params1;
 
 invariant gl_Position;
 
