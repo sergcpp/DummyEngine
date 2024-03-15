@@ -124,6 +124,12 @@ void glslx::Fixup::Apply(TrUnit *tu) {
             ++it;
         }
     }
+    for (int i = 0; i < int(tu->globals.size()); ++i) {
+        if (config_.remove_inout_layout &&
+            (tu->globals[i]->storage == eStorage::In || tu->globals[i]->storage == eStorage::Out)) {
+            tu->globals[i]->layout_qualifiers.clear();
+        }
+    }
     for (ast_function *func : tu->functions) {
         next_counter_ = 0;
         Visit_Function(func);
