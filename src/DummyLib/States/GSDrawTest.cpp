@@ -314,6 +314,31 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
             initial_view_dir_[0] = float(js_dir.at(0).as_num().val);
             initial_view_dir_[1] = float(js_dir.at(1).as_num().val);
             initial_view_dir_[2] = float(js_dir.at(2).as_num().val);
+        } else if (js_cam.Has("view_rot")) {
+            const JsArrayP &js_view_rot = js_cam.at("view_rot").as_arr();
+
+            auto rx = float(js_view_rot.at(0).as_num().val);
+            auto ry = float(js_view_rot.at(1).as_num().val);
+            auto rz = float(js_view_rot.at(2).as_num().val);
+
+            rx *= Ren::Pi<float>() / 180.0f;
+            ry *= Ren::Pi<float>() / 180.0f;
+            rz *= Ren::Pi<float>() / 180.0f;
+
+            Ren::Mat4f transform;
+            transform = Ren::Rotate(transform, float(rz), Ren::Vec3f{0.0f, 0.0f, 1.0f});
+            transform = Ren::Rotate(transform, float(rx), Ren::Vec3f{1.0f, 0.0f, 0.0f});
+            transform = Ren::Rotate(transform, float(ry), Ren::Vec3f{0.0f, 1.0f, 0.0f});
+
+            auto view_vec = Ren::Vec4f{0.0f, -1.0f, 0.0f, 0.0f};
+            view_vec = transform * view_vec;
+
+            memcpy(&initial_view_dir_[0], ValuePtr(view_vec), 3 * sizeof(float));
+
+            //Ren::Vec4f view_up_vec = {0.0f, 0.0f, -1.0f, 0.0f};
+            //view_up_vec = transform * view_up_vec;
+
+            //memcpy(&view_up[0], ValuePtr(view_up_vec), 3 * sizeof(float));
         }
 
         if (js_cam.Has("fwd_speed")) {

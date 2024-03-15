@@ -13,7 +13,7 @@ struct LightSource {
     Ren::Vec3f offset;
     float radius;
     Ren::Vec3f col;
-    float brightness;
+    float power;
     Ren::Vec3f dir;
     float spot, cap_radius;
     float cull_offset, cull_radius;

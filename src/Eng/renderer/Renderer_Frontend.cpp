@@ -465,7 +465,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const Transform &tr = transforms[obj.components[CompTransform]];
                     const LightSource &light = lights_src[obj.components[CompLightSource]];
 
-                    if (light.col[0] > 0.0f || light.col[1] > 0.0f || light.col[2] > 0.0f) {
+                    if (light.power > 0.0f) {
                         auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
                         pos = tr.world_from_object * pos;
                         pos /= pos[3];
@@ -480,9 +480,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         proc_objects_[i.index].li_index = int32_t(list.lights.size());
                         LightItem &ls = list.lights.emplace_back();
 
-                        ls.col[0] = light.col[0] / light.area;
-                        ls.col[1] = light.col[1] / light.area;
-                        ls.col[2] = light.col[2] / light.area;
+                        ls.col[0] = light.power * light.col[0] / light.area;
+                        ls.col[1] = light.power * light.col[1] / light.area;
+                        ls.col[2] = light.power * light.col[2] / light.area;
                         ls.type = int(light.type);
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light.radius;

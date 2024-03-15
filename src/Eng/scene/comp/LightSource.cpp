@@ -28,13 +28,19 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         }
     }
 
-    const JsArrayP &js_color = js_in.at("color").as_arr();
+    ls.col[0] = ls.col[1] = ls.col[2] = 1.0f;
+    if (js_in.Has("color")) {
+        const JsArrayP &js_color = js_in.at("color").as_arr();
+        ls.col[0] = float(js_color[0].as_num().val);
+        ls.col[1] = float(js_color[1].as_num().val);
+        ls.col[2] = float(js_color[2].as_num().val);
+    }
 
-    ls.col[0] = float(js_color[0].as_num().val);
-    ls.col[1] = float(js_color[1].as_num().val);
-    ls.col[2] = float(js_color[2].as_num().val);
-
-    ls.brightness = std::max(ls.col[0], std::max(ls.col[1], ls.col[2]));
+    ls.power = 1.0f;
+    if (js_in.Has("power")) {
+        const JsNumber &js_power = js_in.at("power").as_num();
+        ls.power = float(js_power.val);
+    }
 
     if (js_in.Has("offset")) {
         const JsArrayP &js_offset = js_in.at("offset").as_arr();
@@ -86,7 +92,8 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         const JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
         ls.cull_radius = float(js_cull_radius.val);
     } else {
-        ls.cull_radius = ls.radius * (std::sqrt(ls.brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
+        const float brightness = std::max(ls.col[0], std::max(ls.col[1], ls.col[2]));
+        ls.cull_radius = ls.radius * (std::sqrt(brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
         if (ls.type != eLightType::Point) {
             // TODO: properly determine influence of area lights
             ls.cull_radius *= 10.0f;
@@ -144,7 +151,7 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_out.Push("type", std::move(js_type));
     }
 
-    { // Write color
+    if (ls.col[0] != 1.0f || ls.col[1] != 1.0f || ls.col[2] != 1.0f) { // Write color
         JsArrayP js_color(alloc);
 
         js_color.Push(JsNumber{ls.col[0]});
@@ -152,6 +159,10 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_color.Push(JsNumber{ls.col[2]});
 
         js_out.Push("color", std::move(js_color));
+    }
+
+    if (ls.power != 1.0f) {
+        js_out.Push("power", JsNumber{ls.power});
     }
 
     { // Write offset
