@@ -22,10 +22,6 @@ jobs:
           cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "windows-x86_64-gl"
-      - name: Prepare assets
-        uses: ./.github/actions/prepare-assets
-        with:
-          bin-dir: "windows-x86_64-gl"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -48,10 +44,6 @@ jobs:
         with:
           cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
-          bin-dir: "windows-x86_64-vk"
-      - name: Prepare assets
-        uses: ./.github/actions/prepare-assets
-        with:
           bin-dir: "windows-x86_64-vk"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -76,10 +68,6 @@ jobs:
           cmake-args: "-DRENDERER=GL -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
           bin-dir: "linux-x86_64-gl"
-      - name: Prepare assets
-        uses: ./.github/actions/prepare-assets
-        with:
-          bin-dir: "linux-x86_64-gl"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -102,10 +90,6 @@ jobs:
         with:
           cmake-args: "-DRENDERER=VK -DCMAKE_UNITY_BUILD=ON"
           config: "Release"
-          bin-dir: "linux-x86_64-vk"
-      - name: Prepare assets
-        uses: ./.github/actions/prepare-assets
-        with:
           bin-dir: "linux-x86_64-vk"
       - name: Upload artifacts
         uses: actions/upload-artifact@v3

@@ -22,7 +22,6 @@ runs:
           mkdir $WORK_DIR/${{ inputs.bin-dir }}
           mkdir $WORK_DIR/${{ inputs.bin-dir }}/test_data
           cp build/tests/${{ inputs.config }}/test_Eng* $WORK_DIR/${{ inputs.bin-dir }}
-          cp -ru tests/test_data/assets $WORK_DIR/${{ inputs.bin-dir }}/test_data/assets
           cp build/first-party/Ren/tests/${{ inputs.config }}/test_Ren* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/first-party/Ren/SW/tests/${{ inputs.config }}/test_SW* $WORK_DIR/${{ inputs.bin-dir }}
           cp build/first-party/Sys/tests/${{ inputs.config }}/test_Sys* $WORK_DIR/${{ inputs.bin-dir }}

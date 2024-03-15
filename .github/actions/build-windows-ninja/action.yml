@@ -38,7 +38,6 @@ runs:
         if ("${{ inputs.bin-dir }}" -ne "") {
           mkdir $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/tests/test_Eng.exe $WORK_DIR/${{ inputs.bin-dir }}
-          xcopy src\Eng\tests\test_data\assets\* $WORK_DIR\${{ inputs.bin-dir }}\test_data\assets\* /s
           copy build/src/Ray/tests/test_Ray.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Ren/tests/test_Ren.exe $WORK_DIR/${{ inputs.bin-dir }}
           copy build/src/Eng/first-party/Ren/SW/tests/test_SW.exe $WORK_DIR/${{ inputs.bin-dir }}

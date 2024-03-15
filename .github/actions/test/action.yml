@@ -30,8 +30,10 @@ runs:
         $WORK_DIR/${{ inputs.bin-dir }}/test_Phy
         $WORK_DIR/${{ inputs.bin-dir }}/test_Snd
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ren
-        cd $WORK_DIR/${{ inputs.bin-dir }}/test_data
         mkdir $WORK_DIR/${{ inputs.out-dir }}
+        cd $WORK_DIR/../../builds/DummyEngine/src/Eng/tests/test_data/assets/shaders
+        ln -s ../../../../renderer/shaders internal
+        cd $WORK_DIR/../../builds/DummyEngine/src/Eng/tests/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }} | tee $WORK_DIR/${{ inputs.out-dir }}/test_Eng_output.txt
         cd $WORK_DIR/../../builds/DummyEngine/src/Ray/tests
         $WORK_DIR/${{ inputs.bin-dir }}/test_Ray ${{ inputs.test-args }}
