@@ -338,18 +338,10 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     type_ = eMeshType::Simple;
 
-    enum { MESH_INFO_CHUNK = 0, VTX_ATTR_CHUNK, VTX_NDX_CHUNK, MATERIALS_CHUNK, TRI_GROUPS_CHUNK };
-
-    struct ChunkPos {
-        int offset;
-        int length;
-    };
-
     struct Header {
         int num_chunks;
-        ChunkPos p[5];
+        MeshChunkPos p[5];
     } file_header = {};
-
     data.read((char *)&file_header, sizeof(file_header));
 
     // Skip name, cant remember why i put it there
@@ -361,16 +353,16 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    const auto attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
+    const auto attribs_size = uint32_t(file_header.p[int(eMeshFileChunk::VtxAttributes)].length);
 
     attribs_ = std::make_unique<char[]>(attribs_size);
     data.read((char *)attribs_.get(), attribs_size);
 
-    const auto index_data_size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
+    const auto index_data_size = uint32_t(file_header.p[int(eMeshFileChunk::TriIndices)].length);
     indices_ = std::make_unique<char[]>(index_data_size);
     data.read((char *)indices_.get(), index_data_size);
 
-    const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
+    const int materials_count = file_header.p[int(eMeshFileChunk::Materials)].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
     for (int i = 0; i < materials_count; i++) {
         auto &name = material_names.emplace_back();
@@ -379,7 +371,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 
     flags_ = {};
 
-    const int tri_groups_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
+    const int tri_groups_count = file_header.p[int(eMeshFileChunk::TriGroups)].length / 12;
     assert(tri_groups_count == materials_count);
     for (int i = 0; i < tri_groups_count; i++) {
         int index, num_indices, alpha;
@@ -450,18 +442,10 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 
     type_ = eMeshType::Colored;
 
-    enum { MESH_INFO_CHUNK = 0, VTX_ATTR_CHUNK, VTX_NDX_CHUNK, MATERIALS_CHUNK, TRI_GROUPS_CHUNK };
-
-    struct ChunkPos {
-        int offset;
-        int length;
-    };
-
     struct Header {
         int num_chunks;
-        ChunkPos p[5];
+        MeshChunkPos p[5];
     } file_header = {};
-
     data.read((char *)&file_header, sizeof(file_header));
 
     // Skip name, cant remember why i put it there
@@ -473,16 +457,16 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
     data.read((char *)&temp_f[0], sizeof(float) * 3);
     bbox_max_ = MakeVec3(temp_f);
 
-    const auto attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
+    const auto attribs_size = uint32_t(file_header.p[int(eMeshFileChunk::VtxAttributes)].length);
 
     attribs_ = std::make_unique<char[]>(attribs_size);
     data.read((char *)attribs_.get(), attribs_size);
 
-    const auto index_data_size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
+    const auto index_data_size = uint32_t(file_header.p[int(eMeshFileChunk::TriIndices)].length);
     indices_ = std::make_unique<char[]>(index_data_size);
     data.read((char *)indices_.get(), index_data_size);
 
-    const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
+    const int materials_count = file_header.p[int(eMeshFileChunk::Materials)].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
     for (int i = 0; i < materials_count; i++) {
         auto &name = material_names.emplace_back();
@@ -491,7 +475,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 
     flags_ = {};
 
-    const int tri_strips_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
+    const int tri_strips_count = file_header.p[int(eMeshFileChunk::TriGroups)].length / 12;
     assert(tri_strips_count == materials_count);
     for (int i = 0; i < tri_strips_count; i++) {
         int index, num_indices, alpha;
@@ -565,28 +549,12 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
 
     type_ = eMeshType::Skeletal;
 
-    enum {
-        MESH_INFO_CHUNK = 0,
-        VTX_ATTR_CHUNK,
-        VTX_NDX_CHUNK,
-        MATERIALS_CHUNK,
-        TRI_GROUPS_CHUNK,
-        BONES_CHUNK,
-        SHAPE_KEYS_CHUNK
-    };
-
-    struct ChunkPos {
-        int offset;
-        int length;
-    };
-
     struct Header {
         int num_chunks;
-        ChunkPos p[7];
+        MeshChunkPos p[7];
     } file_header = {};
-
     data.read((char *)&file_header.num_chunks, sizeof(int));
-    data.read((char *)&file_header.p[0], std::streamsize(file_header.num_chunks * sizeof(ChunkPos)));
+    data.read((char *)&file_header.p[0], std::streamsize(file_header.num_chunks * sizeof(MeshChunkPos)));
 
     // Skip name, cant remember why i put it there
     data.seekg(32, std::ios::cur);
@@ -599,15 +567,15 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         bbox_max_ = MakeVec3(temp_f);
     }
 
-    const uint32_t sk_attribs_size = uint32_t(file_header.p[VTX_ATTR_CHUNK].length);
+    const uint32_t sk_attribs_size = uint32_t(file_header.p[int(eMeshFileChunk::VtxAttributes)].length);
     attribs_ = std::make_unique<char[]>(sk_attribs_size);
     data.read((char *)attribs_.get(), sk_attribs_size);
 
-    indices_buf_.size = uint32_t(file_header.p[VTX_NDX_CHUNK].length);
+    indices_buf_.size = uint32_t(file_header.p[int(eMeshFileChunk::TriIndices)].length);
     indices_ = std::make_unique<char[]>(indices_buf_.size);
     data.read((char *)indices_.get(), indices_buf_.size);
 
-    const int materials_count = file_header.p[MATERIALS_CHUNK].length / 64;
+    const int materials_count = file_header.p[int(eMeshFileChunk::Materials)].length / 64;
     SmallVector<std::array<char, 64>, 8> material_names;
     for (int i = 0; i < materials_count; i++) {
         auto &name = material_names.emplace_back();
@@ -616,7 +584,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
 
     flags_ = {};
 
-    const int tri_groups_count = file_header.p[TRI_GROUPS_CHUNK].length / 12;
+    const int tri_groups_count = file_header.p[int(eMeshFileChunk::TriGroups)].length / 12;
     assert(tri_groups_count == materials_count);
     for (int i = 0; i < tri_groups_count; i++) {
         int index, num_indices, alpha;
@@ -636,7 +604,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         grp.mat = on_mat_load(&material_names[i][0]);
     }
 
-    skel_.bones_count = file_header.p[BONES_CHUNK].length / (64 + 8 + 12 + 16);
+    skel_.bones_count = file_header.p[int(eMeshFileChunk::Bones)].length / (64 + 8 + 12 + 16);
     skel_.bones = std::make_unique<Bone[]>(skel_.bones_count);
 
     for (int i = 0; i < skel_.bones_count; i++) {
@@ -680,7 +648,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         data.read((char *)&shape_keyed_vertices_count, sizeof(uint32_t));
 
         skel_.shapes_count =
-            int(file_header.p[SHAPE_KEYS_CHUNK].length - 2 * sizeof(uint32_t)) /
+            int(file_header.p[int(eMeshFileChunk::ShapeKeys)].length - 2 * sizeof(uint32_t)) /
             (64 + shape_keyed_vertices_count * (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float)));
 
         deltas_ = std::make_unique<VtxDelta[]>(skel_.shapes_count * shape_keyed_vertices_count);

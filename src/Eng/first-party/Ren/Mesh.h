@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cfloat>
 #include <memory>
 
 #include "AccStructure.h"
@@ -69,6 +70,21 @@ enum class eMeshLoadStatus { Found, SetToDefault, CreatedFromData };
 enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
 using material_load_callback = std::function<MaterialRef(const char *name)>;
+
+enum class eMeshFileChunk { Info = 0, VtxAttributes, TriIndices, Materials, TriGroups, Bones, ShapeKeys };
+
+struct MeshChunkPos {
+    int32_t offset, length;
+};
+static_assert(sizeof(MeshChunkPos) == 8, "!");
+
+struct MeshFileInfo {
+    char name[32] = "ModelName";
+    float bbox_min[3] = {FLT_MAX, FLT_MAX, FLT_MAX}, bbox_max[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
+};
+static_assert(sizeof(MeshFileInfo) == 56, "!");
+static_assert(offsetof(MeshFileInfo, bbox_min) == 32, "!");
+static_assert(offsetof(MeshFileInfo, bbox_max) == 44, "!");
 
 class Mesh : public RefCounter {
     eMeshType type_ = eMeshType::Undefined;

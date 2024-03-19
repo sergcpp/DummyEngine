@@ -681,19 +681,8 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
     using namespace std::placeholders;
 
     enum class eModelType { M_UNKNOWN, M_STATIC, M_COLORED, M_SKEL, M_SKEL_COLORED } mesh_type = eModelType::M_UNKNOWN;
-    struct MeshInfo {
-        char name[32];
-        float bbox_min[3], bbox_max[3];
 
-        MeshInfo() {
-            strcpy(name, "ModelName");
-            fill_n(bbox_min, 3, numeric_limits<float>::max());
-            fill_n(bbox_max, 3, -numeric_limits<float>::max());
-        }
-    } mesh_info;
-    static_assert(sizeof(MeshInfo) == 56, "fix struct packing!");
-    static_assert(offsetof(MeshInfo, bbox_min) == 32, "!");
-    static_assert(offsetof(MeshInfo, bbox_max) == 44, "!");
+    Ren::MeshFileInfo mesh_info = {};
 
     struct OutBone {
         char name[64];
@@ -744,12 +733,11 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
         string str;
         getline(in_file, str);
 
-        {
-            const int toks_count = Tokenize(str, " ", toks);
-            if (!toks_count)
-                return eCompileResult::RES_PARSE_ERROR;
-            str = toks[0];
+        const int toks_count = Tokenize(str, " ", toks);
+        if (!toks_count) {
+            return eCompileResult::RES_PARSE_ERROR;
         }
+        str = toks[0];
 
         if (str == "STATIC_MESH") {
             mesh_type = eModelType::M_STATIC;
@@ -1287,15 +1275,9 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
         out_file.write("SKECOL_MESH\0", 12);
     }
 
-    enum eFileChunk { CH_MESH_INFO = 0, CH_VTX_ATTR, CH_VTX_NDX, CH_MATERIALS, CH_STRIPS, CH_BONES, CH_SHAPE_KEYS };
-
-    struct ChunkPos {
-        int32_t offset, length;
-    };
-
     struct Header {
         int32_t num_chunks;
-        ChunkPos p[7];
+        Ren::MeshChunkPos p[7];
     } file_header;
 
     if (mesh_type == eModelType::M_STATIC || mesh_type == eModelType::M_COLORED) {
@@ -1306,53 +1288,53 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
             file_header.num_chunks++;
         }
     }
-    size_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(ChunkPos);
+    size_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(Ren::MeshChunkPos);
     size_t file_offset = 12 + header_size;
 
-    file_header.p[CH_MESH_INFO].offset = (int32_t)file_offset;
-    file_header.p[CH_MESH_INFO].length = sizeof(mesh_info);
-    file_offset += file_header.p[CH_MESH_INFO].length;
+    file_header.p[int(Ren::eMeshFileChunk::Info)].offset = (int32_t)file_offset;
+    file_header.p[int(Ren::eMeshFileChunk::Info)].length = sizeof(mesh_info);
+    file_offset += file_header.p[int(Ren::eMeshFileChunk::Info)].length;
 
-    file_header.p[CH_VTX_ATTR].offset = (int32_t)file_offset;
+    file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].offset = (int32_t)file_offset;
     if (mesh_type == eModelType::M_COLORED || mesh_type == eModelType::M_SKEL_COLORED) {
-        file_header.p[CH_VTX_ATTR].length =
+        file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].length =
             (int32_t)(sizeof(float) * (positions.size() / 3) * 11 + sizeof(uint8_t) * vtx_colors.size() +
                       sizeof(float) * weights.size());
     } else {
-        file_header.p[CH_VTX_ATTR].length =
+        file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].length =
             (int32_t)(sizeof(float) * (positions.size() / 3) * 13 + sizeof(float) * weights.size());
     }
-    file_offset += file_header.p[CH_VTX_ATTR].length;
+    file_offset += file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].length;
 
-    file_header.p[CH_VTX_NDX].offset = (int32_t)file_offset;
-    file_header.p[CH_VTX_NDX].length = (int32_t)(sizeof(uint32_t) * total_indices.size());
-    file_offset += file_header.p[CH_VTX_NDX].length;
+    file_header.p[int(Ren::eMeshFileChunk::TriIndices)].offset = (int32_t)file_offset;
+    file_header.p[int(Ren::eMeshFileChunk::TriIndices)].length = (int32_t)(sizeof(uint32_t) * total_indices.size());
+    file_offset += file_header.p[int(Ren::eMeshFileChunk::TriIndices)].length;
 
-    file_header.p[CH_MATERIALS].offset = (int32_t)file_offset;
-    file_header.p[CH_MATERIALS].length = (int32_t)(64 * materials.size());
-    file_offset += file_header.p[CH_MATERIALS].length;
+    file_header.p[int(Ren::eMeshFileChunk::Materials)].offset = (int32_t)file_offset;
+    file_header.p[int(Ren::eMeshFileChunk::Materials)].length = (int32_t)(64 * materials.size());
+    file_offset += file_header.p[int(Ren::eMeshFileChunk::Materials)].length;
 
-    file_header.p[CH_STRIPS].offset = (int32_t)file_offset;
-    file_header.p[CH_STRIPS].length = (int32_t)(sizeof(MeshChunk) * total_chunks.size());
-    file_offset += file_header.p[CH_STRIPS].length;
+    file_header.p[int(Ren::eMeshFileChunk::TriGroups)].offset = (int32_t)file_offset;
+    file_header.p[int(Ren::eMeshFileChunk::TriGroups)].length = (int32_t)(sizeof(MeshChunk) * total_chunks.size());
+    file_offset += file_header.p[int(Ren::eMeshFileChunk::TriGroups)].length;
 
     if (mesh_type == eModelType::M_SKEL || mesh_type == eModelType::M_SKEL_COLORED) {
-        file_header.p[CH_BONES].offset = (int32_t)file_offset;
-        file_header.p[CH_BONES].length = (int32_t)(100 * out_bones.size());
-        file_offset += file_header.p[CH_BONES].length;
+        file_header.p[int(Ren::eMeshFileChunk::Bones)].offset = (int32_t)file_offset;
+        file_header.p[int(Ren::eMeshFileChunk::Bones)].length = (int32_t)(100 * out_bones.size());
+        file_offset += file_header.p[int(Ren::eMeshFileChunk::Bones)].length;
 
         if (!shape_keys.empty()) {
-            file_header.p[CH_SHAPE_KEYS].offset = (int32_t)file_offset;
-            file_header.p[CH_SHAPE_KEYS].length =
+            file_header.p[int(Ren::eMeshFileChunk::ShapeKeys)].offset = (int32_t)file_offset;
+            file_header.p[int(Ren::eMeshFileChunk::ShapeKeys)].length =
                 int32_t(2 * sizeof(uint32_t) +
                         shape_keys.size() * (64 + shape_keys[0].data.size() *
                                                       (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float))));
-            file_offset += file_header.p[CH_SHAPE_KEYS].length;
+            file_offset += file_header.p[int(Ren::eMeshFileChunk::ShapeKeys)].length;
         }
     }
 
     out_file.write((char *)&file_header, header_size);
-    out_file.write((char *)&mesh_info, sizeof(MeshInfo));
+    out_file.write((char *)&mesh_info, sizeof(Ren::MeshFileInfo));
 
     for (unsigned i = 0; i < positions.size() / 3; i++) {
         out_file.write((char *)&positions[i * 3ull], sizeof(float) * 3);
@@ -1561,16 +1543,9 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, co
 
     enum eFileChunk { CH_SKELETON, CH_SHAPES, CH_ANIM_INFO, CH_FRAMES };
 
-    struct ChunkPos {
-        int32_t offset, length;
-    };
-
-    static_assert(sizeof(ChunkPos) == 8, "fix struct packing!");
-    static_assert(offsetof(ChunkPos, length) == 4, "!");
-
     struct Header {
         int32_t num_chunks;
-        ChunkPos p[4];
+        Ren::MeshChunkPos p[4];
     } file_header;
 
     static_assert(sizeof(Header) == 36, "fix struct packing!");

@@ -1042,8 +1042,8 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 
             Vec3f tangent, binormal;
 
-            const float det = dt1[0] * dt2[1] - dt1[1] * dt2[0];
-            if (std::abs(det) > flt_eps) {
+            const float det = fabsf(dt1[0] * dt2[1] - dt1[1] * dt2[0]);
+            if (det > flt_eps) {
                 const float inv_det = 1.0f / det;
                 tangent = (dp1 * dt2[1] - dp2 * dt1[1]) * inv_det;
                 binormal = (dp2 * dt1[0] - dp1 * dt2[0]) * inv_det;
@@ -1100,7 +1100,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
             if (i1 || i2) {
                 uint32_t index = twin_verts[indices[i + 1]][i1 + i2 - 1];
                 if (index == 0) {
-                    index = (uint32_t)(vertices.size());
+                    index = uint32_t(vertices.size());
                     vertices.push_back(*v1);
                     memset(&vertices.back().b[0], 0, 3 * sizeof(float));
                     twin_verts[indices[i + 1]][i1 + i2 - 1] = index;
