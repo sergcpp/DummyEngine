@@ -358,7 +358,8 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
             } else if (strcmp(platform, "android") == 0) {
                 tex.replace(n + 1, 3, "ktx");
             }
-        } else if ((n = tex.find(".png")) != std::string::npos || (n = tex.find(".img")) != std::string::npos) {
+        } else if ((n = tex.find(".png")) != std::string::npos || (n = tex.find(".jpg")) != std::string::npos ||
+                   (n = tex.find(".img")) != std::string::npos) {
             if (strcmp(platform, "pc") == 0) {
                 tex.replace(n + 1, 3, "dds");
             } else if (strcmp(platform, "android") == 0) {
@@ -531,6 +532,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["tga"] = {"dds", HConvToDDS};
         g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"dds", HConvToDDS};
+        g_asset_handlers["jpg"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
         g_asset_handlers["dds"] = {"dds", HCopy};
         g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HCompileShader};
@@ -543,6 +545,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"ktx", HConvToASTC};
+        g_asset_handlers["jpg"] = {"ktx", HConvToASTC};
         g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
         g_asset_handlers["ktx"] = {"ktx", HCopy};
     }

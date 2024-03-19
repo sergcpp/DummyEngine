@@ -58,6 +58,9 @@ bool Eng::Cmdline::Parse(const char *str, ArgData *out_argv, int &out_argc) {
 
     for (int i = 0; i < out_argc; i++) {
         ArgData &arg = out_argv[i];
+        if (arg.str.empty()) {
+            continue;
+        }
 
         if (arg.str[0] == '"') {
             if (arg.str[arg.str.length() - 1] != '"') {

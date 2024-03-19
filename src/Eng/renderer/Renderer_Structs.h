@@ -360,7 +360,7 @@ struct SharedDataBlock {
     ProbeItem probes[MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 64 + 16, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 
@@ -471,7 +471,7 @@ const size_t ItemsBufChunkSize = sizeof(ItemData) * MAX_ITEMS_TOTAL;
 const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES;
 const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES;
 const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * MAX_RT_TLAS_NODES;
-const size_t SharedDataBlockSize = 8 * 1024;
+const size_t SharedDataBlockSize = 12 * 1024;
 
 static_assert(sizeof(SharedDataBlock) <= SharedDataBlockSize, "!");
 
