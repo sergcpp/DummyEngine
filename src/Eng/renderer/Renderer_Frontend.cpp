@@ -1345,7 +1345,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                 if (!light_sees_dynamic_objects && region->last_update != 0xffffffff &&
                     (scene.update_counter - region->last_update > 2)) {
-                    // nothing was changed within the last two frames, discard added batches
+                    // nothing has changed within the last two frames, discard added batches
                     list.shadow_batches.resize(sh_list.shadow_batch_start);
                     sh_list.shadow_batch_count = 0;
                 } else {

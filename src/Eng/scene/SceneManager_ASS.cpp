@@ -141,7 +141,7 @@ std::vector<float> FlushSeams(const float *pixels, int width, int height, float 
 void ReadAllFiles_r(Eng::assets_context_t &ctx, const std::filesystem::path &in_folder,
                     const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback) {
     if (!std::filesystem::exists(in_folder)) {
-        //ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
+        // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
     }
 
@@ -158,7 +158,7 @@ void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const std::filesystem::path &
                        const std::function<void(Eng::assets_context_t &ctx, const std::filesystem::path &)> &callback,
                        Sys::ThreadPool *threads, std::deque<std::future<void>> &events) {
     if (!std::filesystem::exists(in_folder)) {
-        //ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
+        // ctx.log->Error("Cannot open folder %s", in_folder.generic_string().c_str());
         return;
     }
 
@@ -186,7 +186,7 @@ uint32_t HashFile(const std::filesystem::path &in_file, Ren::ILog *log) {
     const size_t HashChunkSize = 8 * 1024;
     uint8_t in_file_buf[HashChunkSize];
 
-    log->Info("Hashing %s", in_file.generic_string().c_str());
+    //log->Info("Hashing %s", in_file.generic_string().c_str());
 
     uint32_t hash = 0;
 
@@ -493,6 +493,61 @@ std::string ExtractHTMLData(Eng::assets_context_t &ctx, const char *in_file, std
     return out_str;
 }
 
+static const char g_base64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                                     "abcdefghijklmnopqrstuvwxyz"
+                                     "0123456789+/";
+
+bool is_base64(const uint8_t c) { return (isalnum(c) || (c == '+') || (c == '/')); }
+
+std::vector<uint8_t> base64_decode(const std::string_view encoded_string) {
+    int in_len = int(encoded_string.size());
+    int i = 0;
+    int j = 0;
+    int in_ = 0;
+    uint8_t char_array_4[4], char_array_3[3];
+    std::vector<uint8_t> ret;
+
+    while (in_len-- && (encoded_string[in_] != '=') && is_base64(encoded_string[in_])) {
+        char_array_4[i++] = encoded_string[in_];
+        in_++;
+        if (i == 4) {
+            for (i = 0; i < 4; i++) {
+                char_array_4[i] =
+                    char(std::find(std::begin(g_base64_chars), std::end(g_base64_chars), char_array_4[i]) -
+                         std::begin(g_base64_chars));
+            }
+            char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+            char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+            char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+            for (i = 0; (i < 3); i++)
+                ret.push_back(char_array_3[i]);
+            i = 0;
+        }
+    }
+
+    if (i) {
+        for (j = i; j < 4; j++) {
+            char_array_4[j] = 0;
+        }
+        for (j = 0; j < 4; j++) {
+            char_array_4[j] = char(std::find(std::begin(g_base64_chars), std::end(g_base64_chars), char_array_4[j]) -
+                                   std::begin(g_base64_chars));
+        }
+        char_array_3[0] = (char_array_4[0] << 2) + ((char_array_4[1] & 0x30) >> 4);
+        char_array_3[1] = ((char_array_4[1] & 0xf) << 4) + ((char_array_4[2] & 0x3c) >> 2);
+        char_array_3[2] = ((char_array_4[2] & 0x3) << 6) + char_array_4[3];
+
+        for (j = 0; (j < i - 1); j++) {
+            ret.push_back(char_array_3[j]);
+        }
+    }
+
+    return ret;
+}
+
+enum class eGLTFComponentType { Byte = 5120, UByte = 5121, Short = 5122, UShort = 5123, UInt = 5125, Float = 5126 };
+
 bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]);
 
 bool g_astc_initialized = false;
@@ -516,10 +571,11 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     g_asset_handlers["bff"] = {"bff", HCopy};
     g_asset_handlers["mesh"] = {"mesh", HCopy};
+    g_asset_handlers["gltf"] = {"mesh", HConvGLTFToMesh};
     g_asset_handlers["anim"] = {"anim", HCopy};
     g_asset_handlers["wav"] = {"wav", HCopy};
     g_asset_handlers["ivf"] = {"ivf", HCopy};
-    //g_asset_handlers["glsl"] = {"glsl", HCopy};
+    // g_asset_handlers["glsl"] = {"glsl", HCopy};
     g_asset_handlers["vert.glsl"] = {"vert.glsl", HCompileShader};
     g_asset_handlers["frag.glsl"] = {"frag.glsl", HCompileShader};
     g_asset_handlers["tesc.glsl"] = {"tesc.glsl", HCompileShader};
@@ -597,7 +653,6 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
             ctx.log->Info("Failed to create directories for %s", out_file.generic_string().c_str());
             return;
         }
-
 
         // std::lock_guard<std::mutex> _(ctx.cache_mtx);
 
@@ -749,6 +804,308 @@ bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const 
     }
 
     return dst_stream.good();
+}
+
+bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                        Ren::SmallVectorImpl<std::string> &out_dependencies) {
+    using namespace SceneManagerInternal;
+
+    ctx.log->Info("Prep %s", out_file);
+
+    std::ifstream src_stream(in_file, std::ios::binary);
+    if (!src_stream) {
+        return false;
+    }
+
+    JsObject js_gltf;
+    if (!js_gltf.Read(src_stream)) {
+        ctx.log->Error("Failed to parse %s", in_file);
+        return false;
+    }
+
+    try {
+        std::vector<std::vector<uint8_t>> buffers;
+        const JsArray &js_buffers = js_gltf.at("buffers").as_arr();
+        for (const JsElement &js_buffer : js_buffers.elements) {
+            const JsObject &js_buf = js_buffer.as_obj();
+
+            const JsNumber &js_byte_length = js_buf.at("byteLength").as_num();
+            const JsString &js_uri = js_buf.at("uri").as_str();
+
+            if (std::string_view(js_uri.val.c_str(), 5) == "data:") {
+                const size_t n = js_uri.val.find(',', 5);
+                if (n != std::string::npos) {
+                    std::vector<uint8_t> data = base64_decode(std::string_view(js_uri.val.c_str() + n + 1));
+                    data.resize(size_t(js_byte_length.val));
+                    buffers.emplace_back(std::move(data));
+                } else {
+                    ctx.log->Error("Unsupported URI");
+                    return false;
+                }
+            } else {
+                ctx.log->Error("Unsupported URI");
+                return false;
+            }
+        }
+
+        std::vector<float> positions, normals, tangents, uvs, uvs2, weights;
+        std::vector<std::string> materials;
+        std::vector<std::vector<uint32_t>> indices;
+
+        const JsArray &js_materials = js_gltf.at("materials").as_arr();
+        for (const JsElement &js_material : js_materials.elements) {
+            const JsObject &js_mat = js_material.as_obj();
+            materials.push_back(js_mat.at("name").as_str().val);
+        }
+
+        const JsArray &js_accessors = js_gltf.at("accessors").as_arr();
+        const JsArray &js_buffer_views = js_gltf.at("bufferViews").as_arr();
+
+        const JsArray &js_meshes = js_gltf.at("meshes").as_arr();
+        if (js_meshes.Size() == 1) {
+            const JsObject &js_mesh = js_meshes.at(0).as_obj();
+
+            const JsArray &js_primitives = js_mesh.at("primitives").as_arr();
+            for (const JsElement &js_primitive : js_primitives.elements) {
+                const JsObject &js_prim = js_primitive.as_obj();
+
+                const JsObject &js_attributes = js_prim.at("attributes").as_obj();
+                const uint32_t index_offset = uint32_t(positions.size()) / 3;
+
+                { // parse positions
+                    const int pos_ndx = int(js_attributes.at("POSITION").as_num().val);
+                    const JsObject &js_pos_accessor = js_accessors.at(pos_ndx).as_obj();
+                    const JsObject &js_pos_view =
+                        js_buffer_views.at(int(js_pos_accessor.at("bufferView").as_num().val)).as_obj();
+                    assert(int(js_pos_accessor.at("componentType").as_num().val) == int(eGLTFComponentType::Float));
+                    assert(js_pos_accessor.at("type").as_str().val == "VEC3");
+
+                    const auto &pos_buf = buffers[int(js_pos_view.at("buffer").as_num().val)];
+                    const int pos_byte_len = int(js_pos_view.at("byteLength").as_num().val);
+                    const int pos_byte_off = int(js_pos_view.at("byteOffset").as_num().val);
+                    assert((pos_byte_len % sizeof(float)) == 0);
+                    const size_t pos_off = positions.size();
+                    positions.resize(positions.size() + pos_byte_len / sizeof(float));
+                    memcpy(&positions[pos_off], &pos_buf[pos_byte_off], pos_byte_len);
+                }
+
+                { // parse normals
+                    const int norm_ndx = int(js_attributes.at("NORMAL").as_num().val);
+                    const JsObject &js_norm_accessor = js_accessors.at(norm_ndx).as_obj();
+                    const JsObject &js_norm_view =
+                        js_buffer_views.at(int(js_norm_accessor.at("bufferView").as_num().val)).as_obj();
+                    assert(int(js_norm_accessor.at("componentType").as_num().val) == int(eGLTFComponentType::Float));
+                    assert(js_norm_accessor.at("type").as_str().val == "VEC3");
+
+                    const auto &norm_buf = buffers[int(js_norm_view.at("buffer").as_num().val)];
+                    const int norm_byte_len = int(js_norm_view.at("byteLength").as_num().val);
+                    const int norm_byte_off = int(js_norm_view.at("byteOffset").as_num().val);
+                    assert((norm_byte_len % sizeof(float)) == 0);
+                    const size_t norm_off = normals.size();
+                    normals.resize(normals.size() + norm_byte_len / sizeof(float));
+                    memcpy(&normals[norm_off], &norm_buf[norm_byte_off], norm_byte_len);
+                }
+
+                { // parse uvs
+                    const int uvs_ndx = int(js_attributes.at("TEXCOORD_0").as_num().val);
+                    const JsObject &js_uvs_accessor = js_accessors.at(uvs_ndx).as_obj();
+                    const JsObject &js_uvs_view =
+                        js_buffer_views.at(int(js_uvs_accessor.at("bufferView").as_num().val)).as_obj();
+                    assert(int(js_uvs_accessor.at("componentType").as_num().val) == int(eGLTFComponentType::Float));
+                    assert(js_uvs_accessor.at("type").as_str().val == "VEC2");
+
+                    const auto &uvs_buf = buffers[int(js_uvs_view.at("buffer").as_num().val)];
+                    const int uvs_byte_len = int(js_uvs_view.at("byteLength").as_num().val);
+                    const int uvs_byte_off = int(js_uvs_view.at("byteOffset").as_num().val);
+                    assert((uvs_byte_len % sizeof(float)) == 0);
+                    const size_t uvs_off = uvs.size();
+                    uvs.resize(uvs.size() + uvs_byte_len / sizeof(float));
+                    memcpy(&uvs[uvs_off], &uvs_buf[uvs_byte_off], uvs_byte_len);
+                }
+
+                { // parse indices
+                    const int indices_ndx = int(js_prim.at("indices").as_num().val);
+                    const JsObject &js_indices_accessor = js_accessors.at(indices_ndx).as_obj();
+                    const JsObject &js_indices_view =
+                        js_buffer_views.at(int(js_indices_accessor.at("bufferView").as_num().val)).as_obj();
+                    const eGLTFComponentType comp_type =
+                        eGLTFComponentType(js_indices_accessor.at("componentType").as_num().val);
+                    assert(js_indices_accessor.at("type").as_str().val == "SCALAR");
+
+                    const auto &indices_buf = buffers[int(js_indices_view.at("buffer").as_num().val)];
+                    const int indices_byte_len = int(js_indices_view.at("byteLength").as_num().val);
+                    const int indices_byte_off = int(js_indices_view.at("byteOffset").as_num().val);
+                    auto &ndx = indices.emplace_back();
+                    if (comp_type == eGLTFComponentType::UByte) {
+                        ndx.resize(indices_byte_len);
+                        const uint8_t *src = &indices_buf[indices_byte_off];
+                        for (uint32_t &n : ndx) {
+                            n = index_offset + uint32_t(*src++);
+                        }
+                    } else if (comp_type == eGLTFComponentType::UShort) {
+                        ndx.resize(indices_byte_len / sizeof(uint16_t));
+                        const auto *src = reinterpret_cast<const uint16_t *>(&indices_buf[indices_byte_off]);
+                        for (uint32_t &n : ndx) {
+                            n = index_offset + uint32_t(*src++);
+                        }
+                    } else if (comp_type == eGLTFComponentType::UInt) {
+                        ndx.resize(indices_byte_len / sizeof(uint32_t));
+                        const auto *src = reinterpret_cast<const uint32_t *>(&indices_buf[indices_byte_off]);
+                        for (uint32_t &n : ndx) {
+                            n = index_offset + uint32_t(*src++);
+                        }
+                    } else {
+                        ctx.log->Error("Unsupported indices format");
+                        return false;
+                    }
+                }
+            }
+
+            int vertex_count = int(positions.size() / 3);
+            uvs2.resize(2 * vertex_count, 0.0f);
+
+            { // generate tangents
+                std::vector<Ren::vertex_t> vertices(vertex_count);
+
+                for (int i = 0; i < vertex_count; ++i) {
+                    memcpy(&vertices[i].p[0], &positions[i * 3ull], sizeof(float) * 3);
+                    memcpy(&vertices[i].n[0], &normals[i * 3ull], sizeof(float) * 3);
+                    memset(&vertices[i].b[0], 0, sizeof(float) * 3);
+                    memcpy(&vertices[i].t[0][0], &uvs[i * 2ull], sizeof(float) * 2);
+                    vertices[i].t[1][0] = vertices[i].t[1][1] = 0;
+                    vertices[i].index = i;
+                }
+
+                Ren::ComputeTangentBasis(vertices, &indices[0], int(indices.size()));
+
+                tangents.resize(vertices.size() * 3);
+
+                for (size_t i = 0; i < vertices.size(); ++i) {
+                    vertices[i].b[0] = -vertices[i].b[0];
+                    vertices[i].b[1] = -vertices[i].b[1];
+                    vertices[i].b[2] = -vertices[i].b[2];
+                    memcpy(&tangents[i * 3], &vertices[i].b[0], sizeof(float) * 3);
+                }
+
+                for (int i = vertex_count; i < int(vertices.size()); ++i) {
+                    positions.push_back(vertices[i].p[0]);
+                    positions.push_back(vertices[i].p[1]);
+                    positions.push_back(vertices[i].p[2]);
+                    normals.push_back(vertices[i].n[0]);
+                    normals.push_back(vertices[i].n[1]);
+                    normals.push_back(vertices[i].n[2]);
+                    uvs.push_back(vertices[i].t[0][0]);
+                    uvs.push_back(vertices[i].t[0][1]);
+                    uvs2.push_back(vertices[i].t[1][0]);
+                    uvs2.push_back(vertices[i].t[1][1]);
+                }
+
+                vertex_count = int(vertices.size());
+            }
+
+            const bool OptimizeMesh = true;
+
+            std::vector<std::vector<uint32_t>> reordered_indices;
+            if (OptimizeMesh) {
+                for (std::vector<uint32_t> &index_group : indices) {
+                    std::vector<uint32_t> &cur_strip = reordered_indices.emplace_back();
+                    cur_strip.resize(index_group.size());
+                    Ren::ReorderTriangleIndices(&index_group[0], uint32_t(index_group.size()), uint32_t(vertex_count),
+                                                &cur_strip[0]);
+                }
+            } else {
+                reordered_indices = indices;
+            }
+
+            struct MeshChunk {
+                uint32_t index, num_indices;
+                uint32_t alpha;
+
+                MeshChunk(uint32_t ndx, uint32_t num, uint32_t has_alpha)
+                    : index(ndx), num_indices(num), alpha(has_alpha) {}
+            };
+            std::vector<uint32_t> total_indices;
+            std::vector<MeshChunk> total_chunks;
+
+            for (int i = 0; i < int(reordered_indices.size()); ++i) {
+                total_chunks.emplace_back(uint32_t(total_indices.size()), uint32_t(reordered_indices[i].size()), 0);
+                total_indices.insert(end(total_indices), begin(reordered_indices[i]), end(reordered_indices[i]));
+            }
+
+            std::ofstream out_f(out_file, std::ios::binary);
+            out_f.write("STATIC_MESH\0", 12);
+
+            struct Header {
+                int32_t num_chunks;
+                Ren::MeshChunkPos p[7];
+            } file_header = {};
+            file_header.num_chunks = 5;
+
+            Ren::MeshFileInfo mesh_info = {};
+            for (int i = 0; i < vertex_count; ++i) {
+                for (int j : {0, 1, 2}) {
+                    mesh_info.bbox_min[j] = fminf(mesh_info.bbox_min[j], positions[i * 3 + j]);
+                    mesh_info.bbox_max[j] = fmaxf(mesh_info.bbox_max[j], positions[i * 3 + j]);
+                }
+            }
+
+            const int32_t header_size = sizeof(int32_t) + file_header.num_chunks * sizeof(Ren::MeshChunkPos);
+            int32_t file_offset = 12 + header_size;
+
+            file_header.p[int(Ren::eMeshFileChunk::Info)].offset = file_offset;
+            file_header.p[int(Ren::eMeshFileChunk::Info)].length = sizeof(Ren::MeshFileInfo);
+            file_offset += file_header.p[int(Ren::eMeshFileChunk::Info)].length;
+
+            file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].offset = file_offset;
+            file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].length =
+                int32_t(sizeof(float) * (positions.size() / 3) * 13);
+            file_offset += file_header.p[int(Ren::eMeshFileChunk::VtxAttributes)].length;
+
+            file_header.p[int(Ren::eMeshFileChunk::TriIndices)].offset = file_offset;
+            file_header.p[int(Ren::eMeshFileChunk::TriIndices)].length =
+                int32_t(sizeof(uint32_t) * total_indices.size());
+            file_offset += file_header.p[int(Ren::eMeshFileChunk::TriIndices)].length;
+
+            file_header.p[int(Ren::eMeshFileChunk::Materials)].offset = file_offset;
+            file_header.p[int(Ren::eMeshFileChunk::Materials)].length = int32_t(64 * materials.size());
+            file_offset += file_header.p[int(Ren::eMeshFileChunk::Materials)].length;
+
+            file_header.p[int(Ren::eMeshFileChunk::TriGroups)].offset = file_offset;
+            file_header.p[int(Ren::eMeshFileChunk::TriGroups)].length =
+                int32_t(sizeof(MeshChunk) * total_chunks.size());
+            file_offset += file_header.p[int(Ren::eMeshFileChunk::TriGroups)].length;
+
+            out_f.write((char *)&file_header, header_size);
+            out_f.write((char *)&mesh_info, sizeof(Ren::MeshFileInfo));
+
+            for (int i = 0; i < int(positions.size()) / 3; ++i) {
+                out_f.write((char *)&positions[i * 3ull], sizeof(float) * 3);
+                out_f.write((char *)&normals[i * 3ull], sizeof(float) * 3);
+                out_f.write((char *)&tangents[i * 3ull], sizeof(float) * 3);
+                out_f.write((char *)&uvs[i * 2ull], sizeof(float) * 2);
+                out_f.write((char *)&uvs2[i * 2ull], sizeof(float) * 2);
+            }
+
+            out_f.write((char *)&total_indices[0], sizeof(uint32_t) * total_indices.size());
+
+            for (const std::string &str : materials) {
+                char name[64] = {};
+                strcpy(name, str.c_str());
+                strcat(name, ".txt");
+                out_f.write(name, sizeof(name));
+            }
+
+            out_f.write((char *)&total_chunks[0], sizeof(MeshChunk) * total_chunks.size());
+        } else {
+            ctx.log->Error("Multiple meshes are not supported");
+            return false;
+        }
+    } catch (...) {
+        ctx.log->Error("Failed to parse %s", in_file);
+        return false;
+    }
+
+    return true;
 }
 
 bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
@@ -931,6 +1288,33 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
 
             js_chapter["caption"] = std::move(js_caption);
             js_chapter["text_data"] = std::move(js_text_data);
+        }
+    }
+
+    if (js_root.Has("objects")) {
+        JsArray &js_objects = js_root.at("objects").as_arr();
+        for (JsElement &js_obj_el : js_objects.elements) {
+            JsObject &js_obj = js_obj_el.as_obj();
+            if (js_obj.Has("drawable")) {
+                JsObject &js_drawable = js_obj.at("drawable").as_obj();
+                if (js_drawable.Has("mesh_file")) {
+                    JsString &js_mesh_file = js_drawable.at("mesh_file").as_str();
+                    size_t n;
+                    if ((n = js_mesh_file.val.find(".gltf")) != std::string::npos) {
+                        js_mesh_file.val.replace(n + 1, 4, "mesh");
+                    }
+                }
+            }
+            if (js_obj.Has("acc_structure")) {
+                JsObject &js_acc_structure = js_obj.at("acc_structure").as_obj();
+                if (js_acc_structure.Has("mesh_file")) {
+                    JsString &js_mesh_file = js_acc_structure.at("mesh_file").as_str();
+                    size_t n;
+                    if ((n = js_mesh_file.val.find(".gltf")) != std::string::npos) {
+                        js_mesh_file.val.replace(n + 1, 4, "mesh");
+                    }
+                }
+            }
         }
     }
 

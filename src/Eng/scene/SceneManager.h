@@ -330,6 +330,10 @@ class SceneManager {
     static bool HCompileShader(assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string> &out_dependencies);
 
+    // meshes
+    static bool HConvGLTFToMesh(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                Ren::SmallVectorImpl<std::string> &out_dependencies);
+
     // materials
     static bool HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
                                     Ren::SmallVectorImpl<std::string> &out_dependencies);

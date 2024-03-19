@@ -1076,7 +1076,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
             if (i1 || i2) {
                 uint32_t index = twin_verts[indices[i + 0]][i1 + i2 - 1];
                 if (index == 0) {
-                    index = (uint32_t)(vertices.size());
+                    index = uint32_t(vertices.size());
                     vertices.push_back(*v0);
                     memset(&vertices.back().b[0], 0, 3 * sizeof(float));
                     twin_verts[indices[i + 0]][i1 + i2 - 1] = index;
@@ -1124,7 +1124,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
             if (i1 || i2) {
                 uint32_t index = twin_verts[indices[i + 2]][i1 + i2 - 1];
                 if (index == 0) {
-                    index = (uint32_t)(vertices.size());
+                    index = uint32_t(vertices.size());
                     vertices.push_back(*v2);
                     memset(&vertices.back().b[0], 0, 3 * sizeof(float));
                     twin_verts[indices[i + 2]][i1 + i2 - 1] = index;
