@@ -606,7 +606,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     continue;
                 }
 
-                if (light.col[0] > 0.0f || light.col[1] > 0.0f || light.col[2] > 0.0f) {
+                if (light.power > 0.0f) {
                     auto pos = Vec4f{light.offset[0], light.offset[1], light.offset[2], 1.0f};
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
