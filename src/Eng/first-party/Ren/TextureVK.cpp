@@ -182,6 +182,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     api_ctx_ = std::exchange(rhs.api_ctx_, nullptr);
     handle_ = std::exchange(rhs.handle_, {});
     alloc_ = std::exchange(rhs.alloc_, {});
+    initialized_mips_ = std::exchange(rhs.initialized_mips_, 0);
     params = std::exchange(rhs.params, {});
     ready_ = std::exchange(rhs.ready_, false);
     cubemap_ready_ = std::exchange(rhs.cubemap_ready_, 0);

@@ -400,9 +400,11 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size, const boo
                 // stage_buf->fence.ClientWaitSync();
                 ren_ctx_.BegSingleTimeCommands(stage_buf->cmd_buf);
 
-                req->ref->Realloc(w, h, last_initialized_mip + 1 + req->mip_count_to_init, 1 /* samples */,
-                                  req->orig_format, req->orig_block, bool(p.flags & Ren::eTexFlagBits::SRGB),
-                                  stage_buf->cmd_buf, ren_ctx_.default_mem_allocs(), ren_ctx_.log());
+                const int new_mip_count =
+                    (p.w != 1 || p.h != 1) ? (last_initialized_mip + 1 + req->mip_count_to_init) : req->mip_count_to_init;
+                req->ref->Realloc(w, h, new_mip_count, 1 /* samples */, req->orig_format, req->orig_block,
+                                  bool(p.flags & Ren::eTexFlagBits::SRGB), stage_buf->cmd_buf,
+                                  ren_ctx_.default_mem_allocs(), ren_ctx_.log());
 
                 initialized_mips = req->ref->initialized_mips();
 
