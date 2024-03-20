@@ -80,7 +80,7 @@ void main() {
 
     float cone_width = g_params.pixel_spread_angle * gl_HitTEXT;
 
-    float tex_lod = 0.5 * log2(ta/pa);
+    float tex_lod = 0.5 * log2(ta / pa);
     tex_lod += log2(cone_width);
     tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
     tex_lod -= log2(abs(dot(gl_ObjectRayDirectionEXT, tri_normal)));
@@ -109,6 +109,7 @@ void main() {
         if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
             N = -N;
         }
+        N = normalize((gl_ObjectToWorldEXT * vec4(N, 0.0)).xyz);
 
         const vec3 P = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
         const vec3 I = -gl_WorldRayDirectionEXT;//normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
@@ -180,7 +181,7 @@ void main() {
             const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
             const int li = int(bitfieldExtract(item_data, 0, 12));
 
-            light_item_t litem = g_lights[li];
+            const light_item_t litem = g_lights[li];
 
             vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

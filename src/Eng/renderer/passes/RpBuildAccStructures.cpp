@@ -63,10 +63,11 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
             Ren::Mat4f transform;
             memcpy(&transform[0][0], inst.xform, 12 * sizeof(float));
 
-            // TODO: !!!!!!
-            transform = Ren::Inverse(transform);
+            // TODO: Optimize this!
+            Ren::Mat4f inv_transform = Ren::Inverse(transform);
 
-            memcpy(&new_mi.inv_transform[0][0], ValuePtr(transform), 12 * sizeof(float));
+            memcpy(&new_mi.inv_transform[0][0], ValuePtr(inv_transform), 12 * sizeof(float));
+            memcpy(&new_mi.transform[0][0], ValuePtr(transform), 12 * sizeof(float));
         }
 
         { // update instances buf

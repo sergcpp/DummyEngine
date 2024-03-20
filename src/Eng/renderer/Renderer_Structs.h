@@ -446,15 +446,19 @@ struct gpu_mesh_t {
     uint32_t vert_index, geo_count;
 };
 static_assert(sizeof(gpu_mesh_t) == 24, "!");
+static_assert(sizeof(gpu_mesh_t) == MESH_BUF_STRIDE * 2 * sizeof(float), "!");
 
 struct gpu_mesh_instance_t {
     Ren::Vec3f bbox_min;
     uint32_t geo_index;
     Ren::Vec3f bbox_max;
     uint32_t mesh_index;
+    // TODO: this can be optimized
     Ren::Mat3x4f inv_transform;
+    Ren::Mat3x4f transform;
 };
-static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48, "!");
+static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48 + 48, "!");
+static_assert(sizeof(gpu_mesh_instance_t) == MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float), "!");
 
 const size_t sizeof_VkAccelerationStructureInstanceKHR = 64;
 

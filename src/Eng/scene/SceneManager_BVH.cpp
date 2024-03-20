@@ -656,6 +656,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 4; ++j) {
                 new_instance.inv_transform[i][j] = tr.object_from_world[j][i];
+                new_instance.transform[i][j] = tr.world_from_object[j][i];
             }
         }
 

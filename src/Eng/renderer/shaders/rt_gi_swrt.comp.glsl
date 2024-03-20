@@ -244,9 +244,9 @@ void main() {
 
             const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
-            const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(5 * inter.obj_index + 2)),
-                                                          texelFetch(g_mesh_instances, int(5 * inter.obj_index + 3)),
-                                                          texelFetch(g_mesh_instances, int(5 * inter.obj_index + 4))));
+            const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
+                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
+                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4))));
             const vec3 direction_obj_space = (inv_transform * vec4(gi_ray_ws.xyz, 0.0)).xyz;
 
             const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
@@ -295,6 +295,10 @@ void main() {
                 if (is_backfacing) {
                     N = -N;
                 }
+                const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
+                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
+                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7))));
+                N = normalize((transform * vec4(N, 0.0)).xyz);
 
                 const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * inter.t;
                 const vec3 I = -gi_ray_ws.xyz;

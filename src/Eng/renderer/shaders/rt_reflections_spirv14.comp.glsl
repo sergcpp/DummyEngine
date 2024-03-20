@@ -176,6 +176,7 @@ void main() {
         const int prim_id = rayQueryGetIntersectionPrimitiveIndexEXT(rq, true);
         const vec2 bary_coord = rayQueryGetIntersectionBarycentricsEXT(rq, true);
         const bool backfacing = !rayQueryGetIntersectionFrontFaceEXT(rq, true);
+        const mat4x3 world_from_object = rayQueryGetIntersectionObjectToWorldEXT(rq, true);
 
         const RTGeoInstance geo = g_geometries[custom_index + geo_index];
         const MaterialData mat = g_materials[geo.material_index];
@@ -233,6 +234,7 @@ void main() {
             if (backfacing) {
                 N = -N;
             }
+            N = normalize((world_from_object * vec4(N, 0.0)).xyz);
 
             const vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * hit_t;
             const vec3 I = -refl_ray_ws.xyz;//normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);

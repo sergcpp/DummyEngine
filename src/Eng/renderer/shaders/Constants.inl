@@ -114,6 +114,8 @@ const int MAX_RT_OBJ_INSTANCES = 4096;
 const int MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
 
 const int DECALS_BUF_STRIDE = 7;
+const int MESH_BUF_STRIDE = 3;
+const int MESH_INSTANCE_BUF_STRIDE = 8;
 
 #define USE_OCT_PACKED_NORMALS 1
 

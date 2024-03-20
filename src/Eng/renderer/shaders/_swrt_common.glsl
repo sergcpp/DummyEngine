@@ -180,24 +180,24 @@ shared uint g_stack[64][MAX_STACK_SIZE];
 void Traverse_MicroTree_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_positions, usamplerBuffer vtx_indices, usamplerBuffer prim_indices,
                                   vec3 ro, vec3 rd, vec3 inv_d, int obj_index, uint node_index,
                                   uint first_vertex, uint stack_size, inout hit_data_t inter, int geo_index, int geo_count) {
-    vec3 neg_inv_do = -inv_d * ro;
+    const vec3 neg_inv_do = -inv_d * ro;
 
     uint initial_stack_size = stack_size;
     g_stack[gl_LocalInvocationIndex][stack_size++] = node_index;
 
     while (stack_size != initial_stack_size) {
-        uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
+        const uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
 
-        vec4 bbox_min = texelFetch(blas_nodes, int(2 * cur + 0));
-        vec4 bbox_max = texelFetch(blas_nodes, int(2 * cur + 1));
+        const vec4 bbox_min = texelFetch(blas_nodes, int(2 * cur + 0));
+        const vec4 bbox_max = texelFetch(blas_nodes, int(2 * cur + 1));
 
         if (!_bbox_test_fma(inv_d, neg_inv_do, inter.t, bbox_min.xyz, bbox_max.xyz)) {
             continue;
         }
 
         if ((floatBitsToUint(bbox_min.w) & LEAF_NODE_BIT) == 0) {
-            uint left_child = floatBitsToUint(bbox_min.w);
-            uint right_child = (floatBitsToUint(bbox_max.w) & RIGHT_CHILD_BITS);
+            const uint left_child = floatBitsToUint(bbox_min.w);
+            const uint right_child = (floatBitsToUint(bbox_max.w) & RIGHT_CHILD_BITS);
             if (rd[floatBitsToUint(bbox_max.w) >> 30] < 0) {
                 g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
                 g_stack[gl_LocalInvocationIndex][stack_size++] = right_child;
@@ -206,8 +206,8 @@ void Traverse_MicroTree_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_po
                 g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
             }
         } else {
-            int tri_beg = int(floatBitsToUint(bbox_min.w) & PRIM_INDEX_BITS);
-            int tri_end = tri_beg + floatBitsToInt(bbox_max.w);
+            const int tri_beg = int(floatBitsToUint(bbox_min.w) & PRIM_INDEX_BITS);
+            const int tri_end = tri_beg + floatBitsToInt(bbox_max.w);
 
             IntersectTris_ClosestHit(vtx_positions, vtx_indices, prim_indices, ro, rd, tri_beg, tri_end, first_vertex, obj_index, inter, geo_index, geo_count);
         }
@@ -222,18 +222,18 @@ void Traverse_MacroTree_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_n
     g_stack[gl_LocalInvocationIndex][stack_size++] = node_index;
 
     while (stack_size != 0) {
-        uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
+        const uint cur = g_stack[gl_LocalInvocationIndex][--stack_size];
 
-        vec4 n_bbox_min = texelFetch(tlas_nodes, int(2 * cur + 0));
-        vec4 n_bbox_max = texelFetch(tlas_nodes, int(2 * cur + 1));
+        const vec4 n_bbox_min = texelFetch(tlas_nodes, int(2 * cur + 0));
+        const vec4 n_bbox_max = texelFetch(tlas_nodes, int(2 * cur + 1));
 
         if (!_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, n_bbox_min.xyz, n_bbox_max.xyz)) {
             continue;
         }
 
         if ((floatBitsToUint(n_bbox_min.w) & LEAF_NODE_BIT) == 0) {
-            uint left_child = floatBitsToUint(n_bbox_min.w);
-            uint right_child = (floatBitsToUint(n_bbox_max.w) & RIGHT_CHILD_BITS);
+            const uint left_child = floatBitsToUint(n_bbox_min.w);
+            const uint right_child = (floatBitsToUint(n_bbox_max.w) & RIGHT_CHILD_BITS);
             if (orig_rd[floatBitsToUint(n_bbox_max.w) >> 30] < 0) {
                 g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
                 g_stack[gl_LocalInvocationIndex][stack_size++] = right_child;
@@ -242,29 +242,29 @@ void Traverse_MacroTree_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_n
                 g_stack[gl_LocalInvocationIndex][stack_size++] = left_child;
             }
         } else {
-            uint prim_index = (floatBitsToUint(n_bbox_min.w) & PRIM_INDEX_BITS);
-            uint prim_count = floatBitsToUint(n_bbox_max.w);
+            const uint prim_index = (floatBitsToUint(n_bbox_min.w) & PRIM_INDEX_BITS);
+            const uint prim_count = floatBitsToUint(n_bbox_max.w);
             for (uint i = prim_index; i < prim_index + prim_count; ++i) {
-                vec4 mi_bbox_min = texelFetch(mesh_instances, int(5 * i + 0));
-                vec4 mi_bbox_max = texelFetch(mesh_instances, int(5 * i + 1));
+                const vec4 mi_bbox_min = texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 0));
+                const vec4 mi_bbox_max = texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 1));
 
                 if (!_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, mi_bbox_min.xyz, mi_bbox_max.xyz)) {
                     continue;
                 }
 
-                mat4x3 inv_transform = transpose(mat3x4(texelFetch(mesh_instances, int(5 * i + 2)),
-                                                        texelFetch(mesh_instances, int(5 * i + 3)),
-                                                        texelFetch(mesh_instances, int(5 * i + 4))));
+                const mat4x3 inv_transform = transpose(mat3x4(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 2)),
+                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 3)),
+                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 4))));
 
-                vec3 ro = (inv_transform * vec4(orig_ro, 1.0)).xyz;
-                vec3 rd = (inv_transform * vec4(orig_rd, 0.0)).xyz;
-                vec3 inv_d = safe_invert(rd);
+                const vec3 ro = (inv_transform * vec4(orig_ro, 1.0)).xyz;
+                const vec3 rd = (inv_transform * vec4(orig_rd, 0.0)).xyz;
+                const vec3 inv_d = safe_invert(rd);
 
-                uint mesh_index = floatBitsToUint(mi_bbox_max.w);
-                uint m_node_index = texelFetch(meshes, int(3 * mesh_index + 0)).x;
-                uvec2 m_vindex_gcount = texelFetch(meshes, int(3 * mesh_index + 2)).xy;
+                const uint mesh_index = floatBitsToUint(mi_bbox_max.w);
+                const uint m_node_index = texelFetch(meshes, int(MESH_BUF_STRIDE * mesh_index + 0)).x;
+                const uvec2 m_vindex_gcount = texelFetch(meshes, int(MESH_BUF_STRIDE * mesh_index + 2)).xy;
 
-                uint geo_index = floatBitsToUint(mi_bbox_min.w);
+                const uint geo_index = floatBitsToUint(mi_bbox_min.w);
                 Traverse_MicroTree_WithStack(blas_nodes, vtx_positions, vtx_indices, prim_indices, ro, rd, inv_d, int(i), m_node_index, m_vindex_gcount.x,
                                              stack_size, inter, int(geo_index), int(m_vindex_gcount.y));
             }
