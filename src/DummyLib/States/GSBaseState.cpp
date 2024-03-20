@@ -1175,34 +1175,34 @@ void GSBaseState::InitScene_PT() {
         if ((obj.comp_mask & lightsource_flags) == lightsource_flags) {
             const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
             const Eng::LightSource &ls = lights_src[obj.components[Eng::CompLightSource]];
-            if (ls.col[0] > 0.0f || ls.col[1] > 0.0f || ls.col[2] > 0.0f) {
+            if (ls.power > 0.0f) {
                 if (ls.type == Eng::eLightType::Sphere) {
                     auto pos = Ren::Vec4f{ls.offset[0], ls.offset[1], ls.offset[2], 1.0f};
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
                     Ray::sphere_light_desc_t sphere_light_desc;
-                    memcpy(sphere_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    memcpy(sphere_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     memcpy(sphere_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
                     sphere_light_desc.radius = ls.radius;
                     const Ray::LightHandle new_light = ray_scene_->AddLight(sphere_light_desc);
                 } else if (ls.type == Eng::eLightType::Rect) {
                     Ray::rect_light_desc_t rect_light_desc;
-                    memcpy(rect_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    memcpy(rect_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     rect_light_desc.width = ls.width;
                     rect_light_desc.height = ls.height;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(rect_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Disk) {
                     Ray::disk_light_desc_t disk_light_desc;
-                    memcpy(disk_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    memcpy(disk_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     disk_light_desc.size_x = ls.width;
                     disk_light_desc.size_y = ls.height;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(disk_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Line) {
                     Ray::line_light_desc_t line_light_desc;
-                    memcpy(line_light_desc.color, ValuePtr(0.25f * ls.col / ls.area), 3 * sizeof(float));
+                    memcpy(line_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                     line_light_desc.radius = ls.radius;
                     line_light_desc.height = ls.height;
                     const Ray::LightHandle new_light =
