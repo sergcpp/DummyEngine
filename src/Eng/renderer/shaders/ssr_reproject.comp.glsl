@@ -166,8 +166,12 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
 #endif
 
     { // project from screen space to view space
-        ray_vs.y = (1.0 - ray_vs.y);
+#if defined(VULKAN)
         ray_vs.xy = 2.0 * ray_vs.xy - 1.0;
+        ray_vs.y = -ray_vs.y;
+#else
+        ray_vs.xyz = 2.0 * ray_vs.xyz - 1.0;
+#endif
         ray_vs.xy -= unjitter;
         vec4 projected = g_shrd_data.view_from_clip * vec4(ray_vs, 1.0);
         ray_vs = projected.xyz / projected.w;
@@ -193,7 +197,9 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
         vec4 projected = g_shrd_data.prev_clip_from_world_no_translation * vec4(hit_position_ws - g_shrd_data.prev_cam_pos.xyz, 1.0);
         projected.xyz /= projected.w;
         projected.xy = 0.5 * projected.xy + 0.5;
+#if defined(VULKAN)
         projected.y = (1.0 - projected.y);
+#endif
         prev_hit_position = projected.xy;
     }
     return prev_hit_position;
