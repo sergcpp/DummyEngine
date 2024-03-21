@@ -83,7 +83,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     if (js_in.Has("cull_offset")) {
         const JsNumber &js_cull_offset = js_in.at("cull_offset").as_num();
-        ls.cull_radius = float(js_cull_offset.val);
+        ls.cull_offset = float(js_cull_offset.val);
     } else {
         ls.cull_offset = 0.1f;
     }
