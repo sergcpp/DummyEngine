@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refactor_21_03_2
-	commit = e5ff92ed3741e26de4e5f0111c86d1ba6eeed559
+	branch = tonemap_gamma
+	commit = 94dac783bcd809f1c95eb2bbe56625d401749e24
 	method = merge
 	cmdver = 0.4.6
-	parent = b993eece3b0f7e72baa68912e27d21327c76ad23
+	parent = bd6e85a6555824e1c1da46f2402e723113bfa29a
