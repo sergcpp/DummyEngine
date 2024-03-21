@@ -239,14 +239,8 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
 
     const uint32_t old_size = size_;
 
-    if (!size_) {
-        size_ = new_size;
-        assert(size_ > 0);
-    }
-
-    while (size_ < new_size) {
-        size_ *= 2;
-    }
+    size_ = new_size;
+    assert(size_ > 0);
 
     alloc_->ResizePool(0, size_);
     assert(alloc_->IntegrityCheck());
