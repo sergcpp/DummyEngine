@@ -74,7 +74,7 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
 
     // Prepare cam for probes updating
     temp_probe_cam_.Perspective(90.0f, 1.0f, 0.1f, 10000.0f);
-    temp_probe_cam_.set_render_mask(uint32_t(Eng::Drawable::eDrVisibility::VisProbes));
+    temp_probe_cam_.set_render_mask(uint32_t(Eng::Drawable::eVisibility::Probes));
 
     //
     // Create required staging buffers
@@ -205,15 +205,20 @@ void GSBaseState::Enter() {
 
     cmdline_->RegisterCommand("r_tonemap", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         if (argc > 1) {
-            if (argv[1].val > 2.5) {
+            if (argv[1].val > 3.5) {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
+                                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (argv[1].val > 2.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
                     Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
                     Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
                                                  Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
-                                             reinterpret_cast<const uint8_t *>(
-                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]) +
-                                                 4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+                                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
             } else if (argv[1].val > 1.5) {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
                 renderer_->SetTonemapLUT(
@@ -1017,7 +1022,7 @@ void GSBaseState::InitScene_PT() {
     ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
     { // Setup environment
         Ray::environment_desc_t env_desc;
-        env_desc.env_col[0] = env_desc.back_col[0] = 0.5f;
+        env_desc.env_col[0] = env_desc.back_col[0] = 0.0f;
         env_desc.env_col[1] = env_desc.back_col[1] = 0.0f;
         env_desc.env_col[2] = env_desc.back_col[2] = 0.0f;
         ray_scene_->SetEnvironment(env_desc);
@@ -1167,8 +1172,11 @@ void GSBaseState::InitScene_PT() {
             }
 
             const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
-            const Ray::MeshInstanceHandle new_mi =
-                ray_scene_->AddMeshInstance(mesh_it->second, ValuePtr(tr.world_from_object));
+            Ray::mesh_instance_desc_t mi;
+            mi.xform = ValuePtr(tr.world_from_object);
+            mi.mesh = mesh_it->second;
+            mi.shadow_visibility = bool(dr.vis_mask & Eng::Drawable::eVisibility::Shadow);
+            const Ray::MeshInstanceHandle new_mi = ray_scene_->AddMeshInstance(mi);
         }
 
         const uint32_t lightsource_flags = Eng::CompLightSourceBit | Eng::CompTransformBit;
@@ -1276,5 +1284,5 @@ void GSBaseState::Draw_PT() {
 
     const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
     renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
-                                 Ren::eTexFormat::RawRGBA32F, 0.0f);
+                                 Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().max_exposure);
 }
