@@ -192,7 +192,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         list.env.sun_col = {};
     }
 
-    const uint32_t render_mask = list.draw_cam.render_mask();
+    const auto render_mask = Ren::Bitmask<Drawable::eVisibility>(list.draw_cam.render_mask());
 
     int pipeline_index = int(eFwdPipeline::FrontfaceDraw);
     if (list.render_settings.debug_wireframe) {
@@ -381,7 +381,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                     const Transform &tr = transforms[obj.components[CompTransform]];
                     const Drawable &dr = drawables[obj.components[CompDrawable]];
-                    if (!(dr.vis_mask & render_mask)) {
+                    if (!bool(dr.vis_mask & render_mask)) {
                         continue;
                     }
                     const Mesh *mesh = dr.mesh.get();
@@ -999,7 +999,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                     const Transform &tr = transforms[obj.components[CompTransform]];
                     const Drawable &dr = drawables[obj.components[CompDrawable]];
-                    if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
+                    if ((dr.vis_mask & Drawable::eVisibility::Shadow) == 0) {
                         continue;
                     }
 
@@ -1264,7 +1264,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             }
 
                             const Drawable &dr = drawables[obj.components[CompDrawable]];
-                            if ((dr.vis_mask & uint32_t(Drawable::eDrVisibility::VisShadow)) == 0) {
+                            if ((dr.vis_mask & Drawable::eVisibility::Shadow) == 0) {
                                 continue;
                             }
 

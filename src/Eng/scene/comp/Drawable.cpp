@@ -3,21 +3,24 @@
 #include <Ren/Mesh.h>
 #include <Sys/Json.h>
 
+const Ren::Bitmask<Eng::Drawable::eVisibility> Eng::Drawable::DefaultVisMask =
+    Ren::Bitmask<eVisibility>{eVisibility::Shadow} | eVisibility::Probes;
+
 void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
-    dr.flags = 0;
-    dr.vis_mask = 0xffffffff;
+    dr.flags = {};
+    dr.vis_mask = DefaultVisMask;
 
     if (js_in.Has("visible_to_shadow")) {
         JsLiteral v = js_in.at("visible_to_shadow").as_lit();
         if (v.val == JsLiteralType::False) {
-            dr.vis_mask &= ~uint32_t(eDrVisibility::VisShadow);
+            dr.vis_mask &= ~Ren::Bitmask(eVisibility::Shadow);
         }
     }
 
     if (js_in.Has("visible_to_probes")) {
         JsLiteral v = js_in.at("visible_to_probes").as_lit();
         if (v.val == JsLiteralType::False) {
-            dr.vis_mask &= ~uint32_t(eDrVisibility::VisProbes);
+            dr.vis_mask &= ~Ren::Bitmask(eVisibility::Probes);
         }
     }
 
@@ -27,7 +30,7 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
     }
 
     if (js_in.Has("material_override")) {
-        dr.flags |= uint32_t(eDrFlags::DrMaterialOverride);
+        dr.flags |= eFlags::MaterialOverride;
     }
 
     if (js_in.Has("ellipsoids")) {
@@ -47,8 +50,7 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
             dr.ellipsoids[i].axis[2] = float(js_ellipsoid_axis[2].as_num().val);
 
             if (js_ellipsoid.Has("bone")) {
-                dr.ellipsoids[i].bone_name =
-                    Ren::String{js_ellipsoid.at("bone").as_str().val.c_str()};
+                dr.ellipsoids[i].bone_name = Ren::String{js_ellipsoid.at("bone").as_str().val.c_str()};
             }
             dr.ellipsoids[i].bone_index = -1;
         }
@@ -65,12 +67,10 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
         if (mesh_name != dr.mesh_file) {
             js_out.Push("mesh_name", JsStringP{mesh_name.c_str(), alloc});
         }
-        js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name.c_str()
-                                                                : dr.mesh_file.c_str(),
-                                           alloc});
+        js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name.c_str() : dr.mesh_file.c_str(), alloc});
     }
 
-    if (dr.flags & uint32_t(eDrFlags::DrMaterialOverride)) {
+    if (dr.flags & uint32_t(eFlags::MaterialOverride)) {
         JsArrayP js_material_override(alloc);
 
         const Ren::Mesh *mesh = dr.mesh.get();
@@ -82,10 +82,10 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
     }
 
     { // write visibility
-        if (!(dr.vis_mask & uint32_t(eDrVisibility::VisShadow))) {
+        if (!(dr.vis_mask & uint32_t(eVisibility::Shadow))) {
             js_out.Push("visible_to_shadow", JsLiteral(JsLiteralType::False));
         }
-        if (!(dr.vis_mask & uint32_t(eDrVisibility::VisProbes))) {
+        if (!(dr.vis_mask & uint32_t(eVisibility::Probes))) {
             js_out.Push("visible_to_probes", JsLiteral(JsLiteralType::False));
         }
     }
@@ -115,8 +115,7 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
             }
 
             if (!dr.ellipsoids[i].bone_name.empty()) {
-                js_ellipsoid.Push("bone",
-                                  JsStringP{dr.ellipsoids[i].bone_name.c_str(), alloc});
+                js_ellipsoid.Push("bone", JsStringP{dr.ellipsoids[i].bone_name.c_str(), alloc});
             }
         }
     }

@@ -7,11 +7,13 @@
 
 namespace Eng {
 struct Drawable {
-    enum class eDrFlags { DrMaterialOverride = (1 << 0) };
+    enum class eFlags { MaterialOverride };
+    enum class eVisibility { Shadow, Probes };
 
-    enum class eDrVisibility { VisShadow = (1 << 0), VisProbes = (1 << 1) };
+    static const Ren::Bitmask<eVisibility> DefaultVisMask;
 
-    uint32_t flags = 0, vis_mask = 0xffffffff;
+    Ren::Bitmask<eFlags> flags = {};
+    Ren::Bitmask<eVisibility> vis_mask = DefaultVisMask;
     Ren::MeshRef mesh;
     Ren::String mesh_file;
 
