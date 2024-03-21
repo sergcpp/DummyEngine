@@ -378,7 +378,7 @@ void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
 
     // Update camera
     scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, true,
-                              max_exposure_);
+                              1.0f, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],

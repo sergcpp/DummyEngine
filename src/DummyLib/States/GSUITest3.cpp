@@ -3,11 +3,11 @@
 #include <fstream>
 #include <memory>
 
+#include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Image.h>
 #include <Eng/gui/Image9Patch.h>
 #include <Eng/gui/Utils.h>
-#include <Eng/Log.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Sys/AssetFile.h>
@@ -96,8 +96,8 @@ void GSUITest3::Enter() {
 
         /*{
             const auto page_root = Gui::RootElement{Ren::Vec2i{page_buf_.w, page_buf_.h}};
-            paged_reader_ = std::make_unique<PagedReader>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{2.0f, 2.0f},
-                                                &page_root, book_main_font_, book_emph_font_, book_caption_font_);
+            paged_reader_ = std::make_unique<PagedReader>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f},
+        Ren::Vec2f{2.0f, 2.0f}, &page_root, book_main_font_, book_emph_font_, book_caption_font_);
 
             paged_reader_->LoadBook(js_book, "en", "de");
         }*/
@@ -140,8 +140,8 @@ void GSUITest3::Enter() {
     }*/
 
     // disable bloom and fxaa, they make fonts look bad
-    //render_flags_ &= ~Eng::EnableBloom;
-    //render_flags_ &= ~Eng::EnableFxaa;
+    // render_flags_ &= ~Eng::EnableBloom;
+    // render_flags_ &= ~Eng::EnableFxaa;
 }
 
 void GSUITest3::OnPostloadScene(JsObjectP &js_scene) {
@@ -294,7 +294,7 @@ void GSUITest3::Draw() {
 
     const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0.0f, view_offset_, 0.0f};
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, true, max_exposure_);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, true, 1.0f, max_exposure_);
 
     GSBaseState::Draw();
 }
@@ -310,7 +310,7 @@ bool GSUITest3::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 

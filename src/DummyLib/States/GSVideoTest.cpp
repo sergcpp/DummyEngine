@@ -6,8 +6,8 @@
 #include <vtune/ittnotify.h>
 extern __itt_domain *__g_itt_domain;
 
-#include <Eng/gui/Renderer.h>
 #include <Eng/Log.h>
+#include <Eng/gui/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/ShaderLoader.h>
@@ -39,7 +39,7 @@ extern const bool VerboseLogging;
 
 #define UPDATE_PBO_FROM_SEPARATE_THREAD
 #define UPDATE_TEX_FROM_SEPARATE_CONTEXT
-//#define FORCE_WAIT_FOR_DECODER
+// #define FORCE_WAIT_FOR_DECODER
 #define FORCE_UPLOAD_EVERY_FRAME
 
 #if defined(UPDATE_TEX_FROM_SEPARATE_CONTEXT) && !defined(UPDATE_PBO_FROM_SEPARATE_THREAD)
@@ -47,8 +47,8 @@ extern const bool VerboseLogging;
 #endif
 
 GSVideoTest::GSVideoTest(Viewer *viewer) : GSBaseState(viewer) {
-    //aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
-    //decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
+    // aux_gfx_thread_ = game_->GetComponent<Sys::ThreadWorker>(AUX_GFX_THREAD);
+    // decoder_threads_ = std::make_shared<Sys::QThreadPool>(4 /* threads */, 8 /* queues */, "decoder_thread");
 }
 
 void GSVideoTest::Enter() {
@@ -228,7 +228,7 @@ bool GSVideoTest::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
                 click_time_ = 0;
@@ -367,8 +367,8 @@ void GSVideoTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
-                              true, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, true,
+                              1.0f, max_exposure_);
 
     if (enable_video_update_) {
         video_time_us_ += fr_info_.delta_time_us;
@@ -555,12 +555,12 @@ void GSVideoTest::UpdateVideoTextureData(const int tex_index, const int frame_in
 
     const uint32_t y_buf_chunk_size = tex_w * tex_h, uv_buf_chunk_size = 2 * (tex_w / 2) * (tex_h / 2);
 
-    //y_sbuf_[tex_index].FlushMappedRange(frame_index * y_buf_chunk_size, y_buf_chunk_size);
+    // y_sbuf_[tex_index].FlushMappedRange(frame_index * y_buf_chunk_size, y_buf_chunk_size);
     y_tex_[tex_index][frame_index]->SetSubImage(0, 0 /* offsetx */, 0 /* offsety */, tex_w, tex_h,
                                                 Ren::eTexFormat::RawR8, y_sbuf_[tex_index], ren_ctx_->current_cmd_buf(),
                                                 frame_index * y_buf_chunk_size, y_buf_chunk_size);
 
-    //uv_sbuf_[tex_index].FlushMappedRange(frame_index * uv_buf_chunk_size, uv_buf_chunk_size);
+    // uv_sbuf_[tex_index].FlushMappedRange(frame_index * uv_buf_chunk_size, uv_buf_chunk_size);
     uv_tex_[tex_index][frame_index]->SetSubImage(
         0, 0 /* offsetx */, 0 /* offsety */, tex_w / 2, tex_h / 2, Ren::eTexFormat::RawRG88, uv_sbuf_[tex_index],
         ren_ctx_->current_cmd_buf(), frame_index * uv_buf_chunk_size, uv_buf_chunk_size);

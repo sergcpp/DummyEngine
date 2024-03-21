@@ -134,7 +134,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     }
 
     Ren::Vec3f view_pos, view_dir;
-    float view_fov = 45.0f, max_exposure = 1.0f;
+    float view_fov = 45.0f, gamma = 1.0f, max_exposure = 1.0f;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -155,6 +155,11 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         if (js_cam.Has("fov")) {
             const JsNumber &js_fov = js_cam.at("fov").as_num();
             view_fov = float(js_fov.val);
+        }
+
+        if (js_cam.Has("gamma")) {
+            const JsNumber &js_gamma = js_cam.at("gamma").as_num();
+            gamma = float(js_gamma.val);
         }
 
         if (js_cam.Has("max_exposure")) {
@@ -187,7 +192,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     }
 
     scene_manager.LoadScene(js_scene);
-    scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, false, max_exposure);
+    scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, false, gamma,
+                            max_exposure);
 
     //
     // Create required staging buffers

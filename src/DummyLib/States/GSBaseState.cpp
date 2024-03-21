@@ -1284,5 +1284,6 @@ void GSBaseState::Draw_PT() {
 
     const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
     renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
-                                 Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().max_exposure);
+                                 Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
+                                 scene_manager_->main_cam().max_exposure);
 }

@@ -66,7 +66,8 @@ class Renderer {
 
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
-    void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float exposure);
+    void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
+                           float exposure);
     render_settings_t settings = {};
 
   private:

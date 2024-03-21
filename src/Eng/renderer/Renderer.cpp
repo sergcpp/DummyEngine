@@ -600,9 +600,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
         !std::equal(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
     const bool probe_storage_changed = (list.probe_storage != probe_storage_);
-    const bool rebuild_renderpasses =
-        !cached_settings_.has_value() || (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
-        !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
+    const bool rebuild_renderpasses = !cached_settings_.has_value() ||
+                                      (cached_settings_.value() != list.render_settings) || probe_storage_changed ||
+                                      !rp_builder_.ready() || rendertarget_changed || env_map_changed || lm_tex_changed;
 
     cached_settings_ = list.render_settings;
     cached_rp_index_ = 0;
@@ -1287,7 +1287,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 }
                 rp_combine_data_.lut_tex = tonemap_lut_;
                 rp_combine_data_.tonemap_mode = int(list.render_settings.tonemap_mode);
-                rp_combine_data_.inv_gamma = 1.0f;
+                rp_combine_data_.inv_gamma = 1.0f / list.draw_cam.gamma;
                 rp_combine_data_.exposure = powf(2.0f, exposure);
                 rp_combine_data_.fade = list.draw_cam.fade;
 
@@ -1492,7 +1492,7 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const u
 }
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
-                                      const Ren::eTexFormat format, const float exposure) {
+                                      const Ren::eTexFormat format, const float gamma, const float exposure) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -1564,7 +1564,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         rp_combine_data_.lut_tex = tonemap_lut_;
         rp_combine_data_.tonemap_mode = int(settings.tonemap_mode);
-        rp_combine_data_.inv_gamma = 1.0f;
+        rp_combine_data_.inv_gamma = 1.0f / gamma;
         rp_combine_data_.exposure = powf(2.0f, exposure);
         rp_combine_data_.fade = 0.0f;
 
