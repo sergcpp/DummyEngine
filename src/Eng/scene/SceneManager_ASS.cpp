@@ -186,7 +186,7 @@ uint32_t HashFile(const std::filesystem::path &in_file, Ren::ILog *log) {
     const size_t HashChunkSize = 8 * 1024;
     uint8_t in_file_buf[HashChunkSize];
 
-    //log->Info("Hashing %s", in_file.generic_string().c_str());
+    // log->Info("Hashing %s", in_file.generic_string().c_str());
 
     uint32_t hash = 0;
 
@@ -1003,7 +1003,11 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
                 vertex_count = int(vertices.size());
             }
 
+#ifdef NDEBUG
             const bool OptimizeMesh = true;
+#else
+            const bool OptimizeMesh = false;
+#endif
 
             std::vector<std::vector<uint32_t>> reordered_indices;
             if (OptimizeMesh) {
