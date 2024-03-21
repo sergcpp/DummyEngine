@@ -8,11 +8,10 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
 
     static underlying_type to_mask(const enum_type e) { return 1 << static_cast<underlying_type>(e); }
 
-    explicit Bitmask(const underlying_type mask) : mask_(mask) {}
-
   public:
     Bitmask() : mask_(0) {}
     Bitmask(const enum_type e) : mask_(to_mask(e)) {}
+    explicit Bitmask(const underlying_type mask) : mask_(mask) {}
 
     Bitmask(const Bitmask &rhs) = default;
     Bitmask(Bitmask &&rhs) = default;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Bitmask.h"
 #include "Log.h"
 #include "Storage.h"
 #include "Resource.h"
