@@ -1259,7 +1259,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
                 rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
-                if (list.render_settings.enable_bloom && blur_tex) {
+                if (false && list.render_settings.enable_bloom && blur_tex) {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
                 } else {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
