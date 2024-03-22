@@ -487,10 +487,11 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light.radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
-                        ls.spot = light.spot;
+                        ls.spot = light.spot_angle;
                         memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
                         ls.shadowreg_index = -1;
                         memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
+                        ls.blend = light.spot_blend * light.spot_blend;
                     }
                 }
             }
@@ -620,17 +621,18 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                     LightItem &ls = list.lights.emplace_back();
 
-                    ls.col[0] = light.col[0] / light.area;
-                    ls.col[1] = light.col[1] / light.area;
-                    ls.col[2] = light.col[2] / light.area;
+                    ls.col[0] = light.power * light.col[0] / light.area;
+                    ls.col[1] = light.power * light.col[1] / light.area;
+                    ls.col[2] = light.power * light.col[2] / light.area;
                     ls.type = int(light.type);
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light.radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));
-                    ls.spot = light.spot;
+                    ls.spot = light.spot_angle;
                     memcpy(ls.u, ValuePtr(u), 3 * sizeof(float));
                     ls.shadowreg_index = -1;
                     memcpy(ls.v, ValuePtr(v), 3 * sizeof(float));
+                    ls.blend = light.spot_blend * light.spot_blend;
                 }
             }
         }
@@ -1174,9 +1176,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const auto light_up = Vec3f{l.v[0], l.v[1], l.v[2]};
 
             float light_angle = 91.0f;
-            if (ls->type == eLightType::Point) {
-                light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
-            }
+            //if (ls->type == eLightType::Point) {
+            //    light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
+            //}
 
             l.shadowreg_index = int(list.shadow_regions.count);
 
@@ -1855,7 +1857,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
             if (dist < -cull_radius) {
                 visible_to_slice = eVisResult::Invisible;
             } else if (l.spot > epsilon) {
-                const float dn[3] = _CROSS(l.dir, p_n);
+                /*const float dn[3] = _CROSS(l.dir, p_n);
                 const float m[3] = _CROSS(l.dir, dn);
 
                 const float Q[3] = {l.pos[0] - cull_radius * l.dir[0] - cap_radius * m[0],
@@ -1864,7 +1866,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                 if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
                     visible_to_slice = eVisResult::Invisible;
-                }
+                }*/
             }
         }
 
@@ -1887,7 +1889,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
                 if (dist < -cull_radius) {
                     visible_to_line = eVisResult::Invisible;
                 } else if (l.spot > epsilon) {
-                    const float dn[3] = _CROSS(l.dir, p_n);
+                    /*const float dn[3] = _CROSS(l.dir, p_n);
                     const float m[3] = _CROSS(l.dir, dn);
 
                     const float Q[3] = {l.pos[0] - cull_radius * l.dir[0] - cap_radius * m[0],
@@ -1898,7 +1900,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                     if (dist < -radius && val < -epsilon) {
                         visible_to_line = eVisResult::Invisible;
-                    }
+                    }*/
                 }
             }
 
@@ -1921,7 +1923,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
                     if (dist < -cull_radius) {
                         res = eVisResult::Invisible;
                     } else if (l.spot > epsilon) {
-                        const float dn[3] = _CROSS(l.dir, p_n);
+                        /*const float dn[3] = _CROSS(l.dir, p_n);
                         const float m[3] = _CROSS(l.dir, dn);
 
                         const float Q[3] = {l.pos[0] - cull_radius * l.dir[0] - cap_radius * m[0],
@@ -1930,7 +1932,7 @@ void Eng::Renderer::ClusterItemsForZSlice_Job(const int slice, const Ren::Frustu
 
                         if (dist < -radius && p_n[0] * Q[0] + p_n[1] * Q[1] + p_n[2] * Q[2] + p_d < -epsilon) {
                             res = eVisResult::Invisible;
-                        }
+                        }*/
                     }
                 }
 

@@ -293,7 +293,7 @@ void main() {
                 int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
                 [[dont_flatten]] if (shadowreg_index != -1) {
                     vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-                    shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_unused.xyz));
+                    shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
                     vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
                     vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);

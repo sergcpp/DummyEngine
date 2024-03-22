@@ -1189,11 +1189,27 @@ void GSBaseState::InitScene_PT() {
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
-                    Ray::sphere_light_desc_t sphere_light_desc;
-                    memcpy(sphere_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
-                    memcpy(sphere_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
-                    sphere_light_desc.radius = ls.radius;
-                    const Ray::LightHandle new_light = ray_scene_->AddLight(sphere_light_desc);
+                    if (ls.spot_angle > 0.0f) {
+                        auto dir = Ren::Vec4f{ls.dir[0], ls.dir[1], ls.dir[2], 0.0f};
+                        dir = tr.world_from_object * dir;
+
+                        Ray::spot_light_desc_t spot_light_desc;
+                        memcpy(spot_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area),
+                               3 * sizeof(float));
+                        memcpy(spot_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
+                        memcpy(spot_light_desc.direction, ValuePtr(dir), 3 * sizeof(float));
+                        spot_light_desc.radius = ls.radius;
+                        spot_light_desc.spot_size = ls.angle_deg;
+                        spot_light_desc.spot_blend = ls.spot_blend;
+                        const Ray::LightHandle new_light = ray_scene_->AddLight(spot_light_desc);
+                    } else {
+                        Ray::sphere_light_desc_t sphere_light_desc;
+                        memcpy(sphere_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area),
+                               3 * sizeof(float));
+                        memcpy(sphere_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
+                        sphere_light_desc.radius = ls.radius;
+                        const Ray::LightHandle new_light = ray_scene_->AddLight(sphere_light_desc);
+                    }
                 } else if (ls.type == Eng::eLightType::Rect) {
                     Ray::rect_light_desc_t rect_light_desc;
                     memcpy(rect_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));

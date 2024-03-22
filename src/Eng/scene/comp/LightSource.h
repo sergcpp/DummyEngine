@@ -5,7 +5,7 @@
 #include "Common.h"
 
 namespace Eng {
-enum class eLightType { Point, Sphere, Rect, Disk, Line, _Count };
+enum class eLightType { Sphere, Rect, Disk, Line, _Count };
 
 struct LightSource {
     eLightType type;
@@ -15,7 +15,8 @@ struct LightSource {
     Ren::Vec3f col;
     float power;
     Ren::Vec3f dir;
-    float spot, cap_radius;
+    float spot_angle, spot_blend, cap_radius;
+    float spot_cos;
     float cull_offset, cull_radius;
     bool cast_shadow, cache_shadow;
     float shadow_bias[2];

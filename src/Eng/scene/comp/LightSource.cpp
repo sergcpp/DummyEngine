@@ -8,7 +8,7 @@
 
 namespace Eng {
 namespace LightSourceInternal {
-const char *g_type_names[] = {"point", "sphere", "rectangle", "disk", "line"};
+const char *g_type_names[] = {"sphere", "rectangle", "disk", "line"};
 static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
 } // namespace LightSourceInternal
 } // namespace Eng
@@ -16,7 +16,7 @@ static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::
 void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     using namespace LightSourceInternal;
 
-    ls.type = eLightType::Point;
+    ls.type = eLightType::Sphere;
 
     if (js_in.Has("type")) {
         const JsStringP &js_type = js_in.at("type").as_str();
@@ -50,25 +50,22 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.offset[2] = float(js_offset[2].as_num().val);
     }
 
+    ls.radius = 1.0f;
     if (js_in.Has("radius")) {
         const JsNumber &js_radius = js_in.at("radius").as_num();
         ls.radius = float(js_radius.val);
-    } else {
-        ls.radius = 1.0f;
     }
 
+    ls.width = 1.0f;
     if (js_in.Has("width")) {
         const JsNumber &js_width = js_in.at("width").as_num();
         ls.width = float(js_width.val);
-    } else {
-        ls.width = 1.0f;
     }
 
+    ls.height = 1.0f;
     if (js_in.Has("height")) {
         const JsNumber &js_height = js_in.at("height").as_num();
         ls.height = float(js_height.val);
-    } else {
-        ls.height = 1.0f;
     }
 
     if (ls.type == eLightType::Sphere) {
@@ -94,12 +91,20 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
     } else {
         const float brightness = std::max(ls.col[0], std::max(ls.col[1], ls.col[2]));
         ls.cull_radius = ls.radius * (std::sqrt(brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
-        if (ls.type != eLightType::Point) {
-            // TODO: properly determine influence of area lights
-            ls.cull_radius *= 10.0f;
-        }
+        // TODO: properly determine influence of area lights
+        ls.cull_radius *= 10.0f;
     }
 
+    ls.dir[0] = ls.dir[2] = 0.0f;
+    ls.dir[1] = -1.0f;
+    ls.spot_angle = 0.5f * Ren::Pi<float>();
+    ls.spot_cos = 0.0f;
+    ls.spot_blend = 0.0f;
+    if (ls.type == eLightType::Sphere || ls.type == eLightType::Line) {
+        // whole sphere
+        ls.spot_angle = Ren::Pi<float>() + 0.01f;
+        ls.spot_cos = -1.01f;
+    }
     if (js_in.Has("direction")) {
         const JsArrayP &js_dir = js_in.at("direction").as_arr();
 
@@ -108,24 +113,26 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.dir[2] = float(js_dir[2].as_num().val);
 
         ls.angle_deg = 45.0f;
-        if (js_in.Has("angle")) {
-            const JsNumber &js_angle = js_in.at("angle").as_num();
-            ls.angle_deg = float(js_angle.val);
+        if (js_in.Has("spot_angle")) {
+            const JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
+            ls.angle_deg = float(js_spot_angle.val);
+        }
+
+        if (js_in.Has("spot_blend")) {
+            const JsNumber &js_spot_blend = js_in.at("spot_blend").as_num();
+            ls.spot_blend = float(js_spot_blend.val);
         }
 
         const float angle_rad = ls.angle_deg * Ren::Pi<float>() / 180.0f;
 
-        ls.spot = std::cos(angle_rad);
+        ls.spot_angle = 0.5f * angle_rad;
+        ls.spot_cos = cosf(ls.spot_angle);
         ls.cap_radius = ls.cull_radius * std::tan(angle_rad);
-    } else {
-        ls.dir[1] = -1.0f;
-        ls.spot = -1.2f;
     }
 
+    ls.cast_shadow = false;
     if (js_in.Has("cast_shadow")) {
         ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == JsLiteralType::True;
-    } else {
-        ls.cast_shadow = false;
     }
 
     if (js_in.Has("shadow_bias")) {
@@ -190,6 +197,10 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
 
         if (ls.angle_deg != 45.0f) {
             js_out.Push("angle", JsNumber{ls.angle_deg});
+        }
+
+        if (ls.spot_blend != 0.0f) {
+            js_out.Push("spot_blend", JsNumber{ls.spot_blend});
         }
     }
 

@@ -28,7 +28,7 @@ struct LightItem {
     float dir[3], spot;
     float u[3];
     int shadowreg_index;
-    float v[3], _unused1;
+    float v[3], blend;
 };
 static_assert(sizeof(LightItem) == 80, "!");
 

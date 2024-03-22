@@ -988,14 +988,14 @@ void Eng::SceneManager::PostloadLightSource(const JsObjectP &js_comp_obj, void *
     bbox_min = Min(bbox_min, p1);
     bbox_max = Max(bbox_max, p1);
 
-    const Ren::Vec3f p2 = _dir * ls->spot * ls->cull_radius;
+    const Ren::Vec3f p2 = _dir * ls->spot_cos * ls->cull_radius;
 
-    const float d = std::sqrt(1.0f - ls->spot * ls->spot) * ls->cull_radius;
+    const float d = std::sqrt(1.0f - ls->spot_cos * ls->spot_cos) * ls->cull_radius;
 
     bbox_min = Min(bbox_min, p2 - Ren::Vec3f{d, 0.0f, d});
     bbox_max = Max(bbox_max, p2 + Ren::Vec3f{d, 0.0f, d});
 
-    if (ls->spot < 0.0f) {
+    if (ls->spot_cos < 0.0f) {
         bbox_min = Min(bbox_min, p1 - Ren::Vec3f{ls->cull_radius, 0.0f, ls->cull_radius});
         bbox_max = Max(bbox_max, p1 + Ren::Vec3f{ls->cull_radius, 0.0f, ls->cull_radius});
     }

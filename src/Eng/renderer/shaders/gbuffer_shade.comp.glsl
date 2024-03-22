@@ -149,7 +149,7 @@ void main() {
         litem.pos_and_radius = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 1);
         litem.dir_and_spot = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 2);
         litem.u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
-        litem.v_and_unused = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
+        litem.v_and_blend = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
 
         vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                       sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
@@ -160,7 +160,7 @@ void main() {
         int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
         [[dont_flatten]] if (shadowreg_index != -1) {
             vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-            shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_unused.xyz));
+            shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
             vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);

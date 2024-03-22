@@ -102,7 +102,7 @@ struct light_item_t {
     vec4 pos_and_radius;
     vec4 dir_and_spot;
     vec4 u_and_reg;
-    vec4 v_and_unused;
+    vec4 v_and_blend;
 };
 
 #define ENABLE_SPHERE_LIGHT 1
@@ -121,7 +121,9 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
 
     const int type = floatBitsToInt(litem.col_and_type.w);
     const vec3 to_light = normalize(pos_ws - litem.pos_and_radius.xyz);
-    if (type != LIGHT_TYPE_SPHERE && type != LIGHT_TYPE_LINE && dot(to_light, litem.dir_and_spot.xyz) > 0.0) {
+    const float _dot = -dot(to_light, litem.dir_and_spot.xyz);
+    const float _angle = approx_acos(_dot);
+    if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
         return vec3(0.0);
     }
 
@@ -172,10 +174,10 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         }
     } else if (type == LIGHT_TYPE_RECT && ENABLE_RECT_LIGHT != 0) {
         vec3 points[4];
-        points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_unused.xyz;
-        points[1] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz - litem.v_and_unused.xyz;
-        points[2] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz - litem.v_and_unused.xyz;
-        points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_unused.xyz;
+        points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
+        points[1] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[2] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_blend.xyz;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
             vec3 dcol = base_color;
@@ -208,10 +210,10 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         }
     } else if (type == LIGHT_TYPE_DISK && ENABLE_DISK_LIGHT != 0) {
         vec3 points[4];
-        points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_unused.xyz;
-        points[1] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz - litem.v_and_unused.xyz;
-        points[2] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz - litem.v_and_unused.xyz;
-        points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_unused.xyz;
+        points[0] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz + litem.v_and_blend.xyz;
+        points[1] = litem.pos_and_radius.xyz + litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[2] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz - litem.v_and_blend.xyz;
+        points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_blend.xyz;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
             vec3 dcol = base_color;
@@ -244,8 +246,8 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         }
     } else if (type == LIGHT_TYPE_LINE && ENABLE_LINE_LIGHT != 0) {
         vec3 points[2];
-        points[0] = litem.pos_and_radius.xyz + litem.v_and_unused.xyz;
-        points[1] = litem.pos_and_radius.xyz - litem.v_and_unused.xyz;
+        points[0] = litem.pos_and_radius.xyz + litem.v_and_blend.xyz;
+        points[1] = litem.pos_and_radius.xyz - litem.v_and_blend.xyz;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
             vec3 dcol = base_color;
@@ -276,6 +278,10 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
 
             ret += 0.25 * litem.col_and_type.xyz * coat / 4.0;
         }
+    }
+
+    if (type == LIGHT_TYPE_SPHERE && litem.v_and_blend.w > 0.0) {
+        ret *= saturate((litem.dir_and_spot.w - _angle) / litem.v_and_blend.w);
     }
 
     return ret;

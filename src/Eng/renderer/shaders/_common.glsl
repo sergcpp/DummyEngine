@@ -27,6 +27,21 @@
 #define DelinearizeDepth(z, clip_info) \
     (((clip_info)[0] / (z) - (clip_info)[2]) / ((clip_info)[1] - (clip_info)[2]))
 
+float approx_acos(float x) { // max error is 0.000068f
+    float negate = float(x < 0);
+    x = abs(x);
+    float ret = -0.0187293;
+    ret = ret * x;
+    ret = ret + 0.0742610;
+    ret = ret * x;
+    ret = ret - 0.2121144;
+    ret = ret * x;
+    ret = ret + 1.5707288;
+    ret = ret * sqrt(1.0 - saturate(x));
+    ret = ret - 2.0 * negate * ret;
+    return negate * M_PI + ret;
+}
+
 // Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
 // https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
 // [Cigolle 2014, "A Survey of Efficient Representations for Independent Unit Vectors"]
@@ -176,21 +191,12 @@ struct ShadowMapRegion {
     mat4 clip_from_world;
 };
 
-struct LightItem {
-    vec4 pos_and_radius;
-    vec4 col_and_shadowreg_index;
-    vec4 dir_and_spot;
-    vec4 u_and_unused;
-    vec4 v_and_unused;
-};
-
 #define LIGHTS_BUF_STRIDE 5
 
-const int LIGHT_TYPE_POINT = 0;
-const int LIGHT_TYPE_SPHERE = 1;
-const int LIGHT_TYPE_RECT = 2;
-const int LIGHT_TYPE_DISK = 3;
-const int LIGHT_TYPE_LINE = 4;
+const int LIGHT_TYPE_SPHERE = 0;
+const int LIGHT_TYPE_RECT = 1;
+const int LIGHT_TYPE_DISK = 2;
+const int LIGHT_TYPE_LINE = 3;
 
 struct ProbeItem {
     vec4 pos_and_radius;
