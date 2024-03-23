@@ -2,7 +2,7 @@ gl_program: main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_
 gl_program: main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
 sw_program: main
 texture: vegetation/tree_bark_fagus_a_tex_diff.png
-texture: default_normalmap.png
+texture: default_normalmap.dds
 texture: default_specular.png
 texture: default_mask.png
 texture: vegetation/fagus_pp_pos.dds nofilter

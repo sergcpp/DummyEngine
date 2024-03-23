@@ -3,6 +3,6 @@ gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
 sw_program: main
 flag: alpha_test
 texture: wolf_fur_diff.png
-texture: default_normalmap.png
+texture: default_normalmap.dds
 texture: default_specular.png
 texture: wolf_fur_mask.png

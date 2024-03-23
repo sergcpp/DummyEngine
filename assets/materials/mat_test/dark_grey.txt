@@ -3,6 +3,6 @@ gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag
 sw_program: main
 flag: two_sided
 texture: default_basecolor.png
-texture: default_normalmap.png
+texture: default_normalmap.dds
 texture: default_specular.png
 param: 0.08 0.08 0.08 0.0
