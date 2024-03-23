@@ -97,37 +97,34 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
 
     ls.dir[0] = ls.dir[2] = 0.0f;
     ls.dir[1] = -1.0f;
-    ls.spot_angle = 0.5f * Ren::Pi<float>();
-    ls.spot_cos = 0.0f;
-    ls.spot_blend = 0.0f;
-    if (ls.type == eLightType::Sphere || ls.type == eLightType::Line) {
-        // whole sphere
-        ls.spot_angle = Ren::Pi<float>() + 0.01f;
-        ls.spot_cos = -1.01f;
-    }
     if (js_in.Has("direction")) {
         const JsArrayP &js_dir = js_in.at("direction").as_arr();
 
         ls.dir[0] = float(js_dir[0].as_num().val);
         ls.dir[1] = float(js_dir[1].as_num().val);
         ls.dir[2] = float(js_dir[2].as_num().val);
+    }
 
-        ls.angle_deg = 45.0f;
-        if (js_in.Has("spot_angle")) {
-            const JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
-            ls.angle_deg = float(js_spot_angle.val);
-        }
+    ls.angle_deg = 180.0f;
+    if (ls.type == eLightType::Sphere || ls.type == eLightType::Line) {
+        // whole sphere
+        ls.angle_deg = 360.0f;
+    }
+    if (js_in.Has("spot_angle")) {
+        const JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
+        ls.angle_deg = float(js_spot_angle.val);
+    }
 
-        if (js_in.Has("spot_blend")) {
-            const JsNumber &js_spot_blend = js_in.at("spot_blend").as_num();
-            ls.spot_blend = float(js_spot_blend.val);
-        }
+    const float angle_rad = ls.angle_deg * Ren::Pi<float>() / 180.0f;
 
-        const float angle_rad = ls.angle_deg * Ren::Pi<float>() / 180.0f;
+    ls.spot_angle = 0.5f * angle_rad;
+    ls.spot_cos = cosf(ls.spot_angle);
+    ls.cap_radius = ls.cull_radius * std::tan(angle_rad);
 
-        ls.spot_angle = 0.5f * angle_rad;
-        ls.spot_cos = cosf(ls.spot_angle);
-        ls.cap_radius = ls.cull_radius * std::tan(angle_rad);
+    ls.spot_blend = 0.0f;
+    if (js_in.Has("spot_blend")) {
+        const JsNumber &js_spot_blend = js_in.at("spot_blend").as_num();
+        ls.spot_blend = float(js_spot_blend.val);
     }
 
     ls.cast_shadow = false;
@@ -194,14 +191,14 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_dir.Push(JsNumber{ls.dir[2]});
 
         js_out.Push("direction", std::move(js_dir));
+    }
 
-        if (ls.angle_deg != 45.0f) {
-            js_out.Push("angle", JsNumber{ls.angle_deg});
-        }
+    if (ls.angle_deg != 45.0f) {
+        js_out.Push("angle", JsNumber{ls.angle_deg});
+    }
 
-        if (ls.spot_blend != 0.0f) {
-            js_out.Push("spot_blend", JsNumber{ls.spot_blend});
-        }
+    if (ls.spot_blend != 0.0f) {
+        js_out.Push("spot_blend", JsNumber{ls.spot_blend});
     }
 
     if (ls.cull_offset != 0.1f) {
