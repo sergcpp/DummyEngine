@@ -55,10 +55,10 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
         if (sequence_) {
             char str_buf[128];
 
-            const char *name = sequence_->GetTrackName(track);
-            const char *target = sequence_->GetTrackTarget(track);
-            if (name && target) {
-                snprintf(str_buf, sizeof(str_buf), "%s|%s", name, target);
+            std::string_view name = sequence_->GetTrackName(track);
+            std::string_view target = sequence_->GetTrackTarget(track);
+            if (!name.empty() && !target.empty()) {
+                snprintf(str_buf, sizeof(str_buf), "%s|%s", name.data(), target.data());
                 font_.DrawText(r, str_buf, Ren::Vec2f{-1.0f + border_width, y_coord + font_height}, Gui::ColorBlack,
                                this);
             }
@@ -151,9 +151,9 @@ void SeqCanvasUI::Draw(Gui::Renderer *r) {
             end_.Draw(r);
         }
 
-        const char *lookup_name = sequence_->lookup_name();
-        if (lookup_name) {
-            const float width = font_.GetWidth(lookup_name, -1, this);
+        std::string_view lookup_name = sequence_->lookup_name();
+        if (!lookup_name.empty()) {
+            const float width = font_.GetWidth(lookup_name, this);
             font_.DrawText(r, lookup_name, Ren::Vec2f{1.0f - width, -1.0f + font_height}, Gui::ColorWhite, this);
         }
     }

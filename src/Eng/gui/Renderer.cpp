@@ -47,9 +47,9 @@ bool Gui::Renderer::Init() {
             eShaderLoadStatus sh_status;
             ui_vs_ref = ctx_.LoadShaderSPIRV("__ui_vs__",
 #if defined(USE_VK_RENDER)
-                                             ui_vert_spv, ui_vert_spv_size,
+                                             ui_vert_spv,
 #else
-                                             ui_vert_spv_ogl, ui_vert_spv_ogl_size,
+                                             ui_vert_spv_ogl,
 #endif
                                              eShaderType::Vertex, &sh_status);
             if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {
@@ -58,9 +58,9 @@ bool Gui::Renderer::Init() {
             }
             ui_fs_ref = ctx_.LoadShaderSPIRV("__ui_fs__",
 #if defined(USE_VK_RENDER)
-                                             ui_frag_spv, ui_frag_spv_size,
+                                             ui_frag_spv,
 #else
-                                             ui_frag_spv_ogl, ui_frag_spv_ogl_size,
+                                             ui_frag_spv_ogl,
 #endif
                                              eShaderType::Fragment, &sh_status);
             if (sh_status != eShaderLoadStatus::CreatedFromData && sh_status != eShaderLoadStatus::Found) {

@@ -17,13 +17,14 @@ GLuint LoadShader(GLenum shader_type, const uint8_t *data, int data_size, ILog *
 void ParseGLSLBindings(const char *shader_str, Descr **bindings, int *bindings_count, ILog *log);
 } // namespace Ren
 
-Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
                       ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
     Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), status, log);
 }
 
-Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
+Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status,
+                      ILog *log) {
     name_ = String{name};
     Init(std::move(cs_ref), status, log);
 }

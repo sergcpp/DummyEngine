@@ -131,7 +131,7 @@ void GSUITest3::Enter() {
             for (const auto &grp : mesh->groups()) {
                 // hold reference to original material here
                 Ren::MaterialRef mat = grp.mat;
-                if (mat->name() == "book/book_page0.txt") {
+                if (mat->name() == "book/book_page0.mat") {
                     // replace material
                     const_cast<Ren::TriGroup &>(grp).mat = page_mat_;
                 }

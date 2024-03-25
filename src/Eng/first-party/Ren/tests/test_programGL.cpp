@@ -360,11 +360,9 @@ void main() {
                 0x00};
 
             Ren::eShaderLoadStatus sh_status;
-            Ren::ShaderRef vs_ref =
-                test.LoadShaderSPIRV("simple_vs", vert_spv, vert_spv_size, Ren::eShaderType::Vertex, &sh_status);
+            Ren::ShaderRef vs_ref = test.LoadShaderSPIRV("simple_vs", vert_spv, Ren::eShaderType::Vertex, &sh_status);
             require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
-            Ren::ShaderRef fs_ref =
-                test.LoadShaderSPIRV("simple_fs", frag_spv, frag_spv_size, Ren::eShaderType::Fragment, &sh_status);
+            Ren::ShaderRef fs_ref = test.LoadShaderSPIRV("simple_fs", frag_spv, Ren::eShaderType::Fragment, &sh_status);
             require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
             Ren::eProgLoadStatus status;

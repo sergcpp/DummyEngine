@@ -7,7 +7,7 @@
 #pragma warning(disable : 4996)
 #endif
 
-Ren::AnimSequence::AnimSequence(const char *name, std::istream &data) {
+Ren::AnimSequence::AnimSequence(std::string_view name, std::istream &data) {
     name_ = String{name};
     Init(data);
 }
@@ -164,7 +164,7 @@ void Ren::AnimSequence::InterpolateFrames(const int fr_0, const int fr_1, const 
 
 // skeleton
 
-Ren::Vec3f Ren::Skeleton::bone_pos(const char *name) {
+Ren::Vec3f Ren::Skeleton::bone_pos(std::string_view name) {
     const Bone *bone = find_bone(name);
     Vec3f ret;
     const float *m = ValuePtr(bone->cur_comb_matrix);
@@ -194,7 +194,7 @@ Ren::Vec3f Ren::Skeleton::bone_pos(const int i) {
     return ret;
 }
 
-void Ren::Skeleton::bone_matrix(const char *name, Mat4f &mat) {
+void Ren::Skeleton::bone_matrix(std::string_view name, Mat4f &mat) {
     const Bone *bone = find_bone(name);
     assert(bone);
     mat = bone->cur_comb_matrix;

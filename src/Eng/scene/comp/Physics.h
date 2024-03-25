@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Phy/Body.h>
 
 #include "Common.h"
@@ -11,6 +13,6 @@ struct Physics {
     static void Read(const JsObjectP &js_in, Physics &ph);
     static void Write(const Physics &ph, JsObjectP &js_out);
 
-    static const char *name() { return "physics"; }
+    static std::string_view name() { return "physics"; }
 };
 } // namespace Eng

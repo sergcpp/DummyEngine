@@ -581,7 +581,7 @@ void GSDrawTest::UpdateFixed(const uint64_t dt_us) {
             }
         }
 
-        scene_manager_->InvalidateObjects(scooter_indices_, 16, Eng::CompTransformBit);
+        scene_manager_->InvalidateObjects(scooter_indices_, Eng::CompTransformBit);
     }
 
     wind_update_time_ += dt_us;
@@ -840,7 +840,7 @@ void GSDrawTest::TestUpdateAnims(const float delta_time_s) {
 
                     tr->world_from_object_prev = tr->world_from_object;
                     tr->world_from_object = xform * tr->world_from_object;
-                    scene_manager_->InvalidateObjects(&wolf_index, 1, Eng::CompTransformBit);
+                    scene_manager_->InvalidateObjects({&wolf_index, 1}, Eng::CompTransformBit);
                 }
             }
         }

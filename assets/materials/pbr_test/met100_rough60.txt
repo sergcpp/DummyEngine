@@ -1,6 +1,0 @@
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-sw_program: main
-texture: test/red0_diff.png
-texture: default_normalmap.dds
-texture: test/red_spec100_rough60.png

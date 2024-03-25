@@ -12,6 +12,6 @@ struct AccStructure {
     static void Read(const JsObjectP &js_in, AccStructure &acc);
     static void Write(const AccStructure &acc, JsObjectP &js_out);
 
-    static const char *name() { return "acc_structure"; }
+    static std::string_view name() { return "acc_structure"; }
 };
 } // namespace Eng

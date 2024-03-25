@@ -837,9 +837,8 @@ void GSBaseState::UpdateFixed(const uint64_t dt_us) {
     physics_manager_->Update(scene_manager_->scene_data(), float(dt_us * 0.000001));
 
     { // invalidate objects updated by physics manager
-        uint32_t updated_count = 0;
-        const uint32_t *updated_objects = physics_manager_->updated_objects(updated_count);
-        scene_manager_->InvalidateObjects(updated_objects, updated_count, Eng::CompPhysicsBit);
+        Ren::Span<const uint32_t> updated_objects = physics_manager_->updated_objects();
+        scene_manager_->InvalidateObjects(updated_objects, Eng::CompPhysicsBit);
     }
 }
 

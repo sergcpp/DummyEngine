@@ -1,6 +1,0 @@
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-sw_program: main
-texture: bistro/MenuSign_01_diff.png
-texture: bistro/MenuSign_01_norm.png
-texture: default_specular.png

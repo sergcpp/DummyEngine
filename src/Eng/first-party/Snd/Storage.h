@@ -34,7 +34,7 @@ template <typename T> class Storage : public SparseArray<T> {
         SparseArray<T>::erase(i);
     }
 
-    StrongRef<T> FindByName(const char *name) {
+    StrongRef<T> FindByName(std::string_view name) {
         uint32_t *p_index = items_by_name_.Find(name);
         if (p_index) {
             return {this, *p_index};

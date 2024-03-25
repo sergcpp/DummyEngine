@@ -1,6 +1,7 @@
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-sw_program: main
-texture: chars/Shirt4_diff.png
-texture: chars/Shirt4_norm.png
-texture: default_specular.png
+gl_programs:
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+textures:
+    - chars/Shirt4_diff.png
+    - chars/Shirt4_norm.png
+    - default_specular.png

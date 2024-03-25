@@ -58,7 +58,7 @@ class ModlApp {
 
     bool terminated() const { return quit_; }
 
-  //private:
+    // private:
     enum class eCompileResult { RES_SUCCESS = 0, RES_PARSE_ERROR, RES_FILE_NOT_FOUND };
     eCompileResult CompileModel(const std::string &in_file_name, const std::string &out_file_name, bool optimize,
                                 bool generate_occlusion);
@@ -123,11 +123,11 @@ class ModlApp {
 
     void PrintUsage();
 
-    Ren::Tex2DRef OnTextureNeeded(const char *name);
+    Ren::Tex2DRef OnTextureNeeded(std::string_view name);
     Ren::SamplerRef OnSamplerNeeded(Ren::SamplingParams params);
-    void OnPipelinesNeeded(const char *prog_name, uint32_t flags, const char *vs_shader, const char *fs_shader,
+    void OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, const char *vs_shader, const char *fs_shader,
                            const char *arg3, const char *arg4, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    Ren::MaterialRef OnMaterialNeeded(const char *name);
+    Ren::MaterialRef OnMaterialNeeded(std::string_view name);
 
     static void ClearColorAndDepth(float r, float g, float b, float a);
 };

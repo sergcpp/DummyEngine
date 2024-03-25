@@ -38,7 +38,7 @@ enum class eFontFileChunk { FontChTypoData, FontChImageData, FontChGlyphData, Fo
 
 class BitmapFont {
   public:
-    explicit BitmapFont(const char *name = nullptr, Ren::Context *ctx = nullptr);
+    explicit BitmapFont(std::string_view name = {}, Ren::Context *ctx = nullptr);
 
     float scale() const { return scale_; }
     float height(const BaseElement *parent) const;
@@ -49,12 +49,12 @@ class BitmapFont {
     void set_scale(float scale) { scale_ = scale; }
     void set_draw_mode(eDrawMode mode) { draw_mode_ = mode; }
 
-    bool Load(const char *name, Ren::Context &ctx);
+    bool Load(std::string_view name, Ren::Context &ctx);
 
-    float GetWidth(const char *text, int text_len, const BaseElement *parent) const;
-    float DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4],
+    float GetWidth(std::string_view text, const BaseElement *parent) const;
+    float DrawText(Renderer *r, std::string_view text, const Vec2f &pos, const uint8_t col[4],
                    const BaseElement *parent) const;
-    int CheckText(const char *text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
+    int CheckText(std::string_view text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
                   const BaseElement *parent) const;
 
   private:

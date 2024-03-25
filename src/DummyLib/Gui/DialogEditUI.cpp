@@ -65,10 +65,10 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
 
                 const uint8_t *text_color = (elem_index == selected_element_) ? Gui::ColorWhite : Gui::ColorBlack;
 
-                const float width = font_.GetWidth(choice->key.c_str(), -1, this);
+                const float width = font_.GetWidth(choice->key, this);
 
-                font_.DrawText(r, choice->key.c_str(), SnapToPixels(p0 + Ren::Vec2f{-width - elem_border[0], 0.0f}),
-                               text_color, this);
+                font_.DrawText(r, choice->key, SnapToPixels(p0 + Ren::Vec2f{-width - elem_border[0], 0.0f}), text_color,
+                               this);
             }
 
             if (!visited) {
@@ -85,8 +85,8 @@ void DialogEditUI::Draw(Gui::Renderer *r) {
                     Ren::Vec2f text_pos =
                         elem_pos + Ren::Vec2f{elem_border[0], elem_size[1] - elem_border[1] - font_height};
 
-                    const char *seq_name = seq->name();
-                    if (seq_name) {
+                    std::string_view seq_name = seq->name();
+                    if (!seq_name.empty()) {
                         font_.DrawText(r, seq_name, text_pos, col, this);
                     }
                     text_pos[1] -= font_height;

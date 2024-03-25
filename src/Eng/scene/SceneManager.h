@@ -114,16 +114,16 @@ class SceneManager {
 
     Eng::SceneObject *GetObject(const uint32_t i) { return &scene_data_.objects[i]; }
 
-    uint32_t FindObject(const char *name) {
+    uint32_t FindObject(std::string_view name) {
         uint32_t *p_ndx = scene_data_.name_to_object.Find(name);
         return p_ndx ? (*p_ndx) : 0xffffffff;
     }
 
-    void InvalidateObjects(const uint32_t *indices, const uint32_t count, const uint32_t change_mask) {
-        for (uint32_t i = 0; i < count; i++) {
+    void InvalidateObjects(Ren::Span<const uint32_t> indices, const uint32_t change_mask) {
+        for (uint32_t i = 0; i < uint32_t(indices.size()); i++) {
             scene_data_.objects[indices[i]].change_mask |= change_mask;
         }
-        changed_objects_.insert(changed_objects_.end(), indices, indices + count);
+        changed_objects_.insert(changed_objects_.end(), indices.begin(), indices.end());
     }
     void InvalidateTexture(const Ren::Tex2DRef &ref);
 
@@ -175,22 +175,22 @@ class SceneManager {
     void PostloadSoundSource(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
-    Ren::MaterialRef OnLoadMaterial(const char *name);
-    void OnLoadPipelines(const char *name, uint32_t flags, const char *v_shader, const char *f_shader,
+    Ren::MaterialRef OnLoadMaterial(std::string_view name);
+    void OnLoadPipelines(std::string_view name, uint32_t flags, const char *v_shader, const char *f_shader,
                          const char *tc_shader, const char *te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
-    Ren::Tex2DRef OnLoadTexture(const char *name, const uint8_t color[4], Ren::eTexFlags flags);
+    Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::eTexFlags flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
     Ren::MeshRef LoadMesh(const char *name, std::istream *data, const Ren::material_load_callback &on_mat_load,
                           Ren::eMeshLoadStatus *load_status);
-    Ren::MaterialRef LoadMaterial(const char *name, const char *mat_src, Ren::eMatLoadStatus *status,
+    Ren::MaterialRef LoadMaterial(std::string_view name, std::string_view mat_src, Ren::eMatLoadStatus *status,
                                   const Ren::pipelines_load_callback &on_pipes_load,
                                   const Ren::texture_load_callback &on_tex_load,
                                   const Ren::sampler_load_callback &on_sampler_load);
-    Ren::Tex2DRef LoadTexture(const char *name, const void *data, int size, const Ren::Tex2DParams &p,
+    Ren::Tex2DRef LoadTexture(const std::string_view name, Ren::Span<const uint8_t> data, const Ren::Tex2DParams &p,
                               Ren::eTexLoadStatus *load_status);
-    Ren::Vec4f LoadDecalTexture(const char *name);
+    Ren::Vec4f LoadDecalTexture(std::string_view name);
 
     void EstimateTextureMemory(int portion_size);
     bool ProcessPendingTextures(int portion_size, bool animate_lod);

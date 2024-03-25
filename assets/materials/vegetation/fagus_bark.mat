@@ -1,0 +1,10 @@
+gl_programs:
+    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+textures:
+    - vegetation/tree_bark_fagus_a_tex_diff.png
+    - default_normalmap.dds
+    - default_specular.png
+    - default_mask.png
+    - vegetation/fagus_pp_pos.dds nofilter
+    - vegetation/fagus_pp_dir.dds nofilter

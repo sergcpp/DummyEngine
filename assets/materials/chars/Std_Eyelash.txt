@@ -1,8 +1,10 @@
-gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-sw_program: main
-flag: alpha_blend
-texture: chars/Std_Eyelash_diff.png
-texture: default_normalmap.dds
-texture: default_specular.png
-texture: chars/Std_Eyelash_mask.png
+gl_programs:
+    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+flags:
+    - alpha_blend
+textures:
+    - chars/Std_Eyelash_diff.png
+    - default_normalmap.dds
+    - default_specular.png
+    - chars/Std_Eyelash_mask.png

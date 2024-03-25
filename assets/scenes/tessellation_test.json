@@ -32,10 +32,10 @@
 			},
 			"drawable" : {
 				"mesh_file" : "ground_plane_200x200.mesh",
-				"material_override3" : [ "cobblestone_pom.txt", "checker.txt" ],
-				"material_override1" : [ "cobblestone_tess.txt", "checker.txt" ],
-				"material_override" : [ "checker_pom.txt", "checker.txt" ],
-				"material_override2" : [ "_wind_debug.txt" ]
+				"material_override3" : [ "cobblestone_pom.mat", "checker.mat" ],
+				"material_override1" : [ "cobblestone_tess.mat", "checker.mat" ],
+				"material_override" : [ "checker_pom.mat", "checker.mat" ],
+				"material_override2" : [ "_wind_debug.mat" ]
 			}
 		},
 		{
@@ -53,7 +53,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "sph_low.mesh",
-				"material_override" : [ "checker_pn.txt" ]
+				"material_override" : [ "checker_pn.mat" ]
 			}
 		},
 		{

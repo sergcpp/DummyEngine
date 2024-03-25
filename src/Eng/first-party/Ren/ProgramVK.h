@@ -40,11 +40,11 @@ class Program : public RefCounter {
 
   public:
     Program() = default;
-    Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+    Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
             ShaderRef tes_ref, eProgLoadStatus *status, ILog *log);
-    Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
-    Program(const char *name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
-            ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
+    Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log);
+    Program(std::string_view name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
+            ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status, ILog *log);
 
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -67,8 +67,7 @@ class Program : public RefCounter {
     const String &name() const { return name_; }
 
     const Attribute &attribute(const int i) const { return attributes_[i]; }
-
-    const Attribute &attribute(const char *name) const {
+    const Attribute &attribute(std::string_view name) const {
         for (int i = 0; i < int(attributes_.size()); i++) {
             if (attributes_[i].name == name) {
                 return attributes_[i];
@@ -78,8 +77,7 @@ class Program : public RefCounter {
     }
 
     const Uniform &uniform(const int i) const { return uniforms_[i]; }
-
-    const Uniform &uniform(const char *name) const {
+    const Uniform &uniform(std::string_view name) const {
         for (int i = 0; i < int(uniforms_.size()); i++) {
             if (uniforms_[i].name == name) {
                 return uniforms_[i];

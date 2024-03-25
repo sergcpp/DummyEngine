@@ -81,7 +81,8 @@ void Gui::EditBox::Draw(Renderer *r) {
     }
 
     if (focused_) {
-        const float width_until_cursor = 2.0f * font_->GetWidth(lines_[current_line_].c_str(), current_char_, this),
+        const float width_until_cursor =
+                        2.0f * font_->GetWidth({lines_[current_line_].c_str(), size_t(current_char_)}, this),
                     y_offset = y_start - float(current_line_) * line_spacing;
 
         // draw cursor

@@ -65,9 +65,9 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
         // write mesh file name
         const Ren::String &mesh_name = dr.mesh->name();
         if (mesh_name != dr.mesh_file) {
-            js_out.Push("mesh_name", JsStringP{mesh_name.c_str(), alloc});
+            js_out.Push("mesh_name", JsStringP{mesh_name, alloc});
         }
-        js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name.c_str() : dr.mesh_file.c_str(), alloc});
+        js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name : dr.mesh_file, alloc});
     }
 
     if (dr.flags & uint32_t(eFlags::MaterialOverride)) {
@@ -75,7 +75,7 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
 
         const Ren::Mesh *mesh = dr.mesh.get();
         for (const auto &grp : mesh->groups()) {
-            js_material_override.Push(JsStringP{grp.mat->name().c_str(), alloc});
+            js_material_override.Push(JsStringP{grp.mat->name(), alloc});
         }
 
         js_out.Push("material_override", std::move(js_material_override));
@@ -115,7 +115,7 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
             }
 
             if (!dr.ellipsoids[i].bone_name.empty()) {
-                js_ellipsoid.Push("bone", JsStringP{dr.ellipsoids[i].bone_name.c_str(), alloc});
+                js_ellipsoid.Push("bone", JsStringP{dr.ellipsoids[i].bone_name, alloc});
             }
         }
     }

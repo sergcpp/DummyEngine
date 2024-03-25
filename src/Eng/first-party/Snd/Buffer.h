@@ -2,12 +2,15 @@
 
 #include <cstdint>
 
+#include <string_view>
+
+#include "Span.h"
 #include "Storage.h"
 #include "String.h"
 
 namespace Snd {
 class ILog;
-    
+
 enum class eBufFormat { Undefined, Mono8, Mono16, Stereo8, Stereo16, Count };
 
 struct BufParams {
@@ -24,11 +27,12 @@ class Buffer : public RefCounter {
 #endif
     uint32_t size_ = 0;
     BufParams params_;
-    
+
     void FreeBuf();
+
   public:
-    Buffer(const char *name, const void *data, uint32_t size, const BufParams &params,
-           eBufLoadStatus *load_status, ILog *log);
+    Buffer(std::string_view name, Span<const uint8_t> data, const BufParams &params, eBufLoadStatus *load_status,
+           ILog *log);
     ~Buffer();
 
     Buffer(const Buffer &rhs) = delete;
@@ -47,10 +51,9 @@ class Buffer : public RefCounter {
 
     float GetDurationS() const;
 
-    void SetData(const void *data, uint32_t size, const BufParams &params);
+    void SetData(Span<const uint8_t> data, const BufParams &params);
 
-    void Init(const void *data, uint32_t size, const BufParams &params,
-              eBufLoadStatus *load_status, ILog *log);
+    void Init(Span<const uint8_t> data, const BufParams &params, eBufLoadStatus *load_status, ILog *log);
 };
 
 typedef StrongRef<Buffer> BufferRef;

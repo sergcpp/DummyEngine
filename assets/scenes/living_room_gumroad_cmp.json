@@ -103,7 +103,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_0.mesh",
-				"material_override" : [ "wall_picture_YCoCg.txt" ]
+				"material_override" : [ "wall_picture_YCoCg.mat" ]
 			}
 		},
 		{
@@ -122,7 +122,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_1.mesh",
-				"material_override" : [ "wall_picture_0.txt" ]
+				"material_override" : [ "wall_picture_0.mat" ]
 			}
 		},
 		{

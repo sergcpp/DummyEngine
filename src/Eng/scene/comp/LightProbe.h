@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Ren/MMat.h>
 
 #include "Common.h"
@@ -15,6 +17,6 @@ struct LightProbe {
     static void Read(const JsObjectP &js_in, LightProbe &pr);
     static void Write(const LightProbe &pr, JsObjectP &js_out);
 
-    static const char *name() { return "probe"; }
+    static std::string_view name() { return "probe"; }
 };
 } // namespace Eng

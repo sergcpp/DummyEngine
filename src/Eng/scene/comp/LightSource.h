@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Ren/MMat.h>
 
 #include "Common.h"
@@ -31,6 +33,6 @@ struct LightSource {
     static void Read(const JsObjectP &js_in, LightSource &ls);
     static void Write(const LightSource &ls, JsObjectP &js_out);
 
-    static const char *name() { return "light"; }
+    static std::string_view name() { return "light"; }
 };
 } // namespace Eng

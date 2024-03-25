@@ -13,20 +13,21 @@ namespace Ren {
 extern const VkShaderStageFlagBits g_shader_stages_vk[];
 } // namespace Ren
 
-Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
                       ShaderRef tes_ref, eProgLoadStatus *status, ILog *log) {
     name_ = String{name};
     api_ctx_ = api_ctx;
     Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), status, log);
 }
 
-Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status, ILog *log) {
+Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef cs_ref, eProgLoadStatus *status,
+                      ILog *log) {
     name_ = String{name};
     api_ctx_ = api_ctx;
     Init(std::move(cs_ref), status, log);
 }
 
-Ren::Program::Program(const char *name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
+Ren::Program::Program(std::string_view name, ApiContext *api_ctx, ShaderRef raygen_ref, ShaderRef closesthit_ref,
                       ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *status,
                       ILog *log) {
     name_ = String{name};

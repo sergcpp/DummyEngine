@@ -58,6 +58,7 @@ set(SOURCE_FILES Buffer.h
 				 HashMap32.h
                  Log.h
 				 Source.h
+				 Span.h
 				 SparseArray.h
 				 Storage.h
 				 String.h

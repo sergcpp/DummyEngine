@@ -148,24 +148,24 @@ extern const VkCompareOp g_vk_compare_ops[];
 extern const float AnisotropyLevel;
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(const char *name, ApiContext *api_ctx, const Tex2DParams &p, MemoryAllocators *mem_allocs,
-                          ILog *log)
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &p,
+                          MemoryAllocators *mem_allocs, ILog *log)
     : api_ctx_(api_ctx), name_(name) {
     Init(p, mem_allocs, log);
 }
 
-Ren::Texture2D::Texture2D(const char *name, ApiContext *api_ctx, const void *data, const uint32_t size,
-                          const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log)
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
+                          Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+                          ILog *log)
     : api_ctx_(api_ctx), name_(name) {
-    Init(data, size, p, stage_buf, _cmd_buf, mem_allocs, load_status, log);
+    Init(data, p, stage_buf, _cmd_buf, mem_allocs, load_status, log);
 }
 
-Ren::Texture2D::Texture2D(const char *name, ApiContext *api_ctx, const void *data[6], const int size[6],
-                          const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                          eTexLoadStatus *load_status, ILog *log)
+Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
+                          Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+                          ILog *log)
     : api_ctx_(api_ctx), name_(name) {
-    Init(data, size, p, stage_buf, _cmd_buf, mem_allocs, load_status, log);
+    Init(data, p, stage_buf, _cmd_buf, mem_allocs, load_status, log);
 }
 
 Ren::Texture2D::~Texture2D() { Free(); }
@@ -198,9 +198,9 @@ void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *mem_allocs, IL
     ready_ = true;
 }
 
-void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
-    if (!data) {
+    if (data.empty()) {
         uint8_t *stage_data = sbuf.Map(eBufMap::Write);
         memcpy(stage_data, p.fallback_color, 4);
         sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(4));
@@ -222,15 +222,15 @@ void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DPara
         } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, size, sbuf, _cmd_buf, mem_allocs, p, log);
+            InitFromDDSFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, size, sbuf, _cmd_buf, mem_allocs, p, log);
+            InitFromKTXFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, size, sbuf, _cmd_buf, mem_allocs, p, log);
+            InitFromPNGFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else {
             uint8_t *stage_data = sbuf.Map(eBufMap::Write);
-            memcpy(stage_data, data, size);
-            sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(size));
+            memcpy(stage_data, data.data(), data.size());
+            sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(uint32_t(data.size())));
             sbuf.Unmap();
 
             InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, p, log);
@@ -240,7 +240,7 @@ void Ren::Texture2D::Init(const void *data, const uint32_t size, const Tex2DPara
     }
 }
 
-void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         uint8_t *stage_data = sbuf.Map(eBufMap::Write);
@@ -266,21 +266,21 @@ void Ren::Texture2D::Init(const void *data[6], const int size[6], const Tex2DPar
         } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, size, sbuf, _cmd_buf, mem_allocs, p, log);
+            InitFromPNGFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".ktx") != 0 || name_.EndsWith(".KTX") != 0) {
-            InitFromKTXFile(data, size, sbuf, _cmd_buf, mem_allocs, p, log);
+            InitFromKTXFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
-            InitFromDDSFile(data, size, sbuf, _cmd_buf, mem_allocs, p, log);
+            InitFromDDSFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else {
             uint8_t *stage_data = sbuf.Map(eBufMap::Write);
             uint32_t stage_off = 0;
 
             int data_off[6];
             for (int i = 0; i < 6; i++) {
-                if (data[i]) {
-                    memcpy(&stage_data[stage_off], data[i], size[i]);
+                if (!data[i].empty()) {
+                    memcpy(&stage_data[stage_off], data[i].data(), data[i].size());
                     data_off[i] = int(stage_off);
-                    stage_off += size[i];
+                    stage_off += uint32_t(data[i].size());
                 } else {
                     data_off[i] = -1;
                 }
@@ -769,8 +769,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
     }
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                                     const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
+                                     MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
     uint32_t img_size = 0;
@@ -791,8 +791,8 @@ void Ren::Texture2D::InitFromTGAFile(const void *data, Buffer &sbuf, void *_cmd_
     InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                                          const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGA_RGBEFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
+                                          MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
     std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
@@ -811,10 +811,10 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data, Buffer &sbuf, void *
     InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     DDSHeader header;
-    memcpy(&header, data, sizeof(DDSHeader));
+    memcpy(&header, data.data(), sizeof(DDSHeader));
 
     eTexFormat format;
     eTexBlock block;
@@ -851,8 +851,8 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
     params.sampling = p.sampling;
 
     int w = params.w, h = params.h;
-    uint32_t bytes_left = uint32_t(size) - sizeof(DDSHeader);
-    const uint8_t *p_data = (uint8_t *)data + sizeof(DDSHeader);
+    uint32_t bytes_left = uint32_t(data.size()) - sizeof(DDSHeader);
+    const uint8_t *p_data = data.data() + sizeof(DDSHeader);
 
     assert(bytes_left <= sbuf.size());
     uint8_t *stage_data = sbuf.Map(eBufMap::Write);
@@ -953,10 +953,11 @@ void Ren::Texture2D::InitFromDDSFile(const void *data, const int size, Buffer &s
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromPNGFile(const void *data, const int size, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     int width, height, channels;
-    unsigned char *const image_data = stbi_load_from_memory((const uint8_t *)data, size, &width, &height, &channels, 0);
+    unsigned char *const image_data =
+        stbi_load_from_memory(data.data(), int(data.size()), &width, &height, &channels, 0);
 
     Tex2DParams _p = p;
     _p.w = width;
@@ -980,10 +981,10 @@ void Ren::Texture2D::InitFromPNGFile(const void *data, const int size, Buffer &s
     free(image_data);
 }
 
-void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     KTXHeader header;
-    memcpy(&header, data, sizeof(KTXHeader));
+    memcpy(&header, data.data(), sizeof(KTXHeader));
 
     eTexBlock block;
     bool is_srgb_format;
@@ -1007,13 +1008,12 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
     params.w = w;
     params.h = h;
 
-    const auto *_data = (const uint8_t *)data;
     int data_offset = sizeof(KTXHeader);
 
-    assert(uint32_t(size - data_offset) <= sbuf.size());
+    assert(uint32_t(data.size() - data_offset) <= sbuf.size());
     uint8_t *stage_data = sbuf.Map(eBufMap::Write);
-    memcpy(stage_data, _data, size);
-    sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(size));
+    memcpy(stage_data, data.data(), data.size());
+    sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(uint32_t(data.size())));
     sbuf.Unmap();
 
     assert(sbuf.type() == eBufType::Stage);
@@ -1032,7 +1032,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
         new_barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         new_barrier.buffer = sbuf.vk_handle();
         new_barrier.offset = 0;
-        new_barrier.size = VkDeviceSize(size);
+        new_barrier.size = VkDeviceSize(data.size());
 
         src_stages |= VKPipelineStagesForState(sbuf.resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopySrc);
@@ -1074,15 +1074,16 @@ void Ren::Texture2D::InitFromKTXFile(const void *data, const int size, Buffer &s
     int regions_count = 0;
 
     for (int i = 0; i < int(header.mipmap_levels_count); i++) {
-        if (data_offset + int(sizeof(uint32_t)) > size) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", size - data_offset, sizeof(uint32_t));
+        if (data_offset + int(sizeof(uint32_t)) > data.size()) {
+            log->Error("Insufficient data length, bytes left %i, expected %i", data.size() - data_offset,
+                       sizeof(uint32_t));
             break;
         }
 
         uint32_t img_size;
-        memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
-        if (data_offset + int(img_size) > size) {
-            log->Error("Insufficient data length, bytes left %i, expected %i", size - data_offset, img_size);
+        memcpy(&img_size, &data[data_offset], sizeof(uint32_t));
+        if (data_offset + int(img_size) > data.size()) {
+            log->Error("Insufficient data length, bytes left %i, expected %i", data.size() - data_offset, img_size);
             break;
         }
 
@@ -1288,8 +1289,8 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromTGAFile(const void *data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                                     const Tex2DParams &p, ILog *log) {
+void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf,
+                                     MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     int w = 0, h = 0;
     eTexFormat format = eTexFormat::Undefined;
 
@@ -1299,7 +1300,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data[6], Buffer &sbuf, void *_c
     int data_off[6] = {-1, -1, -1, -1, -1, -1};
 
     for (int i = 0; i < 6; i++) {
-        if (data[i]) {
+        if (!data[i].empty()) {
             uint32_t data_size;
             const bool res1 = ReadTGAFile(data[i], w, h, format, nullptr, data_size);
             assert(res1);
@@ -1324,7 +1325,7 @@ void Ren::Texture2D::InitFromTGAFile(const void *data[6], Buffer &sbuf, void *_c
     InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromTGA_RGBEFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf,
                                           MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     int w = p.w, h = p.h;
 
@@ -1334,10 +1335,10 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], Buffer &sbuf, voi
     int data_off[6];
 
     for (int i = 0; i < 6; i++) {
-        if (data[i]) {
+        if (!data[i].empty()) {
             const uint32_t img_size = 3 * w * h * sizeof(uint16_t);
             assert(stage_off + img_size <= sbuf.size());
-            ConvertRGBE_to_RGB16F((const uint8_t *)data[i], w, h, (uint16_t *)&stage_data[stage_off]);
+            ConvertRGBE_to_RGB16F(data[i].data(), w, h, (uint16_t *)&stage_data[stage_off]);
             data_off[i] = int(stage_off);
             stage_off += img_size;
         } else {
@@ -1356,7 +1357,7 @@ void Ren::Texture2D::InitFromTGA_RGBEFile(const void *data[6], Buffer &sbuf, voi
     InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
 }
 
-void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     uint8_t *stage_data = sbuf.Map(eBufMap::Write);
     uint32_t stage_off = 0;
@@ -1365,8 +1366,9 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], Buf
 
     int width, height, channels;
     for (int i = 0; i < 6; i++) {
-        if (data[i]) {
-            uint8_t *img_data = stbi_load_from_memory((const uint8_t *)data[i], size[i], &width, &height, &channels, 0);
+        if (!data[i].empty()) {
+            uint8_t *img_data =
+                stbi_load_from_memory(data[i].data(), int(data[i].size()), &width, &height, &channels, 0);
 
             assert(stage_off + channels * width * height <= sbuf.size());
             memcpy(&stage_data[stage_off], img_data, channels * width * height);
@@ -1394,7 +1396,7 @@ void Ren::Texture2D::InitFromPNGFile(const void *data[6], const int size[6], Buf
     InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
 }
 
-void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     assert(p.w > 0 && p.h > 0);
     Free();
@@ -1409,7 +1411,7 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     int first_block_size_bytes = 0;
 
     for (int i = 0; i < 6; ++i) {
-        const DDSHeader *header = reinterpret_cast<const DDSHeader *>(data[i]);
+        const DDSHeader *header = reinterpret_cast<const DDSHeader *>(data[i].data());
 
         eTexFormat format;
         eTexBlock block;
@@ -1448,10 +1450,10 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
             assert(block_size_bytes == first_block_size_bytes);
         }
 
-        memcpy(stage_data + stage_len, data[i], size[i]);
+        memcpy(stage_data + stage_len, data[i].data(), data[i].size());
 
         data_off[i] = stage_len;
-        stage_len += size[i];
+        stage_len += uint32_t(data[i].size());
     }
 
     sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(stage_len));
@@ -1603,10 +1605,10 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     int regions_count = 0;
 
     for (int i = 0; i < 6; i++) {
-        const auto *header = reinterpret_cast<const DDSHeader *>(data[i]);
+        const auto *header = reinterpret_cast<const DDSHeader *>(data[i].data());
 
         int offset = sizeof(DDSHeader);
-        int data_len = size[i] - int(sizeof(DDSHeader));
+        int data_len = int(data[i].size() - sizeof(DDSHeader));
 
         for (uint32_t j = 0; j < header->dwMipMapCount; j++) {
             const int width = std::max(int(header->dwWidth >> j), 1), height = std::max(int(header->dwHeight >> j), 1);
@@ -1642,19 +1644,18 @@ void Ren::Texture2D::InitFromDDSFile(const void *data[6], const int size[6], Buf
     ApplySampling(p.sampling, log);
 }
 
-void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     Free();
 
-    const auto *first_header = reinterpret_cast<const KTXHeader *>(data[0]);
+    const auto *first_header = reinterpret_cast<const KTXHeader *>(data[0].data());
 
     uint8_t *stage_data = sbuf.Map(eBufMap::Write);
     uint32_t data_off[6] = {};
     uint32_t stage_len = 0;
 
     for (int i = 0; i < 6; ++i) {
-        const auto *_data = (const uint8_t *)data[i];
-        const auto *this_header = reinterpret_cast<const KTXHeader *>(_data);
+        const auto *this_header = reinterpret_cast<const KTXHeader *>(data[i].data());
 
         // make sure all images have same properties
         if (this_header->pixel_width != first_header->pixel_width) {
@@ -1673,10 +1674,10 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
             continue;
         }
 
-        memcpy(stage_data + stage_len, _data, size[i]);
+        memcpy(stage_data + stage_len, data->data(), data[i].size());
 
         data_off[i] = stage_len;
-        stage_len += size[i];
+        stage_len += uint32_t(data[i].size());
     }
 
     sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(stage_len));
@@ -1834,10 +1835,8 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
     int regions_count = 0;
 
     for (int i = 0; i < 6; ++i) {
-        const auto *_data = (const uint8_t *)data[i];
-
 #ifndef NDEBUG
-        const auto *this_header = reinterpret_cast<const KTXHeader *>(data[i]);
+        const auto *this_header = reinterpret_cast<const KTXHeader *>(data[i].data());
 
         // make sure all images have same properties
         if (this_header->pixel_width != first_header->pixel_width) {
@@ -1861,7 +1860,7 @@ void Ren::Texture2D::InitFromKTXFile(const void *data[6], const int size[6], Buf
 
         for (int j = 0; j < int(first_header->mipmap_levels_count); j++) {
             uint32_t img_size;
-            memcpy(&img_size, &_data[data_offset], sizeof(uint32_t));
+            memcpy(&img_size, &data[data_offset], sizeof(uint32_t));
             data_offset += sizeof(uint32_t);
 
             auto &reg = regions[regions_count++];
@@ -2144,7 +2143,7 @@ void Ren::ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture1D::Texture1D(const char *name, BufferRef buf, const eTexFormat format, const uint32_t offset,
+Ren::Texture1D::Texture1D(std::string_view name, BufferRef buf, const eTexFormat format, const uint32_t offset,
                           const uint32_t size, ILog *log)
     : name_(name) {
     Init(std::move(buf), format, offset, size, log);
@@ -2198,8 +2197,8 @@ void Ren::Texture1D::Free() {
 
 ////////////////////////////////////////////////////////////////////////////////////////
 
-Ren::Texture3D::Texture3D(const char *name, ApiContext *ctx, const Tex3DParams &params, MemoryAllocators *mem_allocs,
-                          ILog *log)
+Ren::Texture3D::Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params,
+                          MemoryAllocators *mem_allocs, ILog *log)
     : name_(name), api_ctx_(ctx) {
     Init(params, mem_allocs, log);
 }

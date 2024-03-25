@@ -97,8 +97,8 @@
 			},
 			"drawable" : {
 				"mesh_file" : "ground_plane_200x200.mesh",
-				"material_override1" : [ "checker_glossy.txt" ],
-				"material_override2" : [ "_wind_debug.txt" ]
+				"material_override1" : [ "checker_glossy.mat" ],
+				"material_override2" : [ "_wind_debug.mat" ]
 			}
 		}
     ],

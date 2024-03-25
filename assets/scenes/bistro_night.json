@@ -121,7 +121,7 @@
             "material_override" : [ null, null, null, null, null, null, null, null,
                                     null, null, null, null, null, null, null, null,
                                     null, null, null, null, null, null, null, null,
-                                    null, null, null, null, null, null, null, "bistro/Paris_StringLights_01_White_Color2.txt" ]
+                                    null, null, null, null, null, null, null, "bistro/Paris_StringLights_01_White_Color2.mat" ]
         },
         "Paris_StreetPivot_01" : {
             "mesh_file" : "bistro/Paris_StreetPivot_01.mesh"
@@ -149,7 +149,7 @@
         },
         "streetlight_01a" : {
             "mesh_file" : "bistro/streetlight_01a.mesh",
-            "material_override" : [ null, null, "bistro/Paris_StringLights_01_White_Color2.txt", "bistro/Paris_StringLights_01_White_Color2.txt", null, null ]
+            "material_override" : [ null, null, "bistro/Paris_StringLights_01_White_Color2.mat", "bistro/Paris_StringLights_01_White_Color2.mat", null, null ]
         },
         "table_01" : {
             "mesh_file" : "bistro/table_01.mesh"
@@ -169,10 +169,10 @@
         "stringlight_wind" : {
             "mesh_file" : "bistro/stringlight_wind.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind" : {
@@ -181,69 +181,69 @@
         "stringlight_wind_14" : {
             "mesh_file" : "bistro/stringlight_wind_14.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind_15" : {
             "mesh_file" : "bistro/stringlight_wind_15.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind_16" : {
             "mesh_file" : "bistro/stringlight_wind_16.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind_17" : {
             "mesh_file" : "bistro/stringlight_wind_17.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind_18" : {
             "mesh_file" : "bistro/stringlight_wind_18.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Green_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind_19" : {
             "mesh_file" : "bistro/stringlight_wind_19.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Red_Color_Emissive2.mat"
                                   ]
         },
         "stringlight_wind_20" : {
             "mesh_file" : "bistro/stringlight_wind_20.mesh",
             "material_override" : [ null,
-                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.txt",
-                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.txt"
+                                    "bistro/Paris_StringLights_01_Orange_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Blue_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_White_Color_Emissive2.mat",
+                                    "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat"
                                   ]
         },
         "Lantern_Wind" : {

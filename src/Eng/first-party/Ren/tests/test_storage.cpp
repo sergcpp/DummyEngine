@@ -12,7 +12,7 @@ void test_storage() {
         int *ref;
 
         MyObj() : ref(nullptr) {}
-        MyObj(const char *name, int *r) : name_(name), ref(r) { (*ref)++; }
+        MyObj(std::string_view name, int *r) : name_(name), ref(r) { (*ref)++; }
         MyObj(const MyObj &rhs) = delete;
         MyObj(MyObj &&rhs) noexcept {
             name_ = std::move(rhs.name_);

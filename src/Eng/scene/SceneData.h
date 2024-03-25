@@ -138,7 +138,7 @@ static_assert(sizeof(TexEntry) == 8, "!");
 class CompStorage {
   public:
     virtual ~CompStorage() = default;
-    virtual const char *name() const = 0;
+    virtual std::string_view name() const = 0;
 
     virtual uint32_t Create() = 0;
     virtual void Delete(uint32_t i) = 0;

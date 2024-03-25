@@ -101,7 +101,7 @@ void TimelineUI::Draw(Gui::Renderer *r) {
             char buf[16];
             snprintf(buf, sizeof(buf), "%.1f", t);
 
-            const float width = font_.GetWidth(buf, -1, this);
+            const float width = font_.GetWidth(buf, this);
             font_.DrawText(r, buf,
                            SnapToPixels(Ren::Vec2f{px - 0.5f * width, 1.0f - 4.0f / dims_px_[1][1] - font_height}),
                            Gui::ColorWhite, this);

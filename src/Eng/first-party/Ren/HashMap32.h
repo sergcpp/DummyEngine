@@ -58,15 +58,17 @@ template <> class Hash<const char *> {
 
 template <> class Hash<std::string> {
   public:
-    uint32_t operator()(const std::string &s) const { return _str_hash(s.c_str()); }
+    uint32_t operator()(const String &s) const { return _str_hash_len(s.c_str(), s.length()); }
+    uint32_t operator()(const std::string &s) const { return _str_hash_len(s.c_str(), s.length()); }
+    uint32_t operator()(const std::string_view &s) const { return _str_hash_len(s.data(), s.size()); }
+    uint32_t operator()(const char *s) const { return _str_hash(s); }
 };
 
 template <> class Hash<String> {
   public:
-    uint32_t operator()(const String &s) const { return _str_hash(s.c_str()); }
-
+    uint32_t operator()(const String &s) const { return _str_hash_len(s.c_str(), s.length()); }
+    uint32_t operator()(const std::string &s) const { return _str_hash_len(s.c_str(), s.length()); }
     uint32_t operator()(const std::string_view &s) const { return _str_hash_len(s.data(), s.length()); }
-
     uint32_t operator()(const char *s) const { return _str_hash(s); }
 };
 
@@ -80,6 +82,12 @@ template <typename K> class Equal {
 template <> class Equal<const char *> {
   public:
     bool operator()(const char *k1, const char *k2) const { return strcmp(k1, k2) == 0; }
+};
+
+template <> class Equal<std::string> {
+  public:
+    template <typename K2> bool operator()(const std::string &k1, const K2 &k2) const { return k1 == k2; }
+    bool operator()(const std::string &k1, const char *k2) const { return k1 == k2; }
 };
 
 template <> class Equal<String> {

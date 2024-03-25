@@ -12,7 +12,7 @@ void CaptionsUI::Draw(Gui::Renderer *r) {
     for (int i = captions_count_ - 1; i >= 0; i--) {
         const SeqCaption &cap = captions_[i];
 
-        const float width = font_.GetWidth(cap.text, -1, this);
+        const float width = font_.GetWidth(cap.text, this);
 
         font_.DrawText(r, cap.text, Ren::Vec2f{-0.5f * width, y_coord}, cap.color, this);
         y_coord += font_height;

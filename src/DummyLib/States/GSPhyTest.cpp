@@ -148,7 +148,7 @@ void GSPhyTest::OnPreloadScene(JsObjectP &js_scene) {
 
                 { // Set material to checkerboard
                     JsArrayP js_material_override(alloc);
-                    js_material_override.Push(JsStringP{"checker.txt", alloc});
+                    js_material_override.Push(JsStringP{"checker.mat", alloc});
                     js_drawable.Push("material_override", std::move(js_material_override));
                 }
 

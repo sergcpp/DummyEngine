@@ -286,7 +286,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
         for (int i = 0; i < opt.var_count; i++) {
             const std::string &var = option_variants_[opt.var_start + i];
 
-            const float width = font_.GetWidth(var.c_str(), -1, this);
+            const float width = font_.GetWidth(var, this);
             exp_back_size[0] = std::max(exp_back_size[0], width);
             exp_back_size[1] += font_height;
         }
@@ -314,7 +314,7 @@ void WordPuzzleUI::Draw(Gui::Renderer *r) {
         const rect_t &hint_rect = hint_rects_[expanded_hint_];
         const HintData &hint_data = text_hints_[hint_rect.data];
 
-        const float width = font_.GetWidth(hint_strings_[hint_data.str_index].c_str(), -1, this);
+        const float width = font_.GetWidth(hint_strings_[hint_data.str_index], this);
         const Ren::Vec2f hint_pos = hint_rect.dims[0] + Ren::Vec2f{0.0f, font_height};
 
         background_small_.Resize(Gui::Vec2f{hint_pos[0] - 0.1f * font_height, hint_pos[1] - 0.25f * font_height},
@@ -593,7 +593,7 @@ Ren::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
                 // null terminate
                 portion_buf[portion_buf_len] = '\0';
 
-                const float width = font_.GetWidth(portion_buf, -1, this);
+                const float width = font_.GetWidth(portion_buf, this);
 
                 rect_t &rect = out_options_rects.back();
                 rect.dims[1] = Ren::Vec2f{width, font_height};
@@ -622,7 +622,7 @@ Ren::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
                 // null terminate
                 portion_buf[portion_buf_len] = '\0';
 
-                const float width = font_.GetWidth(portion_buf, -1, this);
+                const float width = font_.GetWidth(portion_buf, this);
 
                 rect_t &rect = out_hint_rects.back();
                 rect.dims[1] = Gui::Vec2f{width, font_height};
@@ -677,7 +677,7 @@ Ren::Vec2f WordPuzzleUI::DrawTextBuffer(Gui::Renderer *r, const char *text_data,
             // null terminate
             portion_buf[portion_buf_len] = '\0';
 
-            const float width = draw_offset[0] + font_.GetWidth(portion_buf, -1, this);
+            const float width = draw_offset[0] + font_.GetWidth(portion_buf, this);
             if (width > 1.0f - side_margin) {
                 new_line = true;
             }

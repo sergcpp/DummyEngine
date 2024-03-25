@@ -116,12 +116,12 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        dummy_black_ = ctx_.LoadTexture2D("dummy_black", black, sizeof(black), p, ctx_.default_stage_bufs(),
-                                          ctx_.default_mem_allocs(), &status);
+        dummy_black_ =
+            ctx_.LoadTexture2D("dummy_black", black, p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
-        dummy_white_ = ctx_.LoadTexture2D("dummy_white", white, sizeof(white), p, ctx_.default_stage_bufs(),
-                                          ctx_.default_mem_allocs(), &status);
+        dummy_white_ =
+            ctx_.LoadTexture2D("dummy_white", white, p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -132,7 +132,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
-        rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", &HaltonSeq23[0][0], sizeof(HaltonSeq23), p,
+        rand2d_8x8_ = ctx_.LoadTexture2D("rand2d_8x8", {(const uint8_t *)&HaltonSeq23[0][0], sizeof(HaltonSeq23)}, p,
                                          ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
@@ -144,8 +144,9 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
 
         Ren::eTexLoadStatus status;
-        rand2d_dirs_4x4_ = ctx_.LoadTexture2D("rand2d_dirs_4x4", &__rand_dirs[0], sizeof(__rand_dirs), p,
-                                              ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        rand2d_dirs_4x4_ =
+            ctx_.LoadTexture2D("rand2d_dirs_4x4", {(const uint8_t *)&__rand_dirs[0], sizeof(__rand_dirs)}, p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -179,7 +180,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        cone_rt_lut_ = ctx_.LoadTexture2D("cone_rt_lut", &__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res,
+        cone_rt_lut_ = ctx_.LoadTexture2D("cone_rt_lut", {&__cone_rt_lut[0], 4 * __cone_rt_lut_res * __cone_rt_lut_res},
                                           p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
 
         // cone_rt_lut_ =
@@ -200,8 +201,8 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", &__brdf_lut[0], sizeof(__brdf_lut), p, ctx_.default_stage_bufs(),
-                                       ctx_.default_mem_allocs(), &status);
+        brdf_lut_ = ctx_.LoadTexture2D("brdf_lut", {(const uint8_t *)&__brdf_lut[0], sizeof(__brdf_lut)}, p,
+                                       ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -236,8 +237,9 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eTexLoadStatus status;
-        ltc_luts_ = ctx_.LoadTexture2D("LTS LUTs", combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float), p,
-                                       ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+        ltc_luts_ =
+            ctx_.LoadTexture2D("LTC LUTs", {(const uint8_t *)combined_data.get(), 8 * 4 * 64 * 64 * sizeof(float)}, p,
+                               ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
@@ -255,7 +257,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
 
         Ren::eTexLoadStatus status;
-        noise_tex_ = ctx_.LoadTexture2D("noise", &__noise[0], __noise_res * __noise_res * 4, p,
+        noise_tex_ = ctx_.LoadTexture2D("noise", {(const uint8_t *)&__noise[0], __noise_res * __noise_res * 4}, p,
                                         ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
@@ -586,7 +588,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     BindlessTextureData bindless_tex;
 #if defined(USE_VK_RENDER)
-    bindless_tex.textures_descr_sets = &persistent_data.textures_descr_sets[ctx_.backend_frame()];
+    bindless_tex.textures_descr_sets = persistent_data.textures_descr_sets[ctx_.backend_frame()];
     bindless_tex.rt_textures_descr_set = persistent_data.rt_textures_descr_sets[ctx_.backend_frame()];
     bindless_tex.rt_inline_textures_descr_set = persistent_data.rt_inline_textures_descr_sets[ctx_.backend_frame()];
 #elif defined(USE_GL_RENDER)

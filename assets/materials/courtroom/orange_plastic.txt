@@ -1,6 +1,7 @@
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-sw_program: main
-texture: orange.png
-texture: default_normalmap.dds
-texture: rough_spec.uncompressed.png
+gl_programs:
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+textures:
+    - orange.png
+    - default_normalmap.dds
+    - rough_spec.uncompressed.png

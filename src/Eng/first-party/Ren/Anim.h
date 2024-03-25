@@ -56,7 +56,7 @@ class AnimSequence : public RefCounter {
 
   public:
     AnimSequence() = default;
-    AnimSequence(const char *name, std::istream &data);
+    AnimSequence(std::string_view name, std::istream &data);
 
     const String &name() const { return name_; }
     const String &act_name() const { return act_name_; }
@@ -125,19 +125,19 @@ struct Skeleton {
     std::vector<AnimLink> anims;
     // std::vector<BoneGroup>  bone_groups;
 
-    Bone *find_bone(const char *name) const {
+    Bone *find_bone(std::string_view name) const {
         for (int i = 0; i < bones_count; i++) {
-            if (std::strcmp(bones[i].name, name) == 0) {
+            if (name == bones[i].name) {
                 return &bones[i];
             }
         }
         return nullptr;
     }
 
-    Vec3f bone_pos(const char *name);
+    Vec3f bone_pos(std::string_view name);
     Vec3f bone_pos(int i);
 
-    void bone_matrix(const char *name, Mat4f &mat);
+    void bone_matrix(std::string_view name, Mat4f &mat);
     void bone_matrix(int i, Mat4f &mat);
 
     int AddAnimSequence(AnimSeqRef ref);

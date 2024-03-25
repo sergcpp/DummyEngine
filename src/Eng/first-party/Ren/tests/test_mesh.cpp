@@ -88,14 +88,14 @@ void test_mesh() {
 
         TestContext test;
 
-        auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
+        auto on_pipelines_needed = [&test](std::string_view prog_name, const uint32_t flags, const char *arg1,
                                            const char *arg2, const char *arg3, const char *arg4,
                                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {};
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
-            return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), nullptr, &status);
+            return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), nullptr, &status);
         };
 
         auto on_sampler_needed = [&test](Ren::SamplingParams params) {
@@ -103,9 +103,9 @@ void test_mesh() {
             return test.LoadSampler(params, &status);
         };
 
-        auto on_material_needed = [&](const char *name) {
+        auto on_material_needed = [&](std::string_view name) {
             Ren::eMatLoadStatus status;
-            return test.LoadMaterial(name, nullptr, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            return test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
         };
 
         Ren::eMeshLoadStatus load_status;
@@ -147,7 +147,7 @@ void test_mesh() {
 
         TestContext test;
 
-        auto on_pipelines_needed = [&test](const char *prog_name, const uint32_t flags, const char *arg1,
+        auto on_pipelines_needed = [&test](std::string_view prog_name, const uint32_t flags, const char *arg1,
                                            const char *arg2, const char *arg3, const char *arg4,
                                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
@@ -159,10 +159,10 @@ void test_mesh() {
 #endif
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
-            return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), nullptr, &status);
+            return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), nullptr, &status);
         };
 
         auto on_sampler_needed = [&test](Ren::SamplingParams params) {
@@ -170,9 +170,9 @@ void test_mesh() {
             return test.LoadSampler(params, &status);
         };
 
-        auto on_material_needed = [&](const char *name) {
+        auto on_material_needed = [&](std::string_view name) {
             Ren::eMatLoadStatus status;
-            return test.LoadMaterial(name, nullptr, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            return test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
         };
 
         Ren::eMeshLoadStatus load_status;

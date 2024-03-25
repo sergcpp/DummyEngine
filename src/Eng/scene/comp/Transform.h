@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Ren/MMat.h>
 
 #include "Common.h"
@@ -27,6 +29,6 @@ struct Transform {
     static void Read(const JsObjectP &js_in, Transform &tr);
     static void Write(const Transform &tr, JsObjectP &js_out);
 
-    static const char *name() { return "transform"; }
+    static std::string_view name() { return "transform"; }
 };
 } // namespace Eng

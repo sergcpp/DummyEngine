@@ -244,7 +244,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
                                         nullptr);
     }
 
-    const auto &texture_descr_sets = *bindless_tex_->textures_descr_sets;
+    const auto &texture_descr_sets = bindless_tex_->textures_descr_sets;
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 

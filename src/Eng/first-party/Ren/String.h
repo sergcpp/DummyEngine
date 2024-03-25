@@ -90,6 +90,8 @@ template <typename Alloc = std::allocator<char>> class BasicString {
         return *this;
     }
 
+    operator std::string_view() const { return {str_, len_}; }
+
     const char *c_str() const { return str_; }
     size_t length() const { return len_; }
     bool empty() const { return len_ == 0; }

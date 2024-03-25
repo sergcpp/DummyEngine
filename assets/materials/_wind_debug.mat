@@ -1,0 +1,7 @@
+gl_programs:
+    - wind_debug _wind_debug.vert.glsl _wind_debug.frag.glsl
+    - wind_debug _wind_debug.vert.glsl _wind_debug.frag.glsl
+textures:
+    - checker_diff.png
+    - default_normalmap.dds
+    - glossy_spec.png

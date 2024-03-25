@@ -11,8 +11,8 @@
 
 namespace BitmapFontInternal {}
 
-Gui::BitmapFont::BitmapFont(const char *name, Ren::Context *ctx) : info_{}, scale_(1.0f), tex_res_{} {
-    if (name && ctx) {
+Gui::BitmapFont::BitmapFont(std::string_view name, Ren::Context *ctx) : info_{}, scale_(1.0f), tex_res_{} {
+    if (!name.empty() && ctx) {
         this->Load(name, *ctx);
     }
 }
@@ -21,7 +21,7 @@ float Gui::BitmapFont::height(const BaseElement *parent) const {
     return 2.0f * scale_ * float(info_.line_height) / parent->size_px()[1];
 }
 
-bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
+bool Gui::BitmapFont::Load(std::string_view fname, Ren::Context &ctx) {
     Sys::AssetFile in_file(fname, Sys::eOpenMode::In);
     if (!in_file) {
         return false;
@@ -127,17 +127,16 @@ bool Gui::BitmapFont::Load(const char *fname, Ren::Context &ctx) {
     return true;
 }
 
-float Gui::BitmapFont::GetWidth(const char *text, int text_len, const BaseElement *parent) const {
+float Gui::BitmapFont::GetWidth(std::string_view text, const BaseElement *parent) const {
     int cur_x = 0;
 
     const glyph_range_t *glyph_ranges = glyph_ranges_.get();
     const glyph_info_t *glyphs = glyphs_.get();
 
-    if (text_len == -1)
-        text_len = std::numeric_limits<int>::max();
+    size_t text_len = text.size();
 
     int char_pos = 0;
-    while (text[char_pos] && text_len--) {
+    while (text_len--) {
         uint32_t unicode;
         char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 
@@ -162,7 +161,7 @@ float Gui::BitmapFont::GetWidth(const char *text, int text_len, const BaseElemen
     return float(cur_x) * mul;
 }
 
-float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos, const uint8_t col[4],
+float Gui::BitmapFont::DrawText(Renderer *r, std::string_view text, const Vec2f &pos, const uint8_t col[4],
                                 const BaseElement *parent) const {
     using namespace BitmapFontInternal;
 
@@ -198,7 +197,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
     const Vec2f *clip = r->GetClipArea();
 
     int char_pos = 0;
-    while (text[char_pos]) {
+    while (char_pos < text.size()) {
         uint32_t unicode;
         char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 
@@ -293,7 +292,7 @@ float Gui::BitmapFont::DrawText(Renderer *r, const char *text, const Vec2f &pos,
     return float(cur_x) * m[0];
 }
 
-int Gui::BitmapFont::CheckText(const char *text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
+int Gui::BitmapFont::CheckText(std::string_view text, const Vec2f &pos, const Vec2f &press_pos, float &out_char_offset,
                                const BaseElement *parent) const {
     using namespace BitmapFontInternal;
 
@@ -307,7 +306,7 @@ int Gui::BitmapFont::CheckText(const char *text, const Vec2f &pos, const Vec2f &
     int char_index = 0;
 
     int char_pos = 0;
-    while (text[char_pos]) {
+    while (char_pos < text.size()) {
         uint32_t unicode;
         char_pos += Gui::ConvChar_UTF8_to_Unicode(&text[char_pos], unicode);
 

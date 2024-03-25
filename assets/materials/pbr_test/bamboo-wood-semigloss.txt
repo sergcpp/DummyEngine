@@ -1,6 +1,0 @@
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-gl_program: main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-sw_program: main
-texture: pbr_test/bamboo-wood-semigloss_diff.png
-texture: pbr_test/bamboo-wood-semigloss_norm.png
-texture: pbr_test/bamboo-wood-semigloss_spec.png

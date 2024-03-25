@@ -4,6 +4,7 @@
 
 #include "Shader.h"
 #include "SmallVector.h"
+#include "Span.h"
 #include "Storage.h"
 #include "String.h"
 
@@ -17,18 +18,17 @@ class Shader : public RefCounter {
     eShaderSource source_ = eShaderSource::_Count;
     String name_;
 
-    void InitFromGLSL(const char *shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
+    void InitFromGLSL(std::string_view shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
 #ifndef __ANDROID__
-    void InitFromSPIRV(const uint8_t *shader_data, int data_size, eShaderType type, eShaderLoadStatus *status,
-                       ILog *log);
+    void InitFromSPIRV(Span<const uint8_t> shader_data, eShaderType type, eShaderLoadStatus *status, ILog *log);
 #endif
   public:
     SmallVector<Descr, 16> attr_bindings, unif_bindings, blck_bindings;
 
-    Shader(const char *name, ApiContext *api_ctx, const char *shader_src, eShaderType type, eShaderLoadStatus *status,
-           ILog *log);
+    Shader(std::string_view name, ApiContext *api_ctx, std::string_view shader_src, eShaderType type,
+           eShaderLoadStatus *status, ILog *log);
 #ifndef __ANDROID__
-    Shader(const char *name, ApiContext *api_ctx, const uint8_t *shader_code, int code_size, eShaderType type,
+    Shader(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> shader_code, eShaderType type,
            eShaderLoadStatus *status, ILog *log);
 #endif
     Shader(const Shader &rhs) = delete;
@@ -44,9 +44,9 @@ class Shader : public RefCounter {
     eShaderSource source() const { return source_; }
     const String &name() const { return name_; }
 
-    void Init(const char *shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
+    void Init(std::string_view shader_src, eShaderType type, eShaderLoadStatus *status, ILog *log);
 #ifndef __ANDROID__
-    void Init(const uint8_t *shader_code, int code_size, eShaderType type, eShaderLoadStatus *status, ILog *log);
+    void Init(Span<const uint8_t> shader_code, eShaderType type, eShaderLoadStatus *status, ILog *log);
 #endif
 };
 

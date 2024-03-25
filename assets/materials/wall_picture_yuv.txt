@@ -1,6 +1,0 @@
-gl_program: main_unlit_yuv main_unlit.vert.glsl main_unlit_yuv.frag.glsl
-gl_program: main_unlit_yuv main_unlit.vert.glsl main_unlit_yuv.frag.glsl
-sw_program: main
-texture: wall_picture_diff.png
-texture: default_normalmap.dds
-texture: default_specular.png

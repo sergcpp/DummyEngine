@@ -1,0 +1,14 @@
+gl_programs:
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+textures:
+    - mat_test/gold-scuffed_basecolor-boosted.png
+    - mat_test/gold-scuffed_normal.png
+    - mat_test/gold-scuffed_roughness.png
+    - mat_test/gold-scuffed_metallic.png
+params:
+    - 1.0 1.0 1.0 1.0      # base color, roughness
+    - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint
+    - 1.0 0.0 0.0 0.0      # metallic, transmission, clearcoat, clearcoat_roughness

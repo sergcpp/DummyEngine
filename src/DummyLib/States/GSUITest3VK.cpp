@@ -30,7 +30,7 @@ void GSUITest3::InitBookMaterials() {
     }
 
     { // replace texture
-        orig_page_mat_ = scene_manager_->scene_data().materials.FindByName("book/book_page0.txt");
+        orig_page_mat_ = scene_manager_->scene_data().materials.FindByName("book/book_page0.mat");
         if (!orig_page_mat_) {
             log_->Error("Failed to find material book/book_page0");
             return;

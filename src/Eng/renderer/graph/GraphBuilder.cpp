@@ -12,7 +12,7 @@ const bool EnableTextureAliasing = true;
 
 Ren::ILog *Eng::RpBuilder::log() { return ctx_.log(); }
 
-Eng::RpSubpass &Eng::RpBuilder::AddPass(const char *name) {
+Eng::RpSubpass &Eng::RpBuilder::AddPass(std::string_view name) {
     char *mem = alloc_.allocate(sizeof(RpSubpass) + alignof(RpSubpass));
     auto *new_rp = reinterpret_cast<RpSubpass *>(mem + alignof(RpSubpass) - (uintptr_t(mem) % alignof(RpSubpass)));
     alloc_.construct(new_rp, int(subpasses_.size()), name, *this);
@@ -20,9 +20,9 @@ Eng::RpSubpass &Eng::RpBuilder::AddPass(const char *name) {
     return *subpasses_.back();
 }
 
-Eng::RpSubpass *Eng::RpBuilder::FindPass(const char *name) {
+Eng::RpSubpass *Eng::RpBuilder::FindPass(std::string_view name) {
     auto it = std::find_if(begin(subpasses_), end(subpasses_),
-                           [name](const RpSubpass *pass) { return strcmp(pass->name(), name) == 0; });
+                           [name](const RpSubpass *pass) { return pass->name() == name; });
     if (it != end(subpasses_)) {
         return (*it);
     }
@@ -56,7 +56,7 @@ Eng::RpResRef Eng::RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
-    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name().c_str());
+    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
     if (!pbuf_index) {
         RpAllocBuf new_buf;
         new_buf.read_count = 0;
@@ -116,7 +116,7 @@ Eng::RpResRef Eng::RpBuilder::ReadBuffer(const Ren::WeakBufferRef &ref, const Re
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
-    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name().c_str());
+    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
     if (!pbuf_index) {
         RpAllocBuf new_buf;
         new_buf.read_count = 0;
@@ -174,7 +174,7 @@ Eng::RpResRef Eng::RpBuilder::ReadTexture(const RpResRef handle, const Ren::eRes
     return ret;
 }
 
-Eng::RpResRef Eng::RpBuilder::ReadTexture(const char *name, const Ren::eResState desired_state,
+Eng::RpResRef Eng::RpBuilder::ReadTexture(std::string_view name, const Ren::eResState desired_state,
                                           const Ren::eStageBits stages, RpSubpass &pass) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
@@ -200,7 +200,7 @@ Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
     RpResource ret;
     ret.type = eRpResType::Texture;
 
-    const uint16_t *ptex_index = name_to_texture_.Find(ref->name().c_str());
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         RpAllocTex new_tex;
         new_tex.read_count = 0;
@@ -279,8 +279,8 @@ Eng::RpResRef Eng::RpBuilder::ReadHistoryTexture(const RpResRef handle, const Re
     return ret;
 }
 
-Eng::RpResRef Eng::RpBuilder::ReadHistoryTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
-                                                 RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::ReadHistoryTexture(std::string_view name, Ren::eResState desired_state,
+                                                 Ren::eStageBits stages, RpSubpass &pass) {
     RpResRef ret;
     ret.type = eRpResType::Texture;
 
@@ -325,8 +325,9 @@ Eng::RpResRef Eng::RpBuilder::WriteBuffer(const RpResRef handle, const Ren::eRes
     return ret;
 }
 
-Eng::RpResRef Eng::RpBuilder::WriteBuffer(const char *name, const RpBufDesc &desc, const Ren::eResState desired_state,
-                                          const Ren::eStageBits stages, RpSubpass &pass) {
+Eng::RpResRef Eng::RpBuilder::WriteBuffer(std::string_view name, const RpBufDesc &desc,
+                                          const Ren::eResState desired_state, const Ren::eStageBits stages,
+                                          RpSubpass &pass) {
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
@@ -371,7 +372,7 @@ Eng::RpResRef Eng::RpBuilder::WriteBuffer(const Ren::WeakBufferRef &ref, const R
     RpResource ret;
     ret.type = eRpResType::Buffer;
 
-    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name().c_str());
+    const uint16_t *pbuf_index = name_to_buffer_.Find(ref->name());
     if (!pbuf_index) {
         RpAllocBuf new_buf;
         new_buf.read_count = 0;
@@ -431,7 +432,7 @@ Eng::RpResRef Eng::RpBuilder::WriteTexture(const RpResRef handle, const Ren::eRe
     return ret;
 }
 
-Eng::RpResRef Eng::RpBuilder::WriteTexture(const char *name, const Ren::eResState desired_state,
+Eng::RpResRef Eng::RpBuilder::WriteTexture(std::string_view name, const Ren::eResState desired_state,
                                            const Ren::eStageBits stages, RpSubpass &pass) {
     const uint16_t *tex_index = name_to_texture_.Find(name);
     assert(tex_index && "Texture does not exist!");
@@ -454,7 +455,7 @@ Eng::RpResRef Eng::RpBuilder::WriteTexture(const char *name, const Ren::eResStat
     return ret;
 }
 
-Eng::RpResRef Eng::RpBuilder::WriteTexture(const char *name, const Ren::Tex2DParams &p,
+Eng::RpResRef Eng::RpBuilder::WriteTexture(std::string_view name, const Ren::Tex2DParams &p,
                                            const Ren::eResState desired_state, const Ren::eStageBits stages,
                                            RpSubpass &pass) {
     RpResource ret;
@@ -503,7 +504,7 @@ Eng::RpResRef Eng::RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
     RpResource ret;
     ret.type = eRpResType::Texture;
 
-    const uint16_t *ptex_index = name_to_texture_.Find(ref->name().c_str());
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         RpAllocTex new_tex;
         new_tex.read_count = 0;
@@ -564,7 +565,7 @@ Eng::RpResRef Eng::RpBuilder::MakeTextureResource(const Ren::WeakTex2DRef &ref) 
     RpResource ret;
     ret.type = eRpResType::Texture;
 
-    const uint16_t *ptex_index = name_to_texture_.Find(ref->name().c_str());
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
     if (!ptex_index) {
         RpAllocTex new_tex;
         new_tex.read_count = 0;
@@ -1376,7 +1377,7 @@ void Eng::RpBuilder::Execute() {
         for (int i = render_passes_[j].subpass_beg; i < render_passes_[j].subpass_end; ++i) {
             RpSubpass &cur_pass = *reordered_subpasses_[i];
             OPTICK_GPU_EVENT("Execute Pass");
-            OPTICK_TAG("Pass Name", cur_pass.name());
+            OPTICK_TAG("Pass Name", cur_pass.name().data());
 
 #if !defined(NDEBUG) && defined(USE_GL_RENDER)
             Ren::ResetGLState();

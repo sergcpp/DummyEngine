@@ -37,7 +37,7 @@ uint32_t _draw_range(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Re
 uint32_t _draw_range_ext(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, const Ren::Pipeline &pipeline,
                          Ren::Span<const uint32_t> batch_indices, Ren::Span<const Eng::BasicDrawBatch> batches,
                          uint32_t i, const uint32_t mask, const uint32_t materials_per_descriptor,
-                         const Ren::SmallVectorImpl<VkDescriptorSet> &descr_sets, int *draws_count) {
+                         Ren::Span<const VkDescriptorSet> descr_sets, int *draws_count) {
     uint32_t bound_descr_id = 0;
     for (; i < batch_indices.size(); i++) {
         const auto &batch = batches[batch_indices[i]];
@@ -110,7 +110,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_sizes.tbuf_count = 1;
 
         simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, simple_descr_set_layout);
-        simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+        simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
     { // update descriptor sets
@@ -165,7 +165,7 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
         descr_sizes.tbuf_count = 1;
 
         vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, vege_descr_set_layout);
-        vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+        vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
     { // update descriptor set
@@ -348,11 +348,11 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
             api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_static_transp_[0].layout(), 0,
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
-                                BDB::BitAlphaTest, materials_per_descriptor, *bindless_tex_->textures_descr_sets,
+                                BDB::BitAlphaTest, materials_per_descriptor, bindless_tex_->textures_descr_sets,
                                 &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[0], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitCustomShaded, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
@@ -362,10 +362,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, pi_static_transp_[1], zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitTwoSided | BDB::BitCustomShaded, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
@@ -409,10 +409,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving | BDB::BitCustomShaded, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
@@ -422,10 +422,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided | BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
@@ -581,10 +581,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, vege_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitCustomShaded, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
@@ -594,10 +594,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, vege_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitTwoSided | BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
@@ -641,10 +641,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, vege_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
@@ -654,11 +654,11 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, vege_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsVege | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided |
                                     BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
@@ -820,10 +820,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitCustomShaded, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
@@ -833,10 +833,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitTwoSided | BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
@@ -882,10 +882,10 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving, materials_per_descriptor,
-                                *bindless_tex_->textures_descr_sets, &draws_count);
+                                bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_onesided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         { // two-sided
@@ -895,11 +895,11 @@ void Eng::RpDepthFill::DrawDepth(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
                                              2, simple_descr_sets, 0, nullptr);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
             i = _draw_range_ext(api_ctx, cmd_buf, *pipeline_twosided, zfill_batch_indices, zfill_batches, i,
                                 BDB::BitsSkinned | BDB::BitAlphaTest | BDB::BitMoving | BDB::BitTwoSided |
                                     BDB::BitCustomShaded,
-                                materials_per_descriptor, *bindless_tex_->textures_descr_sets, &draws_count);
+                                materials_per_descriptor, bindless_tex_->textures_descr_sets, &draws_count);
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);

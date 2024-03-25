@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 #if defined(__ANDROID__)
 class AAsset;
@@ -27,9 +28,7 @@ class AssetFile {
 
   public:
     AssetFile() = default;
-    explicit AssetFile(const char *file_name, eOpenMode mode = eOpenMode::In);
-    explicit AssetFile(const std::string &file_name, eOpenMode mode = eOpenMode::In)
-        : AssetFile(file_name.c_str(), mode) {}
+    explicit AssetFile(std::string_view file_name, eOpenMode mode = eOpenMode::In);
     AssetFile(const AssetFile &) = delete;
     AssetFile(AssetFile &&rhs) noexcept;
     AssetFile &operator=(const AssetFile &) = delete;
@@ -45,7 +44,7 @@ class AssetFile {
 
     size_t pos();
 
-    bool Open(const char* file_name, eOpenMode mode = eOpenMode::In);
+    bool Open(std::string_view file_name, eOpenMode mode = eOpenMode::In);
     void Close();
 
     size_t Read(char *buf, size_t size);

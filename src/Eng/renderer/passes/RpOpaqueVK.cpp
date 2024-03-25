@@ -11,8 +11,8 @@
 
 namespace RpSharedInternal {
 uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
-                               const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                               const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                               Ren::Span<const VkDescriptorSet> texture_descr_sets, const Ren::Pipeline pipelines[],
+                               Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                Ren::Span<const uint32_t> main_batch_indices, uint32_t i, uint64_t mask,
                                const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id, uint32_t &bound_descr_id,
                                Eng::BackendInfo &backend_info) {
@@ -56,8 +56,8 @@ uint32_t _draw_list_range_full(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf
 }
 
 uint32_t _draw_list_range_full_rev(Ren::ApiContext *api_ctx, VkCommandBuffer cmd_buf, VkDescriptorSet res_descr_set,
-                                   const Ren::SmallVectorImpl<VkDescriptorSet> &texture_descr_sets,
-                                   const Ren::Pipeline pipelines[], Ren::Span<const Eng::CustomDrawBatch> main_batches,
+                                   Ren::Span<const VkDescriptorSet> texture_descr_sets, const Ren::Pipeline pipelines[],
+                                   Ren::Span<const Eng::CustomDrawBatch> main_batches,
                                    Ren::Span<const uint32_t> main_batch_indices, uint32_t ndx, uint64_t mask,
                                    const uint32_t materials_per_descriptor, uint64_t &cur_pipe_id,
                                    uint32_t &bound_descr_id, Eng::BackendInfo &backend_info) {
@@ -382,35 +382,35 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
 
         { // one-sided1
             Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-1");
-            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, bindless_tex_->textures_descr_sets, pipelines_,
                                       batches, batch_indices, i, 0ull, materials_per_descriptor, cur_pipe_id,
                                       bound_descr_id, _dummy);
         }
 
         { // two-sided1
             Ren::DebugMarker _m(api_ctx, cmd_buf, "TWO-SIDED-1");
-            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, bindless_tex_->textures_descr_sets, pipelines_,
                                       batches, batch_indices, i, CDB::BitTwoSided, materials_per_descriptor,
                                       cur_pipe_id, bound_descr_id, _dummy);
         }
 
         { // one-sided2
             Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-2");
-            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, bindless_tex_->textures_descr_sets, pipelines_,
                                       batches, batch_indices, i, CDB::BitAlphaTest, materials_per_descriptor,
                                       cur_pipe_id, bound_descr_id, _dummy);
         }
 
         { // two-sided2
             Ren::DebugMarker _m(api_ctx, cmd_buf, "TWO-SIDED-2");
-            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+            i = _draw_list_range_full(api_ctx, cmd_buf, res_descr_set, bindless_tex_->textures_descr_sets, pipelines_,
                                       batches, batch_indices, i, CDB::BitAlphaTest | CDB::BitTwoSided,
                                       materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }
 
         { // two-sided-tested-blended
             Ren::DebugMarker _m(api_ctx, cmd_buf, "TWO-SIDED-TESTED-BLENDED");
-            i = _draw_list_range_full_rev(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets,
+            i = _draw_list_range_full_rev(api_ctx, cmd_buf, res_descr_set, bindless_tex_->textures_descr_sets,
                                           pipelines_, batches, batch_indices, uint32_t(batch_indices.size() - 1),
                                           CDB::BitAlphaBlend | CDB::BitAlphaTest | CDB::BitTwoSided,
                                           materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
@@ -418,7 +418,7 @@ void Eng::RpOpaque::DrawOpaque(RpBuilder &builder) {
 
         { // one-sided-tested-blended
             Ren::DebugMarker _m(api_ctx, cmd_buf, "ONE-SIDED-TESTED-BLENDED");
-            _draw_list_range_full_rev(api_ctx, cmd_buf, res_descr_set, *bindless_tex_->textures_descr_sets, pipelines_,
+            _draw_list_range_full_rev(api_ctx, cmd_buf, res_descr_set, bindless_tex_->textures_descr_sets, pipelines_,
                                       batches, batch_indices, i, CDB::BitAlphaBlend | CDB::BitAlphaTest,
                                       materials_per_descriptor, cur_pipe_id, bound_descr_id, _dummy);
         }

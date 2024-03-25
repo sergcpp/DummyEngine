@@ -1,9 +1,11 @@
-gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-sw_program: main
-flag: alpha_test
-flag: alpha_blend
-texture: chars/skullcap_diff.jpg
-texture: default_normalmap.dds
-texture: chars/skullcap_spec.png srgb
-texture: chars/skullcap_mask.jpg
+gl_programs:
+    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+flags:
+    - alpha_test
+    - alpha_blend
+textures:
+    - chars/skullcap_diff.jpg
+    - default_normalmap.dds
+    - chars/skullcap_spec.png srgb
+    - chars/skullcap_mask.jpg

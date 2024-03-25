@@ -41,7 +41,7 @@ public:
     Program() {
         name_[0] = '\0';
     }
-    Program(const char *name, uint32_t prog_id, const Attribute *attrs, const Uniform *unifs) : prog_id_(prog_id) {
+    Program(std::string_view name, uint32_t prog_id, const Attribute *attrs, const Uniform *unifs) : prog_id_(prog_id) {
         for (int i = 0; i < MaxAttributesCount; i++) {
             if (attrs[i].loc == -1) break;
             attributes_[i] = attrs[i];
@@ -53,7 +53,7 @@ public:
         ready_ = true;
         strcpy(name_, name);
     }
-    Program(const char *name, void *vs_shader, void *fs_shader, int num_fvars,
+    Program(std::string_view name, void *vs_shader, void *fs_shader, int num_fvars,
             const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *status = nullptr);
     Program(const Program &rhs) = delete;
     Program(Program &&rhs) {

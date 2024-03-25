@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Ren/MMat.h>
 
 #include "Common.h"
@@ -12,6 +14,6 @@ struct Decal {
     static void Read(const JsObjectP &js_in, Decal &de);
     static void Write(const Decal &de, JsObjectP &js_out);
 
-    static const char *name() { return "decal"; }
+    static std::string_view name() { return "decal"; }
 };
 }

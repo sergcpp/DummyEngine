@@ -14,7 +14,7 @@ template <typename T> class Storage : public SparseArray<T> {
 
     Storage(const Storage &rhs) = delete;
 
-    template <class... Args> StrongRef<T, Storage> Add(Args &&... args) {
+    template <class... Args> StrongRef<T, Storage> Add(Args &&...args) {
         const uint32_t index = SparseArray<T>::emplace(args...);
 
         bool res = items_by_name_.Insert(SparseArray<T>::at(index).name(), index);
@@ -32,7 +32,7 @@ template <typename T> class Storage : public SparseArray<T> {
         SparseArray<T>::erase(i);
     }
 
-    StrongRef<T, Storage> FindByName(const char *name) {
+    StrongRef<T, Storage> FindByName(const std::string_view name) {
         uint32_t *p_index = items_by_name_.Find(name);
         if (p_index) {
             return {this, *p_index};
@@ -59,9 +59,7 @@ class RefCounter {
         ctrl_->strong_refs = ctrl_->weak_refs = 0;
     }
     RefCounter &operator=(const RefCounter &) { return *this; }
-    RefCounter(RefCounter &&rhs) noexcept {
-        ctrl_ = std::exchange(rhs.ctrl_, nullptr);
-    }
+    RefCounter(RefCounter &&rhs) noexcept { ctrl_ = std::exchange(rhs.ctrl_, nullptr); }
     RefCounter &operator=(RefCounter &&rhs) noexcept {
         if (ctrl_) {
             assert(ctrl_->strong_refs == 0);

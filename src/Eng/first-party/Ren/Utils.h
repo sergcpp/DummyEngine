@@ -4,11 +4,12 @@
 #include <vector>
 
 #include "MVec.h"
+#include "Span.h"
 
 namespace Ren {
 enum class eTexFormat : uint8_t;
-std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format);
-bool ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format, uint8_t *out_data, uint32_t &out_size);
+std::unique_ptr<uint8_t[]> ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format);
+bool ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format, uint8_t *out_data, uint32_t &out_size);
 
 void RGBMDecode(const uint8_t rgbm[4], float out_rgb[3]);
 void RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]);

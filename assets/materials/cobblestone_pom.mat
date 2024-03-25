@@ -1,0 +1,8 @@
+gl_programs:
+    - main_probelit_pom main_probelit.vert.glsl main_probelit_pom.frag.glsl
+    - main_probelit_pom main_probelit.vert.glsl main_probelit_pom.frag.glsl
+textures:
+    - cobblestone_diff.png
+    - cobblestone_norm.png
+    - default_specular.png
+    - cobblestone_bump.png

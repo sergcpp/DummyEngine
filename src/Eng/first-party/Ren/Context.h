@@ -143,19 +143,19 @@ class Context {
     void Resize(int w, int h);
 
     /*** Mesh ***/
-    MeshRef LoadMesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
+    MeshRef LoadMesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices,
+                     int ndx_count, eMeshLoadStatus *load_status);
+    MeshRef LoadMesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices,
+                     int ndx_count, StageBufs &stage_bufs, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
+                     BufferRef &index_buf, eMeshLoadStatus *load_status);
+    MeshRef LoadMesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
                      eMeshLoadStatus *load_status);
-    MeshRef LoadMesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
-                     StageBufs &stage_bufs, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
-                     eMeshLoadStatus *load_status);
-    MeshRef LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-                     eMeshLoadStatus *load_status);
-    MeshRef LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
+    MeshRef LoadMesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load,
                      StageBufs &stage_bufs, BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
                      BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status);
 
     /*** Material ***/
-    MaterialRef LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status,
+    MaterialRef LoadMaterial(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,
                              const pipelines_load_callback &on_pipes_load, const texture_load_callback &on_tex_load,
                              const sampler_load_callback &on_sampler_load);
     int NumMaterialsNotReady();
@@ -163,23 +163,23 @@ class Context {
 
     /*** Program ***/
 #if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
-    ShaderRef LoadShaderGLSL(const char *name, const char *shader_src, eShaderType type,
+    ShaderRef LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type,
                              eShaderLoadStatus *load_status);
 #ifndef __ANDROID__
-    ShaderRef LoadShaderSPIRV(const char *name, const uint8_t *shader_data, int data_size, eShaderType type,
+    ShaderRef LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type,
                               eShaderLoadStatus *load_status);
 #endif
 
-    ProgramRef LoadProgram(const char *name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref, ShaderRef tes_ref,
-                           eProgLoadStatus *load_status);
-    ProgramRef LoadProgram(const char *name, ShaderRef cs_source, eProgLoadStatus *load_status);
+    ProgramRef LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+                           ShaderRef tes_ref, eProgLoadStatus *load_status);
+    ProgramRef LoadProgram(std::string_view name, ShaderRef cs_source, eProgLoadStatus *load_status);
 #elif defined(USE_SW_RENDER)
-    ProgramRef LoadProgramSW(const char *name, void *vs_shader, void *fs_shader, int num_fvars, const Attribute *attrs,
-                             const Uniform *unifs, eProgLoadStatus *load_status);
+    ProgramRef LoadProgramSW(std::string_view name, void *vs_shader, void *fs_shader, int num_fvars,
+                             const Attribute *attrs, const Uniform *unifs, eProgLoadStatus *load_status);
 #endif
 
 #if defined(USE_VK_RENDER)
-    ProgramRef LoadProgram(const char *name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
+    ProgramRef LoadProgram(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref, ShaderRef anyhit_ref,
                            ShaderRef miss_ref, ShaderRef intersection_ref, eProgLoadStatus *load_status);
 #endif
 
@@ -188,15 +188,15 @@ class Context {
     void ReleasePrograms();
 
     /*** Texture 3D ***/
-    Tex3DRef LoadTexture3D(const char *name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
+    Tex3DRef LoadTexture3D(std::string_view name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
 
     /*** Texture 2D ***/
-    Tex2DRef LoadTexture2D(const char *name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+    Tex2DRef LoadTexture2D(std::string_view name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
                            eTexLoadStatus *load_status);
-    Tex2DRef LoadTexture2D(const char *name, const void *data, int size, const Tex2DParams &p, StageBufs &stage_bufs,
+    Tex2DRef LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p, StageBufs &stage_bufs,
                            MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
-    Tex2DRef LoadTextureCube(const char *name, const void *data[6], const int size[6], const Tex2DParams &p,
+    Tex2DRef LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
                              StageBufs &stage_bufs, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status);
 
     void VisitTextures(eTexFlags mask, const std::function<void(Texture2D &tex)> &callback);
@@ -204,14 +204,14 @@ class Context {
     void Release2DTextures();
 
     /*** Texture 1D ***/
-    Tex1DRef CreateTexture1D(const char *name, BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size);
+    Tex1DRef CreateTexture1D(std::string_view name, BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size);
     void Release1DTextures();
 
     /** Texture regions (placed on default atlas) **/
-    TextureRegionRef LoadTextureRegion(const char *name, const void *data, int size, StageBufs &stage_bufs,
+    TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, StageBufs &stage_bufs,
                                        const Tex2DParams &p, eTexLoadStatus *load_status);
-    TextureRegionRef LoadTextureRegion(const char *name, const Buffer &sbuf, int data_off, int data_len, void *cmd_buf,
-                                       const Tex2DParams &p, eTexLoadStatus *load_status);
+    TextureRegionRef LoadTextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
+                                       void *cmd_buf, const Tex2DParams &p, eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 
@@ -220,12 +220,12 @@ class Context {
     void ReleaseSamplers();
 
     /*** Anims ***/
-    AnimSeqRef LoadAnimSequence(const char *name, std::istream &data);
+    AnimSeqRef LoadAnimSequence(std::string_view name, std::istream &data);
     int NumAnimsNotReady();
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef LoadBuffer(const char *name, eBufType type, uint32_t initial_size);
+    BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size);
     void ReleaseBuffers();
 
     void InitDefaultBuffers();

@@ -218,7 +218,7 @@ void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
 
 } // namespace Ren
 
-Ren::Mesh::Mesh(const char *name, const float *positions, const int vtx_count, const uint32_t *indices,
+Ren::Mesh::Mesh(std::string_view name, const float *positions, const int vtx_count, const uint32_t *indices,
                 const int ndx_count, Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
                 BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
@@ -226,7 +226,7 @@ Ren::Mesh::Mesh(const char *name, const float *positions, const int vtx_count, c
          std::move(index_buf), load_status, log);
 }
 
-Ren::Mesh::Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+Ren::Mesh::Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
                 void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
                 BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};

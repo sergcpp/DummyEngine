@@ -396,7 +396,7 @@ static_assert(sizeof(RTObjInstance) == 64 + 24, "!");
 
 struct BindlessTextureData {
 #if defined(USE_VK_RENDER)
-    const Ren::SmallVectorImpl<VkDescriptorSet> *textures_descr_sets;
+    Ren::Span<const VkDescriptorSet> textures_descr_sets;
     VkDescriptorSet rt_textures_descr_set, rt_inline_textures_descr_set;
 #elif defined(USE_GL_RENDER)
     Ren::WeakBufferRef textures_buf;

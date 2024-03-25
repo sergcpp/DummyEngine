@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 #include <vector>
 
 namespace Eng {
-std::vector<uint8_t> LoadHDR(const char *name, int &w, int &h);
+std::vector<uint8_t> LoadHDR(std::string_view name, int &w, int &h);
 }

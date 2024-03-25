@@ -135,8 +135,8 @@ class RpBuilder {
 
     bool ready() const { return !reordered_subpasses_.empty(); }
 
-    RpSubpass &AddPass(const char *name);
-    RpSubpass *FindPass(const char *name);
+    RpSubpass &AddPass(std::string_view name);
+    RpSubpass *FindPass(std::string_view name);
 
     template <typename T, class... Args> T *AllocPassData(Args &&...args) {
         char *mem = alloc_.allocate(sizeof(T) + alignof(T));
@@ -153,23 +153,23 @@ class RpBuilder {
                         Ren::eStageBits stages, RpSubpass &pass);
 
     RpResRef ReadTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
-    RpResRef ReadTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
+    RpResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          RpSubpass &pass);
 
     RpResRef ReadHistoryTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
-    RpResRef ReadHistoryTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages,
+    RpResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages,
                                 RpSubpass &pass);
 
     RpResRef WriteBuffer(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
-    RpResRef WriteBuffer(const char *name, const RpBufDesc &desc, Ren::eResState desired_state, Ren::eStageBits stages,
-                         RpSubpass &pass);
+    RpResRef WriteBuffer(std::string_view name, const RpBufDesc &desc, Ren::eResState desired_state,
+                         Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteBuffer(const Ren::WeakBufferRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          RpSubpass &pass);
 
     RpResRef WriteTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
-    RpResRef WriteTexture(const char *name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
-    RpResRef WriteTexture(const char *name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
+    RpResRef WriteTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
+    RpResRef WriteTexture(std::string_view name, const Ren::Tex2DParams &p, Ren::eResState desired_state,
                           Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           RpSubpass &pass, int slot_index = -1);

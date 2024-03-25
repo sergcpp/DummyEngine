@@ -11,15 +11,16 @@
 
 const char *Ren::Version() { return "v0.1.0-unknown-commit"; }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,
-                                    int ndx_count, eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, const float *positions, const int vtx_count,
+                                    const uint32_t *indices, const int ndx_count, eMeshLoadStatus *load_status) {
     return LoadMesh(name, positions, vtx_count, indices, ndx_count, default_stage_bufs_, default_vertex_buf1_,
                     default_vertex_buf2_, default_indices_buf_, load_status);
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices,
-                                    int ndx_count, StageBufs &stage_bufs, BufferRef &vertex_buf1,
-                                    BufferRef &vertex_buf2, BufferRef &index_buf, eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, const float *positions, int vtx_count,
+                                    const uint32_t *indices, int ndx_count, StageBufs &stage_bufs,
+                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
+                                    eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
@@ -38,16 +39,16 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, const float *positions, in
     return ref;
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-                                    eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, std::istream *data,
+                                    const material_load_callback &on_mat_load, eMeshLoadStatus *load_status) {
     return LoadMesh(name, data, on_mat_load, default_stage_bufs(), default_vertex_buf1_, default_vertex_buf2_,
                     default_indices_buf_, default_skin_vertex_buf_, default_delta_buf_, load_status);
 }
 
-Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const material_load_callback &on_mat_load,
-                                    StageBufs &stage_bufs, BufferRef &vertex_buf1, BufferRef &vertex_buf2,
-                                    BufferRef &index_buf, BufferRef &skin_vertex_buf, BufferRef &delta_buf,
-                                    eMeshLoadStatus *load_status) {
+Ren::MeshRef Ren::Context::LoadMesh(std::string_view name, std::istream *data,
+                                    const material_load_callback &on_mat_load, StageBufs &stage_bufs,
+                                    BufferRef &vertex_buf1, BufferRef &vertex_buf2, BufferRef &index_buf,
+                                    BufferRef &skin_vertex_buf, BufferRef &delta_buf, eMeshLoadStatus *load_status) {
     MeshRef ref = meshes_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
@@ -66,7 +67,7 @@ Ren::MeshRef Ren::Context::LoadMesh(const char *name, std::istream *data, const 
     return ref;
 }
 
-Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_src, eMatLoadStatus *status,
+Ren::MaterialRef Ren::Context::LoadMaterial(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,
                                             const pipelines_load_callback &on_pipes_load,
                                             const texture_load_callback &on_tex_load,
                                             const sampler_load_callback &on_sampler_load) {
@@ -76,7 +77,7 @@ Ren::MaterialRef Ren::Context::LoadMaterial(const char *name, const char *mat_sr
     } else {
         if (ref->ready()) {
             (*status) = eMatLoadStatus::Found;
-        } else if (!ref->ready() && mat_src) {
+        } else if (!ref->ready() && !mat_src.empty()) {
             ref->Init(mat_src, status, on_pipes_load, on_tex_load, on_sampler_load, log_);
         }
     }
@@ -101,10 +102,9 @@ void Ren::Context::ReleaseMaterials() {
 }
 
 #if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
-Ren::ShaderRef Ren::Context::LoadShaderGLSL(const char *name, const char *shader_src, eShaderType type,
+Ren::ShaderRef Ren::Context::LoadShaderGLSL(std::string_view name, std::string_view shader_src, eShaderType type,
                                             eShaderLoadStatus *load_status) {
     ShaderRef ref = shaders_.FindByName(name);
-
     if (!ref) {
         ref = shaders_.Add(name, api_ctx_.get(), shader_src, type, load_status, log_);
     } else {
@@ -112,40 +112,36 @@ Ren::ShaderRef Ren::Context::LoadShaderGLSL(const char *name, const char *shader
             if (load_status) {
                 (*load_status) = eShaderLoadStatus::Found;
             }
-        } else if (shader_src) {
+        } else if (!shader_src.empty()) {
             ref->Init(shader_src, type, load_status, log_);
         }
     }
-
     return ref;
 }
 
 #if defined(USE_VK_RENDER) || !defined(__ANDROID__)
-Ren::ShaderRef Ren::Context::LoadShaderSPIRV(const char *name, const uint8_t *shader_data, int data_size,
-                                             eShaderType type, eShaderLoadStatus *load_status) {
+Ren::ShaderRef Ren::Context::LoadShaderSPIRV(std::string_view name, Span<const uint8_t> shader_data, eShaderType type,
+                                             eShaderLoadStatus *load_status) {
     ShaderRef ref = shaders_.FindByName(name);
-
     if (!ref) {
-        ref = shaders_.Add(name, api_ctx_.get(), shader_data, data_size, type, load_status, log_);
+        ref = shaders_.Add(name, api_ctx_.get(), shader_data, type, load_status, log_);
     } else {
         if (ref->ready()) {
             if (load_status) {
                 (*load_status) = eShaderLoadStatus::Found;
             }
-        } else if (shader_data) {
-            ref->Init(shader_data, data_size, type, load_status, log_);
+        } else if (!shader_data.empty()) {
+            ref->Init(shader_data, type, load_status, log_);
         }
     }
-
     return ref;
 }
 #endif
 #endif
 
-Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
+Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef vs_ref, ShaderRef fs_ref, ShaderRef tcs_ref,
                                           ShaderRef tes_ref, eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
-
     if (!ref) {
         ref = programs_.Add(name, api_ctx_.get(), std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref),
                             std::move(tes_ref), load_status, log_);
@@ -158,13 +154,11 @@ Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef vs_ref, Sh
             ref->Init(std::move(vs_ref), std::move(fs_ref), std::move(tcs_ref), std::move(tes_ref), load_status, log_);
         }
     }
-
     return ref;
 }
 
-Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef cs_ref, eProgLoadStatus *load_status) {
+Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef cs_ref, eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
-
     if (!ref) {
         ref = programs_.Add(name, api_ctx_.get(), std::move(cs_ref), load_status, log_);
     } else {
@@ -175,16 +169,14 @@ Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef cs_ref, eP
             ref->Init(std::move(cs_ref), load_status, log_);
         }
     }
-
     return ref;
 }
 
 #if defined(USE_VK_RENDER)
-Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
+Ren::ProgramRef Ren::Context::LoadProgram(std::string_view name, ShaderRef raygen_ref, ShaderRef closesthit_ref,
                                           ShaderRef anyhit_ref, ShaderRef miss_ref, ShaderRef intersection_ref,
                                           eProgLoadStatus *load_status) {
     ProgramRef ref = programs_.FindByName(name);
-
     if (!ref) {
         ref = programs_.Add(name, api_ctx_.get(), std::move(raygen_ref), std::move(closesthit_ref),
                             std::move(anyhit_ref), std::move(miss_ref), std::move(intersection_ref), load_status, log_);
@@ -198,7 +190,6 @@ Ren::ProgramRef Ren::Context::LoadProgram(const char *name, ShaderRef raygen_ref
                       std::move(intersection_ref), load_status, log_);
         }
     }
-
     return ref;
 }
 #endif
@@ -223,8 +214,8 @@ void Ren::Context::ReleasePrograms() {
     programs_.clear();
 }
 
-Ren::Tex3DRef Ren::Context::LoadTexture3D(const char *name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
-                       eTexLoadStatus *load_status) {
+Ren::Tex3DRef Ren::Context::LoadTexture3D(std::string_view name, const Tex3DParams &p, MemoryAllocators *mem_allocs,
+                                          eTexLoadStatus *load_status) {
     Tex3DRef ref = textures_3D_.FindByName(name);
     if (!ref) {
         ref = textures_3D_.Add(name, api_ctx_.get(), p, mem_allocs, log_);
@@ -238,7 +229,7 @@ Ren::Tex3DRef Ren::Context::LoadTexture3D(const char *name, const Tex3DParams &p
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, const Tex2DParams &p, MemoryAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
@@ -253,37 +244,37 @@ Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const Tex2DParams &p
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTexture2D(const char *name, const void *data, int size, const Tex2DParams &p,
+Ren::Tex2DRef Ren::Context::LoadTexture2D(std::string_view name, Span<const uint8_t> data, const Tex2DParams &p,
                                           StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
                                           eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = textures_2D_.Add(name, api_ctx_.get(), data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
     } else {
         (*load_status) = eTexLoadStatus::Found;
-        if (!ref->ready() && data) {
+        if (!ref->ready() && !data.empty()) {
             StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+            ref->Init(data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
         }
     }
 
     return ref;
 }
 
-Ren::Tex2DRef Ren::Context::LoadTextureCube(const char *name, const void *data[6], const int size[6],
-                                            const Tex2DParams &p, StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
+Ren::Tex2DRef Ren::Context::LoadTextureCube(std::string_view name, Span<const uint8_t> data[6], const Tex2DParams &p,
+                                            StageBufs &stage_bufs, MemoryAllocators *mem_allocs,
                                             eTexLoadStatus *load_status) {
     Tex2DRef ref = textures_2D_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = textures_2D_.Add(name, api_ctx_.get(), data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+        ref = textures_2D_.Add(name, api_ctx_.get(), data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
         } else if (data) {
             StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, size, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
+            ref->Init(data, p, *sb.buf, sb.cmd_buf, mem_allocs, load_status, log_);
         }
     }
 
@@ -314,7 +305,7 @@ void Ren::Context::Release2DTextures() {
     textures_2D_.clear();
 }
 
-Ren::Tex1DRef Ren::Context::CreateTexture1D(const char *name, BufferRef buf, const eTexFormat format,
+Ren::Tex1DRef Ren::Context::CreateTexture1D(std::string_view name, BufferRef buf, const eTexFormat format,
                                             const uint32_t offset, const uint32_t size) {
     Tex1DRef ref = textures_1D_.FindByName(name);
     if (!ref) {
@@ -338,26 +329,26 @@ void Ren::Context::Release1DTextures() {
     textures_1D_.clear();
 }
 
-Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const void *data, const int size,
+Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Span<const uint8_t> data,
                                                       StageBufs &stage_bufs, const Tex2DParams &p,
                                                       eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
         StageBufRef sb = stage_bufs.GetNextBuffer();
-        ref = texture_regions_.Add(name, data, size, *sb.buf, sb.cmd_buf, p, &texture_atlas_, load_status);
+        ref = texture_regions_.Add(name, data, *sb.buf, sb.cmd_buf, p, &texture_atlas_, load_status);
     } else {
         if (ref->ready()) {
             (*load_status) = eTexLoadStatus::Found;
         } else {
             StageBufRef sb = stage_bufs.GetNextBuffer();
-            ref->Init(data, size, *sb.buf, sb.cmd_buf, p, &texture_atlas_, load_status);
+            ref->Init(data, *sb.buf, sb.cmd_buf, p, &texture_atlas_, load_status);
         }
     }
     return ref;
 }
 
-Ren::TextureRegionRef Ren::Context::LoadTextureRegion(const char *name, const Buffer &sbuf, int data_off, int data_len,
-                                                      void *cmd_buf, const Tex2DParams &p,
+Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, const Buffer &sbuf, const int data_off,
+                                                      const int data_len, void *cmd_buf, const Tex2DParams &p,
                                                       eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
@@ -410,7 +401,7 @@ void Ren::Context::ReleaseSamplers() {
     samplers_.clear();
 }
 
-Ren::AnimSeqRef Ren::Context::LoadAnimSequence(const char *name, std::istream &data) {
+Ren::AnimSeqRef Ren::Context::LoadAnimSequence(std::string_view name, std::istream &data) {
     AnimSeqRef ref = anims_.FindByName(name);
     if (!ref) {
         ref = anims_.Add(name, data);
@@ -440,7 +431,7 @@ void Ren::Context::ReleaseAnims() {
     anims_.clear();
 }
 
-Ren::BufferRef Ren::Context::LoadBuffer(const char *name, const eBufType type, const uint32_t initial_size) {
+Ren::BufferRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const uint32_t initial_size) {
     Ren::BufferRef ref = buffers_.FindByName(name);
     if (!ref) {
         ref = buffers_.Add(name, api_ctx_.get(), type, initial_size);

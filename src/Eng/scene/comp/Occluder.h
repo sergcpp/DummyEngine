@@ -11,6 +11,6 @@ struct Occluder {
     static void Read(const JsObjectP &js_in, Occluder &occ) {}
     static void Write(const Occluder &occ, JsObjectP &js_out) {}
 
-    static const char *name() { return "occluder"; }
+    static std::string_view name() { return "occluder"; }
 };
 } // namespace Eng

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 
 #include <Ren/MMat.h>
 
@@ -20,6 +21,6 @@ class AnimState {
     static void Read(const JsObjectP &js_in, AnimState &as);
     static void Write(const AnimState &as, JsObjectP &js_out) {}
 
-    static const char *name() { return "anim_state"; }
+    static std::string_view name() { return "anim_state"; }
 };
 } // namespace Eng

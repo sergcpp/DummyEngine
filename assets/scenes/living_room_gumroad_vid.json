@@ -103,7 +103,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_0.mesh",
-				"material_override" : [ "wall_picture_yuv.txt" ]
+				"material_override" : [ "wall_picture_yuv.mat" ]
 			}
 		},
 		{
@@ -122,7 +122,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_1.mesh",
-				"material_override" : [ "wall_picture_yuv.txt" ]
+				"material_override" : [ "wall_picture_yuv.mat" ]
 			}
 		},
 		{
@@ -141,7 +141,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_2.mesh",
-				"material_override" : [ "wall_picture_yuv.txt" ]
+				"material_override" : [ "wall_picture_yuv.mat" ]
 			}
 		},
 		{
@@ -160,7 +160,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_3.mesh",
-				"material_override" : [ "wall_picture_yuv.txt" ]
+				"material_override" : [ "wall_picture_yuv.mat" ]
 			}
 		},
 		{
@@ -179,7 +179,7 @@
 			},
 			"drawable" : {
 				"mesh_file" : "wall_picture_4.mesh",
-				"material_override" : [ "wall_picture_yuv.txt" ]
+				"material_override" : [ "wall_picture_yuv.mat" ]
 			}
 		},
 		{

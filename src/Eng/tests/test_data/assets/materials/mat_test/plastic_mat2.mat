@@ -1,0 +1,14 @@
+gl_programs:
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+textures:
+    - default_basecolor.png
+    - default_normalmap.dds
+    - default_roughness.png
+    - default_metallic.png
+params:
+    - 0.0 0.5 0.5 1.0      # base color, roughness
+    - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint
+    - 0.0 0.0 0.0 0.0      # metallic, transmission, clearcoat, clearcoat_roughness

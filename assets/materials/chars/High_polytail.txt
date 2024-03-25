@@ -1,10 +1,12 @@
-gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-gl_program: main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-sw_program: main
-flag: two_sided
-flag: alpha_blend
-flag: alpha_test
-texture: chars/High_polytail_diff.png
-texture: default_normalmap.dds
-texture: chars/High_polytail_spec.png
-texture: chars/High_polytail_mask.png
+gl_programs:
+    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+flags:
+    - two_sided
+    - alpha_blend
+    - alpha_test
+textures:
+    - chars/High_polytail_diff.png
+    - default_normalmap.dds
+    - chars/High_polytail_spec.png
+    - chars/High_polytail_mask.png

@@ -10,7 +10,7 @@
 #include "SW/SW.h"
 #endif
 
-Ren::Buffer::Buffer(const char *name, eBufferType type, uint32_t initial_size)
+Ren::Buffer::Buffer(std::string_view name, eBufferType type, uint32_t initial_size)
     : name_(name), type_(type), size_(0) {
     nodes_.emplace_back();
     nodes_.back().size = initial_size;

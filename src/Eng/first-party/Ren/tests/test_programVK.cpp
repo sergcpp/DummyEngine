@@ -158,15 +158,14 @@ void main(void) {
             0xfd, 0x00, 0x01, 0x00, 0x38, 0x00, 0x01, 0x00};
 
         Ren::eShaderLoadStatus sh_status;
-        Ren::ShaderRef cs_ref =
-            test.LoadShaderSPIRV("sample_cs", cs_spirv, sizeof(cs_spirv), Ren::eShaderType::Compute, &sh_status);
+        Ren::ShaderRef cs_ref = test.LoadShaderSPIRV("sample_cs", cs_spirv, Ren::eShaderType::Compute, &sh_status);
         require(sh_status == Ren::eShaderLoadStatus::CreatedFromData);
 
         Ren::eProgLoadStatus status;
         Ren::ProgramRef p = test.LoadProgram("sample", cs_ref, &status);
         require(status == Ren::eProgLoadStatus::CreatedFromData);
 
-        //require(p->uniform(0).name == "delta");
+        // require(p->uniform(0).name == "delta");
         require(p->uniform(0).loc != -1);
 
 #if 0

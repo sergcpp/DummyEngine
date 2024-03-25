@@ -1,6 +1,7 @@
-gl_program: main_probelit_nossr_occ main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
-gl_program: main_probelit_nossr_occ main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
-sw_program: main
-texture: grey_diff.png
-texture: default_normalmap.dds
-texture: default_specular.png
+gl_programs:
+    - main_probelit_nossr_occ main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
+    - main_probelit_nossr_occ main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
+textures:
+    - grey_diff.png
+    - default_normalmap.dds
+    - default_specular.png

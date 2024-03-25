@@ -2,10 +2,10 @@
 
 #include "VKCtx.h"
 
-Ren::DebugMarker::DebugMarker(ApiContext *api_ctx, void *_cmd_buf, const char *name)
+Ren::DebugMarker::DebugMarker(ApiContext *api_ctx, void *_cmd_buf, std::string_view name)
     : api_ctx_(api_ctx), cmd_buf_(_cmd_buf) {
     VkDebugUtilsLabelEXT label = {VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT};
-    label.pLabelName = name;
+    label.pLabelName = name.data();
     label.color[0] = label.color[1] = label.color[2] = label.color[3] = 1.0f;
 
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);

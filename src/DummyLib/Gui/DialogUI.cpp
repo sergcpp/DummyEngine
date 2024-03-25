@@ -66,7 +66,7 @@ void DialogUI::IterateChoices(
     float y_coord = -0.5f;
 
     for (int i = 0; i < choices_count_; i++) {
-        const float width = font_.GetWidth(choices_[i].text, -1, this);
+        const float width = font_.GetWidth(choices_[i].text, this);
         if (!callback(i, Ren::Vec2f{-0.5f * width + 0.5f * float(choices_->off), y_coord},
                       Ren::Vec2f{width, font_height})) {
             break;

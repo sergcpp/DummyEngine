@@ -286,7 +286,7 @@ int round_up(int v, int align) { return align * ((v + align - 1) / align); }
 
 } // namespace Ren
 
-std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format) {
+std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format) {
     uint32_t img_size;
     ReadTGAFile(data, w, h, format, nullptr, img_size);
 
@@ -296,10 +296,11 @@ std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(const void *data, int &w, int &h, eT
     return image_ret;
 }
 
-bool Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format, uint8_t *out_data, uint32_t &out_size) {
+bool Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format, uint8_t *out_data,
+                      uint32_t &out_size) {
     const uint8_t tga_header[12] = {0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    const auto *tga_compare = (const uint8_t *)data;
-    const uint8_t *img_header = (const uint8_t *)data + sizeof(tga_header);
+    const uint8_t *tga_compare = data.data();
+    const uint8_t *img_header = data.data() + sizeof(tga_header);
     bool compressed = false;
 
     if (memcmp(tga_header, tga_compare, sizeof(tga_header)) != 0) {
@@ -343,7 +344,7 @@ bool Ren::ReadTGAFile(const void *data, int &w, int &h, eTexFormat &format, uint
 
     out_size = w * h * bytes_per_pixel;
     if (out_data) {
-        const uint8_t *image_data = (const uint8_t *)data + 18;
+        const uint8_t *image_data = data.data() + 18;
 
         if (!compressed) {
             for (size_t i = 0; i < out_size; i += bytes_per_pixel) {

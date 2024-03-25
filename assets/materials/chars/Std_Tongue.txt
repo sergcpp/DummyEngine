@@ -1,6 +1,7 @@
-gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
-gl_program: main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
-sw_program: main
-texture: chars/Std_Tongue_diff.png
-texture: chars/Std_Tongue_norm.png
-texture: default_specular.png
+gl_programs:
+    - main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+    - main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+textures:
+    - chars/Std_Tongue_diff.png
+    - chars/Std_Tongue_norm.png
+    - default_specular.png

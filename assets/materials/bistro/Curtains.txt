@@ -1,8 +1,0 @@
-gl_program: main_probelit_nossr main_probelit_nossr.vert.glsl main_probelit_nossr.frag.glsl
-gl_program: main_probelit_nossr main_probelit_nossr.vert.glsl main_probelit_nossr.frag.glsl
-sw_program: main
-flag: alpha_test
-texture: bistro/Curtains_diff.png
-texture: bistro/Curtains_norm.png
-texture: default_specular.png
-texture: bistro/Curtains_mask.png

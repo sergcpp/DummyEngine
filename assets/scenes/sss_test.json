@@ -32,7 +32,7 @@
 			"drawable" : {
 				"mesh_name" : "head_diffuse",
 				"mesh_file" : "test_head.mesh",
-				"material_override" : [ "grey.txt" ],
+				"material_override" : [ "grey.mat" ],
 				"visible_to_probes" : false
 			}
 		},
@@ -52,7 +52,7 @@
 			"drawable" : {
 				"mesh_name" : "head_sss",
 				"mesh_file" : "test_head.mesh",
-				"material_override" : [ "grey_sss.txt" ],
+				"material_override" : [ "grey_sss.mat" ],
 				"visible_to_probes" : false
 			}
 		},
@@ -71,8 +71,8 @@
 			},
 			"drawable" : {
 				"mesh_file" : "ground_plane_200x200.mesh",
-				"material_override" : [ "checker_glossy.txt" ],
-				"material_override2" : [ "_wind_debug.txt" ]
+				"material_override" : [ "checker_glossy.mat" ],
+				"material_override2" : [ "_wind_debug.mat" ]
 			}
 		},
 		{

@@ -13,7 +13,7 @@ class Image : public BaseElement {
 
   public:
     Image(const Ren::TextureRegionRef &tex, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
-    Image(Ren::Context &ctx, const char *tex_name, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
+    Image(Ren::Context &ctx, std::string_view tex_name, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
     Ren::TextureRegionRef &tex() { return tex_; }
 

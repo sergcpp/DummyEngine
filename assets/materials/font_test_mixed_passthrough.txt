@@ -1,7 +1,0 @@
-gl_program: _font_test_mixed_passthrough _font_test_mixed_passthrough.vert.glsl _font_test_mixed.frag.glsl
-gl_program: _font_test_mixed_passthrough _font_test_mixed_passthrough.vert.glsl _font_test_mixed.frag.glsl
-sw_program: main
-flag: alpha_blend
-texture: digits.uncompressed.png
-texture: default_normalmap.dds
-texture: default_specular.png

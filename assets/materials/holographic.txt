@@ -1,8 +1,0 @@
-gl_program: holographic holographic.vert.glsl holographic.frag.glsl
-gl_program: holographic holographic.vert.glsl holographic.frag.glsl
-sw_program: main
-flag: depth_write
-flag: alpha_blend
-texture: rand8x8.png srgb
-texture: default_normalmap.dds
-texture: white.png

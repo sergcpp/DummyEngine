@@ -10,17 +10,17 @@
 #endif
 
 namespace Ren {
-std::unique_ptr<uint8_t[]> ReadTGAFile(const void *data, int &w, int &h,
+std::unique_ptr<uint8_t[]> ReadTGAFile(Span<const uint8_t> data, int &w, int &h,
                                        eTexFormat &format);
 void CheckError(const char *op);
 } // namespace Ren
 
-Ren::Texture2D::Texture2D(const char *name, const void *data, int size,
+Ren::Texture2D::Texture2D(std::string_view name, const void *data, int size,
                           const Tex2DParams &p, eTexLoadStatus *load_status) {
     Init(name, data, size, p, load_status);
 }
 
-Ren::Texture2D::Texture2D(const char *name, const void *data[6], const int size[6],
+Ren::Texture2D::Texture2D(std::string_view name, const void *data[6], const int size[6],
                           const Tex2DParams &p, eTexLoadStatus *load_status) {
     Init(name, data, size, p, load_status);
 }
@@ -55,7 +55,7 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) {
     return *this;
 }
 
-void Ren::Texture2D::Init(const char *name, const void *data, [[maybe_unused]] int size,
+void Ren::Texture2D::Init(std::string_view name, const void *data, [[maybe_unused]] int size,
                           const Tex2DParams &p, eTexLoadStatus *load_status) {
     strcpy(name_, name);
 
@@ -83,7 +83,7 @@ void Ren::Texture2D::Init(const char *name, const void *data, [[maybe_unused]] i
     }
 }
 
-void Ren::Texture2D::Init(const char *name, [[maybe_unused]] const void *data[6], [[maybe_unused]] const int size[6],
+void Ren::Texture2D::Init(std::string_view name, [[maybe_unused]] const void *data[6], [[maybe_unused]] const int size[6],
                           [[maybe_unused]] const Tex2DParams &params, eTexLoadStatus *load_status) {
     strcpy(name_, name);
     ready_ = false;

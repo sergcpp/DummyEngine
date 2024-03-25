@@ -14,6 +14,6 @@ struct SoundSource {
     static void Read(const JsObjectP &js_in, SoundSource &ls);
     static void Write(const SoundSource &ls, JsObjectP &js_out);
 
-    static const char *name() { return "sound"; }
+    static std::string_view name() { return "sound"; }
 };
 } // namespace Eng

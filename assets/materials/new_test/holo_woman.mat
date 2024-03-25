@@ -1,0 +1,9 @@
+gl_programs:
+    - holographic holographic.vert.glsl holographic.frag.glsl
+    - holographic holographic.vert.glsl holographic.frag.glsl
+flags:
+    - alpha_blend
+textures:
+    - rand8x8.png srgb
+    - default_normalmap.dds
+    - white.png

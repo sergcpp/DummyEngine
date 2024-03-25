@@ -1,0 +1,7 @@
+gl_programs:
+    - main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+    - main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+textures:
+    - wood_004_1_diff.png
+    - default_normalmap.dds
+    - rough_spec.uncompressed.png

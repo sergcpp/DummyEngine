@@ -1,0 +1,9 @@
+gl_programs:
+    - _tess_test _tess_test.vert.glsl _tess_test.frag.glsl _tess_test.tesc.glsl _tess_test.tese.glsl
+    - _tess_test _tess_test.vert.glsl _tess_test.frag.glsl _tess_test.tesc.glsl _tess_test.tese.glsl
+    - _tess_test _tess_test.vert.glsl _tess_test.frag.glsl
+textures:
+    - cobblestone_diff.png
+    - cobblestone_norm.png
+    - default_specular.png
+    - cobblestone_bump.png

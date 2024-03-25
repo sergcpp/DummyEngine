@@ -1,0 +1,10 @@
+gl_programs:
+    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+textures:
+    - vegetation/leaf_tree_trunk_diff.png
+    - vegetation/leaf_tree_trunk_norm.png
+    - default_specular.png
+    - default_mask.png
+    - vegetation/leaf_tree_pp_pos.dds nofilter
+    - vegetation/leaf_tree_pp_dir.dds nofilter

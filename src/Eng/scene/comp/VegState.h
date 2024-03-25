@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string_view>
+
 #include <Ren/MMat.h>
 
 #include "Common.h"
@@ -20,6 +22,6 @@ struct VegState {
     static void Read(const JsObjectP &js_in, VegState &vs);
     static void Write(const VegState &vs, JsObjectP &js_out);
 
-    static const char *name() { return "veg_state"; }
+    static std::string_view name() { return "veg_state"; }
 };
 } // namespace Eng

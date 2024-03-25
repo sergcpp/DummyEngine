@@ -65,7 +65,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_sizes.tbuf_count = 1;
 
         simple_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, simple_descr_set_layout);
-        simple_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+        simple_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
     { // update descriptor set
@@ -111,7 +111,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
         descr_sizes.tbuf_count = 1;
 
         vege_descr_sets[0] = ctx.default_descr_alloc()->Alloc(descr_sizes, vege_descr_set_layout);
-        vege_descr_sets[1] = (*bindless_tex_->textures_descr_sets)[0];
+        vege_descr_sets[1] = bindless_tex_->textures_descr_sets[0];
     }
 
     { // update descriptor set
@@ -257,7 +257,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     if (descr_id != bound_descr_id) {
                         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                                          pi_vege_solid_.layout(), 1, 1,
-                                                         &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
+                                                         &bindless_tex_->textures_descr_sets[descr_id], 0, nullptr);
                         bound_descr_id = descr_id;
                     }
 
@@ -307,7 +307,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     const uint32_t descr_id = batch.material_index / materials_per_descriptor;
                     if (descr_id != bound_descr_id) {
                         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS, pi_transp_.layout(),
-                                                         1, 1, &(*bindless_tex_->textures_descr_sets)[descr_id], 0,
+                                                         1, 1, &bindless_tex_->textures_descr_sets[descr_id], 0,
                                                          nullptr);
                         bound_descr_id = descr_id;
                     }
@@ -359,7 +359,7 @@ void Eng::RpShadowMaps::DrawShadowMaps(RpBuilder &builder, RpAllocTex &shadowmap
                     if (descr_id != bound_descr_id) {
                         api_ctx->vkCmdBindDescriptorSets(cmd_buf, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                                          pi_vege_transp_.layout(), 1, 1,
-                                                         &(*bindless_tex_->textures_descr_sets)[descr_id], 0, nullptr);
+                                                         &bindless_tex_->textures_descr_sets[descr_id], 0, nullptr);
                         bound_descr_id = descr_id;
                     }
 

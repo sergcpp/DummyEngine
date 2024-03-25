@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <functional>
+#include <string_view>
 
 #include "Fwd.h"
 #include "Program.h"
@@ -27,10 +28,10 @@ enum class eMatFlags {
 
 enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
 
-using texture_load_callback = std::function<Tex2DRef(const char *name, const uint8_t color[4], eTexFlags flags)>;
+using texture_load_callback = std::function<Tex2DRef(std::string_view name, const uint8_t color[4], eTexFlags flags)>;
 using sampler_load_callback = std::function<SamplerRef(SamplingParams params)>;
 using pipelines_load_callback =
-    std::function<void(const char *prog_name, uint32_t flags, const char *arg1, const char *arg2, const char *arg3,
+    std::function<void(std::string_view prog_name, uint32_t flags, const char *arg1, const char *arg2, const char *arg3,
                        const char *arg4, SmallVectorImpl<PipelineRef> &out_pipelines)>;
 
 class Material : public RefCounter {
@@ -38,7 +39,7 @@ class Material : public RefCounter {
     bool ready_ = false;
     String name_;
 
-    void InitFromTXT(const char *mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
+    void InitFromMAT(std::string_view mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
                      const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load, ILog *log);
 
   public:
@@ -49,11 +50,11 @@ class Material : public RefCounter {
     SmallVector<uint32_t, 4> next_texture_user;
 
     Material() = default;
-    Material(const char *name, const char *mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
-             const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load, ILog *log);
-    Material(const char *name, uint32_t flags, const PipelineRef pipelines[], int pipelines_count,
-             const Tex2DRef textures[], const SamplerRef samplers[], int textures_count, const Vec4f params[],
-             int params_count, ILog *log);
+    Material(std::string_view name, std::string_view mat_src, eMatLoadStatus *status,
+             const pipelines_load_callback &on_pipes_load, const texture_load_callback &on_tex_load,
+             const sampler_load_callback &on_sampler_load, ILog *log);
+    Material(std::string_view name, uint32_t flags, Span<const PipelineRef> pipelines, Span<const Tex2DRef> textures,
+             Span<const SamplerRef> samplers, Span<const Vec4f> params, ILog *log);
 
     Material(const Mesh &rhs) = delete;
     Material(Material &&rhs) = default;
@@ -65,9 +66,9 @@ class Material : public RefCounter {
     bool ready() const { return ready_; }
     const String &name() const { return name_; }
 
-    void Init(uint32_t flags, const PipelineRef _pipelines[], int pipelines_count, const Tex2DRef _textures[],
-              const SamplerRef _samplers[], int textures_count, const Vec4f _params[], int params_count, ILog *log);
-    void Init(const char *mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
+    void Init(uint32_t flags, Span<const PipelineRef> _pipelines, Span<const Tex2DRef> _textures,
+              Span<const SamplerRef> _samplers, Span<const Vec4f> _params, ILog *log);
+    void Init(std::string_view mat_src, eMatLoadStatus *status, const pipelines_load_callback &on_pipes_load,
               const texture_load_callback &on_tex_load, const sampler_load_callback &on_sampler_load, ILog *log);
 };
 

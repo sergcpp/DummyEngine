@@ -27,7 +27,7 @@ namespace Sys {
 AAssetManager *Sys::AssetFile::asset_manager_ = nullptr;
 #endif
 
-Sys::AssetFile::AssetFile(const char *file_name, const eOpenMode mode) {
+Sys::AssetFile::AssetFile(std::string_view file_name, const eOpenMode mode) {
     Open(file_name, mode);
 }
 
@@ -60,7 +60,7 @@ Sys::AssetFile& Sys::AssetFile::operator=(AssetFile&& rhs) noexcept {
     return (*this);
 }
 
-bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
+bool Sys::AssetFile::Open(std::string_view file_name, const eOpenMode mode) {
     using namespace std;
 
     Close();
@@ -131,7 +131,7 @@ bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
         }*/
 
         if (!found_in_package) {
-            file_stream_->open(file_name, std::ios::in | std::ios::binary);
+            file_stream_->open(file_name.data(), std::ios::in | std::ios::binary);
             file_stream_->seekg(0, std::ios::end);
             size_ = (size_t)file_stream_->tellg();
             file_stream_->seekg(0, std::ios::beg);
@@ -142,7 +142,7 @@ bool Sys::AssetFile::Open(const char* file_name, const eOpenMode mode) {
         throw std::runtime_error("Cannot write to assets folder on Android!");
 #else
         file_stream_ = new std::fstream();
-        file_stream_->open(file_name, std::ios::out | std::ios::binary);
+        file_stream_->open(file_name.data(), std::ios::out | std::ios::binary);
 #endif
     }
 

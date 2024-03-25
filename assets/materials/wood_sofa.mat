@@ -1,0 +1,7 @@
+gl_programs:
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+textures:
+    - wood_004_diff.png
+    - wood_004_norm.png
+    - wood_004_spec.png

@@ -70,29 +70,29 @@ class Texture2D : public RefCounter {
 
     void InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf, MemoryAllocators *mem_allocs, const Tex2DParams &p,
                          ILog *log);
-    void InitFromTGAFile(const void *data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(const void *data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromTGA_RGBEFile(Span<const uint8_t> data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                               const Tex2DParams &p, ILog *log);
-    void InitFromDDSFile(const void *data, int size, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromPNGFile(const void *data, int size, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromKTXFile(const void *data, int size, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
 
     void InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromTGAFile(const void *data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(const void *data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromTGA_RGBEFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                               const Tex2DParams &p, ILog *log);
-    void InitFromPNGFile(const void *data[6], const int size[6], Buffer &sbuf, void *_cmd_buf,
-                         MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log);
-    void InitFromDDSFile(const void *data[6], const int size[6], Buffer &sbuf, void *_cmd_buf,
-                         MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log);
-    void InitFromKTXFile(const void *data[6], const int size[6], Buffer &sbuf, void *_cmd_buf,
-                         MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log);
+    void InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+                         const Tex2DParams &p, ILog *log);
+    void InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+                         const Tex2DParams &p, ILog *log);
+    void InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+                         const Tex2DParams &p, ILog *log);
 
   public:
     Tex2DParams params;
@@ -101,14 +101,14 @@ class Texture2D : public RefCounter {
     mutable eResState resource_state = eResState::Undefined;
 
     Texture2D() = default;
-    Texture2D(const char *name, ApiContext *api_ctx, const Tex2DParams &params, MemoryAllocators *mem_allocs,
+    Texture2D(std::string_view name, ApiContext *api_ctx, const Tex2DParams &params, MemoryAllocators *mem_allocs,
               ILog *log);
-    Texture2D(const char *name, ApiContext *api_ctx, VkImage img, VkImageView view, VkSampler sampler,
+    Texture2D(std::string_view name, ApiContext *api_ctx, VkImage img, VkImageView view, VkSampler sampler,
               const Tex2DParams &_params, ILog *log)
         : handle_{img, view, VK_NULL_HANDLE, sampler, 0}, params(_params), ready_(true), name_(name) {}
-    Texture2D(const char *name, ApiContext *api_ctx, const void *data, const uint32_t size, const Tex2DParams &p,
+    Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
               Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
-    Texture2D(const char *name, ApiContext *api_ctx, const void *data[6], const int size[6], const Tex2DParams &p,
+    Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
               Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) noexcept { (*this) = std::move(rhs); }
@@ -123,9 +123,9 @@ class Texture2D : public RefCounter {
         params = _params;
         ready_ = true;
     }
-    void Init(const void *data, const uint32_t size, const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
+    void Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
-    void Init(const void *data[6], const int size[6], const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
+    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
 
     bool Realloc(int w, int h, int mip_count, int samples, Ren::eTexFormat format, Ren::eTexBlock block, bool is_srgb,
@@ -176,7 +176,7 @@ class Texture1D : public RefCounter {
     void Free();
 
   public:
-    Texture1D(const char *name, BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
+    Texture1D(std::string_view name, BufferRef buf, eTexFormat format, uint32_t offset, uint32_t size, ILog *log);
     Texture1D(const Texture1D &rhs) = delete;
     Texture1D(Texture1D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture1D();
@@ -206,7 +206,8 @@ class Texture3D : public RefCounter {
     mutable eResState resource_state = eResState::Undefined;
 
     Texture3D() = default;
-    Texture3D(const char *name, ApiContext *ctx, const Tex3DParams &params, MemoryAllocators *mem_allocs, ILog *log);
+    Texture3D(std::string_view name, ApiContext *ctx, const Tex3DParams &params, MemoryAllocators *mem_allocs,
+              ILog *log);
     Texture3D(const Texture3D &rhs) = delete;
     Texture3D(Texture3D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture3D();

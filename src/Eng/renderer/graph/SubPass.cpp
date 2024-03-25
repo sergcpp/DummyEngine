@@ -6,7 +6,7 @@ Eng::RpResRef Eng::RpSubpass::AddTransferInput(const Ren::WeakBufferRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddTransferOutput(const char *name, const RpBufDesc &desc) {
+Eng::RpResRef Eng::RpSubpass::AddTransferOutput(std::string_view name, const RpBufDesc &desc) {
     return builder_.WriteBuffer(name, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
@@ -22,7 +22,7 @@ Eng::RpResRef Eng::RpSubpass::AddTransferImageInput(const RpResRef handle) {
     return builder_.ReadTexture(handle, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddTransferImageOutput(const char *name, const Ren::Tex2DParams &params) {
+Eng::RpResRef Eng::RpSubpass::AddTransferImageOutput(std::string_view name, const Ren::Tex2DParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
@@ -47,7 +47,7 @@ Eng::RpResRef Eng::RpSubpass::AddStorageReadonlyInput(const Ren::WeakBufferRef &
     return builder_.ReadBuffer(buf, tbo, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddStorageOutput(const char *name, const RpBufDesc &desc, const Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddStorageOutput(std::string_view name, const RpBufDesc &desc, const Ren::eStageBits stages) {
     return builder_.WriteBuffer(name, desc, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
@@ -59,7 +59,7 @@ Eng::RpResRef Eng::RpSubpass::AddStorageOutput(const Ren::WeakBufferRef &buf, co
     return builder_.WriteBuffer(buf, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddStorageImageOutput(const char *name, const Ren::Tex2DParams &params,
+Eng::RpResRef Eng::RpSubpass::AddStorageImageOutput(std::string_view name, const Ren::Tex2DParams &params,
                                                     const Ren::eStageBits stages) {
     return builder_.WriteTexture(name, params, Ren::eResState::UnorderedAccess, stages, *this);
 }
@@ -72,7 +72,7 @@ Eng::RpResRef Eng::RpSubpass::AddStorageImageOutput(const Ren::WeakTex2DRef &tex
     return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddColorOutput(const char *name, const Ren::Tex2DParams &params) {
+Eng::RpResRef Eng::RpSubpass::AddColorOutput(std::string_view name, const Ren::Tex2DParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
@@ -84,11 +84,11 @@ Eng::RpResRef Eng::RpSubpass::AddColorOutput(const Ren::WeakTex2DRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddColorOutput(const char *name) {
+Eng::RpResRef Eng::RpSubpass::AddColorOutput(std::string_view name) {
     return builder_.WriteTexture(name, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddDepthOutput(const char *name, const Ren::Tex2DParams &params) {
+Eng::RpResRef Eng::RpSubpass::AddDepthOutput(std::string_view name, const Ren::Tex2DParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
@@ -117,7 +117,7 @@ Eng::RpResRef Eng::RpSubpass::AddTextureInput(const Ren::WeakTex2DRef &tex, Ren:
     return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddTextureInput(const char *name, Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddTextureInput(std::string_view name, Ren::eStageBits stages) {
     return builder_.ReadTexture(name, Ren::eResState::ShaderResource, stages, *this);
 }
 
@@ -125,7 +125,7 @@ Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(RpResRef handle, Ren::eStag
     return builder_.ReadHistoryTexture(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(const char *name, Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages) {
     return builder_.ReadHistoryTexture(name, Ren::eResState::ShaderResource, stages, *this);
 }
 
@@ -166,6 +166,6 @@ Eng::RpResRef Eng::RpSubpass::AddASBuildOutput(const Ren::WeakBufferRef &buf) {
     return builder_.WriteBuffer(buf, Ren::eResState::BuildASWrite, Ren::eStageBits::AccStructureBuild, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddASBuildOutput(const char *name, const RpBufDesc &desc) {
+Eng::RpResRef Eng::RpSubpass::AddASBuildOutput(std::string_view name, const RpBufDesc &desc) {
     return builder_.WriteBuffer(name, desc, Ren::eResState::BuildASWrite, Ren::eStageBits::AccStructureBuild, *this);
 }

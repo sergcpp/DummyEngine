@@ -81,7 +81,7 @@ void GSVideoTest::Enter() {
             for (const auto &grp : mesh->groups()) {
                 // hold reference to original material here
                 Ren::MaterialRef mat = grp.mat;
-                if (mat->name() == "wall_picture_yuv.txt") {
+                if (mat->name() == "wall_picture_yuv.mat") {
                     // replace material
                     const_cast<Ren::TriGroup &>(grp).mat = vid_mat_[i];
                 }

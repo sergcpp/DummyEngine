@@ -5,18 +5,18 @@
 
 #include "stb/stb_image.h"
 
-Ren::TextureRegion::TextureRegion(const char *name, TextureAtlasArray *atlas, const int texture_pos[3])
+Ren::TextureRegion::TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3])
     : name_(name), atlas_(atlas) {
     memcpy(texture_pos_, texture_pos, 3 * sizeof(int));
 }
 
-Ren::TextureRegion::TextureRegion(const char *name, const void *data, int size, Buffer &stage_buf, void *cmd_buf,
+Ren::TextureRegion::TextureRegion(std::string_view name, Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf,
                                   const Tex2DParams &p, Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status)
     : name_(name) {
-    Init(data, size, stage_buf, cmd_buf, p, atlas, load_status);
+    Init(data, stage_buf, cmd_buf, p, atlas, load_status);
 }
 
-Ren::TextureRegion::TextureRegion(const char *name, const Buffer &sbuf, int data_off, int data_len, void *cmd_buf,
+Ren::TextureRegion::TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len, void *cmd_buf,
                                   const Tex2DParams &p, TextureAtlasArray *atlas, eTexLoadStatus *load_status)
     : name_(name) {
     Init(sbuf, data_off, data_len, cmd_buf, p, atlas, load_status);
@@ -44,9 +44,9 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
     return (*this);
 }
 
-void Ren::TextureRegion::Init(const void *data, int size, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
+void Ren::TextureRegion::Init(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
                               Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
-    if (!data) {
+    if (data.empty()) {
         uint8_t *out_col = stage_buf.Map(eBufMap::Write);
         out_col[0] = 0;
         out_col[1] = out_col[2] = out_col[3] = 255;
@@ -69,9 +69,9 @@ void Ren::TextureRegion::Init(const void *data, int size, Buffer &stage_buf, voi
         }
 
         if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
-            InitFromTGAFile(data, size, stage_buf, cmd_buf, p, atlas);
+            InitFromTGAFile(data, stage_buf, cmd_buf, p, atlas);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
-            InitFromPNGFile(data, size, stage_buf, cmd_buf, p, atlas);
+            InitFromPNGFile(data, stage_buf, cmd_buf, p, atlas);
         } else {
             assert("Wrong function is used for raw data!");
         }
@@ -96,7 +96,7 @@ void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, vo
     }
 }
 
-void Ren::TextureRegion::InitFromTGAFile(const void *data, const int /*size*/, Buffer &stage_buf, void *cmd_buf,
+void Ren::TextureRegion::InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf,
                                          const Tex2DParams &p, TextureAtlasArray *atlas) {
     uint8_t *img_stage = stage_buf.Map(eBufMap::Write);
     uint32_t img_size = stage_buf.size();
@@ -118,10 +118,10 @@ void Ren::TextureRegion::InitFromTGAFile(const void *data, const int /*size*/, B
     InitFromRAWData(stage_buf, 0, int(img_size), cmd_buf, _p, atlas);
 }
 
-void Ren::TextureRegion::InitFromPNGFile(const void *data, const int size, Buffer &stage_buf, void *cmd_buf,
+void Ren::TextureRegion::InitFromPNGFile(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf,
                                          const Tex2DParams &p, TextureAtlasArray *atlas) {
     int w, h, channels;
-    unsigned char *const image_data = stbi_load_from_memory((const uint8_t *)data, size, &w, &h, &channels, 0);
+    unsigned char *const image_data = stbi_load_from_memory(data.data(), int(data.size()), &w, &h, &channels, 0);
     if (image_data) {
         uint8_t *img_stage = stage_buf.Map(eBufMap::Write);
         memcpy(img_stage, image_data, w * h * channels);

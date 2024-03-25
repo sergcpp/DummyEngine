@@ -33,12 +33,12 @@ namespace SceneManagerInternal {
 void LoadTGA(Sys::AssetFile &in_file, int w, int h, uint8_t *out_data) {
     auto in_file_size = (size_t)in_file.size();
 
-    std::vector<char> in_file_data(in_file_size);
-    in_file.Read(&in_file_data[0], in_file_size);
+    std::vector<uint8_t> in_file_data(in_file_size);
+    in_file.Read((char *)&in_file_data[0], in_file_size);
 
     Ren::eTexFormat format;
     int _w, _h;
-    std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(&in_file_data[0], _w, _h, format);
+    std::unique_ptr<uint8_t[]> pixels = Ren::ReadTGAFile(in_file_data, _w, _h, format);
 
     if (_w != w || _h != h)
         return;
@@ -259,14 +259,14 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                     if (js_out_file_hash.val == out_hash_str) {
                         // write new time
                         if (!js_in_file.Has("in_time")) {
-                            js_in_file.Push("in_time", JsStringP(in_t_str.c_str(), *ctx.mp_alloc));
+                            js_in_file.Push("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
                         } else {
                             JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
                             js_in_file_time.val = in_t_str;
                         }
 
                         if (!js_in_file.Has("out_time")) {
-                            js_in_file.Push("out_time", JsStringP(out_t_str.c_str(), *ctx.mp_alloc));
+                            js_in_file.Push("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
                         } else {
                             JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                             js_out_file_time.val = out_t_str;
@@ -281,7 +281,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
             if (file_has_changed) {
                 // store new hash and time value
                 if (!js_in_file.Has("in_hash")) {
-                    js_in_file.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
+                    js_in_file.Push("in_hash", JsStringP(in_hash_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_in_file_hash = js_in_file["in_hash"].as_str();
                     js_in_file_hash.val = in_hash_str;
@@ -289,7 +289,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
                 // write new time
                 if (!js_in_file.Has("in_time")) {
-                    js_in_file.Push("in_time", JsStringP(in_t_str.c_str(), *ctx.mp_alloc));
+                    js_in_file.Push("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
                     js_in_file_time.val = in_t_str;
@@ -340,8 +340,8 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
         const std::string in_hash_str = std::to_string(in_hash);
 
         JsObjectP new_entry(*ctx.mp_alloc);
-        new_entry.Push("in_time", JsStringP(in_t_str.c_str(), *ctx.mp_alloc));
-        new_entry.Push("in_hash", JsStringP(in_hash_str.c_str(), *ctx.mp_alloc));
+        new_entry.Push("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
+        new_entry.Push("in_hash", JsStringP(in_hash_str, *ctx.mp_alloc));
         const size_t new_ndx = js_files.Push(in_file.generic_string().c_str(), std::move(new_entry));
         ctx.cache->db_map[in_file.generic_string().c_str()] = int(new_ndx);
     }
@@ -605,7 +605,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
         g_asset_handlers["ktx"] = {"ktx", HCopy};
     }
-    g_asset_handlers["txt"] = {"txt", HPreprocessMaterial};
+    g_asset_handlers["mat"] = {"mat", HPreprocessMaterial};
 
     // auto
 
@@ -671,7 +671,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                 JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
                 // store new hash value
                 if (!js_in_file.Has("out_hash")) {
-                    js_in_file.Push("out_hash", JsStringP(out_hash_str.c_str(), *ctx.mp_alloc));
+                    js_in_file.Push("out_hash", JsStringP(out_hash_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_out_file_hash = js_in_file["out_hash"].as_str();
                     js_out_file_hash.val = out_hash_str.c_str();
@@ -685,7 +685,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
                 // store new time value
                 if (!js_in_file.Has("out_time")) {
-                    js_in_file.Push("out_time", JsStringP(out_t_str.c_str(), *ctx.mp_alloc));
+                    js_in_file.Push("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                     js_out_file_time.val = out_t_str;
@@ -710,8 +710,8 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
                         const std::string dep_hash_str = std::to_string(out_hash);
 
                         JsObjectP js_dep(*ctx.mp_alloc);
-                        js_dep.Push("in_time", JsStringP(dep_t_str.c_str(), *ctx.mp_alloc));
-                        js_dep.Push("in_hash", JsStringP(dep_hash_str.c_str(), *ctx.mp_alloc));
+                        js_dep.Push("in_time", JsStringP(dep_t_str, *ctx.mp_alloc));
+                        js_dep.Push("in_hash", JsStringP(dep_hash_str, *ctx.mp_alloc));
 
                         if (i < js_deps.Size()) {
                             js_deps[i].first = dependencies[i].c_str();
@@ -1095,7 +1095,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
             for (const std::string &str : materials) {
                 char name[64] = {};
                 strcpy(name, str.c_str());
-                strcat(name, ".txt");
+                strcat(name, ".mat");
                 out_f.write(name, sizeof(name));
             }
 
@@ -1132,38 +1132,53 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
                 line.pop_back();
             }
 
-            if (line.rfind("texture:", 0) == 0) {
-                const size_t n1 = line.find(' ');
-                const size_t n2 = line.find(' ', n1 + 1);
-                const std::string tex_name = "assets/textures/" + line.substr(n1 + 1, n2 - n1 - 1);
-
-                auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), tex_name);
-                if (it == std::end(out_dependencies)) {
-                    out_dependencies.emplace_back(tex_name);
-                }
-
-                uint8_t average_color[4] = {0, 255, 255, 255};
-
-                const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str());
-                if (cached_color) {
-                    memcpy(average_color, cached_color, 4);
-                } else {
-                    if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(), average_color)) {
-                        ctx.log->Error("Failed to get average color of %s", tex_name.c_str());
-                    } else {
-                        std::lock_guard<std::mutex> _(ctx.cache_mtx);
-                        ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
+            if (line.rfind("textures:", 0) == 0) {
+                dst_stream << line << "\n";
+                while (std::getline(src_stream, line)) {
+                    if (line.rfind("    - ", 0) != 0) {
+                        break;
                     }
-                }
 
-                SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+                    if (line.back() == '\n') {
+                        line.pop_back();
+                    }
+                    if (line.back() == '\r') {
+                        line.pop_back();
+                    }
 
-                static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
-                                                   '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
-                line += " #";
-                for (int i = 0; i < 4; i++) {
-                    line += hex_chars[average_color[i] / 16];
-                    line += hex_chars[average_color[i] % 16];
+                    const size_t n2 = line.find(' ', 7);
+                    const std::string tex_name = "assets/textures/" + line.substr(7, n2 - 7 - 1);
+
+                    auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), tex_name);
+                    if (it == std::end(out_dependencies)) {
+                        out_dependencies.emplace_back(tex_name);
+                    }
+
+                    uint8_t average_color[4] = {0, 255, 255, 255};
+
+                    const uint32_t *cached_color = ctx.cache->texture_averages.Find(tex_name.c_str());
+                    if (cached_color) {
+                        memcpy(average_color, cached_color, 4);
+                    } else {
+                        if (!SceneManagerInternal::GetTexturesAverageColor(tex_name.c_str(), average_color)) {
+                            ctx.log->Error("Failed to get average color of %s", tex_name.c_str());
+                        } else {
+                            std::lock_guard<std::mutex> _(ctx.cache_mtx);
+                            ctx.cache->WriteTextureAverage(tex_name.c_str(), average_color);
+                        }
+                    }
+
+                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, line);
+
+                    static char const hex_chars[16] = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                                       '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+                    line += " #";
+                    for (int i = 0; i < 4; i++) {
+                        line += hex_chars[average_color[i] / 16];
+                        line += hex_chars[average_color[i] % 16];
+                    }
+
+                    dst_stream << line << "\n";
                 }
             }
         }

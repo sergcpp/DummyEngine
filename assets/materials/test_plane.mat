@@ -1,0 +1,5 @@
+gl_programs:
+    - main main.vert.glsl main.frag.glsl
+textures:
+    - grey_diff.png
+    - test_normalmap.png

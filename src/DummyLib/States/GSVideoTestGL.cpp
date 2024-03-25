@@ -53,7 +53,7 @@ void GSVideoTest::InitVideoTextures() {
         }
 
         { // register material
-            orig_vid_mat_[tx] = scene_manager_->scene_data().materials.FindByName("wall_picture_yuv.txt");
+            orig_vid_mat_[tx] = scene_manager_->scene_data().materials.FindByName("wall_picture_yuv.mat");
             if (!orig_vid_mat_[tx]) {
                 log_->Error("Failed to find material wall_picture");
                 return;

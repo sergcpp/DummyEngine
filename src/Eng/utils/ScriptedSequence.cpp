@@ -180,14 +180,12 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
 
                 if (js_action.Has("sound")) {
                     const JsString &js_action_sound = js_action.at("sound").as_str();
-                    const char *name = js_action_sound.val.c_str();
-
-                    Snd::eBufLoadStatus status;
-
+                    const auto &name = js_action_sound.val;
                     // check if sound was alpready loaded
-                    action.sound_ref = snd_ctx_.LoadBuffer(name, nullptr, 0, {}, &status);
+                    Snd::eBufLoadStatus status;
+                    action.sound_ref = snd_ctx_.LoadBuffer(name, {}, {}, &status);
                     if (status == Snd::eBufLoadStatus::CreatedDefault) {
-                        const std::string sound_path = std::string(SOUNDS_PATH) + js_action_sound.val;
+                        const std::string sound_path = std::string(SOUNDS_PATH) + name;
 
                         // TODO: CHANGE THIS!!!
 
@@ -223,7 +221,7 @@ bool Eng::ScriptedSequence::Load(const std::string_view lookup_name, const JsObj
                         }
                         params.samples_per_sec = samples_per_sec;
 
-                        action.sound_ref = snd_ctx_.LoadBuffer(name, &samples[0], size, params, &status);
+                        action.sound_ref = snd_ctx_.LoadBuffer(name, {&samples[0], size}, params, &status);
                         assert(status == Snd::eBufLoadStatus::Found || status == Snd::eBufLoadStatus::CreatedFromData);
                         action.sound_wave_tex = RenderSoundWave(name, &samples[0], samples_count, params);
                     }
@@ -310,7 +308,7 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
         for (const Track &track : tracks_) {
             JsObject js_track;
             js_track.Push("name", JsString{track.name});
-            js_track.Push("type", JsString{TrackTypeNames[(int)track.type]});
+            js_track.Push("type", JsString{TrackTypeNames[int(track.type)]});
             js_track.Push("target", JsString{track.target});
 
             { // write actions
@@ -320,48 +318,48 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
                     const SeqAction &action = actions_[i];
 
                     JsObject js_action;
-                    js_action.Push("type", JsString{ActionTypeNames[(int)action.type]});
+                    js_action.Push("type", JsString{ActionTypeNames[int(action.type)]});
                     js_action.Push("time_beg", JsNumber{action.time_beg});
                     js_action.Push("time_end", JsNumber{action.time_end});
                     { // write start pos
                         JsArray js_pos_beg;
-                        js_pos_beg.Push(JsNumber{(double)action.pos_beg[0]});
-                        js_pos_beg.Push(JsNumber{(double)action.pos_beg[1]});
-                        js_pos_beg.Push(JsNumber{(double)action.pos_beg[2]});
+                        js_pos_beg.Push(JsNumber{action.pos_beg[0]});
+                        js_pos_beg.Push(JsNumber{action.pos_beg[1]});
+                        js_pos_beg.Push(JsNumber{action.pos_beg[2]});
                         js_action.Push("pos_beg", std::move(js_pos_beg));
                     }
                     if (action.pos_end[0] != action.pos_beg[0] || action.pos_end[1] != action.pos_beg[1] ||
                         action.pos_end[2] != action.pos_beg[2]) {
                         JsArray js_pos_end;
-                        js_pos_end.Push(JsNumber{(double)action.pos_end[0]});
-                        js_pos_end.Push(JsNumber{(double)action.pos_end[1]});
-                        js_pos_end.Push(JsNumber{(double)action.pos_end[2]});
+                        js_pos_end.Push(JsNumber{action.pos_end[0]});
+                        js_pos_end.Push(JsNumber{action.pos_end[1]});
+                        js_pos_end.Push(JsNumber{action.pos_end[2]});
                         js_action.Push("pos_end", std::move(js_pos_end));
                     }
                     { // write start rot
                         JsArray js_rot_beg;
-                        js_rot_beg.Push(JsNumber{(double)action.rot_beg[0]});
-                        js_rot_beg.Push(JsNumber{(double)action.rot_beg[1]});
-                        js_rot_beg.Push(JsNumber{(double)action.rot_beg[2]});
+                        js_rot_beg.Push(JsNumber{action.rot_beg[0]});
+                        js_rot_beg.Push(JsNumber{action.rot_beg[1]});
+                        js_rot_beg.Push(JsNumber{action.rot_beg[2]});
                         js_action.Push("rot_beg", std::move(js_rot_beg));
                     }
                     if (action.rot_end[0] != action.rot_beg[0] || action.rot_end[1] != action.rot_beg[1] ||
                         action.rot_end[2] != action.rot_beg[2]) {
                         JsArray js_rot_end;
-                        js_rot_end.Push(JsNumber{(double)action.rot_end[0]});
-                        js_rot_end.Push(JsNumber{(double)action.rot_end[1]});
-                        js_rot_end.Push(JsNumber{(double)action.rot_end[2]});
+                        js_rot_end.Push(JsNumber{action.rot_end[0]});
+                        js_rot_end.Push(JsNumber{action.rot_end[1]});
+                        js_rot_end.Push(JsNumber{action.rot_end[2]});
                         js_action.Push("rot_end", std::move(js_rot_end));
                     }
                     if (action.anim_ref) {
-                        js_action.Push("anim", JsString{action.anim_ref->name().c_str()});
+                        js_action.Push("anim", JsString{action.anim_ref->name()});
                     }
                     if (!action.caption.empty()) {
                         js_action.Push("caption", JsString{action.caption});
                     }
 
                     if (action.sound_ref) {
-                        js_action.Push("sound", JsString{action.sound_ref->name().c_str()});
+                        js_action.Push("sound", JsString{action.sound_ref->name()});
                     }
 
                     if (std::abs(action.sound_offset) > 0.001) {
@@ -591,7 +589,7 @@ void Eng::ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction 
             }
         }
 
-        scene_manager_.InvalidateObjects(&target_actor, 1, invalidate_mask);
+        scene_manager_.InvalidateObjects({&target_actor, 1}, invalidate_mask);
 
         if (!action.caption.empty()) {
             const double vis0 = std::min(std::max((action.time_end - time_cur_s) / 0.5, 0.0), 1.0);
@@ -625,7 +623,8 @@ void Eng::ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction 
         cam.fade = Ren::Mix(action.fade_beg, action.fade_end, t_norm);
         cam.max_exposure = 32.0f;
 
-        scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(), true, cam.gamma, cam.max_exposure);
+        scene_manager_.SetupView(pos, trg, Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle(), true, cam.gamma,
+                                 cam.max_exposure);
 
         Snd::Source &amb_sound = scene_manager_.ambient_sound();
         if (action.sound_ref) {
@@ -655,12 +654,11 @@ void Eng::ScriptedSequence::UpdateAction(const uint32_t target_actor, SeqAction 
     }
 }
 
-Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(const char *name, const void *samples_data,
+Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(std::string_view name, const void *samples_data,
                                                              int samples_count, const Snd::BufParams &params) {
     { // check if sound-wave picture was already loaded
         Ren::eTexLoadStatus status;
-        Ren::TextureRegionRef ret =
-            ren_ctx_.LoadTextureRegion(name, nullptr, 0, ren_ctx_.default_stage_bufs(), {}, &status);
+        Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, {}, ren_ctx_.default_stage_bufs(), {}, &status);
         if (status == Ren::eTexLoadStatus::Found) {
             return ret;
         }
@@ -675,7 +673,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(const char *name, c
     const int tex_h = 16;
     const int tex_data_size = tex_w * tex_h * 4;
 
-    std::unique_ptr<uint8_t[]> tex_data(new uint8_t[tex_data_size]);
+    std::vector<uint8_t> tex_data(tex_data_size);
     memset(&tex_data[0], 0x00, tex_data_size);
     int tex_data_pos = 0;
 
@@ -721,8 +719,7 @@ Ren::TextureRegionRef Eng::ScriptedSequence::RenderSoundWave(const char *name, c
     p.format = Ren::eTexFormat::RawRGBA8888;
 
     Ren::eTexLoadStatus status;
-    Ren::TextureRegionRef ret =
-        ren_ctx_.LoadTextureRegion(name, &tex_data[0], tex_data_size, ren_ctx_.default_stage_bufs(), p, &status);
+    Ren::TextureRegionRef ret = ren_ctx_.LoadTextureRegion(name, tex_data, ren_ctx_.default_stage_bufs(), p, &status);
     assert(status == Ren::eTexLoadStatus::CreatedFromData);
 
     return ret;

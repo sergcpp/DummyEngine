@@ -1,0 +1,8 @@
+gl_programs:
+    - main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
+    - main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+textures:
+    - carpet_01_diff.png
+    - carpet_01_norm.png
+    - default_specular.png
+

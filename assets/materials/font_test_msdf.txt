@@ -1,7 +1,0 @@
-gl_program: _font_test_msdf _font_test_msdf.vert.glsl _font_test_msdf.frag.glsl
-gl_program: _font_test_msdf _font_test_msdf.vert.glsl _font_test_msdf.frag.glsl
-sw_program: main
-flag: alpha_blend
-texture: digits_sdf.uncompressed.png
-texture: default_normalmap.dds
-texture: default_specular.png

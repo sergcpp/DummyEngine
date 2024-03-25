@@ -5,27 +5,22 @@
 #include "../RenderPass.h"
 #include "../VertexInput.h"
 
-static Ren::ProgramRef OnProgramNeeded(const char *name, const char *arg1, const char *arg2) { return {}; }
-
-static Ren::Tex2DRef OnTextureNeeded(const char *name) { return {}; }
-
 void test_material() {
     printf("Test material           | ");
 
     { // Load material
         TestContext test;
 
-        auto on_pipelines_needed = [&](const char *prog_name, const uint32_t flags, const char *arg1,
+        auto on_pipelines_needed = [&](std::string_view prog_name, const uint32_t flags, const char *arg1,
                                        const char *arg2, const char *arg3, const char *arg4,
                                        Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
             out_pipelines.emplace_back(nullptr, 0);
         };
 
-        auto on_texture_needed = [&test](const char *name, const uint8_t color[4], const Ren::eTexFlags flags) {
+        auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const Ren::eTexFlags flags) {
             Ren::eTexLoadStatus status;
             Ren::Tex2DParams p;
-            return test.LoadTexture2D(name, nullptr, 0, p, test.default_stage_bufs(), test.default_mem_allocs(),
-                                      &status);
+            return test.LoadTexture2D(name, {}, p, test.default_stage_bufs(), test.default_mem_allocs(), &status);
         };
 
         auto on_sampler_needed = [&test](Ren::SamplingParams params) {
@@ -33,29 +28,32 @@ void test_material() {
             return test.LoadSampler(params, &status);
         };
 
-        const char *mat_src = "gl_program: constant constant.vs constant.fs\n"
-                              "sw_program: constant\n"
-                              "flag: alpha_test\n"
-                              "texture: checker.tga\n"
-                              "texture: checker.tga signed\n"
-                              "texture: metal_01.tga\n"
-                              "texture: checker.tga\n"
-                              "param: 0 1 2 3\n"
-                              "param: 0.5 1.2 11 15";
+        const char mat_src[] = "gl_programs:\n"
+                               "    - constant constant.vert.glsl constant.frag.glsl\n"
+                               "    - constant2 constant2.vert.glsl constant2.frag.glsl\n"
+                               "flags:\n"
+                               "    - alpha_test\n"
+                               "textures:\n"
+                               "    - checker.tga\n"
+                               "    - checker.tga signed\n"
+                               "    - metal_01.tga\n"
+                               "    - checker.tga\n"
+                               "params:\n"
+                               "    - 0 1 2 3\n"
+                               "    - 0.5 1.2 11 15";
 
         Ren::eMatLoadStatus status;
         Ren::MaterialRef m_ref =
-            test.LoadMaterial("mat1", nullptr, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            test.LoadMaterial("mat1.mat", {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
         require(status == Ren::eMatLoadStatus::SetToDefault);
+        require(!m_ref->ready());
 
-        { require(!m_ref->ready()); }
-
-        test.LoadMaterial("mat1", mat_src, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+        test.LoadMaterial("mat1.mat", mat_src, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
 
         require(status == Ren::eMatLoadStatus::CreatedFromData);
         require(m_ref->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
         require(m_ref->ready());
-        require(m_ref->name() == "mat1");
+        require(m_ref->name() == "mat1.mat");
 
         Ren::Tex2DRef t0 = m_ref->textures[0];
         Ren::Tex2DRef t1 = m_ref->textures[1];

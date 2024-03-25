@@ -30,6 +30,6 @@ struct Drawable {
     static void Read(const JsObjectP &js_in, Drawable &dr);
     static void Write(const Drawable &dr, JsObjectP &js_out);
 
-    static const char *name() { return "drawable"; }
+    static std::string_view name() { return "drawable"; }
 };
 }

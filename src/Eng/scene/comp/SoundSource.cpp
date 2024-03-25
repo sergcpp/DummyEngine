@@ -28,7 +28,7 @@ void Eng::SoundSource::Write(const SoundSource &snd, JsObjectP &js_out) {
     }
 
     if (!snd.bone_name.empty()) {
-        auto js_bone_name = JsStringP{snd.bone_name.c_str(), alloc};
+        auto js_bone_name = JsStringP{snd.bone_name, alloc};
         js_out.Push("bone", std::move(js_bone_name));
     }
 }

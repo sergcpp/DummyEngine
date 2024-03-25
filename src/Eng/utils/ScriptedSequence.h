@@ -85,30 +85,30 @@ class ScriptedSequence {
 
     void UpdateAction(uint32_t target_actor, SeqAction &action, double time_cur_s, bool playing);
 
-    Ren::TextureRegionRef RenderSoundWave(const char *name, const void *samples_data, int samples_count,
+    Ren::TextureRegionRef RenderSoundWave(std::string_view name, const void *samples_data, int samples_count,
                                           const Snd::BufParams &params);
 
   public:
     ScriptedSequence(Ren::Context &ren_ctx, Snd::Context &snd_ctx, SceneManager &scene_manager);
 
-    const char *lookup_name() const { return lookup_name_.empty() ? nullptr : lookup_name_.c_str(); }
-    const char *name() const { return name_.empty() ? nullptr : name_.c_str(); }
+    std::string_view lookup_name() const { return lookup_name_; }
+    std::string_view name() const { return name_; }
 
     double duration() const { return end_time_; }
     eChoiceAlign choice_align() const { return choice_align_; }
 
-    const char *GetTrackName(int track) const {
+    std::string_view GetTrackName(int track) const {
         if (track >= int(tracks_.size())) {
-            return nullptr;
+            return {};
         }
-        return tracks_[track].name.c_str();
+        return tracks_[track].name;
     }
 
-    const char *GetTrackTarget(int track) const {
+    std::string_view GetTrackTarget(int track) const {
         if (track >= int(tracks_.size())) {
-            return nullptr;
+            return {};
         }
-        return tracks_[track].target.c_str();
+        return tracks_[track].target;
     }
 
     int GetActionsCount(int track) const {

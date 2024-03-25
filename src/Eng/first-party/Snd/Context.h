@@ -28,8 +28,8 @@ class Context {
     void SetupListener(const float pos[3], const float vel[3], const float fwd_up[6]);
 
     /*** Buffer ***/
-    BufferRef LoadBuffer(const char *name, const void *data, uint32_t size,
-                         const BufParams &params, eBufLoadStatus *load_status);
+    BufferRef LoadBuffer(std::string_view name, Span<const uint8_t> data, const BufParams &params,
+                         eBufLoadStatus *load_status);
 
     void ReleaseAll();
 };

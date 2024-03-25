@@ -1,6 +1,0 @@
-gl_program: checker_pn _tess_test.vert.glsl main_probelit_nossr.frag.glsl _tess_test2.tesc.glsl _tess_test2.tese.glsl
-gl_program: checker_pn _tess_test.vert.glsl main_probelit_nossr.frag.glsl _tess_test2.tesc.glsl _tess_test2.tese.glsl
-sw_program: main
-texture: checker_diff.png
-texture: default_normalmap.png
-texture: default_specular.png

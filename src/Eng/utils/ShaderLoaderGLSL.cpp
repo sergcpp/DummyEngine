@@ -11,10 +11,10 @@ extern const char *SHADERS_PATH;
 extern const char *SHADERS_PATH;
 #endif
 
-Ren::eShaderType ShaderTypeFromName(const char *name, int len);
+Ren::eShaderType ShaderTypeFromName(std::string_view name, int len);
 } // namespace ShaderLoaderInternal
 
-std::string Eng::ShaderLoader::ReadGLSLContent(const char *name, Ren::ILog *log) {
+std::string Eng::ShaderLoader::ReadGLSLContent(std::string_view name, Ren::ILog *log) {
     using namespace ShaderLoaderInternal;
 
     std::string file_path = SHADERS_PATH;
@@ -35,7 +35,7 @@ std::string Eng::ShaderLoader::ReadGLSLContent(const char *name, Ren::ILog *log)
     return temp_buf;
 }
 
-Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name, const Param *params) {
+Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, std::string_view name, const Param *params) {
     using namespace ShaderLoaderInternal;
 
     temp_param_str_.clear();
@@ -47,7 +47,7 @@ Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name, 
         return {};
     }
 
-    const Ren::eShaderType type = ShaderTypeFromName(temp_param_str_.c_str(), name_len);
+    const Ren::eShaderType type = ShaderTypeFromName(temp_param_str_, name_len);
     if (type == Ren::eShaderType::_Count) {
         ctx.log()->Error("Shader name is not correct (%s)", name);
     }
@@ -55,10 +55,10 @@ Ren::ShaderRef Eng::ShaderLoader::LoadGLSL(Ren::Context &ctx, const char *name, 
     ParamsToString(params, temp_param_str_, temp_param_def_);
 
     Ren::eShaderLoadStatus status;
-    Ren::ShaderRef ret = ctx.LoadShaderGLSL(temp_param_str_.c_str(), nullptr, type, &status);
+    Ren::ShaderRef ret = ctx.LoadShaderGLSL(temp_param_str_, {}, type, &status);
     if (!ret->ready()) {
         const std::string shader_src = ReadGLSLContent(name, ctx.log());
-        ret->Init(shader_src.c_str(), type, &status, ctx.log());
+        ret->Init(shader_src, type, &status, ctx.log());
         if (status == Ren::eShaderLoadStatus::SetToDefault) {
             ctx.log()->Error("Error loading shader %s", name);
         }

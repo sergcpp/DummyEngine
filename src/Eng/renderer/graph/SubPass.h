@@ -18,7 +18,7 @@ class RpSubpass {
     friend class RpBuilder;
 
     int16_t index_ = -1, actual_pass_index_ = -1;
-    Ren::String name_;
+    std::string name_;
     RpBuilder &builder_;
     Ren::SmallVector<RpResource, 16> input_;
     Ren::SmallVector<RpResource, 16> output_;
@@ -32,7 +32,8 @@ class RpSubpass {
     mutable bool visited_ = false;
 
   public:
-    RpSubpass(const int index, const char *name, RpBuilder &builder) : index_(index), name_(name), builder_(builder) {}
+    RpSubpass(const int index, std::string_view name, RpBuilder &builder)
+        : index_(index), name_(name), builder_(builder) {}
 
     template <typename T, class... Args> T *AllocPassData(Args &&...args) {
         return builder_.AllocPassData<T>(std::forward<Args>(args)...);
@@ -54,12 +55,12 @@ class RpSubpass {
     void set_executor(RpExecutor *exec) { p_executor_ = exec; }
 
     RpResRef AddTransferInput(const Ren::WeakBufferRef &buf);
-    RpResRef AddTransferOutput(const char *name, const RpBufDesc &desc);
+    RpResRef AddTransferOutput(std::string_view name, const RpBufDesc &desc);
     RpResRef AddTransferOutput(const Ren::WeakBufferRef &buf);
 
     RpResRef AddTransferImageInput(const Ren::WeakTex2DRef &tex);
     RpResRef AddTransferImageInput(RpResRef handle);
-    RpResRef AddTransferImageOutput(const char *name, const Ren::Tex2DParams &params);
+    RpResRef AddTransferImageOutput(std::string_view name, const Ren::Tex2DParams &params);
     RpResRef AddTransferImageOutput(const Ren::WeakTex2DRef &tex);
     RpResRef AddTransferImageOutput(RpResRef handle);
 
@@ -67,20 +68,19 @@ class RpSubpass {
     RpResRef AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);
     RpResRef AddStorageReadonlyInput(const Ren::WeakBufferRef &buf, const Ren::WeakTex1DRef &tbo,
                                      Ren::eStageBits stages);
-    RpResRef AddStorageOutput(const char *name, const RpBufDesc &desc, Ren::eStageBits stages);
+    RpResRef AddStorageOutput(std::string_view name, const RpBufDesc &desc, Ren::eStageBits stages);
     RpResRef AddStorageOutput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddStorageOutput(const Ren::WeakBufferRef &buf, Ren::eStageBits stages);
 
-    RpResRef AddStorageImageOutput(const char *name, const Ren::Tex2DParams &params, Ren::eStageBits stages);
+    RpResRef AddStorageImageOutput(std::string_view name, const Ren::Tex2DParams &params, Ren::eStageBits stages);
     RpResRef AddStorageImageOutput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddStorageImageOutput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
 
-    RpResRef AddColorOutput(const char *name, const Ren::Tex2DParams &params);
+    RpResRef AddColorOutput(std::string_view name, const Ren::Tex2DParams &params);
     RpResRef AddColorOutput(RpResRef handle);
     RpResRef AddColorOutput(const Ren::WeakTex2DRef &tex);
-    RpResRef AddColorOutput(const char *name);
-    // RpResRef AddColorOutput(const char *name, const Ren::Tex2DParams &params);
-    RpResRef AddDepthOutput(const char *name, const Ren::Tex2DParams &params);
+    RpResRef AddColorOutput(std::string_view name);
+    RpResRef AddDepthOutput(std::string_view name, const Ren::Tex2DParams &params);
     RpResRef AddDepthOutput(const Ren::WeakTex2DRef &tex);
 
     // TODO: try to get rid of this
@@ -91,10 +91,10 @@ class RpSubpass {
 
     RpResRef AddTextureInput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddTextureInput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
-    RpResRef AddTextureInput(const char *name, Ren::eStageBits stages);
+    RpResRef AddTextureInput(std::string_view name, Ren::eStageBits stages);
 
     RpResRef AddHistoryTextureInput(RpResRef handle, Ren::eStageBits stages);
-    RpResRef AddHistoryTextureInput(const char *name, Ren::eStageBits stages);
+    RpResRef AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages);
 
     RpResRef AddCustomTextureInput(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages);
 
@@ -107,7 +107,7 @@ class RpSubpass {
 
     RpResRef AddASBuildReadonlyInput(RpResRef handle);
     RpResRef AddASBuildOutput(const Ren::WeakBufferRef &buf);
-    RpResRef AddASBuildOutput(const char *name, const RpBufDesc &desc);
+    RpResRef AddASBuildOutput(std::string_view name, const RpBufDesc &desc);
 
     void Execute(RpBuilder &builder) {
         if (p_executor_) {
@@ -117,6 +117,6 @@ class RpSubpass {
         }
     }
 
-    const char *name() const { return name_.c_str(); }
+    std::string_view name() const { return name_; }
 };
 } // namespace Eng

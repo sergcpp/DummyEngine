@@ -69,7 +69,7 @@ enum class eMeshLoadStatus { Found, SetToDefault, CreatedFromData };
 
 enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
-using material_load_callback = std::function<MaterialRef(const char *name)>;
+using material_load_callback = std::function<MaterialRef(std::string_view name)>;
 
 enum class eMeshFileChunk { Info = 0, VtxAttributes, TriIndices, Materials, TriGroups, Bones, ShapeKeys };
 
@@ -115,10 +115,10 @@ class Mesh : public RefCounter {
 
   public:
     Mesh() = default;
-    Mesh(const char *name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
+    Mesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
          Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
          eMeshLoadStatus *load_status, ILog *log);
-    Mesh(const char *name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+    Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
          void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
          BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 
