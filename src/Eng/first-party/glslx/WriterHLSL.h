@@ -90,6 +90,8 @@ class WriterHLSL : public WriterBase {
                                Bitmask<eOutputFlags> output_flags);
     void Write_DistardStatement(const ast_discard_statement *statement, std::ostream &out_stream,
                                 Bitmask<eOutputFlags> output_flags);
+    void Write_ExtJumpStatement(const ast_ext_jump_statement *statement, std::ostream &out_stream,
+                                Bitmask<eOutputFlags> output_flags);
     void Write_Statement(const ast_statement *statement, std::ostream &out_stream, Bitmask<eOutputFlags> output_flags);
 
     // Byteaddress buffer access

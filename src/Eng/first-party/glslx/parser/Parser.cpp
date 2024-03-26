@@ -2493,7 +2493,7 @@ glslx::ast_ext_jump_statement *glslx::Parser::ParseExtJumpStatement() {
     if (!statement) {
         return nullptr;
     }
-    if (!next()) { // skip 'return'
+    if (!next()) {
         return nullptr;
     }
     if (!is_type(eTokType::Semicolon)) {

@@ -616,6 +616,11 @@ void glslx::WriterHLSL::Write_DistardStatement(const ast_discard_statement *stat
     out_stream << "discard;\n";
 }
 
+void glslx::WriterHLSL::Write_ExtJumpStatement(const ast_ext_jump_statement *statement, std::ostream &out_stream,
+                                               Bitmask<eOutputFlags> output_flags) {
+    out_stream << g_hlsl_keywords[int(statement->keyword)] << "();\n";
+}
+
 void glslx::WriterHLSL::Write_Statement(const ast_statement *statement, std::ostream &out_stream,
                                         Bitmask<eOutputFlags> out_flags) {
     if (out_flags & eOutputFlags::WriteTabs) {
