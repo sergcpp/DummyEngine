@@ -388,7 +388,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
             flags_ |= eMeshFlags::HasAlpha;
         }
 
-        grp.mat = on_mat_load(&material_names[i][0]);
+        std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
     }
 
     const uint32_t vertex_count = attribs_size / sizeof(orig_vertex_t);
@@ -492,7 +492,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
             flags_ |= eMeshFlags::HasAlpha;
         }
 
-        grp.mat = on_mat_load(&material_names[i][0]);
+        std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
     }
 
     assert(attribs_size % sizeof(orig_vertex_colored_t) == 0);
@@ -601,7 +601,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
             flags_ |= eMeshFlags::HasAlpha;
         }
 
-        grp.mat = on_mat_load(&material_names[i][0]);
+        std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
     }
 
     skel_.bones_count = file_header.p[int(eMeshFileChunk::Bones)].length / (64 + 8 + 12 + 16);

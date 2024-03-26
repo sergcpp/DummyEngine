@@ -107,13 +107,15 @@ struct BasicDrawBatch {                        // NOLINT
     static const uint32_t BitAlphaTest = (1u << 29u);
     static const uint32_t BitMoving = (1u << 28u);
     static const uint32_t BitTwoSided = (1u << 27u);
-    static const uint32_t BitCustomShaded = (1u << 26u);
-    static const uint32_t FlagBits = (0b111111u << 26u);
+    static const uint32_t BitBackSided = (1u << 26u);
+    static const uint32_t BitCustomShaded = (1u << 25u);
+    static const uint32_t FlagBits = (0b1111111u << 25u);
 
     union {
         struct {
-            uint32_t indices_offset : 26;
+            uint32_t indices_offset : 25;
             uint32_t custom_shaded : 1;
+            uint32_t back_sided_bit : 1;
             uint32_t two_sided_bit : 1;
             uint32_t moving_bit : 1; // object uses two transforms
             uint32_t alpha_test_bit : 1;

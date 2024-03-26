@@ -9,6 +9,7 @@
 #include "Buffer.h"
 #include "Material.h"
 #include "SmallVector.h"
+#include "Span.h"
 #include "String.h"
 
 namespace Ren {
@@ -19,7 +20,7 @@ enum class eMeshFlags { HasAlpha = 0 };
 struct TriGroup {
     int offset = -1;
     int num_indices = 0;
-    MaterialRef mat;
+    MaterialRef front_mat, back_mat;
     Bitmask<eMeshFlags> flags;
 
     TriGroup() = default;
@@ -69,7 +70,7 @@ enum class eMeshLoadStatus { Found, SetToDefault, CreatedFromData };
 
 enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
-using material_load_callback = std::function<MaterialRef(std::string_view name)>;
+using material_load_callback = std::function<std::pair<MaterialRef, MaterialRef> (std::string_view name)>;
 
 enum class eMeshFileChunk { Info = 0, VtxAttributes, TriIndices, Materials, TriGroups, Bones, ShapeKeys };
 
@@ -146,7 +147,8 @@ class Mesh : public RefCounter {
     const BufferRange &sk_deltas_buf() const { return sk_deltas_buf_; }
     const void *indices() const { return indices_.get(); }
     const BufferRange &indices_buf() const { return indices_buf_; }
-    const SmallVectorImpl<TriGroup> &groups() const { return groups_; }
+    Span<const TriGroup> groups() const { return groups_; }
+    SmallVectorImpl<TriGroup> &groups() { return groups_; }
     const Vec3f &bbox_min() const { return bbox_min_; }
     const Vec3f &bbox_max() const { return bbox_max_; }
     const String &name() const { return name_; }

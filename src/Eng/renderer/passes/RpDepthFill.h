@@ -40,8 +40,8 @@ class RpDepthFill : public RpExecutor {
 
     Ren::VertexInput vi_solid_, vi_vege_solid_, vi_transp_, vi_vege_transp_, vi_skin_solid_, vi_skin_transp_;
 
-    Ren::Pipeline pi_static_solid_[2], pi_static_transp_[2];
-    Ren::Pipeline pi_moving_solid_[2], pi_moving_transp_[2];
+    Ren::Pipeline pi_static_solid_[3], pi_static_transp_[3];
+    Ren::Pipeline pi_moving_solid_[3], pi_moving_transp_[3];
     Ren::Pipeline pi_vege_static_solid_[2], pi_vege_static_solid_vel_[2];
     Ren::Pipeline pi_vege_static_transp_[2], pi_vege_static_transp_vel_[2];
     Ren::Pipeline pi_vege_moving_solid_vel_[2], pi_vege_moving_transp_vel_[2];

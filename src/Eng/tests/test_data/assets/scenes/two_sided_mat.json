@@ -1,0 +1,321 @@
+{
+    "name" : "mat_test",
+    "environment" : {
+        "sun_dir" : [
+            0.57735,
+            -0.57735,
+            -0.57735
+        ],
+        "sun_col" : [
+            0,
+            0,
+            0
+        ],
+        "sun_angle" : 0.1,
+        "env_map" : "env/black",
+        "env_map_pt" : "env/noon_grass_2k.hdr",
+        "ambient_hack" : [
+            0.25,
+            0.25,
+            0.25
+        ]
+    },
+    "objects" : [
+        {
+            "transform" : {
+                "pos" : [
+                    0,
+                    0,
+                    0
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/env.mesh",
+                "visible_to_probes" : false
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/env.mesh"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0,
+                    0.010504,
+                    0
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/base.mesh",
+                "visible_to_probes" : false
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/base.mesh"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0.0,
+                    0.04,
+                    0.0
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/two_sided.mesh",
+                "visible_to_probes" : false
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/two_sided.mesh"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0.001112,
+                    0.012253,
+                    0.001037
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/text.mesh",
+                "visible_to_probes" : false
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/text.mesh"
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    -0.436484, 0.187179, 0.204932
+                ],
+                "rot" : [
+                    24.2956, 96.7184, -285.977
+                ]
+            },
+            "light" : {
+                "type" : "rectangle",
+                "color" : [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "power" : 2.13855,
+                "power0" : 0.0,
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 0.1,
+                "width" : 0.162,
+                "height" : 0.162,
+                "direction1" : [
+                    -0.7,
+                    -0.54,
+                    -0.54
+                ],
+                "angle1" : 0,
+                "cast_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0.360501, 0.461762, 0.431781
+                ],
+                "rot" : [
+                    39.8041, 17.0063, -44.4769
+                ]
+            },
+            "light" : {
+                "type" : "disk",
+                "color" : [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "power" : 4.2998,
+                "power0" : 0.0,
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 0.1,
+                "width" : 0.1296,
+                "height" : 0.1296,
+                "cast_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0.360501, 0.461762, 0.431781
+                ],
+                "rot" : [
+                    39.8041, 17.0063, -44.4769
+                ]
+            },
+            "light" : {
+                "type" : "line",
+                "color" : [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "power0" : 200.0,
+                "power" : 0.0,
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 0.01,
+                "width" : 0.1296,
+                "height" : 0.1296,
+                "cast_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    -0.436484, 0.187179, 0.204932
+                ],
+                "rot" : [
+                    24.2956, 96.7184, -285.977
+                ]
+            },
+            "light" : {
+                "type" : "sphere",
+                "color" : [
+                    1,
+                    1,
+                    1
+                ],
+                "power0" : 10.0,
+                "power" : 0.0,
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 0.05,
+                "cast_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    -0.436484, 0.187179, 0.204932
+                ],
+                "rot" : [
+                    44.6279, -13.9419, 79.3997
+                ]
+            },
+            "light" : {
+                "type" : "sphere",
+                "color" : [
+                    1,
+                    1,
+                    1
+                ],
+                "power0" : 10.0,
+                "power" : 0.0,
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 0.001,
+                "direction" : [
+                    0.0,
+                    -1.0,
+                    0.0
+                ],
+                "spot_angle" : 50,
+                "spot_blend" : 0.15,
+                "cull_radius" : 2.0,
+                "cast_shadow" : true
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0,
+                    1,
+                    0
+                ],
+                "rot" : [
+                    0,
+                    0,
+                    0
+                ]
+            },
+            "probe" : {
+                "offset" : [
+                    0,
+                    0,
+                    0
+                ],
+                "radius" : 150,
+                "sh_coeffs" : [
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ],
+                    [
+                        0.0,
+                        0.0,
+                        0.0
+                    ]
+                ]
+            }
+        }
+    ],
+    "camera" : {
+        "view_origin" : [
+            0.16149, 0.294997, 0.332965
+        ],
+        "view_dir" : [
+            -0.364128768, -0.555621922, -0.747458696
+        ],
+        "view_target" : [ -0.000594, 0.047674, 0.00025 ],
+        "fwd_speed" : 0.005,
+        "fov" : 18.1806,
+        "autoexposure" : false,
+        "max_exposure" : 0
+    }
+}

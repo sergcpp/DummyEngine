@@ -14,7 +14,7 @@ class RpGBufferFill : public RpExecutor {
 
     Ren::VertexInput vi_simple_, vi_vegetation_;
 
-    Ren::Pipeline pi_simple_[2];
+    Ren::Pipeline pi_simple_[3];
     Ren::Pipeline pi_vegetation_[2];
 
     Ren::Framebuffer main_draw_fb_[Ren::MaxFramesInFlight][2];

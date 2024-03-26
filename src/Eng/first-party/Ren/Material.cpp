@@ -84,6 +84,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
     params.clear();
     flags_ = {};
 
+    bool multi_doc = false;
     SmallVector<std::string, 4> program_names;
     SmallVector<std::string, 4> v_shader_names, f_shader_names, tc_shader_names, te_shader_names;
 
@@ -270,7 +271,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                     p = q + 1;
                     continue;
                 }
-                if (*p != '-') {
+                if (p[0] != '-' || p[1] != ' ') {
                     break;
                 }
                 Vec4f &par = params.emplace_back();
@@ -299,6 +300,10 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                 item = std::string(p, q);
             }
         }
+        if (item == "---") {
+            multi_doc = true;
+            break;
+        }
 
         if (!q) {
             break;
@@ -314,7 +319,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
     }
 
     ready_ = true;
-    (*status) = eMatLoadStatus::CreatedFromData;
+    (*status) = multi_doc ? eMatLoadStatus::CreatedFromData_NeedsMore : eMatLoadStatus::CreatedFromData;
 }
 
 #ifdef _MSC_VER

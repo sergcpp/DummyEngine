@@ -20,7 +20,7 @@ class ILog;
 
 enum class eMatFlags { AlphaTest, AlphaBlend, DepthWrite, TwoSided, CustomShaded };
 
-enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData };
+enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData, CreatedFromData_NeedsMore };
 
 using texture_load_callback = std::function<Tex2DRef(std::string_view name, const uint8_t color[4], eTexFlags flags)>;
 using sampler_load_callback = std::function<SamplerRef(SamplingParams params)>;

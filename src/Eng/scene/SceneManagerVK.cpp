@@ -353,7 +353,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
 
         const uint32_t indices_start = indices.sub.offset;
         for (const Ren::TriGroup &grp : acc->mesh->groups()) {
-            const Ren::Material *mat = grp.mat.get();
+            const Ren::Material *mat = grp.front_mat.get();
             const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
 
             if (mat_flags & Ren::eMatFlags::AlphaBlend) {
@@ -365,7 +365,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
             new_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
             new_geo.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
             new_geo.flags = 0;
-            if (!(mat_flags & Ren::eMatFlags::AlphaTest)) {
+            if (!(mat_flags & Ren::eMatFlags::AlphaTest) && !(grp.back_mat->flags() & Ren::eMatFlags::AlphaTest)) {
                 new_geo.flags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
             }
             new_geo.geometry.triangles = tri_data;
@@ -586,7 +586,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
 
         const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
         for (const Ren::TriGroup &grp : acc.mesh->groups()) {
-            const Ren::Material *mat = grp.mat.get();
+            const Ren::Material *mat = grp.front_mat.get();
             const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
             if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
@@ -599,7 +599,8 @@ void Eng::SceneManager::InitHWRTAccStructures() {
             auto &geo = geo_instances.back();
             geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
             geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
-            geo.material_index = grp.mat.index();
+            assert(grp.front_mat.index() < 0xffff && grp.back_mat.index() < 0xffff);
+            geo.material_index = grp.front_mat.index() | (grp.back_mat.index() << 16);
             geo.flags = 0;
             if (lm) {
                 geo.flags |= RTGeoLightmappedBit;

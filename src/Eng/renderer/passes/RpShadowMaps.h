@@ -14,7 +14,7 @@ class RpShadowMaps : public RpExecutor {
     Ren::RenderPass rp_depth_only_;
     Ren::VertexInput vi_depth_pass_solid_, vi_depth_pass_vege_solid_, vi_depth_pass_transp_, vi_depth_pass_vege_transp_;
 
-    Ren::Pipeline pi_solid_, pi_transp_;
+    Ren::Pipeline pi_solid_[3], pi_transp_[3];
     Ren::Pipeline pi_vege_solid_, pi_vege_transp_;
 
     Ren::Framebuffer shadow_fb_;

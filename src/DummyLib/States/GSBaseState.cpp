@@ -1127,8 +1127,10 @@ void GSBaseState::InitScene_PT() {
 
                 std::vector<Ray::mat_group_desc_t> groups;
                 for (const Ren::TriGroup &grp : mesh->groups()) {
-                    const Ren::Material *mat = grp.mat.get();
+                    const Ren::Material *mat = grp.front_mat.get();
                     const char *mat_name = mat->name().c_str();
+
+                    std::pair<Ray::MaterialHandle, Ray::MaterialHandle> mat_handles;
 
                     auto mat_it = loaded_materials.find(mat_name);
                     if (mat_it == loaded_materials.end()) {
@@ -1158,11 +1160,46 @@ void GSBaseState::InitScene_PT() {
                         }
                         mat_desc.normal_map = load_texture(*mat->textures[1]);
 
-                        const Ray::MaterialHandle new_mat = ray_scene_->AddMaterial(mat_desc);
-                        mat_it = loaded_materials.emplace(mat_name, new_mat).first;
+                        mat_handles.first = ray_scene_->AddMaterial(mat_desc);
+                        loaded_materials.emplace(mat_name, mat_handles.first).first;
                     }
 
-                    groups.emplace_back(mat_it->second, size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
+                    if (grp.front_mat != grp.back_mat) {
+                        mat = grp.back_mat.get();
+
+                        Ray::principled_mat_desc_t mat_desc;
+                        memcpy(mat_desc.base_color, ValuePtr(mat->params[0]), 3 * sizeof(float));
+                        mat_desc.base_texture = load_texture(*mat->textures[0], true, true);
+                        mat_desc.roughness = mat->params[0][3];
+                        mat_desc.roughness_texture = load_texture(*mat->textures[2]);
+                        mat_desc.specular = 0.0f;
+                        if (mat->params.size() > 1) {
+                            mat_desc.sheen = mat->params[1][0];
+                            mat_desc.sheen_tint = mat->params[1][1];
+                            mat_desc.specular = mat->params[1][2];
+                            mat_desc.specular_tint = mat->params[1][3];
+                        }
+                        if (mat->params.size() > 2) {
+                            mat_desc.metallic = mat->params[2][0];
+                            mat_desc.transmission = mat->params[2][1];
+                            mat_desc.clearcoat = mat->params[2][2];
+                            mat_desc.clearcoat_roughness = mat->params[2][3];
+                        }
+                        if (mat->textures.size() > 3) {
+                            mat_desc.metallic_texture = load_texture(*mat->textures[3]);
+                        }
+                        if (mat->textures.size() > 4) {
+                            mat_desc.alpha_texture = load_texture(*mat->textures[4]);
+                        }
+                        mat_desc.normal_map = load_texture(*mat->textures[1]);
+
+                        mat_handles.second = ray_scene_->AddMaterial(mat_desc);
+                    } else {
+                        mat_handles.second = mat_handles.first;
+                    }
+
+                    groups.emplace_back(mat_handles.first, mat_handles.second, size_t(grp.offset / sizeof(uint32_t)),
+                                        size_t(grp.num_indices));
                 }
                 mesh_desc.groups = groups;
 
@@ -1193,8 +1230,7 @@ void GSBaseState::InitScene_PT() {
                         dir = tr.world_from_object * dir;
 
                         Ray::spot_light_desc_t spot_light_desc;
-                        memcpy(spot_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area),
-                               3 * sizeof(float));
+                        memcpy(spot_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
                         memcpy(spot_light_desc.position, ValuePtr(pos), 3 * sizeof(float));
                         memcpy(spot_light_desc.direction, ValuePtr(dir), 3 * sizeof(float));
                         spot_light_desc.radius = ls.radius;

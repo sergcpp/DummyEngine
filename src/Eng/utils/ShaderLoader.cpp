@@ -120,11 +120,11 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
-        ctx.log()->Info("Loading %s", name);
+        ctx.log()->Info("Loading %s", name.data());
         Ren::ShaderRef vs_ref = LoadShader(ctx, vs_name);
         Ren::ShaderRef fs_ref = LoadShader(ctx, fs_name);
         if (!vs_ref->ready() || !fs_ref->ready()) {
-            ctx.log()->Error("Error loading program %s", name);
+            ctx.log()->Error("Error loading program %s", name.data());
             return {};
         }
 
@@ -133,13 +133,13 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
             tcs_ref = LoadShader(ctx, tcs_name);
             tes_ref = LoadShader(ctx, tes_name);
             if (!tcs_ref->ready() || !tes_ref->ready()) {
-                ctx.log()->Error("Error loading program %s", name);
+                ctx.log()->Error("Error loading program %s", name.data());
                 return {};
             }
         }
         ret->Init(vs_ref, fs_ref, tcs_ref, tes_ref, &status, ctx.log());
         if (status == Ren::eProgLoadStatus::SetToDefault) {
-            ctx.log()->Error("Error loading program %s", name);
+            ctx.log()->Error("Error loading program %s", name.data());
         }
     }
     return ret;
@@ -149,11 +149,11 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
-        ctx.log()->Info("Loading %s", name);
+        ctx.log()->Info("Loading %s", name.data());
         Ren::ShaderRef cs_ref = LoadShader(ctx, cs_name);
         ret->Init(cs_ref, &status, ctx.log());
         if (status == Ren::eProgLoadStatus::SetToDefault) {
-            ctx.log()->Error("Error loading program %s", name);
+            ctx.log()->Error("Error loading program %s", name.data());
         }
     }
     return ret;
@@ -166,7 +166,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
-        ctx.log()->Info("Loading %s", name);
+        ctx.log()->Info("Loading %s", name.data());
         Ren::ShaderRef raygen_ref = LoadShader(ctx, raygen_name);
 
         Ren::ShaderRef closesthit_ref, anyhit_ref;
@@ -187,7 +187,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
         ret->Init(std::move(raygen_ref), std::move(closesthit_ref), std::move(anyhit_ref), std::move(miss_ref),
                   std::move(intersection_ref), &status, ctx.log());
         if (status == Ren::eProgLoadStatus::SetToDefault) {
-            ctx.log()->Error("Error loading program %s", name);
+            ctx.log()->Error("Error loading program %s", name.data());
         }
     }
     return ret;

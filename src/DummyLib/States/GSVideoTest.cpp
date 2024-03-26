@@ -78,12 +78,12 @@ void GSVideoTest::Enter() {
 
             Ren::Mesh *mesh = dr->mesh.get();
 
-            for (const auto &grp : mesh->groups()) {
+            for (auto &grp : mesh->groups()) {
                 // hold reference to original material here
-                Ren::MaterialRef mat = grp.mat;
+                Ren::MaterialRef mat = grp.front_mat;
                 if (mat->name() == "wall_picture_yuv.mat") {
                     // replace material
-                    const_cast<Ren::TriGroup &>(grp).mat = vid_mat_[i];
+                    grp.front_mat = vid_mat_[i];
                 }
             }
         }

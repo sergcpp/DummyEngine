@@ -168,8 +168,8 @@ void main() {
                                          ro, gi_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 // perform alpha test
-                const bool is_backfacing = (inter.prim_index < 0);
-                const int tri_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
+                const bool backfacing = (inter.prim_index < 0);
+                const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
                 int i = inter.geo_index;
                 for (; i < inter.geo_index + inter.geo_count; ++i) {
@@ -182,7 +182,8 @@ void main() {
                 const int geo_index = i - 1;
 
                 const RTGeoInstance geo = g_geometries[geo_index];
-                const MaterialData mat = g_materials[geo.material_index];
+                const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+                const MaterialData mat = g_materials[mat_index];
 
                 const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
                 const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
@@ -214,8 +215,8 @@ void main() {
             final_color += throughput * clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws, 4.0)), vec3(0.0), vec3(8.0)); // clamp is temporary workaround
             break;
         } else {
-            const bool is_backfacing = (inter.prim_index < 0);
-            const int tri_index = is_backfacing ? -inter.prim_index - 1 : inter.prim_index;
+            const bool backfacing = (inter.prim_index < 0);
+            const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
             int i = inter.geo_index;
             for (; i < inter.geo_index + inter.geo_count; ++i) {
@@ -228,7 +229,8 @@ void main() {
             const int geo_index = i - 1;
 
             const RTGeoInstance geo = g_geometries[geo_index];
-            const MaterialData mat = g_materials[geo.material_index];
+            const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+            const MaterialData mat = g_materials[mat_index];
 
             const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
             const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
@@ -292,7 +294,7 @@ void main() {
                 const vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
 
                 vec3 N = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
-                if (is_backfacing) {
+                if (backfacing) {
                     N = -N;
                 }
                 const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),

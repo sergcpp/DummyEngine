@@ -17,15 +17,6 @@ uvec2 RoundUp8(uvec2 value) {
     return (round_down == value) ? value : value + 8;
 }
 
-vec3 heatmap(float t) {
-    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
-    return vec3(1.0) - r * r;
-}
-
-highp float rand(highp vec2 co) {
-    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
-}
-
 float pow3(float x) {
     return (x * x) * x;
 }

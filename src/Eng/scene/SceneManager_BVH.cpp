@@ -571,7 +571,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         const uint32_t *tri_indices = reinterpret_cast<const uint32_t *>(acc->mesh->indices());
 
         for (const Ren::TriGroup &grp : acc->mesh->groups()) {
-            const Ren::Material *mat = grp.mat.get();
+            const Ren::Material *mat = grp.front_mat.get();
             const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
             if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
@@ -662,7 +662,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
 
         const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
         for (const Ren::TriGroup &grp : acc.mesh->groups()) {
-            const Ren::Material *mat = grp.mat.get();
+            const Ren::Material *mat = grp.front_mat.get();
             const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
             if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
@@ -675,7 +675,8 @@ void Eng::SceneManager::InitSWRTAccStructures() {
             auto &geo = geo_instances.back();
             geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
             geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
-            geo.material_index = grp.mat.index();
+            assert(grp.front_mat.index() < 0xffff && grp.back_mat.index() < 0xffff);
+            geo.material_index = grp.front_mat.index() | (grp.back_mat.index() << 16);
             geo.flags = 0;
             if (lm) {
                 geo.flags |= RTGeoLightmappedBit;

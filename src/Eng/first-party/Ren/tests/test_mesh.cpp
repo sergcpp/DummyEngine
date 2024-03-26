@@ -105,7 +105,8 @@ void test_mesh() {
 
         auto on_material_needed = [&](std::string_view name) {
             Ren::eMatLoadStatus status;
-            return test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            Ren::MaterialRef ret = test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            return std::pair{ret, ret};
         };
 
         Ren::eMeshLoadStatus load_status;
@@ -136,7 +137,7 @@ void test_mesh() {
             require(bool(m_ref2));
         }
 
-        Ren::MaterialRef mat_ref = m_ref->groups()[0].mat;
+        Ren::MaterialRef mat_ref = m_ref->groups()[0].front_mat;
         require(!mat_ref->ready());
     }
 
@@ -172,7 +173,8 @@ void test_mesh() {
 
         auto on_material_needed = [&](std::string_view name) {
             Ren::eMatLoadStatus status;
-            return test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            Ren::MaterialRef ret = test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            return std::pair{ret, ret};
         };
 
         Ren::eMeshLoadStatus load_status;
@@ -218,7 +220,7 @@ void test_mesh() {
             require(bool(m_ref2));
         }
 
-        Ren::MaterialRef mat_ref = m_ref->groups()[0].mat;
+        Ren::MaterialRef mat_ref = m_ref->groups()[0].front_mat;
         require(bool(mat_ref));
         require(!mat_ref->ready());
     }

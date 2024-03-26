@@ -1960,7 +1960,7 @@ void ModlApp::OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, std:
 #endif
 }
 
-Ren::MaterialRef ModlApp::OnMaterialNeeded(std::string_view name) {
+std::pair<Ren::MaterialRef, Ren::MaterialRef> ModlApp::OnMaterialNeeded(std::string_view name) {
     using namespace std;
 
     Ren::eMatLoadStatus status;
@@ -1969,7 +1969,7 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(std::string_view name) {
         Sys::AssetFile in_file(string("assets_pc/materials/").append(name));
         if (!in_file) {
             printf("Error loading material %s", name.data());
-            return ret;
+            return {ret, ret};
         }
 
         const size_t file_size = in_file.size();
@@ -1985,5 +1985,5 @@ Ren::MaterialRef ModlApp::OnMaterialNeeded(std::string_view name) {
             std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
-    return ret;
+    return {ret, ret};
 }

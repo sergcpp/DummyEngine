@@ -46,7 +46,7 @@ hitAttributeEXT vec2 bary_coord;
 
 void main() {
     RTGeoInstance geo = g_geometries[gl_InstanceCustomIndexEXT + gl_GeometryIndexEXT];
-    MaterialData mat = g_materials[geo.material_index];
+    MaterialData mat = g_materials[geo.material_index & 0xffff];
 
     uint i0 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 0];
     uint i1 = g_indices[geo.indices_start + 3 * gl_PrimitiveID + 1];

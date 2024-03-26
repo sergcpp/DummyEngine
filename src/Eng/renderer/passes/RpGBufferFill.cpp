@@ -75,7 +75,7 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
             rast_state.depth.test_enabled = true;
             rast_state.depth.compare_op = uint8_t(Ren::eCompareOp::Equal);
 
-            if (!pi_simple_[1].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_, 0,
+            if (!pi_simple_[2].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_, 0,
                                     ctx.log())) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
             }
@@ -83,6 +83,13 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
             rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_simple_[0].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_, 0,
+                                    ctx.log())) {
+                ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+
+            if (!pi_simple_[1].Init(ctx.api_ctx(), rast_state, gbuf_simple_prog, &vi_simple_, &rp_main_draw_, 0,
                                     ctx.log())) {
                 ctx.log()->Error("[RpGBufferFill::LazyInit]: Failed to initialize pipeline!");
             }

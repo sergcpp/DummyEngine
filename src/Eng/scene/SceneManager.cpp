@@ -202,9 +202,10 @@ Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Sn
     Ren::eMeshLoadStatus status;
     cam_rig_ = ren_ctx.LoadMesh(
         "__cam_rig", &in_mesh,
-        [this](std::string_view name) -> Ren::MaterialRef {
+        [this](std::string_view name) -> std::pair<Ren::MaterialRef, Ren::MaterialRef> {
             Ren::eMatLoadStatus status;
-            return ren_ctx_.LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
+            Ren::MaterialRef mat = ren_ctx_.LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
+            return std::pair{mat, mat};
         },
         &status);
     assert(status == Ren::eMeshLoadStatus::CreatedFromData);
@@ -865,8 +866,8 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
         int index = 0;
         for (const JsElementP &js_mat_el : js_materials.elements) {
             if (js_mat_el.type() == JsType::String) {
-                const Ren::TriGroup &grp = dr->mesh->groups()[index];
-                const_cast<Ren::TriGroup &>(grp).mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
+                Ren::TriGroup &grp = dr->mesh->groups()[index];
+                std::tie(grp.front_mat, grp.back_mat) = OnLoadMaterial(js_mat_el.as_str().val.c_str());
             }
             index++;
         }
@@ -1145,8 +1146,8 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
         int index = 0;
         for (const JsElementP &js_mat_el : js_materials.elements) {
             if (js_mat_el.type() == JsType::String) {
-                const Ren::TriGroup &grp = acc->mesh->groups()[index];
-                const_cast<Ren::TriGroup &>(grp).mat = OnLoadMaterial(js_mat_el.as_str().val.c_str());
+                Ren::TriGroup &grp = acc->mesh->groups()[index];
+                std::tie(grp.front_mat, grp.back_mat) = OnLoadMaterial(js_mat_el.as_str().val.c_str());
             }
             index++;
         }
@@ -1160,12 +1161,21 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
     obj_bbox[1] = Max(obj_bbox[1], acc->mesh->bbox_max());
 }
 
-Ren::MaterialRef Eng::SceneManager::OnLoadMaterial(std::string_view name) {
+std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(std::string_view name) {
     using namespace SceneManagerConstants;
 
+    std::pair<Ren::MaterialRef, Ren::MaterialRef> ret;
+
     Ren::eMatLoadStatus status;
-    Ren::MaterialRef ret = LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
-    if (!ret->ready()) {
+    ret.first = LoadMaterial(name, {}, &status, nullptr, nullptr, nullptr);
+    if (ret.first->ready()) {
+        const std::string backside_name = std::string(name) + "@back";
+        ret.second = scene_data_.materials.FindByName(backside_name);
+        if (!ret.second) {
+            ret.second = ret.first;
+        }
+    }
+    if (!ret.first->ready()) {
         Sys::AssetFile in_file(std::string(paths_.materials_path).append(name));
         if (!in_file) {
             ren_ctx_.log()->Error("Error loading material %s", name);
@@ -1180,13 +1190,25 @@ Ren::MaterialRef Eng::SceneManager::OnLoadMaterial(std::string_view name) {
 
         using namespace std::placeholders;
 
-        ret = LoadMaterial(name, mat_src.data(), &status,
-                           std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6, _7),
-                           std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
-                           std::bind(&SceneManager::OnLoadSampler, this, _1));
+        ret.first = ret.second = LoadMaterial(
+            name, mat_src, &status, std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6, _7),
+            std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
+            std::bind(&SceneManager::OnLoadSampler, this, _1));
+        if (status == Ren::eMatLoadStatus::CreatedFromData_NeedsMore) {
+            const size_t n = mat_src.find("---");
+            mat_src = mat_src.substr(n + 4);
+            const std::string backside_name = std::string(name) + "@back";
+            ret.second = LoadMaterial(backside_name, mat_src, &status,
+                                      std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6, _7),
+                                      std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
+                                      std::bind(&SceneManager::OnLoadSampler, this, _1));
+        }
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }
-    scene_data_.material_changes.push_back(ret.index());
+    scene_data_.material_changes.push_back(ret.first.index());
+    if (ret.second != ret.first) {
+        scene_data_.material_changes.push_back(ret.second.index());
+    }
     return ret;
 }
 

@@ -1,3 +1,5 @@
+#ifndef COMMON_GLSL
+#define COMMON_GLSL
 
 #include "Constants.inl"
 
@@ -40,6 +42,15 @@ float approx_acos(float x) { // max error is 0.000068f
     ret = ret * sqrt(1.0 - saturate(x));
     ret = ret - 2.0 * negate * ret;
     return negate * M_PI + ret;
+}
+
+vec3 heatmap(float t) {
+    vec3 r = vec3(t) * 2.1 - vec3(1.8, 1.14, 0.3);
+    return vec3(1.0) - r * r;
+}
+
+highp float rand(highp vec2 co) {
+    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 // Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
@@ -260,3 +271,5 @@ float Bayer4x4(uvec2 sample_pos, uint frame) {
     uint bayer = Bayer4x4ui(sample_pos, frame);
     return float(bayer) / 16.0;
 }
+
+#endif // COMMON_GLSL

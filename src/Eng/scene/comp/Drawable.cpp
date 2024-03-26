@@ -75,7 +75,7 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
 
         const Ren::Mesh *mesh = dr.mesh.get();
         for (const auto &grp : mesh->groups()) {
-            js_material_override.Push(JsStringP{grp.mat->name(), alloc});
+            js_material_override.Push(JsStringP{grp.front_mat->name(), alloc});
         }
 
         js_out.Push("material_override", std::move(js_material_override));

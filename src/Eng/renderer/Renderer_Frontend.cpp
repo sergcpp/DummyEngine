@@ -402,7 +402,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                     const uint32_t indices_start = mesh->indices_buf().sub.offset;
                     for (const auto &grp : mesh->groups()) {
-                        const Material *mat = grp.mat.get();
+                        const Material *mat = grp.front_mat.get();
                         const Bitmask<eMatFlags> mat_flags = mat->flags();
 
                         __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
@@ -417,7 +417,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             fwd_batch.depth_write_bit = (mat_flags & eMatFlags::DepthWrite) ? 1 : 0;
                             fwd_batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
                             if (!ctx_.capabilities.bindless_texture) {
-                                fwd_batch.mat_id = uint32_t(grp.mat.index());
+                                fwd_batch.mat_id = uint32_t(grp.front_mat.index());
                             } else {
                                 fwd_batch.mat_id = 0;
                             }
@@ -426,7 +426,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             fwd_batch.base_vertex = base_vertex;
                             fwd_batch.indices_count = grp.num_indices;
                             fwd_batch.instance_index = i.index;
-                            fwd_batch.material_index = int32_t(grp.mat.index());
+                            fwd_batch.material_index = int32_t(grp.front_mat.index());
                             fwd_batch.instance_count = 1;
                         }
 
@@ -435,7 +435,6 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             BasicDrawBatch &base_batch = list.basic_batches.emplace_back();
 
                             base_batch.type_bits = BasicDrawBatch::TypeSimple;
-
                             if (obj.comp_mask & CompAnimStateBit) {
                                 base_batch.type_bits = BasicDrawBatch::TypeSkinned;
                             } else if (obj.comp_mask & CompVegStateBit) {
@@ -450,8 +449,15 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             base_batch.base_vertex = base_vertex;
                             base_batch.indices_count = grp.num_indices;
                             base_batch.instance_index = i.index;
-                            base_batch.material_index = int32_t(grp.mat.index());
+                            base_batch.material_index = int32_t(grp.front_mat.index());
                             base_batch.instance_count = 1;
+
+                            if (grp.front_mat != grp.back_mat) {
+                                BasicDrawBatch &back_batch = list.basic_batches.emplace_back(base_batch);
+                                back_batch.back_sided_bit = 1;
+                                back_batch.alpha_test_bit = (grp.back_mat->flags() & eMatFlags::AlphaTest) ? 1 : 0;
+                                back_batch.material_index = int32_t(grp.back_mat.index());
+                            }
                         }
                     }
                 }
@@ -1042,37 +1048,46 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     }
 
                     for (const auto &grp : mesh->groups()) {
-                        const Material *mat = grp.mat.get();
+                        const Material *mat = grp.front_mat.get();
                         const Bitmask<eMatFlags> mat_flags = mat->flags();
 
                         if ((mat_flags & eMatFlags::AlphaBlend) == 0) {
-                            if ((mat_flags & eMatFlags::AlphaTest) && mat->textures.size() > 3 &&
-                                mat->textures[3]) {
-                                // assume only the third texture gives transparency
-                                __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
+                            if ((mat_flags & eMatFlags::AlphaTest) && mat->textures.size() > 3 && mat->textures[4]) {
+                                // assume only the fourth texture gives transparency
+                                __record_texture(list.visible_textures, mat->textures[4], 0, 0xffffu);
                             }
 
                             BasicDrawBatch &batch = list.shadow_batches.emplace_back();
 
                             batch.type_bits = BasicDrawBatch::TypeSimple;
-
                             // we do not care if it is skinned
                             if (obj.comp_mask & CompVegStateBit) {
                                 batch.type_bits = BasicDrawBatch::TypeVege;
                             }
 
+                            const bool simple_twosided =
+                                (mat_flags & eMatFlags::TwoSided) || (!(mat_flags & eMatFlags::AlphaTest) &&
+                                                                      !(grp.back_mat->flags() & eMatFlags::AlphaTest));
+
                             batch.alpha_test_bit = (mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                             batch.moving_bit = 0;
-                            batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
+                            batch.two_sided_bit = simple_twosided ? 1 : 0;
                             batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
                             batch.base_vertex = proc_objects_[i.index].base_vertex;
                             batch.indices_count = grp.num_indices;
                             batch.instance_index = i.index;
                             batch.material_index =
                                 ((mat_flags & eMatFlags::AlphaTest) || (batch.type_bits == BasicDrawBatch::TypeVege))
-                                    ? int32_t(grp.mat.index())
+                                    ? int32_t(grp.front_mat.index())
                                     : 0;
                             batch.instance_count = 1;
+
+                            if (!simple_twosided && grp.front_mat != grp.back_mat) {
+                                BasicDrawBatch &back_batch = list.shadow_batches.emplace_back(batch);
+                                back_batch.back_sided_bit = 1;
+                                back_batch.alpha_test_bit = (grp.back_mat->flags() & eMatFlags::AlphaTest) ? 1 : 0;
+                                back_batch.material_index = int32_t(grp.back_mat.index());
+                            }
                         }
                     }
                 }
@@ -1288,28 +1303,31 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             }
 
                             for (const auto &grp : mesh->groups()) {
-                                const Material *mat = grp.mat.get();
+                                const Material *mat = grp.front_mat.get();
                                 const Bitmask<eMatFlags> mat_flags = mat->flags();
 
                                 if ((mat_flags & eMatFlags::AlphaBlend) == 0) {
                                     if ((mat_flags & eMatFlags::AlphaTest) && mat->textures.size() > 3 &&
-                                        mat->textures[3]) {
-                                        // assume only the third texture gives transparency
-                                        __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
+                                        mat->textures[4]) {
+                                        // assume only the fourth texture gives transparency
+                                        __record_texture(list.visible_textures, mat->textures[4], 0, 0xffffu);
                                     }
 
                                     BasicDrawBatch &batch = list.shadow_batches.emplace_back();
 
                                     batch.type_bits = BasicDrawBatch::TypeSimple;
-
                                     // we do not care if it is skinned
                                     if (obj.comp_mask & CompVegStateBit) {
                                         batch.type_bits = BasicDrawBatch::TypeVege;
                                     }
 
+                                    const bool simple_twosided = (mat_flags & eMatFlags::TwoSided) ||
+                                                                 (!(mat_flags & eMatFlags::AlphaTest) &&
+                                                                  !(grp.back_mat->flags() & eMatFlags::AlphaTest));
+
                                     batch.alpha_test_bit = (mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                                     batch.moving_bit = 0;
-                                    batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
+                                    batch.two_sided_bit = simple_twosided ? 1 : 0;
                                     batch.indices_offset =
                                         (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
                                     batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
@@ -1317,9 +1335,17 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                     batch.instance_index = n->prim_index;
                                     batch.material_index = ((mat_flags & eMatFlags::AlphaTest) ||
                                                             (batch.type_bits == BasicDrawBatch::TypeVege))
-                                                               ? uint32_t(grp.mat.index())
+                                                               ? uint32_t(grp.front_mat.index())
                                                                : 0;
                                     batch.instance_count = 1;
+
+                                    if (!simple_twosided && grp.front_mat != grp.back_mat) {
+                                        BasicDrawBatch &back_batch = list.shadow_batches.emplace_back(batch);
+                                        back_batch.back_sided_bit = 1;
+                                        back_batch.alpha_test_bit =
+                                            (grp.back_mat->flags() & eMatFlags::AlphaTest) ? 1 : 0;
+                                        back_batch.material_index = int32_t(grp.back_mat.index());
+                                    }
                                 }
                             }
                         }

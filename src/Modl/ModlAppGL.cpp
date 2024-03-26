@@ -38,7 +38,7 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
     using namespace Ren;
 
     const Mesh *m = ref.get();
-    const Material *mat = m->groups()[0].mat.get();
+    const Material *mat = m->groups()[0].front_mat.get();
     ProgramRef p = mat->pipelines[0]->prog();
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
@@ -70,7 +70,7 @@ void ModlApp::DrawMeshSimple(const Ren::MeshRef &ref) {
     glCullFace(GL_BACK);
 
     for (const auto &grp : m->groups()) {
-        const Ren::Material *mat = grp.mat.get();
+        const Ren::Material *mat = grp.front_mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1 || view_mode_ == eViewMode::DiagUVs2) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
@@ -89,7 +89,7 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
     using namespace Ren;
 
     const Mesh *m = ref.get();
-    const Material *mat = m->groups()[0].mat.get();
+    const Material *mat = m->groups()[0].front_mat.get();
     ProgramRef p = mat->pipelines[0]->prog();
 
     glBindBuffer(GL_ARRAY_BUFFER, m->attribs_buf1_id());
@@ -122,7 +122,7 @@ void ModlApp::DrawMeshColored(const Ren::MeshRef &ref) {
     glCullFace(GL_BACK);
 
     for (const auto &grp : m->groups()) {
-        const Ren::Material *mat = grp.mat.get();
+        const Ren::Material *mat = grp.front_mat.get();
 
         if (view_mode_ == eViewMode::DiagUVs1) {
             BindTexture(DIFFUSEMAP_SLOT, checker_tex_->id());
@@ -143,7 +143,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     using namespace Ren;
 
     Ren::Mesh *m = ref.get();
-    const Ren::Material *mat = m->groups()[0].mat.get();
+    const Ren::Material *mat = m->groups()[0].front_mat.get();
 
     anim_time_ += dt_s;
 
@@ -307,7 +307,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
     glCullFace(GL_BACK);
 
     for (const auto &grp : m->groups()) {
-        const Ren::Material *mat = grp.mat.get();
+        const Ren::Material *mat = grp.front_mat.get();
 
         if (mat->flags() & Ren::eMatFlags::TwoSided) {
             glDisable(GL_CULL_FACE);

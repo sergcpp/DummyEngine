@@ -155,12 +155,22 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
             i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, 0, cur_mat_id,
                                  &draws_count);
             i = _skip_range(batch_indices, batches, i, BDB::BitCustomShaded);
+
+            rast_state = pi_simple_[1].rast_state();
+            rast_state.viewport[2] = view_state_->act_res[0];
+            rast_state.viewport[3] = view_state_->act_res[1];
+            rast_state.ApplyChanged(builder.rast_state());
+            builder.rast_state() = rast_state;
+
+            i = _draw_range_ext2(builder, materials, *dummy_white.ref, batch_indices, batches, i, BDB::BitBackSided,
+                                 cur_mat_id, &draws_count);
+            i = _skip_range(batch_indices, batches, i, BDB::BitBackSided | BDB::BitCustomShaded);
         }
 
         { // solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -188,7 +198,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // moving solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -217,7 +227,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -247,7 +257,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // moving alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "MOVING-ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -409,7 +419,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // skinned solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -439,7 +449,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // skinned moving solid two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-MOVING-SOLID-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -469,7 +479,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // skinned alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());
@@ -499,7 +509,7 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         { // skinned moving alpha-tested two-sided
             Ren::DebugMarker _mm(ctx.api_ctx(), ctx.current_cmd_buf(), "SKIN-MOVING-ALPHA-TWO-SIDED");
 
-            Ren::RastState rast_state = pi_simple_[1].rast_state();
+            Ren::RastState rast_state = pi_simple_[2].rast_state();
             rast_state.viewport[2] = view_state_->act_res[0];
             rast_state.viewport[3] = view_state_->act_res[1];
             rast_state.ApplyChanged(builder.rast_state());

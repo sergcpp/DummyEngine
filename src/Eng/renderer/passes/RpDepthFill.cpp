@@ -62,22 +62,23 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             sh.LoadProgram(ctx, "fillz_transp", "internal/fillz.vert.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY",
                            "internal/fillz.frag.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY");
         assert(fillz_transp_prog->ready());
-        Ren::ProgramRef fillz_transp_mov_prog =
-            sh.LoadProgram(ctx, "fillz_transp_mov", "internal/fillz.vert.glsl@MOVING_PERM;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
-        assert(fillz_transp_mov_prog->ready());
-        Ren::ProgramRef fillz_vege_transp_prog =
-            sh.LoadProgram(ctx, "fillz_vege_transp", "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY");
-        assert(fillz_vege_transp_prog->ready());
-        Ren::ProgramRef fillz_vege_transp_vel_prog = sh.LoadProgram(
-            ctx, "fillz_vege_transp_vel", "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+        Ren::ProgramRef fillz_transp_mov_prog = sh.LoadProgram(
+            ctx, "fillz_transp_mov", "internal/fillz.vert.glsl@MOVING_PERM;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
             "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
-        assert(fillz_vege_transp_vel_prog->ready());
-        Ren::ProgramRef fillz_vege_transp_vel_mov_prog =
-            sh.LoadProgram(ctx, "fillz_vege_transp_vel_mov",
-                           "internal/fillz_vege.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+        assert(fillz_transp_mov_prog->ready());
+        Ren::ProgramRef fillz_vege_transp_prog = sh.LoadProgram(
+            ctx, "fillz_vege_transp", "internal/fillz_vege.vert.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+            "internal/fillz.frag.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY");
+        assert(fillz_vege_transp_prog->ready());
+        Ren::ProgramRef fillz_vege_transp_vel_prog =
+            sh.LoadProgram(ctx, "fillz_vege_transp_vel",
+                           "internal/fillz_vege.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
+        assert(fillz_vege_transp_vel_prog->ready());
+        Ren::ProgramRef fillz_vege_transp_vel_mov_prog = sh.LoadProgram(
+            ctx, "fillz_vege_transp_vel_mov",
+            "internal/fillz_vege.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
         assert(fillz_vege_transp_vel_mov_prog->ready());
         Ren::ProgramRef fillz_skin_solid_prog =
             sh.LoadProgram(ctx, "fillz_skin_solid", "internal/fillz_skin.vert.glsl", "internal/fillz.frag.glsl");
@@ -90,18 +91,19 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             sh.LoadProgram(ctx, "fillz_skin_solid_vel_mov", "internal/fillz_skin.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY",
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY");
         assert(fillz_skin_solid_vel_mov_prog->ready());
-        Ren::ProgramRef fillz_skin_transp_prog =
-            sh.LoadProgram(ctx, "fillz_skin_transp", "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY",
-                           "internal/fillz.frag.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY");
+        Ren::ProgramRef fillz_skin_transp_prog = sh.LoadProgram(
+            ctx, "fillz_skin_transp", "internal/fillz_skin.vert.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+            "internal/fillz.frag.glsl@TRANSPARENT_PERM;HASHED_TRANSPARENCY");
         assert(fillz_skin_transp_prog->ready());
-        Ren::ProgramRef fillz_skin_transp_vel_prog = sh.LoadProgram(
-            ctx, "fillz_skin_transp_vel", "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
-            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
-        assert(fillz_skin_transp_vel_prog->ready());
-        Ren::ProgramRef fillz_skin_transp_vel_mov_prog =
-            sh.LoadProgram(ctx, "fillz_skin_transp_vel_mov",
-                           "internal/fillz_skin.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+        Ren::ProgramRef fillz_skin_transp_vel_prog =
+            sh.LoadProgram(ctx, "fillz_skin_transp_vel",
+                           "internal/fillz_skin.vert.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
                            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
+        assert(fillz_skin_transp_vel_prog->ready());
+        Ren::ProgramRef fillz_skin_transp_vel_mov_prog = sh.LoadProgram(
+            ctx, "fillz_skin_transp_vel_mov",
+            "internal/fillz_skin.vert.glsl@MOVING_PERM;OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY",
+            "internal/fillz.frag.glsl@OUTPUT_VELOCITY;TRANSPARENT_PERM;HASHED_TRANSPARENCY");
         assert(fillz_skin_transp_vel_mov_prog->ready());
 
         if (!rp_depth_only_[0].Setup(ctx.api_ctx(), {}, depth_clear_target, ctx.log())) {
@@ -122,8 +124,7 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
         const int buf1_stride = 16, buf2_stride = 16;
 
         { // VAO for solid depth-fill pass (uses position attribute only)
-            const Ren::VtxAttribDesc attribs[] = {
-                {vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
+            const Ren::VtxAttribDesc attribs[] = {{vtx_buf1.ref, VTX_POS_LOC, 3, Ren::eType::Float32, buf1_stride, 0}};
             if (!vi_solid_.Setup(attribs, ndx_buf.ref)) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: vi_solid_ init failed!");
             }
@@ -188,12 +189,12 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             // default value
             rast_state.stencil.reference = 0;
 
-            if (!pi_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_solid_, &rp_depth_only_[0],
+            if (!pi_static_solid_[2].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_solid_, &rp_depth_only_[0],
                                           0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
-            if (!pi_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_transp_,
+            if (!pi_static_transp_[2].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_transp_,
                                            &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
@@ -206,6 +207,18 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             }
 
             if (!pi_static_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_transp_,
+                                           &rp_depth_only_[0], 0, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+
+            if (!pi_static_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_prog, &vi_solid_, &rp_depth_only_[0],
+                                          0, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_static_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_prog, &vi_transp_,
                                            &rp_depth_only_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
@@ -223,12 +236,12 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             // mark dynamic objects
             rast_state.stencil.reference = 1;
 
-            if (!pi_moving_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_solid_,
+            if (!pi_moving_solid_[2].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_solid_,
                                           &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
-            if (!pi_moving_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_transp_,
+            if (!pi_moving_transp_[2].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_transp_,
                                            &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
@@ -241,6 +254,18 @@ void Eng::RpDepthFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllo
             }
 
             if (!pi_moving_transp_[0].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_transp_,
+                                           &rp_depth_velocity_[0], 0, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+
+            if (!pi_moving_solid_[1].Init(ctx.api_ctx(), rast_state, fillz_solid_mov_prog, &vi_solid_,
+                                          &rp_depth_velocity_[0], 0, ctx.log())) {
+                ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
+            }
+
+            if (!pi_moving_transp_[1].Init(ctx.api_ctx(), rast_state, fillz_transp_mov_prog, &vi_transp_,
                                            &rp_depth_velocity_[0], 0, ctx.log())) {
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
