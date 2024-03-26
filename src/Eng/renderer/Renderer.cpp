@@ -1451,13 +1451,13 @@ void Eng::Renderer::InitBackendInfo() {
     }
 }
 
-void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags,
+void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const Ren::Bitmask<Ren::eMatFlags> mat_flags,
                                             Ren::PipelineStorage &storage,
                                             Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const {
     for (int i = 0; i < int(eFwdPipeline::_Count); ++i) {
         Ren::RastState rast_state = rast_states_[i];
 
-        if (uint32_t(Ren::eMatFlags::TwoSided)) {
+        if (mat_flags & Ren::eMatFlags::TwoSided) {
             rast_state.poly.cull = uint8_t(Ren::eCullFace::None);
         }
 

@@ -39,20 +39,20 @@ bool Eng::ScriptedDialog::Load(const std::string_view lookup_name, const JsObjec
 
                 if (choice_seq_index == -1) {
                     JsObject js_next_seq;
-                    if (!read_sequence(js_seq_name.val.c_str(), js_next_seq)) {
+                    if (!read_sequence(js_seq_name.val, js_next_seq)) {
                         ren_ctx_.log()->Error("Failed to read sequence %s", js_seq_name.val.c_str());
                         return false;
                     }
 
-                    choice_seq_index = (int)sequences_.size();
+                    choice_seq_index = int(sequences_.size());
 
-                    if (!Load(js_seq_name.val.c_str(), js_next_seq, read_sequence)) {
+                    if (!Load(js_seq_name.val, js_next_seq, read_sequence)) {
                         ren_ctx_.log()->Error("Failed to load choise %s", js_choice_key.val.c_str());
                         return false;
                     }
                 }
 
-                SeqChoice *choice = sequences_[cur_seq_index].GetChoice(js_choice_key.val.c_str());
+                SeqChoice *choice = sequences_[cur_seq_index].GetChoice(js_choice_key.val);
                 choice->seq_id = choice_seq_index;
 
                 ++choice_index;

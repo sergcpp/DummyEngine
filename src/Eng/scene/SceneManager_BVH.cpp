@@ -572,8 +572,8 @@ void Eng::SceneManager::InitSWRTAccStructures() {
 
         for (const Ren::TriGroup &grp : acc->mesh->groups()) {
             const Ren::Material *mat = grp.mat.get();
-            const uint32_t mat_flags = mat->flags();
-            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) != 0) {
+            const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
+            if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
                 continue;
             }
@@ -663,8 +663,8 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
         for (const Ren::TriGroup &grp : acc.mesh->groups()) {
             const Ren::Material *mat = grp.mat.get();
-            const uint32_t mat_flags = mat->flags();
-            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) != 0) {
+            const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
+            if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
                 continue;
             }

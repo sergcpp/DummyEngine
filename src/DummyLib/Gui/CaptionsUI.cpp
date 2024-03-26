@@ -2,7 +2,8 @@
 
 #include <Eng/gui/BitmapFont.h>
 
-CaptionsUI::CaptionsUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, Gui::BaseElement *parent, Gui::BitmapFont &font)
+CaptionsUI::CaptionsUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, Gui::BaseElement *parent,
+                       const Gui::BitmapFont &font)
     : Gui::BaseElement(pos, size, parent), font_(font) {}
 
 void CaptionsUI::Draw(Gui::Renderer *r) {

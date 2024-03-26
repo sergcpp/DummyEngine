@@ -43,7 +43,7 @@ GSUITest3::GSUITest3(Viewer *viewer) : GSBaseState(viewer) {
     book_main_font_ = viewer->font_storage()->FindFont("book_main_font");
     book_emph_font_ = viewer->font_storage()->FindFont("book_emph_font");
     book_caption_font_ = viewer->font_storage()->FindFont("book_caption_font");
-    book_caption_font_->set_scale(1.25f);
+    //book_caption_font_->set_scale(1.25f);
 }
 
 GSUITest3::~GSUITest3() = default;

@@ -26,7 +26,7 @@ class GSUITest2 : public GSBaseState {
 
     uint64_t click_time_ = 0;
 
-    std::shared_ptr<Gui::BitmapFont> dialog_font_;
+    const Gui::BitmapFont *dialog_font_ = {};
     float test_time_counter_s = 0.0f;
     bool is_visible_ = false;
 

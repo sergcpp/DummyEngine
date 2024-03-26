@@ -6,8 +6,8 @@
 #include <Sys/Time_.h>
 
 DebugInfoUI::DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const BaseElement *parent,
-                         std::shared_ptr<Gui::BitmapFont> font)
-    : BaseElement(pos, size, parent), parent_(parent), font_(std::move(font)) {}
+                         const Gui::BitmapFont *font)
+    : BaseElement(pos, size, parent), parent_(parent), font_(font) {}
 
 void DebugInfoUI::UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
                              const Eng::ItemsInfo &items_info, const bool debug_items) {

@@ -114,8 +114,9 @@ int Eng::ShaderLoader::ParamsStringToDef(const char *params, std::string &out_de
     return count;
 }
 
-Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_view name, const char *vs_name,
-                                               const char *fs_name, const char *tcs_name, const char *tes_name) {
+Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_view name, std::string_view vs_name,
+                                               std::string_view fs_name, std::string_view tcs_name,
+                                               std::string_view tes_name) {
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
@@ -128,7 +129,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
         }
 
         Ren::ShaderRef tcs_ref, tes_ref;
-        if (tcs_name && tes_name) {
+        if (!tcs_name.empty() && !tes_name.empty()) {
             tcs_ref = LoadShader(ctx, tcs_name);
             tes_ref = LoadShader(ctx, tes_name);
             if (!tcs_ref->ready() || !tes_ref->ready()) {
@@ -144,7 +145,7 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
     return ret;
 }
 
-Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, const char *name, const char *cs_name) {
+Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_view name, std::string_view cs_name) {
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
@@ -159,9 +160,9 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, const char *na
 }
 
 #if defined(USE_VK_RENDER)
-Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_view name, const char *raygen_name,
-                                               const char *closesthit_name, const char *anyhit_name,
-                                               const char *miss_name, const char *intersection_name) {
+Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_view name, std::string_view raygen_name,
+                                               std::string_view closesthit_name, std::string_view anyhit_name,
+                                               std::string_view miss_name, std::string_view intersection_name) {
     Ren::eProgLoadStatus status;
     Ren::ProgramRef ret = ctx.LoadProgram(name, {}, {}, {}, {}, &status);
     if (!ret->ready()) {
@@ -169,17 +170,17 @@ Ren::ProgramRef Eng::ShaderLoader::LoadProgram(Ren::Context &ctx, std::string_vi
         Ren::ShaderRef raygen_ref = LoadShader(ctx, raygen_name);
 
         Ren::ShaderRef closesthit_ref, anyhit_ref;
-        if (closesthit_name) {
+        if (!closesthit_name.empty()) {
             closesthit_ref = LoadShader(ctx, closesthit_name);
         }
-        if (anyhit_name) {
+        if (!anyhit_name.empty()) {
             anyhit_ref = LoadShader(ctx, anyhit_name);
         }
 
         Ren::ShaderRef miss_ref = LoadShader(ctx, miss_name);
 
         Ren::ShaderRef intersection_ref;
-        if (intersection_name) {
+        if (!intersection_name.empty()) {
             intersection_ref = LoadShader(ctx, intersection_name);
         }
 
@@ -245,7 +246,7 @@ Ren::ShaderRef Eng::ShaderLoader::LoadShader(Ren::Context &ctx, std::string_view
 
         const std::string shader_src = ReadGLSLContent(name, ctx.log());
         if (!shader_src.empty()) {
-            ret->Init(shader_src.c_str(), type, &status, ctx.log());
+            ret->Init(shader_src, type, &status, ctx.log());
             if (status == Ren::eShaderLoadStatus::SetToDefault) {
                 ctx.log()->Error("Error loading shader %s", name);
             }

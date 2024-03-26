@@ -15,11 +15,11 @@ const int cursor_offset = 12;
 } // namespace EditBoxConstants
 } // namespace Gui
 
-Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets, BitmapFont *font,
+Gui::EditBox::EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets, const BitmapFont *font,
                       const Vec2f &pos, const Vec2f &size, const BaseElement *parent)
     : EditBox({ctx, frame_tex_name, frame_offsets, 1.0f, Vec2f{-1, -1}, Vec2f{2, 2}, this}, font, pos, size, parent) {}
 
-Gui::EditBox::EditBox(Image9Patch frame, BitmapFont *font, const Vec2f &pos, const Vec2f &size,
+Gui::EditBox::EditBox(Image9Patch frame, const BitmapFont *font, const Vec2f &pos, const Vec2f &size,
                       const BaseElement *parent)
     : BaseElement(pos, size, parent), frame_(std::move(frame)), font_(font),
       edit_flags_(EditBoxConstants::default_flags), focused_(false), current_line_(0), current_char_(0) {

@@ -31,7 +31,7 @@ class GSUITest3 : public GSBaseState {
 
     uint64_t click_time_ = 0;
 
-    std::shared_ptr<Gui::BitmapFont> book_main_font_, book_emph_font_, book_caption_font_;
+    const Gui::BitmapFont *book_main_font_ = {}, *book_emph_font_ = {}, *book_caption_font_ = {};
     float test_time_counter_s = 0.0f;
 
     std::unique_ptr<Gui::Image> test_image_;

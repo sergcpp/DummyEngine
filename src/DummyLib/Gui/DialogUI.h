@@ -6,7 +6,7 @@
 #include <Sys/Signal_.h>
 
 class DialogUI : public Gui::BaseElement {
-    Gui::BitmapFont &font_;
+    const Gui::BitmapFont &font_;
     bool debug_;
 
     struct {
@@ -21,7 +21,7 @@ class DialogUI : public Gui::BaseElement {
     void IterateChoices(const std::function<bool(int i, const Ren::Vec2f &pos, const Ren::Vec2f &size)> &callback);
 
   public:
-    DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, Gui::BitmapFont &font,
+    DialogUI(const Gui::Vec2f &pos, const Gui::Vec2f &size, const BaseElement *parent, const Gui::BitmapFont &font,
              bool debug = false);
 
     void Draw(Gui::Renderer *r) override;

@@ -321,7 +321,7 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         if (ctx.capabilities.raytracing) {
             Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(
                 ctx, "rt_reflections", "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",
-                "internal/rt_reflections.rahit.glsl", "internal/rt_reflections.rmiss.glsl", nullptr);
+                "internal/rt_reflections.rahit.glsl", "internal/rt_reflections.rmiss.glsl", {});
             assert(rt_reflections_prog->ready());
 
             if (!pi_rt_reflections_.Init(ctx.api_ctx(), std::move(rt_reflections_prog), ctx.log())) {

@@ -27,7 +27,7 @@ void Eng::RpDebugRT::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         if (ctx.capabilities.raytracing) {
             Ren::ProgramRef debug_hwrt_prog =
                 sh.LoadProgram(ctx, "rt_debug", "internal/rt_debug.rgen.glsl", "internal/rt_debug.rchit.glsl",
-                               "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", nullptr);
+                               "internal/rt_debug.rahit.glsl", "internal/rt_debug.rmiss.glsl", {});
             assert(debug_hwrt_prog->ready());
 
             if (!pi_debug_hwrt_.Init(ctx.api_ctx(), debug_hwrt_prog, ctx.log())) {

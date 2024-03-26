@@ -41,7 +41,7 @@ GSUITest2::GSUITest2(Viewer *viewer) : GSBaseState(viewer) {
                                     Ren::Vec2f{-1.0f, -1.0f},
                                     Ren::Vec2f{2.0f, 2.0f},
                                     ui_root_};
-    edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_.get(), Ren::Vec2f{-0.5f, 0.75f},
+    edit_box_ = std::make_unique<Gui::EditBox>(edit_box_frame, dialog_font_, Ren::Vec2f{-0.5f, 0.75f},
                                                Ren::Vec2f{1.0f, 0.75f * font_height}, ui_root_);
     edit_box_->set_flag(Gui::eEditBoxFlags::Multiline, false);
 

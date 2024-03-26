@@ -1190,8 +1190,9 @@ Ren::MaterialRef Eng::SceneManager::OnLoadMaterial(std::string_view name) {
     return ret;
 }
 
-void Eng::SceneManager::OnLoadPipelines(std::string_view name, uint32_t flags, const char *v_shader,
-                                        const char *f_shader, const char *tc_shader, const char *te_shader,
+void Eng::SceneManager::OnLoadPipelines(std::string_view name, Ren::Bitmask<Ren::eMatFlags> flags,
+                                        std::string_view v_shader, std::string_view f_shader,
+                                        std::string_view tc_shader, std::string_view te_shader,
                                         Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
     using namespace SceneManagerConstants;
 

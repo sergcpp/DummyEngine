@@ -34,7 +34,7 @@ class GSPlayTest : public GSBaseState {
 
     uint64_t click_time_ms_ = 0;
 
-    std::shared_ptr<Gui::BitmapFont> dialog_font_;
+    const Gui::BitmapFont *dialog_font_ = {};
     float test_time_counter_s = 0.0f;
 
     bool is_playing_ = false;

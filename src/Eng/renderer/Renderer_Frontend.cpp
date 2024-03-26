@@ -403,26 +403,25 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     const uint32_t indices_start = mesh->indices_buf().sub.offset;
                     for (const auto &grp : mesh->groups()) {
                         const Material *mat = grp.mat.get();
-                        const uint32_t mat_flags = mat->flags();
+                        const Bitmask<eMatFlags> mat_flags = mat->flags();
 
                         __record_textures(list.visible_textures, mat, (obj.comp_mask & CompAnimStateBit), cam_dist_u16);
 
-                        if (!deferred_shading || (mat_flags & uint32_t(eMatFlags::CustomShaded)) != 0 ||
-                            (mat_flags & uint32_t(eMatFlags::AlphaBlend)) != 0) {
+                        if (!deferred_shading || (mat_flags & eMatFlags::CustomShaded) ||
+                            (mat_flags & eMatFlags::AlphaBlend)) {
                             CustomDrawBatch &fwd_batch = list.custom_batches.emplace_back();
 
-                            fwd_batch.alpha_blend_bit = (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? 1 : 0;
+                            fwd_batch.alpha_blend_bit = (mat_flags & eMatFlags::AlphaBlend) ? 1 : 0;
                             fwd_batch.pipe_id = mat->pipelines[pipeline_index].index();
-                            fwd_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
-                            fwd_batch.depth_write_bit = (mat_flags & uint32_t(eMatFlags::DepthWrite)) ? 1 : 0;
-                            fwd_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                            fwd_batch.alpha_test_bit = (mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
+                            fwd_batch.depth_write_bit = (mat_flags & eMatFlags::DepthWrite) ? 1 : 0;
+                            fwd_batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
                             if (!ctx_.capabilities.bindless_texture) {
                                 fwd_batch.mat_id = uint32_t(grp.mat.index());
                             } else {
                                 fwd_batch.mat_id = 0;
                             }
-                            fwd_batch.cam_dist =
-                                (mat_flags & uint32_t(eMatFlags::AlphaBlend)) ? uint32_t(cam_dist_u8) : 0;
+                            fwd_batch.cam_dist = (mat_flags & eMatFlags::AlphaBlend) ? uint32_t(cam_dist_u8) : 0;
                             fwd_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
                             fwd_batch.base_vertex = base_vertex;
                             fwd_batch.indices_count = grp.num_indices;
@@ -431,9 +430,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             fwd_batch.instance_count = 1;
                         }
 
-                        if (!(mat_flags & uint32_t(eMatFlags::AlphaBlend)) ||
-                            ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) &&
-                             (mat_flags & uint32_t(eMatFlags::AlphaTest)))) {
+                        if (!(mat_flags & eMatFlags::AlphaBlend) ||
+                            ((mat_flags & eMatFlags::AlphaBlend) && (mat_flags & eMatFlags::AlphaTest))) {
                             BasicDrawBatch &base_batch = list.basic_batches.emplace_back();
 
                             base_batch.type_bits = BasicDrawBatch::TypeSimple;
@@ -444,10 +442,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 base_batch.type_bits = BasicDrawBatch::TypeVege;
                             }
 
-                            base_batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                            base_batch.alpha_test_bit = (mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                             base_batch.moving_bit = (obj.last_change_mask & CompTransformBit) ? 1 : 0;
-                            base_batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
-                            base_batch.custom_shaded = (mat_flags & uint32_t(eMatFlags::CustomShaded)) ? 1 : 0;
+                            base_batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
+                            base_batch.custom_shaded = (mat_flags & eMatFlags::CustomShaded) ? 1 : 0;
                             base_batch.indices_offset = (indices_start + grp.offset) / sizeof(uint32_t);
                             base_batch.base_vertex = base_vertex;
                             base_batch.indices_count = grp.num_indices;
@@ -1045,10 +1043,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                     for (const auto &grp : mesh->groups()) {
                         const Material *mat = grp.mat.get();
-                        const uint32_t mat_flags = mat->flags();
+                        const Bitmask<eMatFlags> mat_flags = mat->flags();
 
-                        if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                            if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
+                        if ((mat_flags & eMatFlags::AlphaBlend) == 0) {
+                            if ((mat_flags & eMatFlags::AlphaTest) && mat->textures.size() > 3 &&
                                 mat->textures[3]) {
                                 // assume only the third texture gives transparency
                                 __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
@@ -1063,17 +1061,17 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 batch.type_bits = BasicDrawBatch::TypeVege;
                             }
 
-                            batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                            batch.alpha_test_bit = (mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                             batch.moving_bit = 0;
-                            batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                            batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
                             batch.indices_offset = (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
                             batch.base_vertex = proc_objects_[i.index].base_vertex;
                             batch.indices_count = grp.num_indices;
                             batch.instance_index = i.index;
-                            batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
-                                                    (batch.type_bits == BasicDrawBatch::TypeVege))
-                                                       ? int32_t(grp.mat.index())
-                                                       : 0;
+                            batch.material_index =
+                                ((mat_flags & eMatFlags::AlphaTest) || (batch.type_bits == BasicDrawBatch::TypeVege))
+                                    ? int32_t(grp.mat.index())
+                                    : 0;
                             batch.instance_count = 1;
                         }
                     }
@@ -1176,9 +1174,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const auto light_up = Vec3f{l.v[0], l.v[1], l.v[2]};
 
             float light_angle = 91.0f;
-            //if (ls->type == eLightType::Point) {
-            //    light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
-            //}
+            // if (ls->type == eLightType::Point) {
+            //     light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
+            // }
 
             l.shadowreg_index = int(list.shadow_regions.count);
 
@@ -1291,10 +1289,10 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
 
                             for (const auto &grp : mesh->groups()) {
                                 const Material *mat = grp.mat.get();
-                                const uint32_t mat_flags = mat->flags();
+                                const Bitmask<eMatFlags> mat_flags = mat->flags();
 
-                                if ((mat_flags & uint32_t(eMatFlags::AlphaBlend)) == 0) {
-                                    if ((mat_flags & uint32_t(eMatFlags::AlphaTest)) != 0 && mat->textures.size() > 3 &&
+                                if ((mat_flags & eMatFlags::AlphaBlend) == 0) {
+                                    if ((mat_flags & eMatFlags::AlphaTest) && mat->textures.size() > 3 &&
                                         mat->textures[3]) {
                                         // assume only the third texture gives transparency
                                         __record_texture(list.visible_textures, mat->textures[3], 0, 0xffffu);
@@ -1309,15 +1307,15 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                         batch.type_bits = BasicDrawBatch::TypeVege;
                                     }
 
-                                    batch.alpha_test_bit = (mat_flags & uint32_t(eMatFlags::AlphaTest)) ? 1 : 0;
+                                    batch.alpha_test_bit = (mat_flags & eMatFlags::AlphaTest) ? 1 : 0;
                                     batch.moving_bit = 0;
-                                    batch.two_sided_bit = (mat_flags & uint32_t(eMatFlags::TwoSided)) ? 1 : 0;
+                                    batch.two_sided_bit = (mat_flags & eMatFlags::TwoSided) ? 1 : 0;
                                     batch.indices_offset =
                                         (mesh->indices_buf().sub.offset + grp.offset) / sizeof(uint32_t);
                                     batch.base_vertex = proc_objects_[n->prim_index].base_vertex;
                                     batch.indices_count = grp.num_indices;
                                     batch.instance_index = n->prim_index;
-                                    batch.material_index = ((mat_flags & uint32_t(eMatFlags::AlphaTest)) ||
+                                    batch.material_index = ((mat_flags & eMatFlags::AlphaTest) ||
                                                             (batch.type_bits == BasicDrawBatch::TypeVege))
                                                                ? uint32_t(grp.mat.index())
                                                                : 0;

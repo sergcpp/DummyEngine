@@ -57,7 +57,8 @@ class Renderer {
 
     void InitBackendInfo();
 
-    void InitPipelinesForProgram(const Ren::ProgramRef &prog, const uint32_t mat_flags, Ren::PipelineStorage &storage,
+    void InitPipelinesForProgram(const Ren::ProgramRef &prog, Ren::Bitmask<Ren::eMatFlags> mat_flags,
+                                 Ren::PipelineStorage &storage,
                                  Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) const;
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);

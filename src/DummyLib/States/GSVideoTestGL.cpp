@@ -67,7 +67,7 @@ void GSVideoTest::InitVideoTextures() {
 
             snprintf(name_buf, sizeof(name_buf), "__video_texture_material_%i__", tx);
             vid_mat_[tx] = scene_manager_->scene_data().materials.Add(
-                name_buf, orig_vid_mat_[tx]->flags() | uint32_t(Ren::eMatFlags::TaaResponsive), programs.data(),
+                name_buf, orig_vid_mat_[tx]->flags() | Ren::eMatFlags::TaaResponsive, programs.data(),
                 int(programs.size()), textures.data(), samplers.data(), int(textures.size()), params.data(),
                 int(params.size()), log_.get());*/
         }

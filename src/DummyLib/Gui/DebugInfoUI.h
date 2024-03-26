@@ -13,7 +13,7 @@ struct ItemsInfo;
 
 class DebugInfoUI : public Gui::BaseElement {
     const Gui::BaseElement *parent_;
-    std::shared_ptr<Gui::BitmapFont> font_;
+    const Gui::BitmapFont *font_;
 
     uint64_t last_frame_time_ = 0;
     double cur_frame_dur_ = 0.0;
@@ -51,8 +51,7 @@ class DebugInfoUI : public Gui::BaseElement {
     } prev_timing_info_, cur_timing_info_;
 
   public:
-    DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const BaseElement *parent,
-                std::shared_ptr<Gui::BitmapFont> font);
+    DebugInfoUI(const Ren::Vec2f &pos, const Ren::Vec2f &size, const BaseElement *parent, const Gui::BitmapFont *font);
 
     void UpdateInfo(const Eng::FrontendInfo &frontend_info, const Eng::BackendInfo &backend_info,
                     const Eng::ItemsInfo &items_info, bool debug_items);

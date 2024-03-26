@@ -63,7 +63,7 @@ class GSBaseState : public Eng::ViewerState {
 
     Gui::Renderer *ui_renderer_ = nullptr;
     Gui::BaseElement *ui_root_ = nullptr;
-    std::shared_ptr<Gui::BitmapFont> font_;
+    const Gui::BitmapFont *font_ = {};
     DebugInfoUI *debug_ui_ = nullptr;
     std::unique_ptr<Gui::Image9Patch> cmdline_back_;
 

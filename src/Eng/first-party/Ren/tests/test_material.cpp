@@ -11,8 +11,8 @@ void test_material() {
     { // Load material
         TestContext test;
 
-        auto on_pipelines_needed = [&](std::string_view prog_name, const uint32_t flags, const char *arg1,
-                                       const char *arg2, const char *arg3, const char *arg4,
+        auto on_pipelines_needed = [&](std::string_view prog_name, const uint32_t flags, std::string_view arg1,
+                                       std::string_view arg2, std::string_view arg3, std::string_view arg4,
                                        Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
             out_pipelines.emplace_back(nullptr, 0);
         };
@@ -51,7 +51,7 @@ void test_material() {
         test.LoadMaterial("mat1.mat", mat_src, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
 
         require(status == Ren::eMatLoadStatus::CreatedFromData);
-        require(m_ref->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
+        require(m_ref->flags() & Ren::eMatFlags::AlphaTest);
         require(m_ref->ready());
         require(m_ref->name() == "mat1.mat");
 

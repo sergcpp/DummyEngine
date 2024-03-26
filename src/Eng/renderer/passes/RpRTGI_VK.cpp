@@ -326,7 +326,7 @@ void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         if (ctx.capabilities.raytracing) {
             Ren::ProgramRef rt_gi_prog =
                 sh.LoadProgram(ctx, "rt_gi", "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
-                               "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", nullptr);
+                               "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", {});
             assert(rt_gi_prog->ready());
 
             if (!pi_rt_gi_.Init(ctx.api_ctx(), std::move(rt_gi_prog), ctx.log())) {

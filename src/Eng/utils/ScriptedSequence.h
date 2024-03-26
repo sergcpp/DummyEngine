@@ -141,7 +141,7 @@ class ScriptedSequence {
         return nullptr;
     }
 
-    const SeqChoice *GetChoice(const char *key) const {
+    const SeqChoice *GetChoice(std::string_view key) const {
         for (int i = 0; i < choices_count_; i++) {
             if (choices_[i].key == key) {
                 return &choices_[i];
@@ -150,7 +150,7 @@ class ScriptedSequence {
         return nullptr;
     }
 
-    SeqChoice *GetChoice(const char *key) {
+    SeqChoice *GetChoice(std::string_view key) {
         for (int i = 0; i < choices_count_; i++) {
             if (choices_[i].key == key) {
                 return &choices_[i];

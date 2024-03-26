@@ -24,16 +24,17 @@ class ShaderLoader {
 #if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
     Ren::ShaderRef LoadGLSL(Ren::Context &ctx, std::string_view name, const Param *params);
 
-    Ren::ProgramRef LoadProgram(Ren::Context &ctx, std::string_view name, const char *vs_name, const char *fs_name,
-                                const char *tcs_name = nullptr, const char *tes_name = nullptr);
-    Ren::ProgramRef LoadProgram(Ren::Context &ctx, const char *name, const char *cs_name);
+    Ren::ProgramRef LoadProgram(Ren::Context &ctx, std::string_view name, std::string_view vs_name,
+                                std::string_view fs_name, std::string_view tcs_name = {},
+                                std::string_view tes_name = {});
+    Ren::ProgramRef LoadProgram(Ren::Context &ctx, std::string_view name, std::string_view cs_name);
 #endif
     Ren::ShaderRef LoadShader(Ren::Context &ctx, std::string_view name);
 
 #if defined(USE_VK_RENDER)
-    Ren::ProgramRef LoadProgram(Ren::Context &ctx, std::string_view name, const char *raygen_name,
-                                const char *closesthit_name, const char *anyhit_name, const char *miss_name,
-                                const char *intersection_name);
+    Ren::ProgramRef LoadProgram(Ren::Context &ctx, std::string_view name, std::string_view raygen_name,
+                                std::string_view closesthit_name, std::string_view anyhit_name,
+                                std::string_view miss_name, std::string_view intersection_name);
 #endif
 };
 } // namespace Eng

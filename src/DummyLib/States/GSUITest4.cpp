@@ -43,7 +43,7 @@ const char SEQ_NAME[] = "test/test_dialog/0_begin.json";
 
 GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
-    dialog_font_->set_scale(1.5f);
+    //dialog_font_->set_scale(1.5f);
 
     const float font_height = dialog_font_->height(ui_root_);
 

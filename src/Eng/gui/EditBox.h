@@ -12,15 +12,15 @@ enum class eEditBoxFlags { Integers, Chars, Floats, Signed, Multiline };
 class EditBox : public BaseElement {
     Image9Patch frame_;
     std::vector<std::string> lines_;
-    BitmapFont *font_;
+    const BitmapFont *font_;
     std::bitset<32> edit_flags_;
     bool focused_;
     int current_line_, current_char_;
 
   public:
-    EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets, BitmapFont *font,
+    EditBox(Ren::Context &ctx, const char *frame_tex_name, const Vec2f &frame_offsets, const BitmapFont *font,
             const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
-    EditBox(Image9Patch frame, BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
+    EditBox(Image9Patch frame, const BitmapFont *font, const Vec2f &pos, const Vec2f &size, const BaseElement *parent);
 
     Image9Patch &frame() { return frame_; }
 

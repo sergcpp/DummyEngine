@@ -19,16 +19,10 @@ template <class enum_type, typename = typename std::enable_if<std::is_enum<enum_
     Bitmask &operator=(const Bitmask &rhs) = default;
     Bitmask &operator=(Bitmask &&rhs) = default;
 
-    Bitmask operator|(const enum_type rhs) const { return Bitmask(mask_ | to_mask(rhs)); }
     Bitmask operator|(const Bitmask rhs) const { return Bitmask(mask_ | rhs.mask_); }
-
-    Bitmask operator|=(const enum_type rhs) { return (*this) = Bitmask(mask_ | to_mask(rhs)); }
     Bitmask operator|=(const Bitmask rhs) { return (*this) = Bitmask(mask_ | rhs.mask_); }
 
-    Bitmask operator&(const enum_type rhs) const { return Bitmask(mask_ & to_mask(rhs)); }
     Bitmask operator&(const Bitmask rhs) const { return Bitmask(mask_ & rhs.mask_); }
-
-    Bitmask operator&=(const enum_type rhs) { return (*this) = Bitmask(mask_ & to_mask(rhs)); }
     Bitmask operator&=(const Bitmask rhs) { return (*this) = Bitmask(mask_ & rhs.mask_); }
 
     Bitmask operator~() const { return Bitmask(~mask_); }

@@ -354,9 +354,9 @@ void Eng::SceneManager::InitHWRTAccStructures() {
         const uint32_t indices_start = indices.sub.offset;
         for (const Ren::TriGroup &grp : acc->mesh->groups()) {
             const Ren::Material *mat = grp.mat.get();
-            const uint32_t mat_flags = mat->flags();
+            const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
 
-            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) != 0) {
+            if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
                 continue;
             }
@@ -365,7 +365,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
             new_geo = {VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR};
             new_geo.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR;
             new_geo.flags = 0;
-            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaTest)) == 0) {
+            if (!(mat_flags & Ren::eMatFlags::AlphaTest)) {
                 new_geo.flags |= VK_GEOMETRY_OPAQUE_BIT_KHR;
             }
             new_geo.geometry.triangles = tri_data;
@@ -587,8 +587,8 @@ void Eng::SceneManager::InitHWRTAccStructures() {
         const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
         for (const Ren::TriGroup &grp : acc.mesh->groups()) {
             const Ren::Material *mat = grp.mat.get();
-            const uint32_t mat_flags = mat->flags();
-            if ((mat_flags & uint32_t(Ren::eMatFlags::AlphaBlend)) != 0) {
+            const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
+            if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
                 continue;
             }

@@ -78,8 +78,8 @@ Viewer::Viewer(const int w, const int h, const char *local_dir, const int valida
 #endif
             file_name += el.second.as_str().val;
 
-            std::shared_ptr<Gui::BitmapFont> loaded_font = font_storage_->LoadFont(name, file_name, ren_ctx_.get());
-            (void)loaded_font;
+            [[maybe_unused]] const Gui::BitmapFont *loaded_font =
+                font_storage_->LoadFont(name, file_name, ren_ctx_.get());
         }
     }
 

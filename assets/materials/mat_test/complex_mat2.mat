@@ -1,7 +1,8 @@
 gl_programs:
     - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
     - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-flags: two_sided
+flags:
+    - two_sided
 textures:
     - mat_test/gold-scuffed_basecolor-boosted.png
     - mat_test/gold-scuffed_normal.png

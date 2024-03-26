@@ -1236,7 +1236,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                     std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
                     std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
-                alpha_test = (bool)(mat->flags() & uint32_t(Ren::eMatFlags::AlphaTest));
+                alpha_test = bool(mat->flags() & Ren::eMatFlags::AlphaTest);
             } else {
                 cerr << "material " << materials[i] << " missing!" << endl;
             }
@@ -1904,8 +1904,8 @@ Ren::SamplerRef ModlApp::OnSamplerNeeded(Ren::SamplingParams params) {
     return ctx_->LoadSampler(params, &status);
 }
 
-void ModlApp::OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, const char *vs_shader,
-                                const char *fs_shader, const char *arg3, const char *arg4,
+void ModlApp::OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, std::string_view vs_shader,
+                                std::string_view fs_shader, std::string_view arg3, std::string_view arg4,
                                 Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
@@ -1913,8 +1913,8 @@ void ModlApp::OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, cons
     if (!prog->ready()) {
         using namespace std;
 
-        Sys::AssetFile vs_file(string("assets_pc/shaders/") + vs_shader),
-            fs_file(string("assets_pc/shaders/") + fs_shader);
+        Sys::AssetFile vs_file(string("assets_pc/shaders/").append(vs_shader)),
+            fs_file(string("assets_pc/shaders/").append(fs_shader));
         if (!vs_file || !fs_file) {
             printf("Error loading program %s", prog_name.data());
             return;

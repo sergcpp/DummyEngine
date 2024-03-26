@@ -30,7 +30,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 
 GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("dialog_font");
-    dialog_font_->set_scale(1.5f);
+    //dialog_font_->set_scale(1.5f);
 
     word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
                                                   ui_root_, *dialog_font_);
@@ -187,7 +187,7 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
     GSBaseState::DrawUI(r, root);
 
-    dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
+    //dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
 
     word_puzzle_->Draw(r);
 }

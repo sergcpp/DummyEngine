@@ -8,24 +8,25 @@
 #include <Eng/gui/BitmapFont.h>
 
 class FontStorage {
-    std::vector<std::pair<std::string, std::shared_ptr<Gui::BitmapFont>>> fonts_;
+    std::vector<std::pair<std::string, std::unique_ptr<Gui::BitmapFont>>> fonts_;
 
   public:
-    std::shared_ptr<Gui::BitmapFont> FindFont(const std::string &name) const {
+    const Gui::BitmapFont *FindFont(const std::string &name) const {
         for (auto &f : fonts_) {
             if (f.first == name) {
-                return f.second;
+                return f.second.get();
             }
         }
         return nullptr;
     }
 
-    std::shared_ptr<Gui::BitmapFont> LoadFont(const std::string &name, const std::string &file_name,
+    const Gui::BitmapFont *LoadFont(const std::string &name, const std::string &file_name,
                                               Ren::Context *ctx) {
-        std::shared_ptr<Gui::BitmapFont> font = FindFont(name);
+        const Gui::BitmapFont *font = FindFont(name);
         if (!font) {
-            font = std::make_shared<Gui::BitmapFont>(file_name.c_str(), ctx);
-            fonts_.push_back(std::make_pair(name, font));
+            auto new_font = std::make_unique<Gui::BitmapFont>(file_name.c_str(), ctx);
+            font = new_font.get();
+            fonts_.push_back(std::make_pair(name, std::move(new_font)));
         }
         return font;
     }

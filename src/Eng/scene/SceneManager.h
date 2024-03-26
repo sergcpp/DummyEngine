@@ -140,8 +140,8 @@ class SceneManager {
     void RegisterComponent(uint32_t index, Eng::CompStorage *storage, const std::function<PostLoadFunc> &post_init);
 
     void SetPipelineInitializer(
-        std::function<void(const Ren::ProgramRef &prog, const uint32_t mat_flags, Ren::PipelineStorage &storage,
-                           Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)> &&f) {
+        std::function<void(const Ren::ProgramRef &prog, Ren::Bitmask<Ren::eMatFlags> mat_flags,
+                           Ren::PipelineStorage &storage, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)> &&f) {
         init_pipelines_ = std::move(f);
     }
 
@@ -176,8 +176,8 @@ class SceneManager {
     void PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
     Ren::MaterialRef OnLoadMaterial(std::string_view name);
-    void OnLoadPipelines(std::string_view name, uint32_t flags, const char *v_shader, const char *f_shader,
-                         const char *tc_shader, const char *te_shader,
+    void OnLoadPipelines(std::string_view name, Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader,
+                         std::string_view f_shader, std::string_view tc_shader, std::string_view te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::eTexFlags flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
@@ -197,8 +197,8 @@ class SceneManager {
 
     void RebuildMaterialTextureGraph();
 
-    std::function<void(const Ren::ProgramRef &prog, uint32_t mat_flags, Ren::PipelineStorage &storage,
-                       Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)>
+    std::function<void(const Ren::ProgramRef &prog, Ren::Bitmask<Ren::eMatFlags> mat_flags,
+                       Ren::PipelineStorage &storage, Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines)>
         init_pipelines_;
 
     bool UpdateMaterialsBuffer();
