@@ -108,7 +108,7 @@ void Eng::RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAll
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
 
             if (!pi_solid_[0].Init(ctx.api_ctx(), rast_state, shadow_solid_prog, &vi_depth_pass_solid_, &rp_depth_only_,
                                    0, ctx.log())) {
@@ -120,7 +120,7 @@ void Eng::RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAll
                 ctx.log()->Error("[RpDepthFill::LazyInit]: Failed to initialize pipeline!");
             }
 
-            rast_state.poly.cull = uint8_t(Ren::eCullFace::Front);
+            rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
             if (!pi_solid_[1].Init(ctx.api_ctx(), rast_state, shadow_solid_prog, &vi_depth_pass_solid_, &rp_depth_only_,
                                    0, ctx.log())) {

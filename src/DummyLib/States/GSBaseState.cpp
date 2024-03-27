@@ -1160,11 +1160,12 @@ void GSBaseState::InitScene_PT() {
                         }
                         mat_desc.normal_map = load_texture(*mat->textures[1]);
 
-                        mat_handles.first = ray_scene_->AddMaterial(mat_desc);
-                        loaded_materials.emplace(mat_name, mat_handles.first).first;
+                        const Ray::MaterialHandle new_mat = ray_scene_->AddMaterial(mat_desc);
+                        mat_it = loaded_materials.emplace(mat_name, new_mat).first;
                     }
+                    mat_handles.first = mat_it->second;
 
-                    if (grp.front_mat != grp.back_mat) {
+                    if (false && grp.front_mat != grp.back_mat) {
                         mat = grp.back_mat.get();
 
                         Ray::principled_mat_desc_t mat_desc;
