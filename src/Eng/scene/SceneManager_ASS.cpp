@@ -1146,8 +1146,8 @@ bool Eng::SceneManager::HPreprocessMaterial(assets_context_t &ctx, const char *i
                         line.pop_back();
                     }
 
-                    const size_t n2 = line.find(' ', 7);
-                    const std::string tex_name = "assets/textures/" + line.substr(7, n2 - 7 - 1);
+                    const size_t n2 = line.find(' ', 6);
+                    const std::string tex_name = "assets/textures/" + line.substr(6, n2 - 6);
 
                     auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), tex_name);
                     if (it == std::end(out_dependencies)) {

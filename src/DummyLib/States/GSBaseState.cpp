@@ -1165,7 +1165,7 @@ void GSBaseState::InitScene_PT() {
                     }
                     mat_handles.first = mat_it->second;
 
-                    if (false && grp.front_mat != grp.back_mat) {
+                    if (grp.front_mat != grp.back_mat) {
                         mat = grp.back_mat.get();
 
                         Ray::principled_mat_desc_t mat_desc;
@@ -1216,8 +1216,8 @@ void GSBaseState::InitScene_PT() {
             const Ray::MeshInstanceHandle new_mi = ray_scene_->AddMeshInstance(mi);
         }
 
-        const uint32_t lightsource_flags = Eng::CompLightSourceBit | Eng::CompTransformBit;
-        if ((obj.comp_mask & lightsource_flags) == lightsource_flags) {
+        const uint32_t lightsource_mask = Eng::CompLightSourceBit | Eng::CompTransformBit;
+        if ((obj.comp_mask & lightsource_mask) == lightsource_mask) {
             const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
             const Eng::LightSource &ls = lights_src[obj.components[Eng::CompLightSource]];
             if (ls.power > 0.0f) {
@@ -1226,7 +1226,7 @@ void GSBaseState::InitScene_PT() {
                     pos = tr.world_from_object * pos;
                     pos /= pos[3];
 
-                    if (ls.spot_angle > 0.0f) {
+                    if (ls.spot_angle < Ren::Pi<float>()) {
                         auto dir = Ren::Vec4f{ls.dir[0], ls.dir[1], ls.dir[2], 0.0f};
                         dir = tr.world_from_object * dir;
 
