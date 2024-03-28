@@ -420,6 +420,13 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             const JsNumber &js_sun_softness = js_env.at("sun_angle").as_num();
             scene_data_.env.sun_angle = float(js_sun_softness.val);
         }
+        if (js_env.Has("env_col")) {
+            const JsArrayP &js_col = js_env.at("env_col").as_arr();
+
+            const double r = js_col.at(0).as_num().val, g = js_col.at(1).as_num().val, b = js_col.at(2).as_num().val;
+
+            scene_data_.env.env_col = Ren::Vec3f{float(r), float(g), float(b)};
+        }
         if (js_env.Has("env_map")) {
             const JsStringP &js_env_map = js_env.at("env_map").as_str();
 

@@ -127,6 +127,12 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.spot_blend = float(js_spot_blend.val);
     }
 
+    ls.sky_portal = false;
+    if (js_in.Has("sky_portal")) {
+        const JsLiteral &js_sky_portal = js_in.at("sky_portal").as_lit();
+        ls.sky_portal = (js_sky_portal.val == JsLiteralType::True);
+    }
+
     ls.cast_shadow = false;
     if (js_in.Has("cast_shadow")) {
         ls.cast_shadow = js_in.at("cast_shadow").as_lit().val == JsLiteralType::True;
@@ -207,6 +213,10 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
 
     if (ls.cull_radius != 0.1f) {
         js_out.Push("cull_radius", JsNumber{ls.cull_radius});
+    }
+
+    if (ls.sky_portal) {
+        js_out.Push("sky_portal", JsLiteral{JsLiteralType::True});
     }
 
     if (ls.cast_shadow) {

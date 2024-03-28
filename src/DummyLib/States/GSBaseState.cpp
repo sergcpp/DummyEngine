@@ -683,8 +683,7 @@ void GSBaseState::Draw() {
                 back_list = -1;
             } else if (use_pt_) {
                 const Ren::Camera &cam = scene_manager_->main_cam();
-                SetupView_PT(cam.world_position(), (cam.world_position() - cam.view_dir()),
-                             Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam.angle());
+                SetupView_PT(cam.world_position(), -cam.view_dir(), cam.up(), cam.angle());
                 if (invalidate_view_) {
                     Clear_PT();
                     invalidate_view_ = false;
@@ -1018,12 +1017,14 @@ void GSBaseState::InitRenderer_PT() {
 }
 
 void GSBaseState::InitScene_PT() {
+    const Eng::SceneData &scene_data = scene_manager_->scene_data();
+
     ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
     { // Setup environment
         Ray::environment_desc_t env_desc;
-        env_desc.env_col[0] = env_desc.back_col[0] = 0.0f;
-        env_desc.env_col[1] = env_desc.back_col[1] = 0.0f;
-        env_desc.env_col[2] = env_desc.back_col[2] = 0.0f;
+        env_desc.env_col[0] = env_desc.back_col[0] = scene_data.env.env_col[0];
+        env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
+        env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
         ray_scene_->SetEnvironment(env_desc);
     }
     { // Add main camera
@@ -1031,6 +1032,7 @@ void GSBaseState::InitScene_PT() {
         cam_desc.type = Ray::eCamType::Persp;
         cam_desc.view_transform = Ray::eViewTransform::Standard;
         cam_desc.filter = Ray::ePixelFilter::BlackmanHarris;
+        cam_desc.filter_width = 1.0f;
         cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
         cam_desc.fwd[2] = -1.0f;
@@ -1096,8 +1098,6 @@ void GSBaseState::InitScene_PT() {
         }
         return tex_it->second;
     };
-
-    const Eng::SceneData &scene_data = scene_manager_->scene_data();
 
     const auto *transforms = (Eng::Transform *)scene_data.comp_store[Eng::CompTransform]->SequentialData();
     const auto *drawables = (Eng::Drawable *)scene_data.comp_store[Eng::CompDrawable]->SequentialData();
@@ -1248,9 +1248,12 @@ void GSBaseState::InitScene_PT() {
                     }
                 } else if (ls.type == Eng::eLightType::Rect) {
                     Ray::rect_light_desc_t rect_light_desc;
-                    memcpy(rect_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
+                    if (!ls.sky_portal) {
+                        memcpy(rect_light_desc.color, ValuePtr(0.25f * ls.power * ls.col / ls.area), 3 * sizeof(float));
+                    }
                     rect_light_desc.width = ls.width;
                     rect_light_desc.height = ls.height;
+                    rect_light_desc.sky_portal = ls.sky_portal;
                     const Ray::LightHandle new_light =
                         ray_scene_->AddLight(rect_light_desc, ValuePtr(tr.world_from_object));
                 } else if (ls.type == Eng::eLightType::Disk) {
@@ -1274,12 +1277,11 @@ void GSBaseState::InitScene_PT() {
     ray_scene_->Finalize();
 }
 
-void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
+void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up,
                                const float fov) {
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(Ray::CameraHandle{0}, cam_desc);
 
-    const Ren::Vec3f fwd = Normalize(target - origin);
     memcpy(&cam_desc.origin[0], ValuePtr(origin), 3 * sizeof(float));
     memcpy(&cam_desc.fwd[0], ValuePtr(fwd), 3 * sizeof(float));
     memcpy(&cam_desc.up[0], ValuePtr(up), 3 * sizeof(float));

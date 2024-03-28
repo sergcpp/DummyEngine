@@ -20,6 +20,7 @@ struct LightSource {
     float spot_angle, spot_blend, cap_radius;
     float spot_cos;
     float cull_offset, cull_radius;
+    bool sky_portal = false;
     bool cast_shadow, cache_shadow;
     float shadow_bias[2];
 
