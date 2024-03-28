@@ -59,6 +59,7 @@ class GSBaseState : public Eng::ViewerState {
     std::unique_ptr<Ray::RendererBase> ray_renderer_;
     std::unique_ptr<Ray::SceneBase> ray_scene_;
     std::vector<Ray::RegionContext> ray_reg_ctx_;
+    int unet_filter_passes_count_ = 0;
     Sys::ThreadPool *threads_ = nullptr;
 
     Gui::Renderer *ui_renderer_ = nullptr;

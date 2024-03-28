@@ -1013,6 +1013,10 @@ void GSBaseState::InitRenderer_PT() {
         s.w = ren_ctx_->w();
         s.h = ren_ctx_->h();
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
+
+        Ray::unet_filter_properties_t unet_props;
+        ray_renderer_->InitUNetFilter(true, unet_props);
+        unet_filter_passes_count_ = unet_props.pass_count;
     }
 }
 
@@ -1277,8 +1281,7 @@ void GSBaseState::InitScene_PT() {
     ray_scene_->Finalize();
 }
 
-void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up,
-                               const float fov) {
+void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, const float fov) {
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(Ray::CameraHandle{0}, cam_desc);
 
@@ -1334,6 +1337,9 @@ void GSBaseState::Draw_PT() {
         }
     } else {
         ray_renderer_->RenderScene(ray_scene_.get(), ray_reg_ctx_[0]);
+        for (int i = 0; i < unet_filter_passes_count_ && ray_reg_ctx_[0].iteration > 1; ++i) {
+            ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
+        }
     }
 
     const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
