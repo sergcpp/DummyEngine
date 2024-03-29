@@ -466,6 +466,13 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", device_name, vl, 22.34, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", device_name, vl, 24.14, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", device_name, vl, 24.73, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", device_name, vl, 19.89, NoShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", device_name, vl, 14.96, NoGI));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat3_sun_light", device_name, vl, 18.16, NoGI_RTShadow));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat3_sun_light", device_name, vl, 15.20, NoDiffGI));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat3_sun_light", device_name, vl, 18.69, NoDiffGI_RTShadow));
 
         for (auto &f : futures) {
             f.wait();
