@@ -75,9 +75,9 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
         // write mesh file name
         const Ren::String &mesh_name = dr.mesh->name();
         if (mesh_name != dr.mesh_file) {
-            js_out.Push("mesh_name", JsStringP{mesh_name, alloc});
+            js_out.Insert("mesh_name", JsStringP{mesh_name, alloc});
         }
-        js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name : dr.mesh_file, alloc});
+        js_out.Insert("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name : dr.mesh_file, alloc});
     }
 
     if (!dr.material_override.empty()) {
@@ -87,21 +87,21 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
             js_material_override.Push(JsStringP{mat.first->name(), alloc});
         }
 
-        js_out.Push("material_override", std::move(js_material_override));
+        js_out.Insert("material_override", std::move(js_material_override));
     }
 
     // write visibility
     if ((dr.vis_mask & eVisibility::Camera) == (DefaultVisMask & eVisibility::Camera)) {
-        js_out.Push("visible_to_camera",
-                    JsLiteral((dr.vis_mask & eVisibility::Camera) ? JsLiteralType::True : JsLiteralType::False));
+        js_out.Insert("visible_to_camera",
+                      JsLiteral((dr.vis_mask & eVisibility::Camera) ? JsLiteralType::True : JsLiteralType::False));
     }
     if ((dr.vis_mask & eVisibility::Shadow) == (DefaultVisMask & eVisibility::Shadow)) {
-        js_out.Push("visible_to_shadow",
-                    JsLiteral((dr.vis_mask & eVisibility::Shadow) ? JsLiteralType::True : JsLiteralType::False));
+        js_out.Insert("visible_to_shadow",
+                      JsLiteral((dr.vis_mask & eVisibility::Shadow) ? JsLiteralType::True : JsLiteralType::False));
     }
     if ((dr.vis_mask & eVisibility::Probes) == (DefaultVisMask & eVisibility::Probes)) {
-        js_out.Push("visible_to_probes",
-                    JsLiteral((dr.vis_mask & eVisibility::Probes) ? JsLiteralType::True : JsLiteralType::False));
+        js_out.Insert("visible_to_probes",
+                      JsLiteral((dr.vis_mask & eVisibility::Probes) ? JsLiteralType::True : JsLiteralType::False));
     }
 
     /*if (dr.ellipsoids_count) {

@@ -394,7 +394,7 @@ void GSVideoTest::SaveScene(JsObjectP &js_scene) {
             js_view_origin.Push(JsNumber{double(initial_view_pos_[1])});
             js_view_origin.Push(JsNumber{double(initial_view_pos_[2])});
 
-            js_camera.Push("view_origin", std::move(js_view_origin));
+            js_camera.Insert("view_origin", std::move(js_view_origin));
         }
 
         { // write view direction
@@ -404,22 +404,22 @@ void GSVideoTest::SaveScene(JsObjectP &js_scene) {
             js_view_dir.Push(JsNumber{double(initial_view_dir_[1])});
             js_view_dir.Push(JsNumber{double(initial_view_dir_[2])});
 
-            js_camera.Push("view_dir", std::move(js_view_dir));
+            js_camera.Insert("view_dir", std::move(js_view_dir));
         }
 
         { // write forward speed
-            js_camera.Push("fwd_speed", JsNumber{double(max_fwd_speed_)});
+            js_camera.Insert("fwd_speed", JsNumber{double(max_fwd_speed_)});
         }
 
         { // write fov
-            js_camera.Push("fov", JsNumber{double(view_fov_)});
+            js_camera.Insert("fov", JsNumber{double(view_fov_)});
         }
 
         { // write max exposure
-            js_camera.Push("max_exposure", JsNumber{double(max_exposure_)});
+            js_camera.Insert("max_exposure", JsNumber{double(max_exposure_)});
         }
 
-        js_scene.Push("camera", std::move(js_camera));
+        js_scene.Insert("camera", std::move(js_camera));
     }
 }
 

@@ -175,7 +175,7 @@
                                     "bistro/Paris_StringLights_01_Pink_Color_Emissive2.mat"
                                   ]
         },
-        "stringlight_wind" : {
+        "stringlight_wind_" : {
             "mesh_file" : "bistro/stringlight_wind.mesh"
         },
         "stringlight_wind_14" : {

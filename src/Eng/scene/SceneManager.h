@@ -45,7 +45,6 @@ namespace SceneManagerInternal {
 // TODO: remove this from header file
 struct AssetCache {
     JsObjectP js_db;
-    Ren::HashMap32<std::string, int> db_map;
     Ren::HashMap32<std::string, uint32_t> texture_averages;
 
     explicit AssetCache(const Sys::MultiPoolAllocator<char> &mp_alloc) : js_db(mp_alloc) {}
@@ -56,16 +55,15 @@ struct AssetCache {
         texture_averages.Insert(tex_name, color);
 
         JsObjectP &js_files = js_db["files"].as_obj();
-        const int *index = db_map.Find(tex_name);
-        if (index) {
-            JsObjectP &js_file = js_files.elements[*index].second.as_obj();
-
+        const size_t i = js_files.IndexOf(tex_name);
+        if (i < js_files.Size()) {
+            JsObjectP &js_file = js_files[i].second.as_obj();
             if (js_file.Has("color")) {
                 JsNumber &js_color = js_file.at("color").as_num();
                 js_color.val = double(color);
             } else {
                 auto js_color = JsNumber{double(color)};
-                js_file.Push("color", js_color);
+                js_file.Insert("color", js_color);
             }
         }
     }

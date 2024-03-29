@@ -24,11 +24,11 @@ void Eng::SoundSource::Write(const SoundSource &snd, JsObjectP &js_out) {
         js_offset.Push(JsNumber{snd.offset[1]});
         js_offset.Push(JsNumber{snd.offset[2]});
 
-        js_out.Push("offset", std::move(js_offset));
+        js_out.Insert("offset", std::move(js_offset));
     }
 
     if (!snd.bone_name.empty()) {
         auto js_bone_name = JsStringP{snd.bone_name, alloc};
-        js_out.Push("bone", std::move(js_bone_name));
+        js_out.Insert("bone", std::move(js_bone_name));
     }
 }

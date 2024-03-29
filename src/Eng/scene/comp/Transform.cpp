@@ -78,7 +78,7 @@ void Eng::Transform::Write(const Transform &tr, JsObjectP &js_out) {
         js_pos.Push(JsNumber{tr.world_from_object[3][1]});
         js_pos.Push(JsNumber{tr.world_from_object[3][2]});
 
-        js_out.Push("pos", std::move(js_pos));
+        js_out.Insert("pos", std::move(js_pos));
     }
 
     { // write rotation
@@ -90,7 +90,7 @@ void Eng::Transform::Write(const Transform &tr, JsObjectP &js_out) {
         js_rot.Push(JsNumber{euler_angles_deg[1]});
         js_rot.Push(JsNumber{euler_angles_deg[2]});
 
-        js_out.Push("rot", std::move(js_rot));
+        js_out.Insert("rot", std::move(js_rot));
     }
 
     if (tr.scale[0] != 1.0f || tr.scale[1] != 1.0f || tr.scale[2] != 1.0f) {
@@ -100,7 +100,7 @@ void Eng::Transform::Write(const Transform &tr, JsObjectP &js_out) {
         js_scale.Push(JsNumber{tr.scale[1]});
         js_scale.Push(JsNumber{tr.scale[2]});
 
-        js_out.Push("scale", std::move(js_scale));
+        js_out.Insert("scale", std::move(js_scale));
     }
 }
 

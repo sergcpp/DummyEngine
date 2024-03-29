@@ -300,16 +300,16 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
     using namespace ScriptedSequenceInternal;
 
     { // write name
-        js_seq.Push("name", JsString{name_});
+        js_seq.Insert("name", JsString{name_});
     }
 
     { // write tracks
         JsArray js_tracks;
         for (const Track &track : tracks_) {
             JsObject js_track;
-            js_track.Push("name", JsString{track.name});
-            js_track.Push("type", JsString{TrackTypeNames[int(track.type)]});
-            js_track.Push("target", JsString{track.target});
+            js_track.Insert("name", JsString{track.name});
+            js_track.Insert("type", JsString{TrackTypeNames[int(track.type)]});
+            js_track.Insert("target", JsString{track.target});
 
             { // write actions
                 JsArray js_actions;
@@ -318,15 +318,15 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
                     const SeqAction &action = actions_[i];
 
                     JsObject js_action;
-                    js_action.Push("type", JsString{ActionTypeNames[int(action.type)]});
-                    js_action.Push("time_beg", JsNumber{action.time_beg});
-                    js_action.Push("time_end", JsNumber{action.time_end});
+                    js_action.Insert("type", JsString{ActionTypeNames[int(action.type)]});
+                    js_action.Insert("time_beg", JsNumber{action.time_beg});
+                    js_action.Insert("time_end", JsNumber{action.time_end});
                     { // write start pos
                         JsArray js_pos_beg;
                         js_pos_beg.Push(JsNumber{action.pos_beg[0]});
                         js_pos_beg.Push(JsNumber{action.pos_beg[1]});
                         js_pos_beg.Push(JsNumber{action.pos_beg[2]});
-                        js_action.Push("pos_beg", std::move(js_pos_beg));
+                        js_action.Insert("pos_beg", std::move(js_pos_beg));
                     }
                     if (action.pos_end[0] != action.pos_beg[0] || action.pos_end[1] != action.pos_beg[1] ||
                         action.pos_end[2] != action.pos_beg[2]) {
@@ -334,14 +334,14 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
                         js_pos_end.Push(JsNumber{action.pos_end[0]});
                         js_pos_end.Push(JsNumber{action.pos_end[1]});
                         js_pos_end.Push(JsNumber{action.pos_end[2]});
-                        js_action.Push("pos_end", std::move(js_pos_end));
+                        js_action.Insert("pos_end", std::move(js_pos_end));
                     }
                     { // write start rot
                         JsArray js_rot_beg;
                         js_rot_beg.Push(JsNumber{action.rot_beg[0]});
                         js_rot_beg.Push(JsNumber{action.rot_beg[1]});
                         js_rot_beg.Push(JsNumber{action.rot_beg[2]});
-                        js_action.Push("rot_beg", std::move(js_rot_beg));
+                        js_action.Insert("rot_beg", std::move(js_rot_beg));
                     }
                     if (action.rot_end[0] != action.rot_beg[0] || action.rot_end[1] != action.rot_beg[1] ||
                         action.rot_end[2] != action.rot_beg[2]) {
@@ -349,69 +349,69 @@ void Eng::ScriptedSequence::Save(JsObject &js_seq) {
                         js_rot_end.Push(JsNumber{action.rot_end[0]});
                         js_rot_end.Push(JsNumber{action.rot_end[1]});
                         js_rot_end.Push(JsNumber{action.rot_end[2]});
-                        js_action.Push("rot_end", std::move(js_rot_end));
+                        js_action.Insert("rot_end", std::move(js_rot_end));
                     }
                     if (action.anim_ref) {
-                        js_action.Push("anim", JsString{action.anim_ref->name()});
+                        js_action.Insert("anim", JsString{action.anim_ref->name()});
                     }
                     if (!action.caption.empty()) {
-                        js_action.Push("caption", JsString{action.caption});
+                        js_action.Insert("caption", JsString{action.caption});
                     }
 
                     if (action.sound_ref) {
-                        js_action.Push("sound", JsString{action.sound_ref->name()});
+                        js_action.Insert("sound", JsString{action.sound_ref->name()});
                     }
 
                     if (std::abs(action.sound_offset) > 0.001) {
-                        js_action.Push("sound_offset", JsNumber{action.sound_offset});
+                        js_action.Insert("sound_offset", JsNumber{action.sound_offset});
                     }
 
                     if (action.dof) {
-                        js_action.Push("dof", JsLiteral{JsLiteralType::True});
+                        js_action.Insert("dof", JsLiteral{JsLiteralType::True});
                     }
 
                     if (action.fade_beg != 0.0f || action.fade_end != 0.0f) {
-                        js_action.Push("fade_beg", JsNumber{(double)action.fade_beg});
-                        js_action.Push("fade_end", JsNumber{(double)action.fade_end});
+                        js_action.Insert("fade_beg", JsNumber{(double)action.fade_beg});
+                        js_action.Insert("fade_end", JsNumber{(double)action.fade_end});
                     }
 
                     js_actions.Push(std::move(js_action));
                 }
 
-                js_track.Push("actions", std::move(js_actions));
+                js_track.Insert("actions", std::move(js_actions));
             }
 
             js_tracks.Push(std::move(js_track));
         }
-        js_seq.Push("tracks", std::move(js_tracks));
+        js_seq.Insert("tracks", std::move(js_tracks));
     }
 
     { // write ending
         JsObject js_ending;
-        js_ending.Push("time_point", JsNumber{end_time_});
+        js_ending.Insert("time_point", JsNumber{end_time_});
 
         JsArray js_choices;
         for (int i = 0; i < choices_count_; i++) {
             const SeqChoice &choice = choices_[i];
 
             JsObject js_choice;
-            js_choice.Push("key", JsString{choice.key});
+            js_choice.Insert("key", JsString{choice.key});
             if (!choice.text.empty()) {
-                js_choice.Push("text", JsString{choice.text});
+                js_choice.Insert("text", JsString{choice.text});
             }
-            js_choice.Push("sequence", JsString{choice.seq_name});
+            js_choice.Insert("sequence", JsString{choice.seq_name});
             if (!choice.puzzle_name.empty()) {
-                js_choice.Push("puzzle", JsString{choice.puzzle_name});
+                js_choice.Insert("puzzle", JsString{choice.puzzle_name});
             }
             js_choices.Push(std::move(js_choice));
         }
-        js_ending.Push("choices", std::move(js_choices));
+        js_ending.Insert("choices", std::move(js_choices));
 
         if (choice_align_ != eChoiceAlign::Center) {
-            js_ending.Push("choice_align", JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
+            js_ending.Insert("choice_align", JsString{choice_align_ == eChoiceAlign::Left ? "left" : "right"});
         }
 
-        js_seq.Push("ending", std::move(js_ending));
+        js_seq.Insert("ending", std::move(js_ending));
     }
 }
 

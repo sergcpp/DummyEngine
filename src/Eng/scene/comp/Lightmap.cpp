@@ -7,4 +7,4 @@ void Eng::Lightmap::Read(const JsObjectP &js_in, Lightmap &lm) {
     lm.size[0] = lm.size[1] = int(js_res.val);
 }
 
-void Eng::Lightmap::Write(const Lightmap &lm, JsObjectP &js_out) { js_out.Push("res", JsNumber{lm.size[0]}); }
+void Eng::Lightmap::Write(const Lightmap &lm, JsObjectP &js_out) { js_out.Insert("res", JsNumber{lm.size[0]}); }

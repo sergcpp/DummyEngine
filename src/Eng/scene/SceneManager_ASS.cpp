@@ -233,11 +233,12 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
     std::lock_guard<std::mutex> _(ctx.cache_mtx);
     JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
-    const int *in_ndx = ctx.cache->db_map.Find(in_file.generic_string().c_str());
-    if (in_ndx) {
+    // const int *in_ndx = ctx.cache->db_map.Find(in_file.generic_string().c_str());
+    const size_t in_ndx = js_files.IndexOf(in_file.generic_string());
+    if (in_ndx < js_files.Size()) {
         bool file_has_changed = true;
 
-        JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
+        JsObjectP &js_in_file = js_files[in_ndx].second.as_obj();
         if (js_in_file.Has("in_time") && js_in_file.Has("out_time")) {
             const JsStringP &js_in_file_time = js_in_file.at("in_time").as_str();
             const JsStringP &js_out_file_time = js_in_file.at("out_time").as_str();
@@ -259,14 +260,14 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
                     if (js_out_file_hash.val == out_hash_str) {
                         // write new time
                         if (!js_in_file.Has("in_time")) {
-                            js_in_file.Push("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
+                            js_in_file.Insert("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
                         } else {
                             JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
                             js_in_file_time.val = in_t_str;
                         }
 
                         if (!js_in_file.Has("out_time")) {
-                            js_in_file.Push("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
+                            js_in_file.Insert("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
                         } else {
                             JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                             js_out_file_time.val = out_t_str;
@@ -281,7 +282,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
             if (file_has_changed) {
                 // store new hash and time value
                 if (!js_in_file.Has("in_hash")) {
-                    js_in_file.Push("in_hash", JsStringP(in_hash_str, *ctx.mp_alloc));
+                    js_in_file.Insert("in_hash", JsStringP(in_hash_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_in_file_hash = js_in_file["in_hash"].as_str();
                     js_in_file_hash.val = in_hash_str;
@@ -289,7 +290,7 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
 
                 // write new time
                 if (!js_in_file.Has("in_time")) {
-                    js_in_file.Push("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
+                    js_in_file.Insert("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_in_file_time = js_in_file["in_time"].as_str();
                     js_in_file_time.val = in_t_str;
@@ -340,10 +341,9 @@ bool CheckAssetChanged(const std::filesystem::path &in_file, const std::filesyst
         const std::string in_hash_str = std::to_string(in_hash);
 
         JsObjectP new_entry(*ctx.mp_alloc);
-        new_entry.Push("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
-        new_entry.Push("in_hash", JsStringP(in_hash_str, *ctx.mp_alloc));
-        const size_t new_ndx = js_files.Push(in_file.generic_string().c_str(), std::move(new_entry));
-        ctx.cache->db_map[in_file.generic_string().c_str()] = int(new_ndx);
+        new_entry.Insert("in_time", JsStringP(in_t_str, *ctx.mp_alloc));
+        new_entry.Insert("in_hash", JsStringP(in_hash_str, *ctx.mp_alloc));
+        js_files.Insert(in_file.generic_string(), std::move(new_entry));
     }
 
     return true;
@@ -666,12 +666,12 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
             std::lock_guard<std::mutex> _(ctx.cache_mtx);
             JsObjectP &js_files = ctx.cache->js_db["files"].as_obj();
 
-            const int *in_ndx = ctx.cache->db_map.Find(in_file.generic_string().c_str());
-            if (in_ndx) {
-                JsObjectP &js_in_file = js_files[*in_ndx].second.as_obj();
+            const size_t in_ndx = js_files.IndexOf(in_file.generic_string());
+            if (in_ndx < js_files.Size()) {
+                JsObjectP &js_in_file = js_files[in_ndx].second.as_obj();
                 // store new hash value
                 if (!js_in_file.Has("out_hash")) {
-                    js_in_file.Push("out_hash", JsStringP(out_hash_str, *ctx.mp_alloc));
+                    js_in_file.Insert("out_hash", JsStringP(out_hash_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_out_file_hash = js_in_file["out_hash"].as_str();
                     js_out_file_hash.val = out_hash_str.c_str();
@@ -685,49 +685,42 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
                 // store new time value
                 if (!js_in_file.Has("out_time")) {
-                    js_in_file.Push("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
+                    js_in_file.Insert("out_time", JsStringP(out_t_str, *ctx.mp_alloc));
                 } else {
                     JsStringP &js_out_file_time = js_in_file["out_time"].as_str();
                     js_out_file_time.val = out_t_str;
                 }
 
                 // store new dependencies list
-                if (!dependencies.empty()) {
-                    size_t ndx;
-                    if ((ndx = js_in_file.IndexOf("deps")) == js_in_file.Size()) {
-                        js_in_file.Push("deps", JsObjectP{*ctx.mp_alloc});
+                if (!js_in_file.Has("deps")) {
+                    js_in_file.Insert("deps", JsObjectP{*ctx.mp_alloc});
+                }
+
+                JsObjectP &js_deps = js_in_file["deps"].as_obj();
+                for (size_t i = 0; i < dependencies.size(); ++i) {
+                    std::string dep_t_str;
+                    if (std::filesystem::exists(dependencies[i])) {
+                        const auto dep_t = to_time_t(std::filesystem::last_write_time(dependencies[i]));
+                        dep_t_str = std::to_string(dep_t);
                     }
 
-                    JsObjectP &js_deps = js_in_file.elements[ndx].second.as_obj();
-                    for (size_t i = 0; i < dependencies.size(); ++i) {
-                        std::string dep_t_str;
-                        if (std::filesystem::exists(dependencies[i])) {
-                            const auto dep_t = to_time_t(std::filesystem::last_write_time(dependencies[i]));
-                            dep_t_str = std::to_string(dep_t);
-                        }
+                    const uint32_t dep_hash = HashFile(dependencies[i], ctx.log);
+                    const std::string dep_hash_str = std::to_string(out_hash);
 
-                        const uint32_t dep_hash = HashFile(dependencies[i], ctx.log);
-                        const std::string dep_hash_str = std::to_string(out_hash);
+                    JsObjectP js_dep(*ctx.mp_alloc);
+                    js_dep.Insert("in_time", JsStringP(dep_t_str, *ctx.mp_alloc));
+                    js_dep.Insert("in_hash", JsStringP(dep_hash_str, *ctx.mp_alloc));
 
-                        JsObjectP js_dep(*ctx.mp_alloc);
-                        js_dep.Push("in_time", JsStringP(dep_t_str, *ctx.mp_alloc));
-                        js_dep.Push("in_hash", JsStringP(dep_hash_str, *ctx.mp_alloc));
-
-                        if (i < js_deps.Size()) {
-                            js_deps[i].first = dependencies[i].c_str();
-                            js_deps[i].second = std::move(js_dep);
+                    js_deps[dependencies[i]] = std::move(js_dep);
+                }
+                if (js_deps.elements.size() > dependencies.size()) {
+                    for (auto it = begin(js_deps.elements); it != end(js_deps.elements);) {
+                        auto it2 = std::find(begin(dependencies), end(dependencies), it->first.c_str());
+                        if (it2 == end(dependencies)) {
+                            it = js_deps.elements.erase(it);
                         } else {
-                            js_deps.Push(dependencies[i].c_str(), std::move(js_dep));
+                            ++it;
                         }
-                    }
-                    if (js_deps.elements.size() > dependencies.size()) {
-                        js_deps.elements.erase(js_deps.elements.begin() + dependencies.size(),
-                                               js_deps.elements.begin() + js_deps.elements.size());
-                    }
-                } else {
-                    size_t ndx;
-                    if ((ndx = js_in_file.IndexOf("deps")) < js_in_file.Size()) {
-                        js_in_file.elements.erase(js_in_file.elements.begin() + ndx);
                     }
                 }
             }
@@ -746,17 +739,15 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     if (ctx.cache->js_db.Has("files")) {
         const JsObjectP &js_files = ctx.cache->js_db.at("files").as_obj();
-        for (int i = 0; i < int(js_files.elements.size()); i++) {
-            const char *key = js_files.elements[i].first.c_str();
-            ctx.cache->db_map[key] = i;
-
-            if (js_files.elements[i].second.as_obj().Has("color")) {
-                const JsNumber &js_color = js_files.elements[i].second.as_obj().at("color").as_num();
-                ctx.cache->texture_averages[key] = uint32_t(js_color.val);
+        for (auto it = begin(js_files.elements); it != end(js_files.elements); ++it) {
+            const size_t ndx = it->second.as_obj().IndexOf("color");
+            if (ndx < it->second.as_obj().Size()) {
+                const JsNumber &js_color = it->second.as_obj()[ndx].second.as_num();
+                ctx.cache->texture_averages[it->first.c_str()] = uint32_t(js_color.val);
             }
         }
     } else {
-        ctx.cache->js_db.Push("files", JsObjectP{mp_alloc});
+        ctx.cache->js_db.Insert("files", JsObjectP{mp_alloc});
     }
 
     glslang_initialize_process();

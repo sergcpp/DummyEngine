@@ -39,11 +39,11 @@ void Eng::LightProbe::Write(const LightProbe &pr, JsObjectP &js_out) {
         js_offset.Push(JsNumber(pr.offset[1]));
         js_offset.Push(JsNumber(pr.offset[2]));
 
-        js_out.Push("offset", std::move(js_offset));
+        js_out.Insert("offset", std::move(js_offset));
     }
 
     { // write radius
-        js_out.Push("radius", JsNumber(pr.radius));
+        js_out.Insert("radius", JsNumber(pr.radius));
     }
 
     { // write sh coefficients
@@ -59,6 +59,6 @@ void Eng::LightProbe::Write(const LightProbe &pr, JsObjectP &js_out) {
             js_coeffs.Push(std::move(js_coeff));
         }
 
-        js_out.Push("sh_coeffs", std::move(js_coeffs));
+        js_out.Insert("sh_coeffs", std::move(js_coeffs));
     }
 }

@@ -542,7 +542,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
     auto alloc = js_scene.get_allocator();
     // write name
-    js_scene.Push("name", JsStringP(scene_data_.name, alloc));
+    js_scene.Insert("name", JsStringP(scene_data_.name, alloc));
 
     { // write environment
         JsObjectP js_env(alloc);
@@ -553,7 +553,7 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
             js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[1]));
             js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[2]));
 
-            js_env.Push("sun_dir", std::move(js_sun_dir));
+            js_env.Insert("sun_dir", std::move(js_sun_dir));
         }
 
         { // write sun color
@@ -562,16 +562,16 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
             js_sun_col.Push(JsNumber(scene_data_.env.sun_col[1]));
             js_sun_col.Push(JsNumber(scene_data_.env.sun_col[2]));
 
-            js_env.Push("sun_col", std::move(js_sun_col));
+            js_env.Insert("sun_col", std::move(js_sun_col));
         }
 
         { // write sun softness
-            js_env.Push("sun_angle", JsNumber(scene_data_.env.sun_angle));
+            js_env.Insert("sun_angle", JsNumber(scene_data_.env.sun_angle));
         }
 
         { // write env map names
-            js_env.Push("env_map", JsStringP{scene_data_.env.env_map_name, alloc});
-            js_env.Push("env_map_pt", JsStringP{scene_data_.env.env_map_name_pt, alloc});
+            js_env.Insert("env_map", JsStringP{scene_data_.env.env_map_name, alloc});
+            js_env.Insert("env_map_pt", JsStringP{scene_data_.env.env_map_name_pt, alloc});
         }
 
         { // write sun shadow bias
@@ -579,7 +579,7 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
             js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[0]));
             js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[1]));
 
-            js_env.Push("sun_shadow_bias", std::move(js_sun_shadow_bias));
+            js_env.Insert("sun_shadow_bias", std::move(js_sun_shadow_bias));
         }
 
         { // write ambient hack
@@ -588,10 +588,10 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
             js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[1]));
             js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[2]));
 
-            js_env.Push("ambient_hack", std::move(js_ambient_hack));
+            js_env.Insert("ambient_hack", std::move(js_ambient_hack));
         }
 
-        js_scene.Push("environment", std::move(js_env));
+        js_scene.Insert("environment", std::move(js_env));
     }
 
     { // write objects
@@ -610,14 +610,14 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
                     JsObjectP js_comp(alloc);
                     comp_storage[i]->WriteToJs(p_comp, js_comp);
 
-                    js_obj.Push(comp_storage[i]->name(), std::move(js_comp));
+                    js_obj.Insert(comp_storage[i]->name(), std::move(js_comp));
                 }
             }
 
             js_objects.Push(std::move(js_obj));
         }
 
-        js_scene.Push("objects", std::move(js_objects));
+        js_scene.Insert("objects", std::move(js_objects));
     }
 }
 

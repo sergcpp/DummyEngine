@@ -158,7 +158,7 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
 
         js_type.val = g_type_names[int(ls.type)];
 
-        js_out.Push("type", std::move(js_type));
+        js_out.Insert("type", std::move(js_type));
     }
 
     if (ls.col[0] != 1.0f || ls.col[1] != 1.0f || ls.col[2] != 1.0f) { // Write color
@@ -168,11 +168,11 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_color.Push(JsNumber{ls.col[1]});
         js_color.Push(JsNumber{ls.col[2]});
 
-        js_out.Push("color", std::move(js_color));
+        js_out.Insert("color", std::move(js_color));
     }
 
     if (ls.power != 1.0f) {
-        js_out.Push("power", JsNumber{ls.power});
+        js_out.Insert("power", JsNumber{ls.power});
     }
 
     { // Write offset
@@ -182,11 +182,11 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_offset.Push(JsNumber{ls.offset[1]});
         js_offset.Push(JsNumber{ls.offset[2]});
 
-        js_out.Push("offset", std::move(js_offset));
+        js_out.Insert("offset", std::move(js_offset));
     }
 
     if (ls.radius != 1.0f) {
-        js_out.Push("radius", JsNumber{ls.radius});
+        js_out.Insert("radius", JsNumber{ls.radius});
     }
 
     { // Write direction and angle
@@ -196,31 +196,31 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_dir.Push(JsNumber{ls.dir[1]});
         js_dir.Push(JsNumber{ls.dir[2]});
 
-        js_out.Push("direction", std::move(js_dir));
+        js_out.Insert("direction", std::move(js_dir));
     }
 
     if (ls.angle_deg != 45.0f) {
-        js_out.Push("angle", JsNumber{ls.angle_deg});
+        js_out.Insert("angle", JsNumber{ls.angle_deg});
     }
 
     if (ls.spot_blend != 0.0f) {
-        js_out.Push("spot_blend", JsNumber{ls.spot_blend});
+        js_out.Insert("spot_blend", JsNumber{ls.spot_blend});
     }
 
     if (ls.cull_offset != 0.1f) {
-        js_out.Push("cull_offset", JsNumber{ls.cull_offset});
+        js_out.Insert("cull_offset", JsNumber{ls.cull_offset});
     }
 
     if (ls.cull_radius != 0.1f) {
-        js_out.Push("cull_radius", JsNumber{ls.cull_radius});
+        js_out.Insert("cull_radius", JsNumber{ls.cull_radius});
     }
 
     if (ls.sky_portal) {
-        js_out.Push("sky_portal", JsLiteral{JsLiteralType::True});
+        js_out.Insert("sky_portal", JsLiteral{JsLiteralType::True});
     }
 
     if (ls.cast_shadow) {
-        js_out.Push("cast_shadow", JsLiteral{JsLiteralType::True});
+        js_out.Insert("cast_shadow", JsLiteral{JsLiteralType::True});
     }
 
     if (ls.shadow_bias[0] != 4.0f || ls.shadow_bias[1] != 8.0f) {
@@ -229,6 +229,6 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_shadow_bias.Push(JsNumber{ls.shadow_bias[0]});
         js_shadow_bias.Push(JsNumber{ls.shadow_bias[1]});
 
-        js_out.Push("shadow_bias", std::move(js_shadow_bias));
+        js_out.Insert("shadow_bias", std::move(js_shadow_bias));
     }
 }

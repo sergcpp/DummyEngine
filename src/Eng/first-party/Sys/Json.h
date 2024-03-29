@@ -129,13 +129,14 @@ extern template struct JsArrayT<std::allocator<char>>;
 extern template struct JsArrayT<Sys::MultiPoolAllocator<char>>;
 
 template <typename Alloc> struct JsObjectT {
-    using AllocV = typename std::allocator_traits<Alloc>::template rebind_alloc<std::pair<StdString<Alloc>, JsElementT<Alloc>>>;
-    std::vector<std::pair<StdString<Alloc>, JsElementT<Alloc>>, AllocV> elements;
+    using ValueType = std::pair<StdString<Alloc>, JsElementT<Alloc>>;
+    using AllocV = typename std::allocator_traits<Alloc>::template rebind_alloc<ValueType>;
+    std::vector<ValueType, AllocV> elements;
 
     explicit JsObjectT(const Alloc &alloc = Alloc()) : elements(alloc) {}
 
-    const std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i) const;
-    std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i);
+    const std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i) const { return elements[i]; }
+    std::pair<StdString<Alloc>, JsElementT<Alloc>> &operator[](size_t i) { return elements[i]; }
     JsElementT<Alloc> &operator[](std::string_view s);
 
     [[nodiscard]] const JsElementT<Alloc> &at(std::string_view s) const;
@@ -150,8 +151,8 @@ template <typename Alloc> struct JsObjectT {
 
     [[nodiscard]] size_t Size() const { return elements.size(); }
 
-    size_t Push(std::string_view s, const JsElementT<Alloc> &el);
-    size_t Push(std::string_view s, JsElementT<Alloc> &&el);
+    size_t Insert(std::string_view s, const JsElementT<Alloc> &el);
+    size_t Insert(std::string_view s, JsElementT<Alloc> &&el);
 
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;

@@ -190,43 +190,29 @@ template struct JsArrayT<Sys::MultiPoolAllocator<char>>;
 
 /////////////////////////////////////////////////////////////////
 
-template <typename Alloc>
-const std::pair<StdString<Alloc>, JsElementT<Alloc>> &JsObjectT<Alloc>::operator[](size_t i) const {
-    auto it = elements.cbegin();
-    std::advance(it, i);
-    return *it;
-}
-
-template <typename Alloc> std::pair<StdString<Alloc>, JsElementT<Alloc>> &JsObjectT<Alloc>::operator[](size_t i) {
-    auto it = elements.begin();
-    std::advance(it, i);
-    return *it;
-}
-
 template <typename Alloc> JsElementT<Alloc> &JsObjectT<Alloc>::operator[](std::string_view s) {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            return e.second;
-        }
+    auto it = std::lower_bound(begin(elements), end(elements), s,
+                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
+    if (it == end(elements) || it->first != s) {
+        it = elements.emplace(it, StdString<Alloc>{s, elements.get_allocator()}, JsLiteral{JsLiteralType::Null});
     }
-    elements.emplace_back(StdString<Alloc>(s, elements.get_allocator()), JsLiteral{JsLiteralType::Null});
-    return elements.back().second;
+    return it->second;
 }
 
 template <typename Alloc> const JsElementT<Alloc> &JsObjectT<Alloc>::at(std::string_view s) const {
-    for (const auto &e : elements) {
-        if (e.first == s) {
-            return e.second;
-        }
+    auto it = std::lower_bound(begin(elements), end(elements), s,
+                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
+    if (it != end(elements) && it->first == s) {
+        return it->second;
     }
     throw std::out_of_range(std::string("No such element! \"").append(s) + "\"");
 }
 
 template <typename Alloc> JsElementT<Alloc> &JsObjectT<Alloc>::at(std::string_view s) {
-    for (auto &e : elements) {
-        if (e.first == s) {
-            return e.second;
-        }
+    auto it = std::lower_bound(begin(elements), end(elements), s,
+                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
+    if (it != end(elements) && it->first == s) {
+        return it->second;
     }
     throw std::out_of_range(std::string("No such element! \"").append(s) + "\"");
 }
@@ -239,22 +225,28 @@ template <typename Alloc> bool JsObjectT<Alloc>::operator==(const JsObjectT &rhs
 }
 
 template <typename Alloc> size_t JsObjectT<Alloc>::IndexOf(std::string_view s) const {
-    for (auto it = elements.begin(); it != elements.end(); ++it) {
-        if (it->first == s) {
-            return std::distance(elements.begin(), it);
-        }
+    auto it = std::lower_bound(begin(elements), end(elements), s,
+                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
+    if (it != end(elements) && it->first == s) {
+        return std::distance(begin(elements), it);
     }
     return elements.size();
 }
 
-template <typename Alloc> size_t JsObjectT<Alloc>::Push(std::string_view s, const JsElementT<Alloc> &el) {
-    elements.emplace_back(StdString<Alloc>(s, elements.get_allocator()), el);
-    return elements.size() - 1;
+template <typename Alloc> size_t JsObjectT<Alloc>::Insert(std::string_view s, const JsElementT<Alloc> &el) {
+    auto it = std::lower_bound(begin(elements), end(elements), s,
+                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
+    assert(it == end(elements) || it->first != s);
+    it = elements.emplace(it, StdString<Alloc>{s, elements.get_allocator()}, el);
+    return std::distance(begin(elements), it);
 }
 
-template <typename Alloc> size_t JsObjectT<Alloc>::Push(std::string_view s, JsElementT<Alloc> &&el) {
-    elements.emplace_back(StdString<Alloc>(s, elements.get_allocator()), std::move(el));
-    return elements.size() - 1;
+template <typename Alloc> size_t JsObjectT<Alloc>::Insert(std::string_view s, JsElementT<Alloc> &&el) {
+    auto it = std::lower_bound(begin(elements), end(elements), s,
+                               [](const ValueType &lhs, std::string_view rhs) { return lhs.first < rhs; });
+    assert(it == end(elements) || it->first != s);
+    it = elements.emplace(it, StdString<Alloc>{s, elements.get_allocator()}, std::move(el));
+    return std::distance(begin(elements), it);
 }
 
 template <typename Alloc> bool JsObjectT<Alloc>::Read(std::istream &in) {
@@ -286,8 +278,8 @@ template <typename Alloc> bool JsObjectT<Alloc>::Read(std::istream &in) {
             ;
         in.seekg(-1, std::ios::cur);
 
-        elements.emplace_back(key.val, JsLiteral{JsLiteralType::Null});
-        if (!elements.back().second.Read(in, elements.get_allocator())) {
+        const size_t i = Insert(key.val, JsLiteral{JsLiteralType::Null});
+        if (!elements[i].second.Read(in, elements.get_allocator())) {
             return false;
         }
 
