@@ -121,7 +121,9 @@ void main() {
                               shadow_ray_ws,    // direction
                               max_t             // tMax
                               );
-        while(rayQueryProceedEXT(rq)) {
+
+        int transp_depth = 0;
+        while(rayQueryProceedEXT(rq) && transp_depth++ < 4) {
             if (rayQueryGetIntersectionTypeEXT(rq, false) == gl_RayQueryCandidateIntersectionTriangleEXT) {
                 // perform alpha test
                 const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, false);
@@ -150,7 +152,8 @@ void main() {
             }
         }
 
-        if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT) {
+        if (rayQueryGetIntersectionTypeEXT(rq, true) != gl_RayQueryCommittedIntersectionNoneEXT ||
+            transp_depth >= 4) {
             is_in_shadow = true;
         }
     }
