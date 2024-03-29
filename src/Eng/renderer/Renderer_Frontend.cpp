@@ -677,7 +677,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         const int map_positions[][2] = {{0, 0}, {OneCascadeRes, 0}, {0, OneCascadeRes}, {OneCascadeRes, OneCascadeRes}};
 
         // Choose up vector for shadow camera
-        const Vec3f &light_dir = list.env.sun_dir;
+        const Vec3f &light_dir = -list.env.sun_dir;
         auto cam_up = Vec3f{1.0f, 0.0f, 0.0f};
         if (fabsf(light_dir[1]) < 0.999f) {
             cam_up = Vec3f{0.0f, 1.0f, 0.0f};

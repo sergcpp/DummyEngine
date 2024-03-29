@@ -1043,6 +1043,14 @@ void GSBaseState::InitScene_PT() {
         cam_desc.fov = scene_manager_->main_cam().angle();
         ray_scene_->AddCamera(cam_desc);
     }
+    if (Length2(scene_data.env.sun_col) > 0.0f) {
+        // Add sun light
+        Ray::directional_light_desc_t sun_desc;
+        memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
+        memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
+        sun_desc.angle = scene_data.env.sun_angle;
+        [[maybe_unused]] const Ray::LightHandle new_lighg = ray_scene_->AddLight(sun_desc);
+    }
 
     // Add default material
     Ray::principled_mat_desc_t default_mat_desc;

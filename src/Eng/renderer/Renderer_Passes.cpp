@@ -485,7 +485,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
 
             const float tan_angle = tanf(p_list_->env.sun_angle * Ren::Pi<float>() / 360.0f);
             shrd_data.sun_dir =
-                Ren::Vec4f{p_list_->env.sun_dir[0], p_list_->env.sun_dir[1], p_list_->env.sun_dir[2], tan_angle};
+                Ren::Vec4f{-p_list_->env.sun_dir[0], -p_list_->env.sun_dir[1], -p_list_->env.sun_dir[2], tan_angle};
             shrd_data.sun_col =
                 Ren::Vec4f{p_list_->env.sun_col[0], p_list_->env.sun_col[1], p_list_->env.sun_col[2], 0.0f};
             if (p_list_->env.sun_angle != 0.0f) {
@@ -1386,9 +1386,9 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                     {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 // exposure from previous frame
-                //float exposure =
+                // float exposure =
                 //    reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
-                //exposure = std::min(exposure, max_exposure);
+                // exposure = std::min(exposure, max_exposure);
 
                 const Ren::Binding bindings[] = {
                     {Ren::eBindTarget::Tex2D, TempAA::CURR_TEX_SLOT, *clean_tex.ref},

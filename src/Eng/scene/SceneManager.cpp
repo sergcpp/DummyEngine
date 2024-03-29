@@ -407,7 +407,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             const double x = js_dir.at(0).as_num().val, y = js_dir.at(1).as_num().val, z = js_dir.at(2).as_num().val;
 
             scene_data_.env.sun_dir = Ren::Vec3f{float(x), float(y), float(z)};
-            scene_data_.env.sun_dir = -Normalize(scene_data_.env.sun_dir);
+            scene_data_.env.sun_dir = Normalize(scene_data_.env.sun_dir);
         }
         if (js_env.Has("sun_col")) {
             const JsArrayP &js_col = js_env.at("sun_col").as_arr();
