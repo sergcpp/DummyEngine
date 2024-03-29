@@ -1113,6 +1113,7 @@ void GSBaseState::InitScene_PT() {
 
     const auto *transforms = (Eng::Transform *)scene_data.comp_store[Eng::CompTransform]->SequentialData();
     const auto *drawables = (Eng::Drawable *)scene_data.comp_store[Eng::CompDrawable]->SequentialData();
+    const auto *acc_structs = (Eng::AccStructure *)scene_data.comp_store[Eng::CompAccStructure]->SequentialData();
     const auto *lights_src = (Eng::LightSource *)scene_data.comp_store[Eng::CompLightSource]->SequentialData();
 
     for (const Eng::SceneObject &obj : scene_data.objects) {
@@ -1126,8 +1127,16 @@ void GSBaseState::InitScene_PT() {
             const uint32_t *indices = reinterpret_cast<const uint32_t *>(mesh->indices());
             const int ndx_count = int(mesh->indices_buf().size / sizeof(uint32_t));
 
-            auto mesh_it = loaded_meshes.find(mesh->name().c_str());
-            if (mesh_it == loaded_meshes.end()) {
+            Ray::MeshHandle mesh_handle = Ray::InvalidMeshHandle;
+
+            if (dr.material_override.empty()) {
+                auto mesh_it = loaded_meshes.find(mesh->name().c_str());
+                if (mesh_it != loaded_meshes.end()) {
+                    mesh_handle = mesh_it->second;
+                }
+            }
+
+            if (mesh_handle == Ray::InvalidMeshHandle) {
                 Ray::mesh_desc_t mesh_desc;
                 mesh_desc.name = mesh->name().c_str();
                 mesh_desc.prim_type = Ray::ePrimType::TriangleList;
@@ -1137,95 +1146,111 @@ void GSBaseState::InitScene_PT() {
                 mesh_desc.vtx_uvs = {{attribs, 13 * vtx_count}, 9, 13};
                 mesh_desc.vtx_indices = {indices, ndx_count};
 
-                std::vector<Ray::mat_group_desc_t> groups;
-                for (const Ren::TriGroup &grp : mesh->groups()) {
-                    const Ren::Material *mat = grp.front_mat.get();
-                    const char *mat_name = mat->name().c_str();
+                std::vector<Ray::mat_group_desc_t> mat_groups;
+
+                const Ren::Span<const Ren::TriGroup> groups = mesh->groups();
+                for (int j = 0; j < int(groups.size()); ++j) {
+                    const Ren::TriGroup &grp = groups[j];
+
+                    if (!dr.material_override.empty()) {
+                        volatile int ii = 0;
+                    }
+
+                    const Ren::Material *front_mat =
+                        (j >= dr.material_override.size()) ? grp.front_mat.get() : dr.material_override[j].first.get();
+                    const char *mat_name = front_mat->name().c_str();
 
                     std::pair<Ray::MaterialHandle, Ray::MaterialHandle> mat_handles;
 
                     auto mat_it = loaded_materials.find(mat_name);
                     if (mat_it == loaded_materials.end()) {
                         Ray::principled_mat_desc_t mat_desc;
-                        memcpy(mat_desc.base_color, ValuePtr(mat->params[0]), 3 * sizeof(float));
-                        mat_desc.base_texture = load_texture(*mat->textures[0], true, true);
-                        mat_desc.roughness = mat->params[0][3];
-                        mat_desc.roughness_texture = load_texture(*mat->textures[2]);
+                        memcpy(mat_desc.base_color, ValuePtr(front_mat->params[0]), 3 * sizeof(float));
+                        mat_desc.base_texture = load_texture(*front_mat->textures[0], true, true);
+                        mat_desc.roughness = front_mat->params[0][3];
+                        mat_desc.roughness_texture = load_texture(*front_mat->textures[2]);
                         mat_desc.specular = 0.0f;
-                        if (mat->params.size() > 1) {
-                            mat_desc.sheen = mat->params[1][0];
-                            mat_desc.sheen_tint = mat->params[1][1];
-                            mat_desc.specular = mat->params[1][2];
-                            mat_desc.specular_tint = mat->params[1][3];
+                        if (front_mat->params.size() > 1) {
+                            mat_desc.sheen = front_mat->params[1][0];
+                            mat_desc.sheen_tint = front_mat->params[1][1];
+                            mat_desc.specular = front_mat->params[1][2];
+                            mat_desc.specular_tint = front_mat->params[1][3];
                         }
-                        if (mat->params.size() > 2) {
-                            mat_desc.metallic = mat->params[2][0];
-                            mat_desc.transmission = mat->params[2][1];
-                            mat_desc.clearcoat = mat->params[2][2];
-                            mat_desc.clearcoat_roughness = mat->params[2][3];
+                        if (front_mat->params.size() > 2) {
+                            mat_desc.metallic = front_mat->params[2][0];
+                            mat_desc.transmission = front_mat->params[2][1];
+                            mat_desc.clearcoat = front_mat->params[2][2];
+                            mat_desc.clearcoat_roughness = front_mat->params[2][3];
                         }
-                        if (mat->textures.size() > 3) {
-                            mat_desc.metallic_texture = load_texture(*mat->textures[3]);
+                        if (front_mat->textures.size() > 3) {
+                            mat_desc.metallic_texture = load_texture(*front_mat->textures[3]);
                         }
-                        if (mat->textures.size() > 4) {
-                            mat_desc.alpha_texture = load_texture(*mat->textures[4]);
+                        if (front_mat->textures.size() > 4) {
+                            mat_desc.alpha_texture = load_texture(*front_mat->textures[4]);
                         }
-                        mat_desc.normal_map = load_texture(*mat->textures[1]);
+                        mat_desc.normal_map = load_texture(*front_mat->textures[1]);
 
                         const Ray::MaterialHandle new_mat = ray_scene_->AddMaterial(mat_desc);
                         mat_it = loaded_materials.emplace(mat_name, new_mat).first;
                     }
-                    mat_handles.first = mat_it->second;
+                    mat_handles = {mat_it->second, mat_it->second};
 
-                    if (grp.front_mat != grp.back_mat) {
-                        mat = grp.back_mat.get();
-
+                    const Ren::Material *back_mat =
+                        (j >= dr.material_override.size()) ? grp.back_mat.get() : dr.material_override[j].second.get();
+                    if (front_mat != back_mat) {
                         Ray::principled_mat_desc_t mat_desc;
-                        memcpy(mat_desc.base_color, ValuePtr(mat->params[0]), 3 * sizeof(float));
-                        mat_desc.base_texture = load_texture(*mat->textures[0], true, true);
-                        mat_desc.roughness = mat->params[0][3];
-                        mat_desc.roughness_texture = load_texture(*mat->textures[2]);
+                        memcpy(mat_desc.base_color, ValuePtr(back_mat->params[0]), 3 * sizeof(float));
+                        mat_desc.base_texture = load_texture(*back_mat->textures[0], true, true);
+                        mat_desc.roughness = back_mat->params[0][3];
+                        mat_desc.roughness_texture = load_texture(*back_mat->textures[2]);
                         mat_desc.specular = 0.0f;
-                        if (mat->params.size() > 1) {
-                            mat_desc.sheen = mat->params[1][0];
-                            mat_desc.sheen_tint = mat->params[1][1];
-                            mat_desc.specular = mat->params[1][2];
-                            mat_desc.specular_tint = mat->params[1][3];
+                        if (back_mat->params.size() > 1) {
+                            mat_desc.sheen = back_mat->params[1][0];
+                            mat_desc.sheen_tint = back_mat->params[1][1];
+                            mat_desc.specular = back_mat->params[1][2];
+                            mat_desc.specular_tint = back_mat->params[1][3];
                         }
-                        if (mat->params.size() > 2) {
-                            mat_desc.metallic = mat->params[2][0];
-                            mat_desc.transmission = mat->params[2][1];
-                            mat_desc.clearcoat = mat->params[2][2];
-                            mat_desc.clearcoat_roughness = mat->params[2][3];
+                        if (back_mat->params.size() > 2) {
+                            mat_desc.metallic = back_mat->params[2][0];
+                            mat_desc.transmission = back_mat->params[2][1];
+                            mat_desc.clearcoat = back_mat->params[2][2];
+                            mat_desc.clearcoat_roughness = back_mat->params[2][3];
                         }
-                        if (mat->textures.size() > 3) {
-                            mat_desc.metallic_texture = load_texture(*mat->textures[3]);
+                        if (back_mat->textures.size() > 3) {
+                            mat_desc.metallic_texture = load_texture(*back_mat->textures[3]);
                         }
-                        if (mat->textures.size() > 4) {
-                            mat_desc.alpha_texture = load_texture(*mat->textures[4]);
+                        if (back_mat->textures.size() > 4) {
+                            mat_desc.alpha_texture = load_texture(*back_mat->textures[4]);
                         }
-                        mat_desc.normal_map = load_texture(*mat->textures[1]);
+                        mat_desc.normal_map = load_texture(*back_mat->textures[1]);
 
                         mat_handles.second = ray_scene_->AddMaterial(mat_desc);
-                    } else {
-                        mat_handles.second = mat_handles.first;
                     }
 
-                    groups.emplace_back(mat_handles.first, mat_handles.second, size_t(grp.offset / sizeof(uint32_t)),
-                                        size_t(grp.num_indices));
+                    mat_groups.emplace_back(mat_handles.first, mat_handles.second,
+                                            size_t(grp.offset / sizeof(uint32_t)), size_t(grp.num_indices));
                 }
-                mesh_desc.groups = groups;
+                mesh_desc.groups = mat_groups;
 
-                const Ray::MeshHandle new_mesh = ray_scene_->AddMesh(mesh_desc);
-                mesh_it = loaded_meshes.emplace(mesh->name().c_str(), new_mesh).first;
+                mesh_handle = ray_scene_->AddMesh(mesh_desc);
+                if (dr.material_override.empty()) {
+                    loaded_meshes.emplace(mesh->name().c_str(), mesh_handle).first;
+                }
             }
 
             const Eng::Transform &tr = transforms[obj.components[Eng::CompTransform]];
             Ray::mesh_instance_desc_t mi;
             mi.xform = ValuePtr(tr.world_from_object);
-            mi.mesh = mesh_it->second;
+            mi.mesh = mesh_handle;
+            mi.camera_visibility = bool(dr.vis_mask & Eng::Drawable::eVisibility::Camera);
             mi.shadow_visibility = bool(dr.vis_mask & Eng::Drawable::eVisibility::Shadow);
-            const Ray::MeshInstanceHandle new_mi = ray_scene_->AddMeshInstance(mi);
+            if ((obj.comp_mask & Eng::CompAccStructureBit) != 0) {
+                const Eng::AccStructure &acc = acc_structs[obj.components[Eng::CompAccStructure]];
+                mi.diffuse_visibility = bool(acc.vis_mask & Eng::AccStructure::eRayType::Diffuse);
+                mi.specular_visibility = bool(acc.vis_mask & Eng::AccStructure::eRayType::Specular);
+                mi.refraction_visibility = bool(acc.vis_mask & Eng::AccStructure::eRayType::Refraction);
+            }
+            [[maybe_unused]] const Ray::MeshInstanceHandle new_mi = ray_scene_->AddMeshInstance(mi);
         }
 
         const uint32_t lightsource_mask = Eng::CompLightSourceBit | Eng::CompTransformBit;
