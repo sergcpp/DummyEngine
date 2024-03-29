@@ -653,6 +653,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         new_instance.bbox_min = tr.bbox_min;
         new_instance.bbox_max = tr.bbox_max;
         new_instance.mesh_index = swrt_blas.mesh_index;
+        new_instance.visibility = uint8_t(acc.vis_mask);
         for (int i = 0; i < 3; ++i) {
             for (int j = 0; j < 4; ++j) {
                 new_instance.inv_transform[i][j] = tr.object_from_world[j][i];
@@ -661,9 +662,15 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         }
 
         const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
-        for (const Ren::TriGroup &grp : acc.mesh->groups()) {
-            const Ren::Material *mat = grp.front_mat.get();
-            const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
+        const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+        for (int j = 0; j < int(groups.size()); ++j) {
+            const Ren::TriGroup &grp = groups[j];
+
+            const Ren::MaterialRef &front_mat =
+                (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
+            const Ren::MaterialRef &back_mat =
+                (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
+            const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags();
             if (mat_flags & Ren::eMatFlags::AlphaBlend) {
                 // Include only opaque surfaces
                 continue;
@@ -675,8 +682,8 @@ void Eng::SceneManager::InitSWRTAccStructures() {
             auto &geo = geo_instances.back();
             geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
             geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
-            assert(grp.front_mat.index() < 0xffff && grp.back_mat.index() < 0xffff);
-            geo.material_index = grp.front_mat.index() | (grp.back_mat.index() << 16);
+            assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
+            geo.material_index = front_mat.index() | (back_mat.index() << 16);
             geo.flags = 0;
             if (lm) {
                 geo.flags |= RTGeoLightmappedBit;

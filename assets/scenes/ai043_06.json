@@ -1369,7 +1369,8 @@
                 "visible_to_shadow": false
             },
             "acc_structure": {
-                "mesh_file": "ai043_06/Untitled_220.gltf"
+                "mesh_file": "ai043_06/Untitled_220.gltf",
+                "visible_to_shadow": false
             }
         },
         {
@@ -1945,7 +1946,8 @@
                 "visible_to_shadow": false
             },
             "acc_structure": {
-                "mesh_file": "ai043_06/Untitled_241.gltf"
+                "mesh_file": "ai043_06/Untitled_241.gltf",
+                "visible_to_shadow": false
             }
         },
         {
@@ -1971,7 +1973,8 @@
                 "visible_to_shadow": false
             },
             "acc_structure": {
-                "mesh_file": "ai043_06/Untitled_148.gltf"
+                "mesh_file": "ai043_06/Untitled_148.gltf",
+                "visible_to_shadow": false
             }
         },
         {
@@ -1997,7 +2000,8 @@
                 "visible_to_shadow": false
             },
             "acc_structure": {
-                "mesh_file": "ai043_06/Untitled_253.gltf"
+                "mesh_file": "ai043_06/Untitled_253.gltf",
+                "visible_to_shadow": false
             }
         },
         {
@@ -2073,7 +2077,8 @@
                 "visible_to_shadow": false
             },
             "acc_structure": {
-                "mesh_file": "ai043_06/Untitled_017.gltf"
+                "mesh_file": "ai043_06/Untitled_017.gltf",
+                "visible_to_shadow": false
             }
         },
         {

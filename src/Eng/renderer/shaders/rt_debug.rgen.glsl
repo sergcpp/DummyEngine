@@ -36,17 +36,17 @@ void main() {
 
     g_pld.cone_width = 0.0;
 
-    traceRayEXT(g_tlas,         // topLevel
-                ray_flags,      // rayFlags
-                0xff,           // cullMask
-                0,              // sbtRecordOffset
-                0,              // sbtRecordStride
-                0,              // missIndex
-                origin.xyz,     // origin
-                t_min,          // Tmin
-                direction.xyz,  // direction
-                t_max,          // Tmax
-                0               // payload
+    traceRayEXT(g_tlas,                     // topLevel
+                ray_flags,                  // rayFlags
+                (1u << RAY_TYPE_CAMERA),    // cullMask
+                0,                          // sbtRecordOffset
+                0,                          // sbtRecordStride
+                0,                          // missIndex
+                origin.xyz,                 // origin
+                t_min,                      // Tmin
+                direction.xyz,              // direction
+                t_max,                      // Tmax
+                0                           // payload
                 );
 
     imageStore(g_out_image, ivec2(gl_LaunchIDEXT.xy), vec4(g_pld.col, 1.0));

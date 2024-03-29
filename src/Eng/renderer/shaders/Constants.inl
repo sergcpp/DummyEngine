@@ -1,4 +1,10 @@
 
+#ifdef __cplusplus
+#define EXTERN extern
+#else
+#define EXTERN
+#endif
+
 // Resolution of frustum item grid
 const int ITEM_GRID_RES_X = 16;
 const int ITEM_GRID_RES_Y = 8;
@@ -72,6 +78,13 @@ const int LOC_OUT_SPEC = 2;
 const int LOC_OUT_VELO = 3;
 const int LOC_OUT_ALBEDO = 0;
 
+// Ray type
+const int RAY_TYPE_CAMERA = 0;
+const int RAY_TYPE_DIFFUSE = 1;
+const int RAY_TYPE_SPECULAR = 2;
+const int RAY_TYPE_REFRACTION = 3;
+const int RAY_TYPE_SHADOW = 4;
+
 // Shadow resolution
 const int SHADOWMAP_RES_PC = 8192;
 const int SHADOWMAP_RES_ANDROID = 4096;
@@ -115,7 +128,7 @@ const int MAX_RT_TLAS_NODES = 8192; // (4096 + 2048 + 1024 + ...)
 
 const int DECALS_BUF_STRIDE = 7;
 const int MESH_BUF_STRIDE = 3;
-const int MESH_INSTANCE_BUF_STRIDE = 8;
+const int MESH_INSTANCE_BUF_STRIDE = 9;
 
 #define USE_OCT_PACKED_NORMALS 1
 
@@ -128,3 +141,5 @@ const int MESH_INSTANCE_BUF_STRIDE = 8;
 #define OIT_MODE OIT_DISABLED
 
 #define FLT_EPS 0.0000001
+
+#undef EXTERN

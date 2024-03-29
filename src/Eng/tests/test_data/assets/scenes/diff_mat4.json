@@ -35,8 +35,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/env.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/env.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/env.mesh"
@@ -56,8 +55,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/base.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/base.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/base.mesh"
@@ -77,8 +75,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/core.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/core.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/core.mesh"
@@ -99,11 +96,11 @@
             },
             "drawable" : {
                 "mesh_file" : "mat_test/model.mesh",
-                "visible_to_probes" : false,
                 "material_override" : [ "mat_test/diff_mat1.mat" ]
             },
             "acc_structure" : {
-                "mesh_file" : "mat_test/model.mesh"
+                "mesh_file" : "mat_test/model.mesh",
+                "material_override" : [ "mat_test/diff_mat1.mat" ]
             }
         },
         {
@@ -120,8 +117,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/text.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/text.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/text.mesh"
@@ -141,8 +137,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/subsurf_bar.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/subsurf_bar.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/subsurf_bar.mesh"

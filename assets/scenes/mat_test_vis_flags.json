@@ -35,7 +35,8 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/env.mesh"
+                "mesh_file" : "mat_test/env.mesh",
+                "visible_to_probes" : false
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/env.mesh"
@@ -44,63 +45,167 @@
         {
             "transform" : {
                 "pos" : [
-                    0,
-                    0.010504,
-                    0
+                    -0.05,
+                    0.05,
+                    0.0
                 ],
                 "rot" : [
-                    0,
-                    0,
-                    0
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale" : [
+                    0.0001,
+                    0.0005,
+                    0.0001
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/base.mesh"
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_shadow" : false
             },
             "acc_structure" : {
-                "mesh_file" : "mat_test/base.mesh"
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_shadow" : false
             }
         },
         {
             "transform" : {
                 "pos" : [
                     0.0,
-                    0.04,
+                    0.05,
                     0.0
                 ],
                 "rot" : [
-                    0,
-                    0,
-                    0
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale" : [
+                    0.0001,
+                    0.0005,
+                    0.0001
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/two_sided.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_specular" : false
             },
             "acc_structure" : {
-                "mesh_file" : "mat_test/two_sided.mesh"
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_specular" : false
             }
         },
         {
             "transform" : {
                 "pos" : [
-                    0.001112,
-                    0.012253,
-                    0.001037
+                    0.05,
+                    0.05,
+                    0.0
                 ],
                 "rot" : [
-                    0,
-                    0,
-                    0
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale" : [
+                    0.0001,
+                    0.0005,
+                    0.0001
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/text.mesh",
-                "visible_to_probes" : false
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_diffuse" : false
             },
             "acc_structure" : {
-                "mesh_file" : "mat_test/text.mesh"
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_diffuse" : false
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    -0.05,
+                    0.05,
+                    -0.05
+                ],
+                "rot" : [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale" : [
+                    0.0001,
+                    0.0005,
+                    0.0001
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_camera" : false,
+                "material_override" : [ "mat_test/glossy_mat_green.mat" ]
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_camera" : false,
+                "material_override" : [ "mat_test/glossy_mat_green.mat" ]
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0.0,
+                    0.05,
+                    -0.05
+                ],
+                "rot" : [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale" : [
+                    0.0001,
+                    0.0005,
+                    0.0001
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_refraction" : false,
+                "material_override" : [ "mat_test/glossy_mat_green.mat" ]
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/cube.mesh",
+                "visible_to_refraction" : false,
+                "material_override" : [ "mat_test/glossy_mat_green.mat" ]
+            }
+        },
+        {
+            "transform" : {
+                "pos" : [
+                    0.05,
+                    0.05,
+                    -0.05
+                ],
+                "rot" : [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale" : [
+                    0.0001,
+                    0.0005,
+                    0.0001
+                ]
+            },
+            "drawable" : {
+                "mesh_file" : "mat_test/cube.mesh",
+                "material_override" : [ "mat_test/glossy_mat_green.mat" ]
+            },
+            "acc_structure" : {
+                "mesh_file" : "mat_test/cube.mesh",
+                "material_override" : [ "mat_test/glossy_mat_green.mat" ]
             }
         },
         {

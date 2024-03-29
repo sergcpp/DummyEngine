@@ -126,14 +126,14 @@ void main() {
     float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
     rayQueryEXT rq;
-    rayQueryInitializeEXT(rq,               // rayQuery
-                          g_tlas,           // topLevel
-                          ray_flags,        // rayFlags
-                          0xff,             // cullMask
-                          ray_origin_ws.xyz,// origin
-                          t_min,            // tMin
-                          refl_ray_ws.xyz,  // direction
-                          t_max             // tMax
+    rayQueryInitializeEXT(rq,                       // rayQuery
+                          g_tlas,                   // topLevel
+                          ray_flags,                // rayFlags
+                          (1u << RAY_TYPE_SPECULAR),// cullMask
+                          ray_origin_ws.xyz,        // origin
+                          t_min,                    // tMin
+                          refl_ray_ws.xyz,          // direction
+                          t_max                     // tMax
                           );
 
     int transp_depth = 0;

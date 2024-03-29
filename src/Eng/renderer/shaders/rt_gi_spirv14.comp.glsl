@@ -154,14 +154,14 @@ void main() {
         vec3 tri_normal, albedo;
 
         rayQueryEXT rq;
-        rayQueryInitializeEXT(rq,               // rayQuery
-                              g_tlas,           // topLevel
-                              ray_flags,        // rayFlags
-                              0xff,             // cullMask
-                              ray_origin_ws.xyz,// origin
-                              t_min,            // tMin
-                              gi_ray_ws.xyz,    // direction
-                              t_max             // tMax
+        rayQueryInitializeEXT(rq,                       // rayQuery
+                              g_tlas,                   // topLevel
+                              ray_flags,                // rayFlags
+                              (1u << RAY_TYPE_DIFFUSE), // cullMask
+                              ray_origin_ws.xyz,        // origin
+                              t_min,                    // tMin
+                              gi_ray_ws.xyz,            // direction
+                              t_max                     // tMax
                              );
 
         int transp_depth = 0;

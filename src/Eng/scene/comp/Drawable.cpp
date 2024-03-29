@@ -4,15 +4,25 @@
 #include <Sys/Json.h>
 
 const Ren::Bitmask<Eng::Drawable::eVisibility> Eng::Drawable::DefaultVisMask =
-    Ren::Bitmask<eVisibility>{eVisibility::Shadow} | eVisibility::Probes;
+    Ren::Bitmask<eVisibility>{eVisibility::Camera} | eVisibility::Shadow;
 
 void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
-    dr.flags = {};
     dr.vis_mask = DefaultVisMask;
+
+    if (js_in.Has("visible_to_camera")) {
+        JsLiteral v = js_in.at("visible_to_camera").as_lit();
+        if (v.val == JsLiteralType::True) {
+            dr.vis_mask |= eVisibility::Camera;
+        } else {
+            dr.vis_mask &= ~Ren::Bitmask(eVisibility::Camera);
+        }
+    }
 
     if (js_in.Has("visible_to_shadow")) {
         JsLiteral v = js_in.at("visible_to_shadow").as_lit();
-        if (v.val == JsLiteralType::False) {
+        if (v.val == JsLiteralType::True) {
+            dr.vis_mask |= eVisibility::Shadow;
+        } else {
             dr.vis_mask &= ~Ren::Bitmask(eVisibility::Shadow);
         }
     }
@@ -29,11 +39,11 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
         dr.mesh_file = Ren::String{mesh_name.val.c_str()};
     }
 
-    if (js_in.Has("material_override")) {
-        dr.flags |= eFlags::MaterialOverride;
-    }
+    // if (js_in.Has("material_override")) {
+    //     dr.flags |= eFlags::MaterialOverride;
+    // }
 
-    if (js_in.Has("ellipsoids")) {
+    /*if (js_in.Has("ellipsoids")) {
         const JsArrayP &js_ellipsoids = js_in.at("ellipsoids").as_arr();
         for (size_t i = 0; i < js_ellipsoids.elements.size(); i++) {
             const JsObjectP &js_ellipsoid = js_ellipsoids[i].as_obj();
@@ -55,7 +65,7 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
             dr.ellipsoids[i].bone_index = -1;
         }
         dr.ellipsoids_count = (int)js_ellipsoids.elements.size();
-    }
+    }*/
 }
 
 void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
@@ -70,27 +80,31 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
         js_out.Push("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name : dr.mesh_file, alloc});
     }
 
-    if (dr.flags & uint32_t(eFlags::MaterialOverride)) {
+    if (!dr.material_override.empty()) {
         JsArrayP js_material_override(alloc);
 
-        const Ren::Mesh *mesh = dr.mesh.get();
-        for (const auto &grp : mesh->groups()) {
-            js_material_override.Push(JsStringP{grp.front_mat->name(), alloc});
+        for (const auto &mat : dr.material_override) {
+            js_material_override.Push(JsStringP{mat.first->name(), alloc});
         }
 
         js_out.Push("material_override", std::move(js_material_override));
     }
 
-    { // write visibility
-        if (!(dr.vis_mask & uint32_t(eVisibility::Shadow))) {
-            js_out.Push("visible_to_shadow", JsLiteral(JsLiteralType::False));
-        }
-        if (!(dr.vis_mask & uint32_t(eVisibility::Probes))) {
-            js_out.Push("visible_to_probes", JsLiteral(JsLiteralType::False));
-        }
+    // write visibility
+    if ((dr.vis_mask & eVisibility::Camera) == (DefaultVisMask & eVisibility::Camera)) {
+        js_out.Push("visible_to_camera",
+                    JsLiteral((dr.vis_mask & eVisibility::Camera) ? JsLiteralType::True : JsLiteralType::False));
+    }
+    if ((dr.vis_mask & eVisibility::Shadow) == (DefaultVisMask & eVisibility::Shadow)) {
+        js_out.Push("visible_to_shadow",
+                    JsLiteral((dr.vis_mask & eVisibility::Shadow) ? JsLiteralType::True : JsLiteralType::False));
+    }
+    if ((dr.vis_mask & eVisibility::Probes) == (DefaultVisMask & eVisibility::Probes)) {
+        js_out.Push("visible_to_probes",
+                    JsLiteral((dr.vis_mask & eVisibility::Probes) ? JsLiteralType::True : JsLiteralType::False));
     }
 
-    if (dr.ellipsoids_count) {
+    /*if (dr.ellipsoids_count) {
         JsArrayP js_ellipsoids(alloc);
 
         for (int i = 0; i < dr.ellipsoids_count; i++) {
@@ -118,5 +132,5 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
                 js_ellipsoid.Push("bone", JsStringP{dr.ellipsoids[i].bone_name, alloc});
             }
         }
-    }
+    }*/
 }

@@ -23,7 +23,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
     Ren::Context &ctx = builder.ctx();
 
     std::vector<gpu_bvh_node_t> nodes;
-    Ren::SmallVector<gpu_mesh_instance_t, MAX_RT_OBJ_INSTANCES> mesh_instances;
+    std::vector<gpu_mesh_instance_t> mesh_instances;
 
     const auto &rt_obj_instances = p_list_->rt_obj_instances[rt_index_];
     auto &rt_obj_instances_stage_buf = p_list_->rt_obj_instances_stage_buf[rt_index_];
@@ -56,6 +56,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
             memcpy(&new_mi.bbox_max[0], inst.bbox_max_ws, 3 * sizeof(float));
 
             new_mi.geo_index = inst.geo_index;
+            new_mi.visibility = inst.mask;
 
             const auto *acc = reinterpret_cast<const Ren::AccStructureSW *>(inst.blas_ref);
             new_mi.mesh_index = acc->mesh_index;

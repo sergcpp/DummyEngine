@@ -800,6 +800,8 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     cam_.Perspective(fov, float(cur_scr_w) / float(cur_scr_h), NEAR_CLIP, FAR_CLIP);
     cam_.UpdatePlanes();
 
+    cam_.set_render_mask(Ren::Bitmask<Drawable::eVisibility>{Drawable::eVisibility::Camera});
+
     const float ExtendedFrustumOffset = 100.0f;
     const float ExtendedFrustumFrontOffset = 200.0f;
 
@@ -869,14 +871,9 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
 
     if (js_comp_obj.Has("material_override")) {
         const JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
-
-        int index = 0;
         for (const JsElementP &js_mat_el : js_materials.elements) {
-            if (js_mat_el.type() == JsType::String) {
-                Ren::TriGroup &grp = dr->mesh->groups()[index];
-                std::tie(grp.front_mat, grp.back_mat) = OnLoadMaterial(js_mat_el.as_str().val.c_str());
-            }
-            index++;
+            auto front_back_mats = OnLoadMaterial(js_mat_el.as_str().val);
+            dr->material_override.push_back(std::move(front_back_mats));
         }
     }
 
@@ -908,7 +905,7 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
         const Ren::Skeleton *skel = dr->mesh->skel();
 
         // Attach ellipsoids to bones
-        for (int i = 0; i < dr->ellipsoids_count; i++) {
+        /*for (int i = 0; i < dr->ellipsoids_count; i++) {
             Drawable::Ellipsoid &e = dr->ellipsoids[i];
             if (e.bone_name.empty()) {
                 e.bone_index = -1;
@@ -921,7 +918,7 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
                     break;
                 }
             }
-        }
+        }*/
     }
 
     obj_bbox[0] = Min(obj_bbox[0], dr->mesh->bbox_min());
@@ -1149,14 +1146,9 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
 
     if (js_comp_obj.Has("material_override")) {
         const JsArrayP &js_materials = js_comp_obj.at("material_override").as_arr();
-
-        int index = 0;
         for (const JsElementP &js_mat_el : js_materials.elements) {
-            if (js_mat_el.type() == JsType::String) {
-                Ren::TriGroup &grp = acc->mesh->groups()[index];
-                std::tie(grp.front_mat, grp.back_mat) = OnLoadMaterial(js_mat_el.as_str().val.c_str());
-            }
-            index++;
+            auto front_back_mats = OnLoadMaterial(js_mat_el.as_str().val);
+            acc->material_override.push_back(std::move(front_back_mats));
         }
     }
 

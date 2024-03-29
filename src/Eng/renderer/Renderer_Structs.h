@@ -455,11 +455,13 @@ struct gpu_mesh_instance_t {
     uint32_t geo_index;
     Ren::Vec3f bbox_max;
     uint32_t mesh_index;
+    uint32_t visibility;
+    uint32_t _unused[3];
     // TODO: this can be optimized
     Ren::Mat3x4f inv_transform;
     Ren::Mat3x4f transform;
 };
-static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48 + 48, "!");
+static_assert(sizeof(gpu_mesh_instance_t) == 32 + 48 + 48 + 16, "!");
 static_assert(sizeof(gpu_mesh_instance_t) == MESH_INSTANCE_BUF_STRIDE * 4 * sizeof(float), "!");
 
 const size_t sizeof_VkAccelerationStructureInstanceKHR = 64;

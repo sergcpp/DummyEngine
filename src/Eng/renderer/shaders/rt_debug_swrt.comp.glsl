@@ -111,7 +111,7 @@ void main() {
     int transp_depth = 0;
     while (transp_depth++ < 4) {
         Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0,
-                                    g_vtx_indices, g_prim_indices, origin.xyz, direction.xyz, inv_d, 0 /* root_node */, inter);
+                                     g_vtx_indices, g_prim_indices, origin.xyz, direction.xyz, inv_d, (1u << RAY_TYPE_CAMERA), 0 /* root_node */, inter);
         if (inter.mask != 0) {
             // perform alpha test
             const bool backfacing = (inter.prim_index < 0);
@@ -192,9 +192,9 @@ void main() {
 
         vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
 #if defined(BINDLESS_TEXTURES)
-        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 2)),
-                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
-                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4))));
+        mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
+                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
+                                                texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5))));
         vec3 direction_obj_space = (inv_transform * vec4(direction.xyz, 0.0)).xyz;
 
         vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
@@ -242,9 +242,9 @@ void main() {
             if (backfacing) {
                 N = -N;
             }
-            const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7))));
+            const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
+                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
+                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
             N = normalize((transform * vec4(N, 0.0)).xyz);
 
             const vec3 P = origin.xyz + direction.xyz * inter.t;

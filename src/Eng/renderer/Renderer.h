@@ -46,6 +46,12 @@ namespace Eng {
 class Random;
 class ShaderLoader;
 
+static_assert(RAY_TYPE_CAMERA == int(AccStructure::eRayType::Camera));
+static_assert(RAY_TYPE_DIFFUSE == int(AccStructure::eRayType::Diffuse));
+static_assert(RAY_TYPE_SPECULAR == int(AccStructure::eRayType::Specular));
+static_assert(RAY_TYPE_REFRACTION == int(AccStructure::eRayType::Refraction));
+static_assert(RAY_TYPE_SHADOW == int(AccStructure::eRayType::Shadow));
+
 class Renderer {
   public:
     Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);

@@ -129,6 +129,7 @@ struct mesh_t {
 struct mesh_instance_t {
     vec4 bbox_min; // w is geo_index
     vec4 bbox_max; // w is mesh_index
+    uvec4 flags;   // x is ray visibility
     mat3x4 inv_transform;
 };
 
@@ -215,7 +216,8 @@ void Traverse_MicroTree_WithStack(samplerBuffer blas_nodes, samplerBuffer vtx_po
 }
 
 void Traverse_MacroTree_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_nodes, samplerBuffer mesh_instances, usamplerBuffer meshes, samplerBuffer vtx_positions,
-                                  usamplerBuffer vtx_indices, usamplerBuffer prim_indices, vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint node_index, inout hit_data_t inter) {
+                                  usamplerBuffer vtx_indices, usamplerBuffer prim_indices, vec3 orig_ro, vec3 orig_rd, vec3 orig_inv_rd, uint ray_flags, uint node_index,
+                                  inout hit_data_t inter) {
     vec3 orig_neg_inv_do = -orig_inv_rd * orig_ro;
 
     uint stack_size = 0;
@@ -248,13 +250,16 @@ void Traverse_MacroTree_WithStack(samplerBuffer tlas_nodes, samplerBuffer blas_n
                 const vec4 mi_bbox_min = texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 0));
                 const vec4 mi_bbox_max = texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 1));
 
-                if (!_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, mi_bbox_min.xyz, mi_bbox_max.xyz)) {
+                const uint visibility = floatBitsToUint(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 2)).x);
+
+                if ((visibility & ray_flags) == 0 ||
+                    !_bbox_test_fma(orig_inv_rd, orig_neg_inv_do, inter.t, mi_bbox_min.xyz, mi_bbox_max.xyz)) {
                     continue;
                 }
 
-                const mat4x3 inv_transform = transpose(mat3x4(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 2)),
-                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 3)),
-                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 4))));
+                const mat4x3 inv_transform = transpose(mat3x4(texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 3)),
+                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 4)),
+                                                              texelFetch(mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * i + 5))));
 
                 const vec3 ro = (inv_transform * vec4(orig_ro, 1.0)).xyz;
                 const vec3 rd = (inv_transform * vec4(orig_rd, 0.0)).xyz;

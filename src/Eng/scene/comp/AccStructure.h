@@ -6,7 +6,12 @@
 
 namespace Eng {
 struct AccStructure {
+    enum class eRayType : uint8_t { Camera, Diffuse, Specular, Refraction, Shadow };
+    static const Ren::Bitmask<eRayType> DefaultVisMask;
+
+    Ren::Bitmask<eRayType> vis_mask = DefaultVisMask;
     Ren::MeshRef mesh;
+    std::vector<std::pair<Ren::MaterialRef, Ren::MaterialRef>> material_override;
     float surf_area = 0.0f;
 
     static void Read(const JsObjectP &js_in, AccStructure &acc);
@@ -15,3 +20,5 @@ struct AccStructure {
     static std::string_view name() { return "acc_structure"; }
 };
 } // namespace Eng
+
+

@@ -119,7 +119,7 @@ void main() {
         int transp_depth = 0;
         while (transp_depth++ < 4) {
             Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                         ro, shadow_ray_ws.xyz, inv_d, 0 /* root_node */, inter);
+                                         ro, shadow_ray_ws.xyz, inv_d, (1u << RAY_TYPE_SHADOW), 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 // perform alpha test
                 const bool backfacing = (inter.prim_index < 0);
