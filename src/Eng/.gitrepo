@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = master
-	commit = 0dbe803360a7b5f2e9530b47e963fe79942499ef
+	branch = sun_transp_test2
+	commit = dbe094ecede8b112edc506b3cf03a42964303b39
 	method = merge
 	cmdver = 0.4.6
-	parent = b81be5c33e78ac93d37e7192496fa2d445e49e40
+	parent = 793d615685557c5f8c3b6d99a0fcbea4fcc12339
