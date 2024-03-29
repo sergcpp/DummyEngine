@@ -439,6 +439,7 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", device_name, vl, 29.59, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", device_name, vl, 29.01, NoDiffGI));
         futures.push_back(threads.Enqueue(run_image_test, "two_sided_mat", device_name, vl, 29.55, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "visibility_flags", device_name, vl, 25.13, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 34.69, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 31.38, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat0", device_name, vl, 29.59, NoDiffGI));
