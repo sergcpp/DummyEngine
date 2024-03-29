@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = vis_flags
-	commit = f0f035d2c6ba30fe5a0457a932a4be88a3469fbb
+	branch = vis_flags_test
+	commit = e3597354ef04b01dfa0b3afa6bf7f82d0aa1fb21
 	method = merge
 	cmdver = 0.4.6
-	parent = 82316693c5504d7276a4ddfeeb388010a8245668
+	parent = cc81d0456f9015b4d810d60d690c1a4ded59512b
