@@ -34,11 +34,6 @@ void Eng::Drawable::Read(const JsObjectP &js_in, Drawable &dr) {
         }
     }
 
-    if (js_in.Has("mesh_file")) {
-        const JsStringP &mesh_name = js_in.at("mesh_file").as_str();
-        dr.mesh_file = Ren::String{mesh_name.val.c_str()};
-    }
-
     // if (js_in.Has("material_override")) {
     //     dr.flags |= eFlags::MaterialOverride;
     // }
@@ -73,11 +68,7 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
 
     if (dr.mesh) {
         // write mesh file name
-        const Ren::String &mesh_name = dr.mesh->name();
-        if (mesh_name != dr.mesh_file) {
-            js_out.Insert("mesh_name", JsStringP{mesh_name, alloc});
-        }
-        js_out.Insert("mesh_file", JsStringP{dr.mesh_file.empty() ? mesh_name : dr.mesh_file, alloc});
+        js_out.Insert("mesh_file", JsStringP{dr.mesh->name(), alloc});
     }
 
     if (!dr.material_override.empty()) {
@@ -91,15 +82,15 @@ void Eng::Drawable::Write(const Drawable &dr, JsObjectP &js_out) {
     }
 
     // write visibility
-    if ((dr.vis_mask & eVisibility::Camera) == (DefaultVisMask & eVisibility::Camera)) {
+    if ((dr.vis_mask & eVisibility::Camera) != (DefaultVisMask & eVisibility::Camera)) {
         js_out.Insert("visible_to_camera",
                       JsLiteral((dr.vis_mask & eVisibility::Camera) ? JsLiteralType::True : JsLiteralType::False));
     }
-    if ((dr.vis_mask & eVisibility::Shadow) == (DefaultVisMask & eVisibility::Shadow)) {
+    if ((dr.vis_mask & eVisibility::Shadow) != (DefaultVisMask & eVisibility::Shadow)) {
         js_out.Insert("visible_to_shadow",
                       JsLiteral((dr.vis_mask & eVisibility::Shadow) ? JsLiteralType::True : JsLiteralType::False));
     }
-    if ((dr.vis_mask & eVisibility::Probes) == (DefaultVisMask & eVisibility::Probes)) {
+    if ((dr.vis_mask & eVisibility::Probes) != (DefaultVisMask & eVisibility::Probes)) {
         js_out.Insert("visible_to_probes",
                       JsLiteral((dr.vis_mask & eVisibility::Probes) ? JsLiteralType::True : JsLiteralType::False));
     }

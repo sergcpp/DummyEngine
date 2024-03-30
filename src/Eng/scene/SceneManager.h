@@ -180,7 +180,7 @@ class SceneManager {
     Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::eTexFlags flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);
 
-    Ren::MeshRef LoadMesh(const char *name, std::istream *data, const Ren::material_load_callback &on_mat_load,
+    Ren::MeshRef LoadMesh(std::string_view name, std::istream *data, const Ren::material_load_callback &on_mat_load,
                           Ren::eMeshLoadStatus *load_status);
     Ren::MaterialRef LoadMaterial(std::string_view name, std::string_view mat_src, Ren::eMatLoadStatus *status,
                                   const Ren::pipelines_load_callback &on_pipes_load,

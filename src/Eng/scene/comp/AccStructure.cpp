@@ -1,6 +1,7 @@
 #include "AccStructure.h"
 
 #include <Ren/Material.h>
+#include <Ren/Mesh.h>
 #include <Sys/Json.h>
 
 const Ren::Bitmask<Eng::AccStructure::eRayType> Eng::AccStructure::DefaultVisMask =
@@ -59,6 +60,11 @@ void Eng::AccStructure::Read(const JsObjectP &js_in, AccStructure &acc) {
 void Eng::AccStructure::Write(const AccStructure &acc, JsObjectP &js_out) {
     const auto &alloc = js_out.elements.get_allocator();
 
+    if (acc.mesh) {
+        // write mesh file name
+        js_out.Insert("mesh_file", JsStringP{acc.mesh->name(), alloc});
+    }
+
     if (!acc.material_override.empty()) {
         JsArrayP js_material_override(alloc);
 
@@ -70,23 +76,23 @@ void Eng::AccStructure::Write(const AccStructure &acc, JsObjectP &js_out) {
     }
 
     // write visibility
-    if ((acc.vis_mask & eRayType::Camera) == (DefaultVisMask & eRayType::Camera)) {
+    if ((acc.vis_mask & eRayType::Camera) != (DefaultVisMask & eRayType::Camera)) {
         js_out.Insert("visible_to_camera",
                       JsLiteral((acc.vis_mask & eRayType::Camera) ? JsLiteralType::True : JsLiteralType::False));
     }
-    if ((acc.vis_mask & eRayType::Diffuse) == (DefaultVisMask & eRayType::Diffuse)) {
+    if ((acc.vis_mask & eRayType::Diffuse) != (DefaultVisMask & eRayType::Diffuse)) {
         js_out.Insert("visible_to_diffuse",
                       JsLiteral((acc.vis_mask & eRayType::Diffuse) ? JsLiteralType::True : JsLiteralType::False));
     }
-    if ((acc.vis_mask & eRayType::Specular) == (DefaultVisMask & eRayType::Specular)) {
+    if ((acc.vis_mask & eRayType::Specular) != (DefaultVisMask & eRayType::Specular)) {
         js_out.Insert("visible_to_specular",
                       JsLiteral((acc.vis_mask & eRayType::Specular) ? JsLiteralType::True : JsLiteralType::False));
     }
-    if ((acc.vis_mask & eRayType::Refraction) == (DefaultVisMask & eRayType::Refraction)) {
+    if ((acc.vis_mask & eRayType::Refraction) != (DefaultVisMask & eRayType::Refraction)) {
         js_out.Insert("visible_to_refraction",
                       JsLiteral((acc.vis_mask & eRayType::Refraction) ? JsLiteralType::True : JsLiteralType::False));
     }
-    if ((acc.vis_mask & eRayType::Shadow) == (DefaultVisMask & eRayType::Shadow)) {
+    if ((acc.vis_mask & eRayType::Shadow) != (DefaultVisMask & eRayType::Shadow)) {
         js_out.Insert("visible_to_shadow",
                       JsLiteral((acc.vis_mask & eRayType::Shadow) ? JsLiteralType::True : JsLiteralType::False));
     }

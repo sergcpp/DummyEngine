@@ -29,7 +29,6 @@
 				]
 			},
 			"drawable" : {
-				"mesh_name" : "head_diffuse",
 				"mesh_file" : "test_head.mesh",
 				"material_override" : [ "grey.mat" ],
 				"visible_to_probes" : false
@@ -49,7 +48,6 @@
 				]
 			},
 			"drawable" : {
-				"mesh_name" : "head_sss",
 				"mesh_file" : "test_head.mesh",
 				"material_override" : [ "grey_sss.mat" ],
 				"visible_to_probes" : false

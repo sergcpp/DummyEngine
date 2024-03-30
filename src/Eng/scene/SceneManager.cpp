@@ -36,6 +36,8 @@ const float FAR_CLIP = 10000.0f;
 extern const int DECALS_ATLAS_RESX = 4096 / 4, DECALS_ATLAS_RESY = 2048 / 4;
 extern const int LIGHTMAP_ATLAS_RESX = 2048, LIGHTMAP_ATLAS_RESY = 1024;
 
+const float DefaultSunShadowBias[2] = {4.0f, 8.0f};
+
 const int PROBE_RES = 512;
 const int PROBE_COUNT = 1;
 
@@ -500,8 +502,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.sun_shadow_bias[0] = float(js_sun_shadow_bias.at(0).as_num().val);
             scene_data_.env.sun_shadow_bias[1] = float(js_sun_shadow_bias.at(1).as_num().val);
         } else {
-            scene_data_.env.sun_shadow_bias[0] = 4.0f;
-            scene_data_.env.sun_shadow_bias[1] = 8.0f;
+            scene_data_.env.sun_shadow_bias[0] = DefaultSunShadowBias[0];
+            scene_data_.env.sun_shadow_bias[1] = DefaultSunShadowBias[1];
         }
         if (js_env.Has("ambient_hack")) {
             const JsArrayP &js_ambient_hack = js_env.at("ambient_hack").as_arr();
@@ -537,6 +539,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 }
 
 void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
+    using namespace SceneManagerConstants;
+
     auto alloc = js_scene.get_allocator();
     // write name
     js_scene.Insert("name", JsStringP(scene_data_.name, alloc));
@@ -546,9 +550,9 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
 
         { // write sun direction
             JsArrayP js_sun_dir(alloc);
-            js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[0]));
-            js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[1]));
-            js_sun_dir.Push(JsNumber(-scene_data_.env.sun_dir[2]));
+            js_sun_dir.Push(JsNumber(scene_data_.env.sun_dir[0]));
+            js_sun_dir.Push(JsNumber(scene_data_.env.sun_dir[1]));
+            js_sun_dir.Push(JsNumber(scene_data_.env.sun_dir[2]));
 
             js_env.Insert("sun_dir", std::move(js_sun_dir));
         }
@@ -570,7 +574,8 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
             js_env.Insert("env_map", JsStringP{scene_data_.env.env_map_name, alloc});
         }
 
-        { // write sun shadow bias
+        if (scene_data_.env.sun_shadow_bias[0] != DefaultSunShadowBias[0] ||
+            scene_data_.env.sun_shadow_bias[1] != DefaultSunShadowBias[1]) { // write sun shadow bias
             JsArrayP js_sun_shadow_bias(alloc);
             js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[0]));
             js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[1]));
@@ -828,13 +833,8 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
     if (js_comp_obj.Has("mesh_file")) {
         const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
-        const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
-        if (js_comp_obj.Has("mesh_name")) {
-            js_mesh_lookup_name = js_comp_obj.at("mesh_name").as_str().val.c_str();
-        }
-
         Ren::eMeshLoadStatus status;
-        dr->mesh = LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
+        dr->mesh = LoadMesh(js_mesh_file_name.val, nullptr, nullptr, &status);
 
         if (status != Ren::eMeshLoadStatus::Found) {
             const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
@@ -857,7 +857,7 @@ void Eng::SceneManager::PostloadDrawable(const JsObjectP &js_comp_obj, void *com
 #endif
 
             using namespace std::placeholders;
-            dr->mesh = LoadMesh(js_mesh_lookup_name, &in_file_stream,
+            dr->mesh = LoadMesh(js_mesh_file_name.val, &in_file_stream,
                                 std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
             assert(status == Ren::eMeshLoadStatus::CreatedFromData);
         }
@@ -1114,13 +1114,8 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
 
     const JsStringP &js_mesh_file_name = js_comp_obj.at("mesh_file").as_str();
 
-    const char *js_mesh_lookup_name = js_mesh_file_name.val.c_str();
-    if (js_comp_obj.Has("mesh_name")) {
-        js_mesh_lookup_name = js_comp_obj.at("mesh_name").as_str().val.c_str();
-    }
-
     Ren::eMeshLoadStatus status;
-    acc->mesh = LoadMesh(js_mesh_lookup_name, nullptr, nullptr, &status);
+    acc->mesh = LoadMesh(js_mesh_file_name.val, nullptr, nullptr, &status);
 
     if (status != Ren::eMeshLoadStatus::Found) {
         const std::string mesh_path = std::string(paths_.models_path) + js_mesh_file_name.val.c_str();
@@ -1135,8 +1130,8 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
         std::istream in_file_stream(&mem);
 
         using namespace std::placeholders;
-        acc->mesh =
-            LoadMesh(js_mesh_lookup_name, &in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1), &status);
+        acc->mesh = LoadMesh(js_mesh_file_name.val, &in_file_stream, std::bind(&SceneManager::OnLoadMaterial, this, _1),
+                             &status);
         assert(status == Ren::eMeshLoadStatus::CreatedFromData);
     }
 
@@ -1263,7 +1258,7 @@ Ren::SamplerRef Eng::SceneManager::OnLoadSampler(Ren::SamplingParams params) {
     return ren_ctx_.LoadSampler(params, &status);
 }
 
-Ren::MeshRef Eng::SceneManager::LoadMesh(const char *name, std::istream *data,
+Ren::MeshRef Eng::SceneManager::LoadMesh(std::string_view name, std::istream *data,
                                          const Ren::material_load_callback &on_mat_load,
                                          Ren::eMeshLoadStatus *load_status) {
     Ren::MeshRef ref = scene_data_.meshes.FindByName(name);

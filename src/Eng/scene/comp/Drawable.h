@@ -13,7 +13,6 @@ struct Drawable {
     Ren::Bitmask<eVisibility> vis_mask = DefaultVisMask;
     Ren::MeshRef mesh;
     std::vector<std::pair<Ren::MaterialRef, Ren::MaterialRef>> material_override;
-    Ren::String mesh_file;
 
     // TODO: allocate this dynamically (from pool)
     /*struct Ellipsoid {
