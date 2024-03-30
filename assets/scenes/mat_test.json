@@ -168,12 +168,6 @@
                 "radius" : 0.1,
                 "width" : 0.162,
                 "height" : 0.162,
-                "direction1" : [
-                    -0.7,
-                    -0.54,
-                    -0.54
-                ],
-                "angle1" : 0,
                 "cast_shadow" : true
             }
         },

@@ -162,12 +162,6 @@
                 "radius" : 0.01,
                 "width" : 0.1296,
                 "height" : 0.1296,
-                "direction1" : [
-                    -0.7,
-                    -0.54,
-                    -0.54
-                ],
-                "angle1" : 0,
                 "cast_shadow" : true
             }
         },
@@ -191,12 +185,6 @@
                 "radius" : 0.05,
                 "width" : 0.1296,
                 "height" : 0.1296,
-                "direction1" : [
-                    -0.7,
-                    -0.54,
-                    -0.54
-                ],
-                "angle1" : 0,
                 "cast_shadow" : true
             }
         },

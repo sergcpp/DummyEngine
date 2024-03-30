@@ -87,8 +87,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/cube.mesh",
-                "visible_to_specular" : false
+                "mesh_file" : "mat_test/cube.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/cube.mesh",
@@ -114,8 +113,7 @@
                 ]
             },
             "drawable" : {
-                "mesh_file" : "mat_test/cube.mesh",
-                "visible_to_diffuse" : false
+                "mesh_file" : "mat_test/cube.mesh"
             },
             "acc_structure" : {
                 "mesh_file" : "mat_test/cube.mesh",
@@ -171,7 +169,6 @@
             },
             "drawable" : {
                 "mesh_file" : "mat_test/cube.mesh",
-                "visible_to_refraction" : false,
                 "material_override" : [ "mat_test/glossy_mat_green.mat" ]
             },
             "acc_structure" : {
@@ -224,7 +221,6 @@
                     1.0
                 ],
                 "power" : 2.13855,
-                "power0" : 0.0,
                 "offset" : [
                     0,
                     0,
@@ -233,12 +229,6 @@
                 "radius" : 0.1,
                 "width" : 0.162,
                 "height" : 0.162,
-                "direction1" : [
-                    -0.7,
-                    -0.54,
-                    -0.54
-                ],
-                "angle1" : 0,
                 "cast_shadow" : true
             }
         },
@@ -259,7 +249,6 @@
                     1.0
                 ],
                 "power" : 4.2998,
-                "power0" : 0.0,
                 "offset" : [
                     0,
                     0,
@@ -287,7 +276,6 @@
                     1.0,
                     1.0
                 ],
-                "power0" : 200.0,
                 "power" : 0.0,
                 "offset" : [
                     0,
@@ -316,7 +304,6 @@
                     1,
                     1
                 ],
-                "power0" : 10.0,
                 "power" : 0.0,
                 "offset" : [
                     0,
@@ -343,7 +330,6 @@
                     1,
                     1
                 ],
-                "power0" : 10.0,
                 "power" : 0.0,
                 "offset" : [
                     0,
