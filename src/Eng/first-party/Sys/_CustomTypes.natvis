@@ -9,6 +9,17 @@
 	<DisplayString Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(JsArray&amp;)data_}</DisplayString>
 	<DisplayString Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">{(JsObjectP&amp;)data_}</DisplayString>
 	<DisplayString Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">{(JsObject&amp;)data_}</DisplayString>
+    <Expand>
+      <Item Name="[type]" ExcludeView="simple">type_</Item>
+      <Item Name="[literal]" Condition="type_ == JsType::Literal">(JsLiteral&amp;)data_</Item>
+	  <Item Name="[number]" Condition="type_ == JsType::Number">(JsNumber&amp;)data_</Item>
+	  <Item Name="[string]" Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsStringP&amp;)data_</Item>
+	  <Item Name="[string]" Condition="type_ == JsType::String &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsString&amp;)data_</Item>
+	  <Item Name="[array]" Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsArrayP&amp;)data_</Item>
+	  <Item Name="[array]" Condition="type_ == JsType::Array &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsArray&amp;)data_</Item>
+      <Item Name="[object]" Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)!=0">(JsObjectP&amp;)data_</Item>
+      <Item Name="[object]" Condition="type_ == JsType::Object &amp;&amp; strncmp(&quot;$T1&quot;,&quot;std&quot;,3)==0">(JsObject&amp;)data_</Item>
+    </Expand>
   </Type>
   <Type Name="Sys::SmallVectorImpl&lt;*&gt;">
     <DisplayString>{{ size={end_ - begin_}, capacity={capacity_ &amp; CapacityMask} }}</DisplayString>
