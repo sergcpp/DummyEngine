@@ -6,7 +6,7 @@
 [subrepo]
 	remote = Eng
 	branch = serialization_tests
-	commit = 915f8f279de7fbe87d7760787b363dd412bb7b7f
+	commit = 1abaf95464b7328b5b4b7fb1f5bd56d279057c0e
 	method = merge
 	cmdver = 0.4.6
-	parent = 3733a0315ba1d9ddc79ae3e59e9a52c3a31d9a52
+	parent = 89fd377b844fe83120ee48836a2a7543dc1a8b13
