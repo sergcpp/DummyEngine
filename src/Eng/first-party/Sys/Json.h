@@ -57,6 +57,10 @@ struct JsNumber {
     bool operator==(const JsNumber &rhs) const { return val == rhs.val; }
     bool operator==(const double &rhs) const { return val == rhs; }
 
+    bool Equals(const JsNumber &rhs, const double eps) const {
+        return std::abs(val - rhs.val) < eps;
+    }
+
     bool Read(std::istream &in);
     void Write(std::ostream &out, JsFlags flags = {}) const;
 
@@ -113,6 +117,8 @@ template <typename Alloc> struct JsArrayT {
     bool operator==(const JsArrayT &rhs) const;
     bool operator!=(const JsArrayT &rhs) const { return !operator==(rhs); }
 
+    bool Equals(const JsArrayT &rhs, double eps) const;
+
     [[nodiscard]] size_t Size() const { return elements.size(); }
 
     void Push(const JsElementT<Alloc> &el) { elements.push_back(el); }
@@ -144,6 +150,8 @@ template <typename Alloc> struct JsObjectT {
 
     bool operator==(const JsObjectT<Alloc> &rhs) const;
     bool operator!=(const JsObjectT<Alloc> &rhs) const { return !operator==(rhs); }
+
+    bool Equals(const JsObjectT &rhs, double eps) const;
 
     [[nodiscard]] bool Has(std::string_view s) const { return IndexOf(s) < Size(); }
 
@@ -217,6 +225,8 @@ template <typename Alloc> struct JsElementT {
 
     bool operator==(const JsElementT &rhs) const;
     bool operator!=(const JsElementT &rhs) const { return !operator==(rhs); }
+
+    bool Equals(const JsElementT &rhs, double eps) const;
 
     bool Read(std::istream &in, const Alloc &alloc = Alloc());
     void Write(std::ostream &out, JsFlags flags = {}) const;

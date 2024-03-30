@@ -124,6 +124,17 @@ template <typename Alloc> bool JsArrayT<Alloc>::operator==(const JsArrayT &rhs) 
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
 }
 
+template <typename Alloc> bool JsArrayT<Alloc>::Equals(const JsArrayT &rhs, double eps) const {
+    if (elements.size() != rhs.elements.size()) {
+        return false;
+    }
+    bool ret = true;
+    for (size_t i = 0; i < elements.size() && ret; ++i) {
+        ret &= elements[i].Equals(rhs.elements[i], eps);
+    }
+    return ret;
+}
+
 template <typename Alloc> void JsArrayT<Alloc>::Push(JsElementT<Alloc> &&el) { elements.emplace_back(std::move(el)); }
 
 template <typename Alloc> bool JsArrayT<Alloc>::Read(std::istream &in) {
@@ -222,6 +233,18 @@ template <typename Alloc> bool JsObjectT<Alloc>::operator==(const JsObjectT &rhs
         return false;
     }
     return std::equal(elements.begin(), elements.end(), rhs.elements.begin());
+}
+
+template <typename Alloc> bool JsObjectT<Alloc>::Equals(const JsObjectT &rhs, const double eps) const {
+    if (elements.size() != rhs.elements.size()) {
+        return false;
+    }
+    bool ret = true;
+    for (size_t i = 0; i < elements.size() && ret; ++i) {
+        ret &= elements[i].first == rhs.elements[i].first;
+        ret &= elements[i].second.Equals(rhs.elements[i].second, eps);
+    }
+    return ret;
 }
 
 template <typename Alloc> size_t JsObjectT<Alloc>::IndexOf(std::string_view s) const {
@@ -565,6 +588,28 @@ template <typename Alloc> bool JsElementT<Alloc>::operator==(const JsElementT &r
     } else if (type_ == JsType::Object) {
         return reinterpret_cast<const JsObjectT<Alloc> &>(data_) ==
                reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_);
+    }
+
+    return false;
+}
+
+template <typename Alloc> bool JsElementT<Alloc>::Equals(const JsElementT &rhs, const double eps) const {
+    if (type_ != rhs.type_)
+        return false;
+
+    if (type_ == JsType::Literal) {
+        return reinterpret_cast<const JsLiteral &>(data_) == reinterpret_cast<const JsLiteral &>(rhs.data_);
+    } else if (type_ == JsType::Number) {
+        return reinterpret_cast<const JsNumber &>(data_).Equals(reinterpret_cast<const JsNumber &>(rhs.data_), eps);
+    } else if (type_ == JsType::String) {
+        return reinterpret_cast<const JsStringT<Alloc> &>(data_) ==
+               reinterpret_cast<const JsStringT<Alloc> &>(rhs.data_);
+    } else if (type_ == JsType::Array) {
+        return reinterpret_cast<const JsArrayT<Alloc> &>(data_).Equals(
+            reinterpret_cast<const JsArrayT<Alloc> &>(rhs.data_), eps);
+    } else if (type_ == JsType::Object) {
+        return reinterpret_cast<const JsObjectT<Alloc> &>(data_).Equals(
+            reinterpret_cast<const JsObjectT<Alloc> &>(rhs.data_), eps);
     }
 
     return false;
