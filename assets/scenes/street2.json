@@ -5,8 +5,7 @@
         "sun_col" : [ 0.01, 0.01, 0.01 ],
         "sun_angle" : 0.1,
         "env_col1" : [ 0.05, 0.075, 0.1 ],
-        "env_map" : "env/satara_night_no_lamps",
-        "env_map_pt" : "env/satara_night_no_lamps_2k.hdr"
+        "env_map" : "env/satara_night_no_lamps"
     },
     "camera" : {
         "view_origin" : [ 0.0, 5.0, 0.0 ],

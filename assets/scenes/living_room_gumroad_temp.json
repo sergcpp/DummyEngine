@@ -5,8 +5,7 @@
         "sun_col" : [ 2.0, 2.0, 1.7 ],
         "sun_angle" : 0.1,
         "env_col1" : [ 0.05, 0.075, 0.1 ],
-        "env_map" : "env/room_env_mix",
-        "env_map_pt" : "env/room_env_mix_2k.hdr"
+        "env_map" : "env/room_env_mix"
     },
     "camera" : {
         "view_origin" : [ 6.9, 0.96, 0.0 ],

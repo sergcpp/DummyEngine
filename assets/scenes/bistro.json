@@ -4,8 +4,7 @@
         "sun_dir" : [ 0.35, -0.707, -0.3 ],
         "sun_col" : [ 5.0, 5.0, 4.5 ],
         "sun_angle" : 0.1,
-        "env_map" : "env/san_giuseppe_bridge",
-        "env_map_pt" : "env/san_giuseppe_bridge_2k.hdr"
+        "env_map" : "env/san_giuseppe_bridge"
     },
     "camera" : {
         "view_origin" : [ -0.840865, 1.878111, 7.908841 ],

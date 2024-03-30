@@ -17,8 +17,7 @@
 			4.5
 		],
 		"sun_angle" : 0.1,
-		"env_map" : "env/satara_night_no_lamps",
-		"env_map_pt" : "env/noon_grass_2k.hdr"
+		"env_map" : "env/satara_night_no_lamps"
 	},
 	"objects" : [
 		{

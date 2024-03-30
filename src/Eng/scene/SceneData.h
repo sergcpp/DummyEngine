@@ -116,7 +116,7 @@ struct Environment {
     Ren::Vec3f ambient_hack;
     float sun_shadow_bias[2] = {4.0f, 8.0f};
 
-    Ren::String env_map_name, env_map_name_pt;
+    Ren::String env_map_name;
 };
 
 struct BBox {

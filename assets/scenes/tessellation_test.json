@@ -13,7 +13,6 @@
 		],
 		"sun_angle" : 0.1,
 		"env_map" : "env/clear",
-		"env_map_pt" : "env/noon_grass_2k.hdr",
 		"sun_shadow_bias" : [ 4.0, 0.0 ]
 	},
 	"objects" : [

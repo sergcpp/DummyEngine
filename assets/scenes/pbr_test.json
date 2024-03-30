@@ -12,8 +12,7 @@
 			0
 		],
 		"sun_angle" : 0.1,
-		"env_map" : "env/studio_small_03",
-		"env_map_pt" : "env/studio_small_03_2k.hdr"
+		"env_map" : "env/studio_small_03"
 	},
 	"objects" : [
 		{

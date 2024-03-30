@@ -18,7 +18,6 @@
             4.0
         ],
         "env_map": "env/black",
-        "env_map_pt": "env/noon_grass_2k.hdr",
         "ambient_hack": [
             0.0,
             0.0,

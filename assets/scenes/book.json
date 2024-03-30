@@ -12,8 +12,7 @@
 			3.0
 		],
 		"sun_angle" : 0.1,
-		"env_map" : "env/noon_grass",
-		"env_map_pt" : "env/studio_small_03_2k.hdr"
+		"env_map" : "env/noon_grass"
 	},
 	"camera" : {
 		"view_origin" : [

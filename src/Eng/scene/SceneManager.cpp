@@ -495,9 +495,6 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.env_map = ren_ctx_.LoadTextureCube(tex_name.c_str(), data, p, ren_ctx_.default_stage_bufs(),
                                                                ren_ctx_.default_mem_allocs(), &load_status);
         }
-        if (js_env.Has("env_map_pt")) {
-            scene_data_.env.env_map_name_pt = Ren::String{js_env.at("env_map_pt").as_str().val.c_str()};
-        }
         if (js_env.Has("sun_shadow_bias")) {
             const JsArrayP &js_sun_shadow_bias = js_env.at("sun_shadow_bias").as_arr();
             scene_data_.env.sun_shadow_bias[0] = float(js_sun_shadow_bias.at(0).as_num().val);
@@ -571,7 +568,6 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
 
         { // write env map names
             js_env.Insert("env_map", JsStringP{scene_data_.env.env_map_name, alloc});
-            js_env.Insert("env_map_pt", JsStringP{scene_data_.env.env_map_name_pt, alloc});
         }
 
         { // write sun shadow bias

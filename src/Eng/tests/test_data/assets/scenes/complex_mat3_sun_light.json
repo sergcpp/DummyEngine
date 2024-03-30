@@ -14,7 +14,6 @@
         "sun_angle" : 10.0,
         "sun_shadow_bias" : [ 0.0, 0.0 ],
         "env_map" : "env/black",
-        "env_map_pt" : "env/noon_grass_2k.hdr",
         "ambient_hack" : [
             0.01,
             0.01,

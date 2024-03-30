@@ -53,7 +53,7 @@ struct EnvironmentWeak {
     float sun_shadow_bias[2] = {4.0f, 8.0f};
     Ren::Vec3f ambient_hack;
 
-    Ren::String env_map_name, env_map_name_pt;
+    Ren::String env_map_name;
 
     EnvironmentWeak() = default;
     explicit EnvironmentWeak(const Environment &env) {
@@ -76,7 +76,6 @@ struct EnvironmentWeak {
         sun_shadow_bias[1] = env.sun_shadow_bias[1];
         ambient_hack = env.ambient_hack;
         env_map_name = env.env_map_name;
-        env_map_name_pt = env.env_map_name_pt;
     }
 };
 // static_assert(sizeof(EnvironmentWeak) == sizeof(Environment), "!");

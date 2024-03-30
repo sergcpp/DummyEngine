@@ -12,8 +12,7 @@
 			100.0
 		],
 		"sun_angle" : 0.1,
-		"env_map" : "env/black",
-		"env_map_pt" : "env/black_NX.hdr"
+		"env_map" : "env/black"
 	},
 	"objects" : [
 		{
