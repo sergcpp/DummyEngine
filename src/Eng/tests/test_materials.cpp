@@ -192,6 +192,14 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     }
 
     scene_manager.LoadScene(js_scene);
+    { // test serialization
+        JsObjectP js_scene_out(alloc);
+        if (js_scene.Has("camera")) {
+            js_scene_out["camera"] = js_scene["camera"];
+        }
+        scene_manager.SaveScene(js_scene_out);
+        require(js_scene_out.Equals(js_scene, 0.001));
+    }
     scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, false, gamma,
                             max_exposure);
 

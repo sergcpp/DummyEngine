@@ -10,6 +10,24 @@ namespace Eng {
 namespace LightSourceInternal {
 const char *g_type_names[] = {"sphere", "rectangle", "disk", "line"};
 static_assert(sizeof(g_type_names) / sizeof(g_type_names[0]) == int(eLightType::_Count), "!");
+
+float calc_cull_radius(const Ren::Vec3f &col, const float radius) {
+    const float brightness = std::max(col[0], std::max(col[1], col[2]));
+    float cull_radius = radius * (std::sqrt(brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
+    // TODO: properly determine influence of area lights
+    cull_radius *= 10.0f;
+    return cull_radius;
+}
+
+float default_angle(const eLightType type) {
+    float angle_deg = 180.0f;
+    if (type == eLightType::Sphere || type == eLightType::Line) {
+        // whole sphere
+        angle_deg = 360.0f;
+    }
+    return angle_deg;
+}
+
 } // namespace LightSourceInternal
 } // namespace Eng
 
@@ -89,10 +107,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         const JsNumber &js_cull_radius = js_in.at("cull_radius").as_num();
         ls.cull_radius = float(js_cull_radius.val);
     } else {
-        const float brightness = std::max(ls.col[0], std::max(ls.col[1], ls.col[2]));
-        ls.cull_radius = ls.radius * (std::sqrt(brightness / LIGHT_ATTEN_CUTOFF) - 1.0f);
-        // TODO: properly determine influence of area lights
-        ls.cull_radius *= 10.0f;
+        ls.cull_radius = calc_cull_radius(ls.col, ls.radius);
     }
 
     ls.dir[0] = ls.dir[2] = 0.0f;
@@ -105,11 +120,7 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.dir[2] = float(js_dir[2].as_num().val);
     }
 
-    ls.angle_deg = 180.0f;
-    if (ls.type == eLightType::Sphere || ls.type == eLightType::Line) {
-        // whole sphere
-        ls.angle_deg = 360.0f;
-    }
+    ls.angle_deg = default_angle(ls.type);
     if (js_in.Has("spot_angle")) {
         const JsNumber &js_spot_angle = js_in.at("spot_angle").as_num();
         ls.angle_deg = float(js_spot_angle.val);
@@ -189,7 +200,15 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_out.Insert("radius", JsNumber{ls.radius});
     }
 
-    { // Write direction and angle
+    if (ls.width != 1.0f) {
+        js_out.Insert("width", JsNumber{ls.width});
+    }
+
+    if (ls.height != 1.0f) {
+        js_out.Insert("height", JsNumber{ls.height});
+    }
+
+    if (ls.dir[0] != 0.0f || ls.dir[1] != -1.0f || ls.dir[2] != 0.0f) {
         JsArrayP js_dir(alloc);
 
         js_dir.Push(JsNumber{ls.dir[0]});
@@ -199,8 +218,13 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_out.Insert("direction", std::move(js_dir));
     }
 
-    if (ls.angle_deg != 45.0f) {
-        js_out.Insert("angle", JsNumber{ls.angle_deg});
+    const float cull_radius = calc_cull_radius(ls.col, ls.radius);
+    if (ls.cull_radius != cull_radius) {
+        js_out.Insert("cull_radius", JsNumber{ls.cull_radius});
+    }
+
+    if (ls.angle_deg != default_angle(ls.type)) {
+        js_out.Insert("spot_angle", JsNumber{ls.angle_deg});
     }
 
     if (ls.spot_blend != 0.0f) {
@@ -209,10 +233,6 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
 
     if (ls.cull_offset != 0.1f) {
         js_out.Insert("cull_offset", JsNumber{ls.cull_offset});
-    }
-
-    if (ls.cull_radius != 0.1f) {
-        js_out.Insert("cull_radius", JsNumber{ls.cull_radius});
     }
 
     if (ls.sky_portal) {
