@@ -89,6 +89,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 
     renderer.settings.enable_bloom = false;
     renderer.settings.taa_mode = Eng::eTAAMode::Static;
+    renderer.settings.pixel_filter = Eng::ePixelFilter::Box;
 
     if (img_test == eImgTest::NoShadow) {
         renderer.settings.reflections_quality = Eng::eReflectionsQuality::Off;

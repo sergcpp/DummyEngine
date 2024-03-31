@@ -108,6 +108,11 @@ class Renderer {
     std::vector<uint32_t> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
 
+    static const int FilterTableSize = 1024;
+    ePixelFilter filter_table_filter_ = ePixelFilter(-1);
+    float filter_table_width_ = 0.0f;
+    std::vector<float> filter_table_;
+
     struct ProcessedObjData {
         uint32_t base_vertex;
         int32_t rt_sh_index;
@@ -289,6 +294,7 @@ class Renderer {
 
     void InitPipelines();
     // void InitRendererInternal();
+    void UpdateFilterTable(ePixelFilter filter, float filter_width);
 
     // Parallel Jobs
     static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,

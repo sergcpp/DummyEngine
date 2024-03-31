@@ -114,8 +114,10 @@ set(INPUT_SOURCE_FILES input/InputManager.h
                        input/InputManager.cpp
                        input/Keycode.h)
 
-set(RENDERER_SOURCES    renderer/PrimDraw.h
-renderer/PrimDraw.cpp
+set(RENDERER_SOURCES    renderer/CDFUtils.h
+                        renderer/CDFUtils.cpp
+                        renderer/PrimDraw.h
+                        renderer/PrimDraw.cpp
                         renderer/Renderer.h
                         renderer/Renderer.cpp
                         renderer/Renderer_BN.cpp

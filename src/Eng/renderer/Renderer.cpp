@@ -8,6 +8,7 @@
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 
+#include "CDFUtils.h"
 #include "Renderer_Names.h"
 
 #include <vtune/ittnotify.h>
@@ -22,6 +23,18 @@ int upper_power_of_two(int v) {
         res *= 2;
     }
     return res;
+}
+
+float filter_box(float /*v*/, float /*width*/) { return 1.0f; }
+
+float filter_gaussian(float v, float width) {
+    v *= 6.0f / width;
+    return expf(-2.0f * v * v);
+}
+
+float filter_blackman_harris(float v, float width) {
+    v = 2.0f * Ren::Pi<float>() * (v / width + 0.5f);
+    return 0.35875f - 0.48829f * cosf(v) + 0.14128f * cosf(2.0f * v) - 0.01168f * cosf(3.0f * v);
 }
 
 const Ren::Vec2f HaltonSeq23[64] = {Ren::Vec2f{0.0000000000f, 0.0000000000f}, Ren::Vec2f{0.5000000000f, 0.3333333430f},
@@ -554,6 +567,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         log->Info("Successfully initialized framebuffers %ix%i", view_state_.scr_res[0], view_state_.scr_res[1]);
     }
 
+    if (settings.pixel_filter != filter_table_filter_ || settings.pixel_filter_width != filter_table_width_) {
+        UpdateFilterTable(settings.pixel_filter, settings.pixel_filter_width);
+        filter_table_filter_ = settings.pixel_filter;
+        filter_table_width_ = settings.pixel_filter_width;
+    }
+
     if (!target) {
         // TODO: Change actual resolution dynamically
 #if defined(__ANDROID__)
@@ -579,8 +598,29 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             ((list.render_settings.taa_mode == eTAAMode::Static) ? accumulated_frames_ : list.frame_index) %
             samples_to_use;
         Ren::Vec2f jitter = HaltonSeq23[halton_sample];
-        jitter = (jitter * 2.0f - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};
 
+        auto lookup_filter_table = [this](float x) {
+            x *= (FilterTableSize - 1);
+
+            const int index = std::min(int(x), FilterTableSize - 1);
+            const int nindex = std::min(index + 1, FilterTableSize - 1);
+            const float t = x - float(index);
+
+            const float data0 = filter_table_[index];
+            if (t == 0.0f) {
+                return data0;
+            }
+
+            float data1 = filter_table_[nindex];
+            return (1.0f - t) * data0 + t * data1;
+        };
+
+        if (settings.taa_mode == eTAAMode::Static && settings.pixel_filter != ePixelFilter::Box) {
+            jitter[0] = lookup_filter_table(jitter[0]);
+            jitter[1] = lookup_filter_table(jitter[1]);
+        }
+
+        jitter = (2.0f * jitter - Ren::Vec2f{1.0f}) / Ren::Vec2f{view_state_.act_res};
         list.draw_cam.SetPxOffset(jitter);
     } else {
         list.draw_cam.SetPxOffset(Ren::Vec2f{0.0f, 0.0f});
@@ -1427,6 +1467,30 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     }
 
     temp_upload_buf.FreeImmediate();
+}
+
+void Eng::Renderer::UpdateFilterTable(const ePixelFilter filter, float filter_width) {
+    float (*filter_func)(float v, float width);
+
+    switch (filter) {
+    case ePixelFilter::Box:
+        filter_func = RendererInternal::filter_box;
+        filter_width = 1.0f;
+        break;
+    case ePixelFilter::Gaussian:
+        filter_func = RendererInternal::filter_gaussian;
+        filter_width *= 3.0f;
+        break;
+    case ePixelFilter::BlackmanHarris:
+        filter_func = RendererInternal::filter_blackman_harris;
+        filter_width *= 2.0f;
+        break;
+    default:
+        assert(false && "Unknown filter!");
+    }
+
+    filter_table_ = CDFInverted(FilterTableSize, 0.0f, filter_width * 0.5f,
+                                std::bind(filter_func, std::placeholders::_1, filter_width), true /* make_symmetric */);
 }
 
 void Eng::Renderer::InitBackendInfo() {

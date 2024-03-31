@@ -1022,6 +1022,7 @@ void GSBaseState::InitRenderer_PT() {
 
 void GSBaseState::InitScene_PT() {
     const Eng::SceneData &scene_data = scene_manager_->scene_data();
+    const Eng::render_settings_t &settings = renderer_->settings;
 
     ray_scene_ = std::unique_ptr<Ray::SceneBase>(ray_renderer_->CreateScene());
     { // Setup environment
@@ -1035,8 +1036,13 @@ void GSBaseState::InitScene_PT() {
         Ray::camera_desc_t cam_desc;
         cam_desc.type = Ray::eCamType::Persp;
         cam_desc.view_transform = Ray::eViewTransform::Standard;
-        cam_desc.filter = Ray::ePixelFilter::BlackmanHarris;
-        cam_desc.filter_width = 1.0f;
+        cam_desc.filter = Ray::ePixelFilter::Box;
+        if (settings.pixel_filter == Eng::ePixelFilter::Gaussian) {
+            cam_desc.filter = Ray::ePixelFilter::Gaussian;
+        } else if (settings.pixel_filter == Eng::ePixelFilter::BlackmanHarris) {
+            cam_desc.filter = Ray::ePixelFilter::BlackmanHarris;
+        }
+        cam_desc.filter_width = settings.pixel_filter_width;
         cam_desc.origin[0] = cam_desc.origin[1] = cam_desc.origin[2] = 0.0f;
         cam_desc.fwd[0] = cam_desc.fwd[1] = 0.0f;
         cam_desc.fwd[2] = -1.0f;
