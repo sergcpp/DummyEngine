@@ -721,6 +721,12 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                 best_score = score;
 
                 physical_device = physical_devices[i];
+
+                uint32_t _supported_stages_mask = 0xffffffff;
+                if (!raytracing_supported) {
+                    _supported_stages_mask &= ~VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+                }
+
                 this->device_properties = device_properties;
                 this->present_family_index = present_family_index;
                 this->graphics_family_index = graphics_family_index;
@@ -729,9 +735,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                 this->dynamic_rendering_supported = dynamic_rendering_supported;
                 this->renderpass_loadstore_none_supported = renderpass_loadstore_none_supported;
                 this->subgroup_size_control_supported = subgroup_size_control_supported;
-                if (!this->raytracing_supported) {
-                    supported_stages_mask &= ~VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
-                }
+                this->supported_stages_mask = _supported_stages_mask;
             }
         }
     }
