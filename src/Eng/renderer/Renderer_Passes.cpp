@@ -493,6 +493,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 const float mul = 2.0f / (Ren::Pi<float>() * radius * radius);
                 shrd_data.sun_col *= mul;
             }
+            shrd_data.env_col = Ren::Vec4f{p_list_->env.env_col[0], p_list_->env.env_col[1], p_list_->env.env_col[2],
+                                           p_list_->env.env_map_rot};
 
             // actual resolution and full resolution
             shrd_data.res_and_fres = Ren::Vec4f{float(view_state_.act_res[0]), float(view_state_.act_res[1]),
@@ -687,11 +689,10 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bo
         RpResRef ndx_buf = skymap.AddIndexBufferInput(ctx_.default_indices_buf());
 
         frame_textures.color = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-        frame_textures.specular = skymap.AddColorOutput(MAIN_SPEC_TEX, frame_textures.specular_params);
         frame_textures.depth = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
         rp_skydome_.Setup(*p_list_, &view_state_, clear, vtx_buf1, vtx_buf2, ndx_buf, shared_data_buf, env_tex,
-                          frame_textures.color, frame_textures.specular, frame_textures.depth);
+                          frame_textures.color, frame_textures.depth);
         skymap.set_executor(&rp_skydome_);
     } else {
         // TODO: Physical sky

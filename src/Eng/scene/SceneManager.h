@@ -297,7 +297,6 @@ class SceneManager {
     static Ren::HashMap32<std::string, Handler> g_asset_handlers;
 
     static void InitASTCCodec();
-    static void WriteCommonShaderIncludes(const char *in_folder);
 
     static bool HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
                       Ren::SmallVectorImpl<std::string> &);
@@ -309,11 +308,11 @@ class SceneManager {
                             Ren::SmallVectorImpl<std::string> &);
     static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                            Ren::SmallVectorImpl<std::string> &);
+    static bool HConvHDRToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                              Ren::SmallVectorImpl<std::string> &out_dependencies);
 
     static bool HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string> &);
-    static bool HPreprocessHeightmap(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                     Ren::SmallVectorImpl<std::string> &);
 
     // probe textures
     static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,

@@ -12,7 +12,6 @@
             0
         ],
         "sun_angle" : 0.1,
-        "env_map" : "env/black",
         "ambient_hack" : [
             0.25,
             0.25,

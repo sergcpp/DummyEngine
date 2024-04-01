@@ -195,7 +195,8 @@ void main() {
         }
 
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-            final_color = throughput * clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws, 4.0)), vec3(0.0), vec3(8.0)); // clamp is temporary workaround
+            const vec3 rotated_dir = rotate_xz(gi_ray_ws.xyz, g_shrd_data.env_col.w);
+            final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, 6.0).rgb;
             break;
         } else {
             const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);

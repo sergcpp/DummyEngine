@@ -53,6 +53,17 @@ highp float rand(highp vec2 co) {
     return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
+vec3 rgbe_to_rgb(const vec4 rgbe) {
+    const float f = exp2(255.0 * rgbe.w - 128.0);
+    return rgbe.xyz * f;
+}
+
+vec3 rotate_xz(vec3 dir, float angle) {
+    const float x = dir.x * cos(angle) - dir.z * sin(angle);
+    const float z = dir.x * sin(angle) + dir.z * cos(angle);
+    return vec3(x, dir.y, z);
+}
+
 // Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
 // https://knarkowicz.wordpress.com/2014/04/16/octahedron-normal-vector-encoding/
 // [Cigolle 2014, "A Survey of Efficient Representations for Independent Unit Vectors"]
@@ -225,7 +236,7 @@ struct SharedData {
     mat4 world_from_view, view_from_clip, world_from_clip_no_translation, delta_matrix;
     mat4 rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
-    vec4 sun_dir, sun_col, taa_info, frustum_info;
+    vec4 sun_dir, sun_col, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
     vec4 wind_scroll, wind_scroll_prev;

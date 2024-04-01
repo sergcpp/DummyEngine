@@ -22,9 +22,9 @@ void Eng::RpGBufferFill::Execute(RpBuilder &builder) {
 void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
                                   RpAllocBuf &ndx_buf, RpAllocTex &albedo_tex, RpAllocTex &normal_tex,
                                   RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
-    const Ren::RenderTarget color_targets[] = {{albedo_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-                                               {normal_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store},
-                                               {spec_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store}};
+    const Ren::RenderTarget color_targets[] = {{albedo_tex.ref, Ren::eLoadOp::Clear, Ren::eStoreOp::Store},
+                                               {normal_tex.ref, Ren::eLoadOp::Clear, Ren::eStoreOp::Store},
+                                               {spec_tex.ref, Ren::eLoadOp::Clear, Ren::eStoreOp::Store}};
     const Ren::RenderTarget depth_target = {depth_tex.ref, Ren::eLoadOp::Load, Ren::eStoreOp::Store, Ren::eLoadOp::Load,
                                             Ren::eStoreOp::Store};
 

@@ -434,69 +434,67 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             scene_data_.env.env_map_name = Ren::String{js_env_map.val.c_str()};
 
-            const std::string tex_names[6] = {
-#if !defined(__ANDROID__)
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PX.dds",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NX.dds",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PY.dds",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NY.dds",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PZ.dds",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NZ.dds"
-#else
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PX.ktx",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NX.ktx",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PY.ktx",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NY.ktx",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_PZ.ktx",
-                std::string(paths_.textures_path) + js_env_map.val.c_str() + "_NZ.ktx"
-#endif
-            };
+            Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
+            const size_t in_file_size = in_file.size();
+
+            Ren::DDSHeader header = {};
+            in_file.Read((char *)&header, sizeof(Ren::DDSHeader));
+
+            Ren::DDS_HEADER_DXT10 dx10_header = {};
+            in_file.Read((char *)&dx10_header, sizeof(Ren::DDS_HEADER_DXT10));
+
+            const int w = int(header.dwWidth), h = int(header.dwHeight);
+            assert(w == h);
+
+            const int size_per_face = int(header.dwPitchOrLinearSize) / 6;
 
             std::vector<uint8_t> tex_data[6];
             Ren::Span<const uint8_t> data[6];
-            int res = 0;
 
             for (int i = 0; i < 6; i++) {
-                Sys::AssetFile in_file(tex_names[i]);
-                size_t in_file_size = in_file.size();
-
-                tex_data[i].resize(in_file_size);
-                in_file.Read((char *)&tex_data[i][0], in_file_size);
-
-#if !defined(__ANDROID__)
-                Ren::DDSHeader header;
-                memcpy(&header, &tex_data[i][0], sizeof(Ren::DDSHeader));
-
-                const int w = int(header.dwWidth), h = int(header.dwHeight);
-
-                assert(w == h);
-                res = w;
-#else
-
-#endif
-
+                tex_data[i].resize(size_per_face);
+                in_file.Read((char *)tex_data[i].data(), size_per_face);
                 data[i] = tex_data[i];
             }
 
             Ren::Tex2DParams p;
-            p.w = res;
-            p.h = res;
-            p.format = Ren::DefaultCompressedRGBA;
+            p.w = w;
+            p.h = h;
+            p.mip_count = int(header.dwMipMapCount);
+            p.format = Ren::eTexFormat::RawRGB9E5;
             p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
             p.sampling.filter = Ren::eTexFilter::Bilinear;
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            const std::string tex_name = std::string(js_env_map.val.c_str()) +
-#if !defined(__ANDROID__)
-                                         "_*.dds";
-#else
-                                         "_*.ktx";
-#endif
-
             Ren::eTexLoadStatus load_status;
-            scene_data_.env.env_map = ren_ctx_.LoadTextureCube(tex_name.c_str(), data, p, ren_ctx_.default_stage_bufs(),
-                                                               ren_ctx_.default_mem_allocs(), &load_status);
+            scene_data_.env.env_map =
+                ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_stage_bufs(),
+                                         ren_ctx_.default_mem_allocs(), &load_status);
+        } else {
+            static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128},
+                                                     {255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128}};
+
+            Ren::Span<const uint8_t> _white_cube[6];
+            for (int i = 0; i < 6; ++i) {
+                _white_cube[i] = white_cube[i];
+            }
+
+            Ren::Tex2DParams p;
+            p.w = p.h = 1;
+            p.format = Ren::eTexFormat::RawRGBA8888;
+            p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+            p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            Ren::eTexLoadStatus status;
+            scene_data_.env.env_map =
+                ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p, ren_ctx_.default_stage_bufs(),
+                                         ren_ctx_.default_mem_allocs(), &status);
         }
+        if (js_env.Has("env_map_rot")) {
+            const JsNumber &js_env_map_rot = js_env.at("env_map_rot").as_num();
+            scene_data_.env.env_map_rot = float(js_env_map_rot.val) * Ren::Pi<float>() / 180.0f;
+        }
+
         if (js_env.Has("sun_shadow_bias")) {
             const JsArrayP &js_sun_shadow_bias = js_env.at("sun_shadow_bias").as_arr();
             scene_data_.env.sun_shadow_bias[0] = float(js_sun_shadow_bias.at(0).as_num().val);
@@ -569,9 +567,19 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
         { // write sun softness
             js_env.Insert("sun_angle", JsNumber(scene_data_.env.sun_angle));
         }
+        if (Length2(scene_data_.env.env_col) > FLT_EPSILON) {
+            JsArrayP js_env_col(alloc);
+            js_env_col.Push(JsNumber(scene_data_.env.env_col[0]));
+            js_env_col.Push(JsNumber(scene_data_.env.env_col[1]));
+            js_env_col.Push(JsNumber(scene_data_.env.env_col[2]));
 
-        { // write env map names
+            js_env.Insert("env_col", std::move(js_env_col));
+        }
+        if (scene_data_.env.env_map->name() != "dummy_white_cube") {
             js_env.Insert("env_map", JsStringP{scene_data_.env.env_map_name, alloc});
+        }
+        if (scene_data_.env.env_map_rot != 0.0f) {
+            js_env.Insert("env_map_rot", JsNumber(scene_data_.env.env_map_rot * 180.0f / Ren::Pi<float>()));
         }
 
         if (scene_data_.env.sun_shadow_bias[0] != DefaultSunShadowBias[0] ||

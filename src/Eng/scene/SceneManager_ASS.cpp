@@ -365,6 +365,8 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
             } else if (strcmp(platform, "android") == 0) {
                 tex.replace(n + 1, 3, "ktx");
             }
+        } else if ((n = tex.find(".hdr")) != std::string::npos) {
+            tex.replace(n + 1, 3, "dds");
         }
     }
 }
@@ -586,7 +588,8 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
     if (strcmp(platform, "pc") == 0) {
         g_asset_handlers["tga"] = {"dds", HConvToDDS};
-        g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
+        // g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
+        g_asset_handlers["hdr"] = {"dds", HConvHDRToDDS};
         g_asset_handlers["png"] = {"dds", HConvToDDS};
         g_asset_handlers["jpg"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
@@ -599,7 +602,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
         g_asset_handlers["rcall.glsl"] = {"rcall.glsl", HCompileShader};
     } else if (strcmp(platform, "android") == 0) {
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
-        g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
+        // g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
         g_asset_handlers["png"] = {"ktx", HConvToASTC};
         g_asset_handlers["jpg"] = {"ktx", HConvToASTC};
         g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
@@ -780,21 +783,7 @@ bool Eng::SceneManager::HCopy(assets_context_t &ctx, const char *in_file, const 
                               Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("Copy %s", out_file);
 
-    std::ifstream src_stream(in_file, std::ios::binary);
-    if (!src_stream) {
-        return false;
-    }
-    std::ofstream dst_stream(out_file, std::ios::binary);
-
-    const int BufSize = 64 * 1024;
-    char buf[BufSize];
-
-    while (src_stream) {
-        src_stream.read(buf, BufSize);
-        dst_stream.write(buf, src_stream.gcount());
-    }
-
-    return dst_stream.good();
+    return std::filesystem::copy_file(in_file, out_file, std::filesystem::copy_options::overwrite_existing);
 }
 
 bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_file, const char *out_file,
@@ -1207,19 +1196,19 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
                 JsObject &js_decal = js_obj.at("decal").as_obj();
                 if (js_decal.Has("diff")) {
                     JsString &js_diff_tex = js_decal.at("diff").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_diff_tex.val);
+                    ReplaceTextureExtension(ctx.platform, js_diff_tex.val);
                 }
                 if (js_decal.Has("norm")) {
                     JsString &js_norm_tex = js_decal.at("norm").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_norm_tex.val);
+                    ReplaceTextureExtension(ctx.platform, js_norm_tex.val);
                 }
                 if (js_decal.Has("spec")) {
                     JsString &js_spec_tex = js_decal.at("spec").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
+                    ReplaceTextureExtension(ctx.platform, js_spec_tex.val);
                 }
                 if (js_decal.Has("mask")) {
                     JsString &js_mask_tex = js_decal.at("mask").as_str();
-                    SceneManagerInternal::ReplaceTextureExtension(ctx.platform, js_mask_tex.val);
+                    ReplaceTextureExtension(ctx.platform, js_mask_tex.val);
                 }
             }
         }
@@ -1298,6 +1287,14 @@ bool Eng::SceneManager::HPreprocessJson(assets_context_t &ctx, const char *in_fi
 
             js_chapter["caption"] = std::move(js_caption);
             js_chapter["text_data"] = std::move(js_text_data);
+        }
+    }
+
+    if (js_root.Has("environment")) {
+        JsObject &js_environment = js_root.at("environment").as_obj();
+        if (js_environment.Has("env_map")) {
+            JsString &js_env_map = js_environment.at("env_map").as_str();
+            ReplaceTextureExtension(ctx.platform, js_env_map.val);
         }
     }
 

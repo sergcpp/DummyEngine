@@ -13,7 +13,6 @@
         ],
         "sun_angle" : 10.0,
         "sun_shadow_bias" : [ 0.0, 0.0 ],
-        "env_map" : "env/black",
         "ambient_hack" : [
             0.01,
             0.01,

@@ -11,8 +11,7 @@
 			100.0,
 			100.0
 		],
-		"sun_angle" : 0.1,
-		"env_map" : "env/black"
+		"sun_angle" : 0.1
 	},
 	"objects" : [
 		{

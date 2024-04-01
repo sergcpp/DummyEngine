@@ -20,6 +20,7 @@
 #include <Eng/scene/PhysicsManager.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
+#include <Eng/utils/Load.h>
 #include <Eng/utils/Random.h>
 #include <Ray/Ray.h>
 #include <Ren/Context.h>
@@ -1030,6 +1031,27 @@ void GSBaseState::InitScene_PT() {
         env_desc.env_col[0] = env_desc.back_col[0] = scene_data.env.env_col[0];
         env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
         env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
+
+        if (!scene_data.env.env_map_name.empty()) {
+            std::string env_map_path = "assets_pc/textures/";
+            env_map_path += scene_data.env.env_map_name;
+            env_map_path.replace(env_map_path.length() - 3, 3, "hdr");
+
+            int width, height;
+            const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(env_map_path.c_str(), width, height);
+
+            Ray::tex_desc_t tex_desc;
+            tex_desc.w = width;
+            tex_desc.h = height;
+            tex_desc.data = image_rgbe;
+            tex_desc.format = Ray::eTextureFormat::RGBA8888;
+            tex_desc.is_srgb = false;
+            tex_desc.force_no_compression = true;
+            env_desc.env_map = env_desc.back_map = ray_scene_->AddTexture(tex_desc);
+        }
+
+        env_desc.env_map_rotation = env_desc.back_map_rotation = scene_data.env.env_map_rot;
+
         ray_scene_->SetEnvironment(env_desc);
     }
     { // Add main camera

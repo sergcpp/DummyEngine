@@ -152,8 +152,8 @@ void main() {
         float ray_len = t_max;
         vec3 tri_normal, albedo;
 
-        vec3 ro = ray_origin_ws.xyz + 0.001 * gi_ray_ws.xyz;
-        vec3 inv_d = safe_invert(gi_ray_ws.xyz);
+        vec3 ro = ray_origin_ws.xyz + 0.001 * gi_ray_ws;
+        vec3 inv_d = safe_invert(gi_ray_ws);
 
         hit_data_t inter;
         inter.mask = 0;
@@ -165,7 +165,7 @@ void main() {
         int transp_depth = 0;
         while (transp_depth++ < 4) {
             Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                         ro, gi_ray_ws.xyz, inv_d, (1u << RAY_TYPE_DIFFUSE), 0 /* root_node */, inter);
+                                         ro, gi_ray_ws, inv_d, (1u << RAY_TYPE_DIFFUSE), 0 /* root_node */, inter);
             if (inter.mask != 0) {
                 // perform alpha test
                 const bool backfacing = (inter.prim_index < 0);
@@ -201,7 +201,7 @@ void main() {
     #if defined(BINDLESS_TEXTURES)
                 const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[4])), uv, 0.0).r;
                 if (alpha < 0.5) {
-                    ro += (inter.t + 0.001) * gi_ray_ws.xyz;
+                    ro += (inter.t + 0.001) * gi_ray_ws;
                     inter.mask = 0;
                     inter.t = 1000.0;
                     continue;
@@ -212,7 +212,8 @@ void main() {
         }
 
         if (inter.mask == 0) {
-            final_color += throughput * clamp(RGBMDecode(textureLod(g_env_tex, gi_ray_ws, 4.0)), vec3(0.0), vec3(8.0)); // clamp is temporary workaround
+            const vec3 rotated_dir = rotate_xz(gi_ray_ws, g_shrd_data.env_col.w);
+            final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, 6.0).rgb;
             break;
         } else {
             const bool backfacing = (inter.prim_index < 0);

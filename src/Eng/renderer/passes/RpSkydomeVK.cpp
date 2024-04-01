@@ -15,7 +15,7 @@ extern const int __skydome_vertices_count;
 } // namespace RpSkydomeInternal
 
 void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                                 RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
+                                 RpAllocTex &color_tex, RpAllocTex &depth_tex) {
     using namespace RpSkydomeInternal;
 
     RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(shared_data_buf_);
@@ -66,7 +66,7 @@ void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAll
     render_pass_begin_info.renderPass = render_pass_[rp_index].handle();
     render_pass_begin_info.framebuffer = framebuf_[ctx.backend_frame()][fb_to_use_].handle();
     render_pass_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    VkClearValue clear_values[3] = {{}, {}, {}};
+    const VkClearValue clear_values[3] = {{}, {}, {}};
     render_pass_begin_info.pClearValues = clear_values;
     render_pass_begin_info.clearValueCount = 3;
 

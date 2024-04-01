@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../graph/SubPass.h"
 #include "../Renderer_DrawList.h"
+#include "../graph/SubPass.h"
 
 #include <Ren/Pipeline.h>
 #include <Ren/RastState.h>
@@ -35,13 +35,12 @@ class RpSkydome : public RpExecutor {
     RpResRef ndx_buf_;
 
     RpResRef color_tex_;
-    RpResRef spec_tex_;
     RpResRef depth_tex_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2,
-                  RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
+                  RpAllocBuf &ndx_buf, RpAllocTex &color_tex, RpAllocTex &depth_tex);
     void DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                     RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex);
+                     RpAllocTex &color_tex, RpAllocTex &depth_tex);
 
   public:
     RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
@@ -49,7 +48,7 @@ class RpSkydome : public RpExecutor {
 
     void Setup(const DrawList &list, const ViewState *view_state, bool clear, const RpResRef vtx_buf1,
                const RpResRef vtx_buf2, const RpResRef ndx_buf, const RpResRef shared_data_buf, const RpResRef env_tex,
-               const RpResRef color_tex, const RpResRef spec_tex, const RpResRef depth_tex) {
+               const RpResRef color_tex, const RpResRef depth_tex) {
         view_state_ = view_state;
         clear_ = clear;
 
@@ -62,7 +61,6 @@ class RpSkydome : public RpExecutor {
         ndx_buf_ = ndx_buf;
 
         color_tex_ = color_tex;
-        spec_tex_ = spec_tex;
         depth_tex_ = depth_tex;
     }
 

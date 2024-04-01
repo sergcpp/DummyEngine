@@ -176,7 +176,9 @@ void main() {
         break;
     }
     if (inter.mask == 0) {
-        final_color = clamp(RGBMDecode(textureLod(g_env_tex, refl_ray_ws.xyz, 0.0)), vec3(0.0), vec3(4.0)); // clamp is temporary workaround
+        const vec3 rotated_dir = rotate_xz(refl_ray_ws.xyz, g_shrd_data.env_col.w);
+        const float lod = 8.0 * roughness;
+        final_color = g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, lod).rgb;
     } else {
         const bool backfacing = (inter.prim_index < 0);
         const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;

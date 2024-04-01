@@ -637,7 +637,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
     const bool deferred_shading =
         list.render_settings.render_mode == eRenderMode::Deferred && !list.render_settings.debug_wireframe;
-    const bool env_map_changed = (env_map_ != list.env.env_map);
+    const bool env_map_changed = false;
+    //(env_map_ != list.env.env_map);
     const bool lm_tex_changed =
         lm_direct_ != list.env.lm_direct || lm_indir_ != list.env.lm_indir ||
         !std::equal(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
@@ -896,11 +897,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         // frame_textures.albedo_params.flags = Ren::eTexFlagBits::SRGB;
         frame_textures.albedo_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-        if (!deferred_shading) {
-            // Skydome drawing
-            AddSkydomePass(common_buffers, true /* clear */, frame_textures);
-        }
-
         //
         // Depth prepass
         //
@@ -1033,7 +1029,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // Skydome drawing
-            // AddSkydomePass(common_buffers, false /* clear */, frame_textures);
+            AddSkydomePass(common_buffers, false /* clear */, frame_textures);
         } else {
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
@@ -1297,7 +1293,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
 
             // TODO: Remove this condition
-            if (list.env.env_map) {
+            if (list.env.env_map || true) {
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
                 rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);

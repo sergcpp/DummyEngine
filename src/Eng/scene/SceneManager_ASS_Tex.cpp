@@ -330,9 +330,9 @@ bool Write_RGB(const Ray::color_rgba_t *out_data, int w, int h, const char *name
 }
 #endif
 
-bool Write_RGBM(const float *out_data, const int w, const int h, const int channels, const bool flip_y,
+bool Write_RGBM(Ren::Span<const float> data, const int w, const int h, const int channels, const bool flip_y,
                 const char *name) {
-    const std::unique_ptr<uint8_t[]> u8_data = Ren::ConvertRGB32F_to_RGBM(out_data, w, h, channels);
+    const std::vector<uint8_t> u8_data = Ren::ConvertRGB32F_to_RGBM(data, w, h, channels);
     return WriteImage(&u8_data[0], w, h, 4, flip_y, true /* is_rgbm */, name) == 1;
 }
 
@@ -405,7 +405,7 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
         header.sPixelFormat.dwFourCC = Ren::FourCC_BC3_UNORM;
     }
 
-    header.sCaps.dwCaps1 = unsigned(DDSCAPS_TEXTURE) | unsigned(DDSCAPS_MIPMAP);
+    header.sCaps.dwCaps1 = Ren::DDSCAPS_TEXTURE | Ren::DDSCAPS_MIPMAP;
 
     std::ofstream out_stream(out_file, std::ios::binary);
     out_stream.write((char *)&header, sizeof(header));
@@ -738,6 +738,78 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
     return res;
 }
 
+bool WriteCubemapDDS(Ren::Span<uint32_t> data[6], const int res, const int channels, const char *out_name) {
+    assert(channels == 4);
+    const int mip_count = Ren::CalcMipCount(res, res, 1, Ren::eTexFilter::Bilinear);
+
+    int total_size = 0;
+    for (int i = 0; i < mip_count; ++i) {
+        total_size += (res >> i) * (res >> i) * 4;
+    }
+
+    Ren::DDSHeader header = {};
+    header.dwMagic = (unsigned('D') << 0u) | (unsigned('D') << 8u) | (unsigned('S') << 16u) | (unsigned(' ') << 24u);
+    header.dwSize = 124;
+    header.dwFlags = unsigned(DDSD_CAPS) | unsigned(DDSD_HEIGHT) | unsigned(DDSD_WIDTH) | unsigned(DDSD_PIXELFORMAT) |
+                     unsigned(DDSD_LINEARSIZE) | unsigned(DDSD_MIPMAPCOUNT);
+    header.dwWidth = res;
+    header.dwHeight = res;
+    header.dwPitchOrLinearSize = 6 * total_size;
+    header.dwMipMapCount = mip_count;
+    header.sPixelFormat.dwSize = 32;
+    header.sPixelFormat.dwFlags = DDPF_FOURCC;
+    header.sPixelFormat.dwFourCC =
+        (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('1') << 16u) | (uint32_t('0') << 24u);
+
+    header.sCaps.dwCaps1 = Ren::DDSCAPS_TEXTURE | Ren::DDSCAPS_COMPLEX | Ren::DDSCAPS_MIPMAP;
+    header.sCaps.dwCaps2 = Ren::DDSCAPS2_CUBEMAP | Ren::DDSCAPS2_CUBEMAP_POSITIVEX | Ren::DDSCAPS2_CUBEMAP_NEGATIVEX |
+                           Ren::DDSCAPS2_CUBEMAP_POSITIVEY | Ren::DDSCAPS2_CUBEMAP_NEGATIVEY |
+                           Ren::DDSCAPS2_CUBEMAP_POSITIVEZ | Ren::DDSCAPS2_CUBEMAP_NEGATIVEZ;
+
+    Ren::DDS_HEADER_DXT10 dx10_header = {};
+    dx10_header.dxgiFormat = Ren::DXGI_FORMAT_R9G9B9E5_SHAREDEXP;
+    dx10_header.resourceDimension = Ren::D3D10_RESOURCE_DIMENSION::D3D10_RESOURCE_DIMENSION_TEXTURE2D;
+    dx10_header.arraySize = 1;
+
+    std::ofstream out_stream(out_name, std::ios::binary);
+    out_stream.write((char *)&header, sizeof(header));
+    out_stream.write((char *)&dx10_header, sizeof(dx10_header));
+
+    int _total_size = 0;
+    for (int i = 0; i < 6; ++i) {
+        std::vector<float> mipmaps[16];
+        int widths[16] = {}, heights[16] = {};
+
+        mipmaps[0] = Ren::ConvertRGB9E5_to_RGB32F(data[i], res, res);
+        widths[0] = heights[0] = res;
+
+        for (int j = 1; j < mip_count; ++j) {
+            mipmaps[j].resize(res * res * 3);
+            widths[j] = heights[j] = (res >> j);
+            for (int y = 0; y < heights[j]; ++y) {
+                for (int x = 0; x < widths[j]; ++x) {
+                    for (int c = 0; c < 3; ++c) {
+                        mipmaps[j][3 * (y * widths[j] + x) + c] =
+                            0.25f * (mipmaps[j - 1][3 * ((2 * y + 0) * widths[j - 1] + (2 * x + 0)) + c] +
+                                     mipmaps[j - 1][3 * ((2 * y + 0) * widths[j - 1] + (2 * x + 1)) + c] +
+                                     mipmaps[j - 1][3 * ((2 * y + 1) * widths[j - 1] + (2 * x + 0)) + c] +
+                                     mipmaps[j - 1][3 * ((2 * y + 1) * widths[j - 1] + (2 * x + 1)) + c]);
+                    }
+                }
+            }
+        }
+
+        for (int j = 0; j < mip_count; ++j) {
+            std::vector<uint32_t> out_data = Ren::ConvertRGB32F_to_RGB9E5(mipmaps[j], widths[j], heights[j]);
+            out_stream.write((char *)out_data.data(), widths[j] * heights[j] * sizeof(uint32_t));
+            _total_size += widths[j] * heights[j] * sizeof(uint32_t);
+        }
+    }
+    assert(_total_size = 6 * total_size);
+
+    return out_stream.good();
+}
+
 extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
@@ -967,6 +1039,96 @@ bool Eng::SceneManager::HConvToASTC(assets_context_t &ctx, const char *in_file, 
     return res;
 }
 
+bool Eng::SceneManager::HConvHDRToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                      Ren::SmallVectorImpl<std::string> &out_dependencies) {
+    using namespace SceneManagerInternal;
+
+    ctx.log->Info("Conv %s", out_file);
+
+    std::string out_hdr_path = out_file;
+    out_hdr_path.replace(out_hdr_path.length() - 3, 3, "hdr");
+    if (!std::filesystem::copy_file(in_file, out_hdr_path, std::filesystem::copy_options::overwrite_existing)) {
+        return false;
+    }
+
+    int width, height;
+    const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
+    const std::vector<float> image_f32 = Ren::ConvertRGBE_to_RGB32F(image_rgbe, width, height);
+
+    auto fetch_hdr = [&image_f32, width](const int x, const int y) {
+        return Ren::Vec4f{image_f32[3 * (y * width + x) + 0], image_f32[3 * (y * width + x) + 1],
+                          image_f32[3 * (y * width + x) + 2], 0.0f};
+    };
+
+    auto sample_hdr = [&fetch_hdr, width, height](Ren::Vec2f uv) {
+        uv *= Ren::Vec2f{float(width), float(height)};
+        auto iuv0 = Ren::Vec2i{uv};
+        iuv0 = Ren::Clamp(iuv0, Ren::Vec2i{0, 0}, Ren::Vec2i{width - 1, height - 1});
+        const Ren::Vec2i iuv1 = (iuv0 + 1) % Ren::Vec2i{width, height};
+
+        const Ren::Vec4f p00 = fetch_hdr(iuv0[0], iuv0[1]), p01 = fetch_hdr(iuv1[0], iuv0[1]),
+                         p10 = fetch_hdr(iuv0[0], iuv1[1]), p11 = fetch_hdr(iuv1[0], iuv1[1]);
+
+        const Ren::Vec2f k = Fract(uv);
+        const Ren::Vec4f p0 = p01 * k[0] + p00 * (1.0f - k[0]), p1 = p11 * k[0] + p10 * (1.0f - k[0]);
+
+        return (p1 * k[1] + p0 * (1.0f - k[1]));
+    };
+
+    auto sample_hdr_latlong = [&sample_hdr, width, height](const Ren::Vec3f &dir, const float y_rotation) {
+        const float theta = acosf(std::clamp(dir[1], -1.0f, 1.0f)) / Ren::Pi<float>();
+        float phi = atan2f(dir[2], dir[0]) + y_rotation;
+        if (phi < 0) {
+            phi += 2 * Ren::Pi<float>();
+        }
+        if (phi > 2 * Ren::Pi<float>()) {
+            phi -= 2 * Ren::Pi<float>();
+        }
+
+        float u = 0.5f * phi / Ren::Pi<float>();
+        u = u - std::floor(u);
+
+        return sample_hdr(Ren::Vec2f{u, theta});
+    };
+
+    int CubemapRes = 4;
+    while (CubemapRes < (width / 4)) {
+        CubemapRes *= 2;
+    }
+
+    const Ren::Vec3f axis[6] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
+                                Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
+                                Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, -1.0f}};
+    const Ren::Vec3f up[6] = {Ren::Vec3f{0.0f, -1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
+                              Ren::Vec3f{0.0f, 0.0f, 1.0f},  Ren::Vec3f{0.0f, 0.0f, -1.0f},
+                              Ren::Vec3f{0.0f, -1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f}};
+
+    std::vector<uint32_t> output[6];
+    Ren::Span<uint32_t> _output[6];
+    for (int face = 0; face < 6; ++face) {
+        const Ren::Vec3f side = Cross(axis[face], up[face]);
+
+        std::vector<float> temp_output(3 * CubemapRes * CubemapRes);
+        for (int y = 0; y < CubemapRes; ++y) {
+            const float v = 2.0f * ((float(y) + 0.0f) / CubemapRes) - 1.0f;
+            for (int x = 0; x < CubemapRes; ++x) {
+                const float u = 2.0f * ((float(x) + 0.0f) / CubemapRes) - 1.0f;
+
+                const Ren::Vec3f dir = Normalize(axis[face] + u * side + v * up[face]);
+                const Ren::Vec4f val = Clamp(sample_hdr_latlong(dir, 0.0f), Ren::Vec4f{0}, Ren::Vec4f{255});
+
+                temp_output[3 * (y * CubemapRes + x) + 0] = val[0];
+                temp_output[3 * (y * CubemapRes + x) + 1] = val[1];
+                temp_output[3 * (y * CubemapRes + x) + 2] = val[2];
+            }
+        }
+        output[face] = Ren::ConvertRGB32F_to_RGB9E5(temp_output, CubemapRes, CubemapRes);
+        _output[face] = output[face];
+    }
+
+    return WriteCubemapDDS(_output, CubemapRes, 4, out_file);
+}
+
 bool Eng::SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
                                        Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
@@ -975,9 +1137,9 @@ bool Eng::SceneManager::HConvHDRToRGBM(assets_context_t &ctx, const char *in_fil
 
     int width, height;
     const std::vector<uint8_t> image_rgbe = LoadHDR(in_file, width, height);
-    const std::unique_ptr<float[]> image_f32 = Ren::ConvertRGBE_to_RGB32F(&image_rgbe[0], width, height);
+    const std::vector<float> image_f32 = Ren::ConvertRGBE_to_RGB32F(image_rgbe, width, height);
 
-    return Write_RGBM(&image_f32[0], width, height, 3, false /* flip_y */, out_file);
+    return Write_RGBM(image_f32, width, height, 3, false /* flip_y */, out_file);
 }
 
 bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,

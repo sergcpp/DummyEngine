@@ -181,6 +181,9 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
         rp_begin_info.renderPass = rp_main_draw_.handle();
         rp_begin_info.framebuffer = main_draw_fb_[api_ctx->backend_frame][fb_to_use_].handle();
         rp_begin_info.renderArea = {0, 0, uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
+        const VkClearValue clear_values[4] = {{}, {}, {}, {}};
+        rp_begin_info.pClearValues = clear_values;
+        rp_begin_info.clearValueCount = 4;
         api_ctx->vkCmdBeginRenderPass(cmd_buf, &rp_begin_info, VK_SUBPASS_CONTENTS_INLINE);
 
         // TODO: optimize this (we do not care if it is moving/alpha tested/skinned etc.)!

@@ -42,7 +42,8 @@ struct ShadReg {
 };
 
 struct EnvironmentWeak {
-    Ren::Vec3f sun_dir, sun_col;
+    Ren::Vec3f sun_dir, sun_col, env_col;
+    float env_map_rot = 0.0f;
     float sun_angle = 0.0f;
     Ren::Vec3f wind_vec;
     float wind_turbulence = 0.0f;
@@ -59,6 +60,8 @@ struct EnvironmentWeak {
     explicit EnvironmentWeak(const Environment &env) {
         sun_dir = env.sun_dir;
         sun_col = env.sun_col;
+        env_col = env.env_col;
+        env_map_rot = env.env_map_rot;
         sun_angle = env.sun_angle;
         wind_vec = env.wind_vec;
         wind_turbulence = env.wind_turbulence;

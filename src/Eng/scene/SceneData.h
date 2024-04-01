@@ -111,6 +111,7 @@ struct Environment {
     Ren::Vec2f prev_wind_scroll_lf, prev_wind_scroll_hf;
     Ren::Vec2f curr_wind_scroll_lf, curr_wind_scroll_hf;
     Ren::Vec3f env_col;
+    float env_map_rot = 0.0f;
     Ren::Tex2DRef env_map;
     Ren::Tex2DRef lm_direct, lm_indir, lm_indir_sh[4];
     Ren::Vec3f ambient_hack;

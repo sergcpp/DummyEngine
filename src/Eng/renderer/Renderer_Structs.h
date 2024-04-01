@@ -357,7 +357,7 @@ struct SharedDataBlock {
     Ren::Mat4f world_from_view, view_from_clip, world_from_clip_no_translation, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
-    Ren::Vec4f sun_dir, sun_col, taa_info, frustum_info;
+    Ren::Vec4f sun_dir, sun_col, env_col, taa_info, frustum_info;
     Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
@@ -366,7 +366,7 @@ struct SharedDataBlock {
     ProbeItem probes[MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 

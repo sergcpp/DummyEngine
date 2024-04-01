@@ -9,7 +9,7 @@
 #include "../shaders/skydome_interface.h"
 
 void Eng::RpSkydome::DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                                 RpAllocTex &color_tex, RpAllocTex &spec_tex, RpAllocTex &depth_tex) {
+                                 RpAllocTex &color_tex, RpAllocTex &depth_tex) {
     const int rp_index = clear_ ? 1 : 0;
 
     Ren::RastState rast_state = pipeline_[rp_index].rast_state();
