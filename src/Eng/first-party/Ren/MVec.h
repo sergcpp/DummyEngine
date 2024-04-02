@@ -23,7 +23,7 @@ template <typename T, int N> class Vec {
   public:
     explicit Vec(eUninitialized) noexcept {}
     Vec() noexcept : data_{(T)0} {}
-    force_inline explicit Vec(const T v) noexcept {
+    force_inline Vec(const T v) noexcept {
         for (int i = 0; i < N; i++) {
             data_[i] = v;
         }
@@ -53,56 +53,12 @@ template <typename T, int N> class Vec {
     force_inline const T &operator[](const int i) const { return data_[i]; }
 
     force_inline friend bool operator==(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        bool res = true;
         for (int i = 0; i < N; i++) {
             if (lhs[i] != rhs[i]) {
-                res = false;
-                break;
+                return false;
             }
         }
-        return res;
-    }
-
-    force_inline Vec<T, N> &operator+=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
-            data_[i] += rhs.data_[i];
-        }
-        return *this;
-    }
-
-    force_inline Vec<T, N> &operator-=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
-            data_[i] -= rhs.data_[i];
-        }
-        return *this;
-    }
-
-    force_inline Vec<T, N> &operator*=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
-            data_[i] *= rhs.data_[i];
-        }
-        return *this;
-    }
-
-    force_inline Vec<T, N> &operator/=(const Vec<T, N> &rhs) {
-        for (int i = 0; i < N; i++) {
-            data_[i] /= rhs.data_[i];
-        }
-        return *this;
-    }
-
-    force_inline Vec<T, N> &operator*=(const T rhs) {
-        for (int i = 0; i < N; i++) {
-            data_[i] *= rhs;
-        }
-        return *this;
-    }
-
-    force_inline Vec<T, N> &operator/=(const T rhs) {
-        for (int i = 0; i < N; i++) {
-            data_[i] /= rhs;
-        }
-        return *this;
+        return true;
     }
 
     force_inline friend Vec<T, N> operator-(const Vec<T, N> &v) {
@@ -113,69 +69,45 @@ template <typename T, int N> class Vec {
         return res;
     }
 
-    force_inline friend Vec<T, N> operator+(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
+    force_inline Vec<T, N> &operator+=(const Vec<T, N> &rhs) {
         for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs.data_[i] + rhs.data_[i];
+            data_[i]+= rhs.data_[i];
         }
-        return res;
+        return *this;
+    }
+    force_inline Vec<T, N> &operator-=(const Vec<T, N> &rhs) {
+        for (int i = 0; i < N; i++) {
+            data_[i] -= rhs.data_[i];
+        }
+        return *this;
+    }
+    force_inline Vec<T, N> &operator*=(const Vec<T, N> &rhs) {
+        for (int i = 0; i < N; i++) {
+            data_[i] *= rhs.data_[i];
+        }
+        return *this;
+    }
+    force_inline Vec<T, N> &operator/=(const Vec<T, N> &rhs) {
+        for (int i = 0; i < N; i++) {
+            data_[i] /= rhs.data_[i];
+        }
+        return *this;
     }
 
-    force_inline friend Vec<T, N> operator-(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs.data_[i] - rhs.data_[i];
-        }
-        return res;
+#define DEFINE_ARITHMETIC_OPERATOR(OP)                                                                                 \
+    force_inline friend Vec<T, N> operator OP(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {                            \
+        auto res = Vec<T, N>{Uninitialize};                                                                            \
+        for (int i = 0; i < N; i++) {                                                                                  \
+            res.data_[i] = lhs.data_[i] OP rhs.data_[i];                                                               \
+        }                                                                                                              \
+        return res;                                                                                                    \
     }
 
-    force_inline friend Vec<T, N> operator*(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs.data_[i] * rhs.data_[i];
-        }
-        return res;
-    }
-
-    force_inline friend Vec<T, N> operator/(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs.data_[i] / rhs.data_[i];
-        }
-        return res;
-    }
-
-    force_inline friend Vec<T, N> operator*(const T lhs, const Vec<T, N> &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs * rhs.data_[i];
-        }
-        return res;
-    }
-
-    force_inline friend Vec<T, N> operator/(const T lhs, const Vec<T, N> &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs / rhs.data_[i];
-        }
-        return res;
-    }
-
-    force_inline friend Vec<T, N> operator*(const Vec<T, N> &lhs, const T &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs.data_[i] * rhs;
-        }
-        return res;
-    }
-
-    force_inline friend Vec<T, N> operator/(const Vec<T, N> &lhs, const T &rhs) {
-        auto res = Vec<T, N>{Uninitialize};
-        for (int i = 0; i < N; i++) {
-            res.data_[i] = lhs.data_[i] / rhs;
-        }
-        return res;
-    }
+    DEFINE_ARITHMETIC_OPERATOR(+)
+    DEFINE_ARITHMETIC_OPERATOR(-)
+    DEFINE_ARITHMETIC_OPERATOR(*)
+    DEFINE_ARITHMETIC_OPERATOR(/)
+    DEFINE_ARITHMETIC_OPERATOR(%)
 };
 
 template <typename T, int N> force_inline bool operator!=(const Vec<T, N> &lhs, const Vec<T, N> &rhs) {
