@@ -284,6 +284,112 @@ force_inline Ren::Vec4f fade(const Ren::Vec4f &t) {
 
 int round_up(int v, int align) { return align * ((v + align - 1) / align); }
 
+// https://registry.khronos.org/OpenGL/extensions/EXT/EXT_texture_shared_exponent.txt
+const int RGB9E5_EXPONENT_BITS = 5;
+const int RGB9E5_MANTISSA_BITS = 9;
+const int RGB9E5_EXP_BIAS = 15;
+const int RGB9E5_MAX_VALID_BIASED_EXP = 31;
+
+const int MAX_RGB9E5_EXP = (RGB9E5_MAX_VALID_BIASED_EXP - RGB9E5_EXP_BIAS);
+const int RGB9E5_MANTISSA_VALUES = (1 << RGB9E5_MANTISSA_BITS);
+const int MAX_RGB9E5_MANTISSA = (RGB9E5_MANTISSA_VALUES - 1);
+const float MAX_RGB9E5 = (((float)MAX_RGB9E5_MANTISSA) / RGB9E5_MANTISSA_VALUES * (1 << MAX_RGB9E5_EXP));
+const float EPSILON_RGB9E5 = ((1.0f / RGB9E5_MANTISSA_VALUES) / (1 << RGB9E5_EXP_BIAS));
+
+struct BitsOfIEEE754 {
+    unsigned int mantissa : 23;
+    unsigned int biasedexponent : 8;
+    unsigned int negative : 1;
+};
+
+union float754 {
+    unsigned int raw;
+    float value;
+    BitsOfIEEE754 field;
+};
+
+struct BitsOfRGB9E5 {
+    unsigned int r : RGB9E5_MANTISSA_BITS;
+    unsigned int g : RGB9E5_MANTISSA_BITS;
+    unsigned int b : RGB9E5_MANTISSA_BITS;
+    unsigned int biasedexponent : RGB9E5_EXPONENT_BITS;
+};
+
+union rgb9e5 {
+    unsigned int raw;
+    BitsOfRGB9E5 field;
+};
+
+float ClampRange_for_rgb9e5(float x) {
+    if (x > 0.0f) {
+        if (x >= MAX_RGB9E5) {
+            return MAX_RGB9E5;
+        } else {
+            return x;
+        }
+    } else {
+        // NaN gets here too since comparisons with NaN always fail!
+        return 0.0f;
+    }
+}
+
+int FloorLog2(float x) {
+    float754 f;
+
+    f.value = x;
+    return (f.field.biasedexponent - 127);
+}
+
+rgb9e5 float3_to_rgb9e5(const float rgb[3]) {
+    float rc = ClampRange_for_rgb9e5(rgb[0]);
+    float gc = ClampRange_for_rgb9e5(rgb[1]);
+    float bc = ClampRange_for_rgb9e5(rgb[2]);
+
+    float maxrgb = _MAX3(rc, gc, bc);
+    int exp_shared = _MAX(-RGB9E5_EXP_BIAS - 1, FloorLog2(maxrgb)) + 1 + RGB9E5_EXP_BIAS;
+    assert(exp_shared <= RGB9E5_MAX_VALID_BIASED_EXP);
+    assert(exp_shared >= 0);
+    // This pow function could be replaced by a table.
+    double denom = pow(2, exp_shared - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS);
+
+    int maxm = (int)floor(maxrgb / denom + 0.5);
+    if (maxm == MAX_RGB9E5_MANTISSA + 1) {
+        denom *= 2;
+        exp_shared += 1;
+        assert(exp_shared <= RGB9E5_MAX_VALID_BIASED_EXP);
+    } else {
+        assert(maxm <= MAX_RGB9E5_MANTISSA);
+    }
+
+    int rm = (int)floor(rc / denom + 0.5);
+    int gm = (int)floor(gc / denom + 0.5);
+    int bm = (int)floor(bc / denom + 0.5);
+
+    assert(rm <= MAX_RGB9E5_MANTISSA);
+    assert(gm <= MAX_RGB9E5_MANTISSA);
+    assert(bm <= MAX_RGB9E5_MANTISSA);
+    assert(rm >= 0);
+    assert(gm >= 0);
+    assert(bm >= 0);
+
+    rgb9e5 retval;
+    retval.field.r = rm;
+    retval.field.g = gm;
+    retval.field.b = bm;
+    retval.field.biasedexponent = exp_shared;
+
+    return retval;
+}
+
+void rgb9e5_to_float3(rgb9e5 v, float retval[3]) {
+    int exponent = v.field.biasedexponent - RGB9E5_EXP_BIAS - RGB9E5_MANTISSA_BITS;
+    float scale = (float)pow(2, exponent);
+
+    retval[0] = v.field.r * scale;
+    retval[1] = v.field.g * scale;
+    retval[2] = v.field.b * scale;
+}
+
 } // namespace Ren
 
 std::unique_ptr<uint8_t[]> Ren::ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format) {
@@ -518,6 +624,34 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float image_data[], 
     }
 
     return u8_data;
+}
+
+std::vector<uint32_t> Ren::ConvertRGB32F_to_RGB9E5(Span<const float> image_data, const int w, const int h) {
+    std::vector<uint32_t> ret(w * h);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            const float rgb[3] = {image_data[3 * (y * w + x) + 0], image_data[3 * (y * w + x) + 1],
+                                  image_data[3 * (y * w + x) + 2]};
+            ret[y * w + x] = float3_to_rgb9e5(rgb).raw;
+        }
+    }
+
+    return ret;
+}
+
+std::vector<float> Ren::ConvertRGB9E5_to_RGB32F(Span<const uint32_t> image_data, int w, int h) {
+    std::vector<float> ret(3 * w * h);
+
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            rgb9e5 v;
+            v.raw = image_data[y * w + x];
+            rgb9e5_to_float3(v, &ret[3 * (y * w + x)]);
+        }
+    }
+
+    return ret;
 }
 
 void Ren::ConvertRGB_to_YCoCg_rev(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]) {

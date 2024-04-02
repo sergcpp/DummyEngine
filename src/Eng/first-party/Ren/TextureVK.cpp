@@ -43,6 +43,7 @@ extern const VkFormat g_vk_formats[] = {
     VK_FORMAT_R32G32_UINT,              // RawRG32U
     VK_FORMAT_A2B10G10R10_UNORM_PACK32, // RawRGB10_A2
     VK_FORMAT_B10G11R11_UFLOAT_PACK32,  // RawRG11F_B10F
+    VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,   // RawRGB9E5
     VK_FORMAT_D16_UNORM,                // Depth16
     VK_FORMAT_D24_UNORM_S8_UINT,        // Depth24Stencil8
     VK_FORMAT_D32_SFLOAT_S8_UINT,       // Depth32Stencil8

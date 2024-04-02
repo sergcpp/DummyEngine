@@ -381,6 +381,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_RGB10_A2                         0x8059
 #define GL_R11F_G11F_B10F                   0x8C3A
+#define GL_RGB9_E5                          0x8C3D
 
 #define GL_HALF_FLOAT                       0x140B
 
@@ -506,6 +507,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_PROGRAM                      0x82E2
 
 #define GL_UNSIGNED_INT_2_10_10_10_REV  0x8368
+#define GL_UNSIGNED_INT_5_9_9_9_REV     0x8C3E
 
 #ifndef APIENTRY
 #if defined(_WIN32)

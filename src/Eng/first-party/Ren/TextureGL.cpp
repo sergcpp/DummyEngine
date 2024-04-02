@@ -44,6 +44,7 @@ const uint32_t g_gl_formats[] = {
     GL_RG,                       // RawRG32UI
     GL_RGBA,                     // RawRGB10_A2
     GL_RGB,                      // RawRG11F_B10F
+    GL_RGB,                      // RawRGB9E5
     GL_DEPTH_COMPONENT,          // Depth16
     GL_DEPTH_STENCIL_ATTACHMENT, // Depth24Stencil8
     GL_DEPTH_STENCIL_ATTACHMENT, // Depth32Stencil8
@@ -84,6 +85,7 @@ const uint32_t g_gl_internal_formats[] = {
     GL_RG32UI,            // RawRG32UI
     GL_RGB10_A2,          // RawRGB10_A2
     GL_R11F_G11F_B10F,    // RawRG11F_B10F
+    GL_RGB9_E5,           // RawRGB9E5
     GL_DEPTH_COMPONENT16, // Depth16
     GL_DEPTH24_STENCIL8,  // Depth24Stencil8
     GL_DEPTH32F_STENCIL8, // Depth32Stencil8
@@ -124,6 +126,7 @@ const uint32_t g_gl_types[] = {
     GL_UNSIGNED_INT,                // RawRG32UI
     GL_UNSIGNED_INT_2_10_10_10_REV, // RawRGB10_A2
     GL_FLOAT,                       // RawRG11F_B10F
+    GL_UNSIGNED_INT_5_9_9_9_REV,    // RawRGB9E5
     GL_UNSIGNED_SHORT,              // Depth16
     GL_UNSIGNED_INT,                // Depth24Stencil8
     GL_FLOAT,                       // Depth24Stencil8

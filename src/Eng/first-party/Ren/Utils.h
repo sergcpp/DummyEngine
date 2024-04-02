@@ -21,6 +21,9 @@ void ConvertRGBE_to_RGB16F(const uint8_t image_data[], int w, int h, uint16_t *o
 std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBE(const float image_data[], int w, int h, int channels);
 std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float image_data[], int w, int h, int channels);
 
+std::vector<uint32_t> ConvertRGB32F_to_RGB9E5(Span<const float> image_data, int w, int h);
+std::vector<float> ConvertRGB9E5_to_RGB32F(Span<const uint32_t> image_data, int w, int h);
+
 // Perfectly reversible conversion between RGB and YCoCg (breaks bilinear filtering)
 void ConvertRGB_to_YCoCg_rev(const uint8_t in_RGB[3], uint8_t out_YCoCg[3]);
 void ConvertYCoCg_to_RGB_rev(const uint8_t in_YCoCg[3], uint8_t out_RGB[3]);

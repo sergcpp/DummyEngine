@@ -31,7 +31,7 @@ int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter fi
 }
 
 int Ren::GetColorChannelCount(const eTexFormat format) {
-    static_assert(int(eTexFormat::_Count) == 34, "Update the list below!");
+    static_assert(int(eTexFormat::_Count) == 35, "Update the list below!");
     switch (format) {
     case eTexFormat::RawRGBA8888:
     case eTexFormat::RawRGBA8888Snorm:
@@ -47,6 +47,7 @@ int Ren::GetColorChannelCount(const eTexFormat format) {
     case eTexFormat::RawRGB32F:
     case eTexFormat::RawRGB16F:
     case eTexFormat::RawRG11F_B10F:
+    case eTexFormat::RawRGB9E5:
     case eTexFormat::BC1:
         return 3;
     case eTexFormat::RawRG88:

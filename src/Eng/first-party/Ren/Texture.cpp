@@ -69,6 +69,7 @@ const int g_per_pixel_data_len[] = {
     8,  // RawRG32UI
     4,  // RawRGB10_A2
     4,  // RawRG11F_B10F
+    4,  // RawRGB9E5
     2,  // Depth16
     4,  // Depth24Stencil8
     5,  // Depth32Stencil8
