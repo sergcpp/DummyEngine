@@ -323,7 +323,7 @@ class SceneManager {
 
     // shaders
     static void InlineShaderConstants(assets_context_t &ctx, std::string &line);
-    static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
+    static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,
                                 Ren::SmallVectorImpl<std::string> &out_dependencies);
     static bool HCompileShader(assets_context_t &ctx, const char *in_file, const char *out_file,
                                Ren::SmallVectorImpl<std::string> &out_dependencies);

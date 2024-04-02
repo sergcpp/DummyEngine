@@ -50,7 +50,7 @@ void Eng::SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string
     }
 }
 
-bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::ostream &dst_stream,
+bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,
                                         Ren::SmallVectorImpl<std::string> &out_dependencies) {
     std::ifstream src_stream(in_file, std::ios::binary);
     if (!src_stream) {
@@ -75,22 +75,22 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
             const auto slash_pos = size_t(intptr_t(strrchr(in_file, '/') - in_file));
             const std::string full_path = std::string(in_file, slash_pos + 1) + file_name;
 
-            dst_stream << "#line 0\r\n";
+            output += "#line 0\r\n";
 
             auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
             if (it == std::end(out_dependencies)) {
                 out_dependencies.emplace_back(full_path);
             }
 
-            if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream, out_dependencies)) {
+            if (!ResolveIncludes(ctx, full_path.c_str(), output, out_dependencies)) {
                 return false;
             }
 
-            dst_stream << "\r\n#line " << line_counter << "\r\n";
+            output += "\r\n#line " + std::to_string(line_counter) + "\r\n";
         } else {
             InlineShaderConstants(ctx, line);
 
-            dst_stream << line << "\r\n";
+            output += line + "\r\n";
         }
     }
 
@@ -104,12 +104,13 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
     std::vector<std::string> permutations;
     permutations.emplace_back();
 
+    std::string orig_glsl_file_data;
+
     { // resolve includes, inline constants
         std::ifstream src_stream(in_file, std::ios::binary);
         if (!src_stream) {
             return false;
         }
-        std::ofstream dst_stream(out_file, std::ios::binary);
         std::string line;
 
         int line_counter = 0;
@@ -123,7 +124,7 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 if (strcmp(ctx.platform, "pc") == 0 && line.rfind("es") != std::string::npos) {
                     line = "#version 430";
                 }
-                dst_stream << line << "\r\n";
+                orig_glsl_file_data += line + "\r\n";
             } else if (line.rfind("#include ") == 0) {
                 const size_t n1 = line.find_first_of('\"');
                 const size_t n2 = line.find_last_of('\"');
@@ -132,19 +133,19 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 const std::string full_path =
                     (std::filesystem::path(in_file).parent_path() / file_name).generic_string();
 
-                dst_stream << "#line 0\r\n";
+                orig_glsl_file_data += "#line 0\r\n";
 
                 auto it = std::find(std::begin(out_dependencies), std::end(out_dependencies), full_path);
                 if (it == std::end(out_dependencies)) {
                     out_dependencies.emplace_back(full_path);
                 }
 
-                if (!ResolveIncludes(ctx, full_path.c_str(), dst_stream, out_dependencies)) {
+                if (!ResolveIncludes(ctx, full_path.c_str(), orig_glsl_file_data, out_dependencies)) {
                     ctx.log->Error("Failed to preprocess %s", full_path.c_str());
                     return false;
                 }
 
-                dst_stream << "\r\n#line " << (line_counter + 2) << "\r\n";
+                orig_glsl_file_data += "\r\n#line " + std::to_string(line_counter + 2) + "\r\n";
             } else if (line.find("#pragma multi_compile ") == 0) {
                 std::vector<std::string> new_permutations;
                 line = line.substr(22);
@@ -189,21 +190,12 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 if (!line.empty() && line.back() == '\r') {
                     line.pop_back();
                 }
-                dst_stream << line << "\r\n";
+                orig_glsl_file_data += line + "\r\n";
             }
 
             ++line_counter;
         }
     }
-
-    std::ifstream glsl_file(out_file, std::ios::binary | std::ios::ate);
-    const size_t glsl_file_size = size_t(glsl_file.tellg());
-    glsl_file.seekg(0, std::ios::beg);
-
-    std::string orig_glsl_file_data;
-    orig_glsl_file_data.resize(glsl_file_size);
-    glsl_file.read(orig_glsl_file_data.data(), glsl_file_size);
-    orig_glsl_file_data[glsl_file_size] = 0;
 
     enum class eShaderOutput { GLSL, GL_SPIRV, VK_SPIRV };
 
