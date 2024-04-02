@@ -139,7 +139,7 @@ std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h)
             }
         }
 
-        for (int i = res_x - 1; i >= 0; --i) {
+        for (int i = 0; i < res_x; i++) {
             data[data_offset++] = scanline[i + 0 * res_x];
             data[data_offset++] = scanline[i + 1 * res_x];
             data[data_offset++] = scanline[i + 2 * res_x];
@@ -151,5 +151,3 @@ std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h)
 
     return data;
 }
-
-#undef _abs
