@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = hdri_light
-	commit = 3335bd291b346491037c8ff2097758cc90f8ee81
+	branch = portal_light
+	commit = 02817e936814408273409e5190489a33b98c479a
 	method = merge
 	cmdver = 0.4.6
-	parent = cab1bf65be587f2de7eb1339aca7942cc5ef1056
+	parent = f769ab7c12a819b19dd104011c13cadcdc80bbc1
