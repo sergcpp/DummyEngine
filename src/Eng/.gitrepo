@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = advanced_filters
-	commit = 18203fd95862dc26d5adb367a0714cb9789a84c2
+	branch = hdri_light
+	commit = 2482ddf8249c2fcc0a1525b678a3be7ff8613cd7
 	method = merge
 	cmdver = 0.4.6
-	parent = b93a45b0b95c057440459fa49d6453ade0f3e8fc
+	parent = 9d131b10ea611c6d51e1c535801da87513e642e8
