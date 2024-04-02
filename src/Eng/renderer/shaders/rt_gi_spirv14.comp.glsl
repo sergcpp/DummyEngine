@@ -195,6 +195,35 @@ void main() {
         }
 
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
+            // Check portal lights intersection
+            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
+                const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+
+                const vec3 light_pos = litem.pos_and_radius.xyz;
+                vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
+                const vec3 light_forward = normalize(cross(light_u, light_v));
+
+                const float plane_dist = dot(light_forward, light_pos);
+                const float cos_theta = dot(gi_ray_ws.xyz, light_forward);
+                const float t = (plane_dist - dot(light_forward, ray_origin_ws.xyz)) / min(cos_theta, -FLT_EPS);
+
+                if (cos_theta < 0.0 && t > 0.0) {
+                    light_u /= dot(light_u, light_u);
+                    light_v /= dot(light_v, light_v);
+
+                    const vec3 p = ray_origin_ws.xyz + gi_ray_ws.xyz * t;
+                    const vec3 vi = p - light_pos;
+                    const float a1 = dot(light_u, vi);
+                    if (a1 >= -0.5 && a1 <= 0.5) {
+                        const float a2 = dot(light_v, vi);
+                        if (a2 >= -0.5 && a2 <= 0.5) {
+                            throughput *= 0.0;
+                            break;
+                        }
+                    }
+                }
+            }
+
             const vec3 rotated_dir = rotate_xz(gi_ray_ws.xyz, g_shrd_data.env_col.w);
             final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, 6.0).rgb;
             break;
@@ -323,8 +352,8 @@ void main() {
                 const highp float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
                 const highp float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
                 const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
-                        tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
-                        tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+                          tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
+                          tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
 
                 const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
 
@@ -336,7 +365,7 @@ void main() {
                     const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
                     const int li = int(bitfieldExtract(item_data, 0, 12));
 
-                    light_item_t litem = g_lights[li];
+                    const light_item_t litem = g_lights[li];
 
                     vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                                 sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);

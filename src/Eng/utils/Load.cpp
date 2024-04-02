@@ -8,7 +8,7 @@
 
 std::vector<uint8_t> Eng::LoadHDR(std::string_view name, int &out_w, int &out_h) {
     Sys::AssetFile in_file(name);
-    size_t in_file_size = in_file.size();
+    const size_t in_file_size = in_file.size();
     std::unique_ptr<uint8_t[]> in_file_data(new uint8_t[in_file_size]);
 
     in_file.Read((char *)&in_file_data[0], in_file_size);

@@ -365,8 +365,9 @@ struct SharedDataBlock {
     Ren::Vec4f ambient_hack;
     ProbeItem probes[MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
+    uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 

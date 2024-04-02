@@ -214,11 +214,6 @@
             "light" : {
                 "type" : "rectangle",
                 "power" : 2.13855,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.1,
                 "width" : 0.162,
                 "height" : 0.162,
@@ -237,11 +232,6 @@
             "light" : {
                 "type" : "disk",
                 "power" : 4.2998,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.1,
                 "width" : 0.1296,
                 "height" : 0.1296,
@@ -260,11 +250,6 @@
             "light" : {
                 "type" : "line",
                 "power" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.01,
                 "width" : 0.1296,
                 "height" : 0.1296,
@@ -283,11 +268,6 @@
             "light" : {
                 "type" : "sphere",
                 "power" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.05,
                 "cast_shadow" : true
             }
@@ -304,11 +284,6 @@
             "light" : {
                 "type" : "sphere",
                 "power" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.001,
                 "spot_angle" : 50,
                 "spot_blend" : 0.15,

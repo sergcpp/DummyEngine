@@ -212,6 +212,35 @@ void main() {
         }
 
         if (inter.mask == 0) {
+            // Check portal lights intersection
+            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
+                const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+
+                const vec3 light_pos = litem.pos_and_radius.xyz;
+                vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
+                const vec3 light_forward = normalize(cross(light_u, light_v));
+
+                const float plane_dist = dot(light_forward, light_pos);
+                const float cos_theta = dot(gi_ray_ws, light_forward);
+                const float t = (plane_dist - dot(light_forward, ray_origin_ws.xyz)) / min(cos_theta, -FLT_EPS);
+
+                if (cos_theta < 0.0 && t > 0.0) {
+                    light_u /= dot(light_u, light_u);
+                    light_v /= dot(light_v, light_v);
+
+                    const vec3 p = ray_origin_ws.xyz + gi_ray_ws * t;
+                    const vec3 vi = p - light_pos;
+                    const float a1 = dot(light_u, vi);
+                    if (a1 >= -0.5 && a1 <= 0.5) {
+                        const float a2 = dot(light_v, vi);
+                        if (a2 >= -0.5 && a2 <= 0.5) {
+                            throughput *= 0.0;
+                            break;
+                        }
+                    }
+                }
+            }
+
             const vec3 rotated_dir = rotate_xz(gi_ray_ws, g_shrd_data.env_col.w);
             final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, 6.0).rgb;
             break;

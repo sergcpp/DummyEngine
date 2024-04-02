@@ -113,6 +113,7 @@ struct DrawList {
     mutable Ren::BufferRef decals_stage_buf;
     std::vector<ProbeItem> probes;
     std::vector<EllipsItem> ellipsoids;
+    std::vector<uint32_t> portals;
     DynArray<CellData> cells, rt_cells;
     mutable Ren::BufferRef cells_stage_buf, rt_cells_stage_buf;
     DynArray<ItemData> items, rt_items;

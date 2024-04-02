@@ -244,6 +244,7 @@ struct SharedData {
     vec4 ambient_hack;
     ProbeItem probes[MAX_PROBES_TOTAL];
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL];
+    uint portals[MAX_PORTALS_TOTAL];
 };
 
 struct MaterialData {

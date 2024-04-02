@@ -159,11 +159,6 @@
                 ],
                 "power" : 2.13855,
                 "power0" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.1,
                 "width" : 0.162,
                 "height" : 0.162,
@@ -188,11 +183,6 @@
                 ],
                 "power" : 4.2998,
                 "power0" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.1,
                 "width" : 0.1296,
                 "height" : 0.1296,
@@ -217,11 +207,6 @@
                 ],
                 "power0" : 200.0,
                 "power" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.01,
                 "width" : 0.1296,
                 "height" : 0.1296,
@@ -246,11 +231,6 @@
                 ],
                 "power0" : 10.0,
                 "power" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.05,
                 "cast_shadow" : true
             }
@@ -273,11 +253,6 @@
                 ],
                 "power0" : 10.0,
                 "power" : 0.0,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.001,
                 "direction" : [
                     0.0,

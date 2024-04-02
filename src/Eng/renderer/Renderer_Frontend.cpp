@@ -160,6 +160,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     list.decals.clear();
     list.probes.clear();
     list.ellipsoids.clear();
+    list.portals.clear();
 
     list.instance_indices.clear();
     list.shadow_batches.clear();
@@ -494,9 +495,16 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         proc_objects_[i.index].li_index = int32_t(list.lights.size());
                         LightItem &ls = list.lights.emplace_back();
 
-                        ls.col[0] = light.power * light.col[0] / light.area;
-                        ls.col[1] = light.power * light.col[1] / light.area;
-                        ls.col[2] = light.power * light.col[2] / light.area;
+                        if (!light.sky_portal) {
+                            ls.col[0] = light.power * light.col[0] / light.area;
+                            ls.col[1] = light.power * light.col[1] / light.area;
+                            ls.col[2] = light.power * light.col[2] / light.area;
+                        } else {
+                            ls.col[0] = scene.env.env_col[0] / sqrtf(light.area);
+                            ls.col[1] = scene.env.env_col[1] / sqrtf(light.area);
+                            ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
+                            list.portals.emplace_back(uint32_t(list.lights.size() - 1));
+                        }
                         ls.type = int(light.type);
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light.radius;
@@ -635,9 +643,16 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                     litem_to_lsource_.emplace_back(obj.components[CompLightSource]);
                     LightItem &ls = list.lights.emplace_back();
 
-                    ls.col[0] = light.power * light.col[0] / light.area;
-                    ls.col[1] = light.power * light.col[1] / light.area;
-                    ls.col[2] = light.power * light.col[2] / light.area;
+                    if (!light.sky_portal) {
+                        ls.col[0] = light.power * light.col[0] / light.area;
+                        ls.col[1] = light.power * light.col[1] / light.area;
+                        ls.col[2] = light.power * light.col[2] / light.area;
+                    } else {
+                        ls.col[0] = scene.env.env_col[0] / sqrtf(light.area);
+                        ls.col[1] = scene.env.env_col[1] / sqrtf(light.area);
+                        ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
+                        list.portals.emplace_back(uint32_t(list.lights.size() - 1));
+                    }
                     ls.type = int(light.type);
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light.radius;

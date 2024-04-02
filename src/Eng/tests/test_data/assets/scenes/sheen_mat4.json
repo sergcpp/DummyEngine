@@ -153,11 +153,6 @@
             "light" : {
                 "type" : "line",
                 "power" : 200,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.01,
                 "width" : 0.1296,
                 "height" : 0.1296,
@@ -176,11 +171,6 @@
             "light" : {
                 "type" : "sphere",
                 "power" : 10,
-                "offset" : [
-                    0,
-                    0,
-                    0
-                ],
                 "radius" : 0.05,
                 "width" : 0.1296,
                 "height" : 0.1296,

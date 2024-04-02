@@ -551,6 +551,10 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data(),
                    sizeof(EllipsItem) * p_list_->ellipsoids.size());
 
+            const int portals_count = std::min(int(p_list_->portals.size()), MAX_PORTALS_TOTAL - 1);
+            memcpy(&shrd_data.portals[0], p_list_->portals.data(), portals_count);
+            shrd_data.portals[portals_count] = 0xffffffff;
+
             Ren::UpdateBuffer(*shared_data_buf.ref, 0, sizeof(SharedDataBlock), &shrd_data,
                               *p_list_->shared_data_stage_buf, ctx.backend_frame() * SharedDataBlockSize,
                               SharedDataBlockSize, ctx.current_cmd_buf());

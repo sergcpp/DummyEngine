@@ -473,6 +473,10 @@ void test_materials(Sys::ThreadPool &threads, const char *device_name, int vl) {
         futures.push_back(
             threads.Enqueue(run_image_test, "complex_mat2_sun_light", device_name, vl, 19.45, NoDiffGI_RTShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_hdri_light", device_name, vl, 17.25, Full));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", device_name, vl, 31.38, NoGI));
+        futures.push_back(
+            threads.Enqueue(run_image_test, "complex_mat2_portal_light", device_name, vl, 28.96, NoDiffGI));
+        futures.push_back(threads.Enqueue(run_image_test, "complex_mat2_portal_light", device_name, vl, 27.67, Full));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", device_name, vl, 22.74, NoShadow));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", device_name, vl, 22.34, NoGI));
         futures.push_back(threads.Enqueue(run_image_test, "complex_mat3", device_name, vl, 24.14, NoDiffGI));

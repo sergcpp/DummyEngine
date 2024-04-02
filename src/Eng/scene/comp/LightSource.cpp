@@ -186,7 +186,7 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_out.Insert("power", JsNumber{ls.power});
     }
 
-    { // Write offset
+    if (ls.offset[0] != 0.0f || ls.offset[1] != 0.0f || ls.offset[2] != 0.0f) {
         JsArrayP js_offset(alloc);
 
         js_offset.Push(JsNumber{ls.offset[0]});

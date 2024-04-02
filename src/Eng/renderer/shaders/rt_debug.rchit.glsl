@@ -16,7 +16,6 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
-
 layout(std430, binding = GEO_DATA_BUF_SLOT) readonly buffer GeometryData {
     RTGeoInstance g_geometries[];
 };
