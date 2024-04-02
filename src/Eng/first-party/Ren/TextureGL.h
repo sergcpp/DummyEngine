@@ -42,7 +42,6 @@ class Texture2D : public RefCounter {
     TexHandle handle_;
     uint16_t initialized_mips_ = 0;
     bool ready_ = false;
-    uint32_t cubemap_ready_ = 0;
     String name_;
 
     void Free();

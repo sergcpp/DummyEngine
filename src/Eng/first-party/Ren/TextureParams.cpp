@@ -19,7 +19,7 @@ bool Ren::IsCompressedFormat(const eTexFormat format) {
 
 int Ren::CalcMipCount(const int w, const int h, const int min_res, eTexFilter filter) {
     int mip_count = 0;
-    if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear) {
+    if (filter == eTexFilter::Trilinear || filter == eTexFilter::Bilinear || filter == eTexFilter::NearestMipmap) {
         int max_dim = std::max(w, h);
         do {
             mip_count++;
@@ -61,7 +61,7 @@ int Ren::GetColorChannelCount(const eTexFormat format) {
     case eTexFormat::RawR32F:
     case eTexFormat::RawR16F:
     case eTexFormat::RawR8:
-    //case eTexFormat::RawR16UI:
+    // case eTexFormat::RawR16UI:
     case eTexFormat::RawR32UI:
     case eTexFormat::BC4:
         return 1;

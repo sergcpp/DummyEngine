@@ -248,7 +248,6 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     initialized_mips_ = std::exchange(rhs.initialized_mips_, 0);
     params = std::exchange(rhs.params, {});
     ready_ = std::exchange(rhs.ready_, false);
-    cubemap_ready_ = std::exchange(rhs.cubemap_ready_, 0);
     name_ = std::move(rhs.name_);
 
     return (*this);
@@ -317,7 +316,6 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
         InitFromRAWData(sbuf, data_off, _p, log);
         // mark it as not ready
         ready_ = false;
-        cubemap_ready_ = 0;
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
@@ -350,10 +348,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
             InitFromRAWData(sbuf, data_off, p, log);
         }
 
-        ready_ = (cubemap_ready_ & (1u << 0u)) == 1;
-        for (unsigned i = 1; i < 6; i++) {
-            ready_ = ready_ && ((cubemap_ready_ & (1u << i)) == 1);
-        }
+        ready_ = true;
         (*load_status) = eTexLoadStatus::CreatedFromData;
     }
 }
@@ -741,53 +736,28 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
     const int w = p.w, h = p.h;
     const eTexFilter f = params.sampling.filter;
 
-    auto mip_count = (GLsizei)CalcMipCount(w, h, 1, f);
+    const int mip_count = CalcMipCount(w, h, 1, f);
 
     // allocate all mip levels
     ren_glTextureStorage2D_Comp(GL_TEXTURE_CUBE_MAP, tex_id, mip_count, internal_format, w, h);
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, sbuf.id());
 
-    for (unsigned i = 0; i < 6; i++) {
-        if (data_off[i] == -1) {
-            continue;
-        } else {
-            cubemap_ready_ |= (1u << i);
-        }
-
-        if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
-            ren_glTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, tex_id, 0, 0, 0, i, w, h, 1, format, type,
-                                         reinterpret_cast<const GLvoid *>(uintptr_t(data_off[i])));
+    for (int i = 0; i < 6; ++i) {
+        uint32_t buffer_offset = data_off[i];
+        for (int j = 0; j < mip_count; ++j) {
+            const int _w = (w >> j), _h = (h >> j);
+            if (format != 0xffffffff && internal_format != 0xffffffff && type != 0xffffffff) {
+                ren_glTextureSubImage3D_Comp(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, tex_id, j, 0, 0, i, _w, _h, 1, format,
+                                             type, reinterpret_cast<const GLvoid *>(uintptr_t(buffer_offset)));
+                buffer_offset += GetMipDataLenBytes(_w, _h, p.format, p.block);
+            }
         }
     }
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-    if (f == eTexFilter::NoFilter) {
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    } else if (f == eTexFilter::Bilinear) {
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER,
-                                     (cubemap_ready_ == 0x3F) ? GL_LINEAR_MIPMAP_NEAREST : GL_LINEAR);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    } else if (f == eTexFilter::Trilinear) {
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER,
-                                     (cubemap_ready_ == 0x3F) ? GL_LINEAR_MIPMAP_LINEAR : GL_LINEAR);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    } else if (f == eTexFilter::BilinearNoMipmap) {
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    }
-
-    ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-#if !defined(GL_ES_VERSION_2_0) && !defined(__EMSCRIPTEN__)
-    ren_glTextureParameteri_Comp(GL_TEXTURE_CUBE_MAP, tex_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-#endif
-
-    if ((f == eTexFilter::Trilinear || f == eTexFilter::Bilinear) && (cubemap_ready_ == 0x3F)) {
-        ren_glGenerateTextureMipmap_Comp(GL_TEXTURE_CUBE_MAP, tex_id);
-    }
+    ApplySampling(p.sampling, log);
 }
 
 void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log) {

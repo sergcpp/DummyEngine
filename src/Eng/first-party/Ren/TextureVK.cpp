@@ -140,6 +140,7 @@ VkImageUsageFlags to_vk_image_usage(const eTexUsage usage, const eTexFormat form
 }
 
 eTexFormat FormatFromGLInternalFormat(uint32_t gl_internal_format, eTexBlock *block, bool *is_srgb);
+int GetMipDataLenBytes(const int w, const int h, const eTexFormat format, const eTexBlock block);
 
 extern const VkFilter g_vk_min_mag_filter[];
 extern const VkSamplerAddressMode g_vk_wrap_mode[];
@@ -186,7 +187,6 @@ Ren::Texture2D &Ren::Texture2D::operator=(Ren::Texture2D &&rhs) noexcept {
     initialized_mips_ = std::exchange(rhs.initialized_mips_, 0);
     params = std::exchange(rhs.params, {});
     ready_ = std::exchange(rhs.ready_, false);
-    cubemap_ready_ = std::exchange(rhs.cubemap_ready_, 0);
     name_ = std::move(rhs.name_);
 
     resource_state = std::exchange(rhs.resource_state, eResState::Undefined);
@@ -259,7 +259,6 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
         InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
         // mark it as not ready
         ready_ = false;
-        cubemap_ready_ = 0;
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
         if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
@@ -292,10 +291,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
             InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, p, log);
         }
 
-        ready_ = (cubemap_ready_ & (1u << 0u)) == 1;
-        for (unsigned i = 1; i < 6; i++) {
-            ready_ = ready_ && ((cubemap_ready_ & (1u << i)) == 1);
-        }
+        ready_ = true;
         (*load_status) = eTexLoadStatus::CreatedFromData;
     }
 }
@@ -1138,7 +1134,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         img_info.extent.height = uint32_t(p.h);
         img_info.extent.depth = 1;
         img_info.mipLevels = mip_count;
-        img_info.arrayLayers = 1;
+        img_info.arrayLayers = 6;
         img_info.format = g_vk_formats[size_t(p.format)];
         if (bool(p.flags & eTexFlagBits::SRGB)) {
             img_info.format = ToSRGBFormat(img_info.format);
@@ -1195,7 +1191,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         view_info.subresourceRange.baseMipLevel = 0;
         view_info.subresourceRange.levelCount = mip_count;
         view_info.subresourceRange.baseArrayLayer = 0;
-        view_info.subresourceRange.layerCount = 1;
+        view_info.subresourceRange.layerCount = 6;
 
         const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views[0]);
         if (res != VK_SUCCESS) {
@@ -1267,23 +1263,31 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
     sbuf.resource_state = eResState::CopySrc;
     this->resource_state = eResState::CopyDst;
 
-    VkBufferImageCopy regions[6] = {};
+    SmallVector<VkBufferImageCopy, 16> regions;
     for (int i = 0; i < 6; i++) {
-        regions[i].bufferOffset = VkDeviceSize(data_off[i]);
-        regions[i].bufferRowLength = 0;
-        regions[i].bufferImageHeight = 0;
+        VkDeviceSize buffer_offset = data_off[i];
+        for (int j = 0; j < mip_count; ++j) {
+            VkBufferImageCopy &reg = regions.emplace_back();
 
-        regions[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        regions[i].imageSubresource.mipLevel = 0;
-        regions[i].imageSubresource.baseArrayLayer = i;
-        regions[i].imageSubresource.layerCount = 1;
+            reg.bufferOffset = buffer_offset;
+            reg.bufferRowLength = 0;
+            reg.bufferImageHeight = 0;
 
-        regions[i].imageOffset = {0, 0, 0};
-        regions[i].imageExtent = {uint32_t(p.w), uint32_t(p.h), 1};
+            reg.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            reg.imageSubresource.mipLevel = j;
+            reg.imageSubresource.baseArrayLayer = i;
+            reg.imageSubresource.layerCount = 1;
+
+            reg.imageOffset = {0, 0, 0};
+            reg.imageExtent = {uint32_t(p.w) >> j, uint32_t(p.h) >> j, 1};
+
+            buffer_offset +=
+                GetMipDataLenBytes(int(reg.imageExtent.width), int(reg.imageExtent.height), p.format, p.block);
+        }
     }
 
-    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 6,
-                                     regions);
+    api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), handle_.img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     uint32_t(regions.size()), regions.data());
 
     initialized_mips_ |= (1u << 0);
 

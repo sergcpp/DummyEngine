@@ -14,12 +14,12 @@ bool ReadTGAFile(Span<const uint8_t> data, int &w, int &h, eTexFormat &format, u
 void RGBMDecode(const uint8_t rgbm[4], float out_rgb[3]);
 void RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]);
 
-std::unique_ptr<float[]> ConvertRGBE_to_RGB32F(const uint8_t image_data[], int w, int h);
+std::vector<float> ConvertRGBE_to_RGB32F(Span<const uint8_t> image_data, int w, int h);
 std::unique_ptr<uint16_t[]> ConvertRGBE_to_RGB16F(const uint8_t image_data[], int w, int h);
 void ConvertRGBE_to_RGB16F(const uint8_t image_data[], int w, int h, uint16_t *out_data);
 
-std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBE(const float image_data[], int w, int h, int channels);
-std::unique_ptr<uint8_t[]> ConvertRGB32F_to_RGBM(const float image_data[], int w, int h, int channels);
+std::vector<uint8_t> ConvertRGB32F_to_RGBE(Span<const float> image_data, int w, int h, int channels);
+std::vector<uint8_t> ConvertRGB32F_to_RGBM(Span<const float> image_data, int w, int h, int channels);
 
 std::vector<uint32_t> ConvertRGB32F_to_RGB9E5(Span<const float> image_data, int w, int h);
 std::vector<float> ConvertRGB9E5_to_RGB32F(Span<const uint32_t> image_data, int w, int h);
@@ -105,9 +105,19 @@ static_assert(sizeof(KTXHeader) == 64, "!");
 
 /*	The dwCaps1 member of the DDSCAPS2 structure can be
         set to one or more of the following values.	*/
-#define DDSCAPS_COMPLEX 0x00000008
-#define DDSCAPS_TEXTURE 0x00001000
-#define DDSCAPS_MIPMAP 0x00400000
+const uint32_t DDSCAPS_COMPLEX = 0x00000008;
+const uint32_t DDSCAPS_TEXTURE = 0x00001000;
+const uint32_t DDSCAPS_MIPMAP = 0x00400000;
+
+const uint32_t DDSCAPS2_CUBEMAP = 0x200;
+const uint32_t DDSCAPS2_CUBEMAP_POSITIVEX = 0x400;
+const uint32_t DDSCAPS2_CUBEMAP_NEGATIVEX = 0x800;
+const uint32_t DDSCAPS2_CUBEMAP_POSITIVEY = 0x1000;
+const uint32_t DDSCAPS2_CUBEMAP_NEGATIVEY = 0x2000;
+const uint32_t DDSCAPS2_CUBEMAP_POSITIVEZ = 0x4000;
+const uint32_t DDSCAPS2_CUBEMAP_NEGATIVEZ = 0x8000;
+const uint32_t DDSCAPS2_VOLUME = 0x200000;
+
 
 const uint32_t FourCC_BC1_UNORM =
     (uint32_t('D') << 0u) | (uint32_t('X') << 8u) | (uint32_t('T') << 16u) | (uint32_t('1') << 24u);

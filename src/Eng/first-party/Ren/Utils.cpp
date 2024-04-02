@@ -524,8 +524,8 @@ void Ren::RGBMEncode(const float rgb[3], uint8_t out_rgbm[4]) {
     out_rgbm[3] = (uint8_t)_CLAMP(int(fa * 255), 0, 255);
 }
 
-std::unique_ptr<float[]> Ren::ConvertRGBE_to_RGB32F(const uint8_t image_data[], const int w, const int h) {
-    std::unique_ptr<float[]> fp_data(new float[w * h * 3]);
+std::vector<float> Ren::ConvertRGBE_to_RGB32F(Span<const uint8_t> image_data, const int w, const int h) {
+    std::vector<float> fp_data(w * h * 3);
 
     for (int i = 0; i < w * h; i++) {
         const uint8_t r = image_data[4 * i + 0], g = image_data[4 * i + 1], b = image_data[4 * i + 2],
@@ -562,9 +562,9 @@ void Ren::ConvertRGBE_to_RGB16F(const uint8_t image_data[], int w, int h, uint16
     }
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float image_data[], const int w, const int h,
-                                                      const int channels) {
-    std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
+std::vector<uint8_t> Ren::ConvertRGB32F_to_RGBE(Span<const float> image_data, const int w, const int h,
+                                                const int channels) {
+    std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
@@ -613,9 +613,9 @@ std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBE(const float image_data[], 
     return u8_data;
 }
 
-std::unique_ptr<uint8_t[]> Ren::ConvertRGB32F_to_RGBM(const float image_data[], const int w, const int h,
-                                                      const int channels) {
-    std::unique_ptr<uint8_t[]> u8_data(new uint8_t[w * h * 4]);
+std::vector<uint8_t> Ren::ConvertRGB32F_to_RGBM(Span<const float> image_data, const int w, const int h,
+                                                const int channels) {
+    std::vector<uint8_t> u8_data(w * h * 4);
 
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
