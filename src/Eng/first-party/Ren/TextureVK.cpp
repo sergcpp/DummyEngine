@@ -218,9 +218,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer
         ready_ = false;
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
-        if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
-            InitFromTGA_RGBEFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
-        } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
+        if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".dds") != 0 || name_.EndsWith(".DDS") != 0) {
             InitFromDDSFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
@@ -261,9 +259,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buf
         ready_ = false;
         (*load_status) = eTexLoadStatus::CreatedDefault;
     } else {
-        if (name_.EndsWith(".tga_rgbe") != 0 || name_.EndsWith(".TGA_RGBE") != 0) {
-            InitFromTGA_RGBEFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
-        } else if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
+        if (name_.EndsWith(".tga") != 0 || name_.EndsWith(".TGA") != 0) {
             InitFromTGAFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
         } else if (name_.EndsWith(".png") != 0 || name_.EndsWith(".PNG") != 0) {
             InitFromPNGFile(data, sbuf, _cmd_buf, mem_allocs, p, log);
@@ -788,26 +784,6 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data, Buffer &sbuf, voi
     InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, _p, log);
 }
 
-void Ren::Texture2D::InitFromTGA_RGBEFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
-                                          MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
-    int w = 0, h = 0;
-    eTexFormat format = eTexFormat::Undefined;
-    std::unique_ptr<uint8_t[]> image_data = ReadTGAFile(data, w, h, format);
-    assert(format == eTexFormat::RawRGBA8888);
-
-    uint16_t *stage_data = reinterpret_cast<uint16_t *>(sbuf.Map(eBufMap::Write));
-    ConvertRGBE_to_RGB16F(image_data.get(), w, h, stage_data);
-    sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(3 * w * h * sizeof(uint16_t)));
-    sbuf.Unmap();
-
-    Tex2DParams _p = p;
-    _p.w = w;
-    _p.h = h;
-    _p.format = eTexFormat::RawRGB16F;
-
-    InitFromRAWData(&sbuf, 0, _cmd_buf, mem_allocs, _p, log);
-}
-
 void Ren::Texture2D::InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf,
                                      MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
     DDSHeader header;
@@ -1326,38 +1302,6 @@ void Ren::Texture2D::InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, 
     _p.w = w;
     _p.h = h;
     _p.format = format;
-
-    InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
-}
-
-void Ren::Texture2D::InitFromTGA_RGBEFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf,
-                                          MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log) {
-    int w = p.w, h = p.h;
-
-    uint8_t *stage_data = sbuf.Map(eBufMap::Write);
-    uint32_t stage_off = 0;
-
-    int data_off[6];
-
-    for (int i = 0; i < 6; i++) {
-        if (!data[i].empty()) {
-            const uint32_t img_size = 3 * w * h * sizeof(uint16_t);
-            assert(stage_off + img_size <= sbuf.size());
-            ConvertRGBE_to_RGB16F(data[i].data(), w, h, (uint16_t *)&stage_data[stage_off]);
-            data_off[i] = int(stage_off);
-            stage_off += img_size;
-        } else {
-            data_off[i] = -1;
-        }
-    }
-
-    sbuf.FlushMappedRange(0, sbuf.AlignMapOffset(stage_off));
-    sbuf.Unmap();
-
-    Tex2DParams _p = p;
-    _p.w = w;
-    _p.h = h;
-    _p.format = eTexFormat::RawRGB16F;
 
     InitFromRAWData(sbuf, data_off, _cmd_buf, mem_allocs, _p, log);
 }

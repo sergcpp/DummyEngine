@@ -71,8 +71,6 @@ class Texture2D : public RefCounter {
                          ILog *log);
     void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(Span<const uint8_t> data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                              const Tex2DParams &p, ILog *log);
     void InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
     void InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
@@ -84,8 +82,6 @@ class Texture2D : public RefCounter {
                          const Tex2DParams &p, ILog *log);
     void InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
-                              const Tex2DParams &p, ILog *log);
     void InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
     void InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,

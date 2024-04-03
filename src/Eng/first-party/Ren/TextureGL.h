@@ -48,14 +48,12 @@ class Texture2D : public RefCounter {
 
     void InitFromRAWData(const Buffer *sbuf, int data_off, const Tex2DParams &p, ILog *log);
     void InitFromTGAFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log);
     void InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log);
     void InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log);
     void InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, const Tex2DParams &p, ILog *log);
 
     void InitFromRAWData(const Buffer &sbuf, int data_off[6], const Tex2DParams &p, ILog *log);
     void InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log);
-    void InitFromTGA_RGBEFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log);
     void InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log);
     void InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log);
     void InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, const Tex2DParams &p, ILog *log);
