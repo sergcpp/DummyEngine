@@ -4,14 +4,21 @@
 
 #include "MVec.h"
 
+#ifdef __GNUC__
+#define force_inline __attribute__((always_inline)) inline
+#endif
+#ifdef _MSC_VER
+#define force_inline __forceinline
+#endif
+
 namespace Phy {
 template <typename T> class QuatT {
   public:
     T x, y, z, w;
 
-    explicit QuatT(eUninitialized) {}
-    QuatT() : x(0), y(0), z(0), w(1) {}
-    QuatT(const T _x, const T _y, const T _z, const T _w) : x(_x), y(_y), z(_z), w(_w) {}
+    force_inline explicit QuatT(eUninitialized) {}
+    force_inline QuatT() : x(0), y(0), z(0), w(1) {}
+    force_inline QuatT(const T _x, const T _y, const T _z, const T _w) : x(_x), y(_y), z(_z), w(_w) {}
     QuatT(Vec<T, 3> n, const T angle_rad) {
         const T half_angle_rad = T(0.5) * angle_rad;
 
@@ -25,16 +32,16 @@ template <typename T> class QuatT {
         z = n[2] * half_sine;
     }
 
-    T &operator[](const int i) {
+    force_inline T &operator[](const int i) {
         T *data = &x;
         return data[i];
     }
-    const T &operator[](const int i) const {
+    force_inline const T &operator[](const int i) const {
         const T *data = &x;
         return data[i];
     }
 
-    QuatT<T> &operator+=(const QuatT<T> &rhs) {
+    force_inline QuatT<T> &operator+=(const QuatT<T> &rhs) {
         x += rhs.x;
         y += rhs.y;
         z += rhs.z;
@@ -42,7 +49,7 @@ template <typename T> class QuatT {
         return *this;
     }
 
-    QuatT<T> &operator-=(const QuatT<T> &rhs) {
+    force_inline QuatT<T> &operator-=(const QuatT<T> &rhs) {
         x -= rhs.x;
         y -= rhs.y;
         z -= rhs.z;
@@ -50,7 +57,7 @@ template <typename T> class QuatT {
         return *this;
     }
 
-    QuatT<T> &operator*=(const T rhs) {
+    force_inline QuatT<T> &operator*=(const T rhs) {
         x *= rhs;
         y *= rhs;
         z *= rhs;
@@ -58,7 +65,7 @@ template <typename T> class QuatT {
         return *this;
     }
 
-    QuatT<T> &operator/=(const T rhs) {
+    force_inline QuatT<T> &operator/=(const T rhs) {
         x /= rhs;
         y /= rhs;
         z /= rhs;
@@ -66,7 +73,7 @@ template <typename T> class QuatT {
         return *this;
     }
 
-    friend QuatT<T> operator-(const QuatT<T> &v) {
+    force_inline friend QuatT<T> operator-(const QuatT<T> &v) {
         auto res = QuatT<T>{Uninitialize};
 
         res.x = -v.x;
@@ -77,7 +84,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator*(const T lhs, const QuatT<T> &rhs) {
+    force_inline friend QuatT<T> operator*(const T lhs, const QuatT<T> &rhs) {
         auto res = QuatT<T>{Uninitialize};
 
         res.x = lhs * rhs.x;
@@ -88,7 +95,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator/(const T lhs, const QuatT<T> &rhs) {
+    force_inline friend QuatT<T> operator/(const T lhs, const QuatT<T> &rhs) {
         auto res = QuatT<T>{Uninitialize};
 
         res.x = lhs / rhs.x;
@@ -99,7 +106,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator*(const QuatT<T> &lhs, const T rhs) {
+    force_inline friend QuatT<T> operator*(const QuatT<T> &lhs, const T rhs) {
         auto res = QuatT<T>{Uninitialize};
 
         res.x = lhs.x * rhs;
@@ -110,7 +117,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator/(const QuatT<T> &lhs, const T rhs) {
+    force_inline friend QuatT<T> operator/(const QuatT<T> &lhs, const T rhs) {
         auto res = QuatT<T>{Uninitialize};
 
         res.x = lhs.x / rhs;
@@ -121,7 +128,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator+(const QuatT<T> &lhs, const QuatT<T> &rhs) {
+    force_inline friend QuatT<T> operator+(const QuatT<T> &lhs, const QuatT<T> &rhs) {
         auto res = QuatT<T>{Uninitialize};
         res.x = lhs.x + rhs.x;
         res.y = lhs.y + rhs.y;
@@ -130,7 +137,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator-(const QuatT<T> &lhs, const QuatT<T> &rhs) {
+    force_inline friend QuatT<T> operator-(const QuatT<T> &lhs, const QuatT<T> &rhs) {
         auto res = QuatT<T>{Uninitialize};
         res.x = lhs.x - rhs.x;
         res.y = lhs.y - rhs.y;
@@ -139,7 +146,7 @@ template <typename T> class QuatT {
         return res;
     }
 
-    friend QuatT<T> operator*(const QuatT<T> &lhs, const QuatT<T> &rhs) {
+    force_inline friend QuatT<T> operator*(const QuatT<T> &lhs, const QuatT<T> &rhs) {
         auto res = QuatT<T>{Uninitialize};
 
         res.w = lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z;
@@ -151,11 +158,11 @@ template <typename T> class QuatT {
     }
 };
 
-template <typename T> T Dot(const QuatT<T> &lhs, const QuatT<T> &rhs) {
+template <typename T> force_inline T Dot(const QuatT<T> &lhs, const QuatT<T> &rhs) {
     return lhs.x * rhs.x + lhs.y * rhs.y + lhs.z * rhs.z + lhs.w * rhs.w;
 }
 
-template <typename T> QuatT<T> Inverse(const QuatT<T>& q) {
+template <typename T> force_inline QuatT<T> Inverse(const QuatT<T> &q) {
     auto res = q;
 
     res /= Dot(q, q);
@@ -166,26 +173,24 @@ template <typename T> QuatT<T> Inverse(const QuatT<T>& q) {
     return res;
 }
 
-template <typename T> T Roll(const QuatT<T> &q) {
-    return std::atan2(T(2) * (q.x * q.y + q.w * q.z),
-                      q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z);
+template <typename T> force_inline T Roll(const QuatT<T> &q) {
+    return std::atan2(T(2) * (q.x * q.y + q.w * q.z), q.w * q.w + q.x * q.x - q.y * q.y - q.z * q.z);
 }
 
-template <typename T> T Pitch(const QuatT<T> &q) {
-    return std::atan2(T(2) * (q.y * q.z + q.w * q.x),
-                      q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
+template <typename T> force_inline T Pitch(const QuatT<T> &q) {
+    return std::atan2(T(2) * (q.y * q.z + q.w * q.x), q.w * q.w - q.x * q.x - q.y * q.y + q.z * q.z);
 }
 
-template <typename T> T Yaw(const QuatT<T> &q) {
+template <typename T> force_inline T Yaw(const QuatT<T> &q) {
     return std::asin(clamp(T(-2) * (q.x * q.z - q.w * q.y), T(-1), T(1)));
 }
 
-template <typename T> Vec<T, 3> EulerAngles(const QuatT<T> &q) {
+template <typename T> force_inline Vec<T, 3> EulerAngles(const QuatT<T> &q) {
     return Vec<T, 3>{Pitch(q), Yaw(q), Roll(q)};
 }
 
-template <typename T> QuatT<T> Normalize(const QuatT<T>& q) {
-    auto res = QuatT<T>{ Uninitialize };
+template <typename T> force_inline QuatT<T> Normalize(const QuatT<T> &q) {
+    auto res = QuatT<T>{Uninitialize};
 
     const T inv_len = T(1) / std::sqrt(Dot(q, q));
     res.x = q.x * inv_len;
@@ -207,12 +212,10 @@ template <typename T> QuatT<T> Slerp(const QuatT<T> &q0, const QuatT<T> &q1, con
     }
 
     if (cos_theta > 1 - std::numeric_limits<T>::epsilon()) {
-        return QuatT<T>{Mix(q0.x, q1.x, a), Mix(q0.y, q1.y, a), Mix(q0.z, q1.z, a),
-                        Mix(q0.w, q1.w, a)};
+        return QuatT<T>{Mix(q0.x, q1.x, a), Mix(q0.y, q1.y, a), Mix(q0.z, q1.z, a), Mix(q0.w, q1.w, a)};
     } else {
         const T angle = std::acos(cos_theta);
-        return (std::sin((T(1) - a) * angle) * q0 + std::sin(a * angle) * q2) /
-               std::sin(angle);
+        return (std::sin((T(1) - a) * angle) * q0 + std::sin(a * angle) * q2) / std::sin(angle);
     }
 }
 
@@ -244,8 +247,7 @@ template <typename T> Mat<T, 3, 3> ToMat3(const QuatT<T> &vec) {
     return ret;
 }
 
-template <typename T>
-QuatT<T> ToQuat(const T yaw /* Z */, const T pitch /* Y */, const T roll /* X */) {
+template <typename T> QuatT<T> ToQuat(const T yaw /* Z */, const T pitch /* Y */, const T roll /* X */) {
     const T cy = std::cos(yaw * T(0.5));
     const T sy = std::sin(yaw * T(0.5));
     const T cp = std::cos(pitch * T(0.5));
@@ -263,13 +265,9 @@ QuatT<T> ToQuat(const T yaw /* Z */, const T pitch /* Y */, const T roll /* X */
     return q;
 }
 
-template <typename T> Mat<T, 4, 4> ToMat4(const QuatT<T> &vec) {
-    return Mat<T, 4, 4>{ToMat3(vec)};
-}
+template <typename T> force_inline Mat<T, 4, 4> ToMat4(const QuatT<T> &vec) { return Mat<T, 4, 4>{ToMat3(vec)}; }
 
-template <typename T> QuatT<T> MakeQuat(const T *v) {
-    return QuatT<T>{v[0], v[1], v[2], v[3]};
-}
+template <typename T> force_inline QuatT<T> MakeQuat(const T *v) { return QuatT<T>{v[0], v[1], v[2], v[3]}; }
 
 using Quatf = QuatT<float>;
 using Quatd = QuatT<double>;

@@ -4,7 +4,7 @@
 #include "MQuat.h"
 
 namespace Phy {
-#ifdef DOUBLE_PRECISION
+#ifdef PHY_DOUBLE_PRECISION
 using real = double;
 #else
 using real = float;

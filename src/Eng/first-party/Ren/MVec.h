@@ -21,8 +21,8 @@ template <typename T, int N> class Vec {
     T data_[N];
 
   public:
-    explicit Vec(eUninitialized) noexcept {}
-    Vec() noexcept : data_{(T)0} {}
+    force_inline explicit Vec(eUninitialized) noexcept {}
+    force_inline Vec() noexcept : data_{(T)0} {}
     force_inline Vec(const T v) noexcept {
         for (int i = 0; i < N; i++) {
             data_[i] = v;
@@ -68,6 +68,8 @@ template <typename T, int N> class Vec {
         }
         return res;
     }
+
+    force_inline friend Vec<T, N> operator+(const Vec<T, N> &v) { return v; }
 
     force_inline Vec<T, N> &operator+=(const Vec<T, N> &rhs) {
         for (int i = 0; i < N; i++) {

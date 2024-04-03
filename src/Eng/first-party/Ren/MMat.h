@@ -14,8 +14,8 @@ template <typename T> force_inline T Pi() { return T(3.1415926535897932384626433
 
 template <typename T, int M, int N> class Mat : public Vec<Vec<T, N>, M> {
   public:
-    explicit Mat(eUninitialized) noexcept {}
-    Mat() noexcept : Mat(T(1)) {}
+    force_inline explicit Mat(eUninitialized) noexcept {}
+    force_inline Mat() noexcept : Mat(T(1)) {}
     force_inline explicit Mat(T v) noexcept {
         for (int i = 0; i < M; i++) {
             this->data_[i][i] = v;
@@ -177,7 +177,7 @@ using Mat4x3d = Mat<double, 4, 3>;
 using Mat3x4f = Mat<float, 3, 4>;
 using Mat3x4d = Mat<double, 3, 4>;
 
-template <typename T, int M, int N> force_inline Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {
+template <typename T, int M, int N> Vec<T, M> operator*(const Vec<T, M> &lhs, const Mat<T, M, N> &rhs) {
     auto res = Vec<T, M>{Uninitialize};
     for (int m = 0; m < M; m++) {
         res[m] = Dot(lhs, rhs[m]);
@@ -185,7 +185,7 @@ template <typename T, int M, int N> force_inline Vec<T, M> operator*(const Vec<T
     return res;
 }
 
-template <typename T, int M, int N> force_inline Vec<T, M> operator*(const Mat<T, M, N> &lhs, const Vec<T, M> &rhs) {
+template <typename T, int M, int N> Vec<T, M> operator*(const Mat<T, M, N> &lhs, const Vec<T, M> &rhs) {
     auto res = Vec<T, M>{Uninitialize};
     for (int n = 0; n < N; n++) {
         T sum = (T)0;
@@ -224,7 +224,7 @@ template <typename T, int M, int N> force_inline Mat<T, N, M> Transpose(const Ma
 
 template <typename T, int N> force_inline T Det(const Mat<T, N, N> &mat);
 
-template <typename T, int N> force_inline T Minor(const Mat<T, N, N> &mat, const int row, const int col) {
+template <typename T, int N> T Minor(const Mat<T, N, N> &mat, const int row, const int col) {
     auto res = Mat<T, N - 1, N - 1>{Uninitialize};
     int dst_row, dst_col;
     dst_row = 0;
@@ -267,7 +267,7 @@ template <typename T> force_inline T Det(const Mat<T, 3, 3> &mat) {
            mat[2][0] * (mat[0][1] * mat[1][2] - mat[1][1] * mat[0][2]);
 }
 
-template <typename T> force_inline T Det(const Mat<T, 4, 4> &mat) {
+template <typename T> T Det(const Mat<T, 4, 4> &mat) {
     T r0r1 = mat[0][2] * mat[1][3] - mat[1][2] * mat[0][3];
     T r0r2 = mat[0][2] * mat[2][3] - mat[2][2] * mat[0][3];
     T r0r3 = mat[0][2] * mat[3][3] - mat[3][2] * mat[0][3];
@@ -283,7 +283,12 @@ template <typename T> force_inline T Det(const Mat<T, 4, 4> &mat) {
     return mat[0][0] * minor0 - mat[1][0] * minor1 + mat[2][0] * minor2 - mat[3][0] * minor3;
 }
 
-template <typename T, int N> force_inline Mat<T, N, N> Adj(const Mat<T, N, N> &mat) {
+template <typename T, int N> T Cofactor(const Mat<T, N, N> &mat, const int i, const int j) {
+    const T minor = Minor(mat, i, j);
+    return ((i + j) & 1u) ? -minor : minor;
+}
+
+template <typename T, int N> Mat<T, N, N> Adj(const Mat<T, N, N> &mat) {
     Mat<T, N, N> res = {Uninitialize};
     for (unsigned row = 0; row < N; row++) {
         for (unsigned col = 0; col < N; col++) {
@@ -300,7 +305,7 @@ template <typename T, int N> force_inline Mat<T, N, N> Inverse(const Mat<T, N, N
     return (T(1) / det) * Adj(mat);
 }
 
-template <typename T> force_inline Mat<T, 2, 2> Inverse(const Mat<T, 2, 2> &mat) {
+template <typename T> Mat<T, 2, 2> Inverse(const Mat<T, 2, 2> &mat) {
     T det = Det(mat);
     T inv_det = T(1) / det;
     auto res = Mat<T, 2, 2>{Uninitialize};
