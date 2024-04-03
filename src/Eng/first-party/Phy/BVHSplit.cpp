@@ -4,30 +4,29 @@
 
 #include <algorithm>
 
-namespace {
+namespace Phy {
 const int BinningThreshold = 1024;
 const int BinsCount = 256;
 
 const float FLT_EPS = 0.0000001f;
-} // namespace
 
 struct bbox_t {
-    Ren::Vec3f min = Ren::Vec3f{FLT_MAX}, max = Ren::Vec3f{-FLT_MAX};
+    Vec3f min = Vec3f{FLT_MAX}, max = Vec3f{-FLT_MAX};
     bbox_t() {}
-    bbox_t(const Ren::Vec3f &_min, const Ren::Vec3f &_max) : min(_min), max(_max) {}
+    bbox_t(const Vec3f &_min, const Vec3f &_max) : min(_min), max(_max) {}
 
     float surface_area() const { return surface_area(min, max); }
 
-    static float surface_area(const Ren::Vec3f &min, const Ren::Vec3f &max) {
-        Ren::Vec3f d = max - min;
+    static float surface_area(const Vec3f &min, const Vec3f &max) {
+        Vec3f d = max - min;
         return 2 * (d[0] + d[1] + d[2]);
         // return d[0] * d[1] + d[0] * d[2] + d[1] * d[2];
     }
 };
+} // namespace Phy
 
-Eng::split_data_t Eng::SplitPrimitives_SAH(const prim_t *primitives, Ren::Span<const uint32_t> prim_indices,
-                                           const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max,
-                                           const split_settings_t &s) {
+Phy::split_data_t Phy::SplitPrimitives_SAH(const prim_t *primitives, Span<const uint32_t> prim_indices,
+                                           const Vec3f &bbox_min, const Vec3f &bbox_max, const split_settings_t &s) {
     const int prim_count = int(prim_indices.size());
     const bbox_t whole_box = {bbox_min, bbox_max};
 
@@ -117,7 +116,7 @@ Eng::split_data_t Eng::SplitPrimitives_SAH(const prim_t *primitives, Ren::Span<c
                 {res_left_bounds.min, res_left_bounds.max},
                 {res_right_bounds.min, res_right_bounds.max}};
     } else {
-        Ren::SmallVector<uint32_t, 1024> axis_lists[3];
+        SmallVector<uint32_t, 1024> axis_lists[3];
         for (int axis = 0; axis < 3; axis++) {
             axis_lists[axis].reserve(prim_count);
         }
@@ -128,7 +127,7 @@ Eng::split_data_t Eng::SplitPrimitives_SAH(const prim_t *primitives, Ren::Span<c
             axis_lists[2].push_back(i);
         }
 
-        Ren::SmallVector<bbox_t, 1024> right_bounds(prim_count);
+        SmallVector<bbox_t, 1024> right_bounds(prim_count);
 
         for (int axis = 0; axis < 3; axis++) {
             auto &list = axis_lists[axis];

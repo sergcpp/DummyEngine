@@ -31,7 +31,7 @@
 #include <Sys/DynLib.h>
 #include <Sys/Time_.h>
 
-#include "../Eng/Utils/BVHSplit.cpp"
+#include <Phy/BVHSplit.cpp>
 
 #pragma warning(disable : 4996)
 
@@ -273,8 +273,8 @@ float RadicalInverse_VdC(uint32_t bits) {
     return float(bits) * 2.3283064365386963e-10f; // / 0x100000000
 }
 
-Ren::Vec2f Hammersley2D(const int i, const int N) {
-    return Ren::Vec2f{float(i) / float(N), RadicalInverse_VdC(uint32_t(i))};
+Phy::Vec2f Hammersley2D(const int i, const int N) {
+    return Phy::Vec2f{float(i) / float(N), RadicalInverse_VdC(uint32_t(i))};
 }
 
 const auto center = Ren::Vec3f{-2.0f, 2.0f, 4.0f};
@@ -1190,7 +1190,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
     if (generate_occlusion) {
         std::cout << "Generating occlusion... ";
 
-        vector<Ren::Vec4f> occlusion = GenerateOcclusion(positions, normals, tangents, reordered_indices);
+        vector<Phy::Vec4f> occlusion = GenerateOcclusion(positions, normals, tangents, reordered_indices);
         assert(occlusion.size() == positions.size() / 3);
 
         vtx_colors.resize(4 * occlusion.size());
@@ -1591,19 +1591,19 @@ ModlApp::eCompileResult ModlApp::CompileAnim(const std::string &in_file_name, co
     return eCompileResult::RES_SUCCESS;
 }
 
-std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &positions,
+std::vector<Phy::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &positions,
                                                    const std::vector<float> &normals,
                                                    const std::vector<float> &tangents,
                                                    const std::vector<std::vector<uint32_t>> &indices) const {
-    using Ren::Vec2f;
-    using Ren::Vec3f;
+    using Phy::Vec2f;
+    using Phy::Vec3f;
 
     size_t primitives_count = 0;
     for (const std::vector<uint32_t> &index_grp : indices) {
         primitives_count += index_grp.size();
     }
 
-    std::vector<Eng::prim_t> primitives;
+    std::vector<Phy::prim_t> primitives;
     std::vector<uint32_t> tri_indices, prim_indices;
     primitives.reserve(primitives_count);
     tri_indices.reserve(primitives_count);
@@ -1619,12 +1619,12 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
             tri_indices.push_back(i1);
             tri_indices.push_back(i2);
 
-            const Ren::Vec3f v0 = Ren::MakeVec3(&positions[3ull * i0]);
-            const Ren::Vec3f v1 = Ren::MakeVec3(&positions[3ull * i1]);
-            const Ren::Vec3f v2 = Ren::MakeVec3(&positions[3ull * i2]);
+            const Vec3f v0 = Phy::MakeVec3(&positions[3ull * i0]);
+            const Vec3f v1 = Phy::MakeVec3(&positions[3ull * i1]);
+            const Vec3f v2 = Phy::MakeVec3(&positions[3ull * i2]);
 
             primitives.emplace_back();
-            Eng::prim_t &new_prim = primitives.back();
+            Phy::prim_t &new_prim = primitives.back();
 
             new_prim.bbox_min = Min(v0, Min(v1, v2));
             new_prim.bbox_max = Max(v0, Max(v1, v2));
@@ -1633,9 +1633,9 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 
     struct bvh_node_t { // NOLINT
         uint32_t prim_index, prim_count, left_child, right_child;
-        Ren::Vec3f bbox_min;
+        Vec3f bbox_min;
         uint32_t parent;
-        Ren::Vec3f bbox_max;
+        Vec3f bbox_max;
         uint32_t space_axis; // axis with maximal child's centroids distance
     };
 
@@ -1645,10 +1645,10 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
 
     struct prims_coll_t {
         std::vector<uint32_t> indices;
-        Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()};
-        Ren::Vec3f max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
+        Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()};
+        Vec3f max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() = default;
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Vec3f &_min, const Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
@@ -1661,12 +1661,12 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
 
-    Eng::split_settings_t s;
+    Phy::split_settings_t s;
     s.oversplit_threshold = 0.95f;
     s.node_traversal_cost = 0.025f;
 
     while (!prim_lists.empty()) {
-        Eng::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
+        Phy::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
                                                            prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
@@ -1691,15 +1691,15 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         } else {
             auto index = (uint32_t)nodes_count;
 
-            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f;
-            const Ren::Vec3f c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
+            const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f;
+            const Phy::Vec3f c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
-            const Ren::Vec3f dist = Abs(c_left - c_right);
+            const Phy::Vec3f dist = Abs(c_left - c_right);
 
             const uint32_t space_axis =
                 (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
 
-            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+            const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                              bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             nodes.push_back({
@@ -1707,9 +1707,9 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
                 0,
                 index + 1,
                 index + 2,
-                Ren::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]},
+                Phy::Vec3f{bbox_min[0], bbox_min[1], bbox_min[2]},
                 parent_index,
-                Ren::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]},
+                Phy::Vec3f{bbox_max[0], bbox_max[1], bbox_max[2]},
                 space_axis,
             });
 
@@ -1820,9 +1820,9 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
                 for (uint32_t i = n.prim_index; i < n.prim_index + n.prim_count; ++i) {
                     const int pi = prim_indices[i];
 
-                    const Vec3f v0 = Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 0]]);
-                    const Vec3f v1 = Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 1]]);
-                    const Vec3f v2 = Ren::MakeVec3(&positions[3 * tri_indices[3 * pi + 2]]);
+                    const Vec3f v0 = Phy::MakeVec3(&positions[3 * tri_indices[3 * pi + 0]]);
+                    const Vec3f v1 = Phy::MakeVec3(&positions[3 * tri_indices[3 * pi + 1]]);
+                    const Vec3f v2 = Phy::MakeVec3(&positions[3 * tri_indices[3 * pi + 2]]);
 
                     Vec3f inter;
                     if (intersect_triangle(orig, dir, v0, v1, v2, inter) && inter[0] > 0.0f && inter[0] < max_dist) {
@@ -1835,18 +1835,18 @@ std::vector<Ren::Vec4f> ModlApp::GenerateOcclusion(const std::vector<float> &pos
         return false;
     };
 
-    std::vector<Ren::Vec4f> occlusion;
+    std::vector<Phy::Vec4f> occlusion;
     occlusion.reserve(positions.size() / 3);
 
     for (size_t i = 0; i < positions.size(); i += 3) {
         const int SampleCount = 128;
         const float bias = 0.001f;
 
-        const Vec3f N = Ren::MakeVec3(&normals[i]);
-        const Vec3f T = Ren::MakeVec3(&tangents[i]);
+        const Vec3f N = Phy::MakeVec3(&normals[i]);
+        const Vec3f T = Phy::MakeVec3(&tangents[i]);
         const Vec3f B = Cross(N, T);
 
-        const Vec3f orig = Ren::MakeVec3(&positions[i]);
+        const Vec3f orig = Phy::MakeVec3(&positions[i]);
 
         int occ_count = 0;
         Vec3f unoccluded_dir;

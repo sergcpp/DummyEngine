@@ -2,6 +2,7 @@
 
 #include <deque>
 
+#include <Phy/BVHSplit.h>
 #include <Ren/Context.h>
 #include <Sys/BinaryTree.h>
 #include <Sys/MonoAlloc.h>
@@ -11,7 +12,6 @@
 extern __itt_domain *__g_itt_domain;
 
 #include "../renderer/Renderer_Structs.h"
-#include "../utils/BVHSplit.h"
 
 namespace SceneManagerInternal {
 const float BoundsMargin = 0.2f;
@@ -64,6 +64,8 @@ void update_bbox(const Eng::bvh_node_t *nodes, Eng::bvh_node_t &node) {
     node.bbox_max = Max(nodes[node.left_child].bbox_max, nodes[node.right_child].bbox_max);
 }
 
+Phy::Vec3f adapt(const Ren::Vec3f &v) { return Phy::Vec3f{v[0], v[1], v[2]}; }
+
 __itt_string_handle *itt_rebuild_bvh_str = __itt_string_handle_create("SceneManager::RebuildSceneBVH");
 __itt_string_handle *itt_update_bvh_str = __itt_string_handle_create("SceneManager::UpdateBVH");
 } // namespace SceneManagerInternal
@@ -75,14 +77,15 @@ void Eng::SceneManager::RebuildSceneBVH() {
 
     auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
 
-    std::vector<prim_t> primitives;
+    std::vector<Phy::prim_t> primitives;
     primitives.reserve(scene_data_.objects.size());
 
     for (const SceneObject &obj : scene_data_.objects) {
         if (obj.comp_mask & CompTransformBit) {
             const Transform &tr = transforms[obj.components[CompTransform]];
             const Ren::Vec3f d = tr.bbox_max_ws - tr.bbox_min_ws;
-            primitives.push_back({0, 0, 0, tr.bbox_min_ws - BoundsMargin * d, tr.bbox_max_ws + BoundsMargin * d});
+            primitives.push_back(
+                {0, 0, 0, adapt(tr.bbox_min_ws - BoundsMargin * d), adapt(tr.bbox_max_ws + BoundsMargin * d)});
         }
     }
 
@@ -95,10 +98,10 @@ void Eng::SceneManager::RebuildSceneBVH() {
 
     struct prims_coll_t {
         std::vector<uint32_t> indices;
-        Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
-                   max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
+        Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
+                   max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() = default;
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min, const Phy::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
@@ -114,13 +117,13 @@ void Eng::SceneManager::RebuildSceneBVH() {
         prim_lists.back().max = Max(prim_lists.back().max, primitives[i].bbox_max);
     }
 
-    split_settings_t s;
+    Phy::split_settings_t s;
     s.oversplit_threshold = std::numeric_limits<float>::max();
     s.node_traversal_cost = 0.0f;
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, s);
+        Phy::split_data_t split_data = SplitPrimitives_SAH(&primitives[0], prim_lists.back().indices,
+                                                           prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         const uint32_t leaf_index = uint32_t(scene_data_.nodes.size());
@@ -138,7 +141,7 @@ void Eng::SceneManager::RebuildSceneBVH() {
         }
 
         if (split_data.right_indices.empty()) {
-            const Ren::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
+            const Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
 
             const auto new_node_index = (uint32_t)scene_data_.nodes.size();
 
@@ -162,15 +165,15 @@ void Eng::SceneManager::RebuildSceneBVH() {
         } else {
             auto index = (uint32_t)nodes_count;
 
-            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
+            const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
                              c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
-            const Ren::Vec3f dist = Abs(c_left - c_right);
+            const Phy::Vec3f dist = Abs(c_left - c_right);
 
             const uint32_t space_axis =
                 (dist[0] > dist[1] && dist[0] > dist[2]) ? 0 : ((dist[1] > dist[0] && dist[1] > dist[2]) ? 1 : 2);
 
-            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+            const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                              bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             scene_data_.nodes.emplace_back();
@@ -529,7 +532,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
     std::vector<gpu_mesh_instance_t> mesh_instances;
     std::vector<uint32_t> prim_indices;
 
-    std::vector<prim_t> temp_primitives;
+    std::vector<Phy::prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
 
     uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
@@ -584,11 +587,11 @@ void Eng::SceneManager::InitSWRTAccStructures() {
             for (uint32_t i = index_beg; i < index_end; i += 3) {
                 const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
 
-                const Ren::Vec3f p0 = Ren::MakeVec3(&positions[i0 * VertexStride]),
-                                 p1 = Ren::MakeVec3(&positions[i1 * VertexStride]),
-                                 p2 = Ren::MakeVec3(&positions[i2 * VertexStride]);
+                const Phy::Vec3f p0 = Phy::MakeVec3(&positions[i0 * VertexStride]),
+                                 p1 = Phy::MakeVec3(&positions[i1 * VertexStride]),
+                                 p2 = Phy::MakeVec3(&positions[i2 * VertexStride]);
 
-                const Ren::Vec3f bbox_min = Min(p0, Min(p1, p2)), bbox_max = Max(p0, Max(p1, p2));
+                const Phy::Vec3f bbox_min = Min(p0, Min(p1, p2)), bbox_max = Max(p0, Max(p1, p2));
 
                 temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
                 temp_indices.push_back(i / 3);
@@ -597,7 +600,7 @@ void Eng::SceneManager::InitSWRTAccStructures() {
             ++new_mesh.geo_count;
         }
 
-        split_settings_t s;
+        Phy::split_settings_t s;
         new_mesh.node_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
 
         for (int i = new_mesh.tris_index; i < int(prim_indices.size()); ++i) {
@@ -802,15 +805,15 @@ void Eng::SceneManager::InitSWRTAccStructures() {
     ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
 }
 
-uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, const split_settings_t &s,
+uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
                                                 std::vector<gpu_bvh_node_t> &out_nodes,
                                                 std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
-        Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
-                   max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
+        Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
+                   max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() {}
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min, const Phy::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
@@ -827,12 +830,12 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, c
     }
 
     while (!prim_lists.empty()) {
-        split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices, prim_lists.back().min,
-                                                      prim_lists.back().max, s);
+        Phy::split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices,
+                                                           prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         if (split_data.right_indices.empty()) {
-            Ren::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
+            Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
 
             out_nodes.emplace_back();
             gpu_bvh_node_t &n = out_nodes.back();
@@ -846,10 +849,10 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, c
             const auto index = uint32_t(num_nodes);
 
             uint32_t space_axis = 0;
-            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
+            const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
                              c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
-            const Ren::Vec3f dist = Abs(c_left - c_right);
+            const Phy::Vec3f dist = Abs(c_left - c_right);
 
             if (dist[0] > dist[1] && dist[0] > dist[2]) {
                 space_axis = 0;
@@ -859,7 +862,7 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const prim_t> prims, c
                 space_axis = 2;
             }
 
-            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+            const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                              bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             out_nodes.emplace_back();

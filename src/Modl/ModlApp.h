@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <Phy/MMat.h>
 #include <Ren/Camera.h>
 #include <Ren/Context.h>
 #include <Ren/Mesh.h>
@@ -64,7 +65,7 @@ class ModlApp {
                                 bool generate_occlusion);
     eCompileResult CompileAnim(const std::string &in_file_name, const std::string &out_file_name);
 
-    std::vector<Ren::Vec4f> GenerateOcclusion(const std::vector<float> &positions, const std::vector<float> &normals,
+    std::vector<Phy::Vec4f> GenerateOcclusion(const std::vector<float> &positions, const std::vector<float> &normals,
                                               const std::vector<float> &tangents,
                                               const std::vector<std::vector<uint32_t>> &indices) const;
 

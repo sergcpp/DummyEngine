@@ -2,9 +2,8 @@
 
 #include <deque>
 
+#include <Phy/BVHSplit.h>
 #include <Ren/Context.h>
-
-#include "../../utils/BVHSplit.h"
 
 void Eng::RpBuildAccStructuresExecutor::Execute(RpBuilder &builder) {
     if (builder.ctx().capabilities.raytracing || builder.ctx().capabilities.ray_query) {
@@ -30,7 +29,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
     auto &rt_tlas_stage_buf = p_list_->swrt.rt_tlas_nodes_stage_buf[rt_index_];
 
     if (rt_obj_instances.count) {
-        std::vector<Eng::prim_t> temp_primitives;
+        std::vector<Phy::prim_t> temp_primitives;
 
         for (uint32_t i = 0; i < rt_obj_instances.count; ++i) {
             const auto &inst = rt_obj_instances.data[i];
@@ -44,7 +43,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 
         std::vector<uint32_t> mi_indices;
 
-        Eng::split_settings_t s;
+        Phy::split_settings_t s;
         const uint32_t nodes_count = PreprocessPrims_SAH(temp_primitives, s, nodes, mi_indices);
         assert(nodes_count <= MAX_RT_TLAS_NODES);
 
@@ -110,16 +109,16 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
 }
 
 // TODO: avoid duplication with SceneManager::PreprocessPrims_SAH
-uint32_t Eng::RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims,
-                                                                const Eng::split_settings_t &s,
+uint32_t Eng::RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims,
+                                                                const Phy::split_settings_t &s,
                                                                 std::vector<gpu_bvh_node_t> &out_nodes,
                                                                 std::vector<uint32_t> &out_indices) {
     struct prims_coll_t {
         std::vector<uint32_t> indices;
-        Ren::Vec3f min = Ren::Vec3f{std::numeric_limits<float>::max()},
-                   max = Ren::Vec3f{std::numeric_limits<float>::lowest()};
+        Phy::Vec3f min = Phy::Vec3f{std::numeric_limits<float>::max()},
+                   max = Phy::Vec3f{std::numeric_limits<float>::lowest()};
         prims_coll_t() {}
-        prims_coll_t(std::vector<uint32_t> &&_indices, const Ren::Vec3f &_min, const Ren::Vec3f &_max)
+        prims_coll_t(std::vector<uint32_t> &&_indices, const Phy::Vec3f &_min, const Phy::Vec3f &_max)
             : indices(std::move(_indices)), min(_min), max(_max) {}
     };
 
@@ -136,12 +135,12 @@ uint32_t Eng::RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const 
     }
 
     while (!prim_lists.empty()) {
-        Eng::split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices,
+        Phy::split_data_t split_data = SplitPrimitives_SAH(prims.data(), prim_lists.back().indices,
                                                            prim_lists.back().min, prim_lists.back().max, s);
         prim_lists.pop_back();
 
         if (split_data.right_indices.empty()) {
-            Ren::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
+            Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
 
             out_nodes.emplace_back();
             gpu_bvh_node_t &n = out_nodes.back();
@@ -155,10 +154,10 @@ uint32_t Eng::RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const 
             const auto index = uint32_t(num_nodes);
 
             uint32_t space_axis = 0;
-            const Ren::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
+            const Phy::Vec3f c_left = (split_data.left_bounds[0] + split_data.left_bounds[1]) / 2.0f,
                              c_right = (split_data.right_bounds[0] + split_data.right_bounds[1]) / 2.0f;
 
-            const Ren::Vec3f dist = Abs(c_left - c_right);
+            const Phy::Vec3f dist = Abs(c_left - c_right);
 
             if (dist[0] > dist[1] && dist[0] > dist[2]) {
                 space_axis = 0;
@@ -168,7 +167,7 @@ uint32_t Eng::RpBuildAccStructuresExecutor::PreprocessPrims_SAH(Ren::Span<const 
                 space_axis = 2;
             }
 
-            const Ren::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
+            const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                              bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
             out_nodes.emplace_back();

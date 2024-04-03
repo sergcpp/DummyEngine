@@ -17,13 +17,18 @@
 // TODO: get rid of this dependency!
 #include "../renderer/Renderer_Structs.h"
 
-namespace Sys {
-template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
-}
 template <typename Alloc> struct JsObjectT;
 using JsObject = JsObjectT<std::allocator<char>>;
 using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>;
 
+namespace Phy {
+struct prim_t;
+struct split_settings_t;
+}
+
+namespace Sys {
+template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
+}
 namespace Sys {
 class ThreadPool;
 }
@@ -34,9 +39,6 @@ class Context;
 
 namespace Eng {
 class ShaderLoader;
-
-struct prim_t;
-struct split_settings_t;
 } // namespace Eng
 
 #include <Sys/Json.h>
@@ -276,7 +278,7 @@ class SceneManager {
 
     void TextureLoaderProc();
 
-    static uint32_t PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims, const Eng::split_settings_t &s,
+    static uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
                                         std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
 
     std::vector<char> temp_buf;

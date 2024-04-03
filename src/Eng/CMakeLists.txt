@@ -281,9 +281,7 @@ set(SCENE_COMP_SOURCES  scene/comp/Common.h
                         scene/comp/VegState.h
                         scene/comp/VegState.cpp)
 
-set(UTILS_SOURCES utils/BVHSplit.h
-                  utils/BVHSplit.cpp
-                  utils/Cmdline.h
+set(UTILS_SOURCES utils/Cmdline.h
                   utils/Cmdline.cpp
                   utils/FlowControl.h
                   utils/FlowControl.cpp

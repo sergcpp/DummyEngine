@@ -26,12 +26,16 @@ ENDIF(WIN32)
 set(SOURCE_FILES    Body.h
                     Body.cpp
                     Bounds.h
+                    BVHSplit.h
+                    BVHSplit.cpp
                     Core.h
                     MMat.h
                     MQuat.h
                     MVec.h
                     Shape.h
                     Shape.cpp
+                    SmallVector.h
+                    Span.h
                     Utils.h
                     Utils.cpp)
 

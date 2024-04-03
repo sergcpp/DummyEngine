@@ -3,10 +3,12 @@
 #include "../graph/SubPass.h"
 #include "../Renderer_DrawList.h"
 
-namespace Eng {
+namespace Phy {
 struct prim_t;
 struct split_settings_t;
+}
 
+namespace Eng {
 class RpBuildAccStructuresExecutor : public RpExecutor {
     const DrawList *&p_list_;
     int rt_index_;
@@ -19,7 +21,7 @@ class RpBuildAccStructuresExecutor : public RpExecutor {
     void Execute_HWRT(RpBuilder &builder);
     void Execute_SWRT(RpBuilder &builder);
 
-    uint32_t PreprocessPrims_SAH(Ren::Span<const Eng::prim_t> prims, const Eng::split_settings_t &s,
+    uint32_t PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,
                                  std::vector<gpu_bvh_node_t> &out_nodes, std::vector<uint32_t> &out_indices);
 
   public:
