@@ -119,7 +119,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
                          sampler2D ltc_luts, float sheen, vec3 base_color, vec3 sheen_color, vec3 spec_color, vec3 clearcoat_color) {
     const bool TwoSided = false;
 
-    const int type = floatBitsToInt(litem.col_and_type.w);
+    const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
     const vec3 to_light = normalize(pos_ws - litem.pos_and_radius.xyz);
     const float _dot = -dot(to_light, litem.dir_and_spot.xyz);
     const float _angle = approx_acos(_dot);

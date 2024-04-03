@@ -242,7 +242,8 @@ void main() {
             }
 
             const vec3 rotated_dir = rotate_xz(gi_ray_ws, g_shrd_data.env_col.w);
-            final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, 6.0).rgb;
+            const float env_mip_count = g_shrd_data.ambient_hack.w;
+            final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).rgb;
             break;
         } else {
             const bool backfacing = (inter.prim_index < 0);

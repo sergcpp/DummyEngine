@@ -23,7 +23,7 @@ namespace Eng {
 
 struct LightItem {
     float col[3];
-    int type;
+    uint32_t type_and_flags;
     float pos[3], radius;
     float dir[3], spot;
     float u[3];

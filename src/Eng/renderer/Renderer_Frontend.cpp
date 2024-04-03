@@ -505,7 +505,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                             ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
                             list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                         }
-                        ls.type = int(light.type);
+                        ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2);
                         memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                         ls.radius = light.radius;
                         memcpy(ls.dir, &dir[0], 3 * sizeof(float));
@@ -653,7 +653,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                         ls.col[2] = scene.env.env_col[2] / sqrtf(light.area);
                         list.portals.emplace_back(uint32_t(list.lights.size() - 1));
                     }
-                    ls.type = int(light.type);
+                    ls.type_and_flags = uint32_t(light.type) | (light.sky_portal << 2);
                     memcpy(ls.pos, &pos[0], 3 * sizeof(float));
                     ls.radius = light.radius;
                     memcpy(ls.dir, &dir[0], 3 * sizeof(float));

@@ -23,7 +23,7 @@ const char SCENE_NAME[] = "assets/scenes/"
 const char SCENE_NAME[] = "assets_pc/scenes/"
 #endif
                           //"ai043_06.json";
-                          "mat_test_portal.json";
+                          "mat_test.json";
 //"test_skin.json";
 //"living_room_gumroad.json";
 //"bistro.json";

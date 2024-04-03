@@ -544,16 +544,22 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
 
             shrd_data.item_counts =
                 Ren::Vec4u{uint32_t(p_list_->lights.size()), uint32_t(p_list_->decals.size()), 0, 0};
+            float env_mip_count = 0.0f;
+            if (p_list_->env.env_map) {
+                env_mip_count = float(p_list_->env.env_map->params.mip_count);
+            }
             shrd_data.ambient_hack = Ren::Vec4f{p_list_->env.ambient_hack[0], p_list_->env.ambient_hack[1],
-                                                p_list_->env.ambient_hack[2], 0.0f};
+                                                p_list_->env.ambient_hack[2], env_mip_count};
 
             memcpy(&shrd_data.probes[0], p_list_->probes.data(), sizeof(ProbeItem) * p_list_->probes.size());
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data(),
                    sizeof(EllipsItem) * p_list_->ellipsoids.size());
 
-            const int portals_count = std::min(int(p_list_->portals.size()), MAX_PORTALS_TOTAL - 1);
+            const int portals_count = std::min(int(p_list_->portals.size()), MAX_PORTALS_TOTAL);
             memcpy(&shrd_data.portals[0], p_list_->portals.data(), portals_count);
-            shrd_data.portals[portals_count] = 0xffffffff;
+            if (portals_count < MAX_PORTALS_TOTAL) {
+                shrd_data.portals[portals_count] = 0xffffffff;
+            }
 
             Ren::UpdateBuffer(*shared_data_buf.ref, 0, sizeof(SharedDataBlock), &shrd_data,
                               *p_list_->shared_data_stage_buf, ctx.backend_frame() * SharedDataBlockSize,
@@ -865,6 +871,10 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                            const bool enable_gi) {
+    if (!p_list_->env.env_map) {
+        return;
+    }
+
     using Stg = Ren::eStageBits;
 
     auto &gbuf_shade = rp_builder_.AddPass("GBUFFER SHADE");
@@ -874,7 +884,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpResRef cells_buf, items_buf, lights_buf, decals_buf;
         RpResRef shadowmap_tex, ssao_tex, gi_tex, sun_shadow_tex;
         RpResRef depth_tex, albedo_tex, normal_tex, spec_tex;
-        RpResRef ltc_luts_tex;
+        RpResRef ltc_luts_tex, env_tex;
         RpResRef output_tex;
     };
 
@@ -901,6 +911,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
 
     data->ltc_luts_tex = gbuf_shade.AddTextureInput(ltc_luts_, Stg::ComputeShader);
+    data->env_tex = gbuf_shade.AddTextureInput(p_list_->env.env_map, Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
         gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
@@ -923,6 +934,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
         RpAllocTex &sun_shadow_tex = builder.GetReadTexture(data->sun_shadow_tex);
 
         RpAllocTex &ltc_luts = builder.GetReadTexture(data->ltc_luts_tex);
+        RpAllocTex &env_tex = builder.GetReadTexture(data->env_tex);
 
         RpAllocTex &out_color_tex = builder.GetWriteTexture(data->output_tex);
 
@@ -941,6 +953,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::Tex2D, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
             {Ren::eBindTarget::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

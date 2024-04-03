@@ -357,6 +357,11 @@ void main() {
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
                 }
+                if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {
+                    // Sample environment to create slight color variation
+                    const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                    light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
+                }
 
                 int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
                 [[dont_flatten]] if (shadowreg_index != -1) {

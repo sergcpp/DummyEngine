@@ -13,13 +13,13 @@
         ],
         "sun_angle" : 10.0,
         "sun_shadow_bias" : [ 0.0, 0.0 ],
-        "env_col" : [ 2.0, 4.0, 4.0 ],
-        "env_map0" : "env/meadow_2k.hdr",
+        "env_col" : [ 4.0, 4.0, 4.0 ],
+        "env_map" : "env/meadow_2k.hdr",
         "env_map_rot" : 135.0,
         "ambient_hack" : [
-            0.04,
-            0.08,
-            0.08
+            0.03,
+            0.025,
+            0.02
         ]
     },
     "objects" : [

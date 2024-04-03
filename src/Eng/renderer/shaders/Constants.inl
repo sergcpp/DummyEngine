@@ -85,6 +85,10 @@ const int RAY_TYPE_SPECULAR = 2;
 const int RAY_TYPE_REFRACTION = 3;
 const int RAY_TYPE_SHADOW = 4;
 
+// Light
+const int LIGHT_TYPE_BITS = 0x3;
+const int LIGHT_PORTAL_BIT = (1 << 2);
+
 // Shadow resolution
 const int SHADOWMAP_RES_PC = 8192;
 const int SHADOWMAP_RES_ANDROID = 4096;

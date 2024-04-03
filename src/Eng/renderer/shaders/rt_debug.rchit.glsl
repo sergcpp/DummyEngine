@@ -45,6 +45,7 @@ layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
+layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 layout(binding = LMAP_TEX_SLOTS) uniform sampler2D g_lm_textures[5];
 
@@ -190,6 +191,11 @@ void main() {
                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             if (all(equal(light_contribution, vec3(0.0)))) {
                 continue;
+            }
+            if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {
+                // Sample environment to create slight color variation
+                const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
+                light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
             }
 
             int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);

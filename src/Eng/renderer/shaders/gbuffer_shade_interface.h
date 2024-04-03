@@ -26,6 +26,7 @@ const int ITEMS_BUF_SLOT = 10;
 const int GI_TEX_SLOT = 11;
 const int SUN_SHADOW_TEX_SLOT = 12;
 const int LTC_LUTS_TEX_SLOT = 13;
+const int ENV_TEX_SLOT = 14;
 
 const int OUT_COLOR_IMG_SLOT = 0;
 

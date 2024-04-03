@@ -18,7 +18,8 @@ layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 layout(location = 0) rayPayloadInEXT RayPayload g_pld;
 
 void main() {
-    g_pld.col = texture(g_env_tex, gl_WorldRayDirectionEXT).rgb;
+    const vec3 rotated_dir = rotate_xz(gl_WorldRayDirectionEXT, g_shrd_data.env_col.w);
+    g_pld.col = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
 
     for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
         const light_item_t litem = g_lights[g_shrd_data.portals[i]];
