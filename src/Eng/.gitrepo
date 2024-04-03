@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = portal_light
-	commit = 02817e936814408273409e5190489a33b98c479a
+	branch = portal_tex
+	commit = 9031e9994382e5c4432a160f5fe0b7fae0927f85
 	method = merge
 	cmdver = 0.4.6
-	parent = f769ab7c12a819b19dd104011c13cadcdc80bbc1
+	parent = ca3f36045530015c8f9c72b88e4306423d23421c
