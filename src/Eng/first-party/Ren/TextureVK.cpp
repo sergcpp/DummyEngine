@@ -1245,7 +1245,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         new_barrier.subresourceRange.baseMipLevel = 0;
         new_barrier.subresourceRange.levelCount = mip_count; // transit whole image
         new_barrier.subresourceRange.baseArrayLayer = 0;
-        new_barrier.subresourceRange.layerCount = 1;
+        new_barrier.subresourceRange.layerCount = 6;
 
         src_stages |= VKPipelineStagesForState(this->resource_state);
         dst_stages |= VKPipelineStagesForState(eResState::CopyDst);
