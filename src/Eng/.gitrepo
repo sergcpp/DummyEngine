@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = sun_shadow_filter
-	commit = 71c522082fcf1a53900318729620950c1b27d6c5
+	branch = better_area_shadows
+	commit = 3970fd477ecca045d57db9fce0684df87833f886
 	method = merge
 	cmdver = 0.4.6
-	parent = e551fbcd6315ccd03e7b826e3439c9d72a47b097
+	parent = 9ee327637654a7de947195ced9d74601c426af2d
