@@ -90,6 +90,7 @@ struct DrawList {
     Ren::Camera draw_cam, ext_cam;
     EnvironmentWeak env;
     FrontendInfo frontend_info;
+    Ren::Vec4f sun_shadow_bounds;
     std::vector<Ren::Vec2i> instance_indices;
     mutable Ren::BufferRef instance_indices_stage_buf;
     std::vector<BasicDrawBatch> shadow_batches;

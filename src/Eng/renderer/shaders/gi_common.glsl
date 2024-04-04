@@ -83,9 +83,6 @@ mat3 CreateTBN(vec3 N) {
     return diff * diff;
 }
 
-vec2 RotateVector(vec4 rotator, vec2 v) { return v.x * rotator.xz + v.y * rotator.yw; }
-vec4 CombineRotators(vec4 r1, vec4 r2 ) { return r1.xyxy * r2.xxzz + r1.zwzw * r2.yyww; }
-
 vec4 GetBlurKernelRotation(uvec2 pixel_pos, vec4 base_rotator, uint frame) {
     vec4 rotator = vec4(1, 0, 0, 1);
 

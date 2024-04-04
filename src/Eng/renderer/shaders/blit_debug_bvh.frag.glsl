@@ -63,13 +63,11 @@ void main() {
     vec4 ray_end_cs = vec4(g_vtx_uvs / g_shrd_data.res_and_fres.xy, depth, 1.0);
     ray_end_cs.xy = 2.0 * ray_end_cs.xy - 1.0;
 
-    vec4 ray_start_ws = g_shrd_data.world_from_clip_no_translation * ray_start_cs;
+    vec4 ray_start_ws = g_shrd_data.world_from_clip * ray_start_cs;
     ray_start_ws /= ray_start_ws.w;
-    ray_start_ws.xyz += g_shrd_data.cam_pos_and_gamma.xyz;
 
-    vec4 ray_end_ws = g_shrd_data.world_from_clip_no_translation * ray_end_cs;
+    vec4 ray_end_ws = g_shrd_data.world_from_clip * ray_end_cs;
     ray_end_ws /= ray_end_ws.w;
-    ray_end_ws.xyz += g_shrd_data.cam_pos_and_gamma.xyz;
 
     vec3 ray_dir_ws = ray_end_ws.xyz - ray_start_ws.xyz;
     float ray_length = length(ray_dir_ws);

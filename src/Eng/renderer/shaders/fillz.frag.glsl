@@ -43,14 +43,6 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 layout(location = 0) out vec2 g_out_velocity;
 #endif
 
-float hash(vec2 v) {
-    return fract(1.0e4 * sin(17.0 * v.x + 0.1 * v.y) * (0.1 + abs(sin(13.0 * v.y + v.x))));
-}
-
-float hash3D(vec3 v) {
-    return hash(vec2(hash(v.xy), v.z));
-}
-
 void main() {
 #ifdef TRANSPARENT
     float tx_alpha = texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
@@ -61,15 +53,15 @@ void main() {
     const float HashScale = 0.1;
     float pix_scale = 1.0 / (HashScale * max_deriv);
 
-    vec2 pix_scales = vec2(exp2(floor(log2(pix_scale))), exp2(ceil(log2(pix_scale))));
+    vec2 pix_scales = vec2(exp2(floor(log2(pix_scale))),
+                           exp2(ceil(log2(pix_scale))));
 
     vec2 alpha = vec2(hash3D(floor(pix_scales.x * g_vtx_pos_ls)),
                       hash3D(floor(pix_scales.y * g_vtx_pos_ls)));
 
     float lerp_factor = fract(log2(pix_scale));
 
-    float x = (1.0 - lerp_factor) * alpha.x + lerp_factor * alpha.y;
-
+    float x = mix(alpha.x, alpha.y, lerp_factor);
     float a = min(lerp_factor, 1.0 - lerp_factor);
 
     vec3 cases = vec3(x * x / (2.0 * a * (1.0 - a)),

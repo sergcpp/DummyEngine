@@ -353,8 +353,8 @@ struct ViewState {
 };
 
 struct SharedDataBlock {
-    Ren::Mat4f view_from_world, clip_from_view, clip_from_world_no_translation, prev_clip_from_world_no_translation;
-    Ren::Mat4f world_from_view, view_from_clip, world_from_clip_no_translation, delta_matrix;
+    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, clip_from_world_no_translation, prev_clip_from_world_no_translation;
+    Ren::Mat4f world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, env_col, taa_info, frustum_info;
@@ -367,7 +367,7 @@ struct SharedDataBlock {
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
     uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 64, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 

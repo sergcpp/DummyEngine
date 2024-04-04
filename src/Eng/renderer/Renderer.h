@@ -94,6 +94,7 @@ class Renderer {
 
     // FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
+    Ren::SamplerRef shadow_map_val_sampler_;
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;
@@ -284,9 +285,9 @@ class Renderer {
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                                RpResRef rt_obj_instances_res, FrameTextures &frame_textures, bool debug_denoise);
-    void AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                               const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               bool enabled, FrameTextures &frame_textures);
+    void AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                             const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                             bool enabled, FrameTextures &frame_textures);
 
     void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 

@@ -430,14 +430,23 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         params.h = SHADOWMAP_HEIGHT;
         params.format = Ren::eTexFormat::Depth16;
         params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Sampled;
-        params.sampling.min_lod.from_float(0.0f);
-        params.sampling.max_lod.from_float(0.0f);
+        // params.sampling.min_lod.from_float(0.0f);
+        // params.sampling.max_lod.from_float(0.0f);
         params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
         params.sampling.compare = Ren::eTexCompare::LEqual;
 
         Ren::eTexLoadStatus status;
         shadow_map_tex_ = ctx_.LoadTexture2D("Shadow Map", params, ctx_.default_mem_allocs(), &status);
+    }
+
+    { // shadow map value sampler
+        Ren::SamplingParams sampler_params;
+        //sampler_params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        sampler_params.wrap = Ren::eTexWrap::ClampToEdge;
+
+        Ren::eSamplerLoadStatus status;
+        shadow_map_val_sampler_ = ctx_.LoadSampler(sampler_params, &status);
     }
 
     {
@@ -1012,8 +1021,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                       rt_sh_obj_instances_res, frame_textures,
                                       list.render_settings.debug_denoise == eDebugDenoise::Shadow);
             } else {
-                AddLQSunShadowsPasses(common_buffers, persistent_data, acc_struct_data, bindless_tex,
-                                      list.render_settings.shadows_quality != eShadowsQuality::Off, frame_textures);
+                AddLQSunShadowsPass(common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                                    list.render_settings.shadows_quality != eShadowsQuality::Off, frame_textures);
             }
 
             // GI

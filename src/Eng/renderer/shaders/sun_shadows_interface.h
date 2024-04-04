@@ -8,6 +8,7 @@ INTERFACE_START(SunShadows)
 struct Params {
     UVEC2_TYPE img_size;
     VEC2_TYPE enabled;
+    VEC4_TYPE softness_factor;
 };
 
 struct RayPayload {
@@ -21,6 +22,7 @@ const int LOCAL_GROUP_SIZE_Y = 8;
 const int DEPTH_TEX_SLOT = 1;
 const int NORM_TEX_SLOT = 2;
 const int SHADOW_TEX_SLOT = 3;
+const int SHADOW_TEX_VAL_SLOT = 4;
 const int OUT_SHADOW_IMG_SLOT = 0;
 
 INTERFACE_END

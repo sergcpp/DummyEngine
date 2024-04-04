@@ -193,6 +193,17 @@ float lum(vec3 color) {
     return dot(vec3(0.212671, 0.715160, 0.715160), color);
 }
 
+vec2 RotateVector(vec4 rotator, vec2 v) { return v.x * rotator.xz + v.y * rotator.yw; }
+vec4 CombineRotators(vec4 r1, vec4 r2 ) { return r1.xyxy * r2.xxzz + r1.zwzw * r2.yyww; }
+
+float hash(vec2 v) {
+    return fract(1.0e4 * sin(17.0 * v.x + 0.1 * v.y) * (0.1 + abs(sin(13.0 * v.y + v.x))));
+}
+
+float hash3D(vec3 v) {
+    return hash(vec2(hash(v.xy), v.z));
+}
+
 // Ray Tracing Gems II, Listing 49-1
 vec3 ReconstructViewPosition(vec2 uv, vec4 cam_frustum, float view_z, float is_ortho) {
     vec3 p;
@@ -232,8 +243,8 @@ struct EllipsItem {
 };
 
 struct SharedData {
-    mat4 view_from_world, clip_from_view, clip_from_world_no_translation, prev_clip_from_world_no_translation;
-    mat4 world_from_view, view_from_clip, world_from_clip_no_translation, delta_matrix;
+    mat4 view_from_world, clip_from_view, clip_from_world, clip_from_world_no_translation, prev_clip_from_world_no_translation;
+    mat4 world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     mat4 rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, env_col, taa_info, frustum_info;

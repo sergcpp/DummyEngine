@@ -603,9 +603,10 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
     frame_textures.sun_shadow = output_tex;
 }
 
-void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
-                                          const AccelerationStructureData &acc_struct_data,
-                                          const BindlessTextureData &bindless, const bool enabled, FrameTextures &frame_textures) {
+void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                                        const AccelerationStructureData &acc_struct_data,
+                                        const BindlessTextureData &bindless, const bool enabled,
+                                        FrameTextures &frame_textures) {
     auto &sun_shadows = rp_builder_.AddPass("SUN SHADOWS");
 
     struct RpShadowsData {
@@ -649,6 +650,7 @@ void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, c
             {Ren::eBindTarget::Tex2D, SunShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
+            {Ren::eBindTarget::Tex2D, SunShadows::SHADOW_TEX_VAL_SLOT, *shadow_tex.ref, shadow_map_val_sampler_.get()},
             {Ren::eBindTarget::Image, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
@@ -658,6 +660,9 @@ void Eng::Renderer::AddLQSunShadowsPasses(const CommonBuffers &common_buffers, c
         SunShadows::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
         uniform_params.enabled[0] = enabled ? 1.0f : 0.0f;
+        uniform_params.softness_factor = std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
+        uniform_params.softness_factor /= 2.0f * p_list_->sun_shadow_bounds;
+        uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
 
         Ren::DispatchCompute(pi_sun_shadows_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
                              builder.ctx().default_descr_alloc(), builder.ctx().log());

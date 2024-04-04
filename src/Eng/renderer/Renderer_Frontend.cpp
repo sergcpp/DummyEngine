@@ -773,6 +773,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const Vec3f cam_center = cam_target + fabsf(Dot(cam_support1 - cam_target, light_dir)) * light_dir;
             const float cam_extents = fabsf(Dot(cam_center, light_dir) - Dot(cam_support2, light_dir));
 
+            list.sun_shadow_bounds[casc] = bounding_radius;
+
             Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
             shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f,

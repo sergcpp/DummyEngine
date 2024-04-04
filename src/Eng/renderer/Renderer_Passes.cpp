@@ -415,6 +415,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
 
             shrd_data.view_from_world = p_list_->draw_cam.view_matrix();
             shrd_data.clip_from_view = p_list_->draw_cam.proj_matrix();
+            shrd_data.clip_from_world = (shrd_data.clip_from_view * shrd_data.view_from_world);
 
             shrd_data.taa_info[0] = p_list_->draw_cam.px_offset()[0];
 #if defined(USE_VK_RENDER)
@@ -471,6 +472,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             shrd_data.prev_clip_from_world_no_translation = view_state_.prev_clip_from_world_no_translation;
             shrd_data.world_from_view = Inverse(shrd_data.view_from_world);
             shrd_data.view_from_clip = Inverse(shrd_data.clip_from_view);
+            shrd_data.world_from_clip = Inverse(shrd_data.clip_from_world);
             shrd_data.world_from_clip_no_translation = Inverse(shrd_data.clip_from_world_no_translation);
             // delta matrix between current and previous frame
             shrd_data.delta_matrix =
