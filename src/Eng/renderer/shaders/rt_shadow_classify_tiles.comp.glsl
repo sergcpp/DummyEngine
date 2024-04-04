@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
@@ -17,10 +17,10 @@
 #include "rt_shadow_classify_tiles_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
+#define NO_SUBGROUP
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -52,7 +52,7 @@ layout(binding = OUT_MOMENTS_IMG_SLOT, r11f_g11f_b10f) uniform restrict image2D 
 shared int g_false_count;
 
 bool ThreadGroupAllTrue(bool val) {
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
     if (gl_SubgroupSize == LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y) {
         return subgroupAll(val);
     } else
@@ -196,7 +196,7 @@ vec2 GetClosestVelocity(uvec2 did, float depth) {
     vec2 closest_velocity = texelFetch(g_velocity_tex, ivec2(did), 0).rg;
     float closest_depth = depth;
 
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
     float new_depth = subgroupQuadSwapHorizontal(closest_depth);
     vec2 new_velocity = subgroupQuadSwapHorizontal(closest_velocity);
 #else
@@ -215,7 +215,7 @@ vec2 GetClosestVelocity(uvec2 did, float depth) {
         closest_velocity = new_velocity;
     }
 
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
     new_depth = subgroupQuadSwapVertical(closest_depth);
     new_velocity = subgroupQuadSwapVertical(closest_velocity);
 #else

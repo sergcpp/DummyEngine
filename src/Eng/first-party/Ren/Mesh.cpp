@@ -604,10 +604,10 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         std::tie(grp.front_mat, grp.back_mat) = on_mat_load(&material_names[i][0]);
     }
 
-    skel_.bones_count = file_header.p[int(eMeshFileChunk::Bones)].length / (64 + 8 + 12 + 16);
-    skel_.bones = std::make_unique<Bone[]>(skel_.bones_count);
+    const int bones_count = file_header.p[int(eMeshFileChunk::Bones)].length / (64 + 8 + 12 + 16);
+    skel_.bones.resize(bones_count);
 
-    for (int i = 0; i < skel_.bones_count; i++) {
+    for (int i = 0; i < int(skel_.bones.size()); i++) {
         float temp_f[4];
         Vec3f temp_v;
         Quatf temp_q;
@@ -647,14 +647,14 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         data.read((char *)&shape_keyed_vertices_start, sizeof(uint32_t));
         data.read((char *)&shape_keyed_vertices_count, sizeof(uint32_t));
 
-        skel_.shapes_count =
+        const int shapes_count =
             int(file_header.p[int(eMeshFileChunk::ShapeKeys)].length - 2 * sizeof(uint32_t)) /
             (64 + shape_keyed_vertices_count * (3 * sizeof(float) + 3 * sizeof(float) + 3 * sizeof(float)));
 
-        deltas_ = std::make_unique<VtxDelta[]>(skel_.shapes_count * shape_keyed_vertices_count);
-        skel_.shapes = std::make_unique<ShapeKey[]>(skel_.shapes_count);
+        deltas_.resize(shapes_count * shape_keyed_vertices_count);
+        skel_.shapes.resize(shapes_count);
 
-        for (int i = 0; i < skel_.shapes_count; i++) {
+        for (int i = 0; i < shapes_count; i++) {
             ShapeKey &sh_key = skel_.shapes[i];
 
             data.read(sh_key.name, 64);
@@ -665,14 +665,14 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
             data.read((char *)&deltas_[sh_key.delta_offset], std::streamsize(sh_key.delta_count * sizeof(VtxDelta)));
         }
 
-        sk_deltas_buf_.size = uint32_t(skel_.shapes_count * shape_keyed_vertices_count * sizeof(packed_vertex_delta_t));
+        sk_deltas_buf_.size = uint32_t(shapes_count * shape_keyed_vertices_count * sizeof(packed_vertex_delta_t));
 
         assert(stage_buf.size() - stage_buf_off >= sk_deltas_buf_.size);
         auto *packed_deltas = reinterpret_cast<packed_vertex_delta_t *>(stage_buf_ptr + stage_buf_off);
         delta_buf_off = stage_buf_off;
         stage_buf_off += sk_deltas_buf_.size;
 
-        for (uint32_t i = 0; i < skel_.shapes_count * shape_keyed_vertices_count; i++) {
+        for (uint32_t i = 0; i < shapes_count * shape_keyed_vertices_count; i++) {
             pack_vertex_delta(deltas_[i], packed_deltas[i]);
         }
     }

@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_quad : enable
 #endif
 
@@ -12,10 +12,10 @@
 #include "depth_hierarchy_interface.h"
 
 #pragma multi_compile _ MIPS_7
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && !defined(GL_KHR_shader_subgroup_quad)
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(NO_SUBGROUP) && !defined(GL_KHR_shader_subgroup_quad)
+#define NO_SUBGROUP
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -49,7 +49,7 @@ float ReduceSrcDepth4(ivec2 base) {
     return REDUCE_OP(REDUCE_OP(v0, v1), REDUCE_OP(v2, v3));
 }
 
-#if !defined(NO_SUBGROUP_EXTENSIONS)
+#if !defined(NO_SUBGROUP)
 float ReduceQuad(float v) {
     float v0 = v;
     float v1 = subgroupQuadSwapHorizontal(v);
@@ -85,7 +85,7 @@ float ReduceLoad4(ivec2 base) {
 void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id, uint x, uint y) {
     if (levels_total <= base_level + 1) return;
     { // Init mip level 3 or
-#if defined(NO_SUBGROUP_EXTENSIONS)
+#if defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 64) {
             float v = ReduceIntermediate(ivec2(x * 2 + 0, y * 2 + 0), ivec2(x * 2 + 1, y * 2 + 0),
                                          ivec2(x * 2 + 0, y * 2 + 1), ivec2(x * 2 + 1, y * 2 + 1));
@@ -112,7 +112,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
     }
     if (levels_total <= base_level + 2) return;
     { // Init mip level 4
-#if defined(NO_SUBGROUP_EXTENSIONS)
+#if defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 16) {
             // x 0 x 0
             // 0 0 0 0
@@ -150,7 +150,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
     }
     if (levels_total <= base_level + 3) return;
     { // Init mip level 5
-#if defined(NO_SUBGROUP_EXTENSIONS)
+#if defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 4) {
             // x 0 0 0 x 0 0 0
             // ...
@@ -179,7 +179,7 @@ void DownsampleNext4Levels(int base_level, int levels_total, uvec2 work_group_id
     }
     if (levels_total <= base_level + 4) return;
     { // Init mip level 6
-#if defined(NO_SUBGROUP_EXTENSIONS)
+#if defined(NO_SUBGROUP)
         if (gl_LocalInvocationIndex < 1) {
             // x x x x 0 ...
             // 0 ...
@@ -259,7 +259,7 @@ void main() {
 
         if (required_mips <= 2) return;
 
-#if defined(NO_SUBGROUP_EXTENSIONS)
+#if defined(NO_SUBGROUP)
         for (int i = 0; i < 4; ++i) {
             g_shared_depth[x][y] = v[i];
             barrier();

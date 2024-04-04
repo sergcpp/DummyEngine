@@ -9,6 +9,7 @@
 #include "MMat.h"
 #include "MQuat.h"
 
+#include "Span.h"
 #include "Storage.h"
 #include "String.h"
 
@@ -75,8 +76,8 @@ class AnimSequence : public RefCounter {
     void Init(std::istream &data);
     void InitAnimBones(std::istream &data);
 
-    void LinkBones(const Bone *bones, int bones_count, int *out_bone_indices);
-    void LinkShapes(const ShapeKey *shapes, int shapes_count, int *out_shape_indices);
+    void LinkBones(Span<const Bone> bones, int *out_bone_indices);
+    void LinkShapes(Span<const ShapeKey> shapes, int *out_shape_indices);
     void Update(float time);
     void InterpolateFrames(int fr_0, int fr_1, float t);
 };
@@ -86,8 +87,8 @@ typedef Storage<AnimSequence> AnimSeqStorage;
 
 struct AnimLink {
     AnimSeqRef anim;
-    std::unique_ptr<int[]> anim_bones;
-    std::unique_ptr<int[]> anim_shapes;
+    std::vector<int> anim_bones;
+    std::vector<int> anim_shapes;
 };
 
 struct Bone {
@@ -118,15 +119,13 @@ struct ShapeKey {
 };*/
 
 struct Skeleton {
-    std::unique_ptr<Bone[]> bones;
-    int bones_count = 0;
-    std::unique_ptr<ShapeKey[]> shapes;
-    int shapes_count = 0;
+    std::vector<Bone> bones;
+    std::vector<ShapeKey> shapes;
     std::vector<AnimLink> anims;
     // std::vector<BoneGroup>  bone_groups;
 
-    Bone *find_bone(std::string_view name) const {
-        for (int i = 0; i < bones_count; i++) {
+    const Bone *find_bone(std::string_view name) const {
+        for (int i = 0; i < int(bones.size()); i++) {
             if (name == bones[i].name) {
                 return &bones[i];
             }

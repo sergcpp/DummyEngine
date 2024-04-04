@@ -8,12 +8,12 @@
 #include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
-#pragma multi_compile _ MOVING_PERM
-#pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ MOVING
+#pragma multi_compile _ TRANSPARENT
 #pragma multi_compile _ HASHED_TRANSPARENCY
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 
@@ -31,11 +31,11 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-#ifdef MOVING_PERM
+#ifdef MOVING
     layout(location = 0) out vec3 g_vtx_pos_cs_curr;
     layout(location = 1) out vec3 g_vtx_pos_cs_prev;
-#endif // MOVING_PERM
-#ifdef TRANSPARENT_PERM
+#endif // MOVING
+#ifdef TRANSPARENT
     layout(location = 2) out vec2 g_vtx_uvs0;
     #ifdef HASHED_TRANSPARENCY
         layout(location = 3) out vec3 g_vtx_pos_ls;
@@ -43,7 +43,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     #if defined(BINDLESS_TEXTURES)
         layout(location = 4) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
 invariant gl_Position;
 
@@ -51,11 +51,11 @@ void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
 
     mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
-#ifdef MOVING_PERM
+#ifdef MOVING
     mat4 model_matrix_prev = FetchPrevModelMatrix(g_instances_buf, instance.x);
-#endif // MOVING_PERM
+#endif // MOVING
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
     MaterialData mat = g_materials[instance.y];
@@ -65,7 +65,7 @@ void main() {
 #ifdef HASHED_TRANSPARENCY
     g_vtx_pos_ls = g_in_vtx_pos;
 #endif // HASHED_TRANSPARENCY
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
     vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos, 1.0)).xyz;
     gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws_curr - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
@@ -73,7 +73,7 @@ void main() {
     gl_Position.y = -gl_Position.y;
 #endif
 
-#ifdef MOVING_PERM
+#ifdef MOVING
     g_vtx_pos_cs_curr = gl_Position.xyw;
 
     vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(g_in_vtx_pos, 1.0)).xyz;
@@ -81,5 +81,5 @@ void main() {
 #if defined(VULKAN)
     g_vtx_pos_cs_prev.y = -g_vtx_pos_cs_prev.y;
 #endif
-#endif // MOVING_PERM
+#endif // MOVING
 }

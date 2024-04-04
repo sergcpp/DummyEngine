@@ -202,7 +202,7 @@ void test_mesh() {
         require(m_ref->flags() == 0);
         require(m_ref->groups()[0].flags == 0);
 
-        require(m_ref->skel()->bones_count == 2);
+        require(m_ref->skel()->bones.size() == 2);
         require(std::string(m_ref->skel()->bones[0].name) == "Bone01");
         require(m_ref->skel()->bones[0].id == 0);
         require(m_ref->skel()->bones[0].parent_id == -1);

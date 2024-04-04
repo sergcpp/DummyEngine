@@ -206,7 +206,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
 
     { // update matrices buffer
         Mat3x4f _matr_palette[256];
-        for (int i = 0; i < skel->bones_count; i++) {
+        for (int i = 0; i < int(skel->bones.size()); i++) {
             const Mat4f tr_mat = Ren::Transpose(matr_palette_[i]);
             memcpy(&_matr_palette[i][0][0], ValuePtr(tr_mat), 12 * sizeof(float));
         }
@@ -232,7 +232,7 @@ void ModlApp::DrawMeshSkeletal(Ren::MeshRef &ref, const float dt_s) {
         const int vertex_offset = int(sk_attribs_buf.sub.offset) / 48, vertex_count = int(sk_attribs_buf.size) / 48;
         const int delta_offset = int(sk_deltas_buf.sub.offset) / 24, delta_count = int(sk_deltas_buf.size) / 24;
 
-        if (skel->shapes_count && (shape_key_index_ != -1 || !skel->anims.empty())) {
+        if (!skel->shapes.empty() && (shape_key_index_ != -1 || !skel->anims.empty())) {
             // assume all shape keys have same vertex count
             const int shapekeyed_vertex_count = skel->shapes[0].delta_count;
             const int non_shapekeyed_vertex_count = vertex_count - shapekeyed_vertex_count;

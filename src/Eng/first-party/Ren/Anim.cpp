@@ -93,8 +93,8 @@ void Ren::AnimSequence::InitAnimBones(std::istream &data) {
     ready_ = true;
 }
 
-void Ren::AnimSequence::LinkBones(const Bone *bones, const int bones_count, int *out_bone_indices) {
-    for (int i = 0; i < bones_count; i++) {
+void Ren::AnimSequence::LinkBones(Span<const Bone> bones, int *out_bone_indices) {
+    for (int i = 0; i < int(bones.size()); i++) {
         out_bone_indices[i] = -1;
         for (int j = 0; j < int(bones_.size()); j++) {
             if (strcmp(bones[i].name, bones_[j].name) == 0) {
@@ -108,8 +108,8 @@ void Ren::AnimSequence::LinkBones(const Bone *bones, const int bones_count, int 
     }
 }
 
-void Ren::AnimSequence::LinkShapes(const ShapeKey *shapes, const int shapes_count, int *out_shape_indices) {
-    for (int i = 0; i < shapes_count; i++) {
+void Ren::AnimSequence::LinkShapes(Span<const ShapeKey> shapes, int *out_shape_indices) {
+    for (int i = 0; i < int(shapes.size()); i++) {
         out_shape_indices[i] = -1;
         for (int j = 0; j < int(shapes_.size()); j++) {
             if (strcmp(shapes[i].name, shapes_[j].name) == 0) {
@@ -203,7 +203,7 @@ void Ren::Skeleton::bone_matrix(std::string_view name, Mat4f &mat) {
 void Ren::Skeleton::bone_matrix(const int i, Mat4f &mat) { mat = bones[i].cur_comb_matrix; }
 
 void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
-    for (int i = 0; i < bones_count; i++) {
+    for (int i = 0; i < int(bones.size()); ++i) {
         if (bones[i].dirty) {
             if (bones[i].parent_id != -1) {
                 bones[i].cur_comb_matrix = bones[bones[i].parent_id].cur_comb_matrix * bones[i].cur_matrix;
@@ -219,7 +219,7 @@ void Ren::Skeleton::UpdateBones(Ren::Mat4f *matr_palette) {
 int Ren::Skeleton::UpdateShapes(uint16_t *out_shape_palette) {
     int active_shapes_count = 0;
 
-    for (int i = 0; i < shapes_count; i++) {
+    for (int i = 0; i < int(shapes.size()); ++i) {
         const uint16_t weight_packed = shapes[i].cur_weight_packed;
         if (weight_packed) {
             out_shape_palette[2 * active_shapes_count + 0] = uint16_t(i);
@@ -239,15 +239,15 @@ int Ren::Skeleton::AddAnimSequence(AnimSeqRef ref) {
     }
     AnimLink &a = anims.emplace_back();
     a.anim = std::move(ref);
-    a.anim_bones = std::make_unique<int[]>(bones_count);
-    a.anim->LinkBones(&bones[0], bones_count, &a.anim_bones[0]);
-    a.anim_shapes = std::make_unique<int[]>(bones_count);
-    a.anim->LinkShapes(&shapes[0], shapes_count, &a.anim_shapes[0]);
+    a.anim_bones.resize(bones.size());
+    a.anim->LinkBones(bones, &a.anim_bones[0]);
+    a.anim_shapes.resize(bones.size());
+    a.anim->LinkShapes(shapes, &a.anim_shapes[0]);
     return int(anims.size() - 1);
 }
 
 void Ren::Skeleton::MarkChildren() {
-    for (int i = 0; i < bones_count; i++) {
+    for (int i = 0; i < int(bones.size()); i++) {
         if (bones[i].parent_id != -1 && bones[bones[i].parent_id].dirty) {
             bones[i].dirty = true;
         }
@@ -255,7 +255,7 @@ void Ren::Skeleton::MarkChildren() {
 }
 
 void Ren::Skeleton::ApplyAnim(const int id) {
-    for (int i = 0; i < bones_count; i++) {
+    for (int i = 0; i < int(bones.size()); i++) {
         const int ndx = anims[id].anim_bones[i];
         if (ndx != -1) {
             const AnimBone *abone = anims[id].anim->bone(ndx);
@@ -272,7 +272,7 @@ void Ren::Skeleton::ApplyAnim(const int id) {
     }
     MarkChildren();
 
-    for (int i = 0; i < shapes_count; i++) {
+    for (int i = 0; i < int(shapes.size()); i++) {
         const int ndx = anims[id].anim_shapes[i];
         if (ndx != -1) {
             const AnimShape *ashape = anims[id].anim->shape(ndx);
@@ -282,7 +282,7 @@ void Ren::Skeleton::ApplyAnim(const int id) {
 }
 
 void Ren::Skeleton::ApplyAnim(const int anim_id1, const int anim_id2, const float t) {
-    for (int i = 0; i < bones_count; i++) {
+    for (int i = 0; i < int(bones.size()); i++) {
         if (anims[anim_id1].anim_bones[i] != -1 || anims[anim_id2].anim_bones[i] != -1) {
             const int ndx1 = anims[anim_id1].anim_bones[i];
             const int ndx2 = anims[anim_id2].anim_bones[i];

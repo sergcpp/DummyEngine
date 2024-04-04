@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_arithmetic : enable
@@ -15,10 +15,10 @@
 #include "taa_common.glsl"
 #include "gi_resolve_temporal_interface.h"
 
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_arithmetic))
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_arithmetic))
+#define NO_SUBGROUP
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {

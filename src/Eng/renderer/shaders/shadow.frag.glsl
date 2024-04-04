@@ -11,23 +11,23 @@
 #include "_fs_common.glsl"
 #include "_texturing.glsl"
 
-#pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ TRANSPARENT
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
 #if !defined(BINDLESS_TEXTURES)
     layout(binding = BIND_MAT_TEX3) uniform sampler2D g_alpha_tex;
 #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     layout(location = 0) in highp vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
         layout(location = 1) in flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
 void main() {
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     float alpha = texture(SAMPLER2D(g_alpha_tex), g_vtx_uvs0).r;
     if (alpha < 0.5) discard;
 #endif

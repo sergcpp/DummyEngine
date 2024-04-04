@@ -10,10 +10,10 @@
 
 #include "shadow_interface.h"
 
-#pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ TRANSPARENT
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 
@@ -35,18 +35,18 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     MaterialData g_materials[];
 };
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     layout(location = 0) out vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
         layout(location = 1) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
 void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
     mat4 MMatrix = FetchModelMatrix(g_instances_buf, instance.x);
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
 #if defined(BINDLESS_TEXTURES)

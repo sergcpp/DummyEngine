@@ -2326,10 +2326,10 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     const Ren::Skeleton *skel = mesh->skel();
 
     const auto palette_start = uint16_t(list.skin_transforms.size() / 2);
-    list.skin_transforms.resize(list.skin_transforms.size() + 2 * skel->bones_count);
+    list.skin_transforms.resize(list.skin_transforms.size() + 2 * skel->bones.size());
     Eng::SkinTransform *out_matr_palette = &list.skin_transforms[2 * palette_start];
 
-    for (int i = 0; i < skel->bones_count; i++) {
+    for (int i = 0; i < int(skel->bones.size()); i++) {
         const Ren::Mat4f matr_curr_trans = Transpose(as.matr_palette_curr[i]);
         memcpy(out_matr_palette[2 * i + 0].matr, ValuePtr(matr_curr_trans), 12 * sizeof(float));
 
@@ -2363,7 +2363,7 @@ uint32_t RendererInternal::__push_skeletal_mesh(const uint32_t skinned_buf_vtx_o
     list.shape_keys_data.count += as.shape_palette_count_prev;
     sr.shape_key_count_prev = as.shape_palette_count_prev;
     sr.vertex_count = vertex_cnt;
-    if (skel->shapes_count) {
+    if (!skel->shapes.empty()) {
         sr.shape_keyed_vertex_count = skel->shapes[0].delta_count;
     } else {
         sr.shape_keyed_vertex_count = 0;

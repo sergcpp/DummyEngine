@@ -8,13 +8,13 @@
 #include "_vs_instance_index_emu.glsl"
 #include "_texturing.glsl"
 
-#pragma multi_compile _ MOVING_PERM
+#pragma multi_compile _ MOVING
 #pragma multi_compile _ OUTPUT_VELOCITY
-#pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ TRANSPARENT
 #pragma multi_compile _ HASHED_TRANSPARENCY
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos_curr;
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 #ifdef OUTPUT_VELOCITY
@@ -39,7 +39,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     layout(location = 0) out vec3 g_vtx_pos_cs_curr;
     layout(location = 1) out vec3 g_vtx_pos_cs_prev;
 #endif // OUTPUT_VELOCITY
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     layout(location = 2) out vec2 g_vtx_uvs0;
     #ifdef HASHED_TRANSPARENCY
         layout(location = 3) out vec3 g_vtx_pos_ls;
@@ -47,7 +47,7 @@ layout(binding = BIND_MATERIALS_BUF, std430) readonly buffer Materials {
     #if defined(BINDLESS_TEXTURES)
         layout(location = 4) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
 invariant gl_Position;
 
@@ -55,11 +55,11 @@ void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
     mat4 model_matrix_curr = FetchModelMatrix(g_instances_buf, instance.x);
 
-#ifdef MOVING_PERM
+#ifdef MOVING
     mat4 model_matrix_prev = FetchPrevModelMatrix(g_instances_buf, instance.x);
 #endif
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
 #if defined(BINDLESS_TEXTURES)
@@ -79,7 +79,7 @@ void main() {
 
 #ifdef OUTPUT_VELOCITY
     g_vtx_pos_cs_curr = gl_Position.xyw;
-#ifdef MOVING_PERM
+#ifdef MOVING
     vec3 vtx_pos_ws_prev = (model_matrix_prev * vec4(g_in_vtx_pos_prev, 1.0)).xyz;
 #else
     vec3 vtx_pos_ws_prev = (model_matrix_curr * vec4(g_in_vtx_pos_prev, 1.0)).xyz;

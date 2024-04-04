@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
 #extension GL_KHR_shader_subgroup_shuffle : enable
@@ -16,10 +16,10 @@
 #include "ssr_classify_tiles_interface.h"
 
 #pragma multi_compile _ HQ_HDR
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
+#define NO_SUBGROUP
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -111,7 +111,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
                    bool enable_temporal_variance_guided_tracing) {
     g_tile_count = 0;
 
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
     bool is_first_lane_of_wave = subgroupElect();
 #endif
 
@@ -146,7 +146,7 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 
     // Next we have to figure out which pixels that ray is creating the values for. Thus, if we have to copy its value horizontal, vertical or across.
     bool require_copy = !needs_ray && needs_denoiser; // Our pixel only requires a copy if we want to run a denoiser on it but don't want to shoot a ray for it.
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
      // Subgroup reads need to be unconditional (should be first), probably a compiler bug!!!
     bool copy_horizontal = subgroupShuffleXor(require_copy, 1u) && (samples_per_quad != 4u) && is_base_ray; // 0b01 QuadReadAcrossX
     bool copy_vertical = subgroupShuffleXor(require_copy, 2u) && (samples_per_quad == 1u) && is_base_ray; // 0b10 QuadReadAcrossY

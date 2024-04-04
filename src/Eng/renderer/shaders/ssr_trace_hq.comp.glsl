@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_ballot : enable
 #endif
 
@@ -12,10 +12,10 @@
 #include "ssr_common.glsl"
 #include "ssr_trace_hq_interface.h"
 
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(GL_KHR_shader_subgroup_ballot) && !defined(NO_SUBGROUP_EXTENSIONS)
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(GL_KHR_shader_subgroup_ballot) && !defined(NO_SUBGROUP)
+#define NO_SUBGROUP
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -120,7 +120,7 @@ void main() {
 
     { // schedule rt rays
         bool needs_ray = !hit_found;
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
         uvec4 needs_ray_ballot = subgroupBallot(needs_ray);
         uint local_ray_index_in_wave = subgroupBallotExclusiveBitCount(needs_ray_ballot);
         uint wave_ray_count = subgroupBallotBitCount(needs_ray_ballot);

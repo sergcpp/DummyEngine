@@ -28,12 +28,12 @@ void Eng::RpShadowMaps::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAll
             sh.LoadProgram(ctx, "shadow_vege_solid", "internal/shadow_vege.vert.glsl", "internal/shadow.frag.glsl");
         assert(shadow_vege_solid_prog->ready());
         Ren::ProgramRef shadow_transp_prog =
-            sh.LoadProgram(ctx, "shadow_transp", "internal/shadow.vert.glsl@TRANSPARENT_PERM",
-                           "internal/shadow.frag.glsl@TRANSPARENT_PERM");
+            sh.LoadProgram(ctx, "shadow_transp", "internal/shadow.vert.glsl@TRANSPARENT",
+                           "internal/shadow.frag.glsl@TRANSPARENT");
         assert(shadow_transp_prog->ready());
         Ren::ProgramRef shadow_vege_transp_prog =
-            sh.LoadProgram(ctx, "shadow_vege_transp", "internal/shadow_vege.vert.glsl@TRANSPARENT_PERM",
-                           "internal/shadow.frag.glsl@TRANSPARENT_PERM");
+            sh.LoadProgram(ctx, "shadow_vege_transp", "internal/shadow_vege.vert.glsl@TRANSPARENT",
+                           "internal/shadow.frag.glsl@TRANSPARENT");
         assert(shadow_vege_transp_prog->ready());
 
         if (!rp_depth_only_.Setup(ctx.api_ctx(), {}, depth_target, ctx.log())) {

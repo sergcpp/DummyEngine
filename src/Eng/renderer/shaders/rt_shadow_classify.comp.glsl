@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
@@ -16,10 +16,10 @@
 #include "rt_shadow_classify_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
+#define NO_SUBGROUP
 #endif
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -67,7 +67,7 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
 
     uint bit_index = LaneIdToBitShift(group_thread_id);
     uint mask = uint(is_active_lane) << bit_index;
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
     mask = subgroupOr(mask);
 
     uint light_mask = ~0u;

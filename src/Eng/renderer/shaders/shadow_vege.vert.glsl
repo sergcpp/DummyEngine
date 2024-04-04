@@ -11,14 +11,14 @@
 
 #include "shadow_interface.h"
 
-#pragma multi_compile _ TRANSPARENT_PERM
+#pragma multi_compile _ TRANSPARENT
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
 layout(location = VTX_POS_LOC) in vec3 g_in_vtx_pos;
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
 layout(location = VTX_UV1_LOC) in vec2 g_in_vtx_uvs0;
 #endif
 layout(location = VTX_AUX_LOC) in uint g_in_vtx_uvs1_packed;
@@ -47,12 +47,12 @@ layout(binding = BIND_MAT_TEX4) uniform sampler2D g_pp_pos_tex;
 layout(binding = BIND_MAT_TEX5) uniform sampler2D g_pp_dir_tex;
 #endif
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     layout(location = 0) out vec2 g_vtx_uvs0;
     #if defined(BINDLESS_TEXTURES)
         layout(location = 1) out flat TEX_HANDLE g_alpha_tex;
     #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
 void main() {
     ivec2 instance = g_instance_indices[gl_InstanceIndex];
@@ -78,13 +78,13 @@ void main() {
 
     vec3 vtx_pos_ws = (MMatrix * vec4(vtx_pos_ls, 1.0)).xyz;
 
-#ifdef TRANSPARENT_PERM
+#ifdef TRANSPARENT
     g_vtx_uvs0 = g_in_vtx_uvs0;
 
 #if defined(BINDLESS_TEXTURES)
     g_alpha_tex = GET_HANDLE(mat.texture_indices[4]);
 #endif // BINDLESS_TEXTURES
-#endif // TRANSPARENT_PERM
+#endif // TRANSPARENT
 
     gl_Position = g_shadow_view_proj_mat * vec4(vtx_pos_ws, 1.0);
 #if defined(VULKAN)

@@ -1,5 +1,5 @@
 #version 320 es
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
 #extension GL_KHR_shader_subgroup_arithmetic : enable
 #extension GL_KHR_shader_subgroup_basic : enable
 #extension GL_KHR_shader_subgroup_ballot : enable
@@ -16,10 +16,10 @@
 #include "rt_shadow_prepare_mask_interface.h"
 #include "rt_shadow_common.glsl.inl"
 
-#pragma multi_compile _ NO_SUBGROUP_EXTENSIONS
+#pragma multi_compile _ NO_SUBGROUP
 
-#if !defined(NO_SUBGROUP_EXTENSIONS) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
-#define NO_SUBGROUP_EXTENSIONS
+#if !defined(NO_SUBGROUP) && (!defined(GL_KHR_shader_subgroup_basic) || !defined(GL_KHR_shader_subgroup_ballot) || !defined(GL_KHR_shader_subgroup_shuffle) || !defined(GL_KHR_shader_subgroup_vote))
+#define NO_SUBGROUP
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -40,7 +40,7 @@ void CopyResult(uvec2 gtid, uvec2 gid) {
     bool hits_light = ((1u << LaneIdToBitShift(gtid)) & mask) == 0u;
 
     uint lane_mask = hits_light ? GetBitMaskFromPixelPosition(did) : 0u;
-#ifndef NO_SUBGROUP_EXTENSIONS
+#ifndef NO_SUBGROUP
     lane_mask = subgroupOr(lane_mask);
 #else
     // TODO: ...

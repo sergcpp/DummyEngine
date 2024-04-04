@@ -93,7 +93,7 @@ class Mesh : public RefCounter {
     bool ready_ = false;
     BufferRange attribs_buf1_, attribs_buf2_, sk_attribs_buf_, sk_deltas_buf_, indices_buf_;
     std::unique_ptr<char[]> attribs_, indices_;
-    std::unique_ptr<VtxDelta[]> deltas_;
+    std::vector<VtxDelta> deltas_;
     SmallVector<TriGroup, 8> groups_;
     Vec3f bbox_min_, bbox_max_;
     String name_;
