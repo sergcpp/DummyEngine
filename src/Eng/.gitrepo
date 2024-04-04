@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = better_area_shadows
-	commit = 3970fd477ecca045d57db9fce0684df87833f886
+	branch = multibounce_diffuse
+	commit = 936f21a1a326927341930342f70b9452ede13a61
 	method = merge
 	cmdver = 0.4.6
-	parent = 9ee327637654a7de947195ced9d74601c426af2d
+	parent = 67e12ae6f5398458b07e83fb2874d9ebef539f43
