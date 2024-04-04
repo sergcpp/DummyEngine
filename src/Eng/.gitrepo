@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = portal_tex
-	commit = 9031e9994382e5c4432a160f5fe0b7fae0927f85
+	branch = sun_shadow_filter
+	commit = 7a4ac8e048ff07b94f47bb2ee86476e64f1f9fb3
 	method = merge
 	cmdver = 0.4.6
-	parent = ca3f36045530015c8f9c72b88e4306423d23421c
+	parent = 37f3f3296b3987af07a8a989a0dd3072c05d1ebd
