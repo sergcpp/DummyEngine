@@ -41,6 +41,7 @@ enum eImgTest {
     NoDiffGI,
     NoDiffGI_RTShadow,
     Full,
+    Full_Ultra
 };
 
 void run_image_test(const char *test_name, const char *device_name, int validation_level, const double min_psnr,
@@ -60,6 +61,8 @@ void run_image_test(const char *test_name, const char *device_name, int validati
         test_postfix = "_nodiffgi";
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
         test_postfix = "_nodiffgirt";
+    } else if (img_test == eImgTest::Full_Ultra) {
+        test_postfix = "_ultra";
     }
     const std::string ref_name =
         std::string("assets_pc/references/") + test_name + "/ref" + test_postfix + ".uncompressed.png";
@@ -107,6 +110,9 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     } else if (img_test == eImgTest::NoDiffGI_RTShadow) {
         renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
         renderer.settings.gi_quality = Eng::eGIQuality::Off;
+    } else if (img_test == eImgTest::Full_Ultra) {
+        renderer.settings.shadows_quality = Eng::eShadowsQuality::Raytraced;
+        renderer.settings.gi_quality = Eng::eGIQuality::Ultra;
     }
 
     Eng::path_config_t paths;
@@ -433,7 +439,6 @@ void run_image_test(const char *test_name, const char *device_name, int validati
 
     const std::string out_name = std::string("assets_pc/references/") + test_name + "/out" + test_postfix + ".png";
     const std::string diff_name = std::string("assets_pc/references/") + test_name + "/diff" + test_postfix + ".png";
-    const std::string mask_name = std::string("assets_pc/references/") + test_name + "/mask" + test_postfix + ".png";
 
     stbi_write_png(out_name.c_str(), ref_w, ref_h, 4, img_data, 4 * ref_w);
     stbi_flip_vertically_on_write(false);

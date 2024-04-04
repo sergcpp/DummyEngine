@@ -152,7 +152,7 @@ void main() {
         float ray_len = t_max;
         vec3 tri_normal, albedo;
 
-        vec3 ro = ray_origin_ws.xyz + 0.001 * gi_ray_ws;
+        vec3 ro = ray_origin_ws.xyz;// + 0.001 * gi_ray_ws;
         vec3 inv_d = safe_invert(gi_ray_ws);
 
         hit_data_t inter;
@@ -243,7 +243,7 @@ void main() {
 
             const vec3 rotated_dir = rotate_xz(gi_ray_ws, g_shrd_data.env_col.w);
             const float env_mip_count = g_shrd_data.ambient_hack.w;
-            final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).rgb;
+            final_color += throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, env_mip_count - 4.0).rgb;
             break;
         } else {
             const bool backfacing = (inter.prim_index < 0);
@@ -303,195 +303,187 @@ void main() {
             float tex_lod = 0.0;
 #endif
 
-            if ((geo.flags & RTGeoLightmappedBit) != 0u) {
-                const vec2 lm_uv0 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).w);
-                const vec2 lm_uv1 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).w);
-                const vec2 lm_uv2 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).w);
+            const uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
+            const uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
+            const uvec2 packed2 = texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).xy;
 
-                vec2 lm_uv = lm_uv0 * (1.0 - inter.u - inter.v) + lm_uv1 * inter.u + lm_uv2 * inter.v;
-                lm_uv = geo.lmap_transform.xy + geo.lmap_transform.zw * lm_uv;
+            const vec3 normal0 = vec3(unpackSnorm2x16(packed0.x), unpackSnorm2x16(packed0.y).x);
+            const vec3 normal1 = vec3(unpackSnorm2x16(packed1.x), unpackSnorm2x16(packed1.y).x);
+            const vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
 
-                const vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
-                const vec3 indirect = vec3(0.0);//2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
+            vec3 N = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
+            if (backfacing) {
+                N = -N;
+            }
+            const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
+                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
+                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
+            N = normalize((transform * vec4(N, 0.0)).xyz);
 
-                final_color += throughput * (direct_lm + indirect);
-            } else {
-                const uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
-                const uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
-                const uvec2 packed2 = texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).xy;
+            const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * inter.t;
+            const vec3 I = -gi_ray_ws.xyz;
+            const float N_dot_V = saturate(dot(N, I));
 
-                const vec3 normal0 = vec3(unpackSnorm2x16(packed0.x), unpackSnorm2x16(packed0.y).x);
-                const vec3 normal1 = vec3(unpackSnorm2x16(packed1.x), unpackSnorm2x16(packed1.y).x);
-                const vec3 normal2 = vec3(unpackSnorm2x16(packed2.x), unpackSnorm2x16(packed2.y).x);
+            vec3 tint_color = vec3(0.0);
 
-                vec3 N = normal0 * (1.0 - inter.u - inter.v) + normal1 * inter.u + normal2 * inter.v;
-                if (backfacing) {
-                    N = -N;
-                }
-                const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
-                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
-                                                          texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
-                N = normalize((transform * vec4(N, 0.0)).xyz);
-
-                const vec3 P = ray_origin_ws.xyz + gi_ray_ws.xyz * inter.t;
-                const vec3 I = -gi_ray_ws.xyz;
-                const float N_dot_V = saturate(dot(N, I));
-
-                vec3 tint_color = vec3(0.0);
-
-                const float base_color_lum = lum(base_color);
-                if (base_color_lum > 0.0) {
-                    tint_color = base_color / base_color_lum;
-                }
+            const float base_color_lum = lum(base_color);
+            if (base_color_lum > 0.0) {
+                tint_color = base_color / base_color_lum;
+            }
 
 #if defined(BINDLESS_TEXTURES)
-                const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[2])), uv, tex_lod).r;
+            const float roughness = mat.params[0].w * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[2])), uv, tex_lod).r;
 #else
-                const float roughness = mat.params[0].w;
+            const float roughness = mat.params[0].w;
 #endif
-                const float sheen = mat.params[1].x;
-                const float sheen_tint = mat.params[1].y;
-                const float specular = mat.params[1].z;
-                const float specular_tint = mat.params[1].w;
+            const float sheen = mat.params[1].x;
+            const float sheen_tint = mat.params[1].y;
+            const float specular = mat.params[1].z;
+            const float specular_tint = mat.params[1].w;
 #if defined(BINDLESS_TEXTURES)
-                const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[3])), uv, tex_lod).r;
+            const float metallic = mat.params[2].x * textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[3])), uv, tex_lod).r;
 #else
-                const float metallic = mat.params[2].x;
+            const float metallic = mat.params[2].x;
 #endif
-                const float transmission = mat.params[2].y;
-                const float clearcoat = mat.params[2].z;
-                const float clearcoat_roughness = mat.params[2].w;
+            const float transmission = mat.params[2].y;
+            const float clearcoat = mat.params[2].z;
+            const float clearcoat_roughness = mat.params[2].w;
 
-                vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
-                spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
+            vec3 spec_tmp_col = mix(vec3(1.0), tint_color, specular_tint);
+            spec_tmp_col = mix(specular * 0.08 * spec_tmp_col, base_color, metallic);
 
-                const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
-                const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
+            const float spec_ior = (2.0 / (1.0 - sqrt(0.08 * specular))) - 1.0;
+            const float spec_F0 = fresnel_dielectric_cos(1.0, spec_ior);
 
-                // Approximation of FH (using shading normal)
-                const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
+            // Approximation of FH (using shading normal)
+            const float FN = (fresnel_dielectric_cos(dot(I, N), spec_ior) - spec_F0) / (1.0 - spec_F0);
 
-                const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
-                const float spec_color_lum = lum(approx_spec_col);
+            const vec3 approx_spec_col = mix(spec_tmp_col, vec3(1.0), FN * (1.0 - roughness));
+            const float spec_color_lum = lum(approx_spec_col);
 
-                const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
+            const lobe_weights_t lobe_weights = get_lobe_weights(mix(base_color_lum, 1.0, sheen), spec_color_lum, specular, metallic, transmission, clearcoat);
 
-                const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
+            const vec3 sheen_color = sheen * mix(vec3(1.0), tint_color, sheen_tint);
 
-                const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
-                const float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
-                const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
+            const float clearcoat_ior = (2.0 / (1.0 - sqrt(0.08 * clearcoat))) - 1.0;
+            const float clearcoat_F0 = fresnel_dielectric_cos(1.0, clearcoat_ior);
+            const float clearcoat_roughness2 = clearcoat_roughness * clearcoat_roughness;
 
-                // Approximation of FH (using shading normal)
-                const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
-                const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
+            // Approximation of FH (using shading normal)
+            const float clearcoat_FN = (fresnel_dielectric_cos(dot(I, N), clearcoat_ior) - clearcoat_F0) / (1.0 - clearcoat_F0);
+            const vec3 approx_clearcoat_col = vec3(mix(/*clearcoat * 0.08*/ 0.04, 1.0, clearcoat_FN));
 
-                const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
+            const ltc_params_t ltc = SampleLTC_Params(g_ltc_luts, N_dot_V, roughness, clearcoat_roughness2);
 
-                vec3 light_total = vec3(0.0);
+            vec3 light_total = vec3(0.0);
 
-                vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
-                projected_p /= projected_p[3];
-                #if defined(VULKAN)
-                    projected_p.xy = projected_p.xy * 0.5 + 0.5;
-                #else // VULKAN
-                    projected_p.xyz = projected_p.xyz * 0.5 + 0.5;
-                #endif // VULKAN
-
-                const highp float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
-                const highp float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
-                const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
-                          tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
-                          tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
-
-                const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
-
-                const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-                const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-                const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
-
-                for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
-                    const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
-                    const int li = int(bitfieldExtract(item_data, 0, 12));
-
-                    light_item_t litem = g_lights[li];
-
-                    vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                                sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-                    if (all(equal(light_contribution, vec3(0.0)))) {
-                        continue;
-                    }
-
-                    int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
-                    [[dont_flatten]] if (shadowreg_index != -1) {
-                        vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-                        shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
-                        vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
-
-                        vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
-                        pp /= pp.w;
-
-                        #if defined(VULKAN)
-                            pp.xy = pp.xy * 0.5 + vec2(0.5);
-                        #else // VULKAN
-                            pp.xyz = pp.xyz * 0.5 + vec3(0.5);
-                        #endif // VULKAN
-                        pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
-                        #if defined(VULKAN)
-                            pp.y = 1.0 - pp.y;
-                        #endif // VULKAN
-
-                        light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
-                    }
-
-                    light_total += light_contribution;
-                }
-
-                final_color += throughput * light_total;
-
-                if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
-                    vec4 pos_ws = vec4(P, 1.0);
-
-                    const vec2 shadow_offsets = get_shadow_offsets(saturate(dot(N, g_shrd_data.sun_dir.xyz)));
-                    pos_ws.xyz += 0.01 * shadow_offsets.x * N;
-                    pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
-
-                    vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
+            vec4 projected_p = g_shrd_data.rt_clip_from_world * vec4(P, 1.0);
+            projected_p /= projected_p[3];
             #if defined(VULKAN)
-                    shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+                projected_p.xy = projected_p.xy * 0.5 + 0.5;
             #else // VULKAN
-                    shadow_uvs = 0.5 * shadow_uvs + 0.5;
-            #endif // VULKAN
-                    shadow_uvs.xy *= vec2(0.25, 0.5);
-                    shadow_uvs.xy += vec2(0.25, 0.5);
-            #if defined(VULKAN)
-                    shadow_uvs.y = 1.0 - shadow_uvs.y;
+                projected_p.xyz = projected_p.xyz * 0.5 + 0.5;
             #endif // VULKAN
 
-                    const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
-                    if (sun_visibility > 0.0) {
-                        final_color += throughput * sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
-                    }
+            const highp float lin_depth = LinearizeDepth(projected_p.z, g_shrd_data.rt_clip_info);
+            const highp float k = log2(lin_depth / g_shrd_data.rt_clip_info[1]) / g_shrd_data.rt_clip_info[3];
+            const int tile_x = clamp(int(projected_p.x * ITEM_GRID_RES_X), 0, ITEM_GRID_RES_X - 1),
+                      tile_y = clamp(int(projected_p.y * ITEM_GRID_RES_Y), 0, ITEM_GRID_RES_Y - 1),
+                      tile_z = clamp(int(k * ITEM_GRID_RES_Z), 0, ITEM_GRID_RES_Z - 1);
+
+            const int cell_index = tile_z * ITEM_GRID_RES_X * ITEM_GRID_RES_Y + tile_y * ITEM_GRID_RES_X + tile_x;
+
+            const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+            const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+            const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+
+            for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
+                const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
+                const int li = int(bitfieldExtract(item_data, 0, 12));
+
+                light_item_t litem = g_lights[li];
+
+                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                light_contribution = max(light_contribution, vec3(0.0)); // ???
+                if (all(equal(light_contribution, vec3(0.0)))) {
+                    continue;
                 }
 
-                if (j == NUM_BOUNCES - 1) {
-                    final_color += lobe_weights.diffuse_mul * throughput * base_color * g_shrd_data.ambient_hack.rgb;
+                int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
+                [[dont_flatten]] if (shadowreg_index != -1) {
+                    vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
+                    shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+                    vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
+
+                    vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
+                    pp /= pp.w;
+
+                    #if defined(VULKAN)
+                        pp.xy = pp.xy * 0.5 + vec2(0.5);
+                    #else // VULKAN
+                        pp.xyz = pp.xyz * 0.5 + vec3(0.5);
+                    #endif // VULKAN
+                    pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
+                    #if defined(VULKAN)
+                        pp.y = 1.0 - pp.y;
+                    #endif // VULKAN
+
+                    light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+                }
+
+                light_total += light_contribution;
+            }
+
+            if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
+                vec4 pos_ws = vec4(P, 1.0);
+
+                const vec2 shadow_offsets = get_shadow_offsets(saturate(dot(N, g_shrd_data.sun_dir.xyz)));
+                pos_ws.xyz += 0.01 * shadow_offsets.x * N;
+                pos_ws.xyz += 0.002 * shadow_offsets.y * g_shrd_data.sun_dir.xyz;
+
+                vec3 shadow_uvs = (g_shrd_data.shadowmap_regions[3].clip_from_world * pos_ws).xyz;
+        #if defined(VULKAN)
+                shadow_uvs.xy = 0.5 * shadow_uvs.xy + 0.5;
+        #else // VULKAN
+                shadow_uvs = 0.5 * shadow_uvs + 0.5;
+        #endif // VULKAN
+                shadow_uvs.xy *= vec2(0.25, 0.5);
+                shadow_uvs.xy += vec2(0.25, 0.5);
+        #if defined(VULKAN)
+                shadow_uvs.y = 1.0 - shadow_uvs.y;
+        #endif // VULKAN
+
+                const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
+                if (sun_visibility > 0.0) {
+                    light_total += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                                                                     sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }
             }
-            throughput *= base_color;
+
+            final_color += throughput * light_total;
+            if (j == NUM_BOUNCES - 1) {
+                final_color += lobe_weights.diffuse_mul * throughput * base_color * g_shrd_data.ambient_hack.rgb;
+            }
+
+            throughput *= lobe_weights.diffuse_mul * base_color;
             ray_len = inter.t;
             if (j == 0) {
                 first_ray_len = ray_len;
             }
-        }
+            if (dot(throughput, throughput) < 0.001) {
+                break;
+            }
 
-        // prepare next ray
-        ray_origin_ws.xyz += gi_ray_ws * ray_len;
-        ray_origin_ws.xyz = offset_ray(ray_origin_ws.xyz, tri_normal);
-        gi_ray_ws = SampleDiffuseVector(tri_normal, icoord, 1);
+            // prepare next ray
+            ray_origin_ws.xyz = P;
+            ray_origin_ws.xyz += 0.001 * tri_normal;
+            //ray_origin_ws.xyz = offset_ray(ray_origin_ws.xyz, tri_normal);
+            gi_ray_ws = SampleDiffuseVector(tri_normal, icoord, 1);
+        }
     }
 
+    //final_color *= vec3(10.0, 0.0, 0.0);
     imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad

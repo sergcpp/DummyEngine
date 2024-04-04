@@ -363,6 +363,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             auto *data = rt_gi.AllocPassData<RpRTGIData>();
 
+            data->two_bounce = (settings.gi_quality == eGIQuality::Ultra);
+
             const auto stage = ctx_.capabilities.ray_query
                                    ? Stg::ComputeShader
                                    : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
