@@ -5,6 +5,7 @@
 #include "Log.h"
 #include "Pipeline.h"
 #include "ProbeStorage.h"
+#include "Sampler.h"
 #include "VKCtx.h"
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
@@ -22,7 +23,11 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
-            info.sampler = b.handle.tex->handle().sampler;
+            if (b.sampler) {
+                info.sampler = b.sampler->vk_handle();
+            } else {
+                info.sampler = b.handle.tex->handle().sampler;
+            }
             if (IsDepthStencilFormat(b.handle.tex->params.format)) {
                 // use depth-only image view
                 info.imageView = b.handle.tex->handle().views[1];

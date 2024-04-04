@@ -52,15 +52,17 @@ struct Binding {
     uint16_t offset = 0;
     uint16_t size = 0;
     OpaqueHandle handle;
+    const Sampler *sampler = nullptr;
 
     Binding() = default;
-    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle) : trg(_trg), loc(_loc), handle(_handle) {}
+    Binding(eBindTarget _trg, int _loc, OpaqueHandle _handle, const Sampler *_sampler = nullptr)
+        : trg(_trg), loc(_loc), handle(_handle), sampler(_sampler) {}
     Binding(eBindTarget _trg, int _loc, size_t _offset, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), handle(_handle) {}
     Binding(eBindTarget _trg, uint16_t _loc, size_t _offset, size_t _size, OpaqueHandle _handle)
         : trg(_trg), loc(_loc), offset(uint16_t(_offset)), size(uint16_t(_size)), handle(_handle) {}
 };
-static_assert(sizeof(Binding) == sizeof(void *) + 8, "!");
+static_assert(sizeof(Binding) == sizeof(void *) + 8 + sizeof(void *), "!");
 
 #if defined(USE_VK_RENDER)
 VkDescriptorSet PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout, Span<const Binding> bindings,

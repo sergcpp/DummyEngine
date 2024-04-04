@@ -6,6 +6,7 @@
 #include "GL.h"
 #include "Pipeline.h"
 #include "ProbeStorage.h"
+#include "Sampler.h"
 #include "Texture.h"
 
 namespace Ren {
@@ -78,6 +79,9 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
+            if (b.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            }
         } else if (b.trg == eBindTarget::Tex3D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
