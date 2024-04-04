@@ -146,7 +146,7 @@ vec2 get_shadow_offsets(const float dot_N_L) {
     return vec2(offset_scale_N, min(2.0, offset_scale_L));
 }
 
-float SampleShadowPCF5x5(sampler2DShadow g_shadow_tex, highp vec3 shadow_coord) {
+float SampleShadowPCF5x5(sampler2DShadow shadow_tex, highp vec3 shadow_coord) {
     // http://the-witness.net/news/2013/09/shadow-mapping-summary-part-1/
 
     const highp vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
@@ -187,107 +187,177 @@ float SampleShadowPCF5x5(sampler2DShadow g_shadow_tex, highp vec3 shadow_coord) 
     u2 = u2 * shadow_size_inv.x + base_uv.x;
     v2 = v2 * shadow_size_inv.y + base_uv.y;
 
-    sum += uw0 * vw0 * texture(g_shadow_tex, vec3(u0, v0, z));
-    sum += uw1 * vw0 * texture(g_shadow_tex, vec3(u1, v0, z));
-    sum += uw2 * vw0 * texture(g_shadow_tex, vec3(u2, v0, z));
+    sum += uw0 * vw0 * texture(shadow_tex, vec3(u0, v0, z));
+    sum += uw1 * vw0 * texture(shadow_tex, vec3(u1, v0, z));
+    sum += uw2 * vw0 * texture(shadow_tex, vec3(u2, v0, z));
 
-    sum += uw0 * vw1 * texture(g_shadow_tex, vec3(u0, v1, z));
-    sum += uw1 * vw1 * texture(g_shadow_tex, vec3(u1, v1, z));
-    sum += uw2 * vw1 * texture(g_shadow_tex, vec3(u2, v1, z));
+    sum += uw0 * vw1 * texture(shadow_tex, vec3(u0, v1, z));
+    sum += uw1 * vw1 * texture(shadow_tex, vec3(u1, v1, z));
+    sum += uw2 * vw1 * texture(shadow_tex, vec3(u2, v1, z));
 
-    sum += uw0 * vw2 * texture(g_shadow_tex, vec3(u0, v2, z));
-    sum += uw1 * vw2 * texture(g_shadow_tex, vec3(u1, v2, z));
-    sum += uw2 * vw2 * texture(g_shadow_tex, vec3(u2, v2, z));
+    sum += uw0 * vw2 * texture(shadow_tex, vec3(u0, v2, z));
+    sum += uw1 * vw2 * texture(shadow_tex, vec3(u1, v2, z));
+    sum += uw2 * vw2 * texture(shadow_tex, vec3(u2, v2, z));
 
     sum *= (1.0 / 144.0);
 
     return sum * sum;
 }
 
-float GetSunVisibility(float frag_depth, sampler2DShadow g_shadow_tex, in highp vec3 aVertexShUVs[4]) {
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in highp vec3 aVertexShUVs[4]) {
     float visibility = 0.0;
 
     if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[0]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[0]);
 
 #if SHADOWMAP_CASCADE_SOFT
         if (frag_depth > 0.9 * SHADOWMAP_CASCADE0_DIST) {
-            const float v2 = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[1]);
+            const float v2 = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[1]);
 
             const float k = 10.0 * (frag_depth / SHADOWMAP_CASCADE0_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else if (frag_depth < SHADOWMAP_CASCADE1_DIST) {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[1]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[1]);
 
 #if SHADOWMAP_CASCADE_SOFT
         if (frag_depth > 0.9 * SHADOWMAP_CASCADE1_DIST) {
-            const float v2 = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[2]);
+            const float v2 = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[2]);
 
             const float k = 10.0 * (frag_depth / SHADOWMAP_CASCADE1_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else if (frag_depth < SHADOWMAP_CASCADE2_DIST) {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[2]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[2]);
 
 #if SHADOWMAP_CASCADE_SOFT
         if (frag_depth > 0.9 * SHADOWMAP_CASCADE2_DIST) {
-            const float v2 = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[3]);
+            const float v2 = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[3]);
 
             const float k = 10.0 * (frag_depth / SHADOWMAP_CASCADE2_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[3]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[3]);
     }
 
     return visibility;
 }
 
-float GetSunVisibility(float frag_depth, sampler2DShadow g_shadow_tex, in highp mat4x3 aVertexShUVs) {
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, in highp mat4x3 aVertexShUVs) {
     float visibility = 0.0;
 
     if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[0]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[0]);
 
 #if SHADOWMAP_CASCADE_SOFT
         if (frag_depth > 0.9 * SHADOWMAP_CASCADE0_DIST) {
-            const float v2 = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[1]);
+            const float v2 = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[1]);
 
             const float k = 10.0 * (frag_depth / SHADOWMAP_CASCADE0_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else if (frag_depth < SHADOWMAP_CASCADE1_DIST) {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[1]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[1]);
 
 #if SHADOWMAP_CASCADE_SOFT
         if (frag_depth > 0.9 * SHADOWMAP_CASCADE1_DIST) {
-            const float v2 = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[2]);
+            const float v2 = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[2]);
 
             const float k = 10.0 * (frag_depth / SHADOWMAP_CASCADE1_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else if (frag_depth < SHADOWMAP_CASCADE2_DIST) {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[2]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[2]);
 
 #if SHADOWMAP_CASCADE_SOFT
         if (frag_depth > 0.9 * SHADOWMAP_CASCADE2_DIST) {
-            const float v2 = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[3]);
+            const float v2 = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[3]);
 
             const float k = 10.0 * (frag_depth / SHADOWMAP_CASCADE2_DIST - 0.9);
             visibility = mix(visibility, v2, k);
         }
 #endif
     } else {
-        visibility = SampleShadowPCF5x5(g_shadow_tex, aVertexShUVs[3]);
+        visibility = SampleShadowPCF5x5(shadow_tex, aVertexShUVs[3]);
     }
 
     return visibility;
+}
+
+#define ROTATE_BLOCKER_SEARCH 1
+#define GATHER4_BLOCKER_SEARCH 1
+
+vec2 BlockerSearch(sampler2D shadow_val_tex, vec3 shadow_uv, float search_radius, vec4 rotator) {
+    const vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+
+    float avg_distance = 0.0;
+    float count = 0.0;
+
+#if !ROTATE_BLOCKER_SEARCH
+    rotator = vec4(1, 0, 0, 1);
+#endif
+
+    for (int i = 0; i < 8; ++i) {
+        vec2 uv = shadow_uv.xy + search_radius * RotateVector(rotator, g_poisson_disk_8[i] / shadow_size);
+#if GATHER4_BLOCKER_SEARCH
+        vec4 depth = textureGather(shadow_val_tex, uv, 0);
+        vec4 valid = vec4(lessThan(depth, vec4(shadow_uv.z)));
+        avg_distance += dot(valid, depth);
+        count += dot(valid, vec4(1.0));
+#else
+        float depth = textureLod(shadow_val_tex, uv, 0.0).x;
+        if (depth < shadow_uv.z) {
+            avg_distance += depth;
+            count += 1.0;
+        }
+#endif
+    }
+
+    return vec2(avg_distance, count);
+}
+
+float GetCascadeVisibility(int cascade, sampler2DShadow shadow_tex, sampler2D shadow_val_tex, mat4x3 aVertexShUVs, vec4 rotator, float softness_factor) {
+    const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+    const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
+    const float MaxShadowRadiusPx = 16.0;
+
+    float visibility = 0.0;
+
+    vec2 blocker = BlockerSearch(shadow_val_tex, aVertexShUVs[cascade], MaxShadowRadiusPx, rotator);
+    if (blocker.y < 0.5) {
+        return 1.0;
+    }
+    blocker.x /= blocker.y;
+
+    const float filter_radius_px = clamp(softness_factor * abs(blocker.x - aVertexShUVs[cascade].z), MinShadowRadiusPx, MaxShadowRadiusPx);
+    for (int i = 0; i < 16; ++i) {
+        vec2 uv = aVertexShUVs[cascade].xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
+        visibility += textureLod(shadow_tex, vec3(uv, aVertexShUVs[cascade].z), 0.0);
+    }
+    visibility /= 16.0;
+
+    return visibility;
+}
+
+float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, sampler2D shadow_val_tex, mat4x3 aVertexShUVs, vec4 softness_factor, float hash) {
+    const float angle = hash * 2.0 * M_PI;
+    const float ca = cos(angle), sa = sin(angle);
+    const vec4 rotator = vec4(ca, sa, -sa, ca);
+
+    if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
+        return GetCascadeVisibility(0, shadow_tex, shadow_val_tex, aVertexShUVs, rotator, softness_factor[0]);
+    } else if (frag_depth < SHADOWMAP_CASCADE1_DIST) {
+        return GetCascadeVisibility(1, shadow_tex, shadow_val_tex, aVertexShUVs, rotator, softness_factor[1]);
+    } else if (frag_depth < SHADOWMAP_CASCADE2_DIST) {
+        return GetCascadeVisibility(2, shadow_tex, shadow_val_tex, aVertexShUVs, rotator, softness_factor[2]);
+    }
+    return GetCascadeVisibility(3, shadow_tex, shadow_val_tex, aVertexShUVs, rotator, softness_factor[3]);
 }
 
 vec3 EvaluateSH(in vec3 normal, in vec4 sh_coeffs[3]) {

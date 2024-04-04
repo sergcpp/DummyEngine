@@ -214,7 +214,6 @@
             "light" : {
                 "type" : "rectangle",
                 "power" : 2.13855,
-                "radius" : 0.1,
                 "width" : 0.162,
                 "height" : 0.162,
                 "cast_shadow" : true

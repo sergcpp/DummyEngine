@@ -1169,6 +1169,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
         for (int r = 0; r < int(regions.size()); ++r) {
             // choose resolution based on distance
             int res_index = std::min(int(distance * 0.02f), 4);
+            if (ls->radius > 0.5f) {
+                // make large light softer
+                res_index = std::min(res_index + 1, 4);
+            }
+            if (ls->sky_portal) {
+                // make portal light softer
+                res_index = std::min(res_index + 1, 4);
+            }
 
             for (int j = 0; j < int(allocated_shadow_regions_.count); j++) {
                 ShadReg &reg = allocated_shadow_regions_.data[j];
@@ -1230,7 +1238,7 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const auto light_side = Vec3f{l.u[0], l.u[1], l.u[2]};
             const auto light_up = Vec3f{l.v[0], l.v[1], l.v[2]};
 
-            float light_angle = 91.0f;
+            float light_angle = 100.0f;
             // if (ls->type == eLightType::Point) {
             //     light_angle = 2.0f * std::acos(l.spot) * 180.0f / Pi<float>();
             // }

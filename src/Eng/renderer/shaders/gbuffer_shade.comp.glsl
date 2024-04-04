@@ -1,5 +1,6 @@
 #version 320 es
 #extension GL_EXT_control_flow_attributes : require
+#extension GL_KHR_shader_subgroup_quad : require
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -28,6 +29,7 @@ layout(binding = NORMAL_TEX_SLOT) uniform usampler2D g_normal_tex;
 layout(binding = SPECULAR_TEX_SLOT) uniform usampler2D g_specular_tex;
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
+layout(binding = SHADOW_VAL_TEX_SLOT) uniform sampler2D g_shadow_val_tex;
 layout(binding = SSAO_TEX_SLOT) uniform sampler2D g_ao_tex;
 layout(binding = LIGHT_BUF_SLOT) uniform highp samplerBuffer g_lights_buf;
 layout(binding = DECAL_BUF_SLOT) uniform mediump samplerBuffer g_decals_buf;
@@ -45,6 +47,19 @@ layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color
 #endif
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
+
+float HashWorldPosition(vec2 in_uv, vec3 pos_ws) {
+    vec3 pos_ws_10 = subgroupQuadSwapHorizontal(pos_ws), pos_ws_01 = subgroupQuadSwapVertical(pos_ws);
+
+    vec3 dx = pos_ws_10 - pos_ws, dy = pos_ws_01 - pos_ws;
+    float max_deriv = max(length(dx), length(dy));
+
+    const float HashScale = 0.25;
+    float pix_scale = 1.0 / (HashScale * max_deriv);
+    pix_scale = exp2(ceil(log2(pix_scale)));
+
+    return hash3D(floor(pix_scale * pos_ws));
+}
 
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
@@ -139,6 +154,11 @@ void main() {
     //
     // Evaluate artifitial lights
     //
+    const float hash = HashWorldPosition(norm_uvs, P);
+    const float angle = hash * 2.0 * M_PI;
+    const float ca = cos(angle), sa = sin(angle);
+    const vec4 rotator = vec4(ca, sa, -sa, ca);
+
     vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
@@ -164,8 +184,8 @@ void main() {
 
         int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
         [[dont_flatten]] if (shadowreg_index != -1) {
-            vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-            shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+            vec3 from_light = normalize(P + 0.1 * (hash - 0.5) * N - litem.pos_and_radius.xyz);
+            shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
             vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
             vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
@@ -179,9 +199,28 @@ void main() {
             pp.xy = reg_tr.xy + pp.xy * reg_tr.zw;
             #if defined(VULKAN)
                 pp.y = 1.0 - pp.y;
+                reg_tr.y = 1.0 - reg_tr.y;
             #endif // VULKAN
 
-            light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+            //light_contribution *= SampleShadowPCF5x5(g_shadow_tex, pp.xyz);
+
+            const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
+            const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
+            const float MaxShadowRadiusPx = 5.0;
+
+            vec2 blocker = BlockerSearch(g_shadow_val_tex, pp.xyz, MaxShadowRadiusPx * pp.z, rotator);
+            if (blocker.y > 0.5) {
+                blocker.x /= blocker.y;
+
+                float penumbra_size_approx = 2.0 * (ShadowSizePx.x * reg_tr.z) * abs(blocker.x - pp.z) * litem.pos_and_radius.w / blocker.x;
+                const float filter_radius_px = clamp(penumbra_size_approx, MinShadowRadiusPx, MaxShadowRadiusPx);
+                float visibility = 0.0;
+                for (int i = 0; i < 16; ++i) {
+                    vec2 uv = pp.xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
+                    visibility += textureLod(g_shadow_tex, vec3(uv, pp.z), 0.0);
+                }
+                light_contribution *= (visibility / 16.0);
+            }
         }
 
         artificial_light += light_contribution;

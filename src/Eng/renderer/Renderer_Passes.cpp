@@ -415,7 +415,6 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
 
             shrd_data.view_from_world = p_list_->draw_cam.view_matrix();
             shrd_data.clip_from_view = p_list_->draw_cam.proj_matrix();
-            shrd_data.clip_from_world = (shrd_data.clip_from_view * shrd_data.view_from_world);
 
             shrd_data.taa_info[0] = p_list_->draw_cam.px_offset()[0];
 #if defined(USE_VK_RENDER)
@@ -465,6 +464,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             shrd_data.clip_from_view[2][0] += p_list_->draw_cam.px_offset()[0];
             shrd_data.clip_from_view[2][1] += p_list_->draw_cam.px_offset()[1];
 
+            shrd_data.clip_from_world = (shrd_data.clip_from_view * shrd_data.view_from_world);
             Ren::Mat4f view_matrix_no_translation = shrd_data.view_from_world;
             view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
 
@@ -951,6 +951,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::Tex2D, GBufferShade::NORMAL_TEX_SLOT, *normal_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SPECULAR_TEX_SLOT, *spec_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
+            {Ren::eBindTarget::Tex2D, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref, shadow_map_val_sampler_.get()},
             {Ren::eBindTarget::Tex2D, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},

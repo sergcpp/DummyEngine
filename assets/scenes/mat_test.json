@@ -159,7 +159,6 @@
                 ],
                 "power" : 2.13855,
                 "power0" : 0.0,
-                "radius" : 0.1,
                 "width" : 0.162,
                 "height" : 0.162,
                 "cast_shadow" : true
@@ -232,6 +231,7 @@
                 "power0" : 10.0,
                 "power" : 0.0,
                 "radius" : 0.05,
+                "cull_radius" : 2.0,
                 "cast_shadow" : true
             }
         },

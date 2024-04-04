@@ -25,76 +25,6 @@ layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform writeonly restrict image2D g_o
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-#define ROTATE_BLOCKER_SEARCH 1
-#define GATHER4_BLOCKER_SEARCH 1
-
-vec2 BlockerSearch(sampler2D shadow_val_tex, vec3 shadow_uv, float search_radius, vec4 rotator) {
-    const vec2 shadow_size = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
-
-    float avg_distance = 0.0;
-    float count = 0.0;
-
-#if !ROTATE_BLOCKER_SEARCH
-    rotator = vec4(1, 0, 0, 1);
-#endif
-
-    for (int i = 0; i < 8; ++i) {
-        vec2 uv = shadow_uv.xy + search_radius * RotateVector(rotator, g_poisson_disk_8[i] / shadow_size);
-#if GATHER4_BLOCKER_SEARCH
-        vec4 depth = textureGather(g_shadow_val_tex, uv, 0);
-        vec4 valid = vec4(lessThan(depth, vec4(shadow_uv.z)));
-        avg_distance += dot(valid, depth);
-        count += dot(valid, vec4(1.0));
-#else
-        float depth = textureLod(g_shadow_val_tex, uv, 0.0).x;
-        if (depth < shadow_uv.z) {
-            avg_distance += depth;
-            count += 1.0;
-        }
-#endif
-    }
-
-    return vec2(avg_distance, count);
-}
-
-float GetCascadeVisibility(int cascade, sampler2DShadow shadow_tex, sampler2D shadow_val_tex, mat4x3 aVertexShUVs, vec4 rotator) {
-    const vec2 ShadowSizePx = vec2(float(SHADOWMAP_RES), float(SHADOWMAP_RES) / 2.0);
-    const float MinShadowRadiusPx = 1.5; // needed to hide blockyness
-    const float MaxShadowRadiusPx = 16.0;
-
-    float visibility = 0.0;
-
-    vec2 blocker = BlockerSearch(shadow_val_tex, aVertexShUVs[cascade], MaxShadowRadiusPx, rotator);
-    if (blocker.y < 0.5) {
-        return 1.0;
-    }
-    blocker.x /= blocker.y;
-
-    const float filter_radius_px = clamp(g_params.softness_factor[cascade] * abs(blocker.x - aVertexShUVs[cascade].z), MinShadowRadiusPx, MaxShadowRadiusPx);
-    for (int i = 0; i < 16; ++i) {
-        vec2 uv = aVertexShUVs[cascade].xy + filter_radius_px * RotateVector(rotator, g_poisson_disk_16[i] / ShadowSizePx);
-        visibility += textureLod(g_shadow_tex, vec3(uv, aVertexShUVs[cascade].z), 0.0);
-    }
-    visibility /= 16.0;
-
-    return visibility;
-}
-
-float GetSunVisibility(float frag_depth, sampler2DShadow shadow_tex, sampler2D shadow_val_tex, mat4x3 aVertexShUVs, float hash) {
-    const float angle = hash * 2.0 * M_PI;
-    const float ca = cos(angle), sa = sin(angle);
-    const vec4 rotator = vec4(ca, sa, -sa, ca);
-
-    if (frag_depth < SHADOWMAP_CASCADE0_DIST) {
-        return GetCascadeVisibility(0, shadow_tex, shadow_val_tex, aVertexShUVs, rotator);
-    } else if (frag_depth < SHADOWMAP_CASCADE1_DIST) {
-        return GetCascadeVisibility(1, shadow_tex, shadow_val_tex, aVertexShUVs, rotator);
-    } else if (frag_depth < SHADOWMAP_CASCADE2_DIST) {
-        return GetCascadeVisibility(2, shadow_tex, shadow_val_tex, aVertexShUVs, rotator);
-    }
-    return GetCascadeVisibility(3, shadow_tex, shadow_val_tex, aVertexShUVs, rotator);
-}
-
 float HashWorldPosition(vec2 in_uv, vec3 pos_ws, vec3 pos_ws_biased) {
     vec3 pos_ws_10, pos_ws_01;
 
@@ -201,7 +131,8 @@ void main() {
         float hash = HashWorldPosition(in_uv, pos_ws.xyz, pos_ws_biased);
 
         //visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
-        visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_shadow_val_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)), hash);
+        visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_shadow_val_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)),
+                                      g_params.softness_factor, hash);
     }
 
     imageStore(g_out_shadow_img, icoord, vec4(visibility));

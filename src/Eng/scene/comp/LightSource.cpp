@@ -90,6 +90,8 @@ void Eng::LightSource::Read(const JsObjectP &js_in, LightSource &ls) {
         ls.area = 4.0f * Ren::Pi<float>() * ls.radius * ls.radius;
     } else if (ls.type == eLightType::Rect) {
         ls.area = ls.width * ls.height;
+        // set to diagonal
+        ls.radius = std::sqrt(ls.width * ls.width + ls.height * ls.height);
     } else if (ls.type == eLightType::Disk) {
         ls.area = 0.25f * Ren::Pi<float>() * ls.width * ls.height;
     } else if (ls.type == eLightType::Line) {
@@ -196,7 +198,7 @@ void Eng::LightSource::Write(const LightSource &ls, JsObjectP &js_out) {
         js_out.Insert("offset", std::move(js_offset));
     }
 
-    if (ls.radius != 1.0f) {
+    if (ls.radius != 1.0f && ls.type != eLightType::Rect) {
         js_out.Insert("radius", JsNumber{ls.radius});
     }
 
