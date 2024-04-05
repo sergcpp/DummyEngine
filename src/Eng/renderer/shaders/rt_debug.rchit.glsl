@@ -187,12 +187,22 @@ void main() {
 
             const light_item_t litem = g_lights[li];
 
-            vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
+            const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+            //if (is_portal && lobe_weights.diffuse < FLT_EPS) {
+            //    continue;
+            //}
+
+            lobe_weights_t _lobe_weights = lobe_weights;
+            //if (is_portal) {
+                // Portal lights affect only diffuse
+            //    _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
+            //}
+            vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
                                                           sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             if (all(equal(light_contribution, vec3(0.0)))) {
                 continue;
             }
-            if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {
+            if (is_portal) {
                 // Sample environment to create slight color variation
                 const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
                 light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
@@ -200,8 +210,8 @@ void main() {
 
             int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
             [[dont_flatten]] if (shadowreg_index != -1) {
-                vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-                shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+                const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+                shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
                 vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
                 vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);

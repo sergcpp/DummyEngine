@@ -167,12 +167,44 @@ void main() {
     }
 
     float ray_len = 0.0;
+    vec3 throughput = vec3(1.0);
     vec3 final_color;
 
+    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
+
     if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
+        // Check portal lights intersection (rough rays are blocked by them)
+        for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
+            const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+
+            const vec3 light_pos = litem.pos_and_radius.xyz;
+            vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
+            const vec3 light_forward = normalize(cross(light_u, light_v));
+
+            const float plane_dist = dot(light_forward, light_pos);
+            const float cos_theta = dot(refl_ray_ws.xyz, light_forward);
+            const float t = (plane_dist - dot(light_forward, ray_origin_ws.xyz)) / min(cos_theta, -FLT_EPS);
+
+            if (cos_theta < 0.0 && t > 0.0) {
+                light_u /= dot(light_u, light_u);
+                light_v /= dot(light_v, light_v);
+
+                const vec3 p = ray_origin_ws.xyz + refl_ray_ws.xyz * t;
+                const vec3 vi = p - light_pos;
+                const float a1 = dot(light_u, vi);
+                if (a1 >= -0.5 && a1 <= 0.5) {
+                    const float a2 = dot(light_v, vi);
+                    if (a2 >= -0.5 && a2 <= 0.5) {
+                        throughput *= (1.0 - portals_specular_ltc_weight);
+                        break;
+                    }
+                }
+            }
+        }
+
         const vec3 rotated_dir = rotate_xz(refl_ray_ws.xyz, g_shrd_data.env_col.w);
         const float lod = 8.0 * roughness;
-        final_color = g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, lod).rgb;
+        final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, lod).rgb;
     } else {
         const int custom_index = rayQueryGetIntersectionInstanceCustomIndexEXT(rq, true);
         const int geo_index = rayQueryGetIntersectionGeometryIndexEXT(rq, true);
@@ -317,12 +349,21 @@ void main() {
 
                 const light_item_t litem = g_lights[li];
 
-                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+                const bool is_last_bounce = true;
+
+                lobe_weights_t _lobe_weights = lobe_weights;
+                if (!is_last_bounce && is_portal) {
+                    // Portal lights affect only diffuse
+                    _lobe_weights.specular *= portals_specular_ltc_weight;
+                    _lobe_weights.clearcoat *= portals_specular_ltc_weight;
+                }
+                vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
                                                               sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
                 }
-                if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {
+                if (is_portal) {
                     // Sample environment to create slight color variation
                     const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
                     light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
@@ -330,8 +371,8 @@ void main() {
 
                 int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
                 if (shadowreg_index != -1) {
-                    vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-                    shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+                    const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+                    shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
                     vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
                     vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);
@@ -352,8 +393,6 @@ void main() {
 
                 light_total += light_contribution;
             }
-
-            final_color = light_total;
 
             if (dot(g_shrd_data.sun_col.xyz, g_shrd_data.sun_col.xyz) > 0.0) {
                 vec4 pos_ws = vec4(P, 1.0);
@@ -376,12 +415,13 @@ void main() {
 
                 const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
                 if (sun_visibility > 0.0) {
-                    final_color += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
+                    light_total += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
                                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }
             }
 
-            final_color += lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
+            final_color = throughput * light_total;
+            final_color += throughput * lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
         }
 
         ray_len = hit_t;

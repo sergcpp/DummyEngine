@@ -120,8 +120,8 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
     const bool TwoSided = false;
 
     const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
-    const vec3 to_light = normalize(pos_ws - litem.pos_and_radius.xyz);
-    const float _dot = -dot(to_light, litem.dir_and_spot.xyz);
+    const vec3 from_light = normalize(pos_ws - litem.pos_and_radius.xyz);
+    const float _dot = -dot(from_light, litem.dir_and_spot.xyz);
     const float _angle = approx_acos(_dot);
     if (type != LIGHT_TYPE_LINE && _angle > litem.dir_and_spot.w) {
         return vec3(0.0);
@@ -131,8 +131,8 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
 
     if (type == LIGHT_TYPE_SPHERE && ENABLE_SPHERE_LIGHT != 0) {
         // TODO: simplify this!
-        vec3 u = normalize(I - to_light * dot(I, to_light));
-        vec3 v = cross(to_light, u);
+        vec3 u = normalize(I - from_light * dot(I, from_light));
+        vec3 v = cross(from_light, u);
 
         u *= litem.pos_and_radius.w;
         v *= litem.pos_and_radius.w;

@@ -195,7 +195,7 @@ void main() {
         }
 
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
-            // Check portal lights intersection
+            // Check portal lights intersection (diffuse rays are blocked by them)
             for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
                 const light_item_t litem = g_lights[g_shrd_data.portals[i]];
 
@@ -364,8 +364,8 @@ void main() {
 
                 int shadowreg_index = floatBitsToInt(litem.u_and_reg.w);
                 if (shadowreg_index != -1) {
-                    vec3 to_light = normalize(P - litem.pos_and_radius.xyz);
-                    shadowreg_index += cubemap_face(to_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
+                    const vec3 from_light = normalize(P - litem.pos_and_radius.xyz);
+                    shadowreg_index += cubemap_face(from_light, litem.dir_and_spot.xyz, normalize(litem.u_and_reg.xyz), normalize(litem.v_and_blend.xyz));
                     vec4 reg_tr = g_shrd_data.shadowmap_regions[shadowreg_index].transform;
 
                     vec4 pp = g_shrd_data.shadowmap_regions[shadowreg_index].clip_from_world * vec4(P, 1.0);

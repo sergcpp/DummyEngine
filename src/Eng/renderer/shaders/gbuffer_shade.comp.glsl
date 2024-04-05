@@ -159,6 +159,8 @@ void main() {
     const float ca = cos(angle), sa = sin(angle);
     const vec4 rotator = vec4(ca, sa, -sa, ca);
 
+    const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
+
     vec3 artificial_light = vec3(0.0);
     for (uint i = offset_and_lcount.x; i < offset_and_lcount.x + offset_and_lcount.y; i++) {
         const highp uint item_data = texelFetch(g_items_buf, int(i)).x;
@@ -171,12 +173,19 @@ void main() {
         litem.u_and_reg = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 3);
         litem.v_and_blend = texelFetch(g_lights_buf, li * LIGHTS_BUF_STRIDE + 4);
 
-        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, lobe_weights, ltc, g_ltc_luts,
+        const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
+
+        lobe_weights_t _lobe_weights = lobe_weights;
+        if (is_portal) {
+            _lobe_weights.specular *= portals_specular_ltc_weight;
+            _lobe_weights.clearcoat *= portals_specular_ltc_weight;
+        }
+        vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
                                                       sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
         if (all(equal(light_contribution, vec3(0.0)))) {
             continue;
         }
-        if ((floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0) {
+        if (is_portal) {
             // Sample environment to create slight color variation
             const vec3 rotated_dir = rotate_xz(normalize(litem.pos_and_radius.xyz - P), g_shrd_data.env_col.w);
             light_contribution *= textureLod(g_env_tex, rotated_dir, g_shrd_data.ambient_hack.w - 2.0).rgb;
