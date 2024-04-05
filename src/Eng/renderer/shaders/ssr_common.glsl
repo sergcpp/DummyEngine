@@ -86,7 +86,8 @@ vec3 Sample_GGX_VNDF_Ellipsoid(const vec3 Ve, const float alpha_x, const float a
     return Ne;
 }
 
-vec3 Sample_GGX_VNDF_Hemisphere(const vec3 Ve, const float alpha, const float U1, const float U2) {
+vec3 Sample_GGX_VNDF_Hemisphere(const vec3 Ve, float alpha, const float U1, const float U2) {
+    alpha = max(alpha, 0.00001);
     return Sample_GGX_VNDF_Ellipsoid(Ve, alpha, alpha, U1, U2);
 }
 
