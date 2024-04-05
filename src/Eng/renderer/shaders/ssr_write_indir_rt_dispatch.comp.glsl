@@ -5,7 +5,12 @@
     precision highp float;
 #endif
 
+#include "_common.glsl"
 #include "ssr_write_indir_rt_dispatch_interface.h"
+
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
+};
 
 layout(std430, binding = RAY_COUNTER_SLOT) buffer RayCounter {
     uint g_ray_counter[];
@@ -17,7 +22,7 @@ layout(std430, binding = INDIR_ARGS_SLOT) writeonly buffer IndirArgs {
 layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
-    uint ray_count = g_ray_counter[4];
+    const uint ray_count = g_ray_counter[g_params.counter_index];
 
     // raytracing pipeline dispatch
     g_intersect_args[0] = ray_count;

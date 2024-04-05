@@ -201,10 +201,10 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
 }
 
 vec4 SampleRandomVector2D(uvec2 pixel) {
-    return vec4(fract(SampleRandomNumber(pixel, 0, 2u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                fract(SampleRandomNumber(pixel, 0, 3u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                fract(SampleRandomNumber(pixel, 0, 4u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                fract(SampleRandomNumber(pixel, 0, 5u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
+    return vec4(fract(SampleRandomNumber(pixel, 0, 4u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 5u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 6u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                fract(SampleRandomNumber(pixel, 0, 7u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;

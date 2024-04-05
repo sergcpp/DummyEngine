@@ -18,7 +18,7 @@ layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 void main() {
     { // intersection arguments
-        uint ray_count = g_ray_counter[0];
+        const uint ray_count = g_ray_counter[0];
 
         g_intersect_args[0] = (ray_count + 63) / 64;
         g_intersect_args[1] = 1;
@@ -28,7 +28,7 @@ void main() {
         g_ray_counter[1] = ray_count;
     }
     { // denoising arguments
-        uint tile_count = g_ray_counter[2];
+        const uint tile_count = g_ray_counter[2];
 
         g_intersect_args[3] = tile_count;
         g_intersect_args[4] = 1;

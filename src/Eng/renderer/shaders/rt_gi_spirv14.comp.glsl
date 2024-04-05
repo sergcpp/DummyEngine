@@ -150,7 +150,6 @@ void main() {
     vec3 throughput = vec3(1.0);
 
     for (int j = 0; j < NUM_BOUNCES; ++j) {
-        float ray_len = t_max;
         vec3 tri_normal, albedo;
 
         rayQueryEXT rq;
@@ -417,12 +416,10 @@ void main() {
             if (j == NUM_BOUNCES - 1) {
                 final_color += lobe_weights.diffuse_mul * throughput * base_color * g_shrd_data.ambient_hack.rgb;
             }
-
-            throughput *= lobe_weights.diffuse_mul * base_color;
-            ray_len = hit_t;
             if (j == 0) {
-                first_ray_len = ray_len;
+                first_ray_len = hit_t;
             }
+            throughput *= lobe_weights.diffuse_mul * base_color;
             if (dot(throughput, throughput) < 0.001) {
                 break;
             }

@@ -44,6 +44,8 @@ struct RpRTReflectionsData {
         RpResRef textures_buf;
     } swrt;
 
+    bool four_bounces = false;
+
     RpResRef out_refl_tex;
     RpResRef out_raylen_tex;
 };
@@ -53,8 +55,8 @@ class RpRTReflections : public RpExecutor {
 
     // lazily initialized data
     Ren::Pipeline pi_rt_reflections_;
-    Ren::Pipeline pi_rt_reflections_inline_;
-    Ren::Pipeline pi_rt_reflections_swrt_;
+    Ren::Pipeline pi_rt_reflections_inline_, pi_rt_reflections_4bounce_inline_;
+    Ren::Pipeline pi_rt_reflections_swrt_, pi_rt_reflections_4bounce_swrt_;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

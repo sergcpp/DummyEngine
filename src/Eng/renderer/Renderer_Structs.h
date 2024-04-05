@@ -223,7 +223,7 @@ enum class eRenderMode : uint8_t { Forward, Deferred };
 
 enum class ePixelFilter : uint8_t { Box, Gaussian, BlackmanHarris };
 
-enum class eReflectionsQuality : uint8_t { Off, Low, High, Raytraced };
+enum class eReflectionsQuality : uint8_t { Off, Low, High, Raytraced_Normal, Raytraced_High };
 
 enum class eShadowsQuality : uint8_t { Off, High, Raytraced };
 
@@ -279,7 +279,7 @@ struct render_settings_t {
     eRenderMode render_mode = eRenderMode::Deferred;
     ePixelFilter pixel_filter = ePixelFilter::BlackmanHarris;
     float pixel_filter_width = 1.5f;
-    eReflectionsQuality reflections_quality = eReflectionsQuality::Raytraced;
+    eReflectionsQuality reflections_quality = eReflectionsQuality::Raytraced_Normal;
     eShadowsQuality shadows_quality = eShadowsQuality::High;
     eTonemapMode tonemap_mode = eTonemapMode::Standard;
     eTAAMode taa_mode = eTAAMode::Dynamic;

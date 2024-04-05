@@ -130,7 +130,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
         { // blue noise texture
             Ren::Tex2DParams params;
             params.w = params.h = 128;
-            params.format = Ren::eTexFormat::RawRG88;
+            params.format = Ren::eTexFormat::RawRGBA8888;
             params.sampling.filter = Ren::eTexFilter::NoFilter;
             params.sampling.wrap = Ren::eTexWrap::Repeat;
             noise_tex = data->out_noise_tex =
@@ -234,7 +234,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
     RpResRef ray_rt_list;
 
-    { // Trace rays
+    if (settings.reflections_quality != eReflectionsQuality::Raytraced_High) {
         auto &ssr_trace_hq = rp_builder_.AddPass("SSR TRACE HQ");
 
         struct PassData {
@@ -303,7 +303,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
         });
     }
 
-    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map) {
+    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map &&
+        int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -334,7 +335,10 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                     {Trg::SBuf, SSRWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                     {Trg::SBuf, SSRWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
 
-                Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                SSRWriteIndirRTDispatch::Params params = {};
+                params.counter_index = (settings.reflections_quality == eReflectionsQuality::Raytraced_High) ? 1 : 4;
+
+                Ren::DispatchCompute(pi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, &params, sizeof(params),
                                      builder.ctx().default_descr_alloc(), builder.ctx().log());
             });
         }
@@ -343,6 +347,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             auto &rt_refl = rp_builder_.AddPass("RT REFLECTIONS");
 
             auto *data = rt_refl.AllocPassData<RpRTReflectionsData>();
+
+            data->four_bounces = (settings.reflections_quality == eReflectionsQuality::Raytraced_High);
 
             const auto stage = ctx_.capabilities.ray_query
                                    ? Stg::ComputeShader
@@ -359,7 +365,11 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->normal_tex = rt_refl.AddTextureInput(frame_textures.normal, stage);
             data->env_tex = rt_refl.AddTextureInput(env_map, stage);
             data->ray_counter = rt_refl.AddStorageReadonlyInput(ray_counter, stage);
-            data->ray_list = rt_refl.AddStorageReadonlyInput(ray_rt_list, stage);
+            if (ray_rt_list) {
+                data->ray_list = rt_refl.AddStorageReadonlyInput(ray_rt_list, stage);
+            } else {
+                data->ray_list = rt_refl.AddStorageReadonlyInput(ray_list, stage);
+            }
             data->indir_args = rt_refl.AddIndirectBufferInput(indir_rt_disp_buf);
             data->tlas_buf = rt_refl.AddStorageReadonlyInput(acc_struct_data.rt_tlas_buf, stage);
             data->lights_buf = rt_refl.AddStorageReadonlyInput(common_buffers.lights_res, stage);
@@ -807,8 +817,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
                     {Ren::eBindTarget::Tex2D, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}
-                };
+                    {Ren::eBindTarget::Tex2D, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
 
                 SSRComposeNew::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};

@@ -128,12 +128,14 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Image, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
 
+    const Ren::Pipeline &pi = pass_data_->four_bounces ? pi_rt_reflections_4bounce_swrt_ : pi_rt_reflections_swrt_;
+
     RTReflections::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = std::atan(
         2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
 
-    Ren::DispatchComputeIndirect(pi_rt_reflections_swrt_, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR),
+    Ren::DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR),
                                  bindings, &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
 }
 
@@ -144,6 +146,14 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         assert(rt_reflections_swrt_prog->ready());
 
         if (!pi_rt_reflections_swrt_.Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
+            ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+        }
+
+        rt_reflections_swrt_prog =
+            sh.LoadProgram(ctx, "rt_reflections_4bounce_swrt", "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES");
+        assert(rt_reflections_swrt_prog->ready());
+
+        if (!pi_rt_reflections_4bounce_swrt_.Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 

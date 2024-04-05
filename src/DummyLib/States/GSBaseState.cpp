@@ -191,6 +191,23 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_reflections", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argc > 1) {
+            if (argv[1].val > 3.5) {
+                renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
+            } else if (argv[1].val > 2.5) {
+                renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_Normal;
+            } else if (argv[1].val > 1.5) {
+                renderer_->settings.reflections_quality = Eng::eReflectionsQuality::High;
+            } else if (argv[1].val > 0.5) {
+                renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Low;
+            } else {
+                renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Off;
+            }
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_taa", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         if (argc > 1) {
             if (argv[1].val > 1.5) {

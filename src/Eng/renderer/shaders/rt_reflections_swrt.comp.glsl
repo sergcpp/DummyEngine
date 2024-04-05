@@ -18,6 +18,16 @@
 #include "ssr_common.glsl"
 #include "rt_reflections_interface.h"
 
+#pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
+
+#if defined(FOUR_BOUNCES)
+    #define NUM_BOUNCES 4
+#elif defined(TWO_BOUNCES)
+    #define NUM_BOUNCES 2
+#else
+    #define NUM_BOUNCES 1
+#endif
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -107,33 +117,114 @@ void main() {
     ray_origin_vs /= ray_origin_vs.w;
 
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
-    const vec2 u = texelFetch(g_noise_tex, icoord % 128, 0).rg;
-    const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u);
-    const vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
+    const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
+    const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u.xy);
+    vec3 refl_ray_ws = (g_shrd_data.world_from_view * vec4(refl_ray_vs.xyz, 0.0)).xyz;
 
     vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
-    float ray_len = 0.0;
+    float first_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
-    vec3 final_color;
+    vec3 final_color = vec3(0.0);
 
-    vec3 ro = ray_origin_ws.xyz + 0.001 * refl_ray_ws.xyz;
-    vec3 inv_d = safe_invert(refl_ray_ws.xyz);
+    vec3 ro = ray_origin_ws.xyz + 0.001 * refl_ray_ws;
+    vec3 inv_d = safe_invert(refl_ray_ws);
 
-    hit_data_t inter;
-    inter.mask = 0;
-    inter.obj_index = inter.prim_index = 0;
-    inter.geo_index = inter.geo_count = 0;
-    inter.t = 1000.0;
-    inter.u = inter.v = 0.0;
+    for (int j = 0; j < NUM_BOUNCES; ++j) {
+        hit_data_t inter;
+        inter.mask = 0;
+        inter.obj_index = inter.prim_index = 0;
+        inter.geo_index = inter.geo_count = 0;
+        inter.t = 1000.0;
+        inter.u = inter.v = 0.0;
 
-    int transp_depth = 0;
-    while (transp_depth++ < 4) {
-        Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
-                                     ro, refl_ray_ws.xyz, inv_d, (1u << RAY_TYPE_SPECULAR), 0 /* root_node */, inter);
-        if (inter.mask != 0) {
-            // perform alpha test
+        int transp_depth = 0;
+        while (transp_depth++ < 4) {
+            Traverse_MacroTree_WithStack(g_tlas_nodes, g_blas_nodes, g_mesh_instances, g_meshes, g_vtx_data0, g_vtx_indices, g_prim_indices,
+                                         ro, refl_ray_ws, inv_d, (1u << RAY_TYPE_SPECULAR), 0 /* root_node */, inter);
+            if (inter.mask != 0) {
+                // perform alpha test
+                const bool backfacing = (inter.prim_index < 0);
+                const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
+
+                int i = inter.geo_index;
+                for (; i < inter.geo_index + inter.geo_count; ++i) {
+                    const int tri_start = int(g_geometries[i].indices_start) / 3;
+                    if (tri_start > tri_index) {
+                        break;
+                    }
+                }
+
+                const int geo_index = i - 1;
+
+                const RTGeoInstance geo = g_geometries[geo_index];
+                const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
+                const MaterialData mat = g_materials[mat_index];
+
+                const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
+                const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
+                const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
+
+                const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
+                const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
+                const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
+
+                const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
+                const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
+                const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
+
+                const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
+    #if defined(BINDLESS_TEXTURES)
+                const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[4])), uv, 0.0).r;
+                if (alpha < 0.5) {
+                    ro += (inter.t + 0.001) * refl_ray_ws;
+                    inter.mask = 0;
+                    inter.t = 1000.0;
+                    continue;
+                }
+    #endif
+            }
+            break;
+        }
+
+        const bool ignore_portals_specular = true;
+
+        if (inter.mask == 0) {
+            // Check portal lights intersection (rough rays are blocked by them)
+            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff &&
+                !ignore_portals_specular; ++i) {
+                const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+
+                const vec3 light_pos = litem.pos_and_radius.xyz;
+                vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
+                const vec3 light_forward = normalize(cross(light_u, light_v));
+
+                const float plane_dist = dot(light_forward, light_pos);
+                const float cos_theta = dot(refl_ray_ws, light_forward);
+                const float t = (plane_dist - dot(light_forward, ray_origin_ws.xyz)) / min(cos_theta, -FLT_EPS);
+
+                if (cos_theta < 0.0 && t > 0.0) {
+                    light_u /= dot(light_u, light_u);
+                    light_v /= dot(light_v, light_v);
+
+                    const vec3 p = ray_origin_ws.xyz + refl_ray_ws * t;
+                    const vec3 vi = p - light_pos;
+                    const float a1 = dot(light_u, vi);
+                    if (a1 >= -0.5 && a1 <= 0.5) {
+                        const float a2 = dot(light_v, vi);
+                        if (a2 >= -0.5 && a2 <= 0.5) {
+                            throughput *= 0.0;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            const vec3 rotated_dir = rotate_xz(refl_ray_ws, g_shrd_data.env_col.w);
+            const float lod = 8.0 * roughness;
+            final_color += throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, lod).rgb;
+        } else {
             const bool backfacing = (inter.prim_index < 0);
             const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
 
@@ -164,128 +255,36 @@ void main() {
             const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
 
             const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
-#if defined(BINDLESS_TEXTURES)
-            const float alpha = textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[4])), uv, 0.0).r;
-            if (alpha < 0.5) {
-                ro += (inter.t + 0.001) * refl_ray_ws.xyz;
-                inter.mask = 0;
-                inter.t = 1000.0;
-                continue;
-            }
-#endif
-        }
-        break;
-    }
 
-    const bool ignore_portals_specular = true;
+            vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
+            const float pa = length(tri_normal);
+            tri_normal /= pa;
 
-    if (inter.mask == 0) {
-        // Check portal lights intersection (rough rays are blocked by them)
-        for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff &&
-             !ignore_portals_specular; ++i) {
-            const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+    #if defined(BINDLESS_TEXTURES)
+            const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
+                                                        texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
+                                                        texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5))));
+            const vec3 direction_obj_space = (inv_transform * vec4(refl_ray_ws, 0.0)).xyz;
 
-            const vec3 light_pos = litem.pos_and_radius.xyz;
-            vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
-            const vec3 light_forward = normalize(cross(light_u, light_v));
+            const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
-            const float plane_dist = dot(light_forward, light_pos);
-            const float cos_theta = dot(refl_ray_ws.xyz, light_forward);
-            const float t = (plane_dist - dot(light_forward, ray_origin_ws.xyz)) / min(cos_theta, -FLT_EPS);
+            const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
+            const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
-            if (cos_theta < 0.0 && t > 0.0) {
-                light_u /= dot(light_u, light_u);
-                light_v /= dot(light_v, light_v);
+            float cone_width = g_params.pixel_spread_angle * inter.t;
 
-                const vec3 p = ray_origin_ws.xyz + refl_ray_ws.xyz * t;
-                const vec3 vi = p - light_pos;
-                const float a1 = dot(light_u, vi);
-                if (a1 >= -0.5 && a1 <= 0.5) {
-                    const float a2 = dot(light_v, vi);
-                    if (a2 >= -0.5 && a2 <= 0.5) {
-                        throughput *= 0.0;
-                        break;
-                    }
-                }
-            }
-        }
+            float tex_lod = 0.5 * log2(ta / pa);
+            tex_lod += log2(cone_width);
+            tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
+            tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
 
-        const vec3 rotated_dir = rotate_xz(refl_ray_ws.xyz, g_shrd_data.env_col.w);
-        const float lod = 8.0 * roughness;
-        final_color = throughput * g_shrd_data.env_col.xyz * textureLod(g_env_tex, rotated_dir, lod).rgb;
-    } else {
-        const bool backfacing = (inter.prim_index < 0);
-        const int tri_index = backfacing ? -inter.prim_index - 1 : inter.prim_index;
+            vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
+    #else
+            // TODO: Fallback to shared texture atlas
+            vec3 base_color = vec3(1.0);
+            float tex_lod = 0.0;
+    #endif
 
-        int i = inter.geo_index;
-        for (; i < inter.geo_index + inter.geo_count; ++i) {
-            const int tri_start = int(g_geometries[i].indices_start) / 3;
-            if (tri_start > tri_index) {
-                break;
-            }
-        }
-
-        const int geo_index = i - 1;
-
-        const RTGeoInstance geo = g_geometries[geo_index];
-        const uint mat_index = backfacing ? (geo.material_index >> 16) : (geo.material_index & 0xffff);
-        const MaterialData mat = g_materials[mat_index];
-
-        const uint i0 = texelFetch(g_vtx_indices, 3 * tri_index + 0).x;
-        const uint i1 = texelFetch(g_vtx_indices, 3 * tri_index + 1).x;
-        const uint i2 = texelFetch(g_vtx_indices, 3 * tri_index + 2).x;
-
-        const vec4 p0 = texelFetch(g_vtx_data0, int(geo.vertices_start + i0));
-        const vec4 p1 = texelFetch(g_vtx_data0, int(geo.vertices_start + i1));
-        const vec4 p2 = texelFetch(g_vtx_data0, int(geo.vertices_start + i2));
-
-        const vec2 uv0 = unpackHalf2x16(floatBitsToUint(p0.w));
-        const vec2 uv1 = unpackHalf2x16(floatBitsToUint(p1.w));
-        const vec2 uv2 = unpackHalf2x16(floatBitsToUint(p2.w));
-
-        const vec2 uv = uv0 * (1.0 - inter.u - inter.v) + uv1 * inter.u + uv2 * inter.v;
-#if defined(BINDLESS_TEXTURES)
-        const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5))));
-        const vec3 direction_obj_space = (inv_transform * vec4(refl_ray_ws.xyz, 0.0)).xyz;
-
-        const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
-
-        const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
-        const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
-
-        vec3 tri_normal = cross(p1.xyz - p0.xyz, p2.xyz - p0.xyz);
-        const float pa = length(tri_normal);
-        tri_normal /= pa;
-
-        float cone_width = g_params.pixel_spread_angle * inter.t;
-
-        float tex_lod = 0.5 * log2(ta / pa);
-        tex_lod += log2(cone_width);
-        tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
-        tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
-
-        vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
-#else
-        // TODO: Fallback to shared texture atlas
-        vec3 base_color = vec3(1.0);
-        float tex_lod = 0.0;
-#endif
-
-        if ((geo.flags & RTGeoLightmappedBit) != 0u) {
-            const vec2 lm_uv0 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).w);
-            const vec2 lm_uv1 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).w);
-            const vec2 lm_uv2 = unpackHalf2x16(texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).w);
-
-            vec2 lm_uv = lm_uv0 * (1.0 - inter.u - inter.v) + lm_uv1 * inter.u + lm_uv2 * inter.v;
-            lm_uv = geo.lmap_transform.xy + geo.lmap_transform.zw * lm_uv;
-
-            const vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
-            const vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
-
-            final_color = base_color * (direct_lm + indirect_lm);
-        } else {
             const uvec2 packed0 = texelFetch(g_vtx_data1, int(geo.vertices_start + i0)).xy;
             const uvec2 packed1 = texelFetch(g_vtx_data1, int(geo.vertices_start + i1)).xy;
             const uvec2 packed2 = texelFetch(g_vtx_data1, int(geo.vertices_start + i2)).xy;
@@ -303,8 +302,8 @@ void main() {
                                                       texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
             N = normalize((transform * vec4(N, 0.0)).xyz);
 
-            const vec3 P = ray_origin_ws.xyz + refl_ray_ws.xyz * inter.t;
-            const vec3 I = -refl_ray_ws.xyz;
+            const vec3 P = ray_origin_ws.xyz + refl_ray_ws * inter.t;
+            const vec3 I = -refl_ray_ws;
             const float N_dot_V = saturate(dot(N, I));
 
             vec3 tint_color = vec3(0.0);
@@ -398,7 +397,7 @@ void main() {
                     _lobe_weights.specular = _lobe_weights.clearcoat = 0.0;
                 }
                 vec3 light_contribution = EvaluateLightSource(litem, P, I, N, _lobe_weights, ltc, g_ltc_luts,
-                                                              sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                            sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 if (all(equal(light_contribution, vec3(0.0)))) {
                     continue;
                 }
@@ -455,34 +454,44 @@ void main() {
                 const float sun_visibility = SampleShadowPCF5x5(g_shadow_tex, shadow_uvs);
                 if (sun_visibility > 0.0) {
                     light_total += sun_visibility * EvaluateSunLight(g_shrd_data.sun_col.xyz, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w, P, I, N, lobe_weights, ltc, g_ltc_luts,
-                                                                     sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
+                                                                    sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }
             }
 
-            final_color = throughput * light_total;
+            final_color += throughput * light_total;
             final_color += throughput * lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
-        }
+            if (j == 0) {
+                first_ray_len = inter.t;
+            }
+            throughput *= approx_spec_col;
+            if (dot(throughput, throughput) < 0.001 || roughness > 0.25) {
+                break;
+            }
 
-        ray_len = inter.t;
+            // prepare next ray
+            ray_origin_ws.xyz = P;
+            ray_origin_ws.xyz += 0.001 * tri_normal;
+            refl_ray_ws = SampleReflectionVector(refl_ray_ws, N, roughness, u.zw);
+        }
     }
 
     imageStore(g_out_color_img, icoord, vec4(final_color, 1.0));
-    imageStore(g_out_raylen_img, icoord, vec4(ray_len));
+    imageStore(g_out_raylen_img, icoord, vec4(first_ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
         ivec2 copy_coords = ivec2(copy_target.x, icoord.y);
         imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
+        imageStore(g_out_raylen_img, copy_coords, vec4(first_ray_len));
     }
     if (copy_vertical) {
         ivec2 copy_coords = ivec2(icoord.x, copy_target.y);
         imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
+        imageStore(g_out_raylen_img, copy_coords, vec4(first_ray_len));
     }
     if (copy_diagonal) {
         ivec2 copy_coords = copy_target;
         imageStore(g_out_color_img, copy_coords, vec4(final_color, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
+        imageStore(g_out_raylen_img, copy_coords, vec4(first_ray_len));
     }
 }
