@@ -41,7 +41,7 @@ def main():
             del all_tests[test_name]
 
     # Print failed tests first
-    condition = lambda key, value: value['psnr_tested'] < value['psnr_threshold']
+    condition = lambda key, value: value['psnr_tested'] < value['psnr_threshold'] or (value['psnr_tested'] - value['psnr_threshold']) > 1.0
     failed_tests = {key: value for key, value in all_tests.items() if condition(key, value)}
 
     print("-- Failed tests --")
@@ -49,6 +49,8 @@ def main():
 
     print("-- All tests --")
     print(json.dumps(all_tests, indent=4))
+
+    sys.exit(-1 if len(failed_tests) > 0 else 0)
 
 if __name__ == "__main__":
     main()
