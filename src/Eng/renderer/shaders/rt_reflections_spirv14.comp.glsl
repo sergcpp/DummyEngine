@@ -142,6 +142,8 @@ void main() {
     vec3 final_color = vec3(0.0);
 
     for (int j = 0; j < NUM_BOUNCES; ++j) {
+        const bool is_last_bounce = (j == NUM_BOUNCES - 1);
+
         rayQueryEXT rq;
         rayQueryInitializeEXT(rq,                       // rayQuery
                               g_tlas,                   // topLevel
@@ -182,7 +184,6 @@ void main() {
                 }
             }
         }
-
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
             // Check portal lights intersection (rough rays are blocked by them)
             for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
@@ -259,17 +260,22 @@ void main() {
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(mat.texture_indices[0]), uv, tex_lod)));
 
             const vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x),
-                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
             const vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x),
-                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);
             const vec3 normal2 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].x),
-                                        unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
+                                      unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i2].y).x);
 
             vec3 N = normal0 * (1.0 - bary_coord.x - bary_coord.y) + normal1 * bary_coord.x + normal2 * bary_coord.y;
             if (backfacing) {
                 N = -N;
             }
             N = normalize((world_from_object * vec4(N, 0.0)).xyz);
+
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
+            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
             const vec3 P = ray_origin_ws.xyz + refl_ray_ws * hit_t;
             const vec3 I = -refl_ray_ws;//normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
@@ -348,7 +354,6 @@ void main() {
                 const light_item_t litem = g_lights[li];
 
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
-                const bool is_last_bounce = true;
 
                 lobe_weights_t _lobe_weights = lobe_weights;
                 if (!is_last_bounce && is_portal) {

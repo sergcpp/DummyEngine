@@ -132,6 +132,8 @@ void main() {
     vec3 inv_d = safe_invert(refl_ray_ws);
 
     for (int j = 0; j < NUM_BOUNCES; ++j) {
+        const bool is_last_bounce = (j == NUM_BOUNCES - 1);
+
         hit_data_t inter;
         inter.mask = 0;
         inter.obj_index = inter.prim_index = 0;
@@ -260,12 +262,15 @@ void main() {
             const float pa = length(tri_normal);
             tri_normal /= pa;
 
-    #if defined(BINDLESS_TEXTURES)
-            const mat4x3 inv_transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 3)),
-                                                        texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 4)),
-                                                        texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 5))));
-            const vec3 direction_obj_space = (inv_transform * vec4(refl_ray_ws, 0.0)).xyz;
+            const mat4x3 world_from_object = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
+                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
+                                                              texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
+            if (backfacing) {
+                tri_normal = -tri_normal;
+            }
+            tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
+    #if defined(BINDLESS_TEXTURES)
             const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
             const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
@@ -276,7 +281,7 @@ void main() {
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
             tex_lod += 0.5 * log2(tex_res.x * tex_res.y);
-            tex_lod -= log2(abs(dot(direction_obj_space, tri_normal)));
+            tex_lod -= log2(abs(dot(refl_ray_ws, tri_normal)));
 
             vec3 base_color = mat.params[0].xyz * SRGBToLinear(YCoCg_to_RGB(textureLod(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), uv, tex_lod)));
     #else
@@ -297,10 +302,7 @@ void main() {
             if (backfacing) {
                 N = -N;
             }
-            const mat4x3 transform = transpose(mat3x4(texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 6)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 7)),
-                                                      texelFetch(g_mesh_instances, int(MESH_INSTANCE_BUF_STRIDE * inter.obj_index + 8))));
-            N = normalize((transform * vec4(N, 0.0)).xyz);
+            N = normalize((world_from_object * vec4(N, 0.0)).xyz);
 
             const vec3 P = ray_origin_ws.xyz + refl_ray_ws * inter.t;
             const vec3 I = -refl_ray_ws;
@@ -386,7 +388,6 @@ void main() {
                 const light_item_t litem = g_lights[li];
 
                 const bool is_portal = (floatBitsToUint(litem.col_and_type.w) & LIGHT_PORTAL_BIT) != 0;
-                const bool is_last_bounce = true;
                 if (!is_last_bounce && is_portal && lobe_weights.diffuse < FLT_EPS) {
                     continue;
                 }
