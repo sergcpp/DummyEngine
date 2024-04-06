@@ -137,7 +137,7 @@ void main() {
 
     const float portals_specular_ltc_weight = smoothstep(0.0, 0.25, roughness);
 
-    float first_ray_len = 0.0;
+    float first_ray_len = 0.0, total_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
     vec3 final_color = vec3(0.0);
 
@@ -251,7 +251,8 @@ void main() {
             const float pa = length(tri_normal);
             tri_normal /= pa;
 
-            const float cone_width = _cone_width + g_params.pixel_spread_angle * hit_t;
+            total_ray_len += hit_t;
+            const float cone_width = _cone_width + g_params.pixel_spread_angle * total_ray_len;
 
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);

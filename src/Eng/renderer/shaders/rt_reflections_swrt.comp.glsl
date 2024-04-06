@@ -116,6 +116,8 @@ void main() {
     vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
 
+    const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
+
     const vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     const vec4 u = texelFetch(g_noise_tex, icoord % 128, 0);
     const vec3 refl_ray_vs = SampleReflectionVector(view_ray_vs, normal_vs, roughness, u.xy);
@@ -124,7 +126,7 @@ void main() {
     vec4 ray_origin_ws = g_shrd_data.world_from_view * ray_origin_vs;
     ray_origin_ws /= ray_origin_ws.w;
 
-    float first_ray_len = 0.0;
+    float first_ray_len = 0.0, total_ray_len = 0.0;
     vec3 throughput = vec3(1.0);
     vec3 final_color = vec3(0.0);
 
@@ -271,12 +273,11 @@ void main() {
             tri_normal = (world_from_object * vec4(tri_normal, 0.0)).xyz;
 
     #if defined(BINDLESS_TEXTURES)
-            const float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
-
             const vec2 tex_res = textureSize(SAMPLER2D(GET_HANDLE(mat.texture_indices[0])), 0).xy;
             const float ta = abs((uv1.x - uv0.x) * (uv2.y - uv0.y) - (uv2.x - uv0.x) * (uv1.y - uv0.y));
 
-            float cone_width = g_params.pixel_spread_angle * inter.t;
+            total_ray_len += inter.t;
+            float cone_width = _cone_width + g_params.pixel_spread_angle * total_ray_len;
 
             float tex_lod = 0.5 * log2(ta / pa);
             tex_lod += log2(cone_width);
