@@ -6,7 +6,7 @@
 [subrepo]
 	remote = Eng
 	branch = fixes_06_04
-	commit = 77a35fa17e75133c63a6b560026c7e6dc51265a0
+	commit = b45de4639be769135e935503746c7db280e6ef51
 	method = merge
 	cmdver = 0.4.6
-	parent = 026994ea053b5a54cfecff70e9ce428601d31643
+	parent = 6310b6473f7f0b0771b6d15763c7220c4c6d6836

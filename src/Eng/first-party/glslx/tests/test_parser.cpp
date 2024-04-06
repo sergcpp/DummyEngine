@@ -696,6 +696,8 @@ void test_parser() {
         static const char source[] = "const vec4 g = {1.0, 2.0, 3.0, 4.0};\n"
                                      "const highp vec2 p[2] = vec2[2](vec2(-0.5, 0.0),\n"
                                      "                                vec2(0.0, 0.5));\n"
+                                     "const highp vec2 pp[2] = vec2[](vec2(-0.5, 0.0),\n"
+                                     "                                vec2(0.0, 0.5));\n"
                                      "vec4 f() { return g; }\n"
                                      "float func(const vec3 color, float x, float y) {\n"
                                      "    vec2 s = {x, y};\n"
@@ -706,6 +708,7 @@ void test_parser() {
         static const char expected[] =
             "const vec4 g = { 1.0, 2.0, 3.0, 4.0 };\n"
             "const highp vec2 p[2] = { vec2(-0.5, 0.0), vec2(0.0, 0.5) };\n"
+            "const highp vec2 pp[2] = { vec2(-0.5, 0.0), vec2(0.0, 0.5) };\n"
             "vec4 f() {\n"
             "    return g;\n"
             "}\n"

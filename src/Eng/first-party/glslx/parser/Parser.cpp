@@ -1870,8 +1870,11 @@ glslx::ast_expression *glslx::Parser::ParseArraySpecifier(Bitmask<eEndCondition>
             if (!expect(eOperator::bracket_begin)) {
                 return nullptr;
             }
-            if (!expect(eTokType::Const_int)) {
-                return nullptr;
+            if (is_type(eTokType::Const_int)) {
+                // skip array size
+                if (!next()) {
+                    return nullptr;
+                }
             }
             if (!expect(eOperator::bracket_end)) {
                 return nullptr;
