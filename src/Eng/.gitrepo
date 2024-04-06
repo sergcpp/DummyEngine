@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = multibounce_specular
-	commit = 6df6abaeaad5d4d618b4696208751c8faea216c7
+	branch = fixes_06_04
+	commit = 77a35fa17e75133c63a6b560026c7e6dc51265a0
 	method = merge
 	cmdver = 0.4.6
-	parent = 60f7c8b18cb50c5e1019c7db6b98311401dbbef2
+	parent = 026994ea053b5a54cfecff70e9ce428601d31643
