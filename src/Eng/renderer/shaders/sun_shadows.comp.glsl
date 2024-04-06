@@ -90,7 +90,7 @@ void main() {
             g_vtx_sh_uvs2[i] = shadow_uvs[2];
         }
 
-        float pix_scale = 1.0 / (g_params.pixel_spread_angle * lin_depth);
+        float pix_scale = 3.0 / (g_params.pixel_spread_angle * lin_depth);
         pix_scale = exp2(ceil(log2(pix_scale)));
         const float hash = hash3D(floor(pix_scale * pos_ws_biased));
 

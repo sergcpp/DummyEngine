@@ -140,7 +140,7 @@ void main() {
     //
     // Evaluate artifitial lights
     //
-    float pix_scale = 1.0 / (g_params.pixel_spread_angle * lin_depth);
+    float pix_scale = 3.0 / (g_params.pixel_spread_angle * lin_depth);
     pix_scale = exp2(ceil(log2(pix_scale)));
     const float hash = hash3D(floor(pix_scale * P));
     const float angle = hash * 2.0 * M_PI;
