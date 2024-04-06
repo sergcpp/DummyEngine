@@ -965,6 +965,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
 
         GBufferShade::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
+        uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
 
         const Ren::Pipeline &pi = (settings.hdr_quality == eHDRQuality::High) ? pi_gbuf_shade_hq_ : pi_gbuf_shade_;
         Ren::DispatchCompute(pi, grp_count, bindings, &uniform_params, sizeof(uniform_params),

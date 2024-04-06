@@ -7,7 +7,8 @@ INTERFACE_START(SunShadows)
 
 struct Params {
     UVEC2_TYPE img_size;
-    VEC2_TYPE enabled;
+    float enabled;
+    float pixel_spread_angle;
     VEC4_TYPE softness_factor;
 };
 

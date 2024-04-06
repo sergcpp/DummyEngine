@@ -25,51 +25,13 @@ layout(binding = OUT_SHADOW_IMG_SLOT, r8) uniform writeonly restrict image2D g_o
 
 layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
-float HashWorldPosition(vec2 in_uv, vec3 pos_ws, vec3 pos_ws_biased) {
-    vec3 pos_ws_10, pos_ws_01;
-
-    { // sample position offseted by X
-        vec2 in_uv10 = in_uv + vec2(1.0, 0.0) / vec2(g_params.img_size);
-        float depth10 = textureLod(g_depth_tex, in_uv10, 0.0).r;
-#if defined(VULKAN)
-        vec4 ray_origin_cs10 = vec4(2.0 * in_uv10 - 1.0, depth10, 1.0);
-        ray_origin_cs10.y = -ray_origin_cs10.y;
-#else // VULKAN
-        vec4 ray_origin_cs10 = vec4(2.0 * vec3(in_uv10, depth10) - 1.0, 1.0);
-#endif // VULKAN
-        vec4 pos_ws10 = g_shrd_data.world_from_clip * ray_origin_cs10;
-        pos_ws_10 = pos_ws10.xyz / pos_ws10.w;
-    }
-    { // sample position offseted by Y
-        vec2 in_uv01 = in_uv + vec2(0.0, 1.0) / vec2(g_params.img_size);
-        float depth01 = textureLod(g_depth_tex, in_uv01, 0.0).r;
-#if defined(VULKAN)
-        vec4 ray_origin_cs01 = vec4(2.0 * in_uv01 - 1.0, depth01, 1.0);
-        ray_origin_cs01.y = -ray_origin_cs01.y;
-#else // VULKAN
-        vec4 ray_origin_cs01 = vec4(2.0 * vec3(in_uv01, depth01) - 1.0, 1.0);
-#endif // VULKAN
-        vec4 pos_ws01 = g_shrd_data.world_from_clip * ray_origin_cs01;
-        pos_ws_01 = pos_ws01.xyz / pos_ws01.w;
-    }
-
-    vec3 dx = pos_ws_10 - pos_ws, dy = pos_ws_01 - pos_ws;
-    float max_deriv = max(length(dx), length(dy));
-
-    const float HashScale = 0.25;
-    float pix_scale = 1.0 / (HashScale * max_deriv);
-    pix_scale = exp2(ceil(log2(pix_scale)));
-
-    return hash3D(floor(pix_scale * pos_ws_biased));
-}
-
 void main() {
     ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     if (icoord.x >= g_params.img_size.x || icoord.y >= g_params.img_size.y) {
         return;
     }
 
-    if (g_params.enabled.x < 0.5) {
+    if (g_params.enabled < 0.5) {
         imageStore(g_out_shadow_img, icoord, vec4(1.0));
         return;
     }
@@ -128,7 +90,9 @@ void main() {
             g_vtx_sh_uvs2[i] = shadow_uvs[2];
         }
 
-        float hash = HashWorldPosition(in_uv, pos_ws.xyz, pos_ws_biased);
+        float pix_scale = 1.0 / (g_params.pixel_spread_angle * lin_depth);
+        pix_scale = exp2(ceil(log2(pix_scale)));
+        const float hash = hash3D(floor(pix_scale * pos_ws_biased));
 
         //visibility = GetSunVisibility(lin_depth, g_shadow_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)));
         visibility = GetSunVisibility(lin_depth, g_shadow_tex, g_shadow_val_tex, transpose(mat3x4(g_vtx_sh_uvs0, g_vtx_sh_uvs1, g_vtx_sh_uvs2)),

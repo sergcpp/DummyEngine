@@ -82,8 +82,7 @@ void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
 
     RTGI::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.pixel_spread_angle = std::atan(
-        2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
+    uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_rt_gi_.layout(),
@@ -173,8 +172,7 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
 
     RTGI::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.pixel_spread_angle = std::atan(
-        2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
+    uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),
@@ -310,8 +308,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
 
     RTGI::Params uniform_params;
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
-    uniform_params.pixel_spread_angle = std::atan(
-        2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
+    uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi.layout(), VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(uniform_params),

@@ -659,7 +659,8 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
 
         SunShadows::Params uniform_params;
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
-        uniform_params.enabled[0] = enabled ? 1.0f : 0.0f;
+        uniform_params.enabled = enabled ? 1.0f : 0.0f;
+        uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
         uniform_params.softness_factor = std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor /= 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);

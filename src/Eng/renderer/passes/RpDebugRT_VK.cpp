@@ -245,8 +245,7 @@ void Eng::RpDebugRT::Execute_HWRT(RpBuilder &builder) {
     RTDebug::Params uniform_params;
     uniform_params.img_size[0] = view_state_->scr_res[0];
     uniform_params.img_size[1] = view_state_->scr_res[1];
-    uniform_params.pixel_spread_angle = std::atan(
-        2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->scr_res[1]));
+    uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
     api_ctx->vkCmdPushConstants(cmd_buf, pi_debug_hwrt_.layout(), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, 0,
                                 sizeof(uniform_params), &uniform_params);
@@ -361,8 +360,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
     RTDebug::Params uniform_params;
     uniform_params.img_size[0] = view_state_->act_res[0];
     uniform_params.img_size[1] = view_state_->act_res[1];
-    uniform_params.pixel_spread_angle = std::atan(
-        2.0f * std::tan(0.5f * view_state_->vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_->act_res[1]));
+    uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.root_node = pass_data_->swrt.root_node;
 
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];

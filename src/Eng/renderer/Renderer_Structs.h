@@ -345,6 +345,7 @@ struct ItemsInfo {
 struct ViewState {
     Ren::Vec2i act_res, scr_res;
     float vertical_fov;
+    float pixel_spread_angle;
     int frame_index;
     Ren::Vec3f prev_cam_pos;
     Ren::Mat4f prev_clip_from_world_no_translation, down_buf_view_from_world, prev_clip_from_view;

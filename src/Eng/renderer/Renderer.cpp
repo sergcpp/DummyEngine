@@ -442,7 +442,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
     { // shadow map value sampler
         Ren::SamplingParams sampler_params;
-        //sampler_params.filter = Ren::eTexFilter::BilinearNoMipmap;
+        // sampler_params.filter = Ren::eTexFilter::BilinearNoMipmap;
         sampler_params.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eSamplerLoadStatus status;
@@ -598,6 +598,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     assert(view_state_.act_res[0] <= view_state_.scr_res[0] && view_state_.act_res[1] <= view_state_.scr_res[1]);
 
     view_state_.vertical_fov = list.draw_cam.angle();
+    view_state_.pixel_spread_angle = std::atan(
+        2.0f * std::tan(0.5f * view_state_.vertical_fov * Ren::Pi<float>() / 180.0f) / float(view_state_.scr_res[1]));
     view_state_.frame_index = list.frame_index;
 
     if (list.render_settings.taa_mode != eTAAMode::Off) {

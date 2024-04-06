@@ -1,6 +1,5 @@
 #version 320 es
 #extension GL_EXT_control_flow_attributes : require
-#extension GL_KHR_shader_subgroup_quad : require
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
@@ -47,19 +46,6 @@ layout(binding = OUT_COLOR_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color
 #endif
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
-
-float HashWorldPosition(vec2 in_uv, vec3 pos_ws) {
-    vec3 pos_ws_10 = subgroupQuadSwapHorizontal(pos_ws), pos_ws_01 = subgroupQuadSwapVertical(pos_ws);
-
-    vec3 dx = pos_ws_10 - pos_ws, dy = pos_ws_01 - pos_ws;
-    float max_deriv = max(length(dx), length(dy));
-
-    const float HashScale = 0.25;
-    float pix_scale = 1.0 / (HashScale * max_deriv);
-    pix_scale = exp2(ceil(log2(pix_scale)));
-
-    return hash3D(floor(pix_scale * pos_ws));
-}
 
 void main() {
     if (gl_GlobalInvocationID.x >= g_params.img_size.x || gl_GlobalInvocationID.y >= g_params.img_size.y) {
@@ -154,7 +140,9 @@ void main() {
     //
     // Evaluate artifitial lights
     //
-    const float hash = HashWorldPosition(norm_uvs, P);
+    float pix_scale = 1.0 / (g_params.pixel_spread_angle * lin_depth);
+    pix_scale = exp2(ceil(log2(pix_scale)));
+    const float hash = hash3D(floor(pix_scale * P));
     const float angle = hash * 2.0 * M_PI;
     const float ca = cos(angle), sa = sin(angle);
     const vec4 rotator = vec4(ca, sa, -sa, ca);
