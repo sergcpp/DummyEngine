@@ -1032,6 +1032,7 @@ void GSBaseState::InitRenderer_PT() {
         Ray::settings_t s;
         s.w = ren_ctx_->w();
         s.h = ren_ctx_->h();
+        s.use_spatial_cache = true;
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
         Ray::unet_filter_properties_t unet_props;
@@ -1407,7 +1408,7 @@ void GSBaseState::Draw_PT() {
     }
 
     if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
-        auto render_task = [this](const int i) { ray_renderer_->RenderScene(ray_scene_.get(), ray_reg_ctx_[i]); };
+        auto render_task = [this](const int i) { ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[i]); };
         std::vector<std::future<void>> ev(ray_reg_ctx_.size());
         for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
             ev[i] = threads_->Enqueue(render_task, i);
@@ -1416,9 +1417,11 @@ void GSBaseState::Draw_PT() {
             e.wait();
         }
     } else {
-        ray_renderer_->RenderScene(ray_scene_.get(), ray_reg_ctx_[0]);
+        ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[0]);
+        ray_renderer_->ResolveSpatialCache(*ray_scene_);
+        ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0]);
         for (int i = 0; i < unet_filter_passes_count_ && ray_reg_ctx_[0].iteration > 1; ++i) {
-            ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
+            //ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
         }
     }
 
