@@ -52,9 +52,9 @@ Ray::Dx::Scene::~Scene() {
         Scene::RemoveMesh_nolock(to_delete);
     }
 
-    if (macro_nodes_root_ != 0xffffffff) {
-        nodes_.Erase(macro_nodes_block_);
-        macro_nodes_root_ = macro_nodes_block_ = 0xffffffff;
+    if (tlas_root_ != 0xffffffff) {
+        nodes_.Erase(tlas_block_);
+        tlas_root_ = tlas_block_ = 0xffffffff;
     }
 
     bindless_textures_.clear();
@@ -325,7 +325,7 @@ void Ray::Dx::Scene::Rebuild_HWRT_TLAS_nolock() {
         new_instance.InstanceID = meshes_[instance.mesh_index].vert_index / 3;
         new_instance.InstanceMask = (instance.ray_visibility & 0xff);
         new_instance.InstanceContributionToHitGroupIndex = 0;
-        new_instance.Flags = 0;
+        new_instance.Flags = D3D12_RAYTRACING_INSTANCE_FLAG_FORCE_OPAQUE;
         new_instance.AccelerationStructure = dx_blas.gpu_virtual_address();
 
         // const mesh_t &mesh = meshes_[instance.mesh_index];
