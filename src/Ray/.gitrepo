@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Ray
-	branch = rad_clamp
-	commit = f926a96897717876e4f37f1ad8102656b76a83fc
-	parent = c0ba6c1fb14e916c529ee1989a5eaf576378313b
+	branch = master
+	commit = a950a615f78cd245a3f7c7b158f111482443a256
+	parent = 83f3a2523fc9634b80918434ce76bd430cd2b53c
 	method = merge
 	cmdver = 0.4.6
