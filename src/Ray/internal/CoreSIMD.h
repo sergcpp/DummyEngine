@@ -6579,6 +6579,7 @@ void Ray::NS::Sample_DiffuseNode(const ray_data_t<S> &ray, const ivec<S> &mask, 
         where(mask, new_ray.c[i]) = F[i] * mix_weight / F[3];
     })
     where(mask, new_ray.pdf) = F[3];
+    where(mask, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
 }
 
 template <int S>
@@ -6646,6 +6647,7 @@ void Ray::NS::Sample_GlossyNode(const ray_data_t<S> &ray, const ivec<S> &mask, c
         where(mask, new_ray.c[i]) = F[i] * safe_div_pos(mix_weight, F[3]);
     })
     where(mask, new_ray.pdf) = F[3];
+    where(mask, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
 }
 
 template <int S>
@@ -6716,6 +6718,7 @@ void Ray::NS::Sample_RefractiveNode(const ray_data_t<S> &ray, const ivec<S> &mas
     push_ior_stack(~is_backfacing & mask, new_ray.ior, int_ior);
 
     where(mask, new_ray.pdf) = F[3];
+    where(mask, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
 }
 
 template <int S>
@@ -6880,6 +6883,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
             where(sample_diff_lobe, new_ray.c[i]) = safe_div_pos(F[i] * mix_weight, lobe_weights.diffuse);
         })
         where(sample_diff_lobe, new_ray.pdf) = F[3];
+        where(sample_diff_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT;
 
         assert((secondary_mask & sample_diff_lobe).all_zeros());
         secondary_mask |= sample_diff_lobe;
@@ -6910,6 +6914,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
             where(sample_spec_lobe, new_ray.c[i]) = safe_div_pos(F[i] * mix_weight, F[3]);
         })
         where(sample_spec_lobe, new_ray.pdf) = F[3];
+        where(sample_spec_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
 
         assert(((sample_spec_lobe & mask) != sample_spec_lobe).all_zeros());
         assert((secondary_mask & sample_spec_lobe).all_zeros());
@@ -6939,6 +6944,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
             where(sample_coat_lobe, new_ray.c[i]) = 0.25f * F[i] * safe_div_pos(mix_weight, F[3]);
         })
         where(sample_coat_lobe, new_ray.pdf) = F[3];
+        where(sample_coat_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
 
         assert((secondary_mask & sample_coat_lobe).all_zeros());
         secondary_mask |= sample_coat_lobe;
@@ -6971,6 +6977,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
                 mask_ray_depth(ray.depth) + pack_depth(ivec<S>{0}, ivec<S>{1}, ivec<S>{0}, ivec<S>{0});
 
             UNROLLED_FOR(i, 3, { where(sample_trans_spec_lobe, new_ray.o[i]) = new_p[i]; })
+            where(sample_trans_spec_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
         }
 
         const ivec<S> sample_trans_refr_lobe = ~sample_trans_spec_lobe & sample_trans_lobe;
@@ -6993,6 +7000,7 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
                 where(sample_trans_refr_lobe, V[i]) = temp_V[i];
                 where(sample_trans_refr_lobe, new_ray.o[i]) = new_p[i];
             })
+            where(sample_trans_refr_lobe, new_ray.cone_spread) += MAX_CONE_SPREAD_INCREMENT * min(alpha[0], alpha[1]);
 
             pop_ior_stack(trans.backfacing & sample_trans_refr_lobe, new_ray.ior);
             push_ior_stack(~trans.backfacing & sample_trans_refr_lobe, new_ray.ior, trans.int_ior);
@@ -7377,8 +7385,7 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
         const uvec<S> grid_level = calc_grid_level(surf.P, sc.spatial_cache_grid);
         const fvec<S> voxel_size = calc_voxel_size(grid_level, sc.spatial_cache_grid);
 
-        ivec<S> use_cache = get_diff_depth(ray.depth) > 0;
-        use_cache |= simd_cast(cone_width > mix(fvec<S>{1.0f}, fvec<S>{1.5f}, cache_rand[0]) * voxel_size);
+        ivec<S> use_cache = simd_cast(cone_width > mix(fvec<S>{1.0f}, fvec<S>{1.5f}, cache_rand[0]) * voxel_size);
         use_cache &= simd_cast(inter.t > mix(fvec<S>{1.0f}, fvec<S>{2.0f}, cache_rand[1]) * voxel_size);
         use_cache &= is_active_lane;
         use_cache &= (mat_type != int(eShadingNode::Emissive));
@@ -7402,10 +7409,6 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
                                       float(unpacked.sample_count);
                         color /= sc.spatial_cache_grid.exposure;
                         color *= fvec4{ray.c[0][i], ray.c[1][i], ray.c[2][i], 0.0f};
-                        const float sum = hsum(color);
-                        if (sum > limits[1]) {
-                            color *= (limits[1] / sum);
-                        }
 
                         out_rgba[0].set(i, color[0]);
                         out_rgba[1].set(i, color[1]);
