@@ -73,7 +73,8 @@ void run_material_test(const char *arch_list[], const char *preferred_device, co
                 const auto start_time = high_resolution_clock::now();
 
                 auto renderer = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, &g_log_err, rt));
-                if (!renderer || renderer->type() != rt || renderer->is_hwrt() != use_hwrt) {
+                if (!renderer || renderer->type() != rt || renderer->is_hwrt() != use_hwrt ||
+                    renderer->is_spatial_caching_enabled() != caching) {
                     // skip unsupported (we fell back to some other renderer)
                     break;
                 }
@@ -1397,8 +1398,8 @@ void test_complex_mat5(const char *arch_list[], const char *preferred_device) {
 }
 
 void test_complex_mat5_clipped(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 39;
-    const int PixThres = 5382;
+    const int SampleCount = 40;
+    const int PixThres = 5337;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1669,7 +1670,7 @@ void test_complex_mat5_moon_light(const char *arch_list[], const char *preferred
 void test_complex_mat5_hdri_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 20;
     const double MinPSNR = 23.0;
-    const int PixThres = 6183;
+    const int PixThres = 6190;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};

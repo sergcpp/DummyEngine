@@ -26,9 +26,9 @@ const int MixNode = 4;
 const int TransparentNode = 5;
 const int PrincipledNode = 6;
 
-const uint TEX_SRGB_BIT = (1u << 24);               // 0b00000001
-const uint TEX_RECONSTRUCT_Z_BIT = (2u << 24); // 0b00000010
-const uint TEX_YCOCG_BIT = (4u << 24);              // 0b00000100
+const uint TEX_SRGB_BIT = (1u << 24);           // 0b00000001
+const uint TEX_RECONSTRUCT_Z_BIT = (2u << 24);  // 0b00000010
+const uint TEX_YCOCG_BIT = (4u << 24);          // 0b00000100
 
 const uint TEXTURES_SAMPLER_SLOT = 21;
 const uint TEXTURES_SIZE_SLOT = 22;
@@ -96,9 +96,8 @@ struct light_wbvh_node_t {
     float bbox_max[3][8];
     uint child[8];
     float flux[8];
-    float axis[3][8];
-    float omega_n[8];
-    float omega_e[8];
+    uint axis[8];
+    uint cos_omega_ne[8];
 };
 
 struct vertex_t {
@@ -114,9 +113,9 @@ struct mesh_t {
 };
 
 struct mesh_instance_t {
-    vec4 bbox_min; // w is tr_index
-    vec4 bbox_max; // w is mesh_index
-    uvec4 block_ndx; // xy - indexes of transform and mesh blocks, z - lights index, w - ray_visibility
+    vec4 bbox_min;      // w is tr_index
+    vec4 bbox_max;      // w is mesh_index
+    uvec4 block_ndx;    // xy - indexes of transform and mesh blocks, z - lights index, w - ray_visibility
     mat4 xform, inv_xform;
 };
 
