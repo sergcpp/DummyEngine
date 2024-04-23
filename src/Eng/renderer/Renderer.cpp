@@ -1027,6 +1027,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                                     list.render_settings.shadows_quality != eShadowsQuality::Off, frame_textures);
             }
 
+            // GI cache
+            AddGICachePasses(list.env.env_map, common_buffers, persistent_data, acc_struct_data, bindless_tex,
+                             rt_obj_instances_res, frame_textures);
+
             // GI
             AddDiffusePasses(list.env.env_map, lm_direct_, lm_indir_sh_,
                              list.render_settings.debug_denoise == eDebugDenoise::GI, list.probe_storage,
@@ -1071,11 +1075,30 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         // Debug geometry
         //
-        // if (list.render_flags & DebugProbes) {
-        //    rp_debug_probes_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);
-        //    rp_tail->p_next = &rp_debug_probes_;
-        //    rp_tail = rp_tail->p_next;
-        //}
+        if (list.render_settings.debug_probes) {
+            auto &debug_probes = rp_builder_.AddPass("DEBUG PROBES");
+
+            auto *data = debug_probes.AllocPassData<RpDebugProbesData>();
+
+            data->shared_data =
+                debug_probes.AddUniformBufferInput(common_buffers.shared_data_res, Ren::eStageBits::VertexShader);
+            data->offset_tex =
+                debug_probes.AddTextureInput(frame_textures.gi_cache_data, Ren::eStageBits::VertexShader);
+            data->irradiance_tex =
+                debug_probes.AddTextureInput(frame_textures.gi_cache, Ren::eStageBits::FragmentShader);
+            data->distance_tex =
+                debug_probes.AddTextureInput(frame_textures.gi_cache_dist, Ren::eStageBits::FragmentShader);
+            
+            data->grid_origin = persistent_data.probe_volume.origin;
+            data->grid_scroll = persistent_data.probe_volume.scroll;
+            data->grid_spacing = persistent_data.probe_volume.spacing;
+
+            frame_textures.depth = data->depth_tex = debug_probes.AddDepthOutput(frame_textures.depth);
+            frame_textures.color = data->output_tex = debug_probes.AddColorOutput(frame_textures.color);
+
+            rp_debug_probes_.Setup(rp_builder_, list, &view_state_, data);
+            debug_probes.set_executor(&rp_debug_probes_);
+        }
 
         // if (list.render_flags & DebugEllipsoids) {
         //     rp_debug_ellipsoids_.Setup(rp_builder_, list, &view_state_, SHARED_DATA_BUF, refl_out_name);

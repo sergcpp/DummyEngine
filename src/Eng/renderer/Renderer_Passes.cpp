@@ -101,6 +101,55 @@ void Eng::Renderer::InitPipelines() {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
+    { // GI Cache
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "probe_blend_rad", "internal/probe_blend.comp.glsl@RADIANCE");
+        assert(prog->ready());
+        if (!pi_probe_blend_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_blend_dist", "internal/probe_blend.comp.glsl@DISTANCE");
+        assert(prog->ready());
+        if (!pi_probe_blend_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_relocate", "internal/probe_relocate.comp.glsl");
+        assert(prog->ready());
+        if (!pi_probe_relocate_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_relocate_reset", "internal/probe_relocate.comp.glsl@RESET");
+        assert(prog->ready());
+        if (!pi_probe_relocate_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_classify", "internal/probe_classify.comp.glsl");
+        assert(prog->ready());
+        if (!pi_probe_classify_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_classify_reset", "internal/probe_classify.comp.glsl@RESET");
+        assert(prog->ready());
+        if (!pi_probe_classify_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_sample", "internal/probe_sample.comp.glsl");
+        assert(prog->ready());
+        if (!pi_probe_sample_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+
+        prog = sh_.LoadProgram(ctx_, "probe_sample_hq", "internal/probe_sample.comp.glsl@HQ_HDR");
+        assert(prog->ready());
+        if (!pi_probe_sample_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
     { // Reflections prefilter
         Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "ssr_prefilter", "internal/ssr_prefilter.comp.glsl");
         assert(prog->ready());
@@ -550,8 +599,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             if (p_list_->env.env_map) {
                 env_mip_count = float(p_list_->env.env_map->params.mip_count);
             }
-            shrd_data.ambient_hack = Ren::Vec4f{p_list_->env.ambient_hack[0], p_list_->env.ambient_hack[1],
-                                                p_list_->env.ambient_hack[2], env_mip_count};
+            shrd_data.ambient_hack = Ren::Vec4f{0.0f, 0.0f, 0.0f, env_mip_count};
 
             memcpy(&shrd_data.probes[0], p_list_->probes.data(), sizeof(ProbeItem) * p_list_->probes.size());
             memcpy(&shrd_data.ellipsoids[0], p_list_->ellipsoids.data(),

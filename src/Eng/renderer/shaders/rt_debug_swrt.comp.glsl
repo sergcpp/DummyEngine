@@ -422,8 +422,6 @@ void main() {
                                                                      sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
                 }
             }
-
-            final_color += lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
         }
     }
 

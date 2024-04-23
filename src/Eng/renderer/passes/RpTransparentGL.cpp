@@ -218,7 +218,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
 
 #if !defined(REN_DIRECT_DRAWING)
     if (view_state_->is_multisampled) {
-        Ren::DebugMarker _resolve_ms(ctx.api_ctx(), ctx.current_cmd_buf(), "RESOLVE MS BUFFER");
+        /*Ren::DebugMarker _resolve_ms(ctx.api_ctx(), ctx.current_cmd_buf(), "RESOLVE MS BUFFER");
 
         Ren::RastState rast_state;
         rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -234,7 +234,7 @@ void Eng::RpTransparent::DrawTransparent_Simple(RpBuilder &builder, RpAllocBuf &
         const PrimDraw::Uniform uniforms[] = {
             {0, Ren::Vec4f{0.0f, 0.0f, float(view_state_->act_res[0]), float(view_state_->act_res[1])}}};
 
-        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings, uniforms);
+        prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, {&resolved_fb_, 0}, blit_ms_resolve_prog_.get(), bindings, uniforms);*/
     }
 #endif
 }

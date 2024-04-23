@@ -832,6 +832,8 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
         std::vector<std::string> materials;
         std::vector<std::vector<uint32_t>> indices;
 
+        int tangents_stride = 3;
+
         const JsArray &js_materials = js_gltf.at("materials").as_arr();
         for (const JsElement &js_material : js_materials.elements) {
             const JsObject &js_mat = js_material.as_obj();
@@ -903,6 +905,25 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
                     memcpy(&uvs[uvs_off], &uvs_buf[uvs_byte_off], uvs_byte_len);
                 }
 
+                if (js_attributes.Has("TANGENT")) {
+                    const int tan_ndx = int(js_attributes.at("TANGENT").as_num().val);
+                    const JsObject &js_tan_accessor = js_accessors.at(tan_ndx).as_obj();
+                    const JsObject &js_tan_view =
+                        js_buffer_views.at(int(js_tan_accessor.at("bufferView").as_num().val)).as_obj();
+                    assert(int(js_tan_accessor.at("componentType").as_num().val) == int(eGLTFComponentType::Float));
+                    assert(js_tan_accessor.at("type").as_str().val == "VEC4");
+
+                    const auto &tan_buf = buffers[int(js_tan_view.at("buffer").as_num().val)];
+                    const int tan_byte_len = int(js_tan_view.at("byteLength").as_num().val);
+                    const int tan_byte_off = int(js_tan_view.at("byteOffset").as_num().val);
+                    assert((tan_byte_len % sizeof(float)) == 0);
+                    const size_t tan_off = tangents.size();
+                    tangents.resize(tangents.size() + tan_byte_len / sizeof(float));
+                    memcpy(&tangents[tan_off], &tan_buf[tan_byte_off], tan_byte_len);
+
+                    tangents_stride = 4;
+                }
+
                 { // parse indices
                     const int indices_ndx = int(js_prim.at("indices").as_num().val);
                     const JsObject &js_indices_accessor = js_accessors.at(indices_ndx).as_obj();
@@ -944,7 +965,8 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
             int vertex_count = int(positions.size() / 3);
             uvs2.resize(2 * vertex_count, 0.0f);
 
-            { // generate tangents
+            if (tangents.empty()){
+                // generate tangents
                 std::vector<Ren::vertex_t> vertices(vertex_count);
 
                 for (int i = 0; i < vertex_count; ++i) {
@@ -1065,7 +1087,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
             for (int i = 0; i < int(positions.size()) / 3; ++i) {
                 out_f.write((char *)&positions[i * 3ull], sizeof(float) * 3);
                 out_f.write((char *)&normals[i * 3ull], sizeof(float) * 3);
-                out_f.write((char *)&tangents[i * 3ull], sizeof(float) * 3);
+                out_f.write((char *)&tangents[i * tangents_stride], sizeof(float) * 3);
                 out_f.write((char *)&uvs[i * 2ull], sizeof(float) * 2);
                 out_f.write((char *)&uvs2[i * 2ull], sizeof(float) * 2);
             }

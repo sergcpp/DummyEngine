@@ -82,6 +82,7 @@ class RpSubpass {
     RpResRef AddColorOutput(const Ren::WeakTex2DRef &tex);
     RpResRef AddColorOutput(std::string_view name);
     RpResRef AddDepthOutput(std::string_view name, const Ren::Tex2DParams &params);
+    RpResRef AddDepthOutput(RpResRef handle);
     RpResRef AddDepthOutput(const Ren::WeakTex2DRef &tex);
 
     // TODO: try to get rid of this

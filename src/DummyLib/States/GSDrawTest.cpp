@@ -53,8 +53,8 @@ void GSDrawTest::Enter() {
     GSBaseState::Enter();
 
     cmdline_->RegisterCommand("r_printCam", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        log_->Info("View Origin: { %f, %f, %f }", view_origin_[0], view_origin_[1], view_origin_[2]);
-        log_->Info("View Direction: { %f, %f, %f }", view_dir_[0], view_dir_[1], view_dir_[2]);
+        log_->Info("View Pos: { %f, %f, %f }", view_origin_[0], view_origin_[1], view_origin_[2]);
+        log_->Info("View Dir: { %f, %f, %f }", view_dir_[0], view_dir_[1], view_dir_[2]);
         return true;
     });
 
@@ -336,10 +336,10 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
 
             memcpy(&initial_view_dir_[0], ValuePtr(view_vec), 3 * sizeof(float));
 
-            //Ren::Vec4f view_up_vec = {0.0f, 0.0f, -1.0f, 0.0f};
-            //view_up_vec = transform * view_up_vec;
+            // Ren::Vec4f view_up_vec = {0.0f, 0.0f, -1.0f, 0.0f};
+            // view_up_vec = transform * view_up_vec;
 
-            //memcpy(&view_up[0], ValuePtr(view_up_vec), 3 * sizeof(float));
+            // memcpy(&view_up[0], ValuePtr(view_up_vec), 3 * sizeof(float));
         }
 
         if (js_cam.Has("fwd_speed")) {

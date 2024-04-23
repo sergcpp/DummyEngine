@@ -23,6 +23,7 @@ extern "C" {
 #include "passes/RpGBufferFill.h"
 #include "passes/RpOpaque.h"
 #include "passes/RpRTGI.h"
+#include "passes/RpRTGICache.h"
 #include "passes/RpRTReflections.h"
 #include "passes/RpRTShadows.h"
 #include "passes/RpReadBrightness.h"
@@ -186,6 +187,7 @@ class Renderer {
     RpSSRCompose rp_ssr_compose_ = {prim_draw_};
     RpSSRCompose2 rp_ssr_compose2_ = {prim_draw_};
     RpRTGI rp_rt_gi_;
+    RpRTGICache rp_rt_gi_cache_;
     RpRTReflections rp_rt_reflections_;
     RpRTShadows rp_rt_shadows_;
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
@@ -193,6 +195,7 @@ class Renderer {
     RpCombineData rp_combine_data_;
     RpCombine rp_combine_ = {prim_draw_};
 
+    RpDebugProbes rp_debug_probes_ = {prim_draw_};
     RpDebugRT rp_debug_rt_;
 
     ViewState view_state_;
@@ -205,6 +208,8 @@ class Renderer {
     Ren::Pipeline pi_rt_write_indirect_;
     // SSR Denoiser stuff
     Ren::Pipeline pi_ssr_reproject_[2], pi_ssr_prefilter_[2], pi_ssr_resolve_temporal_[2];
+    // GI Cache
+    Ren::Pipeline pi_probe_blend_[2], pi_probe_relocate_[2], pi_probe_classify_[2], pi_probe_sample_[2];
     // GI
     Ren::Pipeline pi_gi_classify_tiles_, pi_gi_write_indirect_, pi_gi_trace_ss_;
     Ren::Pipeline pi_gi_rt_write_indirect_;
@@ -244,6 +249,10 @@ class Renderer {
         RpResRef ssao;
         RpResRef gi;
         RpResRef sun_shadow;
+
+        RpResRef gi_cache;
+        RpResRef gi_cache_dist;
+        RpResRef gi_cache_data;
     };
 
     void AddBuffersUpdatePass(CommonBuffers &common_buffers);
@@ -279,8 +288,13 @@ class Renderer {
                           const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
+                          const BindlessTextureData &bindless, RpResRef depth_hierarchy, RpResRef rt_obj_instances_res,
+                          FrameTextures &frame_textures);
+
+    void AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
+                          const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
+                          const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
+                          FrameTextures &frame_textures);
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,

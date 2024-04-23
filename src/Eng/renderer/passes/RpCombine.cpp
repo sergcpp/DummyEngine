@@ -12,6 +12,8 @@
 #include "../shaders/blit_combine_interface.h"
 
 void Eng::RpCombine::Execute(RpBuilder &builder) {
+    LazyInit(builder.ctx(), builder.sh());
+
     RpAllocTex &color_tex = builder.GetReadTexture(pass_data_->color_tex);
     RpAllocTex &blur_tex = builder.GetReadTexture(pass_data_->blur_tex);
     RpAllocTex &exposure_tex = builder.GetReadTexture(pass_data_->exposure_tex);
@@ -19,8 +21,6 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
     if (pass_data_->output_tex) {
         output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
     }
-
-    LazyInit(builder.ctx(), builder.sh(), output_tex);
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
@@ -55,7 +55,7 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
                         rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
 }
 
-void Eng::RpCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex) {
+void Eng::RpCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         blit_combine_prog_[0] =
             sh.LoadProgram(ctx, "blit_combine", "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");

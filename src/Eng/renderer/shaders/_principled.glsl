@@ -80,17 +80,24 @@ struct ltc_params_t {
     vec2 coat_t2;
 };
 
-ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, float clearcoat_roughness2) {
-    const vec2 ltc_uv = LTC_Coords(N_dot_V, roughness);
-    const vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
+#ifndef MIN_SPEC_ROUGHNESS
+    #define MIN_SPEC_ROUGHNESS 0.0
+#endif
 
+ltc_params_t SampleLTC_Params(sampler2D luts, float N_dot_V, float roughness, float clearcoat_roughness2) {
     ltc_params_t ret;
-    ret.diff_t1 = textureLod(luts, ltc_uv + vec2(0.0, 0.0), 0.0);
-    ret.diff_t2 = textureLod(luts, ltc_uv + vec2(0.125, 0.0), 0.0).xy;
-    ret.sheen_t1 = textureLod(luts, ltc_uv + vec2(0.25, 0.0), 0.0);
-    ret.sheen_t2 = textureLod(luts, ltc_uv + vec2(0.375, 0.0), 0.0).xy;
-    ret.spec_t1 = textureLod(luts, ltc_uv + vec2(0.5, 0.0), 0.0);
-    ret.spec_t2 = textureLod(luts, ltc_uv + vec2(0.625, 0.0), 0.0).xy;
+
+    const vec2 diff_ltc_uv = LTC_Coords(N_dot_V, clamp(roughness, 0.0, 1.0));
+    ret.diff_t1 = textureLod(luts, diff_ltc_uv + vec2(0.0, 0.0), 0.0);
+    ret.diff_t2 = textureLod(luts, diff_ltc_uv + vec2(0.125, 0.0), 0.0).xy;
+    ret.sheen_t1 = textureLod(luts, diff_ltc_uv + vec2(0.25, 0.0), 0.0);
+    ret.sheen_t2 = textureLod(luts, diff_ltc_uv + vec2(0.375, 0.0), 0.0).xy;
+
+    const vec2 spec_ltc_uv = LTC_Coords(N_dot_V, clamp(roughness, MIN_SPEC_ROUGHNESS, 1.0));
+    ret.spec_t1 = textureLod(luts, spec_ltc_uv + vec2(0.5, 0.0), 0.0);
+    ret.spec_t2 = textureLod(luts, spec_ltc_uv + vec2(0.625, 0.0), 0.0).xy;
+
+    const vec2 coat_ltc_uv = LTC_Coords(N_dot_V, clearcoat_roughness2);
     ret.coat_t1 = textureLod(luts, coat_ltc_uv + vec2(0.75, 0.0), 0.0);
     ret.coat_t2 = textureLod(luts, coat_ltc_uv + vec2(0.875, 0.0), 0.0).xy;
 
@@ -110,13 +117,21 @@ struct light_item_t {
 #define ENABLE_DISK_LIGHT 1
 #define ENABLE_LINE_LIGHT 1
 
-#define ENABLE_DIFFUSE 1
-#define ENABLE_SHEEN 1
-#define ENABLE_SPECULAR 1
-#define ENABLE_CLEARCOAT 1
+#ifndef ENABLE_DIFFUSE
+    #define ENABLE_DIFFUSE 1
+#endif
+#ifndef ENABLE_SHEEN
+    #define ENABLE_SHEEN 1
+#endif
+#ifndef ENABLE_SPECULAR
+    #define ENABLE_SPECULAR 1
+#endif
+#ifndef ENABLE_CLEARCOAT
+    #define ENABLE_CLEARCOAT 1
+#endif
 
-vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_weights_t lobe_weights, ltc_params_t ltc,
-                         sampler2D ltc_luts, float sheen, vec3 base_color, vec3 sheen_color, vec3 spec_color, vec3 clearcoat_color) {
+vec3 EvaluateLightSource(const light_item_t litem, const vec3 pos_ws, const vec3 I, const vec3 N, const lobe_weights_t lobe_weights, const ltc_params_t ltc,
+                         sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color, const vec3 spec_color, const vec3 clearcoat_color) {
     const bool TwoSided = false;
 
     const uint type = floatBitsToUint(litem.col_and_type.w) & LIGHT_TYPE_BITS;
@@ -144,20 +159,20 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         points[3] = litem.pos_and_radius.xyz - u + v;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
-            vec3 dcol = base_color;
+            const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, TwoSided);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
             if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
+                const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / M_PI;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
-            vec3 scol = spec_color;
+            const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
@@ -165,7 +180,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
             ret += litem.col_and_type.xyz * spec / M_PI;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
-            vec3 ccol = clearcoat_color;
+            const vec3 ccol = clearcoat_color;
 
             vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, TwoSided);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
@@ -180,20 +195,20 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_blend.xyz;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
-            vec3 dcol = base_color;
+            const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Rect(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, TwoSided);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
             if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                vec3 _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
+                const vec3 _sheen = LTC_Evaluate_Rect(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
-            vec3 scol = spec_color;
+            const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Rect(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
@@ -201,7 +216,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
             ret += litem.col_and_type.xyz * spec / 4.0;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
-            vec3 ccol = clearcoat_color;
+            const vec3 ccol = clearcoat_color;
 
             vec3 coat = LTC_Evaluate_Rect(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, TwoSided);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
@@ -216,20 +231,20 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         points[3] = litem.pos_and_radius.xyz - litem.u_and_reg.xyz + litem.v_and_blend.xyz;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
-            vec3 dcol = base_color;
+            const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, TwoSided);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
             if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
+                const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, TwoSided);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff / 4.0;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
-            vec3 scol = spec_color;
+            const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, TwoSided);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
@@ -237,7 +252,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
             ret += litem.col_and_type.xyz * spec / 4.0;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
-            vec3 ccol = clearcoat_color;
+            const vec3 ccol = clearcoat_color;
 
             vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, TwoSided);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
@@ -250,20 +265,20 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
         points[1] = litem.pos_and_radius.xyz - litem.v_and_blend.xyz;
 
         if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
-            vec3 dcol = base_color;
+            const vec3 dcol = base_color;
 
             vec3 diff = LTC_Evaluate_Line(N, I, pos_ws.xyz, ltc.diff_t1, points, 0.01);
             diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
             if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-                vec3 _sheen = LTC_Evaluate_Line(N, I, pos_ws.xyz, ltc.sheen_t1, points, 0.01);
+                const vec3 _sheen = LTC_Evaluate_Line(N, I, pos_ws.xyz, ltc.sheen_t1, points, 0.01);
                 diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
             }
 
             ret += lobe_weights.diffuse_mul * litem.col_and_type.xyz * diff;
         }
         if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
-            vec3 scol = spec_color;
+            const vec3 scol = spec_color;
 
             vec3 spec = LTC_Evaluate_Line(N, I, pos_ws.xyz, ltc.spec_t1, points, 0.01);
             spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
@@ -271,7 +286,7 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
             ret += litem.col_and_type.xyz * spec;
         }
         if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
-            vec3 ccol = clearcoat_color;
+            const vec3 ccol = clearcoat_color;
 
             vec3 coat = LTC_Evaluate_Line(N, I, pos_ws.xyz, ltc.coat_t1, points, 0.01);
             coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;
@@ -287,8 +302,10 @@ vec3 EvaluateLightSource(light_item_t litem, vec3 pos_ws, vec3 I, vec3 N, lobe_w
     return ret;
 }
 
-vec3 EvaluateSunLight(vec3 light_color, vec3 light_dir, float light_radius, vec3 pos_ws, vec3 I, vec3 N, lobe_weights_t lobe_weights, ltc_params_t ltc,
-                      sampler2D ltc_luts, float sheen, vec3 base_color, vec3 sheen_color, vec3 spec_color, vec3 clearcoat_color) {
+vec3 EvaluateSunLight(const vec3 light_color, const vec3 light_dir, const float light_radius, const vec3 pos_ws,
+                      const vec3 I, const vec3 N, const lobe_weights_t lobe_weights, const ltc_params_t ltc,
+                      sampler2D ltc_luts, const float sheen, const vec3 base_color, const vec3 sheen_color,
+                      const vec3 spec_color, const vec3 clearcoat_color) {
     //if (dot(N, light_dir) < 0.0) {
     //    return vec3(0.0);
     //}
@@ -310,20 +327,20 @@ vec3 EvaluateSunLight(vec3 light_color, vec3 light_dir, float light_radius, vec3
     points[3] = pos_ws + light_dir - light_radius * u + light_radius * v;
 
     if (lobe_weights.diffuse > 0.0 && ENABLE_DIFFUSE != 0) {
-        vec3 dcol = base_color;
+        const vec3 dcol = base_color;
 
         vec3 diff = LTC_Evaluate_Disk(ltc_luts, 0.125, N, I, pos_ws.xyz, ltc.diff_t1, points, false);
         diff *= dcol * ltc.diff_t2.x;// + (1.0 - dcol) * ltc.diff_t2.y;
 
         if (sheen > 0.0 && ENABLE_SHEEN != 0) {
-            vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, false);
+            const vec3 _sheen = LTC_Evaluate_Disk(ltc_luts, 0.375, N, I, pos_ws.xyz, ltc.sheen_t1, points, false);
             diff += _sheen * (sheen_color * ltc.sheen_t2.x + (1.0 - sheen_color) * ltc.sheen_t2.y);
         }
 
         ret += lobe_weights.diffuse_mul * light_color * diff;
     }
     if (lobe_weights.specular > 0.0 && ENABLE_SPECULAR != 0) {
-        vec3 scol = spec_color;
+        const vec3 scol = spec_color;
 
         vec3 spec = LTC_Evaluate_Disk(ltc_luts, 0.625, N, I, pos_ws.xyz, ltc.spec_t1, points, false);
         spec *= scol * ltc.spec_t2.x + (1.0 - scol) * ltc.spec_t2.y;
@@ -331,7 +348,7 @@ vec3 EvaluateSunLight(vec3 light_color, vec3 light_dir, float light_radius, vec3
         ret += light_color * spec;
     }
     if (lobe_weights.clearcoat > 0.0 && ENABLE_CLEARCOAT != 0) {
-        vec3 ccol = clearcoat_color;
+        const vec3 ccol = clearcoat_color;
 
         vec3 coat = LTC_Evaluate_Disk(ltc_luts, 0.875, N, I, pos_ws.xyz, ltc.coat_t1, points, false);
         coat *= ccol * ltc.coat_t2.x + (1.0 - ccol) * ltc.coat_t2.y;

@@ -151,7 +151,8 @@ class TestContext : public Ren::Context {
     Ren::ILog *log_;
 
   public:
-    TestContext(const int w, const int h, const char *device_name, int validation_level, Ren::ILog *log) : log_(log) {
+    TestContext(const int w, const int h, const char *device_name, int validation_level, bool nohwrt, Ren::ILog *log)
+        : log_(log) {
 #if defined(USE_GL_RENDER)
 #if defined(_WIN32)
         WNDCLASSEX window_class = {};
@@ -281,7 +282,7 @@ class TestContext : public Ren::Context {
         glViewport(0, 0, 256, 256);
 #endif
 #endif
-        if (!Ren::Context::Init(w, h, log_, validation_level, false, device_name)) {
+        if (!Ren::Context::Init(w, h, log_, validation_level, nohwrt, device_name)) {
             throw std::runtime_error("Initialization failed!");
         }
     }

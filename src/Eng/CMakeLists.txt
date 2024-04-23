@@ -128,6 +128,7 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/Renderer_DrawList.cpp
                         renderer/Renderer_Frontend.cpp
                         renderer/Renderer_Gen.cpp
+                        renderer/Renderer_GICache.cpp
                         renderer/Renderer_GIDiffuse.cpp
                         renderer/Renderer_GISpecular.cpp
                         renderer/Renderer_Names.h
@@ -159,6 +160,8 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpBuildAccStructures.cpp
                     renderer/passes/RpCombine.h
                     renderer/passes/RpCombine.cpp
+                    renderer/passes/RpDebugProbes.h
+                    renderer/passes/RpDebugProbes.cpp
                     renderer/passes/RpDebugRT.h
                     renderer/passes/RpDebugRT.cpp
                     renderer/passes/RpDepthFill.h
@@ -173,6 +176,8 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpReadBrightness.cpp
                     renderer/passes/RpRTGI.h
                     renderer/passes/RpRTGI.cpp
+                    renderer/passes/RpRTGICache.h
+                    renderer/passes/RpRTGICache.cpp
                     renderer/passes/RpRTReflections.h
                     renderer/passes/RpRTReflections.cpp
                     renderer/passes/RpRTShadows.h
@@ -196,14 +201,13 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
 
 if(${RENDERER} STREQUAL "GL")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        renderer/PrimDrawGL.cpp)
+                         renderer/PrimDrawGL.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
-                        scene/SceneManagerGL.cpp)
-    set(GRAPH_SOURCES ${GRAPH_SOURCES} renderer/graph/GraphBuilderGL.cpp)
+                      scene/SceneManagerGL.cpp)
+    set(GRAPH_SOURCES ${GRAPH_SOURCES}
+                      renderer/graph/GraphBuilderGL.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
                         renderer/passes/RpDebugRT_GL.cpp
-                        renderer/passes/RpDebugProbes.h         # GL-only for now
-                        renderer/passes/RpDebugProbes.cpp       # GL-only for now
                         renderer/passes/RpDebugTextures.h       # GL-only for now
                         renderer/passes/RpDebugTextures.cpp     # GL-only for now
                         renderer/passes/RpDebugTexturesGL.cpp
@@ -218,6 +222,7 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpGBufferFillGL.cpp
                         renderer/passes/RpOpaqueGL.cpp
                         renderer/passes/RpRTGI_GL.cpp
+                        renderer/passes/RpRTGICache_GL.cpp
                         renderer/passes/RpRTReflections_GL.cpp
                         renderer/passes/RpRTShadows_GL.cpp
                         renderer/passes/RpShadowMapsGL.cpp
@@ -227,28 +232,30 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpUpdateAccBuffersGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        renderer/PrimDrawVK.cpp)
+                         renderer/PrimDrawVK.cpp)
     set(SCENE_SOURCES ${SCENE_SOURCES}
-                        scene/SceneManagerVK.cpp)
-    set(GRAPH_SOURCES ${GRAPH_SOURCES} renderer/graph/GraphBuilderVK.cpp)
+                      scene/SceneManagerVK.cpp)
+    set(GRAPH_SOURCES ${GRAPH_SOURCES}
+                      renderer/graph/GraphBuilderVK.cpp)
     set(PASS_SOURCES ${PASS_SOURCES}
-                        renderer/passes/RpBuildAccStructuresVK.cpp
-                        renderer/passes/RpDebugRT_VK.cpp
-                        renderer/passes/RpDepthFillVK.cpp
-                        renderer/passes/RpDepthHierarchyVK.cpp
-                        renderer/passes/RpGBufferFillVK.cpp
-                        renderer/passes/RpOpaqueVK.cpp
-                        renderer/passes/RpRTGI_VK.cpp
-                        renderer/passes/RpRTReflections_VK.cpp
-                        renderer/passes/RpRTShadows_VK.cpp
-                        renderer/passes/RpShadowMapsVK.cpp
-                        renderer/passes/RpSkinningVK.cpp
-                        renderer/passes/RpSkydomeVK.cpp
-                        renderer/passes/RpTransparentVK.cpp
-                        renderer/passes/RpUpdateAccBuffersVK.cpp)
+                     renderer/passes/RpBuildAccStructuresVK.cpp
+                     renderer/passes/RpDebugRT_VK.cpp
+                     renderer/passes/RpDepthFillVK.cpp
+                     renderer/passes/RpDepthHierarchyVK.cpp
+                     renderer/passes/RpGBufferFillVK.cpp
+                     renderer/passes/RpOpaqueVK.cpp
+                     renderer/passes/RpRTGI_VK.cpp
+                     renderer/passes/RpRTGICache_VK.cpp
+                     renderer/passes/RpRTReflections_VK.cpp
+                     renderer/passes/RpRTShadows_VK.cpp
+                     renderer/passes/RpShadowMapsVK.cpp
+                     renderer/passes/RpSkinningVK.cpp
+                     renderer/passes/RpSkydomeVK.cpp
+                     renderer/passes/RpTransparentVK.cpp
+                     renderer/passes/RpUpdateAccBuffersVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")
     set(RENDERER_SOURCES ${RENDERER_SOURCES}
-                        renderer/RendererSW.cpp)
+                         renderer/RendererSW.cpp)
 endif()
 
 file(GLOB RENDERER_SHADERS

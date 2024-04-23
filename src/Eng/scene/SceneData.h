@@ -10,6 +10,7 @@
 #include <Ren/Pipeline.h>
 #include <Ren/ProbeStorage.h>
 #include <Ren/Storage.h>
+#include <Ren/TextureArray.h>
 #include <Ren/TextureAtlas.h>
 
 #include "components/AccStructure.h"
@@ -114,7 +115,6 @@ struct Environment {
     float env_map_rot = 0.0f;
     Ren::Tex2DRef env_map;
     Ren::Tex2DRef lm_direct, lm_indir, lm_indir_sh[4];
-    Ren::Vec3f ambient_hack;
     float sun_shadow_bias[2] = {4.0f, 8.0f};
 
     Ren::String env_map_name;
@@ -166,6 +166,17 @@ class CompStorage {
 #endif
 
 namespace Eng {
+struct ProbeVolume {
+    Ren::Vec3f origin, spacing;
+    Ren::Vec3i scroll;
+    mutable bool reset_relocation = true;
+    mutable bool reset_classification = true;
+    std::unique_ptr<Ren::Texture2DArray> ray_data;
+    std::unique_ptr<Ren::Texture2DArray> irradiance;
+    std::unique_ptr<Ren::Texture2DArray> distance;
+    std::unique_ptr<Ren::Texture2DArray> data;
+};
+
 struct PersistentGpuData {
     Ren::BufferRef instance_buf;
     Ren::Tex1DRef instance_buf_tbo;
@@ -191,6 +202,8 @@ struct PersistentGpuData {
     } swrt;
     uint32_t rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;
+
+    ProbeVolume probe_volume;
 
     PersistentGpuData();
     ~PersistentGpuData();

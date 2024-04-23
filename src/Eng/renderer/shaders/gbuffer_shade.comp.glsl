@@ -10,8 +10,6 @@
 #include "_principled.glsl"
 #include "gbuffer_shade_interface.h"
 
-#define LIGHT_ATTEN_CUTOFF 0.004
-
 #pragma multi_compile _ HQ_HDR
 
 layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
@@ -55,17 +53,17 @@ void main() {
     const ivec2 icoord = ivec2(gl_GlobalInvocationID.xy);
     const vec2 norm_uvs = (vec2(icoord) + 0.5) / g_shrd_data.res_and_fres.xy;
 
-    const highp float depth = texelFetch(g_depth_tex, icoord, 0).r;
-    const highp float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
-    const highp float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
+    const float depth = texelFetch(g_depth_tex, icoord, 0).r;
+    const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
+    const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 
     const int ix = int(gl_GlobalInvocationID.x), iy = int(gl_GlobalInvocationID.y);
     const int cell_index = GetCellIndex(ix, iy, slice, g_shrd_data.res_and_fres.xy);
 
-    const highp uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
-    const highp uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
-    const highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
+    const uvec2 cell_data = texelFetch(g_cells_buf, cell_index).xy;
+    const uvec2 offset_and_lcount = uvec2(bitfieldExtract(cell_data.x, 0, 24), bitfieldExtract(cell_data.x, 24, 8));
+    const uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8), bitfieldExtract(cell_data.y, 8, 8));
 
     vec4 pos_cs = vec4(norm_uvs, depth, 1.0);
 #if defined(VULKAN)

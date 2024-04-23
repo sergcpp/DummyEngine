@@ -391,19 +391,16 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 #endif
             }
 
-            if (lm_direct) {
-                data->lm_tex[0] = rt_refl.AddTextureInput(lm_direct, stage);
-            }
-
-            for (int i = 0; i < 4; ++i) {
-                if (lm_indir_sh[i]) {
-                    data->lm_tex[i + 1] = rt_refl.AddTextureInput(lm_indir_sh[i], stage);
-                }
-            }
-
             data->dummy_black = rt_refl.AddTextureInput(dummy_black_, stage);
 
             data->tlas = acc_struct_data.rt_tlases[int(eTLASIndex::Main)];
+
+            data->probe_volume = &persistent_data.probe_volume;
+            if (settings.gi_quality != eGIQuality::Off) {
+                data->irradiance_tex = rt_refl.AddTextureInput(frame_textures.gi_cache, stage);
+                data->distance_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_dist, stage);
+                data->offset_tex = rt_refl.AddTextureInput(frame_textures.gi_cache_data, stage);
+            }
 
             refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
             raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);

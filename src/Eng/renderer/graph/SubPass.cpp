@@ -96,6 +96,10 @@ Eng::RpResRef Eng::RpSubpass::AddDepthOutput(std::string_view name, const Ren::T
     return builder_.WriteTexture(name, params, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }
 
+Eng::RpResRef Eng::RpSubpass::AddDepthOutput(const RpResRef handle) {
+    return builder_.WriteTexture(handle, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
+}
+
 Eng::RpResRef Eng::RpSubpass::AddDepthOutput(const Ren::WeakTex2DRef &tex) {
     return builder_.WriteTexture(tex, Ren::eResState::DepthWrite, Ren::eStageBits::DepthAttachment, *this);
 }

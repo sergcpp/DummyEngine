@@ -4,8 +4,6 @@
 #include <Ren/RastState.h>
 #include <Ren/Texture.h>
 
-#include "../../utils/ShaderLoader.h"
-#include "../PrimDraw.h"
 #include "../Renderer_Structs.h"
 
 void Eng::RpRTGI::Execute(RpBuilder &builder) {

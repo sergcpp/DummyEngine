@@ -38,16 +38,15 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     RpAllocTex &dummy_black = builder.GetReadTexture(pass_data_->dummy_black);
     RpAllocTex &shadowmap_tex = builder.GetReadTexture(pass_data_->shadowmap_tex);
     RpAllocTex &ltc_luts_tex = builder.GetReadTexture(pass_data_->ltc_luts_tex);
-    RpAllocTex *lm_tex[5];
-    for (int i = 0; i < 5; ++i) {
-        if (pass_data_->lm_tex[i]) {
-            lm_tex[i] = &builder.GetReadTexture(pass_data_->lm_tex[i]);
-        } else {
-            lm_tex[i] = &dummy_black;
-        }
-    }
     RpAllocBuf &cells_buf = builder.GetReadBuffer(pass_data_->cells_buf);
     RpAllocBuf &items_buf = builder.GetReadBuffer(pass_data_->items_buf);
+
+    RpAllocTex *irradiance_tex = nullptr, *distance_tex = nullptr, *offset_tex = nullptr;
+    if (pass_data_->irradiance_tex) {
+        irradiance_tex = &builder.GetReadTexture(pass_data_->irradiance_tex);
+        distance_tex = &builder.GetReadTexture(pass_data_->distance_tex);
+        offset_tex = &builder.GetReadTexture(pass_data_->offset_tex);
+    }
 
     RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex);
     RpAllocTex &out_raylen_tex = builder.GetWriteTexture(pass_data_->out_raylen_tex);
@@ -96,7 +95,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
             ctx.CreateTexture1D("Meshes TBO", meshes_buf.ref, Ren::eTexFormat::RawRG32UI, 0, meshes_buf.ref->size());
     }
 
-    const Ren::Binding bindings[] = {
+    Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::SBuf, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
@@ -115,11 +114,6 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTReflections::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
@@ -127,10 +121,25 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
+    if (irradiance_tex) {
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::DISTANCE_TEX_SLOT, *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
+    }
 
-    const Ren::Pipeline &pi = pass_data_->four_bounces ? pi_rt_reflections_4bounce_swrt_ : pi_rt_reflections_swrt_;
+    const Ren::Pipeline &pi =
+        pass_data_->four_bounces
+            ? (irradiance_tex ? pi_rt_reflections_4bounce_swrt_[1] : pi_rt_reflections_4bounce_swrt_[0])
+            : (irradiance_tex ? pi_rt_reflections_swrt_[1] : pi_rt_reflections_swrt_[0]);
+
+    const Ren::Vec3f &grid_origin = pass_data_->probe_volume->origin;
+    const Ren::Vec3i &grid_scroll = pass_data_->probe_volume->scroll;
+    const Ren::Vec3f &grid_spacing = pass_data_->probe_volume->spacing;
 
     RTReflections::Params uniform_params;
+    uniform_params.grid_origin = Ren::Vec4f(grid_origin[0], grid_origin[1], grid_origin[2], 0.0f);
+    uniform_params.grid_scroll = Ren::Vec4i(grid_scroll[0], grid_scroll[1], grid_scroll[2], 0.0f);
+    uniform_params.grid_spacing = Ren::Vec4f(grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f);
     uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_->act_res[0]), uint32_t(view_state_->act_res[1])};
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
 
@@ -144,7 +153,15 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             sh.LoadProgram(ctx, "rt_reflections_swrt", "internal/rt_reflections_swrt.comp.glsl");
         assert(rt_reflections_swrt_prog->ready());
 
-        if (!pi_rt_reflections_swrt_.Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
+        if (!pi_rt_reflections_swrt_[0].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
+            ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+        }
+
+        rt_reflections_swrt_prog =
+            sh.LoadProgram(ctx, "rt_reflections_swrt_gi", "internal/rt_reflections_swrt.comp.glsl@GI_CACHE");
+        assert(rt_reflections_swrt_prog->ready());
+
+        if (!pi_rt_reflections_swrt_[1].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 
@@ -152,7 +169,15 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             sh.LoadProgram(ctx, "rt_reflections_4bounce_swrt", "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES");
         assert(rt_reflections_swrt_prog->ready());
 
-        if (!pi_rt_reflections_4bounce_swrt_.Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
+        if (!pi_rt_reflections_4bounce_swrt_[0].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
+            ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
+        }
+
+        rt_reflections_swrt_prog = sh.LoadProgram(ctx, "rt_reflections_4bounce_swrt_gi",
+                                                  "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES;GI_CACHE");
+        assert(rt_reflections_swrt_prog->ready());
+
+        if (!pi_rt_reflections_4bounce_swrt_[1].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 

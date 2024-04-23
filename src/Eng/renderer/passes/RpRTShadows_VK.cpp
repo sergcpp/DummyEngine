@@ -159,13 +159,13 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS TBO", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS SHADOW TBO (Shadow)", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
                                                   rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
         mesh_instances_buf.tbos[0] =
-            ctx.CreateTexture1D("Mesh Instances TBO", mesh_instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
+            ctx.CreateTexture1D("Mesh Instances TBO (Shadow)", mesh_instances_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
                                 mesh_instances_buf.ref->size());
     }
 

@@ -15,12 +15,7 @@
         "sun_shadow_bias" : [ 0.0, 0.0 ],
         "env_col" : [ 4.0, 4.0, 4.0 ],
         "env_map" : "env/meadow_2k.hdr",
-        "env_map_rot" : 135.0,
-        "ambient_hack" : [
-            0.03,
-            0.025,
-            0.02
-        ]
+        "env_map_rot" : 135.0
     },
     "objects" : [
         {
@@ -247,7 +242,8 @@
         ],
         "view_target" : [ -0.000594, 0.047674, 0.00025 ],
         "fwd_speed" : 0.005,
-        "fov" : 18.1806,
+        "fov0" : 18.1806,
+        "fov" : 45.0,
         "autoexposure" : false,
         "max_exposure" : 0
     }

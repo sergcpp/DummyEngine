@@ -1,10 +1,4 @@
 
-#ifdef __cplusplus
-#define EXTERN extern
-#else
-#define EXTERN
-#endif
-
 // Resolution of frustum item grid
 const int ITEM_GRID_RES_X = 16;
 const int ITEM_GRID_RES_Y = 8;
@@ -135,6 +129,15 @@ const int DECALS_BUF_STRIDE = 7;
 const int MESH_BUF_STRIDE = 3;
 const int MESH_INSTANCE_BUF_STRIDE = 9;
 
+const int PROBE_VOLUME_RES = 24;
+const int PROBE_TOTAL_RAYS_COUNT = 256;
+const int PROBE_FIXED_RAYS_COUNT = 32;
+const int PROBE_IRRADIANCE_RES = 8;
+const int PROBE_DISTANCE_RES = 16;
+
+const float PROBE_STATE_INACTIVE = 0;
+const float PROBE_STATE_ACTIVE = 1;
+
 #define USE_OCT_PACKED_NORMALS 1
 
 #define OIT_DISABLED 0
@@ -146,5 +149,3 @@ const int MESH_INSTANCE_BUF_STRIDE = 9;
 #define OIT_MODE OIT_DISABLED
 
 #define FLT_EPS 0.0000001
-
-#undef EXTERN

@@ -38,8 +38,6 @@ layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
     uint g_indices[];
 };
 
-layout(binding = LMAP_TEX_SLOTS) uniform sampler2D g_lm_textures[5];
-
 layout(location = 0) rayPayloadInEXT RayPayload g_pld;
 
 hitAttributeEXT vec2 bary_coord;
@@ -85,9 +83,9 @@ void main() {
         vec2 lm_uv = lm_uv0 * (1.0 - bary_coord.x - bary_coord.y) + lm_uv1 * bary_coord.x + lm_uv2 * bary_coord.y;
         lm_uv = geo.lmap_transform.xy + geo.lmap_transform.zw * lm_uv;
 
-        vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
-        vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
-        g_pld.col *= (direct_lm + indirect_lm);
+        //vec3 direct_lm = RGBMDecode(textureLod(g_lm_textures[0], lm_uv, 0.0));
+        //vec3 indirect_lm = 2.0 * RGBMDecode(textureLod(g_lm_textures[1], lm_uv, 0.0));
+        //g_pld.col *= (direct_lm + indirect_lm);
     } else {
         vec3 normal0 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i0].y).x);
         vec3 normal1 = vec3(unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].x), unpackSnorm2x16(g_vtx_data1[geo.vertices_start + i1].y).x);

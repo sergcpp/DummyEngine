@@ -12,6 +12,7 @@
 #include "shaders/gi_trace_ss_interface.h"
 #include "shaders/gi_write_indir_rt_dispatch_interface.h"
 #include "shaders/gi_write_indirect_args_interface.h"
+#include "shaders/probe_sample_interface.h"
 #include "shaders/reconstruct_normals_interface.h"
 
 void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
@@ -23,6 +24,79 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                      RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
+
+    if (settings.gi_quality == eGIQuality::Medium && frame_textures.gi_cache) {
+        // Skip expensive raytracing, sample GI cache probes to gather indirect lighting
+        auto &probe_sample = rp_builder_.AddPass("PROBE SAMPLE");
+
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef depth_tex;
+            RpResRef normals_tex;
+            RpResRef irradiance_tex;
+            RpResRef distance_tex;
+            RpResRef offset_tex;
+            RpResRef out_tex;
+        };
+
+        auto *data = probe_sample.AllocPassData<PassData>();
+
+        data->shared_data = probe_sample.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->depth_tex = probe_sample.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
+        data->normals_tex = probe_sample.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
+        data->irradiance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache, Stg::ComputeShader);
+        data->distance_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_dist, Stg::ComputeShader);
+        data->offset_tex = probe_sample.AddTextureInput(frame_textures.gi_cache_data, Stg::ComputeShader);
+        { // gi texture
+            Ren::Tex2DParams params;
+            params.w = view_state_.scr_res[0];
+            params.h = view_state_.scr_res[1];
+            params.format = Ren::eTexFormat::RawRGBA16F;
+            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+            frame_textures.gi = data->out_tex =
+                probe_sample.AddStorageImageOutput("GI Tex", params, Stg::ComputeShader);
+        }
+
+        probe_sample.set_execute_cb([data, &persistent_data, this](RpBuilder &builder) {
+            RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
+            RpAllocTex &normals_tex = builder.GetReadTexture(data->normals_tex);
+            RpAllocTex &irradiance_tex = builder.GetReadTexture(data->irradiance_tex);
+            RpAllocTex &distance_tex = builder.GetReadTexture(data->distance_tex);
+            RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
+            RpAllocTex &out_tex = builder.GetWriteTexture(data->out_tex);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_shared_data_buf.ref},
+                {Trg::Tex2D, ProbeSample::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2D, ProbeSample::NORMAL_TEX_SLOT, *normals_tex.ref},
+                {Trg::Tex2DArray, ProbeSample::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
+                {Trg::Tex2DArray, ProbeSample::DISTANCE_TEX_SLOT, *distance_tex.arr},
+                {Trg::Tex2DArray, ProbeSample::OFFSET_TEX_SLOT, *offset_tex.arr},
+                {Trg::Image2D, ProbeSample::OUT_IMG_SLOT, *out_tex.ref}};
+
+            const Ren::Vec3u grp_count = Ren::Vec3u{
+                (view_state_.act_res[0] + ProbeSample::LOCAL_GROUP_SIZE_X - 1u) / ProbeSample::LOCAL_GROUP_SIZE_X,
+                (view_state_.act_res[1] + ProbeSample::LOCAL_GROUP_SIZE_Y - 1u) / ProbeSample::LOCAL_GROUP_SIZE_Y, 1u};
+
+            const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
+            const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
+            const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
+
+            ProbeSample::Params uniform_params;
+            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            uniform_params.img_size = Ren::Vec2u{view_state_.act_res};
+
+            Ren::DispatchCompute(pi_probe_sample_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+
+        return;
+    }
 
     // GI settings
     static const int SamplesPerQuad = 4;
@@ -403,14 +477,11 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 #endif
             }
 
-            if (lm_direct) {
-                data->lm_tex[0] = rt_gi.AddTextureInput(lm_direct, stage);
-            }
-
-            for (int i = 0; i < 4; ++i) {
-                if (lm_indir_sh[i]) {
-                    data->lm_tex[i + 1] = rt_gi.AddTextureInput(lm_indir_sh[i], stage);
-                }
+            data->probe_volume = &persistent_data.probe_volume;
+            if (settings.gi_quality != eGIQuality::Off) {
+                data->irradiance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache, stage);
+                data->distance_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_dist, stage);
+                data->offset_tex = rt_gi.AddTextureInput(frame_textures.gi_cache_data, stage);
             }
 
             data->dummy_black = rt_gi.AddTextureInput(dummy_black_, stage);

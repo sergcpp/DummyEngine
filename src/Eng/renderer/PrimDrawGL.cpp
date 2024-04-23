@@ -13,81 +13,11 @@ extern const int SphereIndicesCount;
 
 Eng::PrimDraw::~PrimDraw() = default;
 
-void Eng::PrimDraw::DrawPrim(const ePrim prim, const RenderTarget &rt, Ren::Program *p,
-                             Ren::Span<const Ren::Binding> bindings, Ren::Span<const Uniform> uniforms) {
-    using namespace PrimDrawInternal;
-
-    glBindFramebuffer(GL_FRAMEBUFFER, rt.fb->id());
-    // glViewport(rt.viewport[0], rt.viewport[1], rt.viewport[2], rt.viewport[3]);
-
-    for (const auto &b : bindings) {
-        if (b.trg == Ren::eBindTarget::UBuf) {
-            if (b.offset) {
-                assert(b.size != 0);
-                glBindBufferRange(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id(), b.offset, b.size);
-            } else {
-                glBindBufferBase(GL_UNIFORM_BUFFER, b.loc, b.handle.buf->id());
-            }
-        } else if (b.trg == Ren::eBindTarget::TexCubeArray) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc),
-                                       GLuint(b.handle.cube_arr ? b.handle.cube_arr->handle().id : 0));
-        } else if (b.trg == Ren::eBindTarget::TBuf) {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex_buf->id()));
-        } else {
-            ren_glBindTextureUnit_Comp(Ren::GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.tex->id()));
-        }
-    }
-
-    glUseProgram(p->id());
-
-    for (const auto &u : uniforms) {
-        if (u.type == Ren::eType::Float32) {
-            if (u.size == 1) {
-                glUniform1f(GLint(u.loc), u.fdata[0]);
-            } else if (u.size == 2) {
-                glUniform2f(GLint(u.loc), u.fdata[0], u.fdata[1]);
-            } else if (u.size == 3) {
-                glUniform3f(GLint(u.loc), u.fdata[0], u.fdata[1], u.fdata[2]);
-            } else if (u.size == 4) {
-                glUniform4f(GLint(u.loc), u.fdata[0], u.fdata[1], u.fdata[2], u.fdata[3]);
-            } else {
-                assert(u.size % 4 == 0);
-                glUniformMatrix4fv(GLint(u.loc), 1, GL_FALSE, u.pfdata);
-            }
-        } else if (u.type == Ren::eType::Int32) {
-            if (u.size == 1) {
-                glUniform1i(GLint(u.loc), u.idata[0]);
-            } else if (u.size == 2) {
-                glUniform2i(GLint(u.loc), u.idata[0], u.idata[1]);
-            } else if (u.size == 3) {
-                glUniform3i(GLint(u.loc), u.idata[0], u.idata[1], u.idata[2]);
-            } else if (u.size == 4) {
-                glUniform4i(GLint(u.loc), u.idata[0], u.idata[1], u.idata[2], u.idata[3]);
-            } else {
-                assert(u.size % 4 == 0);
-                glUniform4iv(GLint(u.loc), GLsizei(u.size / 4), u.pidata);
-            }
-        }
-    }
-
-    if (prim == ePrim::Quad) {
-        glBindVertexArray(fs_quad_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_.offset));
-    } else if (prim == ePrim::Sphere) {
-        glBindVertexArray(sphere_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
-                       (void *)uintptr_t(sphere_ndx_.offset));
-    }
-
-#ifndef NDEBUG
-    Ren::ResetGLState();
-#endif
-}
-
 void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
                              Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
                              Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
-                             const void *uniform_data, int uniform_data_len, int uniform_data_offset) {
+                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
+                             const int instance_count) {
     using namespace PrimDrawInternal;
 
     const Ren::Framebuffer *fb =
@@ -140,11 +70,12 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
 
     if (prim == ePrim::Quad) {
         glBindVertexArray(fs_quad_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_.offset));
+        glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_SHORT, (const GLvoid *)uintptr_t(quad_ndx_.offset),
+                                instance_count);
     } else if (prim == ePrim::Sphere) {
         glBindVertexArray(sphere_vtx_input_.gl_vao());
-        glDrawElements(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
-                       (void *)uintptr_t(sphere_ndx_.offset));
+        glDrawElementsInstanced(GL_TRIANGLES, GLsizei(SphereIndicesCount), GL_UNSIGNED_SHORT,
+                                (void *)uintptr_t(sphere_ndx_.offset), instance_count);
     }
 
 #ifndef NDEBUG

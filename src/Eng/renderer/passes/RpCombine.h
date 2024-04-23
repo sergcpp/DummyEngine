@@ -31,7 +31,7 @@ class RpCombine : public RpExecutor {
     const ViewState *view_state_ = nullptr;
     const RpCombineData *pass_data_ = nullptr;
 
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
   public:
     RpCombine(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}

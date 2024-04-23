@@ -15,12 +15,7 @@
         "sun_shadow_bias" : [ 0.0, 0.0 ],
         "env_col" : [ 4.0, 4.0, 4.0 ],
         "env_map" : "env/meadow_2k.hdr",
-        "env_map_rot" : 135.0,
-        "ambient_hack" : [
-            0.03,
-            0.025,
-            0.02
-        ]
+        "env_map_rot" : 135.0
     },
     "objects" : [
         {

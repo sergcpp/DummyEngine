@@ -289,10 +289,12 @@ void GSBaseState::Enter() {
     });
 
     cmdline_->RegisterCommand("r_gi", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
-        if (argv[1].val > 1.5) {
+        if (argv[1].val > 2.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
-        } else if (argv[1].val > 0.5) {
+        } else if (argv[1].val > 1.5) {
             renderer_->settings.gi_quality = Eng::eGIQuality::High;
+        } else if (argv[1].val > 0.5) {
+            renderer_->settings.gi_quality = Eng::eGIQuality::Medium;
         } else {
             renderer_->settings.gi_quality = Eng::eGIQuality::Off;
         }

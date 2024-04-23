@@ -11,11 +11,13 @@
 #include "_fs_common.glsl"
 #include "_texturing.glsl"
 #include "_principled.glsl"
-#include "ssr_common.glsl"
 
+#include "ssr_common.glsl"
+#include "gi_cache_common.glsl"
 #include "rt_reflections_interface.h"
 
 #pragma multi_compile _ TWO_BOUNCES FOUR_BOUNCES
+#pragma multi_compile _ GI_CACHE
 
 #if defined(FOUR_BOUNCES)
     #define NUM_BOUNCES 4
@@ -64,8 +66,6 @@ layout(std430, binding = NDX_BUF_SLOT) readonly buffer NdxData {
     uint g_indices[];
 };
 
-layout(binding = LMAP_TEX_SLOTS) uniform sampler2D g_lm_textures[5];
-
 layout(std430, binding = LIGHTS_BUF_SLOT) readonly buffer LightsData {
     light_item_t g_lights[];
 };
@@ -75,6 +75,12 @@ layout(binding = ITEMS_BUF_SLOT) uniform highp usamplerBuffer g_items_buf;
 
 layout(binding = SHADOW_TEX_SLOT) uniform sampler2DShadow g_shadow_tex;
 layout(binding = LTC_LUTS_TEX_SLOT) uniform sampler2D g_ltc_luts;
+
+#ifdef GI_CACHE
+    layout(binding = IRRADIANCE_TEX_SLOT) uniform sampler2DArray g_irradiance_tex;
+    layout(binding = DISTANCE_TEX_SLOT) uniform sampler2DArray g_distance_tex;
+    layout(binding = OFFSET_TEX_SLOT) uniform sampler2DArray g_offset_tex;
+#endif
 
 layout(std430, binding = RAY_COUNTER_SLOT) readonly buffer RayCounter {
     uint g_ray_counter[];
@@ -424,8 +430,15 @@ void main() {
                 }
             }
 
+#ifdef GI_CACHE
+            if (lobe_weights.diffuse > 0.0) {
+                const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, refl_ray_ws, g_params.grid_spacing.xyz), N,
+                                                              g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
+                light_total += (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
+            }
+#endif
+
             final_color += throughput * light_total;
-            final_color += throughput * lobe_weights.diffuse_mul * base_color * g_shrd_data.ambient_hack.rgb;
             if (j == 0) {
                 first_ray_len = hit_t;
             }

@@ -467,9 +467,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
             Ren::eTexLoadStatus load_status;
-            scene_data_.env.env_map =
-                ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_stage_bufs(),
-                                         ren_ctx_.default_mem_allocs(), &load_status);
+            scene_data_.env.env_map = ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_stage_bufs(),
+                                                               ren_ctx_.default_mem_allocs(), &load_status);
         } else {
             static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128},
                                                      {255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128}};
@@ -503,14 +502,6 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.sun_shadow_bias[0] = DefaultSunShadowBias[0];
             scene_data_.env.sun_shadow_bias[1] = DefaultSunShadowBias[1];
         }
-        if (js_env.Has("ambient_hack")) {
-            const JsArrayP &js_ambient_hack = js_env.at("ambient_hack").as_arr();
-            scene_data_.env.ambient_hack[0] = float(js_ambient_hack.at(0).as_num().val);
-            scene_data_.env.ambient_hack[1] = float(js_ambient_hack.at(1).as_num().val);
-            scene_data_.env.ambient_hack[2] = float(js_ambient_hack.at(2).as_num().val);
-        } else {
-            scene_data_.env.ambient_hack[0] = scene_data_.env.ambient_hack[1] = scene_data_.env.ambient_hack[2] = 0.0f;
-        }
     } else {
         scene_data_.env = {};
     }
@@ -531,6 +522,48 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         InitHWRTAccStructures();
     } else {
         InitSWRTAccStructures();
+    }
+
+    const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
+
+    scene_data_.persistent_data.probe_volume.origin = Ren::Vec3f{0.0f, 0.0f, 0.0f};
+    scene_data_.persistent_data.probe_volume.spacing = Ren::Vec3f{0.5f, 0.5f, 0.5f};
+
+    scene_data_.persistent_data.probe_volume.ray_data = std::make_unique<Ren::Texture2DArray>(
+        ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
+        PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA32F, Ren::eTexFilter::BilinearNoMipmap,
+        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+    scene_data_.persistent_data.probe_volume.irradiance = std::make_unique<Ren::Texture2DArray>(
+        ren_ctx_.api_ctx(), "Probe Volume Irradiance", PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES,
+        PROBE_VOLUME_RES * PROBE_IRRADIANCE_RES, PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA16F,
+        Ren::eTexFilter::BilinearNoMipmap,
+        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+    scene_data_.persistent_data.probe_volume.distance = std::make_unique<Ren::Texture2DArray>(
+        ren_ctx_.api_ctx(), "Probe Volume Distance", PROBE_VOLUME_RES * PROBE_DISTANCE_RES,
+        PROBE_VOLUME_RES * PROBE_DISTANCE_RES, PROBE_VOLUME_RES, Ren::eTexFormat::RawRG16F,
+        Ren::eTexFilter::BilinearNoMipmap,
+        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+    scene_data_.persistent_data.probe_volume.data = std::make_unique<Ren::Texture2DArray>(
+        ren_ctx_.api_ctx(), "Probe Volume Data", PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES,
+        Ren::eTexFormat::RawRGBA16F, Ren::eTexFilter::BilinearNoMipmap,
+        Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+
+    { // clear data
+        void *cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+
+        const Ren::TransitionInfo transitions[] = {
+            {scene_data_.persistent_data.probe_volume.ray_data.get(), Ren::eResState::CopyDst},
+            {scene_data_.persistent_data.probe_volume.irradiance.get(), Ren::eResState::CopyDst},
+            {scene_data_.persistent_data.probe_volume.distance.get(), Ren::eResState::CopyDst},
+            {scene_data_.persistent_data.probe_volume.data.get(), Ren::eResState::CopyDst}};
+        Ren::TransitionResourceStates(ren_ctx_.api_ctx(), cmd_buf, Ren::AllStages, Ren::AllStages, transitions);
+
+        const float rgba[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+        scene_data_.persistent_data.probe_volume.ray_data->Clear(rgba, cmd_buf);
+        scene_data_.persistent_data.probe_volume.irradiance->Clear(rgba, cmd_buf);
+        scene_data_.persistent_data.probe_volume.distance->Clear(rgba, cmd_buf);
+        scene_data_.persistent_data.probe_volume.data->Clear(rgba, cmd_buf);
+        ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
     }
 
     __itt_task_end(__g_itt_domain);
@@ -589,15 +622,6 @@ void Eng::SceneManager::SaveScene(JsObjectP &js_scene) {
             js_sun_shadow_bias.Push(JsNumber(scene_data_.env.sun_shadow_bias[1]));
 
             js_env.Insert("sun_shadow_bias", std::move(js_sun_shadow_bias));
-        }
-
-        { // write ambient hack
-            JsArrayP js_ambient_hack(alloc);
-            js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[0]));
-            js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[1]));
-            js_ambient_hack.Push(JsNumber(scene_data_.env.ambient_hack[2]));
-
-            js_env.Insert("ambient_hack", std::move(js_ambient_hack));
         }
 
         js_scene.Insert("environment", std::move(js_env));

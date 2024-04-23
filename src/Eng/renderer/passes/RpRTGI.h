@@ -9,7 +9,6 @@
 struct ViewState;
 
 namespace Eng {
-class PrimDraw;
 struct RpRTGIData {
     RpResRef noise_tex;
     RpResRef geo_data;
@@ -22,7 +21,6 @@ struct RpRTGIData {
     RpResRef normal_tex;
     // RpResRef flat_normal_tex;
     RpResRef env_tex;
-    RpResRef lm_tex[5];
     RpResRef lights_buf;
     RpResRef shadowmap_tex;
     RpResRef ltc_luts_tex;
@@ -34,7 +32,12 @@ struct RpRTGIData {
     RpResRef indir_args;
     RpResRef tlas_buf; // fake read for now
 
+    RpResRef irradiance_tex;
+    RpResRef distance_tex;
+    RpResRef offset_tex;
+
     Ren::IAccStructure *tlas = nullptr;
+    const ProbeVolume *probe_volume = nullptr;
 
     struct {
         uint32_t root_node;
@@ -55,8 +58,8 @@ class RpRTGI : public RpExecutor {
 
     // lazily initialized data
     Ren::Pipeline pi_rt_gi_;
-    Ren::Pipeline pi_rt_gi_inline_, pi_rt_gi_2bounce_inline_;
-    Ren::Pipeline pi_rt_gi_swrt_, pi_rt_gi_2bounce_swrt_;
+    Ren::Pipeline pi_rt_gi_inline_[2], pi_rt_gi_2bounce_inline_[2];
+    Ren::Pipeline pi_rt_gi_swrt_[2], pi_rt_gi_2bounce_swrt_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

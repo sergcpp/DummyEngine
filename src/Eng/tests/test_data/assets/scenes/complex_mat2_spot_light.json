@@ -11,12 +11,7 @@
             0,
             0
         ],
-        "sun_angle" : 0.1,
-        "ambient_hack" : [
-            0.025,
-            0.025,
-            0.025
-        ]
+        "sun_angle" : 0.1
     },
     "objects" : [
         {

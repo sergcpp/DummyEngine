@@ -1,42 +1,44 @@
 #pragma once
-#if 0
-#include "../Graph/GraphBuilder.h"
-#include "../Renderer_DrawList.h"
 
+#include "../Renderer_DrawList.h"
+#include "../graph/SubPass.h"
+
+namespace Eng {
 class PrimDraw;
 
-class RpDebugProbes : public RenderPassBase {
+struct RpDebugProbesData {
+    RpResRef shared_data;
+    RpResRef offset_tex;
+    RpResRef irradiance_tex;
+    RpResRef distance_tex;
+    RpResRef depth_tex;
+    RpResRef output_tex;
+
+    Ren::Vec3f grid_origin, grid_spacing;
+    Ren::Vec3i grid_scroll;
+};
+
+class RpDebugProbes : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
-    float debug_roughness_ = 0.0f;
 
     // temp data (valid only between Setup and Execute calls)
-    const Ren::ProbeStorage *probe_storage_ = nullptr;
-    DynArrayConstRef<ProbeItem> probes_;
     const ViewState *view_state_ = nullptr;
+    const RpDebugProbesData *pass_data_ = nullptr;
 
-    RpResource shared_data_buf_;
-
-    RpResource output_tex_;
-
-    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex);
-    void DrawProbes(RpBuilder &builder);
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
     // lazily initialized data
-#if defined(USE_GL_RENDER)
-    Ren::ProgramRef probe_prog_;
-    Ren::Framebuffer draw_fb_;
-#endif
+    Ren::ProgramRef prog_probe_debug_;
+
   public:
     RpDebugProbes(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
     void Setup(RpBuilder &builder, const DrawList &list, const ViewState *view_state,
-               const char shared_data_buf_name[], const char output_tex_name[]);
+               const RpDebugProbesData *pass_data) {
+        view_state_ = view_state;
+        pass_data_ = pass_data;
+    }
     void Execute(RpBuilder &builder) override;
-
-    // TODO: remove this
-    int alpha_blend_start_index_ = -1;
-
-    const char *name() const override { return "DEBUG PROBES"; }
 };
-#endif
+} // namespace Eng

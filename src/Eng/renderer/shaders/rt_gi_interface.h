@@ -6,6 +6,9 @@
 INTERFACE_START(RTGI)
 
 struct Params {
+    VEC4_TYPE grid_origin;
+    IVEC4_TYPE grid_scroll;
+    VEC4_TYPE grid_spacing;
     UVEC2_TYPE img_size;
     float pixel_spread_angle;
     UINT_TYPE frame_index;
@@ -38,7 +41,9 @@ const int SHADOW_TEX_SLOT = 19;
 const int LTC_LUTS_TEX_SLOT = 20;
 const int CELLS_BUF_SLOT = 21;
 const int ITEMS_BUF_SLOT = 22;
-const int LMAP_TEX_SLOTS = 25;
+const int IRRADIANCE_TEX_SLOT = 25;
+const int DISTANCE_TEX_SLOT = 26;
+const int OFFSET_TEX_SLOT = 27;
 
 const int OUT_GI_IMG_SLOT = 0;
 

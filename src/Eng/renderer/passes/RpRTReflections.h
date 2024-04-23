@@ -21,7 +21,6 @@ struct RpRTReflectionsData {
     RpResRef depth_tex;
     RpResRef normal_tex;
     RpResRef env_tex;
-    RpResRef lm_tex[5];
     RpResRef lights_buf;
     RpResRef shadowmap_tex;
     RpResRef ltc_luts_tex;
@@ -33,7 +32,12 @@ struct RpRTReflectionsData {
     RpResRef indir_args;
     RpResRef tlas_buf;
 
-    Ren::IAccStructure *tlas = nullptr;
+    RpResRef irradiance_tex;
+    RpResRef distance_tex;
+    RpResRef offset_tex;
+
+    const Ren::IAccStructure *tlas = nullptr;
+    const ProbeVolume *probe_volume = nullptr;
 
     struct {
         uint32_t root_node;
@@ -55,8 +59,8 @@ class RpRTReflections : public RpExecutor {
 
     // lazily initialized data
     Ren::Pipeline pi_rt_reflections_;
-    Ren::Pipeline pi_rt_reflections_inline_, pi_rt_reflections_4bounce_inline_;
-    Ren::Pipeline pi_rt_reflections_swrt_, pi_rt_reflections_4bounce_swrt_;
+    Ren::Pipeline pi_rt_reflections_inline_[2], pi_rt_reflections_4bounce_inline_[2];
+    Ren::Pipeline pi_rt_reflections_swrt_[2], pi_rt_reflections_4bounce_swrt_[2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

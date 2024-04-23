@@ -10,6 +10,10 @@ extern const VkAttachmentLoadOp vk_load_ops[];
 extern const VkAttachmentStoreOp vk_store_ops[];
 } // namespace Ren
 
+namespace PrimDrawInternal {
+extern const int SphereIndicesCount;
+} // namespace PrimDrawInternal
+
 Eng::PrimDraw::~PrimDraw() {}
 
 void Eng::PrimDraw::Reset() {}
@@ -17,7 +21,10 @@ void Eng::PrimDraw::Reset() {}
 void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Span<const Ren::RenderTarget> color_rts,
                              Ren::RenderTarget depth_rt, const Ren::RastState &new_rast_state,
                              Ren::RastState &applied_rast_state, Ren::Span<const Ren::Binding> bindings,
-                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset) {
+                             const void *uniform_data, const int uniform_data_len, const int uniform_data_offset,
+                             const int instances) {
+    using namespace PrimDrawInternal;
+
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
 
     VkDescriptorSetLayout descr_set_layout = p->descr_set_layouts()[0];
@@ -98,7 +105,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
     }
 
     if (ctx_->capabilities.dynamic_rendering) {
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(p, nullptr, color_rts, depth_rt, &new_rast_state);
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, nullptr, color_rts, depth_rt, &new_rast_state);
         assert(pipeline);
 
         Ren::SmallVector<VkRenderingAttachmentInfoKHR, 4> color_attachments;
@@ -151,10 +158,18 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
             pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
             api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                                      1,                    // instance count
+                                      instances,            // instance count
                                       0,                    // first index
                                       0,                    // vertex offset
                                       0);                   // first instance
+        } else if (prim == ePrim::Sphere) {
+            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
+
+            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(SphereIndicesCount), // index count
+                                      instances,                             // instance count
+                                      0,                                     // first index
+                                      0,                                     // vertex offset
+                                      0);                                    // first instance
         }
 
         api_ctx->vkCmdEndRenderingKHR(cmd_buf);
@@ -163,7 +178,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         const Ren::Framebuffer *fb =
             FindOrCreateFramebuffer(rp, color_rts, new_rast_state.depth.test_enabled ? depth_rt : Ren::RenderTarget{},
                                     new_rast_state.stencil.enabled ? depth_rt : Ren::RenderTarget{});
-        const Ren::Pipeline *pipeline = FindOrCreatePipeline(p, rp, {}, {}, &new_rast_state);
+        const Ren::Pipeline *pipeline = FindOrCreatePipeline(prim, p, rp, {}, {}, &new_rast_state);
 
         VkRenderPassBeginInfo render_pass_begin_info = {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
         render_pass_begin_info.renderPass = rp->handle();
@@ -189,10 +204,18 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
             pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, quad_ndx_.offset, VK_INDEX_TYPE_UINT16);
 
             api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(6), // index count
-                                      1,                    // instance count
+                                      instances,            // instance count
                                       0,                    // first index
                                       0,                    // vertex offset
                                       0);                   // first instance
+        } else if (prim == ePrim::Sphere) {
+            pipeline->vtx_input()->BindBuffers(api_ctx, cmd_buf, sphere_ndx_.offset, VK_INDEX_TYPE_UINT16);
+
+            api_ctx->vkCmdDrawIndexed(cmd_buf, uint32_t(SphereIndicesCount), // index count
+                                      instances,                             // instance count
+                                      0,                                     // first index
+                                      0,                                     // vertex offset
+                                      0);                                    // first instance
         }
 
         api_ctx->vkCmdEndRenderPass(cmd_buf);
@@ -220,41 +243,43 @@ const Ren::RenderPass *Eng::PrimDraw::FindOrCreateRenderPass(Ren::Span<const Ren
     return &new_render_pass;
 }
 
-const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(Ren::ProgramRef p, const Ren::RenderPass *rp,
+const Ren::Pipeline *Eng::PrimDraw::FindOrCreatePipeline(const ePrim prim, Ren::ProgramRef p, const Ren::RenderPass *rp,
                                                          Ren::Span<const Ren::RenderTarget> color_targets,
                                                          const Ren::RenderTarget depth_target,
                                                          const Ren::RastState *rs) {
     // TODO: binary search
-    for (size_t i = 0; i < pipelines_.size(); ++i) {
-        if (pipelines_[i].prog() == p && pipelines_[i].render_pass() == rp && pipelines_[i].rast_state() == *rs) {
+    for (size_t i = 0; i < pipelines_[int(prim)].size(); ++i) {
+        if (pipelines_[int(prim)][i].prog() == p && pipelines_[int(prim)][i].render_pass() == rp &&
+            pipelines_[int(prim)][i].rast_state() == *rs) {
 
-            bool formats_match = (color_targets.size() == pipelines_[i].color_formats().size());
+            bool formats_match = (color_targets.size() == pipelines_[int(prim)][i].color_formats().size());
             for (int j = 0; j < color_targets.size() && formats_match; ++j) {
-                formats_match &= color_targets[j].ref->params.format == pipelines_[i].color_formats()[j];
+                formats_match &= color_targets[j].ref->params.format == pipelines_[int(prim)][i].color_formats()[j];
             }
 
             if (depth_target) {
-                formats_match &= (depth_target.ref->params.format == pipelines_[i].depth_format());
+                formats_match &= (depth_target.ref->params.format == pipelines_[int(prim)][i].depth_format());
             }
 
-            return &pipelines_[i];
+            return &pipelines_[int(prim)][i];
         }
     }
 
     Ren::ApiContext *api_ctx = ctx_->api_ctx();
-    Ren::Pipeline &new_pipeline = pipelines_.emplace_back();
+    Ren::Pipeline &new_pipeline = pipelines_[int(prim)].emplace_back();
+
+    const Ren::VertexInput *vtx_input = (prim == ePrim::Quad) ? &fs_quad_vtx_input_ : &sphere_vtx_input_;
 
     if (rp) {
-        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, rp, 0, ctx_->log())) {
+        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), vtx_input, rp, 0, ctx_->log())) {
             ctx_->log()->Error("Failed to initialize pipeline!");
-            pipelines_.pop_back();
+            pipelines_[int(prim)].pop_back();
             return nullptr;
         }
     } else {
-        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), &fs_quad_vtx_input_, color_targets, depth_target, 0,
-                               ctx_->log())) {
+        if (!new_pipeline.Init(api_ctx, *rs, std::move(p), vtx_input, color_targets, depth_target, 0, ctx_->log())) {
             ctx_->log()->Error("Failed to initialize pipeline!");
-            pipelines_.pop_back();
+            pipelines_[int(prim)].pop_back();
             return nullptr;
         }
     }

@@ -233,7 +233,7 @@ enum class eTAAMode : uint8_t { Off, Dynamic, Static };
 
 enum class eHDRQuality : uint8_t { Medium, High };
 
-enum class eGIQuality : uint8_t { Off, High, Ultra };
+enum class eGIQuality : uint8_t { Off, Medium, High, Ultra };
 
 enum class eDebugRT : uint8_t { Off, Main, Shadow };
 
