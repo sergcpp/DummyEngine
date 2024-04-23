@@ -52,8 +52,11 @@ ELSE(WIN32)
                      OSDependent
                      SPIRV
                      SPIRV-Tools-opt
-                     SPIRV-Tools
-                     X11)
+                     SPIRV-Tools)
+    if (NOT APPLE)
+        set(GLSLANG_LIBS ${GLSLANG_LIBS}
+                         X11)
+    endif()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
 ENDIF(WIN32)
 

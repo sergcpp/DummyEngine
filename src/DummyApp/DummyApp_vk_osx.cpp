@@ -103,7 +103,7 @@ DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() = default;
 
-int DummyApp::Init(const int w, const int h, const char *) {
+int DummyApp::Init(const int w, const int h, const int validation_level, const char *device_name) {
     init_delegate_class();
 
     // id app = [NSApplication sharedApplication];
@@ -137,10 +137,10 @@ int DummyApp::Init(const int w, const int h, const char *) {
 
     try {
         Viewer::PrepareAssets("pc");
+        log_ = std::make_unique<LogStdout>();
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, log_.get(), device_name);
 
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, nullptr, nullptr);
-
-        auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
+        auto *input_manager = viewer_->input_manager();
         input_manager_ = input_manager;
 
         // [window makeKeyAndOrderFront:nil];
@@ -187,13 +187,14 @@ void DummyApp::Frame() { viewer_->Frame(); }
 
 void DummyApp::Resize(int w, int h) { viewer_->Resize(w, h); }
 
-void DummyApp::AddEvent(RawInputEv type, const uint32_t key_code, const float x,
+void DummyApp::AddEvent(Eng::RawInputEv type, const uint32_t key_code, const float x,
                         const float y, const float dx, const float dy) {
-    auto input_manager = viewer_->GetComponent<InputManager>(INPUT_MANAGER_KEY);
-    if (!input_manager)
+    auto *input_manager = viewer_->input_manager();
+    if (!input_manager) {
         return;
+    }
 
-    InputManager::Event evt;
+    Eng::InputManager::Event evt;
     evt.type = type;
     evt.key_code = key_code;
     evt.point.x = x;
@@ -207,8 +208,14 @@ void DummyApp::AddEvent(RawInputEv type, const uint32_t key_code, const float x,
 
 #if !defined(__ANDROID__)
 int DummyApp::Run(int argc, char *argv[]) {
-    int w = 1024, h = 576;
+    int w = 1280, h = 720;
     fullscreen_ = false;
+    int validation_level = 0;
+    const char *device_name = nullptr;
+
+#ifndef NDEBUG
+    validation_level = 1;
+#endif
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
@@ -217,18 +224,20 @@ int DummyApp::Run(int argc, char *argv[]) {
             i++;
         } else if (strcmp(arg, "--norun") == 0) {
             return 0;
-        } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) &&
-                   (i + 1 < argc)) {
+        } else if ((strcmp(arg, "--width") == 0 || strcmp(arg, "-w") == 0) && (i + 1 < argc)) {
             w = std::atoi(argv[++i]);
-        } else if ((strcmp(arg, "--height") == 0 || strcmp(arg, "-h") == 0) &&
-                   (i + 1 < argc)) {
+        } else if ((strcmp(arg, "--height") == 0 || strcmp(arg, "-h") == 0) && (i + 1 < argc)) {
             h = std::atoi(argv[++i]);
         } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
             fullscreen_ = true;
+        } else if (strcmp(arg, "--device") == 0 || strcmp(arg, "-d") == 0) {
+            device_name = argv[++i];
+        } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
+            validation_level = std::atoi(argv[++i]);
         }
     }
 
-    if (Init(w, h, nullptr) < 0) {
+    if (Init(w, h, validation_level, device_name) < 0) {
         return -1;
     }
 
@@ -252,8 +261,7 @@ int DummyApp::Run(int argc, char *argv[]) {
 #undef None
 
 void DummyApp::PollEvents() {
-    std::shared_ptr<InputManager> input_manager = input_manager_.lock();
-    if (!input_manager) {
+    if (!input_manager_) {
         return;
     }
 
