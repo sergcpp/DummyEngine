@@ -4,8 +4,8 @@
 
 #include <Ren/MMat.h>
 
-#include "comp/Physics.h"
-#include "comp/Transform.h"
+#include "components/Physics.h"
+#include "components/Transform.h"
 #include "SceneData.h"
 
 namespace PhysicsManagerInternal {

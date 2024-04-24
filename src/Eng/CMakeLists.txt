@@ -135,8 +135,7 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/Renderer_Structs.h
                         renderer/Renderer_SunShadows.cpp)
 
-set(SCENE_SOURCES   scene/__cam_rig.inl
-                    scene/PhysicsManager.h
+set(SCENE_SOURCES   scene/PhysicsManager.h
                     scene/PhysicsManager.cpp
                     scene/SceneData.h
                     scene/SceneData.cpp
@@ -258,31 +257,31 @@ file(GLOB RENDERER_SHADERS
      "renderer/shaders/*.glsl"
 )
 
-set(SCENE_COMP_SOURCES  scene/comp/Common.h
-                        scene/comp/AccStructure.h
-                        scene/comp/AccStructure.cpp
-                        scene/comp/AnimState.h
-                        scene/comp/AnimState.cpp
-                        scene/comp/Decal.h
-                        scene/comp/Decal.cpp
-                        scene/comp/Drawable.h
-                        scene/comp/Drawable.cpp
-                        scene/comp/Lightmap.h
-                        scene/comp/Lightmap.cpp
-                        scene/comp/LightProbe.h
-                        scene/comp/LightProbe.cpp
-                        scene/comp/LightSource.h
-                        scene/comp/LightSource.cpp
-                        scene/comp/Occluder.h
-                        scene/comp/Occluder.cpp
-                        scene/comp/Physics.h
-                        scene/comp/Physics.cpp
-                        scene/comp/SoundSource.h
-                        scene/comp/SoundSource.cpp
-                        scene/comp/Transform.h
-                        scene/comp/Transform.cpp
-                        scene/comp/VegState.h
-                        scene/comp/VegState.cpp)
+set(SCENE_COMP_SOURCES  scene/components/Common.h
+                        scene/components/AccStructure.h
+                        scene/components/AccStructure.cpp
+                        scene/components/AnimState.h
+                        scene/components/AnimState.cpp
+                        scene/components/Decal.h
+                        scene/components/Decal.cpp
+                        scene/components/Drawable.h
+                        scene/components/Drawable.cpp
+                        scene/components/Lightmap.h
+                        scene/components/Lightmap.cpp
+                        scene/components/LightProbe.h
+                        scene/components/LightProbe.cpp
+                        scene/components/LightSource.h
+                        scene/components/LightSource.cpp
+                        scene/components/Occluder.h
+                        scene/components/Occluder.cpp
+                        scene/components/Physics.h
+                        scene/components/Physics.cpp
+                        scene/components/SoundSource.h
+                        scene/components/SoundSource.cpp
+                        scene/components/Transform.h
+                        scene/components/Transform.cpp
+                        scene/components/VegState.h
+                        scene/components/VegState.cpp)
 
 set(UTILS_SOURCES utils/Cmdline.h
                   utils/Cmdline.cpp
@@ -330,7 +329,7 @@ list(APPEND ALL_SOURCE_FILES ${SCENE_SOURCES})
 source_group("src\\scene" FILES ${SCENE_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${SCENE_COMP_SOURCES})
-source_group("src\\scene\\comp" FILES ${SCENE_COMP_SOURCES})
+source_group("src\\scene\\components" FILES ${SCENE_COMP_SOURCES})
 
 list(APPEND ALL_SOURCE_FILES ${UTILS_SOURCES})
 source_group("src\\utils" FILES ${UTILS_SOURCES})

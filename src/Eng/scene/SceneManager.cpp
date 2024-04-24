@@ -120,7 +120,7 @@ void __init_wind_params(const Eng::VegState &vs, const Eng::Environment &env, co
     instance.wind_turb = Ren::f32_to_f16(env.wind_turbulence);
 }
 
-#include "__cam_rig.inl"
+#include "precomputed/__cam_rig.inl"
 } // namespace SceneManagerInternal
 
 Eng::SceneManager::SceneManager(Ren::Context &ren_ctx, Eng::ShaderLoader &sh, Snd::Context *snd_ctx,

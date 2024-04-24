@@ -12,18 +12,18 @@
 #include <Ren/Storage.h>
 #include <Ren/TextureAtlas.h>
 
-#include "comp/AccStructure.h"
-#include "comp/AnimState.h"
-#include "comp/Decal.h"
-#include "comp/Drawable.h"
-#include "comp/LightProbe.h"
-#include "comp/LightSource.h"
-#include "comp/Lightmap.h"
-#include "comp/Occluder.h"
-#include "comp/Physics.h"
-#include "comp/SoundSource.h"
-#include "comp/Transform.h"
-#include "comp/VegState.h"
+#include "components/AccStructure.h"
+#include "components/AnimState.h"
+#include "components/Decal.h"
+#include "components/Drawable.h"
+#include "components/LightProbe.h"
+#include "components/LightSource.h"
+#include "components/Lightmap.h"
+#include "components/Occluder.h"
+#include "components/Physics.h"
+#include "components/SoundSource.h"
+#include "components/Transform.h"
+#include "components/VegState.h"
 
 namespace Eng {
 enum eObjectComp : uint32_t {
