@@ -177,8 +177,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 {Trg::TBuf, SSRClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
                 {Trg::TBuf, SSRClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
                 {Trg::TBuf, SSRClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
-                {Trg::Image, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
-                {Trg::Image, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
+                {Trg::Image2D, SSRClassifyTiles::REFL_IMG_SLOT, *refl_tex.ref},
+                {Trg::Image2D, SSRClassifyTiles::NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const Ren::Vec3u grp_count =
                 Ren::Vec3u{(view_state_.act_res[0] + SSRClassifyTiles::LOCAL_GROUP_SIZE_X - 1u) /
@@ -288,8 +288,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 {Trg::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
                 {Trg::Tex2D, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBuf, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                {Trg::Image, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Trg::Image, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
+                {Trg::Image2D, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::Image2D, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
                 {Trg::SBuf, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBuf, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
@@ -535,10 +535,10 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 {Trg::Tex2D, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
                 {Trg::Tex2D, SSRReproject::RAYLEN_TEX_SLOT, *raylen_tex.ref},
                 {Trg::SBuf, SSRReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
-                {Trg::Image, SSRReproject::OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
-                {Trg::Image, SSRReproject::OUT_VERIANCE_IMG_SLOT, *out_variance_tex.ref},
-                {Trg::Image, SSRReproject::OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
+                {Trg::Image2D, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
+                {Trg::Image2D, SSRReproject::OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
+                {Trg::Image2D, SSRReproject::OUT_VERIANCE_IMG_SLOT, *out_variance_tex.ref},
+                {Trg::Image2D, SSRReproject::OUT_SAMPLE_COUNT_IMG_SLOT, *out_sample_count_tex.ref}};
 
             SSRReproject::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
@@ -615,16 +615,16 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->out_refl_tex);
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2D, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                             {Trg::Tex2D, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
-                                             {Trg::Tex2D, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                                             {Trg::Tex2D, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
-                                             {Trg::Tex2D, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                             {Trg::Tex2D, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                                             {Trg::SBuf, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-
-                                             {Trg::Image, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                                             {Trg::Image, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2D, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2D, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2D, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                {Trg::Tex2D, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
+                {Trg::Tex2D, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2D, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::SBuf, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image2D, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::Image2D, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
             const auto grp_count = Ren::Vec3u{
                 (view_state_.act_res[0] + SSRPrefilter::LOCAL_GROUP_SIZE_X - 1u) / SSRPrefilter::LOCAL_GROUP_SIZE_X,
@@ -716,8 +716,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 {Trg::Tex2D, SSRResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2D, SSRResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                 {Trg::SBuf, SSRResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                {Trg::Image, SSRResolveTemporal::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Trg::Image, SSRResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
+                {Trg::Image2D, SSRResolveTemporal::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
+                {Trg::Image2D, SSRResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
             SSRResolveTemporal::Params uniform_params;
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};

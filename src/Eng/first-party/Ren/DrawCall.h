@@ -17,7 +17,7 @@ class Texture1D;
 class Texture2D;
 class Texture3D;
 
-enum class eBindTarget : uint16_t { Tex2D, Tex2DMs, TexCubeArray, Tex3D, TBuf, UBuf, SBuf, Image, AccStruct, _Count };
+enum class eBindTarget : uint16_t { Tex2D, Tex2DMs, TexCubeArray, Tex3D, TBuf, UBuf, SBuf, Image2D, AccStruct, _Count };
 
 #if defined(USE_GL_RENDER)
 uint32_t GLBindTarget(eBindTarget binding);

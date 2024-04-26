@@ -138,8 +138,8 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::TBuf, RTShadowClassify::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
                 {Ren::eBindTarget::TBuf, RTShadowClassify::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
                 {Ren::eBindTarget::TBuf, RTShadowClassify::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
-                {Ren::eBindTarget::Image, RTShadowClassify::RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
-                {Ren::eBindTarget::Image, RTShadowClassify::NOISE_IMG_SLOT, *noise_tex.ref}};
+                {Ren::eBindTarget::Image2D, RTShadowClassify::RAY_HITS_IMG_SLOT, *ray_hits_tex.ref},
+                {Ren::eBindTarget::Image2D, RTShadowClassify::NOISE_IMG_SLOT, *noise_tex.ref}};
 
             const auto grp_count = Ren::Vec3u{(view_state_.act_res[0] + RTShadowClassify::LOCAL_GROUP_SIZE_X - 1u) /
                                                   RTShadowClassify::LOCAL_GROUP_SIZE_X,
@@ -226,7 +226,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
             const Ren::Binding bindings[] = {
                 {Ren::eBindTarget::Tex2D, RTShadowDebug::HIT_MASK_TEX_SLOT, *hit_mask_tex.ref},
-                {Ren::eBindTarget::Image, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
+                {Ren::eBindTarget::Image2D, RTShadowDebug::OUT_RESULT_IMG_SLOT, *out_result_img.ref}};
 
             const uint32_t x_tiles = (view_state_.act_res[0] + 8u - 1u) / 8;
             const uint32_t y_tiles = (view_state_.act_res[1] + 4u - 1u) / 4;
@@ -381,9 +381,9 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::Tex2D, RTShadowClassifyTiles::PREV_MOMENTS_TEX_SLOT, *prev_moments_tex.ref},
                 {Ren::eBindTarget::SBuf, RTShadowClassifyTiles::RAY_HITS_BUF_SLOT, *ray_hits_buf.ref},
                 {Ren::eBindTarget::SBuf, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT, *out_tile_metadata_buf.ref},
-                {Ren::eBindTarget::Image, RTShadowClassifyTiles::OUT_REPROJ_RESULTS_IMG_SLOT,
+                {Ren::eBindTarget::Image2D, RTShadowClassifyTiles::OUT_REPROJ_RESULTS_IMG_SLOT,
                  *out_repro_results_img.ref},
-                {Ren::eBindTarget::Image, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, *out_moments_img.ref},
+                {Ren::eBindTarget::Image2D, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, *out_moments_img.ref},
             };
 
             const Ren::Vec3u grp_count =
@@ -452,7 +452,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::SBuf, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
-                {Ren::eBindTarget::Image, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+                {Ren::eBindTarget::Image2D, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
@@ -517,7 +517,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::SBuf, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
-                {Ren::eBindTarget::Image, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+                {Ren::eBindTarget::Image2D, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
@@ -582,7 +582,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::NORM_TEX_SLOT, *norm_tex.ref},
                 {Ren::eBindTarget::Tex2D, RTShadowFilter::INPUT_TEX_SLOT, *input_tex.ref},
                 {Ren::eBindTarget::SBuf, RTShadowFilter::TILE_METADATA_BUF_SLOT, *tile_metadata_buf.ref},
-                {Ren::eBindTarget::Image, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
+                {Ren::eBindTarget::Image2D, RTShadowFilter::OUT_RESULT_IMG_SLOT, *out_history_img.ref},
             };
 
             const Ren::Vec3u grp_count = Ren::Vec3u{
@@ -651,7 +651,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
             {Ren::eBindTarget::Tex2D, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
             {Ren::eBindTarget::Tex2D, SunShadows::SHADOW_TEX_VAL_SLOT, *shadow_tex.ref, shadow_map_val_sampler_.get()},
-            {Ren::eBindTarget::Image, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
+            {Ren::eBindTarget::Image2D, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + SunShadows::LOCAL_GROUP_SIZE_X - 1u) / SunShadows::LOCAL_GROUP_SIZE_X,
@@ -661,7 +661,8 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
         uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
         uniform_params.enabled = enabled ? 1.0f : 0.0f;
         uniform_params.pixel_spread_angle = view_state_.pixel_spread_angle;
-        uniform_params.softness_factor = std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
+        uniform_params.softness_factor =
+            std::tan(p_list_->env.sun_angle * Ren::Pi<float>() / 180.0f) / 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor /= 2.0f * p_list_->sun_shadow_bounds;
         uniform_params.softness_factor *= 0.5f * float(SUN_SHADOW_RES);
 

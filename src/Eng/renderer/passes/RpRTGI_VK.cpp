@@ -69,7 +69,7 @@ void Eng::RpRTGI::Execute_HWRT_Pipeline(RpBuilder &builder) {
                                      {Ren::eBindTarget::SBuf, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
                                      {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
-                                     {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+                                     {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
     descr_sets[0] = Ren::PrepareDescriptorSet(api_ctx, pi_rt_gi_.prog()->descr_set_layouts()[0], bindings,
@@ -157,7 +157,7 @@ void Eng::RpRTGI::Execute_HWRT_Inline(RpBuilder &builder) {
                                      {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
                                      {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
                                      {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-                                     {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+                                     {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     const Ren::Pipeline &pi = pass_data_->two_bounce ? pi_rt_gi_2bounce_inline_ : pi_rt_gi_inline_;
 
@@ -293,7 +293,7 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Image, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
+        {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
 
     const Ren::Pipeline &pi = pass_data_->two_bounce ? pi_rt_gi_2bounce_swrt_ : pi_rt_gi_swrt_;
 

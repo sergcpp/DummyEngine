@@ -957,7 +957,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::Tex2D, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::LTC_LUTS_TEX_SLOT, *ltc_luts.ref},
             {Ren::eBindTarget::Tex2D, GBufferShade::ENV_TEX_SLOT, *env_tex.ref},
-            {Ren::eBindTarget::Image, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
+            {Ren::eBindTarget::Image2D, GBufferShade::OUT_COLOR_IMG_SLOT, *out_color_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + GBufferShade::LOCAL_GROUP_SIZE_X - 1u) / GBufferShade::LOCAL_GROUP_SIZE_X,
@@ -1550,7 +1550,7 @@ void Eng::Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &outp
         RpAllocTex &output_tex = builder.GetWriteTexture(data->out_color_tex);
 
         const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, DebugVelocity::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                                         {Ren::eBindTarget::Image, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
+                                         {Ren::eBindTarget::Image2D, DebugVelocity::OUT_IMG_SLOT, *output_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{
             (view_state_.act_res[0] + DebugVelocity::LOCAL_GROUP_SIZE_X - 1u) / DebugVelocity::LOCAL_GROUP_SIZE_X,
