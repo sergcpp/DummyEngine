@@ -178,7 +178,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) 
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int DummyApp::Init(const int w, const int h, const int validation_level, const char *) {
+int DummyApp::Init(const int w, const int h, const int validation_level, const bool nohwrt, const char *) {
     const BOOL dpi_result = SetProcessDPIAware();
     (void)dpi_result;
 
@@ -330,7 +330,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
     try {
         Viewer::PrepareAssets("pc");
         log_ = std::make_unique<LogStdout>();
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, log_.get(), nullptr);
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nohwrt, log_.get(), nullptr);
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -414,7 +414,7 @@ int DummyApp::Run(int argc, char *argv[]) {
         }
     }
 
-    if (Init(w, h, validation_level, nullptr) < 0) {
+    if (Init(w, h, validation_level, false, nullptr) < 0) {
         return -1;
     }
 

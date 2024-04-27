@@ -103,7 +103,7 @@ DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() = default;
 
-int DummyApp::Init(const int w, const int h, const int validation_level, const char *device_name) {
+int DummyApp::Init(const int w, const int h, const int validation_level, const bool nohwrt, const char *device_name) {
     init_delegate_class();
 
     // id app = [NSApplication sharedApplication];
@@ -138,7 +138,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
     try {
         Viewer::PrepareAssets("pc");
         log_ = std::make_unique<LogStdout>();
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, log_.get(), device_name);
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nohwrt, log_.get(), device_name);
 
         auto *input_manager = viewer_->input_manager();
         input_manager_ = input_manager;
@@ -237,7 +237,7 @@ int DummyApp::Run(int argc, char *argv[]) {
         }
     }
 
-    if (Init(w, h, validation_level, device_name) < 0) {
+    if (Init(w, h, validation_level, false, device_name) < 0) {
         return -1;
     }
 

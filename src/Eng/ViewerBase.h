@@ -61,7 +61,7 @@ class ViewerBase {
     void InitOptickGPUProfiler();
 
   public:
-    ViewerBase(int w, int h, int validation_level, ILog *log, const char *device_name);
+    ViewerBase(int w, int h, int validation_level, bool nohwrt, ILog *log, const char *device_name);
     virtual ~ViewerBase();
 
     ILog *log() { return log_; }

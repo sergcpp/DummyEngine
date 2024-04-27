@@ -114,7 +114,8 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
     return default_descr_alloc_[api_ctx_->backend_frame].get();
 }
 
-bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const char *preferred_device) {
+bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, bool nohwrt,
+                        const char *preferred_device) {
     api_ctx_ = std::make_unique<ApiContext>();
     if (!api_ctx_->Load(log)) {
         return false;
@@ -167,7 +168,7 @@ bool Ren::Context::Init(const int w, const int h, ILog *log, const int validatio
     // Workaround for a buggy linux AMD driver, make sure vkGetBufferDeviceAddressKHR is not NULL
     auto dev_vkGetBufferDeviceAddressKHR =
         (PFN_vkGetBufferDeviceAddressKHR)api_ctx_->vkGetDeviceProcAddr(api_ctx_->device, "vkGetBufferDeviceAddressKHR");
-    if (!dev_vkGetBufferDeviceAddressKHR) {
+    if (!dev_vkGetBufferDeviceAddressKHR || nohwrt) {
         api_ctx_->raytracing_supported = api_ctx_->ray_query_supported = false;
     }
 

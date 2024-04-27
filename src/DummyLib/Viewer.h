@@ -40,7 +40,7 @@ class Viewer : public Eng::ViewerBase {
     std::unique_ptr<Dictionary> dictionary_;
 
   public:
-    Viewer(int w, int h, const char *local_dir, int validation_level, ILog *log, const char *device_name);
+    Viewer(int w, int h, const char *local_dir, int validation_level, bool nohwrt, ILog *log, const char *device_name);
     ~Viewer();
 
     FontStorage *font_storage() { return font_storage_.get(); }

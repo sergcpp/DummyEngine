@@ -147,7 +147,7 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int DummyApp::Init(const int w, const int h, const int validation_level, const char *device_name) {
+int DummyApp::Init(const int w, const int h, const int validation_level, const bool nohwrt, const char *device_name) {
     const BOOL dpi_result = SetProcessDPIAware();
     (void)dpi_result;
 
@@ -181,7 +181,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const c
     try {
         Viewer::PrepareAssets("pc");
         log_ = std::make_unique<LogStdout>();
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, log_.get(), device_name);
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nohwrt, log_.get(), device_name);
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -217,8 +217,7 @@ void DummyApp::Resize(const int w, const int h) {
 }
 
 void DummyApp::AddEvent(const Eng::RawInputEv type, const uint32_t key_code, const float x, const float y,
-                        const float dx,
-                        const float dy) {
+                        const float dx, const float dy) {
     if (!input_manager_) {
         return;
     }
@@ -240,6 +239,7 @@ int DummyApp::Run(int argc, char *argv[]) {
     fullscreen_ = false;
     int validation_level = 0;
     const char *device_name = nullptr;
+    bool nohwrt = false;
 
 #ifndef NDEBUG
     validation_level = 1;
@@ -262,10 +262,12 @@ int DummyApp::Run(int argc, char *argv[]) {
             device_name = argv[++i];
         } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
             validation_level = std::atoi(argv[++i]);
+        } else if (strcmp(arg, "--nohwrt") == 0) {
+            nohwrt = true;
         }
     }
 
-    if (Init(w, h, validation_level, device_name) < 0) {
+    if (Init(w, h, validation_level, nohwrt, device_name) < 0) {
         return -1;
     }
 

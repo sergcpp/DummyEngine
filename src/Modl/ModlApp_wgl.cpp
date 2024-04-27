@@ -571,7 +571,7 @@ int ModlApp::Init(const int w, const int h) {
     }
 
     ctx_ = std::make_unique<Ren::Context>();
-    ctx_->Init(w, h, &log_, 2 /* validation_level */, nullptr);
+    ctx_->Init(w, h, &log_, 2 /* validation_level */, false, nullptr);
     InitInternal();
 
     Sys::InitWorker();
