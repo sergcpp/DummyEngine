@@ -3281,10 +3281,16 @@ const glslx::ast_type *glslx::Evaluate_ExpressionResultType(const TrUnit *tu, co
         }
 
         if (is_integer_type(to_scalar_type(op1_type)) && is_integer_type(to_scalar_type(op2_type))) {
-            if (is_unsigned_type(to_scalar_type(op1_type)) && !is_unsigned_type(to_scalar_type(op2_type))) {
+            if (get_vector_size(op1_type) > get_vector_size(op2_type)) {
                 return op1_type;
-            } else {
+            } else if (get_vector_size(op2_type) > get_vector_size(op1_type)) {
                 return op2_type;
+            } else {
+                if (is_unsigned_type(to_scalar_type(op1_type)) && !is_unsigned_type(to_scalar_type(op2_type))) {
+                    return op1_type;
+                } else {
+                    return op2_type;
+                }
             }
         } else if (is_integer_type(to_scalar_type(op1_type)) && is_float_type(to_scalar_type(op2_type))) {
             return op2_type;
