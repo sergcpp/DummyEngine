@@ -16,8 +16,22 @@ class ProbeStorage;
 class Texture1D;
 class Texture2D;
 class Texture3D;
+class Texture2DArray;
 
-enum class eBindTarget : uint16_t { Tex2D, Tex2DMs, TexCubeArray, Tex3D, TBuf, UBuf, SBuf, Image2D, AccStruct, _Count };
+enum class eBindTarget : uint16_t {
+    Tex2D,
+    Tex2DArray,
+    Tex2DMs,
+    TexCubeArray,
+    Tex3D,
+    TBuf,
+    UBuf,
+    SBuf,
+    Image2D,
+    Image2DArray,
+    AccStruct,
+    _Count
+};
 
 #if defined(USE_GL_RENDER)
 uint32_t GLBindTarget(eBindTarget binding);
@@ -31,6 +45,7 @@ struct OpaqueHandle {
         const Buffer *buf;
         const Texture1D *tex_buf;
         const ProbeStorage *cube_arr;
+        const Texture2DArray *tex2d_arr;
 #if defined(USE_VK_RENDER)
         const AccStructureVK *acc_struct;
 #endif
@@ -41,6 +56,7 @@ struct OpaqueHandle {
     OpaqueHandle(const Texture3D &_tex) : tex3d(&_tex) {}
     OpaqueHandle(const Buffer &_buf) : buf(&_buf) {}
     OpaqueHandle(const ProbeStorage &_probes) : cube_arr(&_probes) {}
+    OpaqueHandle(const Texture2DArray &_tex2d_arr) : tex2d_arr(&_tex2d_arr) {}
 #if defined(USE_VK_RENDER)
     OpaqueHandle(const AccStructureVK &_acc_struct) : acc_struct(&_acc_struct) {}
 #endif

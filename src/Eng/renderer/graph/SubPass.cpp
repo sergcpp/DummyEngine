@@ -72,6 +72,10 @@ Eng::RpResRef Eng::RpSubpass::AddStorageImageOutput(const Ren::WeakTex2DRef &tex
     return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
 }
 
+Eng::RpResRef Eng::RpSubpass::AddStorageImageOutput(const Ren::Texture2DArray *tex, Ren::eStageBits stages) {
+    return builder_.WriteTexture(tex, Ren::eResState::UnorderedAccess, stages, *this);
+}
+
 Eng::RpResRef Eng::RpSubpass::AddColorOutput(std::string_view name, const Ren::Tex2DParams &params) {
     return builder_.WriteTexture(name, params, Ren::eResState::RenderTarget, Ren::eStageBits::ColorAttachment, *this);
 }
@@ -113,19 +117,23 @@ Eng::RpResRef Eng::RpSubpass::AddTextureInput(const RpResRef handle, const Ren::
     return builder_.ReadTexture(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddTextureInput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddTextureInput(const Ren::WeakTex2DRef &tex, const Ren::eStageBits stages) {
     return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddTextureInput(std::string_view name, Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddTextureInput(std::string_view name, const Ren::eStageBits stages) {
     return builder_.ReadTexture(name, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(RpResRef handle, Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddTextureInput(const Ren::Texture2DArray *tex, const Ren::eStageBits stages) {
+    return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
+}
+
+Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(RpResRef handle, const Ren::eStageBits stages) {
     return builder_.ReadHistoryTexture(handle, Ren::eResState::ShaderResource, stages, *this);
 }
 
-Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages) {
+Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(std::string_view name, const Ren::eStageBits stages) {
     return builder_.ReadHistoryTexture(name, Ren::eResState::ShaderResource, stages, *this);
 }
 

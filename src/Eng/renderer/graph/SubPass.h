@@ -75,6 +75,7 @@ class RpSubpass {
     RpResRef AddStorageImageOutput(std::string_view name, const Ren::Tex2DParams &params, Ren::eStageBits stages);
     RpResRef AddStorageImageOutput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddStorageImageOutput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
+    RpResRef AddStorageImageOutput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
 
     RpResRef AddColorOutput(std::string_view name, const Ren::Tex2DParams &params);
     RpResRef AddColorOutput(RpResRef handle);
@@ -92,6 +93,7 @@ class RpSubpass {
     RpResRef AddTextureInput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddTextureInput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
     RpResRef AddTextureInput(std::string_view name, Ren::eStageBits stages);
+    RpResRef AddTextureInput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
 
     RpResRef AddHistoryTextureInput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages);

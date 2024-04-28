@@ -2,8 +2,8 @@
 
 #include "Bitmask.h"
 #include "Log.h"
-#include "Storage.h"
 #include "Resource.h"
+#include "Storage.h"
 
 #if defined(USE_VK_RENDER)
 typedef uint64_t VkDeviceAddress;
@@ -57,6 +57,7 @@ class Shader;
 class Texture2D;
 class Texture1D;
 class TextureAtlas;
+class Texture2DAtlas;
 class TextureSplitter;
 class VertexInput;
 
@@ -76,4 +77,4 @@ using Tex1DRef = StrongRef<Texture1D>;
 using WeakTex1DRef = WeakRef<Texture1D>;
 
 const char *Version();
-}
+} // namespace Ren

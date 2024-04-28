@@ -8,17 +8,20 @@
 #include "ProbeStorage.h"
 #include "Sampler.h"
 #include "Texture.h"
+#include "TextureArray.h"
 
 namespace Ren {
 const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D,             // Tex2D
+    GL_TEXTURE_2D_ARRAY,       // Tex2DArray
     GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
     GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
     GL_TEXTURE_3D,             // Tex3D
     GL_TEXTURE_BUFFER,         // TBuf
     GL_UNIFORM_BUFFER,         // UBuf
     GL_SHADER_STORAGE_BUFFER,  // SBuf
-    0xffffffff,                // Image
+    0xffffffff,                // Image2D
+    0xffffffff,                // Image2DArray
     0xffffffff                 // AccStruct
 };
 static_assert(std::size(gl_binding_targets) == size_t(eBindTarget::_Count), "!");
@@ -35,6 +38,14 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
     for (const auto &b : bindings) {
         if (b.trg == eBindTarget::Tex2D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex->id()));
+            if (b.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            }
+        } else if (b.trg == eBindTarget::Tex2DArray) {
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()));
+            if (b.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            }
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
             if (b.offset) {
                 assert(b.size != 0);
@@ -47,8 +58,11 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
         } else if (b.trg == eBindTarget::TexCubeArray) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc), GLuint(b.handle.cube_arr->handle().id));
         } else if (b.trg == eBindTarget::Image2D) {
-            glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
+            glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));
+        } else if (b.trg == eBindTarget::Image2DArray) {
+            glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format(), false));
         }
     }
 
@@ -82,6 +96,11 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
             if (b.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
             }
+        } else if (b.trg == eBindTarget::Tex2DArray) {
+            ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex2d_arr->id()));
+            if (b.sampler) {
+                ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
+            }
         } else if (b.trg == eBindTarget::Tex3D) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
         } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
@@ -98,6 +117,9 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
         } else if (b.trg == eBindTarget::Image2D) {
             glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex_buf->id()), 0, GL_FALSE, 0, GL_READ_WRITE,
                                GLInternalFormatFromTexFormat(b.handle.tex->params.format, false));
+        } else if (b.trg == eBindTarget::Image2DArray) {
+            glBindImageTexture(GLuint(b.loc), GLuint(b.handle.tex2d_arr->id()), 0, GL_TRUE, 0, GL_READ_WRITE,
+                               GLInternalFormatFromTexFormat(b.handle.tex2d_arr->format(), false));
         }
     }
 

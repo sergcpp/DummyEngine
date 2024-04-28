@@ -71,6 +71,7 @@ struct RpAllocTex {
     Ren::Tex2DParams desc;
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
+    const Ren::Texture2DArray *arr = nullptr;
 };
 
 class RpSubpass;
@@ -156,6 +157,8 @@ class RpBuilder {
     RpResRef ReadTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          RpSubpass &pass);
+    RpResRef ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                         RpSubpass &pass);
 
     RpResRef ReadHistoryTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);
     RpResRef ReadHistoryTexture(std::string_view name, Ren::eResState desired_state, Ren::eStageBits stages,
@@ -173,6 +176,8 @@ class RpBuilder {
                           Ren::eStageBits stages, RpSubpass &pass);
     RpResRef WriteTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                           RpSubpass &pass, int slot_index = -1);
+    RpResRef WriteTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                          RpSubpass &pass);
 
     RpResRef MakeTextureResource(const Ren::WeakTex2DRef &ref);
 

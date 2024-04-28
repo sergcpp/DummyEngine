@@ -122,7 +122,7 @@ void Gui::Renderer::Draw(const int w, const int h) {
     glUseProgram(pipeline_.prog()->id());
 
     glActiveTexture(GL_TEXTURE0 + UIRendererConstants::TexAtlasSlot);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, GLuint(ctx_.texture_atlas().tex_id()));
+    glBindTexture(GL_TEXTURE_2D_ARRAY, GLuint(ctx_.texture_atlas().id()));
 
     glDrawElements(GL_TRIANGLES, ndx_count_[ctx_.backend_frame()], GL_UNSIGNED_SHORT,
                    reinterpret_cast<const GLvoid *>(uintptr_t(0)));

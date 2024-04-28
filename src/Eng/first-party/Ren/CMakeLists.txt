@@ -89,7 +89,9 @@ set(SOURCE_FILES Anim.h
                  String.h
                  Texture.h
                  Texture.cpp
+                 TextureArray.h
                  TextureAtlas.h
+                 TextureAtlas.cpp
                  TextureParams.h
                  TextureParams.cpp
                  TextureRegion.h
@@ -130,6 +132,7 @@ if(${RENDERER} STREQUAL "GL")
                      RenderPassGL.cpp
                      TextureGL.h
                      TextureGL.cpp
+                     TextureArrayGL.cpp
                      TextureAtlasGL.cpp
                      VertexInputGL.cpp)
 
@@ -170,6 +173,7 @@ elseif(${RENDERER} STREQUAL "VK")
                      ShaderVK.cpp
                      TextureVK.h
                      TextureVK.cpp
+                     TextureArrayVK.cpp
                      TextureAtlasVK.cpp
                      VertexInputVK.cpp
                      VK.h

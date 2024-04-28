@@ -2,6 +2,7 @@
 
 #include <Ren/Context.h>
 #include <Ren/DebugMarker.h>
+#include <Ren/TextureArray.h>
 #include <optick/optick.h>
 
 #include "SubPass.h"
@@ -219,6 +220,47 @@ Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::WeakTex2DRef &ref, const Re
     RpAllocTex &tex = textures_[ret.index];
     tex.desc = ref->params;
     tex.ref = ref;
+    ret._generation = tex._generation;
+    ret.desired_state = desired_state;
+    ret.stages = stages;
+
+    tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
+    ++tex.read_count;
+    ++pass.ref_count_;
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.output_.size(); i++) {
+        assert(pass.input_[i].type != eRpResType::Texture || pass.input_[i].index != ret.index);
+    }
+#endif
+
+    pass.input_.push_back(ret);
+
+    return ret;
+}
+
+Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state,
+                                          Ren::eStageBits stages, RpSubpass &pass) {
+    RpResource ret;
+    ret.type = eRpResType::Texture;
+
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
+    if (!ptex_index) {
+        RpAllocTex new_tex;
+        new_tex.read_count = 0;
+        new_tex.write_count = 0;
+        new_tex.used_in_stages = Ren::eStageBits::None;
+        new_tex.name = ref->name();
+        new_tex.external = true;
+
+        ret.index = textures_.emplace(new_tex);
+        name_to_texture_[new_tex.name] = ret.index;
+    } else {
+        ret.index = *ptex_index;
+    }
+
+    RpAllocTex &tex = textures_[ret.index];
+    tex.arr = ref;
     ret._generation = tex._generation;
     ret.desired_state = desired_state;
     ret.stages = stages;
@@ -556,6 +598,50 @@ Eng::RpResRef Eng::RpBuilder::WriteTexture(const Ren::WeakTex2DRef &ref, const R
         }
         pass.output_[slot_index] = ret;
     }
+
+    ++ret.write_count;
+    return ret;
+}
+
+Eng::RpResRef Eng::RpBuilder::WriteTexture(const Ren::Texture2DArray *ref, const Ren::eResState desired_state,
+                                           const Ren::eStageBits stages, RpSubpass &pass) {
+    RpResource ret;
+    ret.type = eRpResType::Texture;
+
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
+    if (!ptex_index) {
+        RpAllocTex new_tex;
+        new_tex.read_count = 0;
+        new_tex.write_count = 0;
+        new_tex.used_in_stages = Ren::eStageBits::None;
+        new_tex.name = ref->name();
+        // new_tex.desc = ref->params;
+        new_tex.external = true;
+
+        ret.index = textures_.emplace(new_tex);
+        name_to_texture_[new_tex.name] = ret.index;
+    } else {
+        ret.index = *ptex_index;
+    }
+
+    RpAllocTex &tex = textures_[ret.index];
+    // tex.desc = ref->params;
+    tex.arr = ref;
+    ret._generation = tex._generation;
+    ret.desired_state = desired_state;
+    ret.stages = stages;
+
+    tex.written_in_passes.push_back({pass.index_, int16_t(pass.output_.size())});
+    ++tex.write_count;
+    ++pass.ref_count_;
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.output_.size(); i++) {
+        assert(pass.output_[i].type != eRpResType::Texture || pass.output_[i].index != ret.index);
+    }
+#endif
+    // Add new output
+    pass.output_.push_back(ret);
 
     ++ret.write_count;
     return ret;
@@ -1360,6 +1446,8 @@ void Eng::RpBuilder::Execute() {
             tex.used_in_stages = Ren::StageBitsForState(tex.ref->resource_state);
             // Needed to clear the texture initially
             tex.used_in_stages |= Ren::eStageBits::Transfer;
+        } else if (tex.arr) {
+            tex.used_in_stages = Ren::StageBitsForState(tex.arr->resource_state);
         }
     }
 
@@ -1481,13 +1569,24 @@ void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
             assert(tex->alias_of == -1);
         }
 
-        if (tex->ref->resource_state != res.desired_state ||
-            tex->ref->resource_state == Ren::eResState::UnorderedAccess ||
-            tex->ref->resource_state == Ren::eResState::CopyDst) {
-            src_stages |= tex->used_in_stages;
-            dst_stages |= res.stages;
-            tex->used_in_stages = Ren::eStageBits::None;
-            res_transitions.emplace_back(tex->ref.get(), res.desired_state);
+        if (!tex->arr) {
+            if (tex->ref->resource_state != res.desired_state ||
+                tex->ref->resource_state == Ren::eResState::UnorderedAccess ||
+                tex->ref->resource_state == Ren::eResState::CopyDst) {
+                src_stages |= tex->used_in_stages;
+                dst_stages |= res.stages;
+                tex->used_in_stages = Ren::eStageBits::None;
+                res_transitions.emplace_back(tex->ref.get(), res.desired_state);
+            }
+        } else {
+            if (tex->arr->resource_state != res.desired_state ||
+                tex->arr->resource_state == Ren::eResState::UnorderedAccess ||
+                tex->arr->resource_state == Ren::eResState::CopyDst) {
+                src_stages |= tex->used_in_stages;
+                dst_stages |= res.stages;
+                tex->used_in_stages = Ren::eStageBits::None;
+                res_transitions.emplace_back(tex->arr, res.desired_state);
+            }
         }
         tex->used_in_stages |= res.stages;
     }

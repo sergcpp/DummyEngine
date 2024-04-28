@@ -6,6 +6,7 @@
 #include "Pipeline.h"
 #include "ProbeStorage.h"
 #include "Sampler.h"
+#include "TextureArray.h"
 #include "VKCtx.h"
 
 VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLayout layout,
@@ -35,6 +36,26 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
                 info.imageView = b.handle.tex->handle().views[0];
             }
             info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex->resource_state));
+
+            auto &new_write = descr_writes.emplace_back();
+            new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            new_write.dstBinding = b.loc;
+            new_write.dstArrayElement = b.offset;
+            new_write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            new_write.descriptorCount = 1;
+            new_write.pImageInfo = &info;
+
+            assert((used_bindings & (1ull << (b.loc + b.offset))) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << (b.loc + b.offset));
+        } else if (b.trg == eBindTarget::Tex2DArray) {
+            auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
+            if (b.sampler) {
+                info.sampler = b.sampler->vk_handle();
+            } else {
+                info.sampler = b.handle.tex2d_arr->sampler().vk_handle();
+            }
+            info.imageView = b.handle.tex2d_arr->img_view();
+            info.imageLayout = VkImageLayout(VKImageLayoutForState(b.handle.tex2d_arr->resource_state));
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
@@ -129,6 +150,22 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
             } else {
                 info.imageView = b.handle.tex->handle().views[0];
             }
+            info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+            auto &new_write = descr_writes.emplace_back();
+            new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+            new_write.dstBinding = b.loc;
+            new_write.dstArrayElement = 0;
+            new_write.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+            new_write.descriptorCount = 1;
+            new_write.pImageInfo = &info;
+
+            assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
+            used_bindings |= (1ull << b.loc);
+        } else if (b.trg == eBindTarget::Image2DArray) {
+            auto &info = img_storage_infos[descr_sizes.store_img_count++];
+            info.sampler = b.handle.tex2d_arr->sampler().vk_handle();
+            info.imageView = b.handle.tex2d_arr->img_view();
             info.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 
             auto &new_write = descr_writes.emplace_back();
