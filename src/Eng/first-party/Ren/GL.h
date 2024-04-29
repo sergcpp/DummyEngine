@@ -316,6 +316,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 #define GL_COLOR_ATTACHMENT3                0x8CE3
 #define GL_DEPTH_ATTACHMENT                 0x8D00
 #define GL_STENCIL_ATTACHMENT               0x8D20
+#define GL_DEPTH_STENCIL                    0x84f9
 #define GL_DEPTH_STENCIL_ATTACHMENT         0x821A
 
 #define GL_FRAMEBUFFER                      0x8D40
@@ -510,6 +511,7 @@ EXTERN_FUNC PFNGLBINDTEXTUREUNITCOMPPROC        ren_glBindTextureUnit_Comp;
 
 #define GL_UNSIGNED_INT_2_10_10_10_REV  0x8368
 #define GL_UNSIGNED_INT_5_9_9_9_REV     0x8C3E
+#define GL_FLOAT_32_UNSIGNED_INT_24_8_REV 0x8dad
 
 #ifndef APIENTRY
 #if defined(_WIN32)

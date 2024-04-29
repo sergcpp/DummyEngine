@@ -60,6 +60,10 @@ inline bool IsDepthStencilFormat(const eTexFormat format) {
     return format == eTexFormat::Depth24Stencil8 || format == eTexFormat::Depth32Stencil8;
 }
 
+inline bool IsUnsignedIntegerFormat(const eTexFormat format) {
+    return format == eTexFormat::RawR32UI || format == eTexFormat::RawRG32UI || format == eTexFormat::RawRGBA32UI;
+}
+
 bool IsCompressedFormat(const eTexFormat format);
 
 int CalcMipCount(int w, int h, int min_res, eTexFilter filter);

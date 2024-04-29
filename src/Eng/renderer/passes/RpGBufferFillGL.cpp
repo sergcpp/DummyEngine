@@ -57,6 +57,8 @@ uint32_t _skip_range(Ren::Span<const uint32_t> batch_indices, Ren::Span<const En
 void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     using namespace RpSharedInternal;
 
+    Ren::Context &ctx = builder.ctx();
+
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
@@ -83,12 +85,13 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     glBindFramebuffer(GL_FRAMEBUFFER, main_draw_fb_[0][fb_to_use_].id());
     if (!main_draw_fb_[0][fb_to_use_].color_attachments.empty()) {
         const float black[] = {0.0f, 0.0f, 0.0f, 0.0f};
-        glClearTexImage(main_draw_fb_[0][fb_to_use_].color_attachments[0].handle.id, 0, GL_RGBA, GL_FLOAT, black);
+        glClearTexImage(main_draw_fb_[ctx.backend_frame()][fb_to_use_].color_attachments[0].handle.id, 0, GL_RGBA,
+                        GL_FLOAT, black);
         const uint32_t zero[] = {0, 0, 0, 0};
-        glClearTexImage(main_draw_fb_[0][fb_to_use_].color_attachments[1].handle.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT,
-                        zero);
-        glClearTexImage(main_draw_fb_[0][fb_to_use_].color_attachments[2].handle.id, 0, GL_RED_INTEGER, GL_UNSIGNED_INT,
-                        zero);
+        glClearTexImage(main_draw_fb_[ctx.backend_frame()][fb_to_use_].color_attachments[1].handle.id, 0,
+                        GL_RED_INTEGER, GL_UNSIGNED_INT, zero);
+        glClearTexImage(main_draw_fb_[ctx.backend_frame()][fb_to_use_].color_attachments[2].handle.id, 0,
+                        GL_RED_INTEGER, GL_UNSIGNED_INT, zero);
     }
 
     rast_state.viewport[2] = view_state_->act_res[0];
@@ -113,8 +116,6 @@ void Eng::RpGBufferFill::DrawOpaque(RpBuilder &builder) {
     RpAllocTex &noise_tex = builder.GetReadTexture(noise_tex_);
     RpAllocTex &dummy_white = builder.GetReadTexture(dummy_white_);
     RpAllocTex &dummy_black = builder.GetReadTexture(dummy_black_);
-
-    auto &ctx = builder.ctx();
 
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, BIND_MATERIALS_BUF, GLuint(materialsbuf.ref->id()));
     if (ctx.capabilities.bindless_texture) {

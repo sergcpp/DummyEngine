@@ -15,7 +15,7 @@ void APIENTRY DebugCallback(const GLenum source, const GLenum type, const GLuint
                             const GLsizei length, const GLchar *message, const void *userParam) {
     auto *self = reinterpret_cast<const Context *>(userParam);
     if (severity != GL_DEBUG_SEVERITY_NOTIFICATION) {
-        if (id != 131154 /* pixel-path performance warning */) {
+        if (id != 131154 /* pixel-path performance warning */ && id != 131186 /* buffer performance warning */) {
             self->log()->Error("%s", message);
         }
     } else if (type != GL_DEBUG_TYPE_PUSH_GROUP && type != GL_DEBUG_TYPE_POP_GROUP && type != GL_DEBUG_TYPE_OTHER) {

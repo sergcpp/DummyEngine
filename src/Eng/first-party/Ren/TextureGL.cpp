@@ -21,33 +21,33 @@
 
 namespace Ren {
 const uint32_t g_gl_formats[] = {
-    0xffffffff,                  // Undefined
-    GL_RGB,                      // RawRGB888
-    GL_RGBA,                     // RawRGBA8888
-    GL_RGBA,                     // RawSignedRGBA8888
-    0xffffffff,                  // RawBGRA8888
-    GL_RED,                      // RawR32F
-    GL_RED,                      // RawR16F
-    GL_RED,                      // RawR8
-    GL_RED,                      // RawR32UI
-    GL_RG,                       // RawRG88
-    GL_RGB,                      // RawRGB32F
-    GL_RGBA,                     // RawRGBA32F
-    GL_RGBA,                     // RawRGBA32UI
-    0xffffffff,                  // RawRGBE8888
-    GL_RGB,                      // RawRGB16F
-    GL_RGBA,                     // RawRGBA16F
-    GL_RG,                       // RawRG16Snorm
-    GL_RG,                       // RawRG16
-    GL_RG,                       // RawRG16F
-    GL_RG,                       // RawRG32F
-    GL_RG,                       // RawRG32UI
-    GL_RGBA,                     // RawRGB10_A2
-    GL_RGB,                      // RawRG11F_B10F
-    GL_RGB,                      // RawRGB9E5
-    GL_DEPTH_COMPONENT,          // Depth16
-    GL_DEPTH_STENCIL_ATTACHMENT, // Depth24Stencil8
-    GL_DEPTH_STENCIL_ATTACHMENT, // Depth32Stencil8
+    0xffffffff,         // Undefined
+    GL_RGB,             // RawRGB888
+    GL_RGBA,            // RawRGBA8888
+    GL_RGBA,            // RawSignedRGBA8888
+    0xffffffff,         // RawBGRA8888
+    GL_RED,             // RawR32F
+    GL_RED,             // RawR16F
+    GL_RED,             // RawR8
+    GL_RED_INTEGER,     // RawR32UI
+    GL_RG,              // RawRG88
+    GL_RGB,             // RawRGB32F
+    GL_RGBA,            // RawRGBA32F
+    GL_RGBA,            // RawRGBA32UI
+    0xffffffff,         // RawRGBE8888
+    GL_RGB,             // RawRGB16F
+    GL_RGBA,            // RawRGBA16F
+    GL_RG,              // RawRG16Snorm
+    GL_RG,              // RawRG16
+    GL_RG,              // RawRG16F
+    GL_RG,              // RawRG32F
+    GL_RG_INTEGER,      // RawRG32UI
+    GL_RGBA,            // RawRGB10_A2
+    GL_RGB,             // RawRG11F_B10F
+    GL_RGB,             // RawRGB9E5
+    GL_DEPTH_COMPONENT, // Depth16
+    GL_DEPTH_STENCIL,   // Depth24Stencil8
+    GL_DEPTH_STENCIL,   // Depth32Stencil8
 #ifndef __ANDROID__
     GL_DEPTH_COMPONENT, // Depth32
 #endif
@@ -103,33 +103,33 @@ const uint32_t g_gl_internal_formats[] = {
 static_assert(std::size(g_gl_internal_formats) == size_t(eTexFormat::_Count), "!");
 
 const uint32_t g_gl_types[] = {
-    0xffffffff,                     // Undefined
-    GL_UNSIGNED_BYTE,               // RawRGB888
-    GL_UNSIGNED_BYTE,               // RawRGBA8888
-    GL_BYTE,                        // RawSignedRGBA8888
-    GL_UNSIGNED_BYTE,               // RawBGRA8888
-    GL_FLOAT,                       // RawR32F
-    GL_HALF_FLOAT,                  // RawR16F
-    GL_UNSIGNED_BYTE,               // RawR8
-    GL_UNSIGNED_INT,                // RawR32UI
-    GL_UNSIGNED_BYTE,               // RawRG88
-    GL_FLOAT,                       // RawRGB32F
-    GL_FLOAT,                       // RawRGBA32F
-    GL_UNSIGNED_INT,                // RawRGBA32UI
-    0xffffffff,                     // RawRGBE8888
-    GL_HALF_FLOAT,                  // RawRGB16F
-    GL_HALF_FLOAT,                  // RawRGBA16F
-    GL_SHORT,                       // RawRG16Snorm
-    GL_UNSIGNED_SHORT,              // RawRG16
-    GL_HALF_FLOAT,                  // RawRG16F
-    GL_FLOAT,                       // RawRG32F
-    GL_UNSIGNED_INT,                // RawRG32UI
-    GL_UNSIGNED_INT_2_10_10_10_REV, // RawRGB10_A2
-    GL_FLOAT,                       // RawRG11F_B10F
-    GL_UNSIGNED_INT_5_9_9_9_REV,    // RawRGB9E5
-    GL_UNSIGNED_SHORT,              // Depth16
-    GL_UNSIGNED_INT,                // Depth24Stencil8
-    GL_FLOAT,                       // Depth24Stencil8
+    0xffffffff,                        // Undefined
+    GL_UNSIGNED_BYTE,                  // RawRGB888
+    GL_UNSIGNED_BYTE,                  // RawRGBA8888
+    GL_BYTE,                           // RawSignedRGBA8888
+    GL_UNSIGNED_BYTE,                  // RawBGRA8888
+    GL_FLOAT,                          // RawR32F
+    GL_HALF_FLOAT,                     // RawR16F
+    GL_UNSIGNED_BYTE,                  // RawR8
+    GL_UNSIGNED_INT,                   // RawR32UI
+    GL_UNSIGNED_BYTE,                  // RawRG88
+    GL_FLOAT,                          // RawRGB32F
+    GL_FLOAT,                          // RawRGBA32F
+    GL_UNSIGNED_INT,                   // RawRGBA32UI
+    0xffffffff,                        // RawRGBE8888
+    GL_HALF_FLOAT,                     // RawRGB16F
+    GL_HALF_FLOAT,                     // RawRGBA16F
+    GL_SHORT,                          // RawRG16Snorm
+    GL_UNSIGNED_SHORT,                 // RawRG16
+    GL_HALF_FLOAT,                     // RawRG16F
+    GL_FLOAT,                          // RawRG32F
+    GL_UNSIGNED_INT,                   // RawRG32UI
+    GL_UNSIGNED_INT_2_10_10_10_REV,    // RawRGB10_A2
+    GL_FLOAT,                          // RawRG11F_B10F
+    GL_UNSIGNED_INT_5_9_9_9_REV,       // RawRGB9E5
+    GL_UNSIGNED_SHORT,                 // Depth16
+    GL_FLOAT_32_UNSIGNED_INT_24_8_REV, // Depth24Stencil8
+    GL_FLOAT,                          // Depth32Stencil8
 #ifndef __ANDROID__
     GL_UNSIGNED_INT, // Depth32
 #endif
@@ -1160,7 +1160,12 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
 }
 
 void Ren::ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
-    glClearTexImage(tex.id(), 0, GL_RGBA, GL_FLOAT, rgba);
+    if (IsDepthStencilFormat(tex.params.format) || IsUnsignedIntegerFormat(tex.params.format)) {
+        glClearTexImage(tex.id(), 0, GLFormatFromTexFormat(tex.params.format), GLTypeFromTexFormat(tex.params.format),
+                        rgba);
+    } else {
+        glClearTexImage(tex.id(), 0, GL_RGBA, GL_FLOAT, rgba);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
