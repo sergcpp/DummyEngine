@@ -159,31 +159,32 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 }
                 new_permutations.push_back(line);
 
-                const int old_count = int(permutations.size());
+                std::vector<std::string> all_permutations;
+
                 for (const std::string &new_perm : new_permutations) {
                     bool all_underscores = true;
                     for (const char c : new_perm) {
                         all_underscores &= (c == '_');
                     }
 
-                    if (all_underscores) {
-                        continue;
-                    }
-
-                    for (int i = 0; i < old_count; ++i) {
+                    for (int i = 0; i < int(permutations.size()); ++i) {
                         std::string perm = permutations[i];
-                        if (!perm.empty()) {
-                            perm += ";";
-                        } else {
-                            perm += "@";
+                        if (!all_underscores) {
+                            if (!perm.empty()) {
+                                perm += ";";
+                            } else {
+                                perm += "@";
+                            }
+                            perm += new_perm;
+                            if (perm.back() == '\r') {
+                                perm.pop_back();
+                            }
                         }
-                        perm += new_perm;
-                        if (perm.back() == '\r') {
-                            perm.pop_back();
-                        }
-                        permutations.emplace_back(std::move(perm));
+                        all_permutations.emplace_back(std::move(perm));
                     }
                 }
+
+                permutations = std::move(all_permutations);
             } else {
                 InlineShaderConstants(ctx, line);
 
