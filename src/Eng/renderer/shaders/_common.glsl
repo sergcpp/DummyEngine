@@ -253,9 +253,9 @@ struct SharedData {
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;
     vec4 ambient_hack;
+    uvec4 portals[MAX_PORTALS_TOTAL / 4];
     ProbeItem probes[MAX_PROBES_TOTAL];
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL];
-    uint portals[MAX_PORTALS_TOTAL];
 };
 
 struct MaterialData {

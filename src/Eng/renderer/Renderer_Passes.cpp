@@ -558,7 +558,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                    sizeof(EllipsItem) * p_list_->ellipsoids.size());
 
             const int portals_count = std::min(int(p_list_->portals.size()), MAX_PORTALS_TOTAL);
-            memcpy(&shrd_data.portals[0], p_list_->portals.data(), portals_count);
+            memcpy(&shrd_data.portals[0], p_list_->portals.data(), portals_count * sizeof(uint32_t));
             if (portals_count < MAX_PORTALS_TOTAL) {
                 shrd_data.portals[portals_count] = 0xffffffff;
             }

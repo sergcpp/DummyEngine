@@ -195,8 +195,8 @@ void main() {
 
         if (rayQueryGetIntersectionTypeEXT(rq, true) == gl_RayQueryCommittedIntersectionNoneEXT) {
             // Check portal lights intersection (diffuse rays are blocked by them)
-            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
-                const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+            for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
+                const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
 
                 const vec3 light_pos = litem.pos_and_radius.xyz;
                 vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;
@@ -213,9 +213,9 @@ void main() {
                     const vec3 p = ray_origin_ws.xyz + gi_ray_ws.xyz * t;
                     const vec3 vi = p - light_pos;
                     const float a1 = dot(light_u, vi);
-                    if (a1 >= -0.5 && a1 <= 0.5) {
+                    if (a1 >= -1.0 && a1 <= 1.0) {
                         const float a2 = dot(light_v, vi);
-                        if (a2 >= -0.5 && a2 <= 0.5) {
+                        if (a2 >= -1.0 && a2 <= 1.0) {
                             throughput *= 0.0;
                             break;
                         }

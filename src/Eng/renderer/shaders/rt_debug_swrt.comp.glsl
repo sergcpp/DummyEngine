@@ -161,8 +161,8 @@ void main() {
         const vec3 rotated_dir = rotate_xz(direction.xyz, g_shrd_data.env_col.w);
         final_color = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
 
-        for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i] != 0xffffffff; ++i) {
-            const light_item_t litem = g_lights[g_shrd_data.portals[i]];
+        for (int i = 0; i < MAX_PORTALS_TOTAL && g_shrd_data.portals[i / 4][i % 4] != 0xffffffff; ++i) {
+            const light_item_t litem = g_lights[g_shrd_data.portals[i / 4][i % 4]];
 
             const vec3 light_pos = litem.pos_and_radius.xyz;
             vec3 light_u = litem.u_and_reg.xyz, light_v = litem.v_and_blend.xyz;

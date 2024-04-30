@@ -364,9 +364,9 @@ struct SharedDataBlock {
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;
     Ren::Vec4f ambient_hack;
+    uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
     ProbeItem probes[MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
-    uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
 };
 static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 64, "!");
 
