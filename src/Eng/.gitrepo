@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = update_01_05
-	commit = 872531009703d79543a4f72d9bcde182eda78126
+	branch = stage_buffers
+	commit = 5ea998e7a9fab4ab59ef97ae63ddb80164441aed
 	method = merge
 	cmdver = 0.4.6
-	parent = 61f68d4d2bd102d8388dd9c38270f7eb3ff7af5d
+	parent = 06d33813a72b6509786bc318bdaf0353abfa99aa
