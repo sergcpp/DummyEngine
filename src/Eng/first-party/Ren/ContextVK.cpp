@@ -390,6 +390,17 @@ void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
     api_ctx_->EndSingleTimeCommands(reinterpret_cast<VkCommandBuffer>(cmd_buf));
 }
 
+void Ren::Context::InsertReadbackMemoryBarrier(void *_cmd_buf) {
+    auto cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
+
+    VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
+    mem_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    mem_barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
+
+    api_ctx_->vkCmdPipelineBarrier(cmd_buf, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
+                                   &mem_barrier, 0, nullptr, 0, nullptr);
+}
+
 void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
 
 int Ren::Context::WriteTimestamp(const bool start) {

@@ -202,6 +202,7 @@ void Ren::Context::BegSingleTimeCommands(void *cmd_buf) {}
 void *Ren::Context::BegTempSingleTimeCommands() { return nullptr; }
 Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) { return MakeFence(); }
 void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {}
+void Ren::Context::InsertReadbackMemoryBarrier(void *cmd_buf) { glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT); }
 void *Ren::Context::current_cmd_buf() { return nullptr; }
 
 int Ren::Context::WriteTimestamp(const bool) {

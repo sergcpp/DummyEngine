@@ -136,6 +136,8 @@ class Context {
     SyncFence EndSingleTimeCommands(void *cmd_buf);
     void EndTempSingleTimeCommands(void *cmd_buf);
 
+    void InsertReadbackMemoryBarrier(void *cmd_buf);
+
     void *current_cmd_buf();
 
     TextureAtlasArray &texture_atlas() { return texture_atlas_; }

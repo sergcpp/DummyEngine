@@ -375,6 +375,7 @@ void run_image_test(const char *test_name, const char *device_name, int validati
     { // Download result
         void *cmd_buf = ren_ctx.BegTempSingleTimeCommands();
         render_result->CopyTextureData(*stage_buf, cmd_buf, 0);
+        ren_ctx.InsertReadbackMemoryBarrier(cmd_buf);
         ren_ctx.EndTempSingleTimeCommands(cmd_buf);
     }
 
