@@ -6,7 +6,7 @@
 [subrepo]
 	remote = glslx
 	branch = master
-	commit = ac7b923b67818d0c7e2890398ec2cc2772d2418a
-	parent = 77a35fa17e75133c63a6b560026c7e6dc51265a0
+	commit = 129b8947c23b0039bde08351519a987a8fa08890
+	parent = 51ef5ddbf0ddbeef4fc48ffc8f4a00245155d12d
 	method = merge
 	cmdver = 0.4.6

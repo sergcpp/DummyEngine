@@ -155,6 +155,8 @@ int get_variable_size(const ast_variable *v, const int array_dim) {
         case eKeyword::K_float:
             return 4;
         case eKeyword::K_double:
+        case eKeyword::K_int64_t:
+        case eKeyword::K_uint64_t:
             return 8;
         case eKeyword::K_bool:
             return 1;
@@ -209,7 +211,8 @@ std::pair<int, int> get_binding_and_set(Span<const ast_layout_qualifier *const> 
     return std::make_pair(binding, set);
 }
 
-const char *g_atomic_functions[] = {"atomicAdd", "atomicAnd", "atomicOr", "atomicXor", "atomicMin", "atomicMax"};
+const char *g_atomic_functions[] = {"atomicAdd", "atomicAnd", "atomicOr",       "atomicXor",
+                                    "atomicMin", "atomicMax", "atomicCompSwap", "atomicExchange"};
 extern const int g_atomic_functions_count = int(std::size(g_atomic_functions));
 
 const std::map<std::string, std::string> g_hlsl_function_mapping = {{"intBitsToFloat", "asfloat"},
@@ -228,9 +231,12 @@ const std::map<std::string, std::string> g_hlsl_function_mapping = {{"intBitsToF
                                                                     {"atomicXor", "InterlockedXor"},
                                                                     {"atomicMin", "InterlockedMin"},
                                                                     {"atomicMax", "InterlockedMax"},
+                                                                    {"atomicExchange", "InterlockedExchange"},
+                                                                    {"atomicCompSwap", "InterlockedCompareExchange"},
                                                                     {"subgroupAdd", "WaveActiveSum"},
                                                                     {"subgroupElect", "WaveIsFirstLane"},
-                                                                    {"subgroupExclusiveAdd", "WavePrefixSum"}};
+                                                                    {"subgroupExclusiveAdd", "WavePrefixSum"},
+                                                                    {"bitCount", "countbits"}};
 } // namespace glslx
 
 void glslx::WriterHLSL::Write_Expression(const ast_expression *expression, bool nested, std::ostream &out_stream) {
@@ -403,12 +409,10 @@ void glslx::WriterHLSL::Write_LoopAttributes(ctrl_flow_params_t ctrl_flow, std::
     out_stream << "[";
     if (ctrl_flow.attributes & eCtrlFlowAttribute::Unroll) {
         out_stream << "unroll";
-        ctrl_flow.attributes &=
-            ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
+        ctrl_flow.attributes &= ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
     } else if (ctrl_flow.attributes & eCtrlFlowAttribute::DontUnroll) {
         out_stream << "loop";
-        ctrl_flow.attributes &=
-            ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
+        ctrl_flow.attributes &= ~(Bitmask{eCtrlFlowAttribute::Unroll} | eCtrlFlowAttribute::DontUnroll);
     }
     out_stream << "] ";
 }
@@ -490,8 +494,7 @@ void glslx::WriterHLSL::Write_IfStatement(const ast_if_statement *statement, std
         if (statement->else_statement->type == eStatement::If) {
             out_stream << " ";
         }
-        Write_Statement(statement->else_statement, out_stream,
-                        DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
+        Write_Statement(statement->else_statement, out_stream, DefaultOutputFlags & ~Bitmask{eOutputFlags::WriteTabs});
     } else {
         Write_Statement(statement->then_statement, out_stream,
                         DefaultOutputFlags & ~(Bitmask{eOutputFlags::WriteTabs}));
@@ -1386,6 +1389,9 @@ void glslx::WriterHLSL::Write(const TrUnit *tu, std::ostream &out_stream) {
                "float4 texelFetch(Texture2D<float4> t, int2 P, int lod) {\n"
                "    return t.Load(int3(P, lod));\n"
                "}\n"
+               "float4 texelFetch(Texture2D<float4> t, SamplerState s, int2 P, int lod) {\n"
+               "    return t.Load(int3(P, lod));\n"
+               "}\n"
                "float4 texelFetch(Texture2DArray<float4> t, SamplerState s, int3 P, int lod) {\n"
                "    return t.Load(int4(P, lod));\n"
                "}\n"
@@ -1673,6 +1679,10 @@ void glslx::WriterHLSL::Process_AtomicOperations(const ast_expression *expressio
                 if (it != end(g_hlsl_function_mapping)) {
                     func_name = it->second.c_str();
                 }
+                if (strcmp(func_name, "InterlockedCompareExchange") == 0 && temp_type->builtin &&
+                    static_cast<const ast_builtin *>(temp_type)->type == eKeyword::K_uint64_t) {
+                    func_name = "InterlockedCompareExchange64";
+                }
                 out_stream << var->variable->name << "." << func_name << "(";
                 out_stream << buf_it->size << " * ";
                 Write_Expression(subscript->index, false, out_stream);
@@ -1733,6 +1743,11 @@ int glslx::WriterHLSL::Calc_TypeSize(const ast_type *type) {
         case eKeyword::K_float:
             total_size = 4;
             break;
+        case eKeyword::K_int64_t:
+        case eKeyword::K_uint64_t:
+        case eKeyword::K_double:
+            total_size = 8;
+            break;
         case eKeyword::K_float16_t:
             total_size = 2;
             break;
@@ -1745,6 +1760,7 @@ int glslx::WriterHLSL::Calc_TypeSize(const ast_type *type) {
         case eKeyword::K_uvec4:
         case eKeyword::K_vec4:
             total_size = 16;
+            break;
         case eKeyword::K_mat4x4:
         case eKeyword::K_mat4:
             total_size = 16 * 4;
@@ -1803,6 +1819,16 @@ int glslx::WriterHLSL::Write_ByteaddressBufLoads(const byteaddress_buf_t &buf, c
             out_stream << prefix << " = ";
             out_stream << buf.name << ".Load(index * " << buf.size << " + " << offset << ");\n";
             return 4;
+        case eKeyword::K_int64_t:
+            Write_Tabs(out_stream);
+            out_stream << prefix << " = ";
+            out_stream << buf.name << ".Load<int64_t>(index * " << buf.size << " + " << offset << ");\n";
+            return 8;
+        case eKeyword::K_uint64_t:
+            Write_Tabs(out_stream);
+            out_stream << prefix << " = ";
+            out_stream << buf.name << ".Load<uint64_t>(index * " << buf.size << " + " << offset << ");\n";
+            return 8;
         case eKeyword::K_float:
             Write_Tabs(out_stream);
             out_stream << prefix << " = asfloat(";
@@ -1827,7 +1853,7 @@ int glslx::WriterHLSL::Write_ByteaddressBufLoads(const byteaddress_buf_t &buf, c
             if (type->type == eKeyword::K_vec2) {
                 out_stream << "asfloat(";
             }
-            out_stream << buf.name << ".Load(index * " << buf.size << " + " << offset << ")";
+            out_stream << buf.name << ".Load2(index * " << buf.size << " + " << offset << ")";
             if (type->type == eKeyword::K_vec2) {
                 out_stream << ")";
             }
@@ -1887,6 +1913,28 @@ int glslx::WriterHLSL::Write_ByteaddressBufStores(const byteaddress_buf_t &buf, 
             out_stream << buf.name << ".Store(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
                        << ");\n";
             return 4;
+        case eKeyword::K_ivec2:
+        case eKeyword::K_uvec2:
+            Write_Tabs(out_stream);
+            out_stream << buf.name << ".Store2(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
+                       << ");\n";
+            return 8;
+        case eKeyword::K_ivec4:
+        case eKeyword::K_uvec4:
+            Write_Tabs(out_stream);
+            out_stream << buf.name << ".Store4(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
+                       << ");\n";
+            return 16;
+        case eKeyword::K_int64_t:
+            Write_Tabs(out_stream);
+            out_stream << buf.name << ".Store<int64_t>(__offset" << temp_var_index_ << " + " << offset << ", " << prefix
+                       << ");\n";
+            return 8;
+        case eKeyword::K_uint64_t:
+            Write_Tabs(out_stream);
+            out_stream << buf.name << ".Store<uint64_t>(__offset" << temp_var_index_ << " + " << offset << ", "
+                       << prefix << ");\n";
+            return 8;
         case eKeyword::K_float:
             Write_Tabs(out_stream);
             out_stream << buf.name << ".Store(__offset" << temp_var_index_ << " + " << offset << ", asuint(" << prefix
