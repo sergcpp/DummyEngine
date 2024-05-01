@@ -133,14 +133,13 @@ void main() {
             _data.push_back({Ren::Vec4f{0.0f, float(i), 0.0f, 0.0f}, Ren::Vec4f{0.0f}});
         }
 
-        auto stage_buf = Ren::Buffer{"stage_buf", test.api_ctx(), Ren::eBufType::Stage, sizeof(AttribData) * 128};
+        auto stage_buf = Ren::Buffer{"upload_buf", test.api_ctx(), Ren::eBufType::Upload, sizeof(AttribData) * 128};
 
         {
-            auto *data = reinterpret_cast<AttribData *>(stage_buf.Map(Ren::eBufMap::Write));
+            auto *data = reinterpret_cast<AttribData *>(stage_buf.Map());
             for (int i = 0; i < 128; i++) {
                 data[i] = _data[i];
             }
-            stage_buf.FlushMappedRange(0, sizeof(AttribData) * 128);
             stage_buf.Unmap();
         }
 

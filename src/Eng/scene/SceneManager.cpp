@@ -1365,7 +1365,7 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
     }
 
     { // Initialize stage buffer
-        uint8_t *stage_data = stage_buf.buf->Map(Ren::eBufMap::Write);
+        uint8_t *stage_data = stage_buf.buf->Map();
         if (!stage_data) {
             ren_ctx_.log()->Error("Failed to map buffer!");
             return Ren::Vec4f{};
@@ -1373,7 +1373,6 @@ Ren::Vec4f Eng::SceneManager::LoadDecalTexture(std::string_view name) {
 
         memcpy(stage_data, p_data, data_len);
 
-        stage_buf.buf->FlushMappedRange(0, stage_buf.buf->AlignMapOffset(data_len));
         stage_buf.buf->Unmap();
     }
 
@@ -1527,8 +1526,8 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
 
     const uint32_t total_data_to_update = sizeof(InstanceData) * (obj_end - obj_beg + 1);
     Ren::BufferRef temp_stage_buf =
-        ren_ctx_.LoadBuffer("Instance Update Stage Buf", Ren::eBufType::Stage, total_data_to_update);
-    auto *instance_stage = (InstanceData *)temp_stage_buf->Map(Ren::eBufMap::Write);
+        ren_ctx_.LoadBuffer("Instance Update Stage Buf", Ren::eBufType::Upload, total_data_to_update);
+    auto *instance_stage = (InstanceData *)temp_stage_buf->Map();
 
     for (uint32_t i = obj_beg; i <= obj_end; ++i) {
         SceneObject &obj = scene_data_.objects[i];
@@ -1551,7 +1550,6 @@ void Eng::SceneManager::UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj
         }
     }
 
-    temp_stage_buf->FlushMappedRange(0, temp_stage_buf->size());
     temp_stage_buf->Unmap();
 
     scene_data_.persistent_data.instance_buf->UpdateSubRegion(obj_beg * sizeof(InstanceData), total_data_to_update,

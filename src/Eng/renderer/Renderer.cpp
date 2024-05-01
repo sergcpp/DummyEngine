@@ -164,7 +164,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     }
 
     { // Brightness readback buffer
-        readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Stage,
+        readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Readback,
                                        rp_sample_brightness_.res()[0] * rp_sample_brightness_.res()[1] * sizeof(float) *
                                            Ren::MaxFramesInFlight);
     }
@@ -303,11 +303,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
 
         // Sobol sequence
         sobol_seq_buf_ = ctx_.LoadBuffer("SobolSequenceBuf", Ren::eBufType::Texture, 256 * 256 * sizeof(int));
-        Ren::Buffer sobol_seq_buf_stage("SobolSequenceBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
+        Ren::Buffer sobol_seq_buf_stage("SobolSequenceBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                         sobol_seq_buf_->size());
 
         { // init stage buf
-            uint8_t *mapped_ptr = sobol_seq_buf_stage.Map(Ren::eBufMap::Write);
+            uint8_t *mapped_ptr = sobol_seq_buf_stage.Map();
             memcpy(mapped_ptr, g_sobol_256spp_256d, 256 * 256 * sizeof(int));
             sobol_seq_buf_stage.Unmap();
         }
@@ -317,11 +317,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         // Scrambling tile
         scrambling_tile_1spp_buf_ =
             ctx_.LoadBuffer("ScramblingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        Ren::Buffer scrambling_tile_buf_stage("ScramblingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
+        Ren::Buffer scrambling_tile_buf_stage("ScramblingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                               scrambling_tile_1spp_buf_->size());
 
         { // init stage buf
-            uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map(Ren::eBufMap::Write);
+            uint8_t *mapped_ptr = scrambling_tile_buf_stage.Map();
             memcpy(mapped_ptr, g_scrambling_tile_1spp, 128 * 128 * 8 * sizeof(int));
             scrambling_tile_buf_stage.Unmap();
         }
@@ -332,11 +332,11 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         // Ranking tile
         ranking_tile_1spp_buf_ =
             ctx_.LoadBuffer("RankingTile32SppBuf", Ren::eBufType::Texture, 128 * 128 * 8 * sizeof(int));
-        Ren::Buffer ranking_tile_buf_stage("RankingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Stage,
+        Ren::Buffer ranking_tile_buf_stage("RankingTile1SppBufStage", ctx_.api_ctx(), Ren::eBufType::Upload,
                                            ranking_tile_1spp_buf_->size());
 
         { // init stage buf
-            uint8_t *mapped_ptr = ranking_tile_buf_stage.Map(Ren::eBufMap::Write);
+            uint8_t *mapped_ptr = ranking_tile_buf_stage.Map();
             memcpy(mapped_ptr, g_ranking_tile_1spp, 128 * 128 * 8 * sizeof(int));
             ranking_tile_buf_stage.Unmap();
         }
@@ -1452,9 +1452,9 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     void *cmd_buf = ctx_.BegTempSingleTimeCommands();
 
     const uint32_t data_len = res * res * res * sizeof(uint32_t);
-    Ren::Buffer temp_upload_buf{"Temp tonemap LUT upload", ctx_.api_ctx(), Ren::eBufType::Stage, data_len};
+    Ren::Buffer temp_upload_buf{"Temp tonemap LUT upload", ctx_.api_ctx(), Ren::eBufType::Upload, data_len};
     { // update stage buffer
-        uint32_t *mapped_ptr = reinterpret_cast<uint32_t *>(temp_upload_buf.Map(Ren::eBufMap::Write));
+        uint32_t *mapped_ptr = reinterpret_cast<uint32_t *>(temp_upload_buf.Map());
         memcpy(mapped_ptr, data.data(), data_len);
         temp_upload_buf.Unmap();
     }
@@ -1591,12 +1591,13 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
     assert(format == Ren::eTexFormat::RawRGBA32F);
 
-    Ren::BufferRef temp_stage_buf = ctx_.LoadBuffer("Image stage buf", Ren::eBufType::Stage, 4 * w * h * sizeof(float));
-    uint8_t *stage_data = temp_stage_buf->Map(Ren::eBufMap::Write);
+    Ren::BufferRef temp_upload_buf =
+        ctx_.LoadBuffer("Image upload buf", Ren::eBufType::Upload, 4 * w * h * sizeof(float));
+    uint8_t *stage_data = temp_upload_buf->Map();
     for (int y = 0; y < h; ++y) {
         memcpy(&stage_data[y * 4 * w * sizeof(float)], &data[y * 4 * stride * sizeof(float)], 4 * w * sizeof(float));
     }
-    temp_stage_buf->Unmap();
+    temp_upload_buf->Unmap();
 
     if (rebuild_renderpasses) {
         const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
@@ -1606,7 +1607,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         auto &update_image = rp_builder_.AddPass("UPDATE IMAGE");
 
-        RpResRef stage_buf_res = update_image.AddTransferInput(temp_stage_buf);
+        RpResRef stage_buf_res = update_image.AddTransferInput(temp_upload_buf);
 
         RpResRef output_tex_res;
         { // output image
@@ -1652,7 +1653,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         ctx_.log()->Info("Renderpass setup is done in %.2fms", (rp_setup_end_us - rp_setup_beg_us) * 0.001);
     } else {
         auto *update_image = rp_builder_.FindPass("UPDATE IMAGE");
-        update_image->ReplaceTransferInput(0, temp_stage_buf);
+        update_image->ReplaceTransferInput(0, temp_upload_buf);
 
         auto *combine = rp_builder_.FindPass("COMBINE");
         rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());

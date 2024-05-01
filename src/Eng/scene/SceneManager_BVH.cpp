@@ -735,39 +735,39 @@ void Eng::SceneManager::InitSWRTAccStructures() {
 
     Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
-    Ren::Buffer rt_blas_stage_buf("SWRT BLAS Stage Buf", api_ctx, Ren::eBufType::Stage, total_nodes_size);
+    Ren::Buffer rt_blas_stage_buf("SWRT BLAS Upload Buf", api_ctx, Ren::eBufType::Upload, total_nodes_size);
     {
-        uint8_t *rt_blas_stage = rt_blas_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *rt_blas_stage = rt_blas_stage_buf.Map();
         memcpy(rt_blas_stage, nodes.data(), total_nodes_size);
         rt_blas_stage_buf.Unmap();
     }
 
-    Ren::Buffer rt_prim_indices_stage_buf("SWRT Prim Indices Stage Buf", api_ctx, Ren::eBufType::Stage,
+    Ren::Buffer rt_prim_indices_stage_buf("SWRT Prim Indices Upload Buf", api_ctx, Ren::eBufType::Upload,
                                           total_prim_indices_size);
     {
-        uint8_t *rt_prim_indices_stage = rt_prim_indices_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *rt_prim_indices_stage = rt_prim_indices_stage_buf.Map();
         memcpy(rt_prim_indices_stage, prim_indices.data(), total_prim_indices_size);
         rt_prim_indices_stage_buf.Unmap();
     }
 
-    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Stage Buf", api_ctx, Ren::eBufType::Stage, total_meshes_size);
+    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload Buf", api_ctx, Ren::eBufType::Upload, total_meshes_size);
     {
-        uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map();
         memcpy(rt_meshes_stage, meshes.data(), total_meshes_size);
         rt_meshes_stage_buf.Unmap();
     }
 
-    Ren::Buffer rt_mesh_instances_stage_buf("SWRT Mesh Instances Stage Buf", api_ctx, Ren::eBufType::Stage,
+    Ren::Buffer rt_mesh_instances_stage_buf("SWRT Mesh Instances Upload Buf", api_ctx, Ren::eBufType::Upload,
                                             total_mesh_instances_size);
     {
-        uint8_t *rt_mesh_instances_stage = rt_mesh_instances_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *rt_mesh_instances_stage = rt_mesh_instances_stage_buf.Map();
         memcpy(rt_mesh_instances_stage, mesh_instances.data(), total_mesh_instances_size);
         rt_mesh_instances_stage_buf.Unmap();
     }
 
-    Ren::Buffer geo_data_stage_buf("SWRT Geo Data Stage Buf", api_ctx, Ren::eBufType::Stage, total_geo_instances_size);
+    Ren::Buffer geo_data_stage_buf("SWRT Geo Data Upload Buf", api_ctx, Ren::eBufType::Upload, total_geo_instances_size);
     {
-        uint8_t *geo_data_stage = geo_data_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *geo_data_stage = geo_data_stage_buf.Map();
         memcpy(geo_data_stage, geo_instances.data(), total_geo_instances_size);
         geo_data_stage_buf.Unmap();
     }

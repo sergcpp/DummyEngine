@@ -169,7 +169,7 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
     }
 #endif
 
-    assert(sbuf.type() == eBufType::Stage);
+    assert(sbuf.type() == eBufType::Upload);
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;

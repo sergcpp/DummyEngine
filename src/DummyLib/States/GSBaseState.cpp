@@ -81,44 +81,44 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
     // Create required staging buffers
     //
     Ren::BufferRef instance_indices_stage_buf = ren_ctx_->LoadBuffer(
-        "Instance Indices (Stage)", Ren::eBufType::Stage, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
+        "Instance Indices (Upload)", Ren::eBufType::Upload, Eng::InstanceIndicesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef skin_transforms_stage_buf = ren_ctx_->LoadBuffer(
-        "Skin Transforms (Stage)", Ren::eBufType::Stage, Eng::SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef shape_keys_stage_buf = ren_ctx_->LoadBuffer("Shape Keys (Stage)", Ren::eBufType::Stage,
+        "Skin Transforms (Upload)", Ren::eBufType::Upload, Eng::SkinTransformsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef shape_keys_stage_buf = ren_ctx_->LoadBuffer("Shape Keys (Upload)", Ren::eBufType::Upload,
                                                                Eng::ShapeKeysBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef cells_stage_buf =
-        ren_ctx_->LoadBuffer("Cells (Stage)", Ren::eBufType::Stage, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_cells_stage_buf =
-        ren_ctx_->LoadBuffer("RT Cells (Stage)", Ren::eBufType::Stage, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Cells (Upload)", Ren::eBufType::Upload, Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_cells_stage_buf = ren_ctx_->LoadBuffer("RT Cells (Upload)", Ren::eBufType::Upload,
+                                                             Eng::CellsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef items_stage_buf =
-        ren_ctx_->LoadBuffer("Items (Stage)", Ren::eBufType::Stage, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef rt_items_stage_buf =
-        ren_ctx_->LoadBuffer("RT Items (Stage)", Ren::eBufType::Stage, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Items (Upload)", Ren::eBufType::Upload, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_items_stage_buf = ren_ctx_->LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload,
+                                                             Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef lights_stage_buf =
-        ren_ctx_->LoadBuffer("Lights (Stage)", Ren::eBufType::Stage, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Lights (Upload)", Ren::eBufType::Upload, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
-        ren_ctx_->LoadBuffer("Decals (Stage)", Ren::eBufType::Stage, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
+        ren_ctx_->LoadBuffer("Decals (Upload)", Ren::eBufType::Upload, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx_->capabilities.raytracing) {
-        rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
+        rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                           Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf =
-            ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
+            ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
                                  Eng::HWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
     } else if (ren_ctx_->capabilities.swrt) {
-        rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Stage)", Ren::eBufType::Stage,
+        rt_obj_instances_stage_buf = ren_ctx_->LoadBuffer("RT Obj Instances (Upload)", Ren::eBufType::Upload,
                                                           Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
         rt_sh_obj_instances_stage_buf =
-            ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Stage)", Ren::eBufType::Stage,
+            ren_ctx_->LoadBuffer("RT Shadow Obj Instances (Upload)", Ren::eBufType::Upload,
                                  Eng::SWRTObjInstancesBufChunkSize * Ren::MaxFramesInFlight);
-        rt_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT TLAS Nodes (Stage)", Ren::eBufType::Stage,
+        rt_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT TLAS Nodes (Upload)", Ren::eBufType::Upload,
                                                        Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
-        rt_sh_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT Shadow TLAS Nodes (Stage)", Ren::eBufType::Stage,
+        rt_sh_tlas_nodes_stage_buf = ren_ctx_->LoadBuffer("SWRT Shadow TLAS Nodes (Upload)", Ren::eBufType::Upload,
                                                           Eng::SWRTTLASNodesBufChunkSize * Ren::MaxFramesInFlight);
     }
 
-    Ren::BufferRef shared_data_stage_buf = ren_ctx_->LoadBuffer("Shared Data (Stage)", Ren::eBufType::Stage,
+    Ren::BufferRef shared_data_stage_buf = ren_ctx_->LoadBuffer("Shared Data (Upload)", Ren::eBufType::Upload,
                                                                 Eng::SharedDataBlockSize * Ren::MaxFramesInFlight);
 
     //
@@ -1117,7 +1117,7 @@ void GSBaseState::InitScene_PT() {
         auto tex_it = loaded_textures.find(tex.name().c_str());
         if (tex_it == loaded_textures.end()) {
             const int data_len = GetMipDataLenBytes(tex.params.w, tex.params.h, tex.params.format, tex.params.block);
-            Ren::Buffer temp_stage_buf("Temp staging buf", ren_ctx_->api_ctx(), Ren::eBufType::Stage, data_len);
+            Ren::Buffer temp_stage_buf("Temp staging buf", ren_ctx_->api_ctx(), Ren::eBufType::Readback, data_len);
             void *cmd_buf = ren_ctx_->BegTempSingleTimeCommands();
             tex.CopyTextureData(temp_stage_buf, cmd_buf, 0);
             const Ren::TransitionInfo transitions[] = {{&tex, Ren::eResState::ShaderResource}};
@@ -1147,7 +1147,7 @@ void GSBaseState::InitScene_PT() {
             tex_desc.is_srgb = is_srgb;
             tex_desc.is_YCoCg = is_YCoCg;
 
-            const uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Read);
+            const uint8_t *mapped_ptr = temp_stage_buf.Map();
             tex_desc.data = {mapped_ptr, temp_stage_buf.size()};
 
             const Ray::TextureHandle new_tex = ray_scene_->AddTexture(tex_desc);
@@ -1421,7 +1421,7 @@ void GSBaseState::Draw_PT() {
         ray_renderer_->ResolveSpatialCache(*ray_scene_);
         ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0]);
         for (int i = 0; i < unet_filter_passes_count_ && ray_reg_ctx_[0].iteration > 1; ++i) {
-            //ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
+            // ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
         }
     }
 

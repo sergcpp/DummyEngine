@@ -35,15 +35,14 @@ void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
     Ren::Buffer temp_unif_buffer =
         Ren::Buffer("Temp uniform buf", nullptr, Ren::eBufType::Uniform, sizeof(DepthHierarchy::Params), 16);
     Ren::Buffer temp_stage_buffer =
-        Ren::Buffer("Temp stage buf", nullptr, Ren::eBufType::Stage, sizeof(DepthHierarchy::Params), 16);
+        Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(DepthHierarchy::Params), 16);
     {
         DepthHierarchy::Params *stage_data =
-            reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map(Ren::eBufMap::Write));
+            reinterpret_cast<DepthHierarchy::Params *>(temp_stage_buffer.Map());
         stage_data->depth_size = Ren::Vec4i{view_state_->scr_res[0], view_state_->scr_res[1],
                                             output_tex.ref->params.mip_count, grp_x * grp_y};
         stage_data->clip_info = view_state_->clip_info;
 
-        temp_stage_buffer.FlushMappedRange(0, sizeof(DepthHierarchy::Params));
         temp_stage_buffer.Unmap();
     }
     Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(DepthHierarchy::Params), nullptr);

@@ -197,9 +197,9 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         return finished;
     }
 
-    Ren::Buffer materials_stage_buf("Materials Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
+    Ren::Buffer materials_upload_buf("Materials Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                     (update_range.second - update_range.first) * sizeof(MaterialData));
-    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::eBufMap::Write));
+    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
 
     Ren::SmallVector<VkDescriptorImageInfo, 256> img_infos;
     Ren::SmallVector<Ren::TransitionInfo, 256> img_transitions;
@@ -292,12 +292,10 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
         }
     }
 
-    materials_stage_buf.FlushMappedRange(
-        0, materials_stage_buf.AlignMapOffset((update_range.second - update_range.first) * sizeof(MaterialData)));
-    materials_stage_buf.Unmap();
+    materials_upload_buf.Unmap();
     scene_data_.persistent_data.materials_buf->UpdateSubRegion(
         update_range.first * sizeof(MaterialData), (update_range.second - update_range.first) * sizeof(MaterialData),
-        materials_stage_buf, 0, ren_ctx_.current_cmd_buf());
+        materials_upload_buf, 0, ren_ctx_.current_cmd_buf());
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 
@@ -655,23 +653,23 @@ void Eng::SceneManager::InitHWRTAccStructures() {
 
     scene_data_.persistent_data.rt_geo_data_buf = ren_ctx_.LoadBuffer(
         "RT Geo Data Buf", Ren::eBufType::Storage, uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
-    Ren::Buffer geo_data_stage_buf("RT Geo Data Stage Buf", api_ctx, Ren::eBufType::Stage,
+    Ren::Buffer geo_data_upload_buf("RT Geo Data Upload Buf", api_ctx, Ren::eBufType::Upload,
                                    uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
 
     {
-        uint8_t *geo_data_stage = geo_data_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *geo_data_stage = geo_data_upload_buf.Map();
         memcpy(geo_data_stage, geo_instances.data(), geo_instances.size() * sizeof(RTGeoInstance));
-        geo_data_stage_buf.Unmap();
+        geo_data_upload_buf.Unmap();
     }
 
     scene_data_.persistent_data.rt_instance_buf =
         ren_ctx_.LoadBuffer("RT Instance Buf", Ren::eBufType::Storage,
                             uint32_t(MAX_RT_OBJ_INSTANCES * sizeof(VkAccelerationStructureInstanceKHR)));
-    // Ren::Buffer instance_stage_buf("RT Instance Stage Buf", api_ctx, Ren::eBufType::Stage,
+    // Ren::Buffer instance_stage_buf("RT Instance Upload Buf", api_ctx, Ren::eBufType::Upload,
     //                                uint32_t(tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR)));
 
     /*{
-        uint8_t *instance_stage = instance_stage_buf.Map(Ren::eBufMap::Write);
+        uint8_t *instance_stage = instance_stage_buf.Map();
         memcpy(instance_stage, tlas_instances.data(),
                tlas_instances.size() * sizeof(VkAccelerationStructureInstanceKHR));
         instance_stage_buf.Unmap();
@@ -682,8 +680,8 @@ void Eng::SceneManager::InitHWRTAccStructures() {
 #if 1
     VkCommandBuffer cmd_buf = api_ctx->BegSingleTimeCommands();
 
-    Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
-                            geo_data_stage_buf.size(), cmd_buf);
+    Ren::CopyBufferToBuffer(geo_data_upload_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
+                            geo_data_upload_buf.size(), cmd_buf);
 
     { // Make sure compaction copying of BLASes has finished
         VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
@@ -774,8 +772,8 @@ void Eng::SceneManager::InitHWRTAccStructures() {
 #else
     VkCommandBuffer cmd_buf = Ren::BegSingleTimeCommands(api_ctx->device, api_ctx->temp_command_pool);
 
-    Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
-                            geo_data_stage_buf.size(), cmd_buf);
+    Ren::CopyBufferToBuffer(geo_data_upload_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
+                            geo_data_upload_buf.size(), cmd_buf);
 
     Ren::CopyBufferToBuffer(instance_stage_buf, 0, *scene_data_.persistent_data.rt_instance_buf, 0,
                             instance_stage_buf.size(), cmd_buf);

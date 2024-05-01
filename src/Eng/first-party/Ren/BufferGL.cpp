@@ -14,6 +14,7 @@ const uint32_t g_gl_buf_targets[] = {
     GL_TEXTURE_BUFFER,        // Texture
     GL_UNIFORM_BUFFER,        // Uniform
     GL_SHADER_STORAGE_BUFFER, // Storage
+    GL_COPY_WRITE_BUFFER,     // Stage
     GL_COPY_READ_BUFFER,      // Stage
     0xffffffff,               // AccStructure
     0xffffffff,               // ShaderBinding
@@ -22,7 +23,7 @@ const uint32_t g_gl_buf_targets[] = {
 static_assert(std::size(g_gl_buf_targets) == size_t(eBufType::_Count), "!");
 
 GLenum GetGLBufUsage(const eBufType type) {
-    if (type == eBufType::Stage) {
+    if (type == eBufType::Upload || type == eBufType::Readback) {
         return GL_STREAM_COPY;
     } else {
         return GL_STATIC_DRAW;
@@ -33,8 +34,10 @@ GLenum GetGLBufUsage(const eBufType type) {
 GLbitfield GetGLBufStorageFlags(const eBufType type) {
     GLbitfield flags = GL_DYNAMIC_STORAGE_BIT;
 
-    if (type == eBufType::Stage) {
-        flags |= (GL_CLIENT_STORAGE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_WRITE_BIT);
+    if (type == eBufType::Upload) {
+        flags |= (GL_CLIENT_STORAGE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_WRITE_BIT | GL_MAP_COHERENT_BIT);
+    } else if (type == eBufType::Readback) {
+        flags |= (GL_CLIENT_STORAGE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_READ_BIT | GL_MAP_COHERENT_BIT);
     }
 
     return flags;
@@ -170,8 +173,7 @@ void Ren::Buffer::Free() {
 
 void Ren::Buffer::FreeImmediate() { Free(); }
 
-uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset, const uint32_t size,
-                               const bool persistent) {
+uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
 
@@ -187,23 +189,17 @@ uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset
     }
 #endif
 
-    GLbitfield buf_map_range_flags = 0;
+    GLbitfield buf_map_range_flags = GLbitfield(GL_MAP_COHERENT_BIT);
 
     if (persistent) {
         buf_map_range_flags |= GLbitfield(GL_MAP_PERSISTENT_BIT);
     }
 
-    if (dir & eBufMap::Read) {
-        buf_map_range_flags |= GLbitfield(GL_MAP_READ_BIT);
-    }
-
-    if (dir & eBufMap::Write) {
+    if (type_ == eBufType::Upload) {
         buf_map_range_flags |= GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_WRITE_BIT) |
-                               GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
-        if ((dir & eBufMap::Read) == 0) {
-            // write only case
-            buf_map_range_flags |= GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT);
-        }
+                               GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT);
+    } else if (type_ == eBufType::Readback) {
+        buf_map_range_flags |= GLbitfield(GL_MAP_READ_BIT);
     }
 
     glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
@@ -215,17 +211,6 @@ uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset
     mapped_ptr_ = ret;
 
     return ret;
-}
-
-void Ren::Buffer::FlushMappedRange(const uint32_t offset, const uint32_t size) {
-    assert(mapped_offset_ != 0xffffffff && mapped_ptr_);
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(handle_.id));
-    glFlushMappedBufferRange(g_gl_buf_targets[int(type_)], GLintptr(offset), GLsizeiptr(size));
-#ifndef NDEBUG
-    flushed_ranges_.emplace_back(std::make_pair(mapped_offset_ + offset, size),
-                                 SyncFence{glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0)});
-#endif
-    glBindBuffer(g_gl_buf_targets[int(type_)], GLuint(0));
 }
 
 void Ren::Buffer::Unmap() {

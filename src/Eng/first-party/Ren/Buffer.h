@@ -33,14 +33,13 @@ enum class eBufType : uint8_t {
     Texture,
     Uniform,
     Storage,
-    Stage,
+    Upload,
+    Readback,
     AccStructure,
     ShaderBinding,
     Indirect,
     _Count
 };
-
-enum class eBufMap : uint8_t { Read, Write };
 
 struct BufHandle {
 #if defined(USE_VK_RENDER)
@@ -140,9 +139,8 @@ class Buffer : public RefCounter {
 
     uint32_t AlignMapOffset(uint32_t offset);
 
-    uint8_t *Map(const Bitmask<eBufMap> dir, const bool persistent = false) { return MapRange(dir, 0, size_, persistent); }
-    uint8_t *MapRange(Bitmask<eBufMap> dir, uint32_t offset, uint32_t size, bool persistent = false);
-    void FlushMappedRange(uint32_t offset, uint32_t size);
+    uint8_t *Map(const bool persistent = false) { return MapRange(0, size_, persistent); }
+    uint8_t *MapRange(uint32_t offset, uint32_t size, bool persistent = false);
     void Unmap();
 
     void Fill(uint32_t dst_offset, uint32_t size, uint32_t data, void *_cmd_buf);

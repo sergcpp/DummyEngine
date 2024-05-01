@@ -65,11 +65,9 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
     const uint32_t vtx_data_offset = uint32_t(api_ctx->backend_frame) * MaxVerticesPerRange * sizeof(vertex_t);
     const uint32_t vtx_data_size = uint32_t(vtx_count_[api_ctx->backend_frame]) * sizeof(vertex_t);
-    vertex_stage_buf_->FlushMappedRange(vtx_data_offset, vertex_stage_buf_->AlignMapOffset(vtx_data_size));
 
     const uint32_t ndx_data_offset = uint32_t(api_ctx->backend_frame) * MaxIndicesPerRange * sizeof(uint16_t);
     const uint32_t ndx_data_size = uint32_t(ndx_count_[api_ctx->backend_frame]) * sizeof(uint16_t);
-    index_stage_buf_->FlushMappedRange(ndx_data_offset, index_stage_buf_->AlignMapOffset(ndx_data_size));
 
     { // insert needed barriers before copying
         // NOTE: stage buffer barriers are not needed as we know all operations for used region have finished

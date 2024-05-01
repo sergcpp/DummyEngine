@@ -72,7 +72,7 @@ void Eng::RpSampleBrightness::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh,
             sh.LoadProgram(ctx, "blit_red2", "internal/blit_reduced.vert.glsl", "internal/blit_reduced.frag.glsl");
         assert(blit_red_prog_->ready());
 
-        readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Stage,
+        readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Readback,
                                        4 * res_[0] * res_[1] * sizeof(float) * Ren::MaxFramesInFlight);
 
         initialized_ = true;

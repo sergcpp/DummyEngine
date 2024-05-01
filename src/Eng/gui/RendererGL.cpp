@@ -14,9 +14,7 @@ namespace UIRendererConstants {
 extern const int TexAtlasSlot;
 } // namespace UIRendererConstants
 
-Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) {
-    instance_index_ = g_instance_count++;
-}
+Gui::Renderer::Renderer(Ren::Context &ctx) : ctx_(ctx) { instance_index_ = g_instance_count++; }
 
 Gui::Renderer::~Renderer() {
     vertex_stage_buf_->Unmap();
@@ -39,8 +37,8 @@ void Gui::Renderer::Draw(const int w, const int h) {
     //
     // Update buffers
     //
-    const GLbitfield BufRangeBindFlags = GLbitfield(GL_MAP_WRITE_BIT) | GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) |
-                                         GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT) | GLbitfield(GL_MAP_FLUSH_EXPLICIT_BIT);
+    const GLbitfield BufRangeMapFlags = GLbitfield(GL_MAP_COHERENT_BIT) | GLbitfield(GL_MAP_WRITE_BIT) |
+                                        GLbitfield(GL_MAP_INVALIDATE_RANGE_BIT) | GLbitfield(GL_MAP_UNSYNCHRONIZED_BIT);
 
     if (vtx_count_[ctx_.backend_frame()]) {
         //
@@ -50,15 +48,12 @@ void Gui::Renderer::Draw(const int w, const int h) {
 
         const size_t vertex_buf_mem_offset = GLintptr(ctx_.backend_frame()) * MaxVerticesPerRange * sizeof(vertex_t);
         const size_t vertex_buf_mem_size = vtx_count_[ctx_.backend_frame()] * sizeof(vertex_t);
-        if (ctx_.capabilities.persistent_buf_mapping) {
-            glFlushMappedBufferRange(GL_COPY_READ_BUFFER, vertex_buf_mem_offset, vertex_buf_mem_size);
-        } else {
+        if (!ctx_.capabilities.persistent_buf_mapping) {
             void *pinned_mem = glMapBufferRange(GL_COPY_READ_BUFFER, vertex_buf_mem_offset,
-                                                MaxVerticesPerRange * sizeof(vertex_t), BufRangeBindFlags);
+                                                MaxVerticesPerRange * sizeof(vertex_t), BufRangeMapFlags);
             if (pinned_mem) {
                 memcpy(pinned_mem, vtx_stage_data_ + size_t(ctx_.backend_frame()) * MaxVerticesPerRange,
                        vertex_buf_mem_size);
-                glFlushMappedBufferRange(GL_COPY_READ_BUFFER, 0, vertex_buf_mem_size);
                 glUnmapBuffer(GL_COPY_READ_BUFFER);
             } else {
                 ctx_.log()->Error("[Gui::Renderer::Draw]: Failed to map vertex buffer!");
@@ -85,15 +80,12 @@ void Gui::Renderer::Draw(const int w, const int h) {
         glBindBuffer(GL_COPY_READ_BUFFER, index_stage_buf_->id());
 
         const size_t index_buf_mem_size = ndx_count_[ctx_.backend_frame()] * sizeof(uint16_t);
-        if (ctx_.capabilities.persistent_buf_mapping) {
-            glFlushMappedBufferRange(GL_COPY_READ_BUFFER, index_buf_mem_offset, index_buf_mem_size);
-        } else {
+        if (!ctx_.capabilities.persistent_buf_mapping) {
             void *pinned_mem = glMapBufferRange(GL_COPY_READ_BUFFER, index_buf_mem_offset,
-                                                MaxIndicesPerRange * sizeof(uint16_t), BufRangeBindFlags);
+                                                MaxIndicesPerRange * sizeof(uint16_t), BufRangeMapFlags);
             if (pinned_mem) {
                 memcpy(pinned_mem, ndx_stage_data_ + size_t(ctx_.backend_frame()) * MaxIndicesPerRange,
                        index_buf_mem_size);
-                glFlushMappedBufferRange(GL_COPY_READ_BUFFER, 0, index_buf_mem_size);
                 glUnmapBuffer(GL_COPY_READ_BUFFER);
             } else {
                 ctx_.log()->Error("[Gui::Renderer::Draw]: Failed to map index buffer!");

@@ -94,8 +94,8 @@ bool Ren::ProbeStorage::Resize(ApiContext *api_ctx, MemoryAllocators *mem_allocs
 
     const uint32_t BlankBlockRes = 64;
 
-    Buffer temp_stage_buf("Temp probe stage buf", api_ctx, eBufType::Stage, BlankBlockRes * BlankBlockRes * 4);
-    uint8_t *blank_block = temp_stage_buf.Map(eBufMap::Write);
+    Buffer temp_stage_buf("Temp probe upload buf", api_ctx, eBufType::Upload, BlankBlockRes * BlankBlockRes * 4);
+    uint8_t *blank_block = temp_stage_buf.Map();
 
     if (IsCompressedFormat(format)) {
         for (int i = 0; i < (BlankBlockRes / 4) * (BlankBlockRes / 4) * 16;) {
@@ -246,9 +246,9 @@ bool Ren::ProbeStorage::SetPixelData(const int level, const int layer, const int
         return false;
     }
 
-    Buffer temp_stage_buf("Temp probe stage buf", api_ctx_, eBufType::Stage, data_len);
+    Buffer temp_stage_buf("Temp probe upload buf", api_ctx_, eBufType::Upload, data_len);
     {
-        uint8_t *stage_data = temp_stage_buf.Map(eBufMap::Write);
+        uint8_t *stage_data = temp_stage_buf.Map();
         memcpy(stage_data, data, data_len);
         temp_stage_buf.Unmap();
     }

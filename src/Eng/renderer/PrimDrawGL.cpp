@@ -125,11 +125,10 @@ void Eng::PrimDraw::DrawPrim(ePrim prim, const Ren::ProgramRef &p, Ren::Span<con
 
     Ren::Buffer temp_stage_buffer, temp_unif_buffer;
     if (uniform_data) {
-        temp_stage_buffer = Ren::Buffer("Temp stage buf", ctx_->api_ctx(), Ren::eBufType::Stage, uniform_data_len, 16);
+        temp_stage_buffer = Ren::Buffer("Temp upload buf", ctx_->api_ctx(), Ren::eBufType::Upload, uniform_data_len, 16);
         {
-            uint8_t *stage_data = temp_stage_buffer.Map(Ren::eBufMap::Write);
+            uint8_t *stage_data = temp_stage_buffer.Map();
             memcpy(stage_data, uniform_data, uniform_data_len);
-            temp_stage_buffer.FlushMappedRange(0, uniform_data_len);
             temp_stage_buffer.Unmap();
         }
         temp_unif_buffer =

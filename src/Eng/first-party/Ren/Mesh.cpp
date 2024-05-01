@@ -252,7 +252,7 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     const uint32_t total_mem_required = attribs_buf1_.size + indices_buf_.size;
     assert(stage_buf.size() >= total_mem_required);
 
-    auto *_vtx_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(eBufMap::Write));
+    auto *_vtx_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map());
 
     bbox_min_ =
         Vec3f{std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()};
@@ -277,7 +277,6 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     assert(uintptr_t(_ndx_data) % alignof(uint32_t) == 0);
     memcpy(_ndx_data, indices, indices_buf_.size);
 
-    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(total_mem_required));
     stage_buf.Unmap();
 
     type_ = eMeshType::Simple;
@@ -400,7 +399,7 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
     assert(stage_buf.size() >= total_mem_required);
 
-    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(eBufMap::Write));
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map());
     auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
     assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
@@ -414,7 +413,6 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     }
     memcpy(index_data, indices_.get(), indices_buf_.size);
 
-    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(total_mem_required));
     stage_buf.Unmap();
 
     attribs_buf1_.sub =
@@ -505,7 +503,7 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
     const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
     assert(stage_buf.size() >= total_mem_required);
 
-    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map(eBufMap::Write));
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map());
     auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
     assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
@@ -519,7 +517,6 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
     }
     memcpy(index_data, indices_.get(), indices_buf_.size);
 
-    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(total_mem_required));
     stage_buf.Unmap();
 
     attribs_buf1_.sub =
@@ -636,7 +633,7 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
         skel_.bones[i].dirty = true;
     }
 
-    uint8_t *stage_buf_ptr = stage_buf.Map(eBufMap::Write);
+    uint8_t *stage_buf_ptr = stage_buf.Map();
     uint32_t stage_buf_off = 0;
 
     uint32_t delta_buf_off = 0;
@@ -723,7 +720,6 @@ void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callbac
     stage_buf_off += indices_buf_.size;
     memcpy(index_data, indices_.get(), indices_buf_.size);
 
-    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(stage_buf_off));
     stage_buf.Unmap();
 
     if (shape_data_present) {

@@ -40,17 +40,15 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
 
             if (non_shapekeyed_vertex_count) {
                 Ren::Buffer temp_stage_buffer =
-                    Ren::Buffer("Temp stage buf", nullptr, Ren::eBufType::Stage, sizeof(Skinning::Params), 16);
+                    Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(Skinning::Params), 16);
                 {
-                    Skinning::Params *stage_data =
-                        reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map(Ren::eBufMap::Write));
+                    Skinning::Params *stage_data = reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map());
 
                     stage_data->uSkinParams =
                         Ren::Vec4u{sr.in_vtx_offset, non_shapekeyed_vertex_count, sr.xform_offset, sr.out_vtx_offset};
                     stage_data->uShapeParamsCurr = Ren::Vec4u{0};
                     stage_data->uShapeParamsPrev = Ren::Vec4u{0};
 
-                    temp_stage_buffer.FlushMappedRange(0, sizeof(Skinning::Params));
                     temp_stage_buffer.Unmap();
                 }
                 Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(Skinning::Params), nullptr);
@@ -63,10 +61,9 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
 
             if (sr.shape_keyed_vertex_count) {
                 Ren::Buffer temp_stage_buffer =
-                    Ren::Buffer("Temp stage buf", nullptr, Ren::eBufType::Stage, sizeof(Skinning::Params), 16);
+                    Ren::Buffer("Temp upload buf", nullptr, Ren::eBufType::Upload, sizeof(Skinning::Params), 16);
                 {
-                    Skinning::Params *stage_data =
-                        reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map(Ren::eBufMap::Write));
+                    Skinning::Params *stage_data = reinterpret_cast<Skinning::Params *>(temp_stage_buffer.Map());
 
                     stage_data->uSkinParams =
                         Ren::Vec4u{sr.in_vtx_offset + non_shapekeyed_vertex_count, sr.shape_keyed_vertex_count,
@@ -76,7 +73,6 @@ void Eng::RpSkinningExecutor::Execute(RpBuilder &builder) {
                     stage_data->uShapeParamsPrev =
                         Ren::Vec4u{sr.shape_key_offset_prev, sr.shape_key_count_prev, sr.delta_offset, 0};
 
-                    temp_stage_buffer.FlushMappedRange(0, sizeof(Skinning::Params));
                     temp_stage_buffer.Unmap();
                 }
                 Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(Skinning::Params), nullptr);

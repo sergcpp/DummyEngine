@@ -69,12 +69,10 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
     Buffer temp_unif_buffer, temp_stage_buffer;
     if (uniform_data && uniform_data_len) {
         temp_unif_buffer = Buffer("Temp uniform buf", nullptr, eBufType::Uniform, uniform_data_len, 16);
-        temp_stage_buffer = Buffer("Temp stage buf", nullptr, eBufType::Stage, uniform_data_len, 16);
+        temp_stage_buffer = Buffer("Temp upload buf", nullptr, eBufType::Upload, uniform_data_len, 16);
         {
-            uint8_t *stage_data = temp_stage_buffer.Map(eBufMap::Write);
+            uint8_t *stage_data = temp_stage_buffer.Map();
             memcpy(stage_data, uniform_data, uniform_data_len);
-
-            temp_stage_buffer.FlushMappedRange(0, uniform_data_len);
             temp_stage_buffer.Unmap();
         }
         CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);
@@ -126,12 +124,10 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
     Buffer temp_unif_buffer, temp_stage_buffer;
     if (uniform_data) {
         temp_unif_buffer = Buffer("Temp uniform buf", nullptr, eBufType::Uniform, uniform_data_len, 16);
-        temp_stage_buffer = Buffer("Temp stage buf", nullptr, eBufType::Stage, uniform_data_len, 16);
+        temp_stage_buffer = Buffer("Temp upload buf", nullptr, eBufType::Upload, uniform_data_len, 16);
         {
-            uint8_t *stage_data = temp_stage_buffer.Map(eBufMap::Write);
+            uint8_t *stage_data = temp_stage_buffer.Map();
             memcpy(stage_data, uniform_data, uniform_data_len);
-
-            temp_stage_buffer.FlushMappedRange(0, uniform_data_len);
             temp_stage_buffer.Unmap();
         }
         CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, uniform_data_len, nullptr);

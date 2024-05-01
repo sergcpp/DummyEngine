@@ -383,8 +383,6 @@ bool Eng::SceneManager::ProcessPendingTextures(const int portion_size, const boo
                 assert(dynamic_cast<TextureUpdateFileBuf *>(req->buf.get()));
                 auto *stage_buf = static_cast<TextureUpdateFileBuf *>(req->buf.get());
 
-                stage_buf->stage_buf().FlushMappedRange(0, stage_buf->stage_buf().AlignMapOffset(uint32_t(bytes_read)));
-
                 const uint64_t t1_us = Sys::GetTimeUs();
 
                 int w = std::max(int(req->orig_w) >> req->mip_offset_to_init, 1);

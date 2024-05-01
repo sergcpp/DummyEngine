@@ -500,7 +500,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::o
             const VkDeviceSize sbt_size = rgen_region_.size + miss_region_.size + hit_region_.size;
 
             rt_sbt_buf_ = Buffer("SBT Buffer", api_ctx, eBufType::ShaderBinding, uint32_t(sbt_size));
-            Buffer sbt_stage_buf = Buffer("SBT Staging Buffer", api_ctx, eBufType::Stage, uint32_t(sbt_size));
+            Buffer sbt_stage_buf = Buffer("SBT Staging Buffer", api_ctx, eBufType::Upload, uint32_t(sbt_size));
 
             const VkDeviceAddress sbt_address = rt_sbt_buf_.vk_device_address();
             rgen_region_.deviceAddress = sbt_address;
@@ -508,7 +508,7 @@ bool Ren::Pipeline::Init(ApiContext *api_ctx, ProgramRef prog, ILog *log, std::o
             hit_region_.deviceAddress = sbt_address + rgen_region_.size + miss_region_.size;
 
             { // Init staging buffer
-                uint8_t *p_sbt_stage = sbt_stage_buf.Map(eBufMap::Write);
+                uint8_t *p_sbt_stage = sbt_stage_buf.Map();
                 uint8_t *p_dst = p_sbt_stage;
                 int handle_ndx = 0;
                 // Copy raygen

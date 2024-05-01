@@ -47,11 +47,9 @@ Ren::TextureRegion &Ren::TextureRegion::operator=(TextureRegion &&rhs) noexcept 
 void Ren::TextureRegion::Init(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
                               Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status) {
     if (data.empty()) {
-        uint8_t *out_col = stage_buf.Map(eBufMap::Write);
+        uint8_t *out_col = stage_buf.Map();
         out_col[0] = 0;
         out_col[1] = out_col[2] = out_col[3] = 255;
-
-        stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(4));
         stage_buf.Unmap();
 
         Tex2DParams _p;
@@ -98,7 +96,7 @@ void Ren::TextureRegion::Init(const Buffer &sbuf, int data_off, int data_len, vo
 
 void Ren::TextureRegion::InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf,
                                          const Tex2DParams &p, TextureAtlasArray *atlas) {
-    uint8_t *img_stage = stage_buf.Map(eBufMap::Write);
+    uint8_t *img_stage = stage_buf.Map();
     uint32_t img_size = stage_buf.size();
 
     int w = 0, h = 0;
@@ -107,7 +105,6 @@ void Ren::TextureRegion::InitFromTGAFile(Span<const uint8_t> data, Buffer &stage
     assert(res);
     assert(format == params_.format && "Format conversion is not implemented yet!");
 
-    stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(img_size));
     stage_buf.Unmap();
 
     Tex2DParams _p = p;
@@ -123,9 +120,8 @@ void Ren::TextureRegion::InitFromPNGFile(Span<const uint8_t> data, Buffer &stage
     int w, h, channels;
     unsigned char *const image_data = stbi_load_from_memory(data.data(), int(data.size()), &w, &h, &channels, 0);
     if (image_data) {
-        uint8_t *img_stage = stage_buf.Map(eBufMap::Write);
+        uint8_t *img_stage = stage_buf.Map();
         memcpy(img_stage, image_data, w * h * channels);
-        stage_buf.FlushMappedRange(0, stage_buf.AlignMapOffset(w * h * channels));
         stage_buf.Unmap();
 
         Tex2DParams _p = p;

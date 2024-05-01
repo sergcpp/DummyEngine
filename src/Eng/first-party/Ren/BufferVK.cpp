@@ -20,7 +20,8 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
         flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     } else if (type == eBufType::Storage) {
         flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    } else if (type == eBufType::Stage) {
+    } else if (type == eBufType::Upload) {
+    } else if (type == eBufType::Readback) {
     } else if (type == eBufType::AccStructure) {
         flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
     } else if (type == eBufType::ShaderBinding) {
@@ -43,8 +44,11 @@ VkBufferUsageFlags GetVkBufferUsageFlags(const ApiContext *api_ctx, const eBufTy
 }
 
 VkMemoryPropertyFlags GetVkMemoryPropertyFlags(const eBufType type) {
-    return (type == eBufType::Stage) ? (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
-                                     : VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    if (type == eBufType::Upload || type == eBufType::Readback) {
+        return (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    }
+    return VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 }
 
 uint32_t FindMemoryType(uint32_t search_from, const VkPhysicalDeviceMemoryProperties *mem_properties,
@@ -110,7 +114,7 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
     const SubAllocation ret = {alloc.offset, alloc.block};
     if (ret.offset != 0xffffffff) {
         if (init_buf) {
-            assert(init_buf->type_ == eBufType::Stage);
+            assert(init_buf->type_ == eBufType::Upload);
             VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
             VkPipelineStageFlags src_stages = 0, dst_stages = 0;
@@ -170,7 +174,7 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
 
 void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, const Buffer &init_buf,
                                   const uint32_t init_off, void *_cmd_buf) {
-    assert(init_buf.type_ == eBufType::Stage);
+    assert(init_buf.type_ == eBufType::Upload);
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
@@ -338,11 +342,10 @@ uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) {
     return offset - (offset % align_to);
 }
 
-uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset, const uint32_t size,
-                               const bool persistent) {
+uint8_t *Ren::Buffer::MapRange(const uint32_t offset, const uint32_t size, const bool persistent) {
     assert(mapped_offset_ == 0xffffffff && !mapped_ptr_);
     assert(offset + size <= size_);
-    assert(type_ == eBufType::Stage);
+    assert(type_ == eBufType::Upload || type_ == eBufType::Readback);
     assert(offset == AlignMapOffset(offset));
     assert((offset + size) == size_ || (offset + size) == AlignMapOffset(offset + size));
 
@@ -363,42 +366,9 @@ uint8_t *Ren::Buffer::MapRange(const Bitmask<eBufMap> dir, const uint32_t offset
         api_ctx_->vkMapMemory(api_ctx_->device, mem_, VkDeviceSize(offset), VkDeviceSize(size), 0, &mapped);
     assert(res == VK_SUCCESS && "Failed to map memory!");
 
-    if (dir & eBufMap::Read) {
-        VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-        range.memory = mem_;
-        range.offset = VkDeviceSize(offset);
-        range.size = VkDeviceSize(size);
-        range.pNext = nullptr;
-
-        const VkResult res = api_ctx_->vkInvalidateMappedMemoryRanges(api_ctx_->device, 1, &range);
-        assert(res == VK_SUCCESS && "Failed to invalidate memory range!");
-    }
-
     mapped_ptr_ = reinterpret_cast<uint8_t *>(mapped);
     mapped_offset_ = offset;
     return reinterpret_cast<uint8_t *>(mapped);
-}
-
-void Ren::Buffer::FlushMappedRange(uint32_t offset, const uint32_t size) {
-    assert(offset == AlignMapOffset(offset));
-    assert((offset + size) == size_ || (offset + size) == AlignMapOffset(offset + size));
-
-    // offset argument is relative to mapped range
-    offset += mapped_offset_;
-
-    VkMappedMemoryRange range = {VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE};
-    range.memory = mem_;
-    range.offset = VkDeviceSize(offset);
-    range.size = VkDeviceSize(size);
-    range.pNext = nullptr;
-
-    const VkResult res = api_ctx_->vkFlushMappedMemoryRanges(api_ctx_->device, 1, &range);
-    assert(res == VK_SUCCESS && "Failed to flush memory range!");
-
-#ifndef NDEBUG
-    // flushed_ranges_.emplace_back(std::make_pair(offset, size),
-    //                             SyncFence{glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0)});
-#endif
 }
 
 void Ren::Buffer::Unmap() {

@@ -34,15 +34,13 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
             uint32_t mem_required = sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs);
             mem_required += (16 - mem_required % 16); // align to vertex stride
 
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Stage, sizeof(__sphere_indices),
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, sizeof(__sphere_indices),
                                        192);
 
             { // copy quad vertices
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
+                uint8_t *mapped_ptr = temp_stage_buf.Map();
                 memcpy(mapped_ptr, fs_quad_positions, sizeof(fs_quad_positions));
                 memcpy(mapped_ptr + sizeof(fs_quad_positions), fs_quad_norm_uvs, sizeof(fs_quad_norm_uvs));
-                temp_stage_buf.FlushMappedRange(
-                    0, temp_stage_buf.AlignMapOffset(sizeof(fs_quad_positions) + sizeof(fs_quad_norm_uvs)));
                 temp_stage_buf.Unmap();
             }
 
@@ -52,12 +50,11 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
         }
 
         { // Allocate quad indices
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Stage, 6 * sizeof(uint16_t), 192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, 6 * sizeof(uint16_t), 192);
 
             { // copy quad indices
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
+                uint8_t *mapped_ptr = temp_stage_buf.Map();
                 memcpy(mapped_ptr, fs_quad_indices, 6 * sizeof(uint16_t));
-                temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(6 * sizeof(uint16_t)));
                 temp_stage_buf.Unmap();
             }
 
@@ -65,12 +62,11 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
         }
 
         { // Allocate sphere positions
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Stage, SphereVerticesSize, 192);
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, SphereVerticesSize, 192);
 
             { // copy sphere positions
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
+                uint8_t *mapped_ptr = temp_stage_buf.Map();
                 memcpy(mapped_ptr, __sphere_positions, sizeof(__sphere_positions));
-                temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(SphereVerticesSize));
                 temp_stage_buf.Unmap();
             }
 
@@ -82,13 +78,12 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
         }
 
         { // Allocate sphere indices
-            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Stage, sizeof(__sphere_indices),
+            Ren::Buffer temp_stage_buf("Temp prim buf", ctx.api_ctx(), Ren::eBufType::Upload, sizeof(__sphere_indices),
                                        192);
 
             { // copy sphere indices
-                uint8_t *mapped_ptr = temp_stage_buf.Map(Ren::eBufMap::Write);
+                uint8_t *mapped_ptr = temp_stage_buf.Map();
                 memcpy(mapped_ptr, __sphere_indices, sizeof(__sphere_indices));
-                temp_stage_buf.FlushMappedRange(0, temp_stage_buf.AlignMapOffset(sizeof(__sphere_indices)));
                 temp_stage_buf.Unmap();
             }
             sphere_ndx_ =

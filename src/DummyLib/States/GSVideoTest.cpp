@@ -583,14 +583,12 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index, const int 
                 for (int y = 0; y < h; y++) {
                     memcpy(y_sbuf_[tex_index].mapped_ptr() + (range_offset + y * w), &y_img[y * stride], w);
                 }
-                y_sbuf_[tex_index].FlushMappedRange(range_offset, w * h);
             } else { // non-persistent mapping case
-                uint8_t *pinned_mem = y_sbuf_[tex_index].MapRange(Ren::eBufMap::Write, frame_index * w * h, w * h);
+                uint8_t *pinned_mem = y_sbuf_[tex_index].MapRange(frame_index * w * h, w * h);
                 if (pinned_mem) {
                     for (int y = 0; y < h; y++) {
                         memcpy(&pinned_mem[y * w], &y_img[y * stride], w);
                     }
-                    y_sbuf_[tex_index].FlushMappedRange(0, w * h);
                     y_sbuf_[tex_index].Unmap();
                 }
             }
@@ -609,14 +607,11 @@ void GSVideoTest::UpdateStageBufWithDecodedFrame(const int tex_index, const int 
                 uint8_t *uv_dst = uv_sbuf_[tex_index].mapped_ptr() + range_offset;
 
                 Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h, uv_dst);
-
-                uv_sbuf_[tex_index].FlushMappedRange(range_offset, u_w * u_h);
             } else { // non-persistent mapping case
-                uint8_t *pinned_mem = uv_sbuf_[tex_index].MapRange(Ren::eBufMap::Write, range_offset, 2 * u_w * u_h);
+                uint8_t *pinned_mem = uv_sbuf_[tex_index].MapRange(range_offset, 2 * u_w * u_h);
                 if (pinned_mem) {
                     Ren::InterleaveUVChannels_16px(u_img, v_img, u_stride, v_stride, u_w, u_h, pinned_mem);
 
-                    uv_sbuf_[tex_index].FlushMappedRange(0, 2 * u_w * u_h);
                     uv_sbuf_[tex_index].Unmap();
                 }
             }

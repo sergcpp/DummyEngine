@@ -14,7 +14,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
 
   public:
     TextureUpdateFileBuf(Ren::ApiContext *api_ctx)
-        : api_ctx_(api_ctx), stage_buf_("Tex Stage Buf", api_ctx, Ren::eBufType::Stage, 768, 768) {
+        : api_ctx_(api_ctx), stage_buf_("Tex Upload Buf", api_ctx, Ren::eBufType::Upload, 768, 768) {
         Realloc(24 * 1024 * 1024);
 
 #if defined(USE_VK_RENDER)
@@ -51,7 +51,7 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
 
     uint8_t *Alloc(const size_t new_size) override {
         stage_buf_.Resize(uint32_t(new_size));
-        return stage_buf_.Map(Ren::eBufMap::Write, true /* persistent */);
+        return stage_buf_.Map(true /* persistent */);
     }
 
     void Free() override {

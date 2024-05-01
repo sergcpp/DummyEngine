@@ -57,19 +57,19 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
 
     const size_t TexSizePerMaterial = MAX_TEX_PER_MATERIAL * sizeof(GLuint64);
 
-    Ren::Buffer materials_stage_buf("Materials Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
-                                    (update_range.second - update_range.first) * sizeof(MaterialData));
+    Ren::Buffer materials_upload_buf("Materials Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
+                                     (update_range.second - update_range.first) * sizeof(MaterialData));
     Ren::Buffer textures_stage_buf;
     if (ren_ctx_.capabilities.bindless_texture) {
-        textures_stage_buf = Ren::Buffer("Textures Stage Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Stage,
+        textures_stage_buf = Ren::Buffer("Textures Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
                                          (update_range.second - update_range.first) * TexSizePerMaterial);
     }
 
-    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_stage_buf.Map(Ren::eBufMap::Write));
+    MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
     GLuint64 *texture_data = nullptr;
     GLuint64 white_tex_handle = 0, error_tex_handle = 0;
     if (ren_ctx_.capabilities.bindless_texture) {
-        texture_data = reinterpret_cast<GLuint64 *>(textures_stage_buf.Map(Ren::eBufMap::Write));
+        texture_data = reinterpret_cast<GLuint64 *>(textures_stage_buf.Map());
 
         white_tex_handle = glGetTextureHandleARB(white_tex_->id());
         if (!glIsTextureHandleResidentARB(white_tex_handle)) {
@@ -122,18 +122,16 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     }
 
     if (texture_data) {
-        textures_stage_buf.FlushMappedRange(0, (update_range.second - update_range.first) * TexSizePerMaterial);
         textures_stage_buf.Unmap();
         scene_data_.persistent_data.textures_buf->UpdateSubRegion(
             update_range.first * TexSizePerMaterial, (update_range.second - update_range.first) * TexSizePerMaterial,
             textures_stage_buf);
     }
 
-    materials_stage_buf.FlushMappedRange(0, (update_range.second - update_range.first) * sizeof(MaterialData));
-    materials_stage_buf.Unmap();
+    materials_upload_buf.Unmap();
     scene_data_.persistent_data.materials_buf->UpdateSubRegion(
         update_range.first * sizeof(MaterialData), (update_range.second - update_range.first) * sizeof(MaterialData),
-        materials_stage_buf);
+        materials_upload_buf);
 
     update_range = std::make_pair(std::numeric_limits<uint32_t>::max(), 0);
 

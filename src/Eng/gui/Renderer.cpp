@@ -98,22 +98,20 @@ bool Gui::Renderer::Init() {
     vertex_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::VertexAttribs, MaxVerticesPerRange * sizeof(vertex_t));
 
     snprintf(name_buf, sizeof(name_buf), "UI_VertexStageBuffer [%i]", instance_index_);
-    vertex_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Stage,
+    vertex_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Upload,
                                         Ren::MaxFramesInFlight * MaxVerticesPerRange * sizeof(vertex_t));
 
     snprintf(name_buf, sizeof(name_buf), "UI_IndexBuffer [%i]", instance_index_);
     index_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::VertexIndices, MaxIndicesPerRange * sizeof(uint16_t));
 
     snprintf(name_buf, sizeof(name_buf), "UI_IndexStageBuffer [%i]", instance_index_);
-    index_stage_buf_ =
-        ctx_.LoadBuffer(name_buf, Ren::eBufType::Stage, Ren::MaxFramesInFlight * MaxIndicesPerRange * sizeof(uint16_t));
+    index_stage_buf_ = ctx_.LoadBuffer(name_buf, Ren::eBufType::Upload,
+                                       Ren::MaxFramesInFlight * MaxIndicesPerRange * sizeof(uint16_t));
 
     if (ctx_.capabilities.persistent_buf_mapping) {
         // map stage buffers directly
-        vtx_stage_data_ =
-            reinterpret_cast<vertex_t *>(vertex_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
-        ndx_stage_data_ =
-            reinterpret_cast<uint16_t *>(index_stage_buf_->Map(Ren::eBufMap::Write, true /* persistent */));
+        vtx_stage_data_ = reinterpret_cast<vertex_t *>(vertex_stage_buf_->Map(true /* persistent */));
+        ndx_stage_data_ = reinterpret_cast<uint16_t *>(index_stage_buf_->Map(true /* persistent */));
     } else {
         // use temporary storage
         stage_vtx_data_ = std::make_unique<vertex_t[]>(MaxVerticesPerRange * Ren::MaxFramesInFlight);
