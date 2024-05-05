@@ -69,3 +69,7 @@ void Ren::Texture2DArray::SetSubImage(const int level, const int layer, const in
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 }
+
+void Ren::Texture2DArray::Clear(const float rgba[4], void *) {
+    glClearTexImage(GLuint(tex_id_), 0, GL_RGBA, GL_FLOAT, rgba);
+}

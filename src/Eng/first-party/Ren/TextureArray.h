@@ -38,6 +38,7 @@ class Texture2DArray {
 
     void SetSubImage(int level, int layer, int offsetx, int offsety, int sizex, int sizey, eTexFormat format,
                      const Buffer &sbuf, int data_off, int data_len, void *_cmd_buf);
+    void Clear(const float rgba[4], void *_cmd_buf);
 
     mutable eResState resource_state = eResState::Undefined;
 

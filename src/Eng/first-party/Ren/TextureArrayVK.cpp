@@ -206,3 +206,18 @@ void Ren::Texture2DArray::SetSubImage(const int level, const int layer, const in
     api_ctx_->vkCmdCopyBufferToImage(cmd_buf, sbuf.vk_handle(), img_,
                                      VkImageLayout(VKImageLayoutForState(eResState::CopyDst)), 1, &region);
 }
+
+void Ren::Texture2DArray::Clear(const float rgba[4], void *_cmd_buf) {
+    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
+    assert(resource_state == eResState::CopyDst);
+
+    VkClearColorValue clear_val = {};
+    memcpy(clear_val.float32, rgba, 4 * sizeof(float));
+
+    VkImageSubresourceRange clear_range = {};
+    clear_range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    clear_range.layerCount = layer_count_;
+    clear_range.levelCount = mip_count_;
+
+    api_ctx_->vkCmdClearColorImage(cmd_buf, img_, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_val, 1, &clear_range);
+}
