@@ -223,7 +223,7 @@ enum class eRenderMode : uint8_t { Forward, Deferred };
 
 enum class ePixelFilter : uint8_t { Box, Gaussian, BlackmanHarris };
 
-enum class eReflectionsQuality : uint8_t { Off, Low, High, Raytraced_Normal, Raytraced_High };
+enum class eReflectionsQuality : uint8_t { Off, High, Raytraced_Normal, Raytraced_High };
 
 enum class eShadowsQuality : uint8_t { Off, High, Raytraced };
 

@@ -509,7 +509,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     }
 
     const bool cur_msaa_enabled = false; //(list.render_flags & EnableMsaa) != 0;
-    const bool cur_hq_ssr_enabled = int(list.render_settings.reflections_quality) > int(eReflectionsQuality::Low);
+    const bool cur_hq_ssr_enabled = int(list.render_settings.reflections_quality) >= int(eReflectionsQuality::High);
     const bool cur_dof_enabled = list.render_settings.enable_dof;
 
     const uint64_t cpu_draw_start_us = Sys::GetTimeUs();
@@ -1005,8 +1005,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         const bool fill_velocity =
             list.render_settings.taa_mode != eTAAMode::Off || list.render_settings.gi_quality != eGIQuality::Off ||
-            int(list.render_settings.reflections_quality) >
-                int(eReflectionsQuality::Low); // Temporal reprojection is used for gi, reflections and TAA
+            int(list.render_settings.reflections_quality) >=
+                int(eReflectionsQuality::High); // Temporal reprojection is used for gi, reflections and TAA
         if (fill_velocity && !list.render_settings.debug_wireframe &&
             list.render_settings.taa_mode != eTAAMode::Static) {
             AddFillStaticVelocityPass(common_buffers, frame_textures.depth, frame_textures.velocity);
