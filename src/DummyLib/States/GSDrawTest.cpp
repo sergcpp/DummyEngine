@@ -22,8 +22,7 @@ extern const int LUT_DIMS;
 extern const uint32_t *transform_luts[];
 } // namespace Ray
 
-namespace GSDrawTestInternal {
-} // namespace GSDrawTestInternal
+namespace GSDrawTestInternal {} // namespace GSDrawTestInternal
 
 #include <Ren/Utils.h>
 
@@ -652,6 +651,7 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
     }
 
     bool input_processed = true;
+    const Ren::Vec3f view_dir_before = view_dir_;
 
     switch (evt.type) {
     case Eng::RawInputEv::P1Down:
@@ -766,6 +766,13 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
     } break;
     default:
         break;
+    }
+
+    const bool view_locked = !viewer_->app_params.ref_name.empty();
+    if (view_locked) {
+        view_dir_ = view_dir_before;
+        fwd_touch_speed_ = side_touch_speed_ = 0;
+        fwd_press_speed_ = side_press_speed_ = 0;
     }
 
     if (!input_processed) {

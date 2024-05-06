@@ -1,0 +1,29 @@
+name: 'Test Img'
+inputs:
+  bin-name:
+    required: true
+  bin-dir:
+    required: true
+  out-dir:
+    required: true
+  test-args:
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: ${{ inputs.bin-dir }}
+        path: ${{ inputs.bin-dir }}/
+    - run: |
+        chmod +x ./${{ inputs.bin-dir }}/${{ inputs.bin-name }}
+        WORK_DIR=`pwd`
+        cd ../../builds/DummyEngine/assets/shaders
+        ln -s ../../src/Eng/renderer/shaders internal
+        cd ../../
+        cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
+        mkdir $WORK_DIR/${{ inputs.out-dir }}
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --psnr 21.55
+        ./${{ inputs.bin-name }} ${{ inputs.test-args }} -s scenes/ai043_06.json -ref references/ai043_06.uncompressed.png -w 1400 -h 936 --pt --psnr 23.43
+        cp ai043_06.png ai043_06_diff.png $WORK_DIR/${{ inputs.out-dir }}
+      shell: bash

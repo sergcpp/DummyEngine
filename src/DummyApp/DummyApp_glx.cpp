@@ -266,6 +266,16 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.validation_level = std::atoi(argv[++i]);
         } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
             app_params.scene_name = argv[i];
+        } else if ((strcmp(argv[i], "--reference") == 0 || strcmp(argv[i], "-ref") == 0) && (++i != argc)) {
+            app_params.ref_name = argv[i];
+        } else if (strcmp(argv[i], "--psnr") == 0 && (++i != argc)) {
+            app_params.psnr = strtod(argv[i], nullptr);
+        } else if (strcmp(argv[i], "--pt") == 0) {
+            app_params.pt = true;
+        } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
+            app_params.pt_denoise = false;
+        } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {
+            app_params.pt_max_samples = std::atoi(argv[++i]);
         }
     }
 
@@ -275,7 +285,7 @@ int DummyApp::Run(int argc, char *argv[]) {
 
     __itt_thread_set_name("Main Thread");
 
-    while (!terminated()) {
+    while (!terminated() && !viewer_->terminated) {
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
 
         this->PollEvents();

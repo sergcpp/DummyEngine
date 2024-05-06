@@ -36,7 +36,12 @@ class FontStorage;
 struct AppParams {
     std::string scene_name = "scenes/mat_test.json";
     std::string device_name;
+    std::string ref_name;
+    double psnr = 0.0;
     bool nohwrt = false;
+    bool pt = false;
+    bool pt_denoise = true;
+    int pt_max_samples = 256;
 #ifndef NDEBUG
     int validation_level = 1;
 #else

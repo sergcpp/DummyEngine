@@ -25,3 +25,4 @@ test.mesh
 *.json8
 cmake-build*
 .DS_Store
+*_diff.png

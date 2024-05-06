@@ -12,6 +12,9 @@
 #include <vtune/ittnotify.h>
 #endif
 
+#include <stb/stb_image.h>
+#include <stb/stb_image_write.h>
+
 #include <Eng/Log.h>
 #include <Eng/ViewerStateManager.h>
 #include <Eng/gui/Image9Patch.h>
@@ -27,6 +30,7 @@
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
 #include <Sys/MemBuf.h>
+#include <Sys/ScopeExit.h>
 #include <Sys/ThreadPool.h>
 #include <Sys/Time_.h>
 #undef GetObject
@@ -39,6 +43,10 @@ namespace Ray {
 extern const int LUT_DIMS;
 extern const uint32_t *transform_luts[];
 } // namespace Ray
+
+namespace RendererInternal {
+extern const int TaaSampleCountStatic;
+}
 
 namespace GSBaseStateInternal {
 const int MAX_CMD_LINES = 8;
@@ -595,6 +603,23 @@ void GSBaseState::OnPreloadScene(JsObjectP &js_scene) {}
 void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
     // trigger probes update
     probes_dirty_ = false;
+
+    if (!viewer_->app_params.ref_name.empty()) {
+        Ren::Tex2DParams params;
+        params.w = viewer_->width;
+        params.h = viewer_->height;
+        params.format = Ren::eTexFormat::RawRGBA8888;
+        params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.usage = Ren::eTexUsage::RenderTarget | Ren::eTexUsage::Transfer;
+#if defined(USE_GL_RENDER)
+        params.flags = Ren::eTexFlagBits::SRGB;
+#endif
+
+        Ren::eTexLoadStatus status;
+        capture_result_ = ren_ctx_->LoadTexture2D("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
+        assert(status == Ren::eTexLoadStatus::CreatedDefault);
+    }
 }
 
 void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
@@ -623,6 +648,57 @@ void GSBaseState::Draw() {
     using namespace GSBaseStateInternal;
 
     OPTICK_GPU_EVENT("Draw");
+
+    const bool animate_texture_lod = viewer_->app_params.ref_name.empty();
+    if (streaming_finished_ && !viewer_->app_params.ref_name.empty() && !capture_started_) {
+        if (viewer_->app_params.pt) {
+            InitRenderer_PT();
+            InitScene_PT();
+            use_pt_ = true;
+            invalidate_view_ = true;
+        } else {
+            if (USE_TWO_THREADS) {
+                std::unique_lock<std::mutex> lock(mtx_);
+                while (notified_) {
+                    thr_done_.wait(lock);
+                }
+            }
+            main_view_lists_[0].Clear();
+            main_view_lists_[1].Clear();
+            random_->Reset(0);
+            renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+            main_view_lists_[0].render_settings = renderer_->settings;
+            renderer_->reset_accumulation();
+        }
+        capture_started_ = true;
+        log_->Info("Starting capture!");
+    }
+
+    Ren::Tex2DRef render_target;
+    if (capture_started_) {
+        if (use_pt_) {
+            const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0].iteration;
+            if (iteration < viewer_->app_params.pt_max_samples) {
+                render_target = capture_result_;
+                log_->Info("Capturing iteration #%i", iteration);
+            } else {
+                log_->Info("Capture finished! (%i samples)", iteration);
+                viewer_->exit_status = WriteAndValidateCaptureResult();
+                viewer_->Quit();
+                return;
+            }
+        } else {
+            if (renderer_->accumulated_frames() < RendererInternal::TaaSampleCountStatic) {
+                render_target = capture_result_;
+                log_->Info("Capturing iteration #%i", renderer_->accumulated_frames());
+            } else {
+                log_->Info("Capture finished! (%i samples)", renderer_->accumulated_frames());
+                viewer_->exit_status = WriteAndValidateCaptureResult();
+                viewer_->Quit();
+                return;
+            }
+        }
+    }
 
     if (cmdline_enabled_) {
         // Process comandline input
@@ -678,91 +754,66 @@ void GSBaseState::Draw() {
     {
         int back_list;
 
-        if (USE_TWO_THREADS) {
+        if (use_pt_) {
+            const Ren::Camera &cam = scene_manager_->main_cam();
+            SetupView_PT(cam.world_position(), -cam.view_dir(), cam.up(), cam.angle());
+            if (invalidate_view_) {
+                Clear_PT();
+                invalidate_view_ = false;
+            }
+
+            Draw_PT(render_target);
+
+            back_list = -1;
+        } else if (USE_TWO_THREADS && !capture_started_) {
             std::unique_lock<std::mutex> lock(mtx_);
             while (notified_) {
                 thr_done_.wait(lock);
             }
 
-            scene_manager_->Serve();
+            streaming_finished_ = scene_manager_->Serve(1, animate_texture_lod);
             renderer_->InitBackendInfo();
 
-            if (use_lm_) {
-                /*int w, h;
-                const float *preview_pixels = nullptr;
-                if (scene_manager_->PrepareLightmaps_PT(&preview_pixels, &w, &h)) {
-                    if (preview_pixels) {
-                        renderer_->BlitPixels(preview_pixels, w, h, Ren::eTexFormat::RawRGBA32F);
-                    }
-                } else {
-                    // Lightmap creation finished, convert textures
-                    Viewer::PrepareAssets("pc");
-                    // Reload scene
-                    // LoadScene(SCENE_NAME);
-                    // Switch back to normal mode
-                    use_lm_ = false;
-                }*/
+            back_list = front_list_;
+            front_list_ = (front_list_ + 1) % 2;
 
-                back_list = -1;
-            } else if (use_pt_) {
-                const Ren::Camera &cam = scene_manager_->main_cam();
-                SetupView_PT(cam.world_position(), -cam.view_dir(), cam.up(), cam.angle());
-                if (invalidate_view_) {
-                    Clear_PT();
-                    invalidate_view_ = false;
+            if (probes_dirty_ && scene_manager_->load_complete()) {
+                // Perform first update of reflection probes
+                update_all_probes_ = true;
+                probes_dirty_ = false;
+            }
+
+            const Eng::SceneData &scene_data = scene_manager_->scene_data();
+
+            if (probe_to_update_sh_) {
+                const bool done = false;
+                // renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
+                //                          probe_sh_update_iteration_, *probe_to_update_sh_);
+                probe_sh_update_iteration_++;
+
+                if (done) {
+                    probe_sh_update_iteration_ = 0;
+                    probe_to_update_sh_ = nullptr;
+                }
+            }
+
+            if (invalidate_view_) {
+                renderer_->reset_accumulation();
+                invalidate_view_ = false;
+            }
+
+            // Render probe cubemap
+            if (probe_to_render_) {
+                /*for (int i = 0; i < 6; i++) {
+                    renderer_->ExecuteDrawList(temp_probe_lists_[i], scene_manager_->persistent_data(),
+                                               &temp_probe_buf_);
+                    renderer_->BlitToTempProbeFace(temp_probe_buf_, scene_data.probe_storage, i);
                 }
 
-                Draw_PT();
+                renderer_->BlitPrefilterFromTemp(scene_data.probe_storage, probe_to_render_->layer_index);
 
-                /*int w, h;
-                const float *preview_pixels = scene_manager_->Draw_PT(&w, &h);
-                if (preview_pixels) {
-                    renderer_->BlitPixelsTonemap(preview_pixels, w, h, Ren::eTexFormat::RawRGBA32F);
-                }*/
-
-                back_list = -1;
-            } else {
-                back_list = front_list_;
-                front_list_ = (front_list_ + 1) % 2;
-
-                if (probes_dirty_ && scene_manager_->load_complete()) {
-                    // Perform first update of reflection probes
-                    update_all_probes_ = true;
-                    probes_dirty_ = false;
-                }
-
-                const Eng::SceneData &scene_data = scene_manager_->scene_data();
-
-                if (probe_to_update_sh_) {
-                    const bool done = false;
-                    // renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
-                    //                          probe_sh_update_iteration_, *probe_to_update_sh_);
-                    probe_sh_update_iteration_++;
-
-                    if (done) {
-                        probe_sh_update_iteration_ = 0;
-                        probe_to_update_sh_ = nullptr;
-                    }
-                }
-
-                if (invalidate_view_) {
-                    renderer_->reset_accumulation();
-                    invalidate_view_ = false;
-                }
-
-                // Render probe cubemap
-                if (probe_to_render_) {
-                    /*for (int i = 0; i < 6; i++) {
-                        renderer_->ExecuteDrawList(temp_probe_lists_[i], scene_manager_->persistent_data(),
-                                                   &temp_probe_buf_);
-                        renderer_->BlitToTempProbeFace(temp_probe_buf_, scene_data.probe_storage, i);
-                    }
-
-                    renderer_->BlitPrefilterFromTemp(scene_data.probe_storage, probe_to_render_->layer_index);
-
-                    probe_to_update_sh_ = probe_to_render_;
-                    probe_to_render_ = nullptr;*/
-                }
+                probe_to_update_sh_ = probe_to_render_;
+                probe_to_render_ = nullptr;*/
             }
 
             // Target frontend to next frame
@@ -771,7 +822,7 @@ void GSBaseState::Draw() {
             notified_ = true;
             thr_notify_.notify_one();
         } else {
-            scene_manager_->Serve();
+            streaming_finished_ = scene_manager_->Serve(1, animate_texture_lod);
             renderer_->InitBackendInfo();
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
@@ -784,7 +835,7 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
-            renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data());
+            renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(), render_target);
         }
     }
 
@@ -1035,10 +1086,11 @@ void GSBaseState::InitRenderer_PT() {
         Ray::settings_t s;
         s.w = ren_ctx_->w();
         s.h = ren_ctx_->h();
-        s.use_spatial_cache = true;
+        s.use_spatial_cache = viewer_->app_params.ref_name.empty();
         if (!viewer_->app_params.device_name.empty()) {
             s.preferred_device = viewer_->app_params.device_name.c_str();
         }
+        s.use_hwrt = !viewer_->app_params.nohwrt;
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
         Ray::unet_filter_properties_t unet_props;
@@ -1387,7 +1439,7 @@ void GSBaseState::Clear_PT() {
     ray_renderer_->Clear({});
 }
 
-void GSBaseState::Draw_PT() {
+void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     auto [res_x, res_y] = ray_renderer_->size();
 
     if (res_x != ren_ctx_->w() || res_y != ren_ctx_->h()) {
@@ -1426,13 +1478,89 @@ void GSBaseState::Draw_PT() {
         ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[0]);
         ray_renderer_->ResolveSpatialCache(*ray_scene_);
         ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0]);
-        for (int i = 0; i < unet_filter_passes_count_ && ray_reg_ctx_[0].iteration > 1; ++i) {
-            // ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
+        for (int i = 0;
+             i < unet_filter_passes_count_ && ray_reg_ctx_[0].iteration > 1 && viewer_->app_params.pt_denoise; ++i) {
+            ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
         }
     }
 
     const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
     renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
                                  Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
-                                 scene_manager_->main_cam().max_exposure);
+                                 scene_manager_->main_cam().max_exposure, target);
+}
+
+int GSBaseState::WriteAndValidateCaptureResult() {
+    Ren::BufferRef stage_buf =
+        ren_ctx_->LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * viewer_->width * viewer_->height);
+
+    { // Download result
+        void *cmd_buf = ren_ctx_->BegTempSingleTimeCommands();
+        capture_result_->CopyTextureData(*stage_buf, cmd_buf, 0);
+        ren_ctx_->InsertReadbackMemoryBarrier(cmd_buf);
+        ren_ctx_->EndTempSingleTimeCommands(cmd_buf);
+    }
+
+    const uint8_t *img_data = stage_buf->Map();
+    SCOPE_EXIT({ stage_buf->Unmap(); })
+
+    const std::string base_name =
+        viewer_->app_params.scene_name.substr(7, viewer_->app_params.scene_name.size() - 7 - 5);
+    const std::string out_name = base_name + ".png";
+    const std::string diff_name = base_name + "_diff.png";
+
+    int ref_w, ref_h, ref_channels;
+    uint8_t *ref_img = stbi_load(("assets/" + viewer_->app_params.ref_name).c_str(), &ref_w, &ref_h, &ref_channels, 4);
+    SCOPE_EXIT({ stbi_image_free(ref_img); })
+
+    if (!ref_img || ref_w != viewer_->width || ref_h != viewer_->height) {
+        log_->Error("Invalid reference image! (%s)", viewer_->app_params.ref_name.c_str());
+        return -1;
+    }
+
+    const bool flip_y =
+#if defined(USE_GL_RENDER)
+        true;
+#else
+        false;
+#endif
+
+    double mse = 0.0;
+    std::unique_ptr<uint8_t[]> diff_data_u8(new uint8_t[ref_w * ref_h * 3]);
+
+    for (int j = 0; j < ref_h; ++j) {
+        const int y = flip_y ? (ref_h - j - 1) : j;
+        for (int i = 0; i < ref_w; ++i) {
+            const uint8_t r = img_data[4 * (y * ref_w + i) + 0];
+            const uint8_t g = img_data[4 * (y * ref_w + i) + 1];
+            const uint8_t b = img_data[4 * (y * ref_w + i) + 2];
+
+            const uint8_t diff_r = std::abs(r - ref_img[4 * (j * ref_w + i) + 0]);
+            const uint8_t diff_g = std::abs(g - ref_img[4 * (j * ref_w + i) + 1]);
+            const uint8_t diff_b = std::abs(b - ref_img[4 * (j * ref_w + i) + 2]);
+
+            diff_data_u8[3 * (j * ref_w + i) + 0] = diff_r;
+            diff_data_u8[3 * (j * ref_w + i) + 1] = diff_g;
+            diff_data_u8[3 * (j * ref_w + i) + 2] = diff_b;
+
+            mse += diff_r * diff_r;
+            mse += diff_g * diff_g;
+            mse += diff_b * diff_b;
+        }
+    }
+
+    mse /= 3.0;
+    mse /= (ref_w * ref_h);
+
+    double psnr = -10.0 * std::log10(mse / (255.0 * 255.0));
+    psnr = std::floor(psnr * 100.0) / 100.0;
+
+    log_->Info("PSNR: %.2f/%.2f dB", psnr, viewer_->app_params.psnr);
+
+    stbi_flip_vertically_on_write(flip_y);
+    stbi_write_png(out_name.c_str(), viewer_->width, viewer_->height, 4, img_data, 4 * viewer_->width);
+    stbi_flip_vertically_on_write(false);
+    stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
+
+    return (psnr >= viewer_->app_params.psnr) ? 0 : -1;
 }

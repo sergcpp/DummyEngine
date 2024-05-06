@@ -173,7 +173,13 @@ int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
 
     int win_pos[] = {CW_USEDEFAULT, CW_USEDEFAULT};
 
-    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (VK)", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+    DWORD style = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    if (!app_params.ref_name.empty()) {
+        style &= ~WS_MINIMIZEBOX;
+        style &= ~WS_MAXIMIZEBOX;
+    }
+
+    window_handle_ = ::CreateWindowEx(NULL, "MainWindowClass", "View (VK)", style,
                                       win_pos[0], win_pos[1], rect.right - rect.left, rect.bottom - rect.top, nullptr,
                                       nullptr, GetModuleHandle(nullptr), nullptr);
 
@@ -261,6 +267,16 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.nohwrt = true;
         } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
             app_params.scene_name = argv[i];
+        } else if ((strcmp(argv[i], "--reference") == 0 || strcmp(argv[i], "-ref") == 0) && (++i != argc)) {
+            app_params.ref_name = argv[i];
+        } else if (strcmp(argv[i], "--psnr") == 0 && (++i != argc)) {
+            app_params.psnr = strtod(argv[i], nullptr);
+        } else if (strcmp(argv[i], "--pt") == 0) {
+            app_params.pt = true;
+        } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
+            app_params.pt_denoise = false;
+        } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {
+            app_params.pt_max_samples = std::atoi(argv[++i]);
         }
     }
 
@@ -271,7 +287,7 @@ int DummyApp::Run(int argc, char *argv[]) {
     __itt_thread_set_name("Main Thread");
 
     bool done = false;
-    while (!done) {
+    while (!done && !viewer_->terminated) {
         OPTICK_FRAME("Main Thread");
         __itt_frame_begin_v3(__g_itt_domain, nullptr);
 
@@ -289,9 +305,11 @@ int DummyApp::Run(int argc, char *argv[]) {
         __itt_frame_end_v3(__g_itt_domain, nullptr);
     }
 
+    const int exit_status = viewer_->exit_status;
+
     this->Destroy();
 
-    return 0;
+    return exit_status;
 }
 
 void DummyApp::PollEvents() {}

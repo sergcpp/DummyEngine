@@ -106,6 +106,10 @@ class GSBaseState : public Eng::ViewerState {
     bool ui_enabled_ = true;
     bool shift_down_ = false;
 
+    bool streaming_finished_ = false;
+    bool capture_started_ = false;
+    Ren::Tex2DRef capture_result_;
+
     bool LoadScene(std::string_view name);
 
     virtual void OnPreloadScene(JsObjectP &js_scene);
@@ -122,7 +126,9 @@ class GSBaseState : public Eng::ViewerState {
     void InitScene_PT();
     void SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, float fov);
     void Clear_PT();
-    void Draw_PT();
+    void Draw_PT(const Ren::Tex2DRef &target);
+
+    int WriteAndValidateCaptureResult();
 
   public:
     explicit GSBaseState(Viewer *viewer);
