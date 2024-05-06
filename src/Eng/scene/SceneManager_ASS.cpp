@@ -1006,7 +1006,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
             }
 
 #ifdef NDEBUG
-            const bool OptimizeMesh = true;
+            const bool OptimizeMesh = false;
 #else
             const bool OptimizeMesh = false;
 #endif
