@@ -115,7 +115,7 @@ Ren::DescrMultiPoolAlloc *Ren::Context::default_descr_alloc() const {
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, bool nohwrt,
-                        const char *preferred_device) {
+                        std::string_view preferred_device) {
     api_ctx_ = std::make_unique<ApiContext>();
     if (!api_ctx_->Load(log)) {
         return false;

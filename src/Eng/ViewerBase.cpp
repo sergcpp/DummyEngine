@@ -24,7 +24,7 @@
 #include "utils/ShaderLoader.h"
 
 Eng::ViewerBase::ViewerBase(const int w, const int h, const int validation_level, const bool nohwrt, ILog *log,
-                            const char *device_name)
+                            std::string_view device_name)
     : log_(log), width(w), height(h) {
     terminated = false;
 

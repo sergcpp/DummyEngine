@@ -37,7 +37,7 @@ Ren::Context::~Context() {
 }
 
 bool Ren::Context::Init(const int w, const int h, ILog *log, const int validation_level, const bool nohwrt,
-                        const char *) {
+                        std::string_view) {
     std::call_once(gl_initialize_once, [&]() { gl_initialized = InitGLExtentions(log); });
     if (!gl_initialized) {
         return false;

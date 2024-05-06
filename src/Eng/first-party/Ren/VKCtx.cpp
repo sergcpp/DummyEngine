@@ -233,8 +233,7 @@ bool Ren::ApiContext::LoadInstanceFunctions(ILog *log) {
         log->Error("Failed to load %s", #x);                                                                           \
         return false;                                                                                                  \
     }
-#define LOAD_OPTIONAL_INSTANCE_FUN(x)                                                                                  \
-    x = (PFN_##x)vkGetInstanceProcAddr(instance, #x);                                                                  \
+#define LOAD_OPTIONAL_INSTANCE_FUN(x) x = (PFN_##x)vkGetInstanceProcAddr(instance, #x);
 
     LOAD_INSTANCE_FUN(vkCreateDebugReportCallbackEXT)
     LOAD_INSTANCE_FUN(vkDestroyDebugReportCallbackEXT)
@@ -606,7 +605,7 @@ bool Ren::ApiContext::InitVkDevice(const char *enabled_layers[], int enabled_lay
     return true;
 }
 
-bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog *log) {
+bool Ren::ApiContext::ChooseVkPhysicalDevice(std::string_view preferred_device, ILog *log) {
     uint32_t physical_device_count = 0;
     vkEnumeratePhysicalDevices(instance, &physical_device_count, nullptr);
 
@@ -714,7 +713,7 @@ bool Ren::ApiContext::ChooseVkPhysicalDevice(const char *preferred_device, ILog 
                 score += 100;
             }
 
-            if (preferred_device && MatchDeviceNames(device_properties.deviceName, preferred_device)) {
+            if (!preferred_device.empty() && MatchDeviceNames(device_properties.deviceName, preferred_device.data())) {
                 // preferred device found
                 score += 100000;
             }

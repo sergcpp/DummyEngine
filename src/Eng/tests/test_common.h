@@ -76,6 +76,7 @@ inline bool operator==(const float val, const Approx &app) { return std::abs(val
 #include <atomic>
 #include <cstdarg>
 #include <mutex>
+#include <string_view>
 
 extern std::atomic_bool g_log_contains_errors;
 
@@ -151,7 +152,8 @@ class TestContext : public Ren::Context {
     Ren::ILog *log_;
 
   public:
-    TestContext(const int w, const int h, const char *device_name, int validation_level, bool nohwrt, Ren::ILog *log)
+    TestContext(const int w, const int h, std::string_view device_name, int validation_level, bool nohwrt,
+                Ren::ILog *log)
         : log_(log) {
 #if defined(USE_GL_RENDER)
 #if defined(_WIN32)

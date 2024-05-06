@@ -1,6 +1,7 @@
 
 #include <atomic>
 #include <cstdio>
+#include <string_view>
 
 #include <Sys/ThreadPool.h>
 
@@ -13,7 +14,7 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
 // void test_object_pool();
 void test_cmdline();
-void test_materials(Sys::ThreadPool &threads, const char *device_name, int validation_level, bool nohwrt);
+void test_materials(Sys::ThreadPool &threads, std::string_view device_name, int validation_level, bool nohwrt);
 void test_unicode();
 void test_widgets();
 
@@ -48,7 +49,7 @@ int main(int argc, char *argv[]) {
     printf("Eng Version: %s\n", Eng::Version());
     puts(" ---------------");
 
-    const char *device_name = nullptr;
+    std::string_view device_name;
     int threads_count = 1;
     int validation_level = 1;
     bool nohwrt = false;

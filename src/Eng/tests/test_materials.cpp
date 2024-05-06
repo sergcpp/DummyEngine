@@ -31,7 +31,7 @@ namespace {
 const int LUT_DIMS = 48;
 #include "__agx.inl"
 
-const char *g_device_name = nullptr;
+std::string_view g_device_name;
 int g_validation_level = 0;
 bool g_nohwrt = false;
 
@@ -40,7 +40,7 @@ std::mutex g_stbi_mutex;
 
 enum eImgTest { NoShadow, NoGI, NoGI_RTShadow, NoDiffGI, NoDiffGI_RTShadow, MedDiffGI, Full, Full_Ultra };
 
-void run_image_test(const char *test_name, const double min_psnr, const eImgTest img_test = eImgTest::NoShadow) {
+void run_image_test(std::string_view test_name, const double min_psnr, const eImgTest img_test = eImgTest::NoShadow) {
     using namespace std::chrono;
 
     const auto start_time = high_resolution_clock::now();
@@ -62,7 +62,7 @@ void run_image_test(const char *test_name, const double min_psnr, const eImgTest
         test_postfix = "_ultra";
     }
     const std::string ref_name =
-        std::string("assets_pc/references/") + test_name + "/ref" + test_postfix + ".uncompressed.png";
+        "assets_pc/references/" + std::string(test_name) + "/ref" + test_postfix + ".uncompressed.png";
 
     int ref_w, ref_h, ref_channels;
     uint8_t *ref_img = stbi_load(ref_name.c_str(), &ref_w, &ref_h, &ref_channels, 4);
@@ -72,7 +72,8 @@ void run_image_test(const char *test_name, const double min_psnr, const eImgTest
     TestContext ren_ctx(ref_w, ref_h, g_device_name, g_validation_level, g_nohwrt, &log);
 #if defined(USE_VK_RENDER)
     Ren::ApiContext *api_ctx = ren_ctx.api_ctx();
-    require_return(!g_device_name || Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, g_device_name));
+    require_return(g_device_name.empty() ||
+                   Ren::MatchDeviceNames(api_ctx->device_properties.deviceName, g_device_name.data()));
 #endif
 
     if (img_test != eImgTest::NoShadow && img_test != eImgTest::NoGI && !ren_ctx.capabilities.raytracing &&
@@ -125,7 +126,7 @@ void run_image_test(const char *test_name, const double min_psnr, const eImgTest
     JsObjectP js_scene(alloc);
 
     { // Load scene data from file
-        const std::string scene_name = std::string("assets_pc/scenes/") + test_name + ".json";
+        const std::string scene_name = "assets_pc/scenes/" + std::string(test_name) + ".json";
         Sys::AssetFile in_scene(scene_name);
         require_return(bool(in_scene));
 
@@ -346,7 +347,7 @@ void run_image_test(const char *test_name, const double min_psnr, const eImgTest
         api_ctx->backend_frame = (api_ctx->backend_frame + 1) % Ren::MaxFramesInFlight;
     };
 
-    //renderer.settings.taa_mode = Eng::eTAAMode::Dynamic;
+    // renderer.settings.taa_mode = Eng::eTAAMode::Dynamic;
 
     // Make sure all textures are loaded
     bool finished = false;
@@ -357,15 +358,15 @@ void run_image_test(const char *test_name, const double min_psnr, const eImgTest
 
         begin_frame();
         finished = scene_manager.Serve(1, false);
-        //renderer.ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
+        // renderer.ExecuteDrawList(draw_list, scene_manager.persistent_data(), render_result);
         end_frame();
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 
-    //draw_list.frame_index = 0;
-    //renderer.settings.taa_mode = Eng::eTAAMode::Static;
-    //draw_list.render_settings = renderer.settings;
-    //renderer.reset_accumulation();
+    // draw_list.frame_index = 0;
+    // renderer.settings.taa_mode = Eng::eTAAMode::Static;
+    // draw_list.render_settings = renderer.settings;
+    // renderer.reset_accumulation();
 
     for (int i = 0; i < RendererInternal::TaaSampleCountStatic; ++i) {
         draw_list.Clear();
@@ -438,15 +439,15 @@ void run_image_test(const char *test_name, const double min_psnr, const eImgTest
 
     stbi_flip_vertically_on_write(flip_y);
 
-    const std::string out_name = std::string("assets_pc/references/") + test_name + "/out" + test_postfix + ".png";
-    const std::string diff_name = std::string("assets_pc/references/") + test_name + "/diff" + test_postfix + ".png";
+    const std::string out_name = "assets_pc/references/" + std::string(test_name) + "/out" + test_postfix + ".png";
+    const std::string diff_name = "assets_pc/references/" + std::string(test_name) + "/diff" + test_postfix + ".png";
 
     stbi_write_png(out_name.c_str(), ref_w, ref_h, 4, img_data, 4 * ref_w);
     stbi_flip_vertically_on_write(false);
     stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
 }
 
-void test_materials(Sys::ThreadPool &threads, const char *device_name, const int vl, const bool nohwrt) {
+void test_materials(Sys::ThreadPool &threads, std::string_view device_name, const int vl, const bool nohwrt) {
     g_device_name = device_name;
     g_validation_level = vl;
     g_nohwrt = nohwrt;
