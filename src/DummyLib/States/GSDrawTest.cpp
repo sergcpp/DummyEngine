@@ -7,6 +7,7 @@
 #include <Eng/gui/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
+#include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Sys/Time_.h>
 
@@ -15,6 +16,11 @@
 
 #include <optick/optick.h>
 #include <stb/stb_image.h>
+
+namespace Ray {
+extern const int LUT_DIMS;
+extern const uint32_t *transform_luts[];
+} // namespace Ray
 
 namespace GSDrawTestInternal {
 #if defined(__ANDROID__)
@@ -365,6 +371,51 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure_ = float(js_max_exposure.val);
+        }
+
+        if (js_cam.Has("filter")) {
+            const JsStringP &js_filter = js_cam.at("filter").as_str();
+            if (js_filter.val == "box") {
+                renderer_->settings.pixel_filter = Eng::ePixelFilter::Box;
+            } else if (js_filter.val == "blackman-harris") {
+                renderer_->settings.pixel_filter = Eng::ePixelFilter::BlackmanHarris;
+                renderer_->settings.pixel_filter_width = 1.5f;
+                if (js_cam.Has("filter_width")) {
+                    const JsNumber &js_filter_width = js_cam.at("filter_width").as_num();
+                    renderer_->settings.pixel_filter_width = float(js_filter_width.val);
+                }
+            }
+        }
+
+        if (js_cam.Has("view_transform")) {
+            const JsStringP &js_view_transform = js_cam.at("view_transform").as_str();
+            if (js_view_transform.val == "filmic_high_contrast") {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_HighContrast)]),
+                                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (js_view_transform.val == "filmic_med_contrast") {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(reinterpret_cast<const uint8_t *>(
+                                                 Ray::transform_luts[int(Ray::eViewTransform::Filmic_MediumContrast)]),
+                                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (js_view_transform.val == "agx") {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(
+                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
+                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
+                            4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (js_view_transform.val == "standard") {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
+            } else if (js_view_transform.val == "off") {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::Off;
+            }
         }
 
         if (js_cam.Has("follow_path")) {
