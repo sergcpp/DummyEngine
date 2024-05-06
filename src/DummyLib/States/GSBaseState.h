@@ -106,7 +106,7 @@ class GSBaseState : public Eng::ViewerState {
     bool ui_enabled_ = true;
     bool shift_down_ = false;
 
-    bool LoadScene(const char *name);
+    bool LoadScene(std::string_view name);
 
     virtual void OnPreloadScene(JsObjectP &js_scene);
     virtual void OnPostloadScene(JsObjectP &js_scene);

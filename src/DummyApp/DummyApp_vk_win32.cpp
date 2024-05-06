@@ -148,7 +148,7 @@ LRESULT CALLBACK WindowProc(const HWND hwnd, const UINT uMsg, const WPARAM wPara
     return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-int DummyApp::Init(const int w, const int h, const int validation_level, const bool nohwrt, const char *device_name) {
+int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     const BOOL dpi_result = SetProcessDPIAware();
     (void)dpi_result;
 
@@ -182,7 +182,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const b
     try {
         Viewer::PrepareAssets("pc");
         log_ = std::make_unique<LogStdout>();
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nohwrt, log_.get(), device_name);
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, app_params, log_.get());
         input_manager_ = viewer_->input_manager();
     } catch (std::exception &e) {
         fprintf(stderr, "%s", e.what());
@@ -238,13 +238,7 @@ void DummyApp::AddEvent(const Eng::RawInputEv type, const uint32_t key_code, con
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1280, h = 720;
     fullscreen_ = false;
-    int validation_level = 0;
-    const char *device_name = nullptr;
-    bool nohwrt = false;
-
-#ifndef NDEBUG
-    validation_level = 1;
-#endif
+    AppParams app_params;
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
@@ -260,15 +254,17 @@ int DummyApp::Run(int argc, char *argv[]) {
         } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
             fullscreen_ = true;
         } else if (strcmp(arg, "--device") == 0 || strcmp(arg, "-d") == 0) {
-            device_name = argv[++i];
+            app_params.device_name = argv[++i];
         } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
-            validation_level = std::atoi(argv[++i]);
+            app_params.validation_level = std::atoi(argv[++i]);
         } else if (strcmp(arg, "--nohwrt") == 0) {
-            nohwrt = true;
+            app_params.nohwrt = true;
+        } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
+            app_params.scene_name = argv[i];
         }
     }
 
-    if (Init(w, h, validation_level, nohwrt, device_name) < 0) {
+    if (Init(w, h, app_params) < 0) {
         return -1;
     }
 

@@ -33,6 +33,17 @@ class DebugInfoUI;
 class Dictionary;
 class FontStorage;
 
+struct AppParams {
+    std::string scene_name = "scenes/mat_test.json";
+    std::string device_name;
+    bool nohwrt = false;
+#ifndef NDEBUG
+    int validation_level = 1;
+#else
+    int validation_level = 0;
+#endif
+};
+
 class Viewer : public Eng::ViewerBase {
     ILog *log_ = nullptr;
     std::unique_ptr<FontStorage> font_storage_;
@@ -40,7 +51,9 @@ class Viewer : public Eng::ViewerBase {
     std::unique_ptr<Dictionary> dictionary_;
 
   public:
-    Viewer(int w, int h, const char *local_dir, int validation_level, bool nohwrt, ILog *log, const char *device_name);
+    AppParams app_params = {};
+
+    Viewer(int w, int h, const char *local_dir, const AppParams &app_params, ILog *log);
     ~Viewer();
 
     FontStorage *font_storage() { return font_storage_.get(); }

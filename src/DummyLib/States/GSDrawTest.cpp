@@ -23,26 +23,6 @@ extern const uint32_t *transform_luts[];
 } // namespace Ray
 
 namespace GSDrawTestInternal {
-#if defined(__ANDROID__)
-const char SCENE_NAME[] = "assets/scenes/"
-#else
-const char SCENE_NAME[] = "assets_pc/scenes/"
-#endif
-                          //"ai043_06.json";
-                          "mat_test.json";
-//"test_skin.json";
-//"living_room_gumroad.json";
-//"bistro.json";
-//"pbr_test.json";
-//"zenith.json";
-//"test_vegetation.json";
-//"test_vegetation_night.json";
-//"test_decals.json";
-//"courtroom.json";
-//"lmap_test.json";
-//"sss_test.json";
-//"char_test.json";
-//"tessellation_test.json";
 } // namespace GSDrawTestInternal
 
 #include <Ren/Utils.h>
@@ -65,7 +45,7 @@ void GSDrawTest::Enter() {
     });
 
     log_->Info("GSDrawTest: Loading scene!");
-    GSBaseState::LoadScene(SCENE_NAME);
+    GSBaseState::LoadScene(viewer_->app_params.scene_name);
 }
 
 void GSDrawTest::OnPreloadScene(JsObjectP &js_scene) {

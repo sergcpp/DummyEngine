@@ -103,7 +103,7 @@ DummyApp::DummyApp() { g_app = this; }
 
 DummyApp::~DummyApp() = default;
 
-int DummyApp::Init(const int w, const int h, const int validation_level, const bool nohwrt, const char *device_name) {
+int DummyApp::Init(const int w, const int h, const AppParams &app_params) {
     init_delegate_class();
 
     // id app = [NSApplication sharedApplication];
@@ -138,7 +138,7 @@ int DummyApp::Init(const int w, const int h, const int validation_level, const b
     try {
         Viewer::PrepareAssets("pc");
         log_ = std::make_unique<LogStdout>();
-        viewer_ = std::make_unique<Viewer>(w, h, nullptr, validation_level, nohwrt, log_.get(), device_name);
+        viewer_ = std::make_unique<Viewer>(w, h, nullptr, app_params, log_.get());
 
         auto *input_manager = viewer_->input_manager();
         input_manager_ = input_manager;
@@ -210,12 +210,7 @@ void DummyApp::AddEvent(Eng::RawInputEv type, const uint32_t key_code, const flo
 int DummyApp::Run(int argc, char *argv[]) {
     int w = 1280, h = 720;
     fullscreen_ = false;
-    int validation_level = 0;
-    const char *device_name = nullptr;
-
-#ifndef NDEBUG
-    validation_level = 1;
-#endif
+    AppParams app_params;
 
     for (int i = 1; i < argc; i++) {
         const char *arg = argv[i];
@@ -231,13 +226,15 @@ int DummyApp::Run(int argc, char *argv[]) {
         } else if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "-fs") == 0) {
             fullscreen_ = true;
         } else if (strcmp(arg, "--device") == 0 || strcmp(arg, "-d") == 0) {
-            device_name = argv[++i];
+            app_params.device_name = argv[++i];
         } else if (strcmp(arg, "--validation_level") == 0 || strcmp(arg, "-vl") == 0) {
-            validation_level = std::atoi(argv[++i]);
+            app_params.validation_level = std::atoi(argv[++i]);
+        } else if ((strcmp(argv[i], "--scene") == 0 || strcmp(argv[i], "-s") == 0) && (++i != argc)) {
+            app_params.scene_name = argv[i];
         }
     }
 
-    if (Init(w, h, validation_level, false, device_name) < 0) {
+    if (Init(w, h, app_params) < 0) {
         return -1;
     }
 

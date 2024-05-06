@@ -37,9 +37,9 @@ extern bool ignore_optick_errors;
 #include "Utils/Dictionary.h"
 #include "Utils/Log.h"
 
-Viewer::Viewer(const int w, const int h, const char *local_dir, const int validation_level, const bool nohwrt,
-               ILog *log, const char *device_name)
-    : ViewerBase(w, h, validation_level, nohwrt, log, device_name), log_(log) {
+Viewer::Viewer(const int w, const int h, const char *local_dir, const AppParams &_app_params, ILog *log)
+    : ViewerBase(w, h, _app_params.validation_level, _app_params.nohwrt, log, _app_params.device_name.c_str()),
+      log_(log), app_params(_app_params) {
     JsObject main_config;
 
     {

@@ -37,6 +37,8 @@ class ILog;
 class ViewerBase;
 } // namespace Eng
 
+struct AppParams;
+
 class DummyApp {
     bool fullscreen_ = false, minimized_ = false, quit_ = false;
 
@@ -73,7 +75,7 @@ class DummyApp {
     DummyApp();
     ~DummyApp();
 
-    int Init(int w, int h, int validation_level, bool nohwrt, const char *device_name);
+    int Init(int w, int h, const AppParams &app_params);
     void Destroy();
 
     void Frame();

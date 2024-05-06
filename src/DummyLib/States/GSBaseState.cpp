@@ -94,10 +94,10 @@ GSBaseState::GSBaseState(Viewer *viewer) : viewer_(viewer) {
         ren_ctx_->LoadBuffer("Items (Upload)", Ren::eBufType::Upload, Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_items_stage_buf = ren_ctx_->LoadBuffer("RT Items (Upload)", Ren::eBufType::Upload,
                                                              Eng::ItemsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef lights_stage_buf =
-        ren_ctx_->LoadBuffer("Lights (Upload)", Ren::eBufType::Upload, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
-    Ren::BufferRef decals_stage_buf =
-        ren_ctx_->LoadBuffer("Decals (Upload)", Ren::eBufType::Upload, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef lights_stage_buf = ren_ctx_->LoadBuffer("Lights (Upload)", Ren::eBufType::Upload,
+                                                           Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef decals_stage_buf = ren_ctx_->LoadBuffer("Decals (Upload)", Ren::eBufType::Upload,
+                                                           Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx_->capabilities.raytracing) {
@@ -508,7 +508,7 @@ void GSBaseState::Enter() {
     UpdateFrame(0);
 }
 
-bool GSBaseState::LoadScene(const char *name) {
+bool GSBaseState::LoadScene(std::string_view name) {
     using namespace GSBaseStateInternal;
 
     // wait for backgroud thread iteration
@@ -527,9 +527,16 @@ bool GSBaseState::LoadScene(const char *name) {
     JsObjectP js_scene(alloc), js_probe_cache(alloc);
 
     { // Load scene data from file
-        Sys::AssetFile in_scene(name);
+        std::string scene_file =
+#if defined(__ANDROID__)
+            "assets/";
+#else
+            "assets_pc/";
+#endif
+        scene_file += name;
+        Sys::AssetFile in_scene(scene_file);
         if (!in_scene) {
-            log_->Error("Can not open scene file %s", name);
+            log_->Error("Can not open scene file %s", scene_file.c_str());
             return false;
         }
 
@@ -553,11 +560,7 @@ bool GSBaseState::LoadScene(const char *name) {
 #else
             "assets_pc/textures/probes_cache/";
 #endif
-        const char *_name = strrchr(name, '/');
-        if (_name) {
-            ++_name;
-            cache_file += _name;
-        }
+        cache_file += name;
 
         Sys::AssetFile in_cache(cache_file.c_str());
 
