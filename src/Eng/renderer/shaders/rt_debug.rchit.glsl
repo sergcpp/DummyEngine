@@ -258,6 +258,8 @@ void main() {
                                                                  sheen, base_color, sheen_color, approx_spec_col, approx_clearcoat_col);
             }
         }
+
+        g_pld.col = light_total;
     }
 }
 
