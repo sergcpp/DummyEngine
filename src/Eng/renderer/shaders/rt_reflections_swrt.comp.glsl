@@ -468,7 +468,7 @@ void main() {
 
 #ifdef GI_CACHE
             if (lobe_weights.diffuse > 0.0) {
-                const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, refl_ray_ws, g_params.grid_spacing.xyz), N,
+                const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(refl_ray_ws, g_params.grid_spacing.xyz), N,
                                                               g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
                 light_total += (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
             }

@@ -297,4 +297,8 @@ vec3 get_surface_bias(const vec3 normal, const vec3 view, const vec3 grid_spacin
     return ((normal * 0.1) + (-view * 0.3)) * grid_spacing;
 }
 
+vec3 get_surface_bias(const vec3 view, const vec3 grid_spacing) {
+    return (-view * 0.3) * grid_spacing;
+}
+
 #endif // GI_CACHE_COMMON_GLSL
