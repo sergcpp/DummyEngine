@@ -89,5 +89,7 @@ class ViewerBase {
 
     std::atomic_bool terminated;
     int width, height;
+
+    mutable int exit_status = 0;
 };
 } // namespace Eng

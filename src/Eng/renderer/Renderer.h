@@ -58,7 +58,8 @@ class Renderer {
     Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::ThreadPool &threads);
     ~Renderer();
 
-    void reset_accumulation() { accumulated_frames_ = 0; }
+    int accumulated_frames() const { return accumulated_frames_; }
+    void reset_accumulation() { frame_index_ = view_state_.frame_index = accumulated_frames_ = 0; }
 
     const BackendInfo &backend_info() const { return backend_info_; }
 
@@ -75,7 +76,7 @@ class Renderer {
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
-                           float exposure);
+                           float exposure, const Ren::Tex2DRef &target);
     render_settings_t settings = {};
 
   private:

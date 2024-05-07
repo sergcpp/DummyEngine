@@ -437,11 +437,10 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     fflush(stdout);
     require(psnr >= min_psnr);
 
-    stbi_flip_vertically_on_write(flip_y);
-
     const std::string out_name = "assets_pc/references/" + std::string(test_name) + "/out" + test_postfix + ".png";
     const std::string diff_name = "assets_pc/references/" + std::string(test_name) + "/diff" + test_postfix + ".png";
 
+    stbi_flip_vertically_on_write(flip_y);
     stbi_write_png(out_name.c_str(), ref_w, ref_h, 4, img_data, 4 * ref_w);
     stbi_flip_vertically_on_write(false);
     stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);

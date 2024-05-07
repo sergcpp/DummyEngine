@@ -1088,7 +1088,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 debug_probes.AddTextureInput(frame_textures.gi_cache, Ren::eStageBits::FragmentShader);
             data->distance_tex =
                 debug_probes.AddTextureInput(frame_textures.gi_cache_dist, Ren::eStageBits::FragmentShader);
-            
+
             data->grid_origin = persistent_data.probe_volume.origin;
             data->grid_scroll = persistent_data.probe_volume.scroll;
             data->grid_spacing = persistent_data.probe_volume.spacing;
@@ -1588,7 +1588,8 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
 }
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
-                                      const Ren::eTexFormat format, const float gamma, const float exposure) {
+                                      const Ren::eTexFormat format, const float gamma, const float exposure,
+                                      const Ren::Tex2DRef &target) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -1657,7 +1658,11 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         rp_combine_data_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
         rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
         rp_combine_data_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
-        rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+        if (target) {
+            rp_combine_data_.output_tex = combine.AddColorOutput(target);
+        } else {
+            rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
+        }
 
         rp_combine_data_.lut_tex = tonemap_lut_;
         rp_combine_data_.tonemap_mode = int(settings.tonemap_mode);
@@ -1679,7 +1684,11 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         update_image->ReplaceTransferInput(0, temp_upload_buf);
 
         auto *combine = rp_builder_.FindPass("COMBINE");
-        rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+        if (target) {
+            rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, target);
+        } else {
+            rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
+        }
     }
 
     rp_builder_.Execute();

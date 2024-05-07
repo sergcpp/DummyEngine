@@ -60,6 +60,7 @@ void Eng::DrawList::Clear() {
     probes.clear();
     ellipsoids.clear();
 
+    frame_index = 0;
     items.count = 0;
     rt_items.count = 0;
 
