@@ -14,7 +14,8 @@ __itt_domain *__g_itt_domain = __itt_domain_create("Global");
 
 // void test_object_pool();
 void test_cmdline();
-void test_materials(Sys::ThreadPool &threads, std::string_view device_name, int validation_level, bool nohwrt);
+void test_materials(Sys::ThreadPool &threads, bool full, std::string_view device_name, int validation_level,
+                    bool nohwrt);
 void test_unicode();
 void test_widgets();
 
@@ -52,7 +53,7 @@ int main(int argc, char *argv[]) {
     std::string_view device_name;
     int threads_count = 1;
     int validation_level = 1;
-    bool nohwrt = false;
+    bool full = false, nohwrt = false;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--prepare_assets") == 0) {
@@ -68,7 +69,9 @@ int main(int argc, char *argv[]) {
         } else if (strcmp(argv[i], "--validation_level") == 0 || strcmp(argv[i], "-vl") == 0) {
             validation_level = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--nohwrt") == 0) {
-            //nohwrt = true;
+            // nohwrt = true;
+        } else if (strcmp(argv[i], "--full") == 0) {
+            full = true;
         }
     }
 
@@ -85,7 +88,7 @@ int main(int argc, char *argv[]) {
     test_unicode();
     test_widgets();
     puts(" ---------------");
-    test_materials(mt_run_pool, device_name, validation_level, nohwrt);
+    test_materials(mt_run_pool, full, device_name, validation_level, nohwrt);
 
     return g_tests_success ? 0 : -1;
 }

@@ -447,7 +447,8 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     stbi_write_png(diff_name.c_str(), ref_w, ref_h, 3, diff_data_u8.get(), 3 * ref_w);
 }
 
-void test_materials(Sys::ThreadPool &threads, std::string_view device_name, const int vl, const bool nohwrt) {
+void test_materials(Sys::ThreadPool &threads, const bool full, std::string_view device_name, const int vl,
+                    const bool nohwrt) {
     g_device_name = device_name;
     g_validation_level = vl;
     g_nohwrt = nohwrt;
@@ -512,6 +513,11 @@ void test_materials(Sys::ThreadPool &threads, std::string_view device_name, cons
             f.wait();
         }
     }
+
+    if (!full) {
+        return;
+    }
+
     puts(" ---------------");
     if (g_tests_success) { // diffuse material
         std::vector<std::future<void>> futures;
