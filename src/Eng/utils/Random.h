@@ -13,6 +13,8 @@ class Random {
     explicit Random(uint32_t seed);
     ~Random();
 
+    void Reset(uint32_t seed);
+
     int GetInt(int min, int max);
     float GetFloat(float min, float max);
     float GetNormalizedFloat();
