@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = probe_cache
-	commit = d39e62cbdd43c30a3609fb08d569e0f7a82db5d3
+	branch = image_tests
+	commit = e8f4ce914bf5fd06ca96ce1732fd3da5bbd9620a
 	method = merge
 	cmdver = 0.4.6
-	parent = 51ba8cf98cbd9280e8ca10a361f7f167e4f59909
+	parent = bdd262148dfa4ddabdaba03ce424f67f7a103787
