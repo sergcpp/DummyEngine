@@ -201,12 +201,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
     enum class eShaderOutput { GLSL, GL_SPIRV, VK_SPIRV };
 
     for (const eShaderOutput sh_output : {eShaderOutput::GLSL, eShaderOutput::GL_SPIRV, eShaderOutput::VK_SPIRV}) {
-        const bool use_spv14 = (strstr(in_file, ".rgen") || strstr(in_file, ".rint") || strstr(in_file, ".rahit") ||
-                                strstr(in_file, ".rchit") || strstr(in_file, ".rmiss") || strstr(in_file, ".rcall") ||
-                                strstr(in_file, "spirv14"));
-        if (sh_output != eShaderOutput::VK_SPIRV && use_spv14) {
-            continue;
-        }
         for (const std::string &perm : permutations) {
             const std::string prep_glsl_file = out_file + perm;
 
@@ -310,7 +304,15 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 unit_type = glslx::eTrUnitType::AnyHit;
             } else if (strstr(out_file, ".rmiss.glsl")) {
                 unit_type = glslx::eTrUnitType::Miss;
+            } else if (strstr(out_file, ".rint.glsl")) {
+                unit_type = glslx::eTrUnitType::Intersect;
+            } else if (strstr(out_file, ".rcall.glsl")) {
+                unit_type = glslx::eTrUnitType::Callable;
             }
+
+            bool use_spv14 = unit_type == glslx::eTrUnitType::RayGen || unit_type == glslx::eTrUnitType::Intersect ||
+                             unit_type == glslx::eTrUnitType::AnyHit || unit_type == glslx::eTrUnitType::ClosestHit ||
+                             unit_type == glslx::eTrUnitType::Miss || unit_type == glslx::eTrUnitType::Callable;
 
             if (TestShaderRewrite) {
                 glslx::Preprocessor preprocessor(glsl_file_data);
@@ -331,6 +333,11 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                     continue;
                 }
 
+                for (const glslx::ast_extension_directive *ext : ast->extensions) {
+                    use_spv14 |= strcmp(ext->name, "GL_EXT_ray_query") == 0;
+                    use_spv14 |= strcmp(ext->name, "GL_EXT_ray_tracing") == 0;
+                }
+
                 glslx::fixup_config_t config;
                 config.randomize_loop_counters = false;
                 if (sh_output == eShaderOutput::GLSL) {
@@ -345,6 +352,10 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 glslx::WriterGLSL().Write(ast.get(), ss);
 
                 glsl_file_data = ss.str();
+            }
+
+            if (sh_output != eShaderOutput::VK_SPIRV && use_spv14) {
+                continue;
             }
 
             if (sh_output == eShaderOutput::GLSL) {

@@ -225,7 +225,7 @@ void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
         if (ctx.capabilities.ray_query) {
             Ren::ProgramRef rt_shadows_inline_prog =
-                sh.LoadProgram(ctx, "rt_shadows_inline", "internal/rt_shadows_spirv14.comp.glsl");
+                sh.LoadProgram(ctx, "rt_shadows_inline", "internal/rt_shadows_hwrt.comp.glsl");
             assert(rt_shadows_inline_prog->ready());
 
             if (!pi_rt_shadows_inline_.Init(ctx.api_ctx(), std::move(rt_shadows_inline_prog), ctx.log())) {

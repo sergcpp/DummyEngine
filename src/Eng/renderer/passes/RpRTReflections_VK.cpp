@@ -341,7 +341,7 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
             if (ctx.capabilities.ray_query) {
                 Ren::ProgramRef rt_reflections_inline_prog =
-                    sh.LoadProgram(ctx, "rt_reflections_inline", "internal/rt_reflections_spirv14.comp.glsl");
+                    sh.LoadProgram(ctx, "rt_reflections_inline", "internal/rt_reflections_hwrt.comp.glsl");
                 assert(rt_reflections_inline_prog->ready());
 
                 if (!pi_rt_reflections_inline_[0].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
@@ -350,7 +350,7 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 }
 
                 rt_reflections_inline_prog = sh.LoadProgram(ctx, "rt_reflections_inline_gi",
-                                                            "internal/rt_reflections_spirv14.comp.glsl@GI_CACHE");
+                                                            "internal/rt_reflections_hwrt.comp.glsl@GI_CACHE");
                 assert(rt_reflections_inline_prog->ready());
 
                 if (!pi_rt_reflections_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
@@ -359,7 +359,7 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 }
 
                 rt_reflections_inline_prog = sh.LoadProgram(ctx, "rt_reflections_4bounce_inline",
-                                                            "internal/rt_reflections_spirv14.comp.glsl@FOUR_BOUNCES");
+                                                            "internal/rt_reflections_hwrt.comp.glsl@FOUR_BOUNCES");
                 assert(rt_reflections_inline_prog->ready());
 
                 if (!pi_rt_reflections_4bounce_inline_[0].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
@@ -369,7 +369,7 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
                 rt_reflections_inline_prog =
                     sh.LoadProgram(ctx, "rt_reflections_4bounce_inline_gi",
-                                   "internal/rt_reflections_spirv14.comp.glsl@FOUR_BOUNCES;GI_CACHE");
+                                   "internal/rt_reflections_hwrt.comp.glsl@FOUR_BOUNCES;GI_CACHE");
                 assert(rt_reflections_inline_prog->ready());
 
                 if (!pi_rt_reflections_4bounce_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),

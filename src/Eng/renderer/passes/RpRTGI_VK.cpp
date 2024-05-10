@@ -341,14 +341,14 @@ void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
             if (ctx.capabilities.ray_query) {
                 Ren::ProgramRef rt_gi_inline_prog =
-                    sh.LoadProgram(ctx, "rt_gi_inline", "internal/rt_gi_spirv14.comp.glsl");
+                    sh.LoadProgram(ctx, "rt_gi_inline", "internal/rt_gi_hwrt.comp.glsl");
                 assert(rt_gi_inline_prog->ready());
 
                 if (!pi_rt_gi_inline_[0].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
                     ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
                 }
 
-                rt_gi_inline_prog = sh.LoadProgram(ctx, "rt_gi_inline_gi", "internal/rt_gi_spirv14.comp.glsl@GI_CACHE");
+                rt_gi_inline_prog = sh.LoadProgram(ctx, "rt_gi_inline_gi", "internal/rt_gi_hwrt.comp.glsl@GI_CACHE");
                 assert(rt_gi_inline_prog->ready());
 
                 if (!pi_rt_gi_inline_[1].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
@@ -356,7 +356,7 @@ void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 }
 
                 rt_gi_inline_prog =
-                    sh.LoadProgram(ctx, "rt_gi_2bounce_inline", "internal/rt_gi_spirv14.comp.glsl@TWO_BOUNCES");
+                    sh.LoadProgram(ctx, "rt_gi_2bounce_inline", "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES");
                 assert(rt_gi_inline_prog->ready());
 
                 if (!pi_rt_gi_2bounce_inline_[0].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {
@@ -364,7 +364,7 @@ void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                 }
 
                 rt_gi_inline_prog = sh.LoadProgram(ctx, "rt_gi_2bounce_inline_gi",
-                                                   "internal/rt_gi_spirv14.comp.glsl@TWO_BOUNCES;GI_CACHE");
+                                                   "internal/rt_gi_hwrt.comp.glsl@TWO_BOUNCES;GI_CACHE");
                 assert(rt_gi_inline_prog->ready());
 
                 if (!pi_rt_gi_2bounce_inline_[1].Init(ctx.api_ctx(), std::move(rt_gi_inline_prog), ctx.log())) {

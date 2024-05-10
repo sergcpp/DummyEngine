@@ -208,7 +208,7 @@ void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
             if (ctx.capabilities.ray_query) {
                 Ren::ProgramRef rt_gi_cache_inline_prog =
-                    sh.LoadProgram(ctx, "rt_gi_cache_inline", "internal/rt_gi_cache_spirv14.comp.glsl");
+                    sh.LoadProgram(ctx, "rt_gi_cache_inline", "internal/rt_gi_cache_hwrt.comp.glsl");
                 assert(rt_gi_cache_inline_prog->ready());
 
                 if (!pi_rt_gi_cache_inline_.Init(ctx.api_ctx(), std::move(rt_gi_cache_inline_prog), ctx.log())) {
