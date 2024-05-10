@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = image_tests
-	commit = e8f4ce914bf5fd06ca96ce1732fd3da5bbd9620a
+	branch = refactor_10_05
+	commit = fcddbc6e1667231dddf177ee7cd60e189874cb2d
 	method = merge
 	cmdver = 0.4.6
-	parent = bdd262148dfa4ddabdaba03ce424f67f7a103787
+	parent = b0202e005b44f1ad57a2736d4c7acc19c2f3a755
