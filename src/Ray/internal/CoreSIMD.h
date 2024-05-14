@@ -474,24 +474,31 @@ void Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<S> &ray, 
 template <int S>
 void ShadeSurface(const pass_settings_t &ps, const float limits[2], eSpatialCacheMode cache_mode,
                   const uint32_t rand_seq[], uint32_t rand_seed, int iteration, const hit_data_t<S> &inter,
-                  const ray_data_t<S> &ray, const scene_data_t &sc, const Cpu::TexStorageBase *const tex_atlases[],
-                  fvec<S> out_rgba[4], ray_data_t<S> out_secondary_rays[], int *out_secondary_rays_count,
-                  shadow_ray_t<S> out_shadow_rays[], int *out_shadow_rays_count, fvec<S> out_base_color[4],
+                  const ray_data_t<S> &ray, uint32_t ray_index, const scene_data_t &sc,
+                  const Cpu::TexStorageBase *const tex_atlases[], fvec<S> out_rgba[4],
+                  ray_data_t<S> out_secondary_rays[], int *out_secondary_rays_count, shadow_ray_t<S> out_shadow_rays[],
+                  int *out_shadow_rays_count, uint32_t out_def_sky[], int *out_def_sky_count, fvec<S> out_base_color[4],
                   fvec<S> out_depth_normals[4]);
 template <int S>
 void ShadePrimary(const pass_settings_t &ps, Span<const hit_data_t<S>> inters, Span<const ray_data_t<S>> rays,
                   const uint32_t rand_seq[], uint32_t rans_seed, int iteration, eSpatialCacheMode cache_mode,
                   const scene_data_t &sc, const Cpu::TexStorageBase *const textures[],
                   ray_data_t<S> *out_secondary_rays, int *out_secondary_rays_count, shadow_ray_t<S> *out_shadow_rays,
-                  int *out_shadow_rays_count, int img_w, float mix_factor, color_rgba_t *out_color,
-                  color_rgba_t *out_base_color, color_rgba_t *out_depth_normals);
+                  int *out_shadow_rays_count, uint32_t *out_def_sky, int *out_def_sky_count, int img_w,
+                  float mix_factor, color_rgba_t *out_color, color_rgba_t *out_base_color,
+                  color_rgba_t *out_depth_normals);
 template <int S>
 void ShadeSecondary(const pass_settings_t &ps, float clamp_direct, Span<const hit_data_t<S>> inters,
                     Span<const ray_data_t<S>> rays, const uint32_t rand_seq[], uint32_t rand_seed, int iteration,
                     eSpatialCacheMode cache_mode, const scene_data_t &sc, const Cpu::TexStorageBase *const textures[],
                     ray_data_t<S> *out_secondary_rays, int *out_secondary_rays_count, shadow_ray_t<S> *out_shadow_rays,
-                    int *out_shadow_rays_count, int img_w, color_rgba_t *out_color, color_rgba_t *out_base_color,
-                    color_rgba_t *out_depth_normal);
+                    int *out_shadow_rays_count, uint32_t *out_def_sky, int *out_def_sky_count, int img_w,
+                    color_rgba_t *out_color, color_rgba_t *out_base_color, color_rgba_t *out_depth_normal);
+
+template <int S>
+void ShadeSky(const pass_settings_t &ps, float limit, Span<const hit_data_t<S>> inters, Span<const ray_data_t<S>> rays,
+              Span<const uint32_t> ray_indices, const scene_data_t &sc, int iteration, int img_w,
+              color_rgba_t *out_color);
 
 // Radiance caching
 template <int S>
@@ -568,15 +575,19 @@ class SIMDPolicyBase {
         return NS::SortRays_CPU<RPSize>(rays, root_min, cell_size, hash_values, scan_values, chunks, chunks_temp);
     }
 
-    static force_inline void ShadePrimary(
-        const pass_settings_t &ps, Span<const HitDataType> inters, Span<const RayDataType> rays,
-        const uint32_t rand_seq[], const uint32_t rand_seed, const int iteration, const eSpatialCacheMode cache_mode,
-        const scene_data_t &sc, const Cpu::TexStorageBase *const textures[], RayDataType *out_secondary_rays,
-        int *out_secondary_rays_count, ShadowRayType *out_shadow_rays, int *out_shadow_rays_count, int img_w,
-        float mix_factor, color_rgba_t *out_color, color_rgba_t *out_base_color, color_rgba_t *out_depth_normal) {
+    static force_inline void ShadePrimary(const pass_settings_t &ps, Span<const HitDataType> inters,
+                                          Span<const RayDataType> rays, const uint32_t rand_seq[],
+                                          const uint32_t rand_seed, const int iteration,
+                                          const eSpatialCacheMode cache_mode, const scene_data_t &sc,
+                                          const Cpu::TexStorageBase *const textures[], RayDataType *out_secondary_rays,
+                                          int *out_secondary_rays_count, ShadowRayType *out_shadow_rays,
+                                          int *out_shadow_rays_count, uint32_t *out_def_sky, int *out_def_sky_count,
+                                          int img_w, float mix_factor, color_rgba_t *out_color,
+                                          color_rgba_t *out_base_color, color_rgba_t *out_depth_normal) {
         NS::ShadePrimary<RPSize>(ps, inters, rays, rand_seq, rand_seed, iteration, cache_mode, sc, textures,
                                  out_secondary_rays, out_secondary_rays_count, out_shadow_rays, out_shadow_rays_count,
-                                 img_w, mix_factor, out_color, out_base_color, out_depth_normal);
+                                 out_def_sky, out_def_sky_count, img_w, mix_factor, out_color, out_base_color,
+                                 out_depth_normal);
     }
 
     static force_inline void
@@ -584,11 +595,29 @@ class SIMDPolicyBase {
                    Span<const RayDataType> rays, const uint32_t rand_seq[], const uint32_t rand_seed,
                    const int iteration, const eSpatialCacheMode cache_mode, const scene_data_t &sc,
                    const Cpu::TexStorageBase *const textures[], RayDataType *out_secondary_rays,
-                   int *out_secondary_rays_count, ShadowRayType *out_shadow_rays, int *out_shadow_rays_count, int img_w,
-                   color_rgba_t *out_color, color_rgba_t *out_base_color, color_rgba_t *out_depth_normal) {
+                   int *out_secondary_rays_count, ShadowRayType *out_shadow_rays, int *out_shadow_rays_count,
+                   uint32_t *out_def_sky, int *out_def_sky_count, int img_w, color_rgba_t *out_color,
+                   color_rgba_t *out_base_color, color_rgba_t *out_depth_normal) {
         NS::ShadeSecondary<RPSize>(ps, clamp_direct, inters, rays, rand_seq, rand_seed, iteration, cache_mode, sc,
                                    textures, out_secondary_rays, out_secondary_rays_count, out_shadow_rays,
-                                   out_shadow_rays_count, img_w, out_color, out_base_color, out_depth_normal);
+                                   out_shadow_rays_count, out_def_sky, out_def_sky_count, img_w, out_color,
+                                   out_base_color, out_depth_normal);
+    }
+
+    static force_inline void ShadeSkyPrimary(const pass_settings_t &ps, Span<const HitDataType> inters,
+                                             Span<const RayDataType> rays, Span<const uint32_t> ray_indices,
+                                             const scene_data_t &sc, const int iteration, const int img_w,
+                                             color_rgba_t *out_color) {
+        const float limit = (ps.clamp_direct != 0.0f) ? 3.0f * ps.clamp_direct : FLT_MAX;
+        NS::ShadeSky(ps, limit, inters, rays, ray_indices, sc, iteration, img_w, out_color);
+    }
+
+    static force_inline void ShadeSkySecondary(const pass_settings_t &ps, const float clamp_direct,
+                                               Span<const HitDataType> inters, Span<const RayDataType> rays,
+                                               Span<const uint32_t> ray_indices, const scene_data_t &sc,
+                                               const int iteration, const int img_w, color_rgba_t *out_color) {
+        const float limit = (clamp_direct != 0.0f) ? 3.0f * clamp_direct : FLT_MAX;
+        NS::ShadeSky(ps, limit, inters, rays, ray_indices, sc, iteration, img_w, out_color);
     }
 
     static force_inline void SpatialCacheUpdate(const cache_grid_params_t &params, Span<const HitDataType> inters,
@@ -676,7 +705,7 @@ template <int S> force_inline fvec<S> safe_inv_pos(const fvec<S> &a) {
 
 template <int S> force_inline fvec<S> safe_div(const fvec<S> &a, const fvec<S> &b) {
 #if USE_SAFE_MATH
-    const fvec<S> denom = select(b != 0.0f, b, fvec<S>{FLT_EPS});
+    const fvec<S> denom = select(b != 0.0f, b, copysign(fvec<S>{FLT_EPS}, b));
     return a / denom;
 #else
     return a / b;
@@ -1426,55 +1455,19 @@ template <int StackSize, typename T = stack_entry_t> class TraversalStateStack_S
 };
 
 template <int S>
-force_inline void comp_aux_inv_values(const fvec<S> o[3], const fvec<S> d[3], fvec<S> inv_d[3], fvec<S> inv_d_o[3]) {
+void comp_aux_inv_values(const fvec<S> o[3], const fvec<S> d[3], fvec<S> inv_d[3], fvec<S> inv_d_o[3]) {
     for (int i = 0; i < 3; i++) {
-        const fvec<S> denom = select(d[i] != 0.0f, d[i], fvec<S>{FLT_EPS});
+        const fvec<S> denom = select(abs(d[i]) > FLT_EPS, d[i], copysign(fvec<S>{FLT_EPS}, d[i]));
 
         inv_d[i] = 1.0f / denom;
         inv_d_o[i] = o[i] * inv_d[i];
-
-        const fvec<S> d_is_plus_zero = (d[i] <= FLT_EPS) & (d[i] >= 0.0f);
-        where(d_is_plus_zero, inv_d[i]) = MAX_DIST;
-        where(d_is_plus_zero, inv_d_o[i]) = MAX_DIST;
-
-        const fvec<S> d_is_minus_zero = (d[i] >= -FLT_EPS) & (d[i] < 0.0f);
-        where(d_is_minus_zero, inv_d[i]) = -MAX_DIST;
-        where(d_is_minus_zero, inv_d_o[i]) = -MAX_DIST;
     }
 }
 
-force_inline void comp_aux_inv_values(const float o[3], const float d[3], float inv_d[3], float inv_d_o[3]) {
-    if (d[0] <= FLT_EPS && d[0] >= 0) {
-        inv_d[0] = MAX_DIST;
-        inv_d_o[0] = MAX_DIST;
-    } else if (d[0] >= -FLT_EPS && d[0] < 0) {
-        inv_d[0] = -MAX_DIST;
-        inv_d_o[0] = -MAX_DIST;
-    } else {
-        inv_d[0] = 1.0f / d[0];
-        inv_d_o[0] = inv_d[0] * o[0];
-    }
-
-    if (d[1] <= FLT_EPS && d[1] >= 0) {
-        inv_d[1] = MAX_DIST;
-        inv_d_o[1] = MAX_DIST;
-    } else if (d[1] >= -FLT_EPS && d[1] < 0) {
-        inv_d[1] = -MAX_DIST;
-        inv_d_o[1] = -MAX_DIST;
-    } else {
-        inv_d[1] = 1.0f / d[1];
-        inv_d_o[1] = inv_d[1] * o[1];
-    }
-
-    if (d[2] <= FLT_EPS && d[2] >= 0) {
-        inv_d[2] = MAX_DIST;
-        inv_d_o[2] = MAX_DIST;
-    } else if (d[2] >= -FLT_EPS && d[2] < 0) {
-        inv_d[2] = -MAX_DIST;
-        inv_d_o[2] = -MAX_DIST;
-    } else {
-        inv_d[2] = 1.0f / d[2];
-        inv_d_o[2] = inv_d[2] * o[2];
+void comp_aux_inv_values(const float o[3], const float d[3], float inv_d[3], float inv_d_o[3]) {
+    for (int i = 0; i < 3; ++i) {
+        inv_d[i] = (fabsf(d[i]) > FLT_EPS) ? (1.0f / d[i]) : copysignf(FLT_MAX, d[i]);
+        inv_d_o[i] = (fabsf(d[i]) > FLT_EPS) ? (inv_d[i] * o[i]) : copysignf(FLT_MAX, d[i]);
     }
 }
 
@@ -7081,11 +7074,11 @@ void Ray::NS::Sample_PrincipledNode(const pass_settings_t &ps, const ray_data_t<
 template <int S>
 void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], const eSpatialCacheMode cache_mode,
                            const uint32_t rand_seq[], const uint32_t rand_seed, const int iteration,
-                           const hit_data_t<S> &inter, const ray_data_t<S> &ray, const scene_data_t &sc,
-                           const Cpu::TexStorageBase *const textures[], fvec<S> out_rgba[4],
+                           const hit_data_t<S> &inter, const ray_data_t<S> &ray, const uint32_t ray_index,
+                           const scene_data_t &sc, const Cpu::TexStorageBase *const textures[], fvec<S> out_rgba[4],
                            ray_data_t<S> out_secondary_rays[], int *out_secondary_rays_count,
-                           shadow_ray_t<S> out_shadow_rays[], int *out_shadow_rays_count, fvec<S> out_base_color[4],
-                           fvec<S> out_depth_normals[4]) {
+                           shadow_ray_t<S> out_shadow_rays[], int *out_shadow_rays_count, uint32_t out_def_sky[],
+                           int *out_def_sky_count, fvec<S> out_base_color[4], fvec<S> out_depth_normals[4]) {
     out_rgba[0] = out_rgba[1] = out_rgba[2] = {0.0f};
     out_rgba[3] = {1.0f};
 
@@ -7104,7 +7097,12 @@ void Ray::NS::ShadeSurface(const pass_settings_t &ps, const float limits[2], con
     const std::array<fvec<S>, 2> tex_rand =
         get_scrambled_2d_rand(rand_dim + RAND_DIM_TEX, rand_hash, iteration - 1, rand_seq);
 
-    const ivec<S> ino_hit = simd_cast(inter.v < 0.0f);
+    ivec<S> ino_hit = simd_cast(inter.v < 0.0f);
+    const ivec<S> deferred_sky_mask = ray.mask & ino_hit & simd_cast(ray.cone_spread < sc.env.sky_map_spread_angle);
+    if (out_def_sky && deferred_sky_mask.not_all_zeros()) {
+        out_def_sky[(*out_def_sky_count)++] = ray_index;
+        ino_hit &= ~deferred_sky_mask;
+    }
     if (ino_hit.not_all_zeros()) {
         fvec<S> env_col[4] = {{1.0f}, {1.0f}, {1.0f}, {1.0f}};
         const fvec<S> pdf_factor = select(total_depth < ps.max_total_depth,
@@ -7908,8 +7906,8 @@ void Ray::NS::ShadePrimary(const pass_settings_t &ps, Span<const hit_data_t<S>> 
                            const eSpatialCacheMode cache_mode, const scene_data_t &sc,
                            const Cpu::TexStorageBase *const textures[], ray_data_t<S> *out_secondary_rays,
                            int *out_secondary_rays_count, shadow_ray_t<S> *out_shadow_rays, int *out_shadow_rays_count,
-                           int img_w, float mix_factor, color_rgba_t *out_color, color_rgba_t *out_base_color,
-                           color_rgba_t *out_depth_normals) {
+                           uint32_t *out_def_sky, int *out_def_sky_count, int img_w, float mix_factor,
+                           color_rgba_t *out_color, color_rgba_t *out_base_color, color_rgba_t *out_depth_normals) {
     const float limits[2] = {(ps.clamp_direct != 0.0f) ? 3.0f * ps.clamp_direct : FLT_MAX,
                              (ps.clamp_direct != 0.0f) ? 3.0f * ps.clamp_direct : FLT_MAX};
     for (int i = 0; i < inters.size(); ++i) {
@@ -7917,9 +7915,9 @@ void Ray::NS::ShadePrimary(const pass_settings_t &ps, Span<const hit_data_t<S>> 
         const hit_data_t<S> &inter = inters[i];
 
         fvec<S> col[4] = {}, base_color[3] = {}, depth_normal[4] = {};
-        ShadeSurface(ps, limits, cache_mode, rand_seq, rand_seed, iteration, inter, r, sc, textures, col,
-                     out_secondary_rays, out_secondary_rays_count, out_shadow_rays, out_shadow_rays_count, base_color,
-                     depth_normal);
+        ShadeSurface(ps, limits, cache_mode, rand_seq, rand_seed, iteration, inter, r, i, sc, textures, col,
+                     out_secondary_rays, out_secondary_rays_count, out_shadow_rays, out_shadow_rays_count, out_def_sky,
+                     out_def_sky_count, base_color, depth_normal);
 
         const uvec<S> x = r.xy >> 16, y = r.xy & 0x0000FFFF;
 
@@ -7964,8 +7962,8 @@ void Ray::NS::ShadeSecondary(const pass_settings_t &ps, const float clamp_direct
                              const int iteration, const eSpatialCacheMode cache_mode, const scene_data_t &sc,
                              const Cpu::TexStorageBase *const textures[], ray_data_t<S> *out_secondary_rays,
                              int *out_secondary_rays_count, shadow_ray_t<S> *out_shadow_rays,
-                             int *out_shadow_rays_count, int img_w, color_rgba_t *out_color,
-                             color_rgba_t *out_base_color, color_rgba_t *out_depth_normals) {
+                             int *out_shadow_rays_count, uint32_t *out_def_sky, int *out_def_sky_count, int img_w,
+                             color_rgba_t *out_color, color_rgba_t *out_base_color, color_rgba_t *out_depth_normals) {
     const float limits[2] = {(clamp_direct != 0.0f) ? 3.0f * clamp_direct : FLT_MAX,
                              (ps.clamp_indirect != 0.0f) ? 3.0f * ps.clamp_indirect : FLT_MAX};
     for (int i = 0; i < inters.size(); ++i) {
@@ -7973,9 +7971,9 @@ void Ray::NS::ShadeSecondary(const pass_settings_t &ps, const float clamp_direct
         const hit_data_t<S> &inter = inters[i];
 
         fvec<S> col[4] = {}, base_color[3] = {}, depth_normal[4] = {};
-        Ray::NS::ShadeSurface(ps, limits, cache_mode, rand_seq, rand_seed, iteration, inter, r, sc, textures, col,
+        Ray::NS::ShadeSurface(ps, limits, cache_mode, rand_seq, rand_seed, iteration, inter, r, i, sc, textures, col,
                               out_secondary_rays, out_secondary_rays_count, out_shadow_rays, out_shadow_rays_count,
-                              base_color, depth_normal);
+                              out_def_sky, out_def_sky_count, base_color, depth_normal);
 
         const uvec<S> x = r.xy >> 16, y = r.xy & 0x0000FFFF;
 
@@ -7996,6 +7994,114 @@ void Ray::NS::ShadeSecondary(const pass_settings_t &ps, const float clamp_direct
                     UNROLLED_FOR(k, 4, { out_depth_normals[y[j] * img_w + x[j]].v[k] = depth_normal[k][j]; })
                 }
             }
+        }
+    }
+}
+
+template <int S>
+void Ray::NS::ShadeSky(const pass_settings_t &ps, float limit, Span<const hit_data_t<S>> inters,
+                       Span<const ray_data_t<S>> rays, Span<const uint32_t> ray_indices, const scene_data_t &sc,
+                       int iteration, int img_w, color_rgba_t *out_color) {
+    if (ray_indices.empty()) {
+        return;
+    }
+
+    const float env_map_rotation =
+        is_indirect(rays[ray_indices[0]].depth).template get<0>() ? sc.env.env_map_rotation : sc.env.back_map_rotation;
+
+    const uint32_t rand_seed = Ref::hash(iteration);
+    for (const uint32_t i : ray_indices) {
+        const ray_data_t<S> &r = rays[i];
+        const hit_data_t<S> &inter = inters[i];
+
+        const uvec<S> x = (r.xy >> 16) & 0x0000ffff;
+        const uvec<S> y = r.xy & 0x0000ffff;
+
+        const uvec<S> px_hash = hash(r.xy);
+        const uvec<S> rand_hash = hash_combine(px_hash, rand_seed);
+
+        const ivec<S> mask =
+            r.mask & simd_cast(inter.v < 0.0f) & simd_cast(r.cone_spread < sc.env.sky_map_spread_angle);
+        assert(mask.not_all_zeros());
+
+        const fvec<S> I[3] = {r.d[0] * cosf(env_map_rotation) - r.d[2] * sinf(env_map_rotation), r.d[1],
+                              r.d[0] * sinf(env_map_rotation) + r.d[2] * cosf(env_map_rotation)};
+
+        fvec<S> pdf_factor = -1.0f;
+        where(get_total_depth(r.depth) < ps.max_total_depth, pdf_factor) =
+#if USE_HIERARCHICAL_NEE
+            safe_div_pos(1.0f, inter.u);
+#else
+            float(sc.li_indices.size());
+#endif
+
+        fvec<S> mis_weight = 1.0f;
+#if USE_NEE
+        const ivec<S> mis_mask =
+            ivec<S>((sc.env.light_index != 0xffffffff) ? -1 : 0) & simd_cast(pdf_factor >= 0.0f) & mask;
+        if (mis_mask.not_all_zeros()) {
+            if (sc.env.qtree_levels) {
+                const auto *qtree_mips = reinterpret_cast<const fvec4 *const *>(sc.env.qtree_mips);
+
+                const fvec<S> light_pdf =
+                    safe_div_pos(Evaluate_EnvQTree(env_map_rotation, qtree_mips, sc.env.qtree_levels, r.d), pdf_factor);
+                const fvec<S> bsdf_pdf = r.pdf;
+
+                mis_weight = power_heuristic(bsdf_pdf, light_pdf);
+            } else {
+                const fvec<S> light_pdf = safe_div_pos(0.5f, PI * pdf_factor);
+                const fvec<S> bsdf_pdf = r.pdf;
+
+                mis_weight = power_heuristic(bsdf_pdf, light_pdf);
+            }
+        }
+#endif
+
+        for (int j = 0; j < S; ++j) {
+            if (!mask[j]) {
+                continue;
+            }
+
+            const Ref::fvec4 _I = Ref::fvec4{I[0][j], I[1][j], I[2][j], 0.0f};
+
+            Ref::fvec4 color = 0.0f;
+            if (!sc.dir_lights.empty()) {
+                for (const uint32_t li_index : sc.dir_lights) {
+                    const light_t &l = sc.lights[li_index];
+
+                    const Ref::fvec4 light_dir = {l.dir.dir[0], l.dir.dir[1], l.dir.dir[2], 0.0f};
+                    Ref::fvec4 light_col = {l.col[0], l.col[1], l.col[2], 0.0f};
+                    if (l.dir.angle != 0.0f) {
+                        const float radius = tanf(l.dir.angle);
+                        light_col *= (PI * radius * radius);
+                    }
+
+                    color += Ref::IntegrateScattering(sc.env.atmosphere,
+                                                      Ref::fvec4{0.0f, sc.env.atmosphere.viewpoint_height, 0.0f, 0.0f},
+                                                      _I, MAX_DIST, light_dir, l.dir.angle, light_col,
+                                                      sc.sky_transmittance_lut, sc.sky_multiscatter_lut, rand_hash[j]);
+                }
+            } else if (sc.env.atmosphere.stars_brightness > 0.0f) {
+                // Use fake lightsource (to light up the moon)
+                const Ref::fvec4 light_dir = {0.0f, -1.0f, 0.0f, 0.0f},
+                                 light_col = {144809.866891f, 129443.618266f, 127098.894121f, 0.0f};
+
+                color += Ref::IntegrateScattering(
+                    sc.env.atmosphere, Ref::fvec4{0.0f, sc.env.atmosphere.viewpoint_height, 0.0f, 0.0f}, _I, MAX_DIST,
+                    light_dir, 0.0f, light_col, sc.sky_transmittance_lut, sc.sky_multiscatter_lut, rand_hash[j]);
+            }
+
+            color *= mis_weight[j];
+            color *= Ref::fvec4{r.c[0][j], r.c[1][j], r.c[2][j], 0.0f};
+            const float sum = hsum(color);
+            if (sum > limit) {
+                color *= (limit / sum);
+            }
+
+            out_color[y[j] * img_w + x[j]].v[0] += color[0];
+            out_color[y[j] * img_w + x[j]].v[1] += color[1];
+            out_color[y[j] * img_w + x[j]].v[2] += color[2];
+            out_color[y[j] * img_w + x[j]].v[3] = 1.0f;
         }
     }
 }
@@ -8023,10 +8129,18 @@ force_inline uint32_t hash64(const uint64_t hash_key) {
 void accumulate_cache_voxel(packed_cache_voxel_t &voxel, const fvec4 &r, const uint32_t sample_data) {
     const uvec4 data = uvec4(r * RAD_CACHE_RADIANCE_SCALE);
 
-    InterlockedExchangeAdd((long *)&voxel.v[0], data.get<0>());
-    InterlockedExchangeAdd((long *)&voxel.v[1], data.get<1>());
-    InterlockedExchangeAdd((long *)&voxel.v[2], data.get<2>());
-    InterlockedExchangeAdd((long *)&voxel.v[3], sample_data);
+    if (data.get<0>()) {
+        Ray_InterlockedExchangeAdd(&voxel.v[0], data.get<0>());
+    }
+    if (data.get<1>()) {
+        Ray_InterlockedExchangeAdd(&voxel.v[1], data.get<1>());
+    }
+    if (data.get<2>()) {
+        Ray_InterlockedExchangeAdd(&voxel.v[2], data.get<2>());
+    }
+    if (sample_data) {
+        Ray_InterlockedExchangeAdd(&voxel.v[3], sample_data);
+    }
 }
 
 uint32_t calc_grid_level(const fvec4 &p, const cache_grid_params_t &params) {
@@ -8075,8 +8189,8 @@ bool hash_map_insert(Span<uint64_t> entries, const uint64_t hash_key, uint32_t &
     const uint32_t base_slot = hash_map_base_slot(slot);
     for (uint32_t bucket_offset = 0; bucket_offset < HASH_GRID_HASH_MAP_BUCKET_SIZE && base_slot < entries.size();
          ++bucket_offset) {
-        const uint64_t prev_hash_key = InterlockedCompareExchange64((long long *)&entries[base_slot + bucket_offset],
-                                                                    hash_key, HASH_GRID_INVALID_HASH_KEY);
+        const uint64_t prev_hash_key =
+            Ray_InterlockedCompareExchange64(&entries[base_slot + bucket_offset], hash_key, HASH_GRID_INVALID_HASH_KEY);
         if (prev_hash_key == HASH_GRID_INVALID_HASH_KEY || prev_hash_key == hash_key) {
             cache_entry = base_slot + bucket_offset;
             return true;

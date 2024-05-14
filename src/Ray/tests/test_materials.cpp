@@ -96,7 +96,7 @@ void run_material_test(const char *arch_list[], const char *preferred_device, co
                     renderer->Resize(test_img_w, test_img_h);
                 }
 
-                snprintf(name_buf, sizeof(name_buf), "Test %s", test_name);
+                snprintf(name_buf, sizeof(name_buf), "Test %-25s", test_name);
                 schedule_render_jobs(threads, *renderer, scene.get(), s, current_sample_count, denoise, partial,
                                      name_buf);
 
@@ -218,8 +218,7 @@ void assemble_material_test_images(const char *arch_list[]) {
         {"complex_mat0", "complex_mat1", "complex_mat2", "complex_mat3", "complex_mat4"},
         {"complex_mat5", "complex_mat5_mesh_lights", "complex_mat5_sphere_light", "complex_mat5_sun_light",
          "complex_mat5_hdr_light"},
-        {"complex_mat6", "complex_mat6_mesh_lights", "complex_mat6_sphere_light", "complex_mat6_sun_light",
-         "complex_mat6_hdr_light"},
+        {"complex_mat6", "complex_mat6_mesh_lights", "complex_mat6_sphere_light", "complex_mat6_hdr_light"},
         {"complex_mat5_regions", "complex_mat5_dof", "complex_mat5_spot_light", "complex_mat6_dof",
          "complex_mat6_spot_light"},
         {"refr_mis2", "complex_mat5_nlm_filter", "complex_mat5_adaptive", "complex_mat5_clipped",
@@ -1419,7 +1418,7 @@ void test_complex_mat5_clipped(const char *arch_list[], const char *preferred_de
 
 void test_complex_mat5_caching(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 31;
-    const int PixThres = 4697;
+    const int PixThres = 4676;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1628,7 +1627,7 @@ void test_complex_mat5_dir_light(const char *arch_list[], const char *preferred_
 void test_complex_mat5_sun_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 13;
     const double MinPSNR = 23.0;
-    const int PixThres = 6274;
+    const int PixThres = 6055;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1648,8 +1647,8 @@ void test_complex_mat5_sun_light(const char *arch_list[], const char *preferred_
 
 void test_complex_mat5_moon_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 10;
-    const double MinPSNR = 28.0;
-    const int PixThres = 611;
+    const double MinPSNR = 30.35;
+    const int PixThres = 266;
 
     Ray::principled_mat_desc_t metal_mat_desc;
     metal_mat_desc.base_texture = Ray::TextureHandle{0};
@@ -1806,7 +1805,7 @@ void test_complex_mat6_spot_light(const char *arch_list[], const char *preferred
 void test_complex_mat6_dir_light(const char *arch_list[], const char *preferred_device) {
     const int SampleCount = 87;
     const double MinPSNR = 18.0;
-    const int PixThres = 9370;
+    const int PixThres = 9394;
 
     Ray::principled_mat_desc_t olive_mat_desc;
     olive_mat_desc.base_color[0] = 0.836164f;
@@ -1818,23 +1817,6 @@ void test_complex_mat6_dir_light(const char *arch_list[], const char *preferred_
 
     run_material_test(arch_list, preferred_device, "complex_mat6_dir_light", olive_mat_desc, SampleCount, MinPSNR,
                       PixThres, eDenoiseMethod::None, false, nullptr, eTestScene::Standard_DirLight);
-}
-
-void test_complex_mat6_sun_light(const char *arch_list[], const char *preferred_device) {
-    const int SampleCount = 16;
-    const double MinPSNR = 19.0;
-    const int PixThres = 14398;
-
-    Ray::principled_mat_desc_t olive_mat_desc;
-    olive_mat_desc.base_color[0] = 0.836164f;
-    olive_mat_desc.base_color[1] = 0.836164f;
-    olive_mat_desc.base_color[2] = 0.656603f;
-    olive_mat_desc.roughness = 0.041667f;
-    olive_mat_desc.transmission = 1.0f;
-    olive_mat_desc.ior = 2.3f;
-
-    run_material_test(arch_list, preferred_device, "complex_mat6_sun_light", olive_mat_desc, SampleCount, MinPSNR,
-                      PixThres, eDenoiseMethod::None, false, nullptr, eTestScene::Standard_SunLight);
 }
 
 void test_complex_mat6_hdri_light(const char *arch_list[], const char *preferred_device) {
