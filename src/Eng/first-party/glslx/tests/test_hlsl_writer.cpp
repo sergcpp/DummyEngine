@@ -750,6 +750,34 @@ void test_hlsl_writer() {
         glslx::WriterHLSL().Write(tr_unit.get(), ss);
         require(ss.str() == expected);
     }
+    { // uniform buffer
+        static const char source[] = "struct atmosphere_params_t {\n"
+                                     "    vec4 rayleigh_scattering;\n"
+                                     "    vec4 mie_scattering;\n"
+                                     "    vec4 mie_extinction;\n"
+                                     "    vec4 mie_absorption;\n"
+                                     "};\n"
+                                     "layout (binding = 3, std140) uniform AtmosphereParams {\n"
+                                     "    atmosphere_params_t g_atmosphere_params;\n"
+                                     "};\n";
+        static const char expected[] = "struct atmosphere_params_t {\n"
+                                       "    float4 rayleigh_scattering;\n"
+                                       "    float4 mie_scattering;\n"
+                                       "    float4 mie_extinction;\n"
+                                       "    float4 mie_absorption;\n"
+                                       "};\n"
+                                       "cbuffer AtmosphereParams : register(b3) {\n"
+                                       "    atmosphere_params_t g_atmosphere_params : packoffset(c0);\n"
+                                       "};\n";
+
+        glslx::Parser parser(source, "push_constant.glsl");
+        std::unique_ptr<glslx::TrUnit> tr_unit = parser.Parse(glslx::eTrUnitType::Compute);
+        require_fatal(tr_unit != nullptr);
+
+        std::stringstream ss;
+        glslx::WriterHLSL().Write(tr_unit.get(), ss);
+        require(ss.str() == expected);
+    }
     { // compute shader variables
         static const char source[] = "layout (local_size_x = 8, local_size_y = 8, local_size_z = 1) in;\n"
                                      "void main() {\n"

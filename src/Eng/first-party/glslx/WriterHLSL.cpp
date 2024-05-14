@@ -1267,7 +1267,7 @@ void glslx::WriterHLSL::Write_Structure(const ast_struct *structure, std::ostrea
 }
 
 void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, std::ostream &out_stream) {
-    enum class eBlockKind { Unknown, ROBuffer, RWBuffer, PushConstant } block_kind = eBlockKind::Unknown;
+    enum class eBlockKind { Unknown, ROBuffer, RWBuffer, PushConstant, UniformBuffer } block_kind = eBlockKind::Unknown;
 
     if (block->storage == eStorage::Buffer) {
         if (block->memory_flags & eMemory::Readonly) {
@@ -1275,7 +1275,8 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
         } else {
             block_kind = eBlockKind::RWBuffer;
         }
-    } else {
+    } else if (block->storage == eStorage::Uniform) {
+        block_kind = eBlockKind::UniformBuffer;
         for (int i = 0; i < int(block->layout_qualifiers.size()); ++i) {
             if (strcmp(block->layout_qualifiers[i]->name, "push_constant") == 0) {
                 block_kind = eBlockKind::PushConstant;
@@ -1346,7 +1347,7 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
             offset += size;
         }
         return;
-    } else if (block_kind == eBlockKind::PushConstant) {
+    } else if (block_kind == eBlockKind::PushConstant || block_kind == eBlockKind::UniformBuffer) {
         out_stream << "cbuffer ";
     }
 
@@ -1357,12 +1358,17 @@ void glslx::WriterHLSL::Write_InterfaceBlock(const ast_interface_block *block, s
         out_stream << ";\n";
         return;
     }
-    out_stream << block->name << " {\n";
+    out_stream << block->name;
+    if (block_kind == eBlockKind::UniformBuffer) {
+        const auto [binding, set] = get_binding_and_set(block->layout_qualifiers);
+        out_stream << " : register(b" << binding << ")";
+    }
+    out_stream << " {\n";
     ++nest_level_;
     for (int i = 0; i < int(block->fields.size()); ++i) {
         Write_Tabs(out_stream);
         Write_Variable(block->fields[i], {}, out_stream);
-        if (i == 0 && block_kind == eBlockKind::PushConstant) {
+        if (i == 0 && (block_kind == eBlockKind::PushConstant || block_kind == eBlockKind::UniformBuffer)) {
             out_stream << " : packoffset(c0)";
         }
         out_stream << ";\n";
