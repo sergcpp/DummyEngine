@@ -753,19 +753,7 @@ void GSBaseState::Draw() {
 
     {
         int back_list;
-
-        if (use_pt_) {
-            const Ren::Camera &cam = scene_manager_->main_cam();
-            SetupView_PT(cam.world_position(), -cam.view_dir(), cam.up(), cam.angle());
-            if (invalidate_view_) {
-                Clear_PT();
-                invalidate_view_ = false;
-            }
-
-            Draw_PT(render_target);
-
-            back_list = -1;
-        } else if (USE_TWO_THREADS && !capture_started_) {
+        if (USE_TWO_THREADS) {
             std::unique_lock<std::mutex> lock(mtx_);
             while (notified_) {
                 thr_done_.wait(lock);
@@ -774,46 +762,23 @@ void GSBaseState::Draw() {
             streaming_finished_ = scene_manager_->Serve(1, animate_texture_lod);
             renderer_->InitBackendInfo();
 
-            back_list = front_list_;
-            front_list_ = (front_list_ + 1) % 2;
-
-            if (probes_dirty_ && scene_manager_->load_complete()) {
-                // Perform first update of reflection probes
-                update_all_probes_ = true;
-                probes_dirty_ = false;
-            }
-
-            const Eng::SceneData &scene_data = scene_manager_->scene_data();
-
-            if (probe_to_update_sh_) {
-                const bool done = false;
-                // renderer_->BlitProjectSH(scene_data.probe_storage, probe_to_update_sh_->layer_index,
-                //                          probe_sh_update_iteration_, *probe_to_update_sh_);
-                probe_sh_update_iteration_++;
-
-                if (done) {
-                    probe_sh_update_iteration_ = 0;
-                    probe_to_update_sh_ = nullptr;
-                }
-            }
-
-            if (invalidate_view_) {
-                renderer_->reset_accumulation();
-                invalidate_view_ = false;
-            }
-
-            // Render probe cubemap
-            if (probe_to_render_) {
-                /*for (int i = 0; i < 6; i++) {
-                    renderer_->ExecuteDrawList(temp_probe_lists_[i], scene_manager_->persistent_data(),
-                                               &temp_probe_buf_);
-                    renderer_->BlitToTempProbeFace(temp_probe_buf_, scene_data.probe_storage, i);
+            if (use_pt_) {
+                const Ren::Camera &cam = scene_manager_->main_cam();
+                SetupView_PT(cam.world_position(), -cam.view_dir(), cam.up(), cam.angle());
+                if (invalidate_view_) {
+                    Clear_PT();
+                    invalidate_view_ = false;
                 }
 
-                renderer_->BlitPrefilterFromTemp(scene_data.probe_storage, probe_to_render_->layer_index);
+                back_list = -1;
+            } else {
+                back_list = front_list_;
+                front_list_ = (front_list_ + 1) % 2;
 
-                probe_to_update_sh_ = probe_to_render_;
-                probe_to_render_ = nullptr;*/
+                if (invalidate_view_) {
+                    renderer_->reset_accumulation();
+                    invalidate_view_ = false;
+                }
             }
 
             // Target frontend to next frame
@@ -836,6 +801,8 @@ void GSBaseState::Draw() {
         if (back_list != -1) {
             // Render current frame (from back list)
             renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(), render_target);
+        } else {
+            Draw_PT(render_target);
         }
     }
 
