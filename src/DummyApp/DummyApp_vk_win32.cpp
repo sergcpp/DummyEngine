@@ -273,6 +273,8 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.psnr = strtod(argv[i], nullptr);
         } else if (strcmp(argv[i], "--pt") == 0) {
             app_params.pt = true;
+        } else if (strcmp(arg, "--pt_nohwrt") == 0) {
+            app_params.pt_nohwrt = true;
         } else if (strcmp(argv[i], "--pt_nodenoise") == 0) {
             app_params.pt_denoise = false;
         } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {

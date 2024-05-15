@@ -41,6 +41,7 @@ struct AppParams {
     bool nohwrt = false;
     bool pt = false;
     bool pt_denoise = true;
+    bool pt_nohwrt = false;
     int pt_max_samples = 128;
 #ifndef NDEBUG
     int validation_level = 1;

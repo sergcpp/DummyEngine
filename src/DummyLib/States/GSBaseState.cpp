@@ -1057,7 +1057,7 @@ void GSBaseState::InitRenderer_PT() {
         if (!viewer_->app_params.device_name.empty()) {
             s.preferred_device = viewer_->app_params.device_name.c_str();
         }
-        s.use_hwrt = !viewer_->app_params.nohwrt;
+        s.use_hwrt = !viewer_->app_params.pt_nohwrt;
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
         Ray::unet_filter_properties_t unet_props;
