@@ -491,7 +491,7 @@ void Eng::Renderer::PrepareDrawList(const SceneData &scene, const Ren::Camera &c
 }
 
 void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                                    const Ren::Tex2DRef target) {
+                                    const Ren::Tex2DRef target, const bool blit_to_backbuffer) {
     using namespace RendererInternal;
 
     __itt_task_begin(__g_itt_domain, __itt_null, __itt_null, itt_exec_dr_str);
@@ -1408,6 +1408,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         auto &combine = *rp_builder_.FindPass("COMBINE");
         if (target) {
             rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, target);
+            if (blit_to_backbuffer) {
+                rp_combine_data_.output_tex2 = combine.ReplaceColorOutput(1, ctx_.backbuffer_ref());
+            }
         } else {
             rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
@@ -1589,7 +1592,7 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
                                       const Ren::eTexFormat format, const float gamma, const float exposure,
-                                      const Ren::Tex2DRef &target) {
+                                      const Ren::Tex2DRef &target, const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -1660,6 +1663,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         rp_combine_data_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
         if (target) {
             rp_combine_data_.output_tex = combine.AddColorOutput(target);
+            if (blit_to_backbuffer) {
+                rp_combine_data_.output_tex2 = combine.AddColorOutput(ctx_.backbuffer_ref());
+            }
         } else {
             rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
         }
@@ -1686,6 +1692,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         auto *combine = rp_builder_.FindPass("COMBINE");
         if (target) {
             rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, target);
+            if (blit_to_backbuffer) {
+                rp_combine_data_.output_tex2 = combine->ReplaceColorOutput(1, ctx_.backbuffer_ref());
+            }
         } else {
             rp_combine_data_.output_tex = combine->ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }

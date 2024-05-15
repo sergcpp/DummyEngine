@@ -13,6 +13,7 @@ struct RpCombineData {
     RpResRef blur_tex;
     RpResRef exposure_tex;
     RpResRef output_tex;
+    RpResRef output_tex2;
 
     Ren::WeakTex3DRef lut_tex;
 
@@ -25,7 +26,7 @@ class RpCombine : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::ProgramRef blit_combine_prog_[2];
+    Ren::ProgramRef blit_combine_prog_[2][2];
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;

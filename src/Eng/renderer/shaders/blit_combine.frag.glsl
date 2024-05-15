@@ -10,7 +10,7 @@
 #include "blit_combine_interface.h"
 
 #pragma multi_compile _ LUT
-
+#pragma multi_compile _ TWO_TARGETS
 
 layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D g_tex;
 layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_tex;
@@ -25,6 +25,9 @@ LAYOUT_PARAMS uniform UniformParams {
 layout(location = 0) in highp vec2 g_vtx_uvs;
 
 layout(location = 0) out vec4 g_out_color;
+#ifdef TWO_TARGETS
+    layout(location = 1) out vec4 g_out_color2;
+#endif
 
 vec3 TonemapLUT(sampler3D lut, vec3 col) {
     const vec3 encoded = col / (col + 1.0);
@@ -57,6 +60,11 @@ void main() {
     const vec3 dither = vec3(Bayer4x4(uvec2(gl_FragCoord.xy), 0),
                              Bayer4x4(uvec2(gl_FragCoord.xy), 1),
                              Bayer4x4(uvec2(gl_FragCoord.xy), 2));
-    g_out_color = vec4(col + dither / 255.0, 1.0);
+    const vec4 result = vec4(col + dither / 255.0, 1.0);
+
+    g_out_color = result;
+#ifdef TWO_TARGETS
+    g_out_color2 = result;
+#endif
 }
 

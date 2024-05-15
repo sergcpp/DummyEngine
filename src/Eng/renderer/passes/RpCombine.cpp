@@ -17,21 +17,17 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
     RpAllocTex &color_tex = builder.GetReadTexture(pass_data_->color_tex);
     RpAllocTex &blur_tex = builder.GetReadTexture(pass_data_->blur_tex);
     RpAllocTex &exposure_tex = builder.GetReadTexture(pass_data_->exposure_tex);
-    RpAllocTex *output_tex = nullptr;
-    if (pass_data_->output_tex) {
-        output_tex = &builder.GetWriteTexture(pass_data_->output_tex);
+    RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
+    RpAllocTex *output_tex2 = nullptr;
+    if (pass_data_->output_tex2) {
+        output_tex2 = &builder.GetWriteTexture(pass_data_->output_tex2);
     }
 
     Ren::RastState rast_state;
     rast_state.poly.cull = uint8_t(Ren::eCullFace::Back);
 
-    if (pass_data_->output_tex) {
-        rast_state.viewport[2] = view_state_->act_res[0];
-        rast_state.viewport[3] = view_state_->act_res[1];
-    } else {
-        rast_state.viewport[2] = view_state_->scr_res[0];
-        rast_state.viewport[3] = view_state_->scr_res[1];
-    }
+    rast_state.viewport[2] = view_state_->act_res[0];
+    rast_state.viewport[3] = view_state_->act_res[1];
 
     BlitCombine::Params uniform_params;
     uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -48,21 +44,32 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
         bindings.emplace_back(Ren::eBindTarget::Tex3D, BlitCombine::LUT_TEX_SLOT, *pass_data_->lut_tex);
     }
 
-    const Ren::WeakTex2DRef output = output_tex ? output_tex->ref : Ren::WeakTex2DRef(builder.ctx().backbuffer_ref());
-    const Ren::RenderTarget render_targets[] = {{output, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+    Ren::SmallVector<Ren::RenderTarget, 2> render_targets = {
+        {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
+    if (output_tex2) {
+        render_targets.emplace_back(output_tex2->ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store);
+    }
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_combine_prog_[pass_data_->tonemap_mode == 2], render_targets, {},
+    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
+                        blit_combine_prog_[pass_data_->tonemap_mode == 2][output_tex2 != nullptr], render_targets, {},
                         rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
 }
 
 void Eng::RpCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        blit_combine_prog_[0] =
+        blit_combine_prog_[0][0] =
             sh.LoadProgram(ctx, "blit_combine", "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");
-        assert(blit_combine_prog_[0]->ready());
-        blit_combine_prog_[1] = sh.LoadProgram(ctx, "blit_combine_lut", "internal/blit_combine.vert.glsl",
-                                               "internal/blit_combine.frag.glsl@LUT");
-        assert(blit_combine_prog_[1]->ready());
+        assert(blit_combine_prog_[0][0]->ready());
+        blit_combine_prog_[0][1] = sh.LoadProgram(ctx, "blit_combine_two_targets", "internal/blit_combine.vert.glsl",
+                                                  "internal/blit_combine.frag.glsl@TWO_TARGETS");
+        assert(blit_combine_prog_[0][1]->ready());
+        blit_combine_prog_[1][0] = sh.LoadProgram(ctx, "blit_combine_lut", "internal/blit_combine.vert.glsl",
+                                                  "internal/blit_combine.frag.glsl@LUT");
+        assert(blit_combine_prog_[1][0]->ready());
+        blit_combine_prog_[1][1] =
+            sh.LoadProgram(ctx, "blit_combine_lut_two_targets", "internal/blit_combine.vert.glsl",
+                           "internal/blit_combine.frag.glsl@LUT;TWO_TARGETS");
+        assert(blit_combine_prog_[1][1]->ready());
 
         initialized = true;
     }

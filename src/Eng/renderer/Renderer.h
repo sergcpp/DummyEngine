@@ -71,12 +71,12 @@ class Renderer {
 
     void PrepareDrawList(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
     void ExecuteDrawList(const DrawList &list, const PersistentGpuData &persistent_data,
-                         const Ren::Tex2DRef target = {});
+                         const Ren::Tex2DRef target = {}, bool blit_to_backbuffer = false);
 
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
-                           float exposure, const Ren::Tex2DRef &target);
+                           float exposure, const Ren::Tex2DRef &target, bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
   private:
