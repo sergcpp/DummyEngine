@@ -186,7 +186,7 @@ vec3 YCoCg_to_RGB(vec4 col) {
     col_rgb.g = Y + Cg;
     col_rgb.b = Y - Co - Cg;
 
-    return col_rgb;
+    return saturate(col_rgb);
 }
 
 float lum(vec3 color) {

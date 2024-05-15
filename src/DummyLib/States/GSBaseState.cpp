@@ -667,6 +667,7 @@ void GSBaseState::Draw() {
             main_view_lists_[1].Clear();
             random_->Reset(0);
             renderer_->settings.taa_mode = Eng::eTAAMode::Static;
+            renderer_->settings.gi_quality = Eng::eGIQuality::Ultra;
             renderer_->settings.reflections_quality = Eng::eReflectionsQuality::Raytraced_High;
             main_view_lists_[0].render_settings = renderer_->settings;
             renderer_->reset_accumulation();
