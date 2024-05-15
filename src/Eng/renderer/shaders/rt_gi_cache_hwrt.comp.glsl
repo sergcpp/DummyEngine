@@ -374,7 +374,8 @@ void main() {
         if (lobe_weights.diffuse > 0.0) {
             const vec3 irradiance = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(N, probe_ray_dir, g_params.grid_spacing.xyz), N,
                                                           g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
-            light_total += (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
+            const float cache_weight = clamp(hit_t / (0.5 * length(g_params.grid_spacing.xyz)), 0.0, 1.0);
+            light_total += cache_weight * (lobe_weights.diffuse_mul / M_PI) * base_color * irradiance;
         }
 
         final_result = vec4(light_total, backfacing ? -hit_t : hit_t);
