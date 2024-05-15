@@ -123,7 +123,6 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/PrimDraw.cpp
                         renderer/Renderer.h
                         renderer/Renderer.cpp
-                        renderer/Renderer_BN.cpp
                         renderer/Renderer_DrawList.h
                         renderer/Renderer_DrawList.cpp
                         renderer/Renderer_Frontend.cpp

@@ -73,6 +73,7 @@ const Ren::Vec2f HaltonSeq23[64] = {Ren::Vec2f{0.0000000000f, 0.0000000000f}, Re
 extern const int TaaSampleCountNormal = 8;
 extern const int TaaSampleCountStatic = 64;
 
+#include "precomputed/__blue_noise.inl"
 #include "precomputed/__brdf_lut.inl"
 #include "precomputed/__cone_rt_lut.inl"
 #include "precomputed/__ltc_clearcoat.inl"
@@ -80,16 +81,6 @@ extern const int TaaSampleCountStatic = 64;
 #include "precomputed/__ltc_sheen.inl"
 #include "precomputed/__ltc_specular.inl"
 #include "precomputed/__noise.inl"
-
-extern const int g_sobol_256spp_256d[];
-extern const int g_scrambling_tile_1spp[];
-extern const int g_scrambling_tile_32spp[];
-extern const int g_scrambling_tile_64spp[];
-extern const int g_scrambling_tile_128spp[];
-extern const int g_ranking_tile_1spp[];
-extern const int g_ranking_tile_32spp[];
-extern const int g_ranking_tile_64spp[];
-extern const int g_ranking_tile_128spp[];
 
 __itt_string_handle *itt_exec_dr_str = __itt_string_handle_create("ExecuteDrawList");
 } // namespace RendererInternal
