@@ -4,7 +4,7 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/AM149_set22_book_pages_4.jpg
+    - ai043_06/AM149_set22_book_pages_4.jpg
     - default_normalmap.png
     - default_roughness.png
     - default_metallic.png

@@ -5,8 +5,8 @@ flags:
     - two_sided
 textures:
     - default_basecolor.png
-    - ai043_01/curtains_white_norm.jpg
-    - ai043_01/curtains_white_rough.jpg
+    - ai043_06/curtains_white_norm.jpg
+    - ai043_06/curtains_white_rough.jpg
     - default_metallic.png
 params:
     - 0.6723999977111816 0.5583000183105469 0.5210000276565552 1.0    # base color, roughness

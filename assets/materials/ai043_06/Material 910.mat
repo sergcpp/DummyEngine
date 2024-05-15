@@ -6,7 +6,7 @@ flags:
 textures:
     - default_basecolor.png
     - default_normalmap.png
-    - ai043_01/AM149_set8_chrome_dirty_reflect.jpg
+    - ai043_06/AM149_set8_chrome_dirty_reflect.jpg
     - default_metallic.png
 params:
     - 0.33034399151802063 0.1836239993572235 0.1126059964299202 1.0    # base color, roughness

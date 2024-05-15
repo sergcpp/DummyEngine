@@ -4,8 +4,8 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/AI43_006_Floor3_diff.jpg
-    - ai043_01/floor_norm.jpg
+    - ai043_06/AI43_006_Floor3_diff.jpg
+    - ai043_06/floor_norm.jpg
     - default_roughness.png
     - default_metallic.png
 params:

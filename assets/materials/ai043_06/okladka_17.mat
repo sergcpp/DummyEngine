@@ -4,9 +4,9 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/okladka_17_diff.jpg
-    - ai043_01/okladka_17_norm.jpg
-    - ai043_01/okladka_17_rough.jpg
+    - ai043_06/okladka_17_diff.jpg
+    - ai043_06/okladka_17_norm.jpg
+    - ai043_06/okladka_17_rough.jpg
     - default_metallic.png
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness

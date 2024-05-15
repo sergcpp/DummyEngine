@@ -4,9 +4,9 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/AI43_006_tiles_diff.jpg
-    - ai043_01/kafle_norm.jpg
-    - ai043_01/kafle_rough.jpg
+    - ai043_06/AI43_006_tiles_diff.jpg
+    - ai043_06/kafle_norm.jpg
+    - ai043_06/kafle_rough.jpg
     - default_metallic.png
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness

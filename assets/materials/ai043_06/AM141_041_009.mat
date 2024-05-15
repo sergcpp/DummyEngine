@@ -5,11 +5,11 @@ flags:
     - two_sided
     - alpha_test
 textures:
-    - ai043_01/AM141_041_009_diff.jpg
-    - ai043_01/AM141_041_009_norm.jpg
-    - ai043_01/AM141_041_009_rough.jpg
+    - ai043_06/AM141_041_009_diff.jpg
+    - ai043_06/AM141_041_009_norm.jpg
+    - ai043_06/AM141_041_009_rough.jpg
     - default_metallic.png
-    - ai043_01/AM141_041_leaf_opacity.jpg
+    - ai043_06/AM141_041_leaf_opacity.jpg
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint

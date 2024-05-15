@@ -4,9 +4,9 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/AM149_set01_cloth_09_diff.jpg
-    - ai043_01/AM149_set01_cloth_09_norm.jpg
-    - ai043_01/AM149_set01_cloth_09_rough.jpg
+    - ai043_06/AM149_set01_cloth_09_diff.jpg
+    - ai043_06/AM149_set01_cloth_09_norm.jpg
+    - ai043_06/AM149_set01_cloth_09_rough.jpg
     - default_metallic.png
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness

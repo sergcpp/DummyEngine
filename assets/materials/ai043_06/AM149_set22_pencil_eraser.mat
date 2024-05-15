@@ -5,7 +5,7 @@ flags:
     - two_sided
 textures:
     - default_basecolor.png
-    - ai043_01/AM149_set22_pencil_eraser_norm.jpg
+    - ai043_06/AM149_set22_pencil_eraser_norm.jpg
     - default_roughness.png
     - default_metallic.png
 params:

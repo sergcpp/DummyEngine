@@ -5,8 +5,8 @@ flags:
     - two_sided
 textures:
     - default_basecolor.png
-    - ai043_01/Archmodels_125_017_leather_norm.jpg
-    - ai043_01/Archmodels_125_017_leather_rough.jpg
+    - ai043_06/Archmodels_125_017_leather_norm.jpg
+    - ai043_06/Archmodels_125_017_leather_rough.jpg
     - default_metallic.png
 params:
     - 0.02840599976480007 0.02840599976480007 0.030074000358581543 1.0    # base color, roughness

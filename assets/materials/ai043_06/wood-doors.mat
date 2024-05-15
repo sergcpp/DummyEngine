@@ -6,7 +6,7 @@ flags:
 textures:
     - default_basecolor.png
     - default_normalmap.png
-    - ai043_01/wood-doors_rough.jpg
+    - ai043_06/wood-doors_rough.jpg
     - default_metallic.png
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness

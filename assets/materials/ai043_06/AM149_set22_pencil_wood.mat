@@ -4,8 +4,8 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/AM149_set22_pencil_wood_diff.jpg
-    - ai043_01/AM149_set22_pencil_wood_norm.jpg
+    - ai043_06/AM149_set22_pencil_wood_diff.jpg
+    - ai043_06/AM149_set22_pencil_wood_norm.jpg
     - default_roughness.png
     - default_metallic.png
 params:

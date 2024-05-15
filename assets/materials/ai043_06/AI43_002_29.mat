@@ -4,7 +4,7 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/AM141_041_wood_diffuse.jpg
+    - ai043_06/AM141_041_wood_diffuse.jpg
     - default_normalmap.png
     - default_roughness.png
     - default_metallic.png

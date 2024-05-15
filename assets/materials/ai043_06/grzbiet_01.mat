@@ -4,9 +4,9 @@ gl_programs:
 flags:
     - two_sided
 textures:
-    - ai043_01/grzbiet_01_diff.jpg
-    - ai043_01/grzbiet_01_norm.jpg
-    - ai043_01/grzbiet_01_rough.jpg
+    - ai043_06/grzbiet_01_diff.jpg
+    - ai043_06/grzbiet_01_norm.jpg
+    - ai043_06/grzbiet_01_rough.jpg
     - default_metallic.png
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness

@@ -5,8 +5,8 @@ flags:
     - two_sided
 textures:
     - default_basecolor.png
-    - ai043_01/AM149_set22_pencil_body_norm.jpg
-    - ai043_01/AM149_set22_pencil_body_rough.jpg
+    - ai043_06/AM149_set22_pencil_body_norm.jpg
+    - ai043_06/AM149_set22_pencil_body_rough.jpg
     - default_metallic.png
 params:
     - 0.8549929857254028 0.38132598996162415 0.12477199733257294 1.0    # base color, roughness
