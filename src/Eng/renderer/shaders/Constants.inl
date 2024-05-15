@@ -129,7 +129,7 @@ const int DECALS_BUF_STRIDE = 7;
 const int MESH_BUF_STRIDE = 3;
 const int MESH_INSTANCE_BUF_STRIDE = 9;
 
-const int PROBE_VOLUME_RES = 24;
+const int PROBE_VOLUME_RES = 28;
 const int PROBE_TOTAL_RAYS_COUNT = 256;
 const int PROBE_FIXED_RAYS_COUNT = 32;
 const int PROBE_IRRADIANCE_RES = 8;
