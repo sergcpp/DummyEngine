@@ -14,7 +14,6 @@ extern const float fs_quad_norm_uvs[] = {0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0
 #endif
 extern const uint16_t fs_quad_indices[] = {0, 1, 2, 0, 2, 3};
 const int TempBufSize = 256;
-#include "precomputed/__skydome_mesh.inl"
 #include "precomputed/__sphere_mesh.inl"
 
 extern const int SphereIndicesCount = __sphere_indices_count;
@@ -94,14 +93,6 @@ bool Eng::PrimDraw::LazyInit(Ren::Context &ctx) {
             temp_vtx2_ = vtx_buf2->AllocSubRegion(TempBufSize, "temp");
             assert(temp_vtx1_.offset == temp_vtx1_.offset && "Offsets do not match!");
             temp_ndx_ = ndx_buf->AllocSubRegion(TempBufSize, "temp");
-        }
-
-        { // Load skydome mesh
-            Ren::eMeshLoadStatus status;
-            skydome_mesh_ =
-                ctx.LoadMesh("__skydome", __skydome_positions, __skydome_vertices_count, __skydome_indices,
-                             __skydome_indices_count, ctx.default_stage_bufs(), vtx_buf1, vtx_buf2, ndx_buf, &status);
-            assert(status == Ren::eMeshLoadStatus::CreatedFromData);
         }
 
         ctx_ = &ctx;

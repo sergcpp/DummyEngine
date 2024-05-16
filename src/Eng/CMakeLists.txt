@@ -226,7 +226,6 @@ if(${RENDERER} STREQUAL "GL")
                         renderer/passes/RpRTShadows_GL.cpp
                         renderer/passes/RpShadowMapsGL.cpp
                         renderer/passes/RpSkinningGL.cpp
-                        renderer/passes/RpSkydomeGL.cpp
                         renderer/passes/RpTransparentGL.cpp
                         renderer/passes/RpUpdateAccBuffersGL.cpp)
 elseif(${RENDERER} STREQUAL "VK")
@@ -249,7 +248,6 @@ elseif(${RENDERER} STREQUAL "VK")
                      renderer/passes/RpRTShadows_VK.cpp
                      renderer/passes/RpShadowMapsVK.cpp
                      renderer/passes/RpSkinningVK.cpp
-                     renderer/passes/RpSkydomeVK.cpp
                      renderer/passes/RpTransparentVK.cpp
                      renderer/passes/RpUpdateAccBuffersVK.cpp)
 elseif(${RENDERER} STREQUAL "SW")

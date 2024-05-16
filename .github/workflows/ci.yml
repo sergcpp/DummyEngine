@@ -191,29 +191,6 @@ jobs:
         with:
           name: windows-x86_64-vk-arc-img-output
           path: windows-x86_64-vk-arc-img-output/
-  test-windows-x86_64-vk-amd:
-    runs-on: [ windows, x86_64, amd ]
-    needs:
-      - build-windows-x86_64-vk-rel
-    steps:
-      - name: Checkout Workflows
-        uses: actions/checkout@v4
-        with:
-          sparse-checkout: .github
-      - name: Re-initialize repository
-        uses: ./.github/actions/checkout
-      - name: Run Tests
-        uses: ./.github/actions/test
-        with:
-          bin-dir: "windows-x86_64-vk"
-          out-dir: "windows-x86_64-vk-amd-output"
-          test-args: "-j2 --device AMD --nocpu"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: windows-x86_64-vk-amd-output
-          path: windows-x86_64-vk-amd-output/
   test-windows-x86_64-vk-nv:
     runs-on: [ windows, x86_64, nv ]
     needs:
@@ -237,6 +214,29 @@ jobs:
         with:
           name: windows-x86_64-vk-nv-output
           path: windows-x86_64-vk-nv-output/
+  test-windows-x86_64-vk-amd:
+    runs-on: [ windows, x86_64, amd ]
+    needs:
+      - build-windows-x86_64-vk-rel
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Run Tests
+        uses: ./.github/actions/test
+        with:
+          bin-dir: "windows-x86_64-vk"
+          out-dir: "windows-x86_64-vk-amd-output"
+          test-args: "-j2 --device AMD --nocpu"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: windows-x86_64-vk-amd-output
+          path: windows-x86_64-vk-amd-output/
   test-windows-x86_64-vk-arc:
     runs-on: [ windows, x86_64, arc ]
     needs:

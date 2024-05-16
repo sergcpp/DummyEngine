@@ -737,22 +737,18 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
     });
 }
 
-void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, const bool clear,
-                                   FrameTextures &frame_textures) {
+void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
     if (p_list_->env.env_map) {
         auto &skymap = rp_builder_.AddPass("SKYDOME");
         RpResRef shared_data_buf = skymap.AddUniformBufferInput(
             common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
         RpResRef env_tex = skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
-        RpResRef vtx_buf1 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf1());
-        RpResRef vtx_buf2 = skymap.AddVertexBufferInput(ctx_.default_vertex_buf2());
-        RpResRef ndx_buf = skymap.AddIndexBufferInput(ctx_.default_indices_buf());
 
         frame_textures.color = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
         frame_textures.depth = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
 
-        rp_skydome_.Setup(*p_list_, &view_state_, clear, vtx_buf1, vtx_buf2, ndx_buf, shared_data_buf, env_tex,
-                          frame_textures.color, frame_textures.depth);
+        rp_skydome_.Setup(*p_list_, &view_state_, shared_data_buf, env_tex, frame_textures.color,
+                          frame_textures.depth);
         skymap.set_executor(&rp_skydome_);
     } else {
         // TODO: Physical sky

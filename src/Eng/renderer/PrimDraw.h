@@ -29,8 +29,6 @@ class PrimDraw {
     Ren::SubAllocation sphere_vtx1_, sphere_vtx2_, sphere_ndx_;
     Ren::SubAllocation temp_vtx1_, temp_vtx2_, temp_ndx_;
 
-    Ren::MeshRef skydome_mesh_;
-
     Ren::VertexInput fs_quad_vtx_input_, sphere_vtx_input_;
 
     Ren::Context *ctx_ = nullptr;
@@ -57,8 +55,6 @@ class PrimDraw {
     void CleanUp();
 
     void Reset();
-
-    const Ren::Mesh *skydome_mesh() const { return skydome_mesh_.get(); }
 
     struct RenderTarget {
         Ren::Framebuffer *fb;

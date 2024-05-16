@@ -1035,7 +1035,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
             // Skydome drawing
-            AddSkydomePass(common_buffers, false /* clear */, frame_textures);
+            AddSkydomePass(common_buffers, frame_textures);
         } else {
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }

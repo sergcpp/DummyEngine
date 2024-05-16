@@ -5,6 +5,10 @@
 
 INTERFACE_START(Skydome)
 
+struct Params {
+    MAT4_TYPE xform;
+};
+
 const int U_M_MATRIX_LOC = 0;
 const int ENV_TEX_SLOT = 1;
 

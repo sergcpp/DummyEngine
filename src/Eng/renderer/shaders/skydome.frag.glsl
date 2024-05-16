@@ -12,6 +12,10 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
+};
+
 layout(binding = ENV_TEX_SLOT) uniform samplerCube g_env_tex;
 
 layout(location = 0) in highp vec3 g_vtx_pos;
