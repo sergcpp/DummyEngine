@@ -63,14 +63,19 @@ endif()
 add_subdirectory(DummyApp)
 add_subdirectory(DummyLib)
 add_subdirectory(Eng)
-add_subdirectory(Modl)
+if(${RENDERER} STREQUAL "GL")
+    add_subdirectory(Modl)
+endif()
 add_subdirectory(Ray)
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 set_target_properties(DummyApp
-                      DummyLib
-                      ModlApp PROPERTIES FOLDER App)
+                      DummyLib PROPERTIES FOLDER App)
+
+if(${RENDERER} STREQUAL "GL")
+    set_target_properties(ModlApp PROPERTIES FOLDER App)
+endif()
 
 set_target_properties(Eng
                       Net

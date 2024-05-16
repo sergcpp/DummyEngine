@@ -192,6 +192,7 @@
         "view_target" : [ -0.000594, 0.047674, 0.00025 ],
         "fwd_speed" : 0.005,
         "fov" : 18.1806,
+        "view_transform": "agx",
         "autoexposure" : false,
         "max_exposure" : 0
     }
