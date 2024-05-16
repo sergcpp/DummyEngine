@@ -6,7 +6,7 @@
 INTERFACE_START(SSRVSDepth)
 
 struct Params {
-    IVEC2_TYPE resolution;
+    ivec2 resolution;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

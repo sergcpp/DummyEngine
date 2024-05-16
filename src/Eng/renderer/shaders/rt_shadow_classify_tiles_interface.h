@@ -6,8 +6,8 @@
 INTERFACE_START(RTShadowClassifyTiles)
 
 struct Params {
-    UVEC2_TYPE img_size;
-    VEC2_TYPE inv_img_size;
+    uvec2 img_size;
+    vec2 inv_img_size;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

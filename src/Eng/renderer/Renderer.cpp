@@ -336,6 +336,10 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
                                 cmd_buf);
 
         ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+        sobol_seq_buf_stage.FreeImmediate();
+        scrambling_tile_buf_stage.FreeImmediate();
+        ranking_tile_buf_stage.FreeImmediate();
     }
 
     const auto vtx_buf1 = ctx_.default_vertex_buf1();
@@ -467,7 +471,7 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
     allocated_shadow_regions_.realloc(MAX_SHADOWMAPS_TOTAL);
 
 #if defined(USE_GL_RENDER)
-    Ren::g_param_buf_binding = BIND_UB_UNIF_PARAM_BUF;
+    Ren::g_param_buf_binding = BIND_PUSH_CONSTANT_BUF;
 #endif
 }
 
@@ -856,7 +860,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         } else {
             frame_textures.color_params.format = Ren::eTexFormat::RawRG11F_B10F;
         }
-        frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        frame_textures.color_params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
         frame_textures.color_params.samples = view_state_.is_multisampled ? 4 : 1;
 
         if (deferred_shading) {
@@ -1004,6 +1008,9 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         if (deferred_shading) {
+            // Skydome drawing
+            AddSkydomePass(common_buffers, frame_textures);
+
             // GBuffer filling pass
             AddGBufferFillPass(common_buffers, persistent_data, bindless_tex, frame_textures);
 
@@ -1033,9 +1040,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
             // Additional forward pass (for custom-shaded objects)
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
-
-            // Skydome drawing
-            AddSkydomePass(common_buffers, frame_textures);
         } else {
             AddForwardOpaquePass(common_buffers, persistent_data, bindless_tex, frame_textures);
         }
@@ -1054,7 +1058,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             !list.render_settings.debug_wireframe) {
             const char *refl_out_name = view_state_.is_multisampled ? RESOLVED_COLOR_TEX : MAIN_COLOR_TEX;
             if (cur_hq_ssr_enabled) {
-                AddHQSpecularPasses(list.env.env_map, lm_direct_, lm_indir_sh_, deferred_shading,
+                AddHQSpecularPasses(lm_direct_, lm_indir_sh_, deferred_shading,
                                     list.render_settings.debug_denoise == eDebugDenoise::Reflection, list.probe_storage,
                                     common_buffers, persistent_data, acc_struct_data, bindless_tex, depth_hierarchy_tex,
                                     rt_obj_instances_res, frame_textures);

@@ -6,7 +6,7 @@
 INTERFACE_START(SSRComposeNew)
 
 struct Params {
-    VEC4_TYPE transform;
+    vec4 transform;
 };
 
 const int ALBEDO_TEX_SLOT = 0;

@@ -20,6 +20,8 @@ runs:
         WORK_DIR=`pwd`
         cd ../../builds/DummyEngine/assets/shaders
         ln -s ../../src/Eng/renderer/shaders internal
+        cd ../textures
+        ln -s ../../src/Eng/renderer/textures internal
         cd ../../
         cp $WORK_DIR/${{ inputs.bin-dir }}/${{ inputs.bin-name }} ./
         mkdir $WORK_DIR/${{ inputs.out-dir }}

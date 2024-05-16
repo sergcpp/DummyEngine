@@ -6,11 +6,17 @@
 INTERFACE_START(Skydome)
 
 struct Params {
-    MAT4_TYPE xform;
+    mat4 xform;
+    mat4 clip_from_world;
 };
 
-const int U_M_MATRIX_LOC = 0;
-const int ENV_TEX_SLOT = 1;
+const int ENV_TEX_SLOT = 0;
+const int TRANSMITTANCE_LUT_SLOT = 1;
+const int MULTISCATTER_LUT_SLOT = 2;
+const int MOON_TEX_SLOT = 3;
+const int WEATHER_TEX_SLOT = 4;
+const int CIRRUS_TEX_SLOT = 5;
+const int NOISE3D_TEX_SLOT = 6;
 
 INTERFACE_END
 

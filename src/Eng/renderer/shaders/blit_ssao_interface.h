@@ -6,8 +6,8 @@
 INTERFACE_START(SSAO)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC2_TYPE resolution;
+    vec4 transform;
+    vec2 resolution;
 };
 
 const int DEPTH_TEX_SLOT = 0;

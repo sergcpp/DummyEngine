@@ -93,6 +93,8 @@ class Renderer {
     Ren::Tex3DRef tonemap_lut_;
     Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
+    Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_;
+    Ren::Tex3DRef sky_noise3d_tex_;
 
     // FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
@@ -179,6 +181,7 @@ class Renderer {
     Ren::SmallVector<RpResRef, 8> backbuffer_sources_;
 
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
+    RpSkydomeCube rp_skydome_cube_ = {prim_draw_};
     RpSkydome rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
     RpDepthHierarchy rp_depth_hierarchy_;
@@ -246,6 +249,7 @@ class Renderer {
         Ren::Tex2DParams velocity_params;
         RpResRef velocity;
 
+        RpResRef envmap;
         RpResRef shadowmap;
         RpResRef ssao;
         RpResRef gi;
@@ -276,7 +280,7 @@ class Renderer {
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 
-    void AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
+    void AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct,
                              const Ren::WeakTex2DRef lm_indir_sh[4], bool deferred_shading, bool debug_denoise,
                              const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
@@ -331,5 +335,8 @@ class Renderer {
     static std::unique_ptr<int16_t[]> Generate_RandDirs(int res, std::string &out_c_header);
     static std::unique_ptr<uint8_t[]> Generate_ConeTraceLUT(int resx, int resy, const float cone_angles[4],
                                                             std::string &out_c_header);
+    static std::vector<Ren::Vec4f> Generate_SkyTransmittanceLUT(const AtmosphereParams &params);
+    static std::vector<Ren::Vec4f> Generate_SkyMultiscatterLUT(const AtmosphereParams &params,
+                                                               Ren::Span<const Ren::Vec4f> transmittance_lut);
 };
 } // namespace Eng

@@ -6,15 +6,15 @@
 INTERFACE_START(RTGICache)
 
 struct Params {
-    VEC4_TYPE grid_origin;
-    IVEC4_TYPE grid_scroll;
-    VEC4_TYPE grid_spacing;
+    vec4 grid_origin;
+    ivec4 grid_scroll;
+    vec4 grid_spacing;
     //float pixel_spread_angle;
-    //UINT_TYPE frame_index;
+    //uint frame_index;
 };
 
 struct RayPayload {
-    VEC3_TYPE col;
+    vec3 col;
     float cone_width;
 };
 

@@ -6,8 +6,8 @@
 INTERFACE_START(DownDepth)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC4_TYPE clip_info;
+    vec4 transform;
+    vec4 clip_info;
     float linearize;
 };
 

@@ -6,10 +6,10 @@
 INTERFACE_START(ProbeSample)
 
 struct Params {
-    VEC4_TYPE grid_origin;
-    IVEC4_TYPE grid_scroll;
-    VEC4_TYPE grid_spacing;
-    UVEC2_TYPE img_size;
+    vec4 grid_origin;
+    ivec4 grid_scroll;
+    vec4 grid_spacing;
+    uvec2 img_size;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

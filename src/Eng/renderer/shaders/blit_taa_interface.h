@@ -6,8 +6,8 @@
 INTERFACE_START(TempAA)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC2_TYPE tex_size;
+    vec4 transform;
+    vec2 tex_size;
     float tonemap;
     float gamma;
     float exposure;

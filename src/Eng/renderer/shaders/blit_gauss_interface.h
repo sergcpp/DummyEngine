@@ -6,8 +6,8 @@
 INTERFACE_START(Gauss)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC4_TYPE vertical;
+    vec4 transform;
+    vec4 vertical;
 };
 
 const int SRC_TEX_SLOT = 0;

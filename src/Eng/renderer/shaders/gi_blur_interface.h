@@ -6,9 +6,9 @@
 INTERFACE_START(GIBlur)
 
 struct Params {
-    VEC4_TYPE rotator;
-    UVEC2_TYPE img_size;
-    UVEC2_TYPE frame_index;
+    vec4 rotator;
+    uvec2 img_size;
+    uvec2 frame_index;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

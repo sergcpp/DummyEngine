@@ -6,9 +6,9 @@
 INTERFACE_START(ReconstructNormals)
 
 struct Params {
-    VEC4_TYPE frustum_info;
-    VEC4_TYPE clip_info;
-    UVEC2_TYPE img_size;
+    vec4 frustum_info;
+    vec4 clip_info;
+    uvec2 img_size;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

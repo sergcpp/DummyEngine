@@ -6,8 +6,8 @@
 INTERFACE_START(SSRResolveTemporal)
 
 struct Params {
-    UVEC2_TYPE img_size;
-    VEC2_TYPE thresholds;
+    uvec2 img_size;
+    vec2 thresholds;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

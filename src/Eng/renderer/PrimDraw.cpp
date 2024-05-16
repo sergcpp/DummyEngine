@@ -160,12 +160,11 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
                                                                Ren::RenderTarget stencil_target) {
     int w = -1, h = -1;
 
-    Ren::SmallVector<Ren::WeakTex2DRef, 4> color_refs;
     for (const auto &rt : color_targets) {
-        color_refs.push_back(rt.ref);
         if (w == -1 && rt.ref) {
             w = rt.ref->params.w;
             h = rt.ref->params.h;
+            break;
         }
     }
 
@@ -182,7 +181,7 @@ const Ren::Framebuffer *Eng::PrimDraw::FindOrCreateFramebuffer(const Ren::Render
     }
 
     for (size_t i = 0; i < framebuffers_.size(); ++i) {
-        if (!framebuffers_[i].Changed(*rp, depth_ref, stencil_ref, color_refs)) {
+        if (!framebuffers_[i].Changed(*rp, depth_ref, stencil_ref, color_targets)) {
             return &framebuffers_[i];
         }
     }

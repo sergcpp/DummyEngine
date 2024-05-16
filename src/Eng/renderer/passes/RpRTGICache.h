@@ -52,7 +52,7 @@ class RpRTGICache : public RpExecutor {
     const ViewState *view_state_ = nullptr;
     const BindlessTextureData *bindless_tex_ = nullptr;
 
-    const RpRTGICacheData *pass_data_;
+    const RpRTGICacheData *pass_data_ = nullptr;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 

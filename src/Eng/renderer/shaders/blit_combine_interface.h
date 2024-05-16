@@ -6,8 +6,8 @@
 INTERFACE_START(BlitCombine)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC2_TYPE tex_size;
+    vec4 transform;
+    vec2 tex_size;
     float tonemap_mode;
     float inv_gamma;
     float exposure;

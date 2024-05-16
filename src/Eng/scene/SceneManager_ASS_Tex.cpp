@@ -1325,6 +1325,9 @@ bool Eng::SceneManager::WriteProbeCache(const char *out_folder, const char *scen
 
 // these are from astc codec
 #undef IGNORE
+#undef mat2
+#undef mat3
+#undef mat4
 #include <astc/astc_codec_internals.h>
 
 #undef MAX

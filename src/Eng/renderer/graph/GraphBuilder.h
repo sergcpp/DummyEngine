@@ -72,6 +72,7 @@ struct RpAllocTex {
     Ren::WeakTex2DRef ref;
     Ren::Tex2DRef strong_ref;
     const Ren::Texture2DArray *arr = nullptr;
+    const Ren::Texture3D *tex3d = nullptr;
 };
 
 class RpSubpass;
@@ -158,6 +159,8 @@ class RpBuilder {
     RpResRef ReadTexture(const Ren::WeakTex2DRef &ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          RpSubpass &pass);
     RpResRef ReadTexture(const Ren::Texture2DArray *ref, Ren::eResState desired_state, Ren::eStageBits stages,
+                         RpSubpass &pass);
+    RpResRef ReadTexture(const Ren::Texture3D *ref, Ren::eResState desired_state, Ren::eStageBits stages,
                          RpSubpass &pass);
 
     RpResRef ReadHistoryTexture(RpResRef handle, Ren::eResState desired_state, Ren::eStageBits stages, RpSubpass &pass);

@@ -6,14 +6,14 @@
 INTERFACE_START(SunShadows)
 
 struct Params {
-    UVEC2_TYPE img_size;
+    uvec2 img_size;
     float enabled;
     float pixel_spread_angle;
-    VEC4_TYPE softness_factor;
+    vec4 softness_factor;
 };
 
 struct RayPayload {
-    VEC3_TYPE col;
+    vec3 col;
     float cone_width;
 };
 

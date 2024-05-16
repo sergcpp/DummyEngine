@@ -3,10 +3,6 @@
 #include "_vs_common.glsl"
 #include "skydome_interface.h"
 
-layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
-    SharedData g_shrd_data;
-};
-
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -18,7 +14,7 @@ layout(location = 0) out vec3 g_vtx_pos;
 void main() {
     vec3 vertex_position_ws = (g_params.xform * vec4(g_in_vtx_pos, 1.0)).xyz;
     g_vtx_pos = vertex_position_ws;
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vertex_position_ws - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
+    gl_Position = g_params.clip_from_world * vec4(vertex_position_ws, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

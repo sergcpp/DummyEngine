@@ -55,6 +55,9 @@ void main() {
 
     const float depth = texelFetch(g_depth_tex, icoord, 0).r;
     const float lin_depth = LinearizeDepth(depth, g_shrd_data.clip_info);
+    if (lin_depth > 3000.0) {
+        return;
+    }
     const float k = log2(lin_depth / g_shrd_data.clip_info[1]) / g_shrd_data.clip_info[3];
     const int slice = clamp(int(k * float(ITEM_GRID_RES_Z)), 0, ITEM_GRID_RES_Z - 1);
 

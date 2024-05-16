@@ -6,10 +6,10 @@
 INTERFACE_START(GIClassifyTiles)
 
 struct Params {
-    UVEC2_TYPE img_size;
-    VEC2_TYPE thresholds;
-    UVEC2_TYPE samples_and_guided;
-    UINT_TYPE frame_index;
+    uvec2 img_size;
+    vec2 thresholds;
+    uvec2 samples_and_guided;
+    uint frame_index;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

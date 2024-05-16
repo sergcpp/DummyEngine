@@ -6,9 +6,9 @@
 INTERFACE_START(Upscale)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC4_TYPE resolution;
-    VEC4_TYPE clip_info;
+    vec4 transform;
+    vec4 resolution;
+    vec4 clip_info;
 };
 
 const int DEPTH_TEX_SLOT = 0;

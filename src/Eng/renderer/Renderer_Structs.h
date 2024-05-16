@@ -18,6 +18,8 @@ namespace Ren {
 class IAccStructure;
 }
 
+#include "shaders/Types.h"
+
 namespace Eng {
 #include "shaders/Constants.inl"
 
@@ -235,6 +237,8 @@ enum class eHDRQuality : uint8_t { Medium, High };
 
 enum class eGIQuality : uint8_t { Off, Medium, High, Ultra };
 
+enum class eSkyQuality : uint8_t { Low, High };
+
 enum class eDebugRT : uint8_t { Off, Main, Shadow };
 
 enum class eDebugDenoise : uint8_t { Off, Reflection, GI, Shadow };
@@ -285,6 +289,7 @@ struct render_settings_t {
     eTAAMode taa_mode = eTAAMode::Dynamic;
     eHDRQuality hdr_quality = eHDRQuality::High;
     eGIQuality gi_quality = eGIQuality::High;
+    eSkyQuality sky_quality = eSkyQuality::High;
 
     eDebugRT debug_rt = eDebugRT::Off;
     eDebugDenoise debug_denoise = eDebugDenoise::Off;
@@ -292,8 +297,8 @@ struct render_settings_t {
     bool operator==(const render_settings_t &rhs) {
         return flags == rhs.flags && debug_flags == rhs.debug_flags && reflections_quality == rhs.reflections_quality &&
                shadows_quality == rhs.shadows_quality && tonemap_mode == rhs.tonemap_mode && taa_mode == rhs.taa_mode &&
-               hdr_quality == rhs.hdr_quality && gi_quality == rhs.gi_quality && debug_rt == rhs.debug_rt &&
-               debug_denoise == rhs.debug_denoise;
+               hdr_quality == rhs.hdr_quality && gi_quality == rhs.gi_quality && sky_quality == rhs.sky_quality &&
+               debug_rt == rhs.debug_rt && debug_denoise == rhs.debug_denoise;
     }
     bool operator!=(const render_settings_t &rhs) { return !operator==(rhs); }
 
@@ -348,17 +353,19 @@ struct ViewState {
     float pixel_spread_angle;
     int frame_index;
     Ren::Vec3f prev_cam_pos;
-    Ren::Mat4f prev_clip_from_world_no_translation, down_buf_view_from_world, prev_clip_from_view;
+    Ren::Mat4f clip_from_world_no_translation, prev_clip_from_world_no_translation, down_buf_view_from_world,
+        prev_clip_from_view;
     mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[3];
     bool is_multisampled = false;
 };
 
 struct SharedDataBlock {
-    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, clip_from_world_no_translation, prev_clip_from_world_no_translation;
+    Ren::Mat4f view_from_world, clip_from_view, clip_from_world, clip_from_world_no_translation,
+        prev_clip_from_world_no_translation;
     Ren::Mat4f world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     Ren::Mat4f rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
-    Ren::Vec4f sun_dir, sun_col, env_col, taa_info, frustum_info;
+    Ren::Vec4f sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
     Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
@@ -367,8 +374,9 @@ struct SharedDataBlock {
     uint32_t portals[MAX_PORTALS_TOTAL] = {0xffffffff};
     ProbeItem probes[MAX_PROBES_TOTAL] = {};
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL] = {};
+    Types::AtmosphereParams atmosphere;
 };
-static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 64, "!");
+static_assert(sizeof(SharedDataBlock) == 7888 + 2560 + 64 + 16 + 16 + 4 * 64 + 64 + 64 + 192 + 16, "!");
 
 const int MAX_MATERIAL_PARAMS = 3;
 

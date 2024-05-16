@@ -63,7 +63,7 @@ const int BIND_REFL_DEPTH_LOW_TEX = 7;
 const int REN_U_BASE_INSTANCE_LOC = 2;
 
 const int BIND_UB_SHARED_DATA_BUF = 23;
-const int BIND_UB_UNIF_PARAM_BUF = 24;
+const int BIND_PUSH_CONSTANT_BUF = 24;
 
 // Shader output location
 const int LOC_OUT_COLOR = 0;
@@ -137,6 +137,16 @@ const int PROBE_DISTANCE_RES = 16;
 
 const float PROBE_STATE_INACTIVE = 0;
 const float PROBE_STATE_ACTIVE = 1;
+
+// Atmosphere
+const int SKY_MULTISCATTER_LUT_RES = 32;
+const int SKY_PRE_ATMOSPHERE_SAMPLE_COUNT = 4;
+const int SKY_MAIN_ATMOSPHERE_SAMPLE_COUNT = 12;
+const int SKY_CLOUDS_SAMPLE_COUNT = 32;
+const float SKY_CLOUDS_HORIZON_CUTOFF = 0.005f;
+const float SKY_MOON_SUN_RELATION = 0.0000001f;
+const float SKY_STARS_THRESHOLD = 14.0f;
+const float SKY_SUN_BLEND_VAL = 0.000005f;
 
 #define USE_OCT_PACKED_NORMALS 1
 

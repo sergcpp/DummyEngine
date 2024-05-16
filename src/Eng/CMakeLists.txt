@@ -135,7 +135,9 @@ set(RENDERER_SOURCES    renderer/CDFUtils.h
                         renderer/Renderer_Structs.h
                         renderer/Renderer_SunShadows.cpp)
 
-set(SCENE_SOURCES   scene/PhysicsManager.h
+set(SCENE_SOURCES   scene/Atmosphere.h
+                    scene/Atmosphere.cpp
+                    scene/PhysicsManager.h
                     scene/PhysicsManager.cpp
                     scene/SceneData.h
                     scene/SceneData.cpp

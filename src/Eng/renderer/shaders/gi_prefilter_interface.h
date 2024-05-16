@@ -6,8 +6,8 @@
 INTERFACE_START(GIPrefilter)
 
 struct Params {
-    VEC4_TYPE rotator;
-    UVEC2_TYPE img_size;
+    vec4 rotator;
+    uvec2 img_size;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

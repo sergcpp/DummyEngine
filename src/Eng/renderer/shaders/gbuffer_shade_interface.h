@@ -6,7 +6,7 @@
 INTERFACE_START(GBufferShade)
 
 struct Params {
-    UVEC2_TYPE img_size;
+    uvec2 img_size;
     float pixel_spread_angle;
     float _pad;
 };

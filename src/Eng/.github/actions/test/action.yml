@@ -31,6 +31,8 @@ runs:
         $WORK_DIR/${{ inputs.bin-dir }}/test_glslx
         cd $WORK_DIR/../../builds/Eng/tests/test_data/assets/shaders
         ln -s ../../../../renderer/shaders internal
+        cd $WORK_DIR/../../builds/Eng/tests/test_data/assets/textures
+        ln -s ../../../../renderer/textures internal
         cd $WORK_DIR/../../builds/Eng/tests/test_data
         $WORK_DIR/${{ inputs.bin-dir }}/test_Eng ${{ inputs.test-args }}
         cd ../../..

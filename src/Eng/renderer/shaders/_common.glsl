@@ -2,10 +2,12 @@
 #define COMMON_GLSL
 
 #include "Constants.inl"
+#include "Types.h"
 
 #define M_PI 3.1415926535897932384626433832795
 #define GOLDEN_RATIO 1.61803398875
 
+#define FLT_MAX 3.402823466e+38
 #define FLT_MIN 1e-15
 
 // limit for 10- and 11-bit float value (https://www.khronos.org/opengl/wiki/Small_Float_Formats)
@@ -62,6 +64,38 @@ vec3 rotate_xz(vec3 dir, float angle) {
     const float x = dir.x * cos(angle) - dir.z * sin(angle);
     const float z = dir.x * sin(angle) + dir.z * cos(angle);
     return vec3(x, dir.y, z);
+}
+
+float from_unit_to_sub_uvs(const float u, const float resolution) {
+    return (u + 0.5 / resolution) * (resolution / (resolution + 1.0));
+}
+float from_sub_uvs_to_unit(const float u, const float resolution) {
+    return (u - 0.5 / resolution) * (resolution / (resolution - 1.0));
+}
+
+float linstep(const float smin, const float smax, const float x) {
+    return saturate((x - smin) / (smax - smin));
+}
+
+uint hash(uint x) {
+    // finalizer from murmurhash3
+    x ^= x >> 16;
+    x *= 0x85ebca6bu;
+    x ^= x >> 13;
+    x *= 0xc2b2ae35u;
+    x ^= x >> 16;
+    return x;
+}
+
+float construct_float(uint m) {
+    const uint ieeeMantissa = 0x007FFFFFu; // binary32 mantissa bitmask
+    const uint ieeeOne      = 0x3F800000u; // 1.0 in IEEE binary32
+
+    m &= ieeeMantissa;                     // Keep only mantissa bits (fractional part)
+    m |= ieeeOne;                          // Add fractional part to 1.0
+
+    const float  f = uintBitsToFloat(m);   // Range [1:2]
+    return f - 1.0;                        // Range [0:1]
 }
 
 // Octahedron packing for unit vectors - xonverts a 3D unit vector to a 2D vector with [0; 1] range
@@ -247,7 +281,7 @@ struct SharedData {
     mat4 world_from_view, view_from_clip, world_from_clip, world_from_clip_no_translation, delta_matrix;
     mat4 rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
-    vec4 sun_dir, sun_col, env_col, taa_info, frustum_info;
+    vec4 sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
     vec4 clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
     vec4 wind_scroll, wind_scroll_prev;
@@ -256,6 +290,7 @@ struct SharedData {
     uvec4 portals[MAX_PORTALS_TOTAL / 4];
     ProbeItem probes[MAX_PROBES_TOTAL];
     EllipsItem ellipsoids[MAX_ELLIPSES_TOTAL];
+    AtmosphereParams atmosphere;
 };
 
 struct MaterialData {

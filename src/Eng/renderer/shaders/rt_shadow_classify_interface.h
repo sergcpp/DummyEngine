@@ -6,8 +6,8 @@
 INTERFACE_START(RTShadowClassify)
 
 struct Params {
-    UVEC2_TYPE img_size;
-    UINT_TYPE frame_index;
+    uvec2 img_size;
+    uint frame_index;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

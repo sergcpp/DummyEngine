@@ -6,13 +6,13 @@
 INTERFACE_START(RTShadows)
 
 struct Params {
-    UVEC2_TYPE img_size;
+    uvec2 img_size;
     float pixel_spread_angle;
-    UINT_TYPE frame_index;
+    uint frame_index;
 };
 
 struct RayPayload {
-    VEC3_TYPE col;
+    vec3 col;
     float cone_width;
 };
 

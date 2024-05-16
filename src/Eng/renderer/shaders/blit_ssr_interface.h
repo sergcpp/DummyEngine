@@ -6,7 +6,7 @@
 INTERFACE_START(SSRTrace)
 
 struct Params {
-    VEC4_TYPE transform;
+    vec4 transform;
 };
 
 const int DEPTH_TEX_SLOT = 0;

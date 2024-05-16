@@ -6,9 +6,9 @@
 INTERFACE_START(Bilateral)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC2_TYPE resolution;
-    VEC2_TYPE _pad;
+    vec4 transform;
+    vec2 resolution;
+    vec2 _pad;
     float vertical;
 };
 

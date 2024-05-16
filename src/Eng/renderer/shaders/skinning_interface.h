@@ -6,9 +6,9 @@
 INTERFACE_START(Skinning)
 
 struct Params {
-    UVEC4_TYPE uSkinParams;
-    UVEC4_TYPE uShapeParamsCurr;
-    UVEC4_TYPE uShapeParamsPrev;
+    uvec4 uSkinParams;
+    uvec4 uShapeParamsCurr;
+    uvec4 uShapeParamsPrev;
 };
 
 const int LOCAL_GROUP_SIZE = 128;

@@ -6,8 +6,8 @@
 INTERFACE_START(GITraceSS)
 
 struct Params {
-    UVEC4_TYPE resolution;
-    UINT_TYPE frame_index;
+    uvec4 resolution;
+    uint frame_index;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

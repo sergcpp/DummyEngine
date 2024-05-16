@@ -13,6 +13,7 @@
 #include <Ren/TextureArray.h>
 #include <Ren/TextureAtlas.h>
 
+#include "Atmosphere.h"
 #include "components/AccStructure.h"
 #include "components/AnimState.h"
 #include "components/Decal.h"
@@ -118,6 +119,7 @@ struct Environment {
     float sun_shadow_bias[2] = {4.0f, 8.0f};
 
     Ren::String env_map_name;
+    AtmosphereParams atmosphere;
 };
 
 struct BBox {

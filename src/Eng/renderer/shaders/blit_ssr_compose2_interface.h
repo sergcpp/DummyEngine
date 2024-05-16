@@ -6,7 +6,7 @@
 INTERFACE_START(SSRCompose2)
 
 struct Params {
-    VEC4_TYPE transform;
+    vec4 transform;
 };
 
 const int SPEC_TEX_SLOT = 0;

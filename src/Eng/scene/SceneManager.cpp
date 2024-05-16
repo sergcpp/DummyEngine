@@ -433,42 +433,82 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             const JsStringP &js_env_map = js_env.at("env_map").as_str();
 
             scene_data_.env.env_map_name = Ren::String{js_env_map.val.c_str()};
+            if (scene_data_.env.env_map_name == "physical_sky") {
+                std::vector<uint8_t> black_cube(4 * 1024 * 1024, 0);
+                Ren::Span<const uint8_t> _black_cube[6];
+                for (int i = 0; i < 6; ++i) {
+                    _black_cube[i] = black_cube;
+                }
 
-            Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
-            const size_t in_file_size = in_file.size();
+                Ren::Tex2DParams p;
+                p.w = p.h = 1024;
+                p.format = Ren::eTexFormat::RawRGBA16F;
+                p.usage =
+                    (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::RenderTarget);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            Ren::DDSHeader header = {};
-            in_file.Read((char *)&header, sizeof(Ren::DDSHeader));
+                Ren::eTexLoadStatus status;
+                scene_data_.env.env_map =
+                    ren_ctx_.LoadTextureCube("Sky Envmap", _black_cube, p, ren_ctx_.default_stage_bufs(),
+                                             ren_ctx_.default_mem_allocs(), &status);
+            } else if (!scene_data_.env.env_map_name.empty()) {
+                Sys::AssetFile in_file(std::string(paths_.textures_path) + scene_data_.env.env_map_name.c_str());
+                const size_t in_file_size = in_file.size();
 
-            Ren::DDS_HEADER_DXT10 dx10_header = {};
-            in_file.Read((char *)&dx10_header, sizeof(Ren::DDS_HEADER_DXT10));
+                Ren::DDSHeader header = {};
+                in_file.Read((char *)&header, sizeof(Ren::DDSHeader));
 
-            const int w = int(header.dwWidth), h = int(header.dwHeight);
-            assert(w == h);
+                Ren::DDS_HEADER_DXT10 dx10_header = {};
+                in_file.Read((char *)&dx10_header, sizeof(Ren::DDS_HEADER_DXT10));
 
-            const int size_per_face = int(header.dwPitchOrLinearSize) / 6;
+                const int w = int(header.dwWidth), h = int(header.dwHeight);
+                assert(w == h);
 
-            std::vector<uint8_t> tex_data[6];
-            Ren::Span<const uint8_t> data[6];
+                const int size_per_face = int(header.dwPitchOrLinearSize) / 6;
 
-            for (int i = 0; i < 6; i++) {
-                tex_data[i].resize(size_per_face);
-                in_file.Read((char *)tex_data[i].data(), size_per_face);
-                data[i] = tex_data[i];
+                std::vector<uint8_t> tex_data[6];
+                Ren::Span<const uint8_t> data[6];
+
+                for (int i = 0; i < 6; i++) {
+                    tex_data[i].resize(size_per_face);
+                    in_file.Read((char *)tex_data[i].data(), size_per_face);
+                    data[i] = tex_data[i];
+                }
+
+                Ren::Tex2DParams p;
+                p.w = w;
+                p.h = h;
+                p.mip_count = int(header.dwMipMapCount);
+                p.format = Ren::eTexFormat::RawRGB9E5;
+                p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
+                p.sampling.filter = Ren::eTexFilter::Bilinear;
+                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                Ren::eTexLoadStatus load_status;
+                scene_data_.env.env_map = ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_stage_bufs(),
+                                                                   ren_ctx_.default_mem_allocs(), &load_status);
+            } else {
+                static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128},
+                                                         {255, 255, 255, 128}, {255, 255, 255, 128},
+                                                         {255, 255, 255, 128}, {255, 255, 255, 128}};
+
+                Ren::Span<const uint8_t> _white_cube[6];
+                for (int i = 0; i < 6; ++i) {
+                    _white_cube[i] = white_cube[i];
+                }
+
+                Ren::Tex2DParams p;
+                p.w = p.h = 1;
+                p.format = Ren::eTexFormat::RawRGBA8888;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                Ren::eTexLoadStatus status;
+                scene_data_.env.env_map =
+                    ren_ctx_.LoadTextureCube("dummy_white_cube", _white_cube, p, ren_ctx_.default_stage_bufs(),
+                                             ren_ctx_.default_mem_allocs(), &status);
             }
-
-            Ren::Tex2DParams p;
-            p.w = w;
-            p.h = h;
-            p.mip_count = int(header.dwMipMapCount);
-            p.format = Ren::eTexFormat::RawRGB9E5;
-            p.usage = (Ren::eTexUsage::Transfer | Ren::eTexUsage::Sampled);
-            p.sampling.filter = Ren::eTexFilter::Bilinear;
-            p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            Ren::eTexLoadStatus load_status;
-            scene_data_.env.env_map = ren_ctx_.LoadTextureCube("EnvCubemap", data, p, ren_ctx_.default_stage_bufs(),
-                                                               ren_ctx_.default_mem_allocs(), &load_status);
         } else {
             static const uint8_t white_cube[6][4] = {{255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128},
                                                      {255, 255, 255, 128}, {255, 255, 255, 128}, {255, 255, 255, 128}};

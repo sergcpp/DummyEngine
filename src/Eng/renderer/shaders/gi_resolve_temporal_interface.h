@@ -6,7 +6,7 @@
 INTERFACE_START(GIResolveTemporal)
 
 struct Params {
-    UVEC2_TYPE img_size;
+    uvec2 img_size;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

@@ -6,4 +6,5 @@ out.png
 diff.png
 mask.png
 tests/test_data/assets/shaders/internal
+tests/test_data/assets/textures/internal
 tests/test_data/assets_pc

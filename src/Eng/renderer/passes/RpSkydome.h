@@ -11,42 +11,79 @@
 namespace Eng {
 class PrimDraw;
 
+struct RpSkydomeCubeData {
+    RpResRef shared_data;
+    RpResRef transmittance_lut;
+    RpResRef multiscatter_lut;
+    RpResRef moon_tex;
+    RpResRef weather_tex;
+    RpResRef cirrus_tex;
+    RpResRef noise3d_tex;
+
+    RpResRef color_tex;
+};
+
+class RpSkydomeCube : public RpExecutor {
+    PrimDraw &prim_draw_;
+    bool initialized = false;
+
+    // temp data (valid only between Setup and Execute calls)
+    const ViewState *view_state_ = nullptr;
+    const RpSkydomeCubeData *pass_data_ = nullptr;
+
+    // lazily initialized data
+    Ren::ProgramRef prog_skydome_phys_;
+
+    void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
+
+  public:
+    RpSkydomeCube(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+
+    void Setup(const ViewState *view_state, const RpSkydomeCubeData *pass_data) {
+        view_state_ = view_state;
+        pass_data_ = pass_data;
+    }
+
+    void Execute(RpBuilder &builder) override;
+};
+
+struct RpSkydomeData {
+    eSkyQuality sky_quality = eSkyQuality::Low;
+
+    RpResRef shared_data;
+    RpResRef env_tex;
+    struct {
+        RpResRef transmittance_lut;
+        RpResRef multiscatter_lut;
+        RpResRef moon_tex;
+        RpResRef weather_tex;
+        RpResRef cirrus_tex;
+        RpResRef noise3d_tex;
+    } phys;
+
+    RpResRef color_tex;
+    RpResRef depth_tex;
+};
+
 class RpSkydome : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-
-    Ren::Vec3f draw_cam_pos_;
+    const RpSkydomeData *pass_data_ = nullptr;
 
     // lazily initialized data
-    Ren::ProgramRef prog_skydome_;
-
-    RpResRef shared_data_buf_;
-    RpResRef env_tex_;
-
-    RpResRef color_tex_;
-    RpResRef depth_tex_;
+    Ren::ProgramRef prog_skydome_simple_, prog_skydome_phys_;
 
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
-    void DrawSkydome(RpBuilder &builder, RpAllocBuf &vtx_buf1, RpAllocBuf &vtx_buf2, RpAllocBuf &ndx_buf,
-                     RpAllocTex &color_tex, RpAllocTex &depth_tex);
 
   public:
     RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(const DrawList &list, const ViewState *view_state, const RpResRef shared_data_buf,
-               const RpResRef env_tex, const RpResRef color_tex, const RpResRef depth_tex) {
+    void Setup(const ViewState *view_state, const RpSkydomeData *pass_data) {
         view_state_ = view_state;
-
-        draw_cam_pos_ = list.draw_cam.world_position();
-
-        shared_data_buf_ = shared_data_buf;
-        env_tex_ = env_tex;
-
-        color_tex_ = color_tex;
-        depth_tex_ = depth_tex;
+        pass_data_ = pass_data;
     }
 
     void Execute(RpBuilder &builder) override;

@@ -2,6 +2,7 @@
 .vs
 .idea
 assets/shaders/internal
+assets/textures/internal
 assets_pc
 assets_android
 build-*

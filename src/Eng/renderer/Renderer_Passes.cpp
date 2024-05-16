@@ -1,7 +1,11 @@
 #include "Renderer.h"
 
 #include <Ren/Context.h>
+#include <Ren/Utils.h>
+#include <Sys/AssetFile.h>
+#include <Sys/ScopeExit.h>
 #include <Sys/Time_.h>
+#include <stb/stb_image.h>
 
 #include "../utils/Random.h"
 #include "../utils/ShaderLoader.h"
@@ -517,7 +521,8 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             Ren::Mat4f view_matrix_no_translation = shrd_data.view_from_world;
             view_matrix_no_translation[3][0] = view_matrix_no_translation[3][1] = view_matrix_no_translation[3][2] = 0;
 
-            shrd_data.clip_from_world_no_translation = shrd_data.clip_from_view * view_matrix_no_translation;
+            shrd_data.clip_from_world_no_translation = view_state_.clip_from_world_no_translation =
+                shrd_data.clip_from_view * view_matrix_no_translation;
             shrd_data.prev_clip_from_world_no_translation = view_state_.prev_clip_from_world_no_translation;
             shrd_data.world_from_view = Inverse(shrd_data.view_from_world);
             shrd_data.view_from_clip = Inverse(shrd_data.clip_from_view);
@@ -537,7 +542,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             const float tan_angle = tanf(p_list_->env.sun_angle * Ren::Pi<float>() / 360.0f);
             shrd_data.sun_dir =
                 Ren::Vec4f{-p_list_->env.sun_dir[0], -p_list_->env.sun_dir[1], -p_list_->env.sun_dir[2], tan_angle};
-            shrd_data.sun_col =
+            shrd_data.sun_col = shrd_data.sun_col_point =
                 Ren::Vec4f{p_list_->env.sun_col[0], p_list_->env.sun_col[1], p_list_->env.sun_col[2], 0.0f};
             if (p_list_->env.sun_angle != 0.0f) {
                 const float radius = tan_angle;
@@ -610,6 +615,9 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             if (portals_count < MAX_PORTALS_TOTAL) {
                 shrd_data.portals[portals_count] = 0xffffffff;
             }
+
+            memcpy(&shrd_data.atmosphere, &p_list_->env.atmosphere, sizeof(AtmosphereParams));
+            static_assert(sizeof(Eng::AtmosphereParams) == sizeof(Types::AtmosphereParams));
 
             Ren::UpdateBuffer(*shared_data_buf.ref, 0, sizeof(SharedDataBlock), &shrd_data,
                               *p_list_->shared_data_stage_buf, ctx.backend_frame() * SharedDataBlockSize,
@@ -738,21 +746,226 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
 }
 
 void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
-    if (p_list_->env.env_map) {
-        auto &skymap = rp_builder_.AddPass("SKYDOME");
-        RpResRef shared_data_buf = skymap.AddUniformBufferInput(
-            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
-        RpResRef env_tex = skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
-
-        frame_textures.color = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
-        frame_textures.depth = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
-
-        rp_skydome_.Setup(*p_list_, &view_state_, shared_data_buf, env_tex, frame_textures.color,
-                          frame_textures.depth);
-        skymap.set_executor(&rp_skydome_);
-    } else {
-        // TODO: Physical sky
+    // TODO: Remove this condition
+    if (!p_list_->env.env_map) {
+        return;
     }
+
+    if (p_list_->env.env_map_name != "physical_sky") {
+        // release resources
+        sky_transmittance_lut_ = {};
+        sky_multiscatter_lut_ = {};
+        sky_moon_tex_ = {};
+        sky_weather_tex_ = {};
+        sky_cirrus_tex_ = {};
+        sky_noise3d_tex_ = {};
+    } else {
+        if (!sky_transmittance_lut_) {
+            const std::vector<Ren::Vec4f> transmittance_lut = Generate_SkyTransmittanceLUT(p_list_->env.atmosphere);
+            { // Init transmittance LUT
+                Ren::Tex2DParams p;
+                p.w = SKY_TRANSMITTANCE_LUT_W;
+                p.h = SKY_TRANSMITTANCE_LUT_H;
+                p.format = Ren::eTexFormat::RawRGBA32F;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                Ren::eTexLoadStatus status;
+                sky_transmittance_lut_ =
+                    ctx_.LoadTexture2D("Sky Transmittance LUT", p, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedDefault);
+
+                Ren::Buffer stage_buf("Temp Stage Buf", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                      4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
+                { // init stage buf
+                    uint8_t *mapped_ptr = stage_buf.Map();
+                    memcpy(mapped_ptr, transmittance_lut.data(),
+                           4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
+                    stage_buf.Unmap();
+                }
+
+                sky_transmittance_lut_->SetSubImage(
+                    0, 0, 0, SKY_TRANSMITTANCE_LUT_W, SKY_TRANSMITTANCE_LUT_H, Ren::eTexFormat::RawRGBA32F, stage_buf,
+                    ctx_.current_cmd_buf(), 0, 4 * SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H * sizeof(float));
+            }
+            { // Init multiscatter LUT
+                Ren::Tex2DParams p;
+                p.w = p.h = SKY_MULTISCATTER_LUT_RES;
+                p.format = Ren::eTexFormat::RawRGBA32F;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+                Ren::eTexLoadStatus status;
+                sky_multiscatter_lut_ =
+                    ctx_.LoadTexture2D("Sky Multiscatter LUT", p, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedDefault);
+
+                const std::vector<Ren::Vec4f> multiscatter_lut =
+                    Generate_SkyMultiscatterLUT(p_list_->env.atmosphere, transmittance_lut);
+
+                Ren::Buffer stage_buf("Temp Stage Buf", ctx_.api_ctx(), Ren::eBufType::Upload,
+                                      4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
+                { // init stage buf
+                    uint8_t *mapped_ptr = stage_buf.Map();
+                    memcpy(mapped_ptr, multiscatter_lut.data(),
+                           4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
+                    stage_buf.Unmap();
+                }
+
+                sky_multiscatter_lut_->SetSubImage(
+                    0, 0, 0, SKY_MULTISCATTER_LUT_RES, SKY_MULTISCATTER_LUT_RES, Ren::eTexFormat::RawRGBA32F, stage_buf,
+                    ctx_.current_cmd_buf(), 0, 4 * SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES * sizeof(float));
+            }
+            { // Init Moon texture
+                Sys::AssetFile moon_tex("assets_pc/textures/internal/moon_diff.dds");
+                std::vector<uint8_t> data(moon_tex.size());
+                moon_tex.Read((char *)&data[0], moon_tex.size());
+
+                Ren::DDSHeader header = {};
+                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
+
+                Ren::Tex2DParams p;
+                p.w = header.dwWidth;
+                p.h = header.dwHeight;
+                p.format = Ren::eTexFormat::BC3;
+                p.block = Ren::eTexBlock::_4x4;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::Repeat;
+
+                Ren::eTexLoadStatus status;
+                sky_moon_tex_ = ctx_.LoadTexture2D(
+                    "Sky Moon Tex", Ren::Span{&data[0] + sizeof(Ren::DDSHeader), data.size() - sizeof(Ren::DDSHeader)},
+                    p, ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+            }
+            { // Init Weather texture
+                Sys::AssetFile weather_tex("assets_pc/textures/internal/weather.uncompressed.png");
+                std::vector<uint8_t> data(weather_tex.size());
+                weather_tex.Read((char *)&data[0], weather_tex.size());
+
+                int width, height, channels;
+                unsigned char *image_data =
+                    stbi_load_from_memory(&data[0], int(data.size()), &width, &height, &channels, 0);
+                SCOPE_EXIT({ stbi_image_free(image_data); })
+                assert(image_data && channels == 4);
+
+                Ren::Tex2DParams p;
+                p.w = width;
+                p.h = height;
+                p.format = Ren::eTexFormat::RawRGBA8888;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::Repeat;
+
+                Ren::eTexLoadStatus status;
+                sky_weather_tex_ = ctx_.LoadTexture2D("Sky Weather Tex", Ren::Span{image_data, 4 * width * height}, p,
+                                                      ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+            }
+            { // Init Cirrus texture
+                Sys::AssetFile cirrus_tex("assets_pc/textures/internal/cirrus.dds");
+                std::vector<uint8_t> data(cirrus_tex.size());
+                cirrus_tex.Read((char *)&data[0], cirrus_tex.size());
+
+                Ren::DDSHeader header = {};
+                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
+
+                Ren::Tex2DParams p;
+                p.w = header.dwWidth;
+                p.h = header.dwHeight;
+                p.format = Ren::eTexFormat::RawRG88;
+                p.usage = (Ren::eTexUsageBits::Transfer | Ren::eTexUsageBits::Sampled);
+                p.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                p.sampling.wrap = Ren::eTexWrap::Repeat;
+
+                Ren::eTexLoadStatus status;
+                sky_cirrus_tex_ = ctx_.LoadTexture2D(
+                    "Sky Cirrus Tex",
+                    Ren::Span{&data[0] + sizeof(Ren::DDSHeader), data.size() - sizeof(Ren::DDSHeader)}, p,
+                    ctx_.default_stage_bufs(), ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedFromData);
+            }
+            { // Init 3d noise texture
+                Sys::AssetFile noise_tex("assets_pc/textures/internal/3dnoise.dds");
+                std::vector<uint8_t> data(noise_tex.size());
+                noise_tex.Read((char *)&data[0], noise_tex.size());
+
+                Ren::DDSHeader header = {};
+                memcpy(&header, &data[0], sizeof(Ren::DDSHeader));
+
+                const uint32_t data_len = header.dwWidth * header.dwHeight * header.dwDepth;
+
+                Ren::Tex3DParams params;
+                params.w = header.dwWidth;
+                params.h = header.dwHeight;
+                params.d = header.dwDepth;
+                params.format = Ren::eTexFormat::RawR8;
+                params.usage = (Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
+                params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
+                params.sampling.wrap = Ren::eTexWrap::Repeat;
+
+                Ren::eTexLoadStatus status;
+                sky_noise3d_tex_ = ctx_.LoadTexture3D("Noise 3d Tex", params, ctx_.default_mem_allocs(), &status);
+                assert(status == Ren::eTexLoadStatus::CreatedDefault);
+
+                Ren::Buffer stage_buf = Ren::Buffer("Temp stage buf", ctx_.api_ctx(), Ren::eBufType::Upload, data_len);
+                uint8_t *mapped_ptr = stage_buf.Map();
+                memcpy(mapped_ptr, &data[0] + sizeof(Ren::DDSHeader), data_len);
+                stage_buf.Unmap();
+
+                sky_noise3d_tex_->SetSubImage(0, 0, 0, header.dwWidth, header.dwHeight, header.dwDepth,
+                                              Ren::eTexFormat::RawR8, stage_buf, ctx_.current_cmd_buf(), 0, data_len);
+            }
+        }
+
+        auto &skydome_cube = rp_builder_.AddPass("SKYDOME CUBE");
+
+        auto *data = skydome_cube.AllocPassData<RpSkydomeCubeData>();
+
+        data->shared_data = skydome_cube.AddUniformBufferInput(
+            common_buffers.shared_data_res, Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+
+        data->transmittance_lut = skydome_cube.AddTextureInput(sky_transmittance_lut_, Ren::eStageBits::FragmentShader);
+        data->multiscatter_lut = skydome_cube.AddTextureInput(sky_multiscatter_lut_, Ren::eStageBits::FragmentShader);
+        data->moon_tex = skydome_cube.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
+        data->weather_tex = skydome_cube.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
+        data->cirrus_tex = skydome_cube.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
+        data->noise3d_tex = skydome_cube.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
+        frame_textures.envmap = data->color_tex = skydome_cube.AddColorOutput(p_list_->env.env_map);
+
+        rp_skydome_cube_.Setup(&view_state_, data);
+        skydome_cube.set_executor(&rp_skydome_cube_);
+    }
+
+    auto &skymap = rp_builder_.AddPass("SKYDOME");
+
+    auto *data = skymap.AllocPassData<RpSkydomeData>();
+
+    data->shared_data = skymap.AddUniformBufferInput(common_buffers.shared_data_res,
+                                                     Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
+    if (p_list_->env.env_map_name != "physical_sky") {
+        frame_textures.envmap = data->env_tex =
+            skymap.AddTextureInput(p_list_->env.env_map, Ren::eStageBits::FragmentShader);
+    } else {
+        data->sky_quality = settings.sky_quality;
+        frame_textures.envmap = data->env_tex =
+            skymap.AddTextureInput(frame_textures.envmap, Ren::eStageBits::FragmentShader);
+        data->phys.transmittance_lut = skymap.AddTextureInput(sky_transmittance_lut_, Ren::eStageBits::FragmentShader);
+        data->phys.multiscatter_lut = skymap.AddTextureInput(sky_multiscatter_lut_, Ren::eStageBits::FragmentShader);
+        data->phys.moon_tex = skymap.AddTextureInput(sky_moon_tex_, Ren::eStageBits::FragmentShader);
+        data->phys.weather_tex = skymap.AddTextureInput(sky_weather_tex_, Ren::eStageBits::FragmentShader);
+        data->phys.cirrus_tex = skymap.AddTextureInput(sky_cirrus_tex_, Ren::eStageBits::FragmentShader);
+        data->phys.noise3d_tex = skymap.AddTextureInput(sky_noise3d_tex_.get(), Ren::eStageBits::FragmentShader);
+    }
+
+    frame_textures.color = data->color_tex = skymap.AddColorOutput(MAIN_COLOR_TEX, frame_textures.color_params);
+    frame_textures.depth = data->depth_tex = skymap.AddDepthOutput(MAIN_DEPTH_TEX, frame_textures.depth_params);
+
+    rp_skydome_.Setup(&view_state_, data);
+    skymap.set_executor(&rp_skydome_);
 }
 
 void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
@@ -917,7 +1130,7 @@ void Eng::Renderer::AddForwardTransparentPass(const CommonBuffers &common_buffer
 
 void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
                                            const bool enable_gi) {
-    if (!p_list_->env.env_map) {
+    if (!frame_textures.envmap) {
         return;
     }
 
@@ -957,7 +1170,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
     data->spec_tex = gbuf_shade.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
 
     data->ltc_luts_tex = gbuf_shade.AddTextureInput(ltc_luts_, Stg::ComputeShader);
-    data->env_tex = gbuf_shade.AddTextureInput(p_list_->env.env_map, Stg::ComputeShader);
+    data->env_tex = gbuf_shade.AddTextureInput(frame_textures.envmap, Stg::ComputeShader);
 
     frame_textures.color = data->output_tex =
         gbuf_shade.AddStorageImageOutput(MAIN_COLOR_TEX, frame_textures.color_params, Stg::ComputeShader);
@@ -1426,7 +1639,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 params.format = Ren::eTexFormat::RawRG11F_B10F;
             }
             params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+            params.sampling.wrap = Ren::eTexWrap::ClampToBorder;
 
             resolved_color = data->output_tex = taa.AddColorOutput(RESOLVED_COLOR_TEX, params);
             data->output_history_tex = taa.AddColorOutput("Color History", params);

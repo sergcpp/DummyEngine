@@ -95,6 +95,7 @@ class RpSubpass {
     RpResRef AddTextureInput(const Ren::WeakTex2DRef &tex, Ren::eStageBits stages);
     RpResRef AddTextureInput(std::string_view name, Ren::eStageBits stages);
     RpResRef AddTextureInput(const Ren::Texture2DArray *tex, Ren::eStageBits stages);
+    RpResRef AddTextureInput(const Ren::Texture3D *tex, Ren::eStageBits stages);
 
     RpResRef AddHistoryTextureInput(RpResRef handle, Ren::eStageBits stages);
     RpResRef AddHistoryTextureInput(std::string_view name, Ren::eStageBits stages);

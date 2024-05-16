@@ -6,7 +6,7 @@
 INTERFACE_START(Shadow)
 
 struct Params {
-    MAT4_TYPE g_shadow_view_proj_mat;
+    mat4 g_shadow_view_proj_mat;
 };
 
 const int U_M_MATRIX_LOC = 12;

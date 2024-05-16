@@ -6,7 +6,7 @@
 INTERFACE_START(SSRTraceHQ)
 
 struct Params {
-    UVEC4_TYPE resolution;
+    uvec4 resolution;
 };
 
 const int LOCAL_GROUP_SIZE_X = 8;

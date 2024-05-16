@@ -13,10 +13,10 @@
 #include "shaders/ssr_write_indir_rt_dispatch_interface.h"
 #include "shaders/ssr_write_indirect_args_interface.h"
 
-void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const Ren::WeakTex2DRef &lm_direct,
-                                        const Ren::WeakTex2DRef lm_indir_sh[4], const bool deferred_shading,
-                                        const bool debug_denoise, const Ren::ProbeStorage *probe_storage,
-                                        const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, const Ren::WeakTex2DRef lm_indir_sh[4],
+                                        const bool deferred_shading, const bool debug_denoise,
+                                        const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
+                                        const PersistentGpuData &persistent_data,
                                         const AccelerationStructureData &acc_struct_data,
                                         const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
                                         RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
@@ -224,8 +224,9 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
             RpAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
-            const Ren::Binding bindings[] = {{Trg::SBufRO, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                                             {Trg::SBufRW, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::SBufRO, SSRWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                {Trg::SBufRW, SSRWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
             Ren::DispatchCompute(pi_ssr_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -303,8 +304,8 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
         });
     }
 
-    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf && env_map &&
-        int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
+    if ((ctx_.capabilities.raytracing || ctx_.capabilities.swrt) && acc_struct_data.rt_tlas_buf &&
+        frame_textures.envmap && int(settings.reflections_quality) >= int(eReflectionsQuality::Raytraced_Normal)) {
         RpResRef indir_rt_disp_buf;
 
         { // Prepare arguments for indirect RT dispatch
@@ -363,7 +364,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             data->noise_tex = rt_refl.AddTextureInput(noise_tex, stage);
             data->depth_tex = rt_refl.AddTextureInput(frame_textures.depth, stage);
             data->normal_tex = rt_refl.AddTextureInput(frame_textures.normal, stage);
-            data->env_tex = rt_refl.AddTextureInput(env_map, stage);
+            data->env_tex = rt_refl.AddTextureInput(frame_textures.envmap, stage);
             data->ray_counter = rt_refl.AddStorageReadonlyInput(ray_counter, stage);
             if (ray_rt_list) {
                 data->ray_list = rt_refl.AddStorageReadonlyInput(ray_rt_list, stage);

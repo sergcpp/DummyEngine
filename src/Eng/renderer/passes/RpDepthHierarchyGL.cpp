@@ -47,7 +47,7 @@ void Eng::RpDepthHierarchy::Execute(RpBuilder &builder) {
     }
     Ren::CopyBufferToBuffer(temp_stage_buffer, 0, temp_unif_buffer, 0, sizeof(DepthHierarchy::Params), nullptr);
 
-    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_UB_UNIF_PARAM_BUF, temp_unif_buffer.id());
+    glBindBufferBase(GL_UNIFORM_BUFFER, BIND_PUSH_CONSTANT_BUF, temp_unif_buffer.id());
 
     glDispatchCompute(grp_x, grp_y, 1);
 }

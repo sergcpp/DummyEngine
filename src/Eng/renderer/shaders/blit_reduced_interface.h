@@ -6,8 +6,8 @@
 INTERFACE_START(Reduced)
 
 struct Params {
-    VEC4_TYPE transform;
-    VEC4_TYPE offset;
+    vec4 transform;
+    vec4 offset;
 };
 
 const int SRC_TEX_SLOT = 0;

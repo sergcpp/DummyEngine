@@ -6,9 +6,9 @@
 INTERFACE_START(ProbeDebug)
 
 struct Params {
-    VEC4_TYPE grid_origin;
-    IVEC4_TYPE grid_scroll;
-    VEC4_TYPE grid_spacing;
+    vec4 grid_origin;
+    ivec4 grid_scroll;
+    vec4 grid_spacing;
 };
 
 const int IRRADIANCE_TEX_SLOT = 0;

@@ -133,6 +133,10 @@ Eng::RpResRef Eng::RpSubpass::AddTextureInput(const Ren::Texture2DArray *tex, co
     return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
 }
 
+Eng::RpResRef Eng::RpSubpass::AddTextureInput(const Ren::Texture3D *tex, const Ren::eStageBits stages) {
+    return builder_.ReadTexture(tex, Ren::eResState::ShaderResource, stages, *this);
+}
+
 Eng::RpResRef Eng::RpSubpass::AddHistoryTextureInput(RpResRef handle, const Ren::eStageBits stages) {
     return builder_.ReadHistoryTexture(handle, Ren::eResState::ShaderResource, stages, *this);
 }

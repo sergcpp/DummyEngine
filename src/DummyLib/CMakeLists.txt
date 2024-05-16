@@ -88,5 +88,9 @@ add_custom_command(TARGET DummyLib
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/renderer/shaders
                                                               ${WORKING_DIRECTORY}/assets/shaders/internal)
+add_custom_command(TARGET DummyLib
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E create_symlink ${CMAKE_CURRENT_SOURCE_DIR}/../Eng/renderer/textures
+                                                              ${WORKING_DIRECTORY}/assets/textures/internal)
 
 add_subdirectory(tests)

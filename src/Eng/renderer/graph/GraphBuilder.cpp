@@ -280,6 +280,47 @@ Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::Texture2DArray *ref, Ren::e
     return ret;
 }
 
+Eng::RpResRef Eng::RpBuilder::ReadTexture(const Ren::Texture3D *ref, Ren::eResState desired_state,
+                                          Ren::eStageBits stages, RpSubpass &pass) {
+    RpResource ret;
+    ret.type = eRpResType::Texture;
+
+    const uint16_t *ptex_index = name_to_texture_.Find(ref->name());
+    if (!ptex_index) {
+        RpAllocTex new_tex;
+        new_tex.read_count = 0;
+        new_tex.write_count = 0;
+        new_tex.used_in_stages = Ren::eStageBits::None;
+        new_tex.name = ref->name();
+        new_tex.external = true;
+
+        ret.index = textures_.emplace(new_tex);
+        name_to_texture_[new_tex.name] = ret.index;
+    } else {
+        ret.index = *ptex_index;
+    }
+
+    RpAllocTex &tex = textures_[ret.index];
+    tex.tex3d = ref;
+    ret._generation = tex._generation;
+    ret.desired_state = desired_state;
+    ret.stages = stages;
+
+    tex.read_in_passes.push_back({pass.index_, int16_t(pass.input_.size())});
+    ++tex.read_count;
+    ++pass.ref_count_;
+
+#ifndef NDEBUG
+    for (size_t i = 0; i < pass.output_.size(); i++) {
+        assert(pass.input_[i].type != eRpResType::Texture || pass.input_[i].index != ret.index);
+    }
+#endif
+
+    pass.input_.push_back(ret);
+
+    return ret;
+}
+
 Eng::RpResRef Eng::RpBuilder::ReadHistoryTexture(const RpResRef handle, const Ren::eResState desired_state,
                                                  const Ren::eStageBits stages, RpSubpass &pass) {
     assert(handle.type == eRpResType::Texture);
@@ -1569,16 +1610,16 @@ void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
             assert(tex->alias_of == -1);
         }
 
-        if (!tex->arr) {
-            if (tex->ref->resource_state != res.desired_state ||
-                tex->ref->resource_state == Ren::eResState::UnorderedAccess ||
-                tex->ref->resource_state == Ren::eResState::CopyDst) {
+        if (tex->tex3d) {
+            if (tex->tex3d->resource_state != res.desired_state ||
+                tex->tex3d->resource_state == Ren::eResState::UnorderedAccess ||
+                tex->tex3d->resource_state == Ren::eResState::CopyDst) {
                 src_stages |= tex->used_in_stages;
                 dst_stages |= res.stages;
                 tex->used_in_stages = Ren::eStageBits::None;
-                res_transitions.emplace_back(tex->ref.get(), res.desired_state);
+                res_transitions.emplace_back(tex->tex3d, res.desired_state);
             }
-        } else {
+        } else if (tex->arr) {
             if (tex->arr->resource_state != res.desired_state ||
                 tex->arr->resource_state == Ren::eResState::UnorderedAccess ||
                 tex->arr->resource_state == Ren::eResState::CopyDst) {
@@ -1586,6 +1627,15 @@ void Eng::RpBuilder::HandleResourceTransition(const RpResource &res,
                 dst_stages |= res.stages;
                 tex->used_in_stages = Ren::eStageBits::None;
                 res_transitions.emplace_back(tex->arr, res.desired_state);
+            }
+        } else {
+            if (tex->ref->resource_state != res.desired_state ||
+                tex->ref->resource_state == Ren::eResState::UnorderedAccess ||
+                tex->ref->resource_state == Ren::eResState::CopyDst) {
+                src_stages |= tex->used_in_stages;
+                dst_stages |= res.stages;
+                tex->used_in_stages = Ren::eStageBits::None;
+                res_transitions.emplace_back(tex->ref.get(), res.desired_state);
             }
         }
         tex->used_in_stages |= res.stages;

@@ -4,6 +4,8 @@
 
 #include <Ren/Utils.h>
 
+#include "../scene/Atmosphere.h"
+
 namespace RendererInternal {
 float RadicalInverse_VdC(uint32_t bits) {
     bits = (bits << 16u) | (bits >> 16u);
@@ -391,4 +393,108 @@ std::unique_ptr<uint8_t[]> Eng::Renderer::Generate_ConeTraceLUT(const int resx, 
     out_c_header += "};";
 
     return out_data;
+}
+
+std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyTransmittanceLUT(const AtmosphereParams &params) {
+    std::vector<Ren::Vec4f> sky_transmittance(SKY_TRANSMITTANCE_LUT_W * SKY_TRANSMITTANCE_LUT_H);
+    for (int y = 0; y < SKY_TRANSMITTANCE_LUT_H; ++y) {
+        const float v = float(y) / SKY_TRANSMITTANCE_LUT_H;
+        for (int x = 0; x < SKY_TRANSMITTANCE_LUT_W; ++x) {
+            const float u = float(x) / SKY_TRANSMITTANCE_LUT_W;
+
+            const auto uv = Ren::Vec2f{u, v};
+
+            float view_height, view_zenith_cos_angle;
+            UvToLutTransmittanceParams(params, uv, view_height, view_zenith_cos_angle);
+
+            const auto world_pos = Ren::Vec4f{0.0f, view_height - params.planet_radius, 0.0f, 0.0f};
+            const auto world_dir = Ren::Vec4f{0.0f, view_zenith_cos_angle,
+                                              -sqrtf(1.0f - view_zenith_cos_angle * view_zenith_cos_angle), 0.0f};
+
+            const Ren::Vec4f optical_depthlight = IntegrateOpticalDepth(params, world_pos, world_dir);
+            const Ren::Vec4f transmittance = Ren::Vec4f{expf(-optical_depthlight[0]), expf(-optical_depthlight[1]),
+                                                        expf(-optical_depthlight[2]), expf(-optical_depthlight[3])};
+
+            sky_transmittance[y * SKY_TRANSMITTANCE_LUT_W + x] = transmittance;
+        }
+    }
+    return sky_transmittance;
+}
+
+std::vector<Ren::Vec4f> Eng::Renderer::Generate_SkyMultiscatterLUT(const AtmosphereParams &params,
+                                                                   Ren::Span<const Ren::Vec4f> transmittance_lut) {
+    AtmosphereParams _params = params;
+    _params.moon_radius = 0.0f;
+
+    const float SphereSolidAngle = 4.0f * Ren::Pi<float>();
+    const float IsotropicPhase = 1.0f / SphereSolidAngle;
+
+    const float PlanetRadiusOffset = 0.01f;
+    const int RaysCountSqrt = 8;
+
+    // Taken from: https://github.com/sebh/UnrealEngineSkyAtmosphere
+
+    std::vector<Ren::Vec4f> sky_multiscatter(SKY_MULTISCATTER_LUT_RES * SKY_MULTISCATTER_LUT_RES);
+    for (int j = 0; j < SKY_MULTISCATTER_LUT_RES; ++j) {
+        const float y = (j + 0.5f) / SKY_MULTISCATTER_LUT_RES;
+        for (int i = 0; i < SKY_MULTISCATTER_LUT_RES; ++i) {
+            const float x = (i + 0.5f) / SKY_MULTISCATTER_LUT_RES;
+
+            const auto uv = Ren::Vec2f{from_sub_uvs_to_unit(x, SKY_MULTISCATTER_LUT_RES),
+                                       from_sub_uvs_to_unit(y, SKY_MULTISCATTER_LUT_RES)};
+
+            const float cos_sun_zenith_angle = uv[0] * 2.0f - 1.0f;
+            const auto sun_dir = Ren::Vec4f{0.0f, cos_sun_zenith_angle,
+                                            -sqrtf(saturate(1.0f - cos_sun_zenith_angle * cos_sun_zenith_angle)), 0.0f};
+
+            const float view_height =
+                saturate(uv[1] + PlanetRadiusOffset) * (params.atmosphere_height - PlanetRadiusOffset);
+
+            const auto world_pos = Ren::Vec4f{0.0f, view_height, 0.0f, 0.0f};
+            auto world_dir = Ren::Vec4f{0.0f, 1.0f, 0.0f, 0.0f};
+
+            std::pair<Ren::Vec4f, Ren::Vec4f> total_res = {};
+
+            for (int rj = 0; rj < RaysCountSqrt; ++rj) {
+                const float rv = (rj + 0.5f) / RaysCountSqrt;
+                const float phi = acosf(1.0f - 2.0f * rv);
+
+                const float cos_phi = cosf(phi), sin_phi = sinf(phi);
+                for (int ri = 0; ri < RaysCountSqrt; ++ri) {
+                    const float ru = (ri + 0.5f) / RaysCountSqrt;
+                    const float theta = 2.0f * Ren::Pi<float>() * ru;
+
+                    const float cos_theta = cosf(theta), sin_theta = sinf(theta);
+
+                    world_dir[0] = cos_theta * sin_phi;
+                    world_dir[1] = cos_phi;
+                    world_dir[2] = -sin_theta * sin_phi;
+
+                    Ren::Vec4f transmittance = 1.0f;
+                    const std::pair<Ren::Vec4f, Ren::Vec4f> res =
+                        IntegrateScatteringMain<true>(_params, world_pos, world_dir, FLT_MAX, sun_dir, {}, 1.0f,
+                                                      transmittance_lut, {}, 0.0f, 32, transmittance);
+
+                    total_res.first += res.first;
+                    total_res.second += res.second;
+                }
+            }
+
+            total_res.first *= SphereSolidAngle / (RaysCountSqrt * RaysCountSqrt);
+            total_res.second *= SphereSolidAngle / (RaysCountSqrt * RaysCountSqrt);
+
+            const Ren::Vec4f in_scattered_luminance = total_res.first * IsotropicPhase;
+            const Ren::Vec4f multi_scat_as_1 = total_res.second * IsotropicPhase;
+
+            // For a serie, sum_{n=0}^{n=+inf} = 1 + r + r^2 + r^3 + ... + r^n = 1 / (1.0 - r), see
+            // https://en.wikipedia.org/wiki/Geometric_series
+            const Ren::Vec4f r = multi_scat_as_1;
+            const Ren::Vec4f sum_of_all_multiscattering_events_contribution = 1.0f / (1.0f - r);
+            const Ren::Vec4f L = in_scattered_luminance * sum_of_all_multiscattering_events_contribution;
+
+            sky_multiscatter[j * SKY_MULTISCATTER_LUT_RES + i] = L;
+        }
+    }
+
+    return sky_multiscatter;
 }

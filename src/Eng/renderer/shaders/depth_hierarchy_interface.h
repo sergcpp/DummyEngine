@@ -6,8 +6,8 @@
 INTERFACE_START(DepthHierarchy)
 
 struct Params {
-    IVEC4_TYPE depth_size;
-    VEC4_TYPE clip_info;
+    ivec4 depth_size;
+    vec4 clip_info;
 };
 
 const int LOCAL_GROUP_SIZE_X = 64;

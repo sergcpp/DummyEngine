@@ -307,6 +307,15 @@ void GSBaseState::Enter() {
         return true;
     });
 
+    cmdline_->RegisterCommand("r_sky", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
+        if (argv[1].val > 0.5) {
+            renderer_->settings.sky_quality = Eng::eSkyQuality::High;
+        } else {
+            renderer_->settings.sky_quality = Eng::eSkyQuality::Low;
+        }
+        return true;
+    });
+
     cmdline_->RegisterCommand("r_updateProbes", [this](const int argc, Eng::Cmdline::ArgData *argv) -> bool {
         Eng::SceneData &scene_data = scene_manager_->scene_data();
 
@@ -1060,6 +1069,7 @@ void GSBaseState::InitRenderer_PT() {
             s.preferred_device = viewer_->app_params.device_name.c_str();
         }
         s.use_hwrt = !viewer_->app_params.pt_nohwrt;
+        s.validation_level = viewer_->app_params.validation_level;
         ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
         Ray::unet_filter_properties_t unet_props;
@@ -1078,23 +1088,27 @@ void GSBaseState::InitScene_PT() {
         env_desc.env_col[0] = env_desc.back_col[0] = scene_data.env.env_col[0];
         env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
         env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
-
+        
         if (!scene_data.env.env_map_name.empty()) {
-            std::string env_map_path = "assets_pc/textures/";
-            env_map_path += scene_data.env.env_map_name;
-            env_map_path.replace(env_map_path.length() - 3, 3, "hdr");
+            if (scene_data.env.env_map_name == "physical_sky") {
+                env_desc.back_map = env_desc.env_map = Ray::PhysicalSkyTexture;
+            } else {
+                std::string env_map_path = "assets_pc/textures/";
+                env_map_path += scene_data.env.env_map_name;
+                env_map_path.replace(env_map_path.length() - 3, 3, "hdr");
 
-            int width, height;
-            const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(env_map_path.c_str(), width, height);
+                int width, height;
+                const std::vector<uint8_t> image_rgbe = Eng::LoadHDR(env_map_path.c_str(), width, height);
 
-            Ray::tex_desc_t tex_desc;
-            tex_desc.w = width;
-            tex_desc.h = height;
-            tex_desc.data = image_rgbe;
-            tex_desc.format = Ray::eTextureFormat::RGBA8888;
-            tex_desc.is_srgb = false;
-            tex_desc.force_no_compression = true;
-            env_desc.env_map = env_desc.back_map = ray_scene_->AddTexture(tex_desc);
+                Ray::tex_desc_t tex_desc;
+                tex_desc.w = width;
+                tex_desc.h = height;
+                tex_desc.data = image_rgbe;
+                tex_desc.format = Ray::eTextureFormat::RGBA8888;
+                tex_desc.is_srgb = false;
+                tex_desc.force_no_compression = true;
+                env_desc.env_map = env_desc.back_map = ray_scene_->AddTexture(tex_desc);
+            }
         }
 
         env_desc.env_map_rotation = env_desc.back_map_rotation = scene_data.env.env_map_rot;
