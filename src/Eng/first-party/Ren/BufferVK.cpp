@@ -106,7 +106,7 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
                                                void *_cmd_buf, const uint32_t init_off) {
     FreelistAlloc::Allocation alloc = alloc_->Alloc(suballoc_align_, req_size);
     while (alloc.pool == 0xffff) {
-        Resize(uint32_t(size_ * 1.5f));
+        Resize(uint32_t(size_ * 1.25f));
         alloc = alloc_->Alloc(suballoc_align_, req_size);
     }
     assert(alloc.pool == 0);
@@ -269,10 +269,12 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
     VkMemoryRequirements memory_requirements = {};
     api_ctx_->vkGetBufferMemoryRequirements(api_ctx_->device, new_buf, &memory_requirements);
 
+    VkMemoryPropertyFlags memory_props = GetVkMemoryPropertyFlags(type_);
+
     VkMemoryAllocateInfo buf_alloc_info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     buf_alloc_info.allocationSize = memory_requirements.size;
     buf_alloc_info.memoryTypeIndex = FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits,
-                                                    GetVkMemoryPropertyFlags(type_), buf_alloc_info.allocationSize);
+                                                    memory_props, buf_alloc_info.allocationSize);
 
     VkMemoryAllocateFlagsInfoKHR additional_flags = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO_KHR};
     additional_flags.flags = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT_KHR;
@@ -282,7 +284,34 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
     }
 
     VkDeviceMemory buffer_mem = {};
-    res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
+
+    res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+    while (buf_alloc_info.memoryTypeIndex != 0xffffffff) {
+        res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
+        if (res == VK_SUCCESS) {
+            break;
+        }
+        buf_alloc_info.memoryTypeIndex =
+            FindMemoryType(buf_alloc_info.memoryTypeIndex + 1, &api_ctx_->mem_properties,
+                           memory_requirements.memoryTypeBits, memory_props, buf_alloc_info.allocationSize);
+    }
+    if (res == VK_ERROR_OUT_OF_DEVICE_MEMORY) {
+        // api_ctx_->log()->Warning("Not enough device memory, falling back to CPU RAM!");
+        memory_props &= ~VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        buf_alloc_info.memoryTypeIndex =
+            FindMemoryType(0, &api_ctx_->mem_properties, memory_requirements.memoryTypeBits, memory_props,
+                           buf_alloc_info.allocationSize);
+        while (buf_alloc_info.memoryTypeIndex != 0xffffffff) {
+            res = api_ctx_->vkAllocateMemory(api_ctx_->device, &buf_alloc_info, nullptr, &buffer_mem);
+            if (res == VK_SUCCESS) {
+                break;
+            }
+            buf_alloc_info.memoryTypeIndex =
+                FindMemoryType(buf_alloc_info.memoryTypeIndex + 1, &api_ctx_->mem_properties,
+                               memory_requirements.memoryTypeBits, memory_props, buf_alloc_info.allocationSize);
+        }
+    }
     assert(res == VK_SUCCESS && "Failed to allocate memory!");
 
     res = api_ctx_->vkBindBufferMemory(api_ctx_->device, new_buf, buffer_mem, 0 /* offset */);
