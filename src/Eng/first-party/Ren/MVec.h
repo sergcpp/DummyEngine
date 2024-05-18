@@ -73,7 +73,7 @@ template <typename T, int N> class Vec {
 
     force_inline Vec<T, N> &operator+=(const Vec<T, N> &rhs) {
         for (int i = 0; i < N; i++) {
-            data_[i]+= rhs.data_[i];
+            data_[i] += rhs.data_[i];
         }
         return *this;
     }
@@ -211,6 +211,8 @@ template <typename T> force_inline T Max(const T v1, const T v2) { return v1 < v
 template <typename T, typename U> force_inline T Clamp(const T &v1, const U min_val, const U max_val) {
     return Min(Max(v1, min_val), max_val);
 }
+
+template <typename T> force_inline T Saturate(const T &v1) { return Clamp(v1, T{0}, T{1}); }
 
 template <typename T, typename S> force_inline T Mix(const T &x, const T &y, const S &a) {
     return x * (S(1) - a) + y * a;
