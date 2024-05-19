@@ -143,7 +143,7 @@ template <typename Alloc = std::allocator<char>> class BasicString {
 
     friend bool operator==(const BasicString &s1, const char *s2) { return s1.str_ && strcmp(s1.str_, s2) == 0; }
 
-    friend bool operator!=(const BasicString &s1, const char *s2) { return strcmp(s1.str_, s2) != 0; }
+    friend bool operator!=(const BasicString &s1, const char *s2) { return !operator==(s1, s2); }
 
     friend bool operator==(const BasicString &s1, const std::string_view s2) { return s1.str_ == s2; }
 
