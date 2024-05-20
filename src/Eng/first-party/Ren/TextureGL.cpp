@@ -727,6 +727,8 @@ void Ren::Texture2D::InitFromRAWData(const Buffer &sbuf, int data_off[6], const 
 
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+    params.cube = 1;
+
     ApplySampling(p.sampling, log);
 }
 

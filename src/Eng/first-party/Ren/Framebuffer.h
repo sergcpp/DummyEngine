@@ -19,6 +19,7 @@ class Framebuffer {
 #endif
     struct Attachment {
         WeakTex2DRef ref;
+        uint8_t view_index = 0;
         TexHandle handle; // handle is stored to detect texture reallocation
     };
 
@@ -47,6 +48,8 @@ class Framebuffer {
 
     bool Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
                  const WeakTex2DRef _stencil_attachment, Span<const WeakTex2DRef> _color_attachments) const;
+    bool Changed(const RenderPass &render_pass, const WeakTex2DRef _depth_attachment,
+                 const WeakTex2DRef _stencil_attachment, Span<const RenderTarget> _color_attachments) const;
 
     bool Setup(ApiContext *api_ctx, const RenderPass &render_pass, int w, int h, WeakTex2DRef depth_attachment,
                WeakTex2DRef stencil_attachment, Span<const WeakTex2DRef> color_attachments, bool is_multisampled,

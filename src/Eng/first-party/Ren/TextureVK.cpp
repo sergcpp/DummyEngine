@@ -1176,6 +1176,39 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
 #endif
     }
 
+    if (uint32_t(params.usage & eTexUsageBits::RenderTarget) != 0) {
+        // create additional image views
+        for (int i = 0; i < 6; ++i) {
+            VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
+            view_info.image = handle_.img;
+            view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            view_info.format = g_vk_formats[size_t(p.format)];
+            if (bool(p.flags & eTexFlagBits::SRGB)) {
+                view_info.format = ToSRGBFormat(view_info.format);
+            }
+            view_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            view_info.subresourceRange.baseMipLevel = 0;
+            view_info.subresourceRange.levelCount = mip_count;
+            view_info.subresourceRange.baseArrayLayer = i;
+            view_info.subresourceRange.layerCount = 1;
+
+            handle_.views.emplace_back(VK_NULL_HANDLE);
+            const VkResult res = api_ctx_->vkCreateImageView(api_ctx_->device, &view_info, nullptr, &handle_.views.back());
+            if (res != VK_SUCCESS) {
+                log->Error("Failed to create image view!");
+                return;
+            }
+
+#ifdef ENABLE_OBJ_LABELS
+            VkDebugUtilsObjectNameInfoEXT name_info = {VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT};
+            name_info.objectType = VK_OBJECT_TYPE_IMAGE_VIEW;
+            name_info.objectHandle = uint64_t(handle_.views.back());
+            name_info.pObjectName = name_.c_str();
+            api_ctx_->vkSetDebugUtilsObjectNameEXT(api_ctx_->device, &name_info);
+#endif
+        }
+    }
+
     assert(p.samples == 1);
     assert(sbuf.type() == eBufType::Upload);
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
@@ -2018,7 +2051,7 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
 
 void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
                            const uint32_t src_y, Texture2D &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
-                           const uint32_t dst_y, const uint32_t width, const uint32_t height) {
+                           const uint32_t dst_y, const uint32_t dst_face, const uint32_t width, const uint32_t height) {
     VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     assert(src_tex.resource_state == eResState::CopySrc);
@@ -2039,7 +2072,7 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
     } else {
         reg.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     }
-    reg.dstSubresource.baseArrayLayer = 0;
+    reg.dstSubresource.baseArrayLayer = dst_face;
     reg.dstSubresource.layerCount = 1;
     reg.dstSubresource.mipLevel = dst_level;
     reg.dstOffset = {int32_t(dst_x), int32_t(dst_y), 0};

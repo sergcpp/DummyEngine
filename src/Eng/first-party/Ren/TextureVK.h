@@ -156,8 +156,8 @@ class Texture2D : public RefCounter {
 };
 
 void CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
-                      Texture2D &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t width,
-                      uint32_t height);
+                      Texture2D &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t dst_face,
+                      uint32_t width, uint32_t height);
 
 void ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf);
 
