@@ -78,7 +78,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
     }
 
     const Ren::Binding bindings[] = {
-        {Ren::eBindTarget::SBuf, BIND_BINDLESS_TEX, *textures_buf.ref},
+        {Ren::eBindTarget::SBufRO, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
@@ -86,12 +86,12 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTGICache::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
-        {Ren::eBindTarget::SBuf, RTGICache::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-        {Ren::eBindTarget::SBuf, RTGICache::MATERIAL_BUF_SLOT, *materials_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTGICache::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTGICache::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::TBuf, RTGICache::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
-        {Ren::eBindTarget::SBuf, RTGICache::LIGHTS_BUF_SLOT, *lights_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTGICache::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},

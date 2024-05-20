@@ -330,8 +330,8 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::SBuf, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-        {Ren::eBindTarget::SBuf, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::TBuf, RTDebug::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
@@ -340,7 +340,7 @@ void Eng::RpDebugRT::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTDebug::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESHES_BUF_SLOT, *meshes_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTDebug::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
-        {Ren::eBindTarget::SBuf, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTDebug::LIGHTS_BUF_SLOT, *lights_buf.ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 0, *lm_tex[0]->ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 1, *lm_tex[1]->ref},
         {Ren::eBindTarget::Tex2DSampled, RTDebug::LMAP_TEX_SLOTS, 2, *lm_tex[2]->ref},

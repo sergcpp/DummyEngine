@@ -16,10 +16,11 @@ const uint32_t gl_binding_targets[] = {
     GL_TEXTURE_2D_ARRAY,       // Tex2DArraySampled
     GL_TEXTURE_2D_MULTISAMPLE, // Tex2DMs
     GL_TEXTURE_CUBE_MAP_ARRAY, // TexCubeArray
-    GL_TEXTURE_3D,             // Tex3D
+    GL_TEXTURE_3D,             // Tex3DSampled
     GL_TEXTURE_BUFFER,         // TBuf
     GL_UNIFORM_BUFFER,         // UBuf
-    GL_SHADER_STORAGE_BUFFER,  // SBuf
+    GL_SHADER_STORAGE_BUFFER,  // SBufRO
+    GL_SHADER_STORAGE_BUFFER,  // SBufRW
     0xffffffff,                // Image2D
     0xffffffff,                // Image2DArray
     0xffffffff                 // AccStruct
@@ -46,7 +47,7 @@ void Ren::DispatchCompute(const Pipeline &comp_pipeline, Vec3u grp_count, Span<c
             if (b.sampler) {
                 ren_glBindSampler(GLuint(b.loc + b.offset), b.sampler->id());
             }
-        } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
+        } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
             if (b.offset) {
                 assert(b.size != 0);
                 glBindBufferRange(GLBindTarget(b.trg), b.loc, b.handle.buf->id(), b.offset, b.size);
@@ -101,7 +102,7 @@ void Ren::DispatchComputeIndirect(const Pipeline &comp_pipeline, const Buffer &i
             }
         } else if (b.trg == eBindTarget::Tex3DSampled) {
             ren_glBindTextureUnit_Comp(GLBindTarget(b.trg), GLuint(b.loc + b.offset), GLuint(b.handle.tex3d->id()));
-        } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBuf) {
+        } else if (b.trg == eBindTarget::UBuf || b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
             if (b.offset) {
                 assert(b.size != 0);
                 glBindBufferRange(GLBindTarget(b.trg), b.loc, b.handle.buf->id(), b.offset, b.size);

@@ -35,10 +35,10 @@ void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
-                                     {Ren::eBindTarget::SBuf, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
                                      {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
@@ -90,11 +90,11 @@ void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
                                      {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
-                                     {Ren::eBindTarget::SBuf, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
-                                     {Ren::eBindTarget::SBuf, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::NDX_BUF_SLOT, *ndx_buf.ref},
+                                     {Ren::eBindTarget::SBufRO, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
                                      {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];
@@ -181,8 +181,8 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::SBuf, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
-        {Ren::eBindTarget::SBuf, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::TBuf, RTShadows::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTShadows::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTShadows::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -190,7 +190,7 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTShadows::MESH_INSTANCES_BUF_SLOT, *mesh_instances_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTShadows::VTX_BUF1_SLOT, *vtx_buf1.tbos[0]},
         {Ren::eBindTarget::TBuf, RTShadows::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
-        {Ren::eBindTarget::SBuf, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
+        {Ren::eBindTarget::SBufRO, RTShadows::TILE_LIST_SLOT, *tile_list_buf.ref},
         {Ren::eBindTarget::Image2D, RTShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
     VkDescriptorSet descr_sets[2];

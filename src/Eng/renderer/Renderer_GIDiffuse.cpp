@@ -269,9 +269,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DSampled, GIClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
                 {Trg::Tex2DSampled, GIClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::SBuf, GIClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                {Trg::SBuf, GIClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
-                {Trg::SBuf, GIClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
+                {Trg::SBufRO, GIClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                {Trg::SBufRO, GIClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
+                {Trg::SBufRO, GIClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
                 {Trg::TBuf, GIClassifyTiles::SOBOL_BUF_SLOT, *sobol_buf.tbos[0]},
                 {Trg::TBuf, GIClassifyTiles::SCRAMLING_TILE_BUF_SLOT, *scrambling_tile_buf.tbos[0]},
                 {Trg::TBuf, GIClassifyTiles::RANKING_TILE_BUF_SLOT, *ranking_tile_buf.tbos[0]},
@@ -321,8 +321,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
             RpAllocBuf &indir_args = builder.GetWriteBuffer(data->indir_disp_buf);
 
-            const Ren::Binding bindings[] = {{Trg::SBuf, GIWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                                             {Trg::SBuf, GIWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
+            const Ren::Binding bindings[] = {{Trg::SBufRW, GIWriteIndirectArgs::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                                             {Trg::SBufRW, GIWriteIndirectArgs::INDIR_ARGS_SLOT, *indir_args.ref}};
 
             Ren::DispatchCompute(pi_gi_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -381,10 +381,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                              {Trg::Tex2DSampled, GITraceSS::COLOR_TEX_SLOT, *color_tex.ref},
                                              {Trg::Tex2DSampled, GITraceSS::NORM_TEX_SLOT, *normal_tex.ref},
                                              {Trg::Tex2DSampled, GITraceSS::NOISE_TEX_SLOT, *noise_tex.ref},
-                                             {Trg::SBuf, GITraceSS::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
+                                             {Trg::SBufRO, GITraceSS::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                                              {Trg::Image2D, GITraceSS::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
-                                             {Trg::SBuf, GITraceSS::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
-                                             {Trg::SBuf, GITraceSS::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
+                                             {Trg::SBufRW, GITraceSS::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
+                                             {Trg::SBufRW, GITraceSS::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
             GITraceSS::Params uniform_params;
             uniform_params.resolution =
@@ -424,8 +424,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 RpAllocBuf &indir_disp_buf = builder.GetWriteBuffer(data->indir_disp_buf);
 
                 const Ren::Binding bindings[] = {
-                    {Trg::SBuf, GIWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
-                    {Trg::SBuf, GIWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
+                    {Trg::SBufRW, GIWriteIndirRTDispatch::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
+                    {Trg::SBufRW, GIWriteIndirRTDispatch::INDIR_ARGS_SLOT, *indir_disp_buf.ref}};
 
                 Ren::DispatchCompute(pi_gi_rt_write_indirect_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
                                      builder.ctx().default_descr_alloc(), builder.ctx().log());
@@ -614,7 +614,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, GIReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
                 {Trg::Tex2DSampled, GIReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
                 {Trg::Tex2DSampled, GIReproject::GI_TEX_SLOT, *gi_tex.ref},
-                {Trg::SBuf, GIReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::SBufRO, GIReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
                 {Trg::Image2D, GIReproject::OUT_AVG_GI_IMG_SLOT, *out_avg_gi_tex.ref},
                 {Trg::Image2D, GIReproject::OUT_VERIANCE_IMG_SLOT, *out_variance_tex.ref},
@@ -697,7 +697,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, GIPrefilter::GI_TEX_SLOT, *gi_tex.ref},
                 {Trg::Tex2DSampled, GIPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2DSampled, GIPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::SBuf, GIPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::SBufRO, GIPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIPrefilter::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
                 {Trg::Image2D, GIPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
@@ -786,7 +786,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::Tex2DSampled, GIResolveTemporal::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                {Trg::SBuf, GIResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::SBufRO, GIResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, GIResolveTemporal::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
                 {Trg::Image2D, GIResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
 
@@ -856,7 +856,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                              //{Trg::Tex2DSampled, GIBlur::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
                                              {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                              {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                             {Trg::SBuf, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                             {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                                              {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
             GIBlur::Params uniform_params;
@@ -927,7 +927,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                              //{Trg::Tex2DSampled, GIBlur::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
                                              {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                                              {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                             {Trg::SBuf, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                                             {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                                              {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
             GIBlur::Params uniform_params;

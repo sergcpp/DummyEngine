@@ -109,11 +109,11 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << b.loc)) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << b.loc);
-        } else if (b.trg == eBindTarget::SBuf) {
+        } else if (b.trg == eBindTarget::SBufRO || b.trg == eBindTarget::SBufRW) {
             auto &sbuf = sbuf_infos[descr_sizes.sbuf_count++];
             sbuf.buffer = b.handle.buf->vk_handle();
             sbuf.offset = b.offset;
-            sbuf.range = b.offset ? b.size : VK_WHOLE_SIZE;
+            sbuf.range = (b.offset || b.size) ? (b.size ? b.size : (b.handle.buf->size() - b.offset)) : VK_WHOLE_SIZE;
 
             auto &new_write = descr_writes.emplace_back();
             new_write = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
