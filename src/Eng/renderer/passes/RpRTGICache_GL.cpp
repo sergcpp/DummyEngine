@@ -80,7 +80,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::SBuf, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -92,13 +92,13 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTGICache::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBuf, RTGICache::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_gi_tex.arr}};
 
     RTGICache::Params uniform_params = {};

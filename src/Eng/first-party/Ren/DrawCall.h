@@ -19,11 +19,11 @@ class Texture3D;
 class Texture2DArray;
 
 enum class eBindTarget : uint16_t {
-    Tex2D,
-    Tex2DArray,
+    Tex2DSampled,
+    Tex2DArraySampled,
     Tex2DMs,
     TexCubeArray,
-    Tex3D,
+    Tex3DSampled,
     TBuf,
     UBuf,
     SBuf,

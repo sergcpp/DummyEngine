@@ -22,7 +22,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
     uint64_t used_bindings = 0;
 
     for (const auto &b : bindings) {
-        if (b.trg == eBindTarget::Tex2D) {
+        if (b.trg == eBindTarget::Tex2DSampled) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             if (b.sampler) {
                 info.sampler = b.sampler->vk_handle();
@@ -47,7 +47,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << (b.loc + b.offset))) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << (b.loc + b.offset));
-        } else if (b.trg == eBindTarget::Tex2DArray) {
+        } else if (b.trg == eBindTarget::Tex2DArraySampled) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             if (b.sampler) {
                 info.sampler = b.sampler->vk_handle();
@@ -67,7 +67,7 @@ VkDescriptorSet Ren::PrepareDescriptorSet(ApiContext *api_ctx, VkDescriptorSetLa
 
             assert((used_bindings & (1ull << (b.loc + b.offset))) == 0 && "Bindings overlap detected!");
             used_bindings |= (1ull << (b.loc + b.offset));
-        } else if (b.trg == eBindTarget::Tex3D) {
+        } else if (b.trg == eBindTarget::Tex3DSampled) {
             auto &info = img_sampler_infos[descr_sizes.img_sampler_count++];
             info.sampler = b.handle.tex3d->handle().sampler;
             info.imageView = b.handle.tex3d->handle().views[0];

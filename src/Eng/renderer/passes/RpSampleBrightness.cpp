@@ -50,7 +50,7 @@ void Eng::RpSampleBrightness::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = res_[1];
 
     { // Sample texture
-        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2D, Reduced::SRC_TEX_SLOT, *input_tex.ref}};
+        const Ren::Binding bindings[] = {{Ren::eBindTarget::Tex2DSampled, Reduced::SRC_TEX_SLOT, *input_tex.ref}};
 
         const Ren::RenderTarget render_targets[] = {{reduced_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 

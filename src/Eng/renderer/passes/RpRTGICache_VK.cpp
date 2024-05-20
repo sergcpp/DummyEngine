@@ -36,7 +36,7 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::AccStruct, RTGICache::TLAS_SLOT, *acc_struct},
         {Ren::eBindTarget::SBuf, RTGICache::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTGICache::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -44,13 +44,13 @@ void Eng::RpRTGICache::Execute_HWRT_Inline(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTGICache::VTX_BUF2_SLOT, *vtx_buf2.ref},
         {Ren::eBindTarget::SBuf, RTGICache::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBuf, RTGICache::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.arr}};
 
     VkDescriptorSet descr_sets[2];
@@ -149,7 +149,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -161,13 +161,13 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTGICache::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBuf, RTGICache::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGICache::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTGICache::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGICache::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::DISTANCE_TEX_SLOT, *distance_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, RTGICache::OFFSET_TEX_SLOT, *offset_tex.arr},
         {Ren::eBindTarget::Image2DArray, RTGICache::OUT_RAY_DATA_IMG_SLOT, *out_ray_data_tex.arr}};
 
     VkDescriptorSet descr_sets[2];

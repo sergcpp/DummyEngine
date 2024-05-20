@@ -28,8 +28,8 @@ void Eng::RpDebugProbes::Execute(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2DArray, ProbeDebug::OFFSET_TEX_SLOT, *offset_tex.arr},
-        {Ren::eBindTarget::Tex2DArray, ProbeDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr}};
+        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::OFFSET_TEX_SLOT, *offset_tex.arr},
+        {Ren::eBindTarget::Tex2DArraySampled, ProbeDebug::IRRADIANCE_TEX_SLOT, *irradiance_tex.arr}};
 
     ProbeDebug::Params uniform_params = {};
     uniform_params.grid_origin =

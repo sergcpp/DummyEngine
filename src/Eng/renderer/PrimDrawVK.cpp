@@ -39,7 +39,7 @@ void Eng::PrimDraw::DrawPrim(const ePrim prim, const Ren::ProgramRef &p, Ren::Sp
         Ren::SmallVector<VkImageMemoryBarrier, 16> img_barriers;
 
         for (const auto &b : bindings) {
-            if (b.trg == Ren::eBindTarget::Tex2D) {
+            if (b.trg == Ren::eBindTarget::Tex2DSampled) {
                 assert(b.handle.tex->resource_state == Ren::eResState::ShaderResource ||
                        b.handle.tex->resource_state == Ren::eResState::DepthRead ||
                        b.handle.tex->resource_state == Ren::eResState::StencilTestDepthFetch);

@@ -99,8 +99,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             RpAllocTex &out_irr_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArray, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                                             {Trg::Tex2DArray, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
+                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
                                              {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_irr_tex.arr}};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
@@ -141,8 +141,8 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             RpAllocTex &offset_tex = builder.GetReadTexture(data->offset_tex);
             RpAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArray, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                                             {Trg::Tex2DArray, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
+            const Ren::Binding bindings[] = {{Trg::Tex2DArraySampled, ProbeBlend::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
+                                             {Trg::Tex2DArraySampled, ProbeBlend::OFFSET_TEX_SLOT, *offset_tex.arr},
                                              {Trg::Image2DArray, ProbeBlend::OUT_IMG_SLOT, *out_dist_tex.arr}};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
@@ -179,8 +179,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             RpAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArray, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                                             {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.arr}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DArraySampled, ProbeRelocate::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
+                {Trg::Image2DArray, ProbeRelocate::OUT_IMG_SLOT, *out_dist_tex.arr}};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
@@ -225,8 +226,9 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             RpAllocTex &ray_data_tex = builder.GetReadTexture(data->ray_data);
             RpAllocTex &out_dist_tex = builder.GetWriteTexture(data->output_tex);
 
-            const Ren::Binding bindings[] = {{Trg::Tex2DArray, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
-                                             {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.arr}};
+            const Ren::Binding bindings[] = {
+                {Trg::Tex2DArraySampled, ProbeClassify::RAY_DATA_TEX_SLOT, *ray_data_tex.arr},
+                {Trg::Image2DArray, ProbeClassify::OUT_IMG_SLOT, *out_dist_tex.arr}};
 
             const Ren::Vec3f &grid_origin = persistent_data.probe_volume.origin;
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;

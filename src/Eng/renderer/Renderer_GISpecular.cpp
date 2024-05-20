@@ -168,9 +168,9 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             }
 
             const Ren::Binding bindings[] = {
-                {Trg::Tex2D, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Tex2D, SSRClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2D, SSRClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2DSampled, SSRClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRClassifyTiles::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SSRClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::SBuf, SSRClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBuf, SSRClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
                 {Trg::SBuf, SSRClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
@@ -283,10 +283,10 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2D, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                {Trg::Tex2D, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
-                {Trg::Tex2D, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
-                {Trg::Tex2D, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::COLOR_TEX_SLOT, *color_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::NORM_TEX_SLOT, *normal_tex.ref},
+                {Trg::Tex2DSampled, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBuf, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                 {Trg::Image2D, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::Image2D, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
@@ -521,16 +521,16 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *shared_data_buf.ref},
-                {Trg::Tex2D, SSRReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Tex2D, SSRReproject::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2D, SSRReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
-                {Trg::Tex2D, SSRReproject::DEPTH_HIST_TEX_SLOT, *depth_hist_tex.ref},
-                {Trg::Tex2D, SSRReproject::NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
-                {Trg::Tex2D, SSRReproject::REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
-                {Trg::Tex2D, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
-                {Trg::Tex2D, SSRReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
-                {Trg::Tex2D, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
-                {Trg::Tex2D, SSRReproject::RAYLEN_TEX_SLOT, *raylen_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::VELOCITY_TEX_SLOT, *velocity_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::DEPTH_HIST_TEX_SLOT, *depth_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::NORM_HIST_TEX_SLOT, *norm_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::REFL_HIST_TEX_SLOT, *refl_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
+                {Trg::Tex2DSampled, SSRReproject::RAYLEN_TEX_SLOT, *raylen_tex.ref},
                 {Trg::SBuf, SSRReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},
                 {Trg::Image2D, SSRReproject::OUT_AVG_REFL_IMG_SLOT, *out_avg_refl_tex.ref},
@@ -613,12 +613,12 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
             RpAllocTex &out_variance_tex = builder.GetWriteTexture(data->out_variance_tex);
 
             const Ren::Binding bindings[] = {
-                {Trg::Tex2D, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Tex2D, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2D, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                {Trg::Tex2D, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
-                {Trg::Tex2D, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::Tex2D, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::REFL_TEX_SLOT, *refl_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2DSampled, SSRPrefilter::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                 {Trg::SBuf, SSRPrefilter::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRPrefilter::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::Image2D, SSRPrefilter::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
@@ -706,12 +706,12 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
 
             const Ren::Binding bindings[] = {
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                {Trg::Tex2D, SSRResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
-                {Trg::Tex2D, SSRResolveTemporal::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
-                {Trg::Tex2D, SSRResolveTemporal::REFL_TEX_SLOT, *refl_tex.ref},
-                {Trg::Tex2D, SSRResolveTemporal::REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
-                {Trg::Tex2D, SSRResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                {Trg::Tex2D, SSRResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::Tex2DSampled, SSRResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, SSRResolveTemporal::AVG_REFL_TEX_SLOT, *avg_refl_tex.ref},
+                {Trg::Tex2DSampled, SSRResolveTemporal::REFL_TEX_SLOT, *refl_tex.ref},
+                {Trg::Tex2DSampled, SSRResolveTemporal::REPROJ_REFL_TEX_SLOT, *reproj_refl_tex.ref},
+                {Trg::Tex2DSampled, SSRResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2DSampled, SSRResolveTemporal::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
                 {Trg::SBuf, SSRResolveTemporal::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRResolveTemporal::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
                 {Trg::Image2D, SSRResolveTemporal::OUT_VARIANCE_IMG_SLOT, *out_variance_tex.ref}};
@@ -809,12 +809,12 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &env_map, const 
                 const Ren::Binding bindings[] = {
                     {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock),
                      *unif_sh_data_buf.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
-                    {Ren::eBindTarget::Tex2D, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::ALBEDO_TEX_SLOT, *albedo_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::SPEC_TEX_SLOT, *spec_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::NORM_TEX_SLOT, *normal_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::REFL_TEX_SLOT, *refl_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, SSRComposeNew::LTC_LUTS_TEX_SLOT, *ltc_luts.ref}};
 
                 SSRComposeNew::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, 1.0f, 1.0f};
@@ -878,8 +878,8 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
                 const Ren::Binding bindings[] = {
-                    {Trg::Tex2D, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
-                    {Trg::Tex2D, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
+                    {Trg::Tex2DSampled, SSRTrace::DEPTH_TEX_SLOT, *depth_down_2x_tex.ref},
+                    {Trg::Tex2DSampled, SSRTrace::NORM_TEX_SLOT, *normal_tex.ref},
                     {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, 0, sizeof(SharedDataBlock), *unif_sh_data_buf.ref}};
 
                 SSRTrace::Params uniform_params;
@@ -932,7 +932,7 @@ void Eng::Renderer::AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, 
 
                 Ren::Program *dilate_prog = blit_ssr_dilate_prog_.get();
 
-                const Ren::Binding bindings[] = {{Trg::Tex2D, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
+                const Ren::Binding bindings[] = {{Trg::Tex2DSampled, SSRDilate::SSR_TEX_SLOT, *ssr_tex.ref}};
 
                 SSRDilate::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, rast_state.viewport[2], rast_state.viewport[3]};

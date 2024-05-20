@@ -43,7 +43,7 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
     rast_state.viewport[3] = view_state_->scr_res[1];
 
     const Ren::eBindTarget clean_buf_bind_target =
-        view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2D;
+        view_state_->is_multisampled ? Ren::eBindTarget::Tex2DMs : Ren::eBindTarget::Tex2DSampled;
 
     { // compose reflections on top of clean buffer
         Ren::ProgramRef blit_ssr_compose_prog =
@@ -60,11 +60,11 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
             {clean_buf_bind_target, BIND_REFL_DEPTH_TEX, *depth_tex.ref},
             {clean_buf_bind_target, BIND_REFL_NORM_TEX, *normal_tex.ref},
             //
-            {Ren::eBindTarget::Tex2D, BIND_REFL_DEPTH_LOW_TEX, *depth_down_2x_tex.ref},
-            {Ren::eBindTarget::Tex2D, BIND_REFL_SSR_TEX, *ssr_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, BIND_REFL_DEPTH_LOW_TEX, *depth_down_2x_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, BIND_REFL_SSR_TEX, *ssr_tex.ref},
             //
-            {Ren::eBindTarget::Tex2D, BIND_REFL_PREV_TEX, *down_buf_4x_tex.ref},
-            {Ren::eBindTarget::Tex2D, BIND_REFL_BRDF_TEX, *brdf_lut.ref},
+            {Ren::eBindTarget::Tex2DSampled, BIND_REFL_PREV_TEX, *down_buf_4x_tex.ref},
+            {Ren::eBindTarget::Tex2DSampled, BIND_REFL_BRDF_TEX, *brdf_lut.ref},
             //
             {Ren::eBindTarget::TBuf, BIND_CELLS_BUF, *cells_buf.tbos[0]},
             {Ren::eBindTarget::TBuf, BIND_ITEMS_BUF, *items_buf.tbos[0]},

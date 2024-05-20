@@ -31,9 +31,9 @@ void Eng::RpRTShadows::Execute_HWRT_Pipeline(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-                                     {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                     {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
                                      {Ren::eBindTarget::SBuf, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
                                      {Ren::eBindTarget::SBuf, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -86,9 +86,9 @@ void Eng::RpRTShadows::Execute_HWRT_Inline(RpBuilder &builder) {
     VkCommandBuffer cmd_buf = api_ctx->draw_cmd_buf[api_ctx->backend_frame];
 
     const Ren::Binding bindings[] = {{Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                     {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-                                     {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                     {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+                                     {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
                                      {Ren::eBindTarget::AccStruct, RTShadows::TLAS_SLOT, *acc_struct},
                                      {Ren::eBindTarget::SBuf, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
                                      {Ren::eBindTarget::SBuf, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -159,8 +159,8 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
     }
 
     if (!rt_tlas_buf.tbos[0] || rt_tlas_buf.tbos[0]->params().size != rt_tlas_buf.ref->size()) {
-        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS SHADOW TBO (Shadow)", rt_tlas_buf.ref, Ren::eTexFormat::RawRGBA32F, 0,
-                                                  rt_tlas_buf.ref->size());
+        rt_tlas_buf.tbos[0] = ctx.CreateTexture1D("RT TLAS SHADOW TBO (Shadow)", rt_tlas_buf.ref,
+                                                  Ren::eTexFormat::RawRGBA32F, 0, rt_tlas_buf.ref->size());
     }
 
     if (!mesh_instances_buf.tbos[0] || mesh_instances_buf.tbos[0]->params().size != mesh_instances_buf.ref->size()) {
@@ -178,9 +178,9 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTShadows::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTShadows::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTShadows::NORM_TEX_SLOT, *normal_tex.ref},
         {Ren::eBindTarget::SBuf, RTShadows::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTShadows::MATERIAL_BUF_SLOT, *materials_buf.ref},
         {Ren::eBindTarget::TBuf, RTShadows::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},

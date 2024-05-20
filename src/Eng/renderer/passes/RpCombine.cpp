@@ -38,10 +38,10 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
     uniform_params.fade = pass_data_->fade;
 
     Ren::SmallVector<Ren::Binding, 8> bindings = {
-        {Ren::eBindTarget::Tex2D, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
-        {Ren::eBindTarget::Tex2D, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
+        {Ren::eBindTarget::Tex2DSampled, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
     if (pass_data_->tonemap_mode == 2) {
-        bindings.emplace_back(Ren::eBindTarget::Tex3D, BlitCombine::LUT_TEX_SLOT, *pass_data_->lut_tex);
+        bindings.emplace_back(Ren::eBindTarget::Tex3DSampled, BlitCombine::LUT_TEX_SLOT, *pass_data_->lut_tex);
     }
 
     Ren::SmallVector<Ren::RenderTarget, 2> render_targets = {

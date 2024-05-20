@@ -97,13 +97,13 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::SBuf, BIND_BINDLESS_TEX, *textures_buf.ref},
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGI::DEPTH_TEX_SLOT, *depth_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
-        //{Ren::eBindTarget::Tex2D, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::NORM_TEX_SLOT, *normal_tex.ref},
+        //{Ren::eBindTarget::Tex2DSampled, RTGI::FLAT_NORM_TEX_SLOT, *flat_normal_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBuf, RTGI::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, RTGI::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGI::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::TBuf, RTGI::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGI::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGI::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -115,15 +115,15 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTGI::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGI::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBuf, RTGI::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTGI::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTGI::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTGI::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTGI::OUT_GI_IMG_SLOT, *out_gi_tex.ref}};
     if (irradiance_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTGI::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTGI::DISTANCE_TEX_SLOT, *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTGI::OFFSET_TEX_SLOT, *offset_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTGI::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTGI::DISTANCE_TEX_SLOT, *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTGI::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
 
     const Ren::Pipeline &pi = pass_data_->two_bounce

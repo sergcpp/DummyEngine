@@ -41,11 +41,11 @@ void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
 
     const Ren::Binding bindings[] = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::AccStruct, RTReflections::TLAS_SLOT, *acc_struct},
         {Ren::eBindTarget::SBuf, RTReflections::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -58,7 +58,7 @@ void Eng::RpRTReflections::Execute_HWRT_Pipeline(RpBuilder &builder) {
         //{Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 3, *lm_tex[3]->ref},
         //{Ren::eBindTarget::Tex2D, RTReflections::LMAP_TEX_SLOTS, 4, *lm_tex[4]->ref},
         {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
 
@@ -125,12 +125,12 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::AccStruct, RTReflections::TLAS_SLOT, *acc_struct},
         {Ren::eBindTarget::SBuf, RTReflections::GEO_DATA_BUF_SLOT, *geo_data_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::MATERIAL_BUF_SLOT, *materials_buf.ref},
@@ -138,16 +138,18 @@ void Eng::RpRTReflections::Execute_HWRT_Inline(RpBuilder &builder) {
         {Ren::eBindTarget::SBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.ref},
         {Ren::eBindTarget::SBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
     if (irradiance_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::DISTANCE_TEX_SLOT, *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::IRRADIANCE_TEX_SLOT,
+                              *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::DISTANCE_TEX_SLOT,
+                              *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
 
     const Ren::Pipeline &pi =
@@ -266,12 +268,12 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
 
     Ren::SmallVector<Ren::Binding, 24> bindings = {
         {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::DEPTH_TEX_SLOT, *depth_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::NORM_TEX_SLOT, *normal_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::NOISE_TEX_SLOT, *noise_tex.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
         {Ren::eBindTarget::SBuf, RTReflections::RAY_LIST_SLOT, *ray_list_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::ENV_TEX_SLOT, *env_tex.ref},
         {Ren::eBindTarget::TBuf, RTReflections::BLAS_BUF_SLOT, *rt_blas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::TLAS_BUF_SLOT, *rt_tlas_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::PRIM_NDX_BUF_SLOT, *prim_ndx_buf.tbos[0]},
@@ -283,16 +285,18 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::TBuf, RTReflections::VTX_BUF2_SLOT, *vtx_buf2.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::NDX_BUF_SLOT, *ndx_buf.tbos[0]},
         {Ren::eBindTarget::SBuf, RTReflections::LIGHTS_BUF_SLOT, *lights_buf.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
-        {Ren::eBindTarget::Tex2D, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::SHADOW_TEX_SLOT, *shadowmap_tex.ref},
+        {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
         {Ren::eBindTarget::Image2D, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
     if (irradiance_tex) {
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::IRRADIANCE_TEX_SLOT, *irradiance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::DISTANCE_TEX_SLOT, *distance_tex->arr);
-        bindings.emplace_back(Ren::eBindTarget::Tex2DArray, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::IRRADIANCE_TEX_SLOT,
+                              *irradiance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::DISTANCE_TEX_SLOT,
+                              *distance_tex->arr);
+        bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::OFFSET_TEX_SLOT, *offset_tex->arr);
     }
 
     const Ren::Pipeline &pi =
@@ -349,8 +353,8 @@ void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
                     ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
                 }
 
-                rt_reflections_inline_prog = sh.LoadProgram(ctx, "rt_reflections_inline_gi",
-                                                            "internal/rt_reflections_hwrt.comp.glsl@GI_CACHE");
+                rt_reflections_inline_prog =
+                    sh.LoadProgram(ctx, "rt_reflections_inline_gi", "internal/rt_reflections_hwrt.comp.glsl@GI_CACHE");
                 assert(rt_reflections_inline_prog->ready());
 
                 if (!pi_rt_reflections_inline_[1].Init(ctx.api_ctx(), std::move(rt_reflections_inline_prog),
