@@ -25,7 +25,6 @@
 #include <Eng/utils/Cmdline.h>
 #include <Eng/utils/Load.h>
 #include <Eng/utils/Random.h>
-#include <Ray/Ray.h>
 #include <Ren/Context.h>
 #include <Sys/AssetFile.h>
 #include <Sys/Json.h>
@@ -629,6 +628,8 @@ void GSBaseState::OnPostloadScene(JsObjectP &js_scene) {
         capture_result_ = ren_ctx_->LoadTexture2D("Capture Result", params, ren_ctx_->default_mem_allocs(), &status);
         assert(status == Ren::eTexLoadStatus::CreatedDefault);
     }
+
+    sun_dir_ = scene_manager_->scene_data().env.sun_dir;
 }
 
 void GSBaseState::SaveScene(JsObjectP &js_scene) { scene_manager_->SaveScene(js_scene); }
@@ -795,11 +796,15 @@ void GSBaseState::Draw() {
             // Target frontend to next frame
             ren_ctx_->frontend_frame = (ren_ctx_->backend_frame() + 1) % Ren::MaxFramesInFlight;
 
+            scene_manager_->scene_data().env.sun_dir = sun_dir_;
+
             notified_ = true;
             thr_notify_.notify_one();
         } else {
             streaming_finished_ = scene_manager_->Serve(1, animate_texture_lod);
             renderer_->InitBackendInfo();
+
+            scene_manager_->scene_data().env.sun_dir = sun_dir_;
             // scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_),
             // Ren::Vec3f{ 0.0f, 1.0f, 0.0f }, view_fov_);
             // Gather drawables for list 0
@@ -811,7 +816,8 @@ void GSBaseState::Draw() {
 
         if (back_list != -1) {
             // Render current frame (from back list)
-            renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(), render_target, true);
+            renderer_->ExecuteDrawList(main_view_lists_[back_list], scene_manager_->persistent_data(), render_target,
+                                       true);
         } else {
             Draw_PT(render_target);
         }
@@ -1088,7 +1094,7 @@ void GSBaseState::InitScene_PT() {
         env_desc.env_col[0] = env_desc.back_col[0] = scene_data.env.env_col[0];
         env_desc.env_col[1] = env_desc.back_col[1] = scene_data.env.env_col[1];
         env_desc.env_col[2] = env_desc.back_col[2] = scene_data.env.env_col[2];
-        
+
         if (!scene_data.env.env_map_name.empty()) {
             if (scene_data.env.env_map_name == "physical_sky") {
                 env_desc.back_map = env_desc.env_map = Ray::PhysicalSkyTexture;
@@ -1138,7 +1144,8 @@ void GSBaseState::InitScene_PT() {
         memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
         memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
         sun_desc.angle = scene_data.env.sun_angle;
-        [[maybe_unused]] const Ray::LightHandle new_lighg = ray_scene_->AddLight(sun_desc);
+        pt_sun_light_ = ray_scene_->AddLight(sun_desc);
+        pt_sun_dir_ = scene_data.env.sun_dir;
     }
 
     // Add default material
@@ -1400,7 +1407,8 @@ void GSBaseState::InitScene_PT() {
             }
         }
     }
-    ray_scene_->Finalize();
+    using namespace std::placeholders;
+    ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
 }
 
 void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, const float fov) {
@@ -1430,6 +1438,22 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         ray_renderer_->Resize(ren_ctx_->w(), ren_ctx_->h());
         res_x = ren_ctx_->w();
         res_y = ren_ctx_->h();
+    }
+
+    const Eng::SceneData &scene_data = scene_manager_->scene_data();
+    if (Distance2(pt_sun_dir_, scene_data.env.sun_dir) > 0.001f && pt_sun_light_ != Ray::InvalidLightHandle) {
+        ray_scene_->RemoveLight(pt_sun_light_);
+        // Re-add sun light
+        Ray::directional_light_desc_t sun_desc;
+        memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
+        memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
+        sun_desc.angle = scene_data.env.sun_angle;
+        pt_sun_light_ = ray_scene_->AddLight(sun_desc);
+        pt_sun_dir_ = scene_data.env.sun_dir;
+
+        using namespace std::placeholders;
+        ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
+        invalidate_view_ = true;
     }
 
     if (ray_reg_ctx_.empty()) {

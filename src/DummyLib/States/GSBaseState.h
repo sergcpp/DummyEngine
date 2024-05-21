@@ -8,6 +8,7 @@
 #include <Eng/ViewerState.h>
 #include <Eng/renderer/Renderer.h>
 #include <Eng/scene/SceneData.h>
+#include <Ray/Ray.h>
 #include <Ren/Camera.h>
 #include <Ren/MVec.h>
 #include <Ren/Mesh.h>
@@ -84,6 +85,9 @@ class GSBaseState : public Eng::ViewerState {
     std::vector<int> probes_to_update_;
 
     std::atomic_bool update_all_probes_{false};
+
+    Ren::Vec3f sun_dir_ = Ren::Vec3f{0.0f, -1.0f, 0.0f}, pt_sun_dir_;
+    Ray::LightHandle pt_sun_light_ = Ray::InvalidLightHandle;
 
     bool use_pt_ = false, use_lm_ = false;
     bool invalidate_view_ = true;

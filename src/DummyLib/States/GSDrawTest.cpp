@@ -419,6 +419,8 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
 
     Eng::SceneData &scene = scene_manager_->scene_data();
 
+    sun_dir_ = scene.env.sun_dir;
+
     {
         char wolf_name[] = "wolf00";
 
@@ -669,6 +671,8 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
     case Eng::RawInputEv::P2Down:
         if (evt.point.x < (float(ren_ctx_->w()) / 3.0f) && move_pointer_ == 0) {
             move_pointer_ = 2;
+        } else if (shift_down_ && sun_pointer_ == 0) {
+            sun_pointer_ = 2;
         } else if (view_pointer_ == 0) {
             view_pointer_ = 2;
         }
@@ -687,6 +691,8 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             move_pointer_ = 0;
             fwd_touch_speed_ = 0;
             side_touch_speed_ = 0;
+        } else if (sun_pointer_ == 2) {
+            sun_pointer_ = 0;
         } else if (view_pointer_ == 2) {
             view_pointer_ = 0;
         }
@@ -711,6 +717,17 @@ bool GSDrawTest::HandleInput(const Eng::InputManager::Event &evt) {
             view_dir_ = rot_m3 * view_dir_;
 
             invalidate_view_ = true;
+        } else if (sun_pointer_ == 2) {
+            auto up = Vec3f{0, 1, 0};
+            Vec3f side = Normalize(Cross(view_dir_, up));
+            up = Cross(side, view_dir_);
+
+            Mat4f rot;
+            rot = Rotate(rot, -0.005f * evt.move.dx, up);
+            rot = Rotate(rot, -0.005f * evt.move.dy, side);
+
+            auto rot_m3 = Mat3f(rot);
+            sun_dir_ = Normalize(rot_m3 * sun_dir_);
         }
         break;
     case Eng::RawInputEv::P2Move:

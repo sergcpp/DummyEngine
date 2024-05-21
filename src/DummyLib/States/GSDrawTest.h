@@ -25,7 +25,7 @@ class Renderer;
 } // namespace Gui
 
 class GSDrawTest final : public GSBaseState {
-    int view_pointer_ = 0, move_pointer_ = 0;
+    int view_pointer_ = 0, move_pointer_ = 0, sun_pointer_ = 0;
 
     Ren::Vec3f initial_view_pos_ = Ren::Vec3f{0, 1, 0}, initial_view_dir_ = Ren::Vec3f{0, 0, -1};
 
