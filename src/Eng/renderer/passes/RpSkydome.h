@@ -47,7 +47,7 @@ class RpSkydomeCube : public RpExecutor {
     void Execute(RpBuilder &builder) override;
 };
 
-struct RpSkydomeData {
+struct RpSkydomeScreenData {
     eSkyQuality sky_quality = eSkyQuality::Low;
 
     RpResRef shared_data;
@@ -65,13 +65,13 @@ struct RpSkydomeData {
     RpResRef depth_tex;
 };
 
-class RpSkydome : public RpExecutor {
+class RpSkydomeScreen : public RpExecutor {
     PrimDraw &prim_draw_;
     bool initialized = false;
 
     // temp data (valid only between Setup and Execute calls)
     const ViewState *view_state_ = nullptr;
-    const RpSkydomeData *pass_data_ = nullptr;
+    const RpSkydomeScreenData *pass_data_ = nullptr;
 
     // lazily initialized data
     Ren::ProgramRef prog_skydome_simple_, prog_skydome_phys_;
@@ -79,9 +79,9 @@ class RpSkydome : public RpExecutor {
     void LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh);
 
   public:
-    RpSkydome(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
+    RpSkydomeScreen(PrimDraw &prim_draw) : prim_draw_(prim_draw) {}
 
-    void Setup(const ViewState *view_state, const RpSkydomeData *pass_data) {
+    void Setup(const ViewState *view_state, const RpSkydomeScreenData *pass_data) {
         view_state_ = view_state;
         pass_data_ = pass_data;
     }

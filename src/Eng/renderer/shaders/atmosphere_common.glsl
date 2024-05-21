@@ -9,6 +9,16 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
     SharedData g_shrd_data;
 };
 
+float _SRGBToLinear(float col) {
+    float ret;
+    if (col > 0.04045) {
+        ret = pow((col + 0.055) / 1.055, 2.4);
+    } else {
+        ret = col / 12.92;
+    }
+    return ret;
+}
+
 vec2 SphereIntersection(vec3 ray_start, const vec3 ray_dir, const vec3 sphere_center, const float sphere_radius) {
     ray_start -= sphere_center;
     const float a = dot(ray_dir, ray_dir);
@@ -372,7 +382,7 @@ vec3 IntegrateScatteringMain(const vec3 ray_start, const vec3 ray_dir, float ray
 }
 
 vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, uint rand_hash, sampler2D transmittance_lut, sampler2D multiscatter_lut,
-                         sampler2D moon_tex, sampler2D weather_tex, sampler2D cirrus_tex, sampler3D noise3d_tex) {
+                         sampler2D moon_tex, sampler2D weather_tex, sampler2D cirrus_tex, sampler3D noise3d_tex, out vec3 total_transmittance) {
     const vec2 atm_intersection = AtmosphereIntersection(ray_start, ray_dir);
     ray_length = min(ray_length, atm_intersection.y);
     if (atm_intersection.x > 0) {
@@ -403,7 +413,8 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
 
     const float light_brightness = g_shrd_data.sun_col_point.x + g_shrd_data.sun_col_point.y + g_shrd_data.sun_col_point.z;
 
-    vec3 total_radiance = vec3(0.0), total_transmittance = vec3(1.0);
+    vec3 total_radiance = vec3(0.0);
+    total_transmittance = vec3(1.0);
 
     const vec4 clouds_intersection = CloudsIntersection(ray_start, ray_dir);
 

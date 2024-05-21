@@ -182,7 +182,7 @@ class Renderer {
 
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydomeCube rp_skydome_cube_ = {prim_draw_};
-    RpSkydome rp_skydome_ = {prim_draw_};
+    RpSkydomeScreen rp_skydome_ = {prim_draw_};
     RpDepthFill rp_depth_fill_;
     RpDepthHierarchy rp_depth_hierarchy_;
     RpGBufferFill rp_gbuffer_fill_;
@@ -223,6 +223,7 @@ class Renderer {
     // Sun shadows
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
+    Ren::Pipeline pi_sun_brightness_;
     // Debug
     Ren::Pipeline pi_debug_velocity_;
 
@@ -260,9 +261,12 @@ class Renderer {
         RpResRef gi_cache_data;
     };
 
+    void InitSkyResources();
+
     void AddBuffersUpdatePass(CommonBuffers &common_buffers);
     void AddLightBuffersUpdatePass(CommonBuffers &common_buffers);
     void AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures);
+    void AddSunColorUpdatePass(CommonBuffers &common_buffers);
     void AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                             const BindlessTextureData &bindless, FrameTextures &frame_textures);
     void AddDeferredShadingPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool enable_gi);

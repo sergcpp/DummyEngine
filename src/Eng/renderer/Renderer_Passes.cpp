@@ -21,6 +21,7 @@
 #include "shaders/blit_upscale_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
+#include "shaders/sun_brightness_interface.h"
 
 namespace RendererInternal {
 extern const int TaaSampleCountStatic;
@@ -387,6 +388,14 @@ void Eng::Renderer::InitPipelines() {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
         }
     }
+    { // Sun brightness
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "sun_brightness", "internal/sun_brightness.comp.glsl");
+        assert(prog->ready());
+
+        if (!pi_sun_brightness_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+        }
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -421,11 +430,12 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         desc.size = InstanceIndicesBufChunkSize;
         common_buffers.instance_indices_res = update_bufs.AddTransferOutput("Instance Indices Buf", desc);
     }
+    RpResRef shared_data_res;
     { // create uniform buffer
         RpBufDesc desc;
         desc.type = Ren::eBufType::Uniform;
         desc.size = SharedDataBlockSize;
-        common_buffers.shared_data_res = update_bufs.AddTransferOutput(SHARED_DATA_BUF, desc);
+        shared_data_res = common_buffers.shared_data_res = update_bufs.AddTransferOutput(SHARED_DATA_BUF, desc);
     }
     { // create atomic counter buffer
         RpBufDesc desc;
@@ -434,13 +444,13 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
         common_buffers.atomic_cnt_res = update_bufs.AddTransferOutput("Atomic Counter Buf", desc);
     }
 
-    update_bufs.set_execute_cb([this, &common_buffers](RpBuilder &builder) {
+    update_bufs.set_execute_cb([this, &common_buffers, shared_data_res](RpBuilder &builder) {
         Ren::Context &ctx = builder.ctx();
         RpAllocBuf &skin_transforms_buf = builder.GetWriteBuffer(common_buffers.skin_transforms_res);
         RpAllocBuf &shape_keys_buf = builder.GetWriteBuffer(common_buffers.shape_keys_res);
         // RpAllocBuf &instances_buf = builder.GetWriteBuffer(common_buffers.instances_res);
         RpAllocBuf &instance_indices_buf = builder.GetWriteBuffer(common_buffers.instance_indices_res);
-        RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(common_buffers.shared_data_res);
+        RpAllocBuf &shared_data_buf = builder.GetWriteBuffer(shared_data_res);
         RpAllocBuf &atomic_cnt_buf = builder.GetWriteBuffer(common_buffers.atomic_cnt_res);
 
         Ren::UpdateBuffer(
@@ -745,12 +755,7 @@ void Eng::Renderer::AddLightBuffersUpdatePass(CommonBuffers &common_buffers) {
     });
 }
 
-void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
-    // TODO: Remove this condition
-    if (!p_list_->env.env_map) {
-        return;
-    }
-
+void Eng::Renderer::InitSkyResources() {
     if (p_list_->env.env_map_name != "physical_sky") {
         // release resources
         sky_transmittance_lut_ = {};
@@ -920,7 +925,16 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
                                               Ren::eTexFormat::RawR8, stage_buf, ctx_.current_cmd_buf(), 0, data_len);
             }
         }
+    }
+}
 
+void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTextures &frame_textures) {
+    // TODO: Remove this condition
+    if (!p_list_->env.env_map) {
+        return;
+    }
+
+    if (p_list_->env.env_map_name == "physical_sky") {
         auto &skydome_cube = rp_builder_.AddPass("SKYDOME CUBE");
 
         auto *data = skydome_cube.AllocPassData<RpSkydomeCubeData>();
@@ -942,7 +956,7 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
     auto &skymap = rp_builder_.AddPass("SKYDOME");
 
-    auto *data = skymap.AllocPassData<RpSkydomeData>();
+    auto *data = skymap.AllocPassData<RpSkydomeScreenData>();
 
     data->shared_data = skymap.AddUniformBufferInput(common_buffers.shared_data_res,
                                                      Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
@@ -966,6 +980,91 @@ void Eng::Renderer::AddSkydomePass(const CommonBuffers &common_buffers, FrameTex
 
     rp_skydome_.Setup(&view_state_, data);
     skymap.set_executor(&rp_skydome_);
+}
+
+void Eng::Renderer::AddSunColorUpdatePass(CommonBuffers &common_buffers) {
+    using Stg = Ren::eStageBits;
+
+    if (p_list_->env.env_map_name != "physical_sky") {
+        return;
+    }
+
+    RpResRef output;
+    { // Sample sun color
+        auto &sun_color = rp_builder_.AddPass("SUN COLOR SAMPLE");
+
+        struct PassData {
+            RpResRef shared_data;
+            RpResRef transmittance_lut;
+            RpResRef multiscatter_lut;
+            RpResRef moon_tex;
+            RpResRef weather_tex;
+            RpResRef cirrus_tex;
+            RpResRef noise3d_tex;
+            RpResRef output_buf;
+        };
+
+        auto *data = sun_color.AllocPassData<PassData>();
+
+        data->shared_data = sun_color.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
+        data->transmittance_lut = sun_color.AddTextureInput(sky_transmittance_lut_, Stg::ComputeShader);
+        data->multiscatter_lut = sun_color.AddTextureInput(sky_multiscatter_lut_, Stg::ComputeShader);
+        data->moon_tex = sun_color.AddTextureInput(sky_moon_tex_, Stg::ComputeShader);
+        data->weather_tex = sun_color.AddTextureInput(sky_weather_tex_, Stg::ComputeShader);
+        data->cirrus_tex = sun_color.AddTextureInput(sky_cirrus_tex_, Stg::ComputeShader);
+        data->noise3d_tex = sun_color.AddTextureInput(sky_noise3d_tex_.get(), Stg::ComputeShader);
+
+        RpBufDesc desc;
+        desc.type = Ren::eBufType::Storage;
+        desc.size = 4 * sizeof(float);
+        output = data->output_buf = sun_color.AddStorageOutput("Sun brightness debug", desc, Stg::ComputeShader);
+
+        sun_color.set_execute_cb([data, this](RpBuilder &builder) {
+            RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
+            RpAllocTex &transmittance_lut = builder.GetReadTexture(data->transmittance_lut);
+            RpAllocTex &multiscatter_lut = builder.GetReadTexture(data->multiscatter_lut);
+            RpAllocTex &moon_tex = builder.GetReadTexture(data->moon_tex);
+            RpAllocTex &weather_tex = builder.GetReadTexture(data->weather_tex);
+            RpAllocTex &cirrus_tex = builder.GetReadTexture(data->cirrus_tex);
+            RpAllocTex &noise3d_tex = builder.GetReadTexture(data->noise3d_tex);
+            RpAllocBuf &output_buf = builder.GetWriteBuffer(data->output_buf);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Ren::eBindTarget::Tex2DSampled, SunBrightness::TRANSMITTANCE_LUT_SLOT, *transmittance_lut.ref},
+                {Ren::eBindTarget::Tex2DSampled, SunBrightness::MULTISCATTER_LUT_SLOT, *multiscatter_lut.ref},
+                {Ren::eBindTarget::Tex2DSampled, SunBrightness::MOON_TEX_SLOT, *moon_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, SunBrightness::WEATHER_TEX_SLOT, *weather_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, SunBrightness::CIRRUS_TEX_SLOT, *cirrus_tex.ref},
+                {Ren::eBindTarget::Tex3DSampled, SunBrightness::NOISE3D_TEX_SLOT, *noise3d_tex.tex3d},
+                {Ren::eBindTarget::SBufRW, SunBrightness::OUT_BUF_SLOT, *output_buf.ref}};
+
+            Ren::DispatchCompute(pi_sun_brightness_, Ren::Vec3u{1u, 1u, 1u}, bindings, nullptr, 0,
+                                 builder.ctx().default_descr_alloc(), builder.ctx().log());
+        });
+    }
+    { // Sample sun color
+        auto &sun_color = rp_builder_.AddPass("SUN COLOR UPDATE");
+
+        struct PassData {
+            RpResRef sample_buf;
+            RpResRef shared_data;
+        };
+
+        auto *data = sun_color.AllocPassData<PassData>();
+
+        data->sample_buf = sun_color.AddTransferInput(output);
+        common_buffers.shared_data_res = data->shared_data =
+            sun_color.AddTransferOutput(common_buffers.shared_data_res);
+
+        sun_color.set_execute_cb([data](RpBuilder &builder) {
+            RpAllocBuf &sample_buf = builder.GetReadBuffer(data->sample_buf);
+            RpAllocBuf &unif_sh_data_buf = builder.GetWriteBuffer(data->shared_data);
+
+            Ren::CopyBufferToBuffer(*sample_buf.ref, 0, *unif_sh_data_buf.ref, offsetof(SharedDataBlock, sun_col),
+                                    3 * sizeof(float), builder.ctx().current_cmd_buf());
+        });
+    }
 }
 
 void Eng::Renderer::AddGBufferFillPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,

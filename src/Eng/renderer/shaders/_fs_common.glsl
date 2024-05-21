@@ -41,16 +41,6 @@ vec3 SRGBToLinear(vec3 sRGB) {
     return mix(higher, lower, cutoff);
 }
 
-float _SRGBToLinear(float col) {
-    float ret;
-    if (col > 0.04045) {
-        ret = pow((col + 0.055) / 1.055, 2.4);
-    } else {
-        ret = col / 12.92;
-    }
-    return ret;
-}
-
 vec3 EvalSHIrradiance(vec3 normal, vec3 sh_l_00, vec3 sh_l_10, vec3 sh_l_11,
                       vec3 sh_l_12) {
     return max((0.5 + (sh_l_10 * normal.y + sh_l_11 * normal.z +

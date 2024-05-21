@@ -55,8 +55,10 @@ class RpSubpass {
     void set_executor(RpExecutor *exec) { p_executor_ = exec; }
 
     RpResRef AddTransferInput(const Ren::WeakBufferRef &buf);
+    RpResRef AddTransferInput(RpResRef handle);
     RpResRef AddTransferOutput(std::string_view name, const RpBufDesc &desc);
     RpResRef AddTransferOutput(const Ren::WeakBufferRef &buf);
+    RpResRef AddTransferOutput(RpResRef handle);
 
     RpResRef AddTransferImageInput(const Ren::WeakTex2DRef &tex);
     RpResRef AddTransferImageInput(RpResRef handle);

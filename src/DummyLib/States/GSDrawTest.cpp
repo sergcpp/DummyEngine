@@ -18,6 +18,7 @@
 #define TINYEXR_USE_MINIZ 0
 #define TINYEXR_USE_STB_ZLIB 1
 #include <tinyexr/tinyexr.h>
+#undef GetObject
 
 #include <optick/optick.h>
 #include <stb/stb_image.h>

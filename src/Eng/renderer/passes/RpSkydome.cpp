@@ -80,7 +80,7 @@ void Eng::RpSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     }
 }
 
-void Eng::RpSkydome::Execute(RpBuilder &builder) {
+void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
     RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(pass_data_->shared_data);
@@ -143,7 +143,7 @@ void Eng::RpSkydome::Execute(RpBuilder &builder) {
     }
 }
 
-void Eng::RpSkydome::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
+void Eng::RpSkydomeScreen::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         prog_skydome_simple_ = sh.LoadProgram(ctx, "skydome_simple", "internal/skydome_simple.vert.glsl",
                                               "internal/skydome_simple.frag.glsl");

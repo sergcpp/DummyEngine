@@ -670,9 +670,12 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
         accumulated_frames_ = 0;
 
+        InitSkyResources();
+
         auto &common_buffers = *rp_builder_.AllocPassData<CommonBuffers>();
         AddBuffersUpdatePass(common_buffers);
         AddLightBuffersUpdatePass(common_buffers);
+        AddSunColorUpdatePass(common_buffers);
 
         {
             auto &skinning = rp_builder_.AddPass("SKINNING");

@@ -6,12 +6,20 @@ Eng::RpResRef Eng::RpSubpass::AddTransferInput(const Ren::WeakBufferRef &buf) {
     return builder_.ReadBuffer(buf, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
 }
 
+Eng::RpResRef Eng::RpSubpass::AddTransferInput(RpResRef handle) {
+    return builder_.ReadBuffer(handle, Ren::eResState::CopySrc, Ren::eStageBits::Transfer, *this);
+}
+
 Eng::RpResRef Eng::RpSubpass::AddTransferOutput(std::string_view name, const RpBufDesc &desc) {
     return builder_.WriteBuffer(name, desc, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
 Eng::RpResRef Eng::RpSubpass::AddTransferOutput(const Ren::WeakBufferRef &buf) {
     return builder_.WriteBuffer(buf, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
+}
+
+Eng::RpResRef Eng::RpSubpass::AddTransferOutput(RpResRef handle) {
+    return builder_.WriteBuffer(handle, Ren::eResState::CopyDst, Ren::eStageBits::Transfer, *this);
 }
 
 Eng::RpResRef Eng::RpSubpass::AddTransferImageInput(const Ren::WeakTex2DRef &tex) {

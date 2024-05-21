@@ -73,7 +73,8 @@ void main() {
 
     const vec3 rotated_dir = rotate_xz(view_dir_ws, g_shrd_data.env_col.w);
     const uint rand_hash = superfast(uvec3(g_vtx_pos * 100.0));
+    vec3 transmittance;
     g_out_color.rgb = g_shrd_data.env_col.xyz * IntegrateScattering(vec3(0.0, g_shrd_data.atmosphere.viewpoint_height, 0.0), view_dir_ws, FLT_MAX, rand_hash,
-                                                                    g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex, g_cirrus_tex, g_noise3d_tex);
+                                                                    g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
     g_out_color.a = 1.0;
 }
