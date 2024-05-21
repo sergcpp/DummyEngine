@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = physical_sky
-	commit = f77dd5c6ac7b8a3dd54d8c4048223ae2bd3a4ad0
+	branch = sun_color
+	commit = af27ddf7d151c7faa089a3fae2d0624a1fd34ea3
 	method = merge
 	cmdver = 0.4.6
-	parent = 2db01887427c8379687c91ccaee7ee4e96d5c29b
+	parent = 964a68eae551a905ccacff05aa63f4d5fccfcb43
