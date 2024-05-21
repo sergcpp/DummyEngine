@@ -1181,7 +1181,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_b
         for (int i = 0; i < 6; ++i) {
             VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
             view_info.image = handle_.img;
-            view_info.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+            view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
             view_info.format = g_vk_formats[size_t(p.format)];
             if (bool(p.flags & eTexFlagBits::SRGB)) {
                 view_info.format = ToSRGBFormat(view_info.format);
