@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = sun_color
-	commit = af27ddf7d151c7faa089a3fae2d0624a1fd34ea3
+	branch = sun_brightness
+	commit = 0790f7749a7bc727b4ab469f75c7c357a1173966
 	method = merge
 	cmdver = 0.4.6
-	parent = 964a68eae551a905ccacff05aa63f4d5fccfcb43
+	parent = 419d41d174b8b4e42dae4b24a6e176116fb9c5a7
