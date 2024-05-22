@@ -107,7 +107,7 @@ void main() {
         // TODO: use flat normal here
         ray_origin_ws.xyz += 0.001 * normal_ws; //offset_ray(ray_origin_ws.xyz, 2 * normal_ws);
 
-        const uint ray_flags = gl_RayFlagsCullFrontFacingTrianglesEXT;
+        const uint ray_flags = 0;//gl_RayFlagsCullFrontFacingTrianglesEXT;
 
         float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
 
