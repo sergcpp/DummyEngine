@@ -142,34 +142,34 @@ void Eng::RpRTGI::Execute_SWRT(RpBuilder &builder) {
     uniform_params.pixel_spread_angle = view_state_->pixel_spread_angle;
     uniform_params.frame_index = view_state_->frame_index;
 
-    Ren::DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR),
-                                 bindings, &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
+    Ren::DispatchComputeIndirect(pi, *indir_args_buf.ref, sizeof(VkTraceRaysIndirectCommandKHR), bindings,
+                                 &uniform_params, sizeof(uniform_params), nullptr, ctx.log());
 }
 
 void Eng::RpRTGI::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef rt_gi_swrt_prog = sh.LoadProgram(ctx, "rt_gi_swrt", "internal/rt_gi_swrt.comp.glsl");
+        Ren::ProgramRef rt_gi_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_swrt.comp.glsl");
         assert(rt_gi_swrt_prog->ready());
 
         if (!pi_rt_gi_swrt_[0].Init(ctx.api_ctx(), std::move(rt_gi_swrt_prog), ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 
-        rt_gi_swrt_prog = sh.LoadProgram(ctx, "rt_gi_swrt_gi", "internal/rt_gi_swrt.comp.glsl@GI_CACHE");
+        rt_gi_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_swrt.comp.glsl@GI_CACHE");
         assert(rt_gi_swrt_prog->ready());
 
         if (!pi_rt_gi_swrt_[1].Init(ctx.api_ctx(), std::move(rt_gi_swrt_prog), ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 
-        rt_gi_swrt_prog = sh.LoadProgram(ctx, "rt_gi_2bounce_swrt", "internal/rt_gi_swrt.comp.glsl@TWO_BOUNCES");
+        rt_gi_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_swrt.comp.glsl@TWO_BOUNCES");
         assert(rt_gi_swrt_prog->ready());
 
         if (!pi_rt_gi_2bounce_swrt_[0].Init(ctx.api_ctx(), std::move(rt_gi_swrt_prog), ctx.log())) {
             ctx.log()->Error("RpRTGI: Failed to initialize pipeline!");
         }
 
-        rt_gi_swrt_prog = sh.LoadProgram(ctx, "rt_gi_2bounce_swrt_gi", "internal/rt_gi_swrt.comp.glsl@TWO_BOUNCES;GI_CACHE");
+        rt_gi_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_swrt.comp.glsl@TWO_BOUNCES;GI_CACHE");
         assert(rt_gi_swrt_prog->ready());
 
         if (!pi_rt_gi_2bounce_swrt_[1].Init(ctx.api_ctx(), std::move(rt_gi_swrt_prog), ctx.log())) {

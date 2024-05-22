@@ -30,10 +30,10 @@ void Eng::RpGBufferFill::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
 
     if (!initialized) {
         Ren::ProgramRef gbuf_simple_prog =
-            sh.LoadProgram(ctx, "gbuffer_fill", "internal/gbuffer_fill.vert.glsl", "internal/gbuffer_fill.frag.glsl");
+            sh.LoadProgram(ctx, "internal/gbuffer_fill.vert.glsl", "internal/gbuffer_fill.frag.glsl");
         assert(gbuf_simple_prog->ready());
-        Ren::ProgramRef gbuf_vegetation_prog = sh.LoadProgram(
-            ctx, "gbuffer_fill_vege", "internal/gbuffer_fill.vert.glsl@VEGETATION", "internal/gbuffer_fill.frag.glsl");
+        Ren::ProgramRef gbuf_vegetation_prog =
+            sh.LoadProgram(ctx, "internal/gbuffer_fill.vert.glsl@VEGETATION", "internal/gbuffer_fill.frag.glsl");
         assert(gbuf_vegetation_prog->ready());
 
         const bool res = rp_main_draw_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log());

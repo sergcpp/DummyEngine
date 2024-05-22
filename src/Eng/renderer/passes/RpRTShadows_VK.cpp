@@ -215,7 +215,7 @@ void Eng::RpRTShadows::Execute_SWRT(RpBuilder &builder) {
 void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         /*Ren::ProgramRef rt_reflections_prog = sh.LoadProgram(
-            ctx, "rt_reflections", "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",
+            ctx, "internal/rt_reflections.rgen.glsl", "internal/rt_reflections.rchit.glsl",
             "internal/rt_reflections.rahit.glsl", "internal/rt_reflections.rmiss.glsl", nullptr);
         assert(rt_reflections_prog->ready());
 
@@ -225,7 +225,7 @@ void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
 
         if (ctx.capabilities.ray_query) {
             Ren::ProgramRef rt_shadows_inline_prog =
-                sh.LoadProgram(ctx, "rt_shadows_inline", "internal/rt_shadows_hwrt.comp.glsl");
+                sh.LoadProgram(ctx, "internal/rt_shadows_hwrt.comp.glsl");
             assert(rt_shadows_inline_prog->ready());
 
             if (!pi_rt_shadows_inline_.Init(ctx.api_ctx(), std::move(rt_shadows_inline_prog), ctx.log())) {
@@ -234,7 +234,7 @@ void Eng::RpRTShadows::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         }
 
         Ren::ProgramRef rt_shadows_swrt_prog =
-            sh.LoadProgram(ctx, "rt_shadows_swrt", "internal/rt_shadows_swrt.comp.glsl");
+            sh.LoadProgram(ctx, "internal/rt_shadows_swrt.comp.glsl");
         assert(rt_shadows_swrt_prog->ready());
 
         if (!pi_rt_shadows_swrt_.Init(ctx.api_ctx(), rt_shadows_swrt_prog, ctx.log(), 32)) {

@@ -1,6 +1,6 @@
 gl_programs:
-    - _book_test main_probelit.vert.glsl _book_test.frag.glsl
-    - _book_test main_probelit.vert.glsl _book_test.frag.glsl
+    - main_probelit.vert.glsl _book_test.frag.glsl
+    - main_probelit.vert.glsl _book_test.frag.glsl
 textures:
     - book/book_page.png srgb
     - default_normalmap.dds

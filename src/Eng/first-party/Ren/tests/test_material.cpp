@@ -11,8 +11,8 @@ void test_material() {
     { // Load material
         TestContext test;
 
-        auto on_pipelines_needed = [&](std::string_view prog_name, const uint32_t flags, std::string_view arg1,
-                                       std::string_view arg2, std::string_view arg3, std::string_view arg4,
+        auto on_pipelines_needed = [&](const uint32_t flags, std::string_view arg1, std::string_view arg2,
+                                       std::string_view arg3, std::string_view arg4,
                                        Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
             out_pipelines.emplace_back(nullptr, 0);
         };
@@ -29,8 +29,8 @@ void test_material() {
         };
 
         const char mat_src[] = "gl_programs:\n"
-                               "    - constant constant.vert.glsl constant.frag.glsl\n"
-                               "    - constant2 constant2.vert.glsl constant2.frag.glsl\n"
+                               "    - constant.vert.glsl constant.frag.glsl\n"
+                               "    - constant2.vert.glsl constant2.frag.glsl\n"
                                "flags:\n"
                                "    - alpha_test\n"
                                "textures:\n"

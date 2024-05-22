@@ -45,11 +45,11 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
                                         Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
                                         Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, -1.0f}};
     static const Ren::Vec3f ups[] = {Ren::Vec3f{0.0f, -1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
-                                     Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, -1.0f},
+                                     Ren::Vec3f{0.0f, 0.0f, 1.0f},  Ren::Vec3f{0.0f, 0.0f, -1.0f},
                                      Ren::Vec3f{0.0f, -1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f}};
 #else
-    static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f}, Ren::Vec3f{-1.0f, 0.0f, 0.0f},
-                                        Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, -1.0f, 0.0f},
+    static const Ren::Vec3f axises[] = {Ren::Vec3f{1.0f, 0.0f, 0.0f},  Ren::Vec3f{-1.0f, 0.0f, 0.0f},
+                                        Ren::Vec3f{0.0f, 1.0f, 0.0f},  Ren::Vec3f{0.0f, -1.0f, 0.0f},
                                         Ren::Vec3f{0.0f, 0.0f, -1.0f}, Ren::Vec3f{0.0f, 0.0f, 1.0f}};
     static const Ren::Vec3f ups[] = {Ren::Vec3f{0.0f, 1.0f, 0.0f}, Ren::Vec3f{0.0f, 1.0f, 0.0f},
                                      Ren::Vec3f{0.0f, 0.0f, 1.0f}, Ren::Vec3f{0.0f, 0.0f, -1.0f},
@@ -72,8 +72,7 @@ void Eng::RpSkydomeCube::Execute(RpBuilder &builder) {
 
 void Eng::RpSkydomeCube::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        prog_skydome_phys_ =
-            sh.LoadProgram(ctx, "skydome_phys", "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
+        prog_skydome_phys_ = sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl");
         assert(prog_skydome_phys_->ready());
 
         initialized = true;
@@ -145,12 +144,12 @@ void Eng::RpSkydomeScreen::Execute(RpBuilder &builder) {
 
 void Eng::RpSkydomeScreen::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        prog_skydome_simple_ = sh.LoadProgram(ctx, "skydome_simple", "internal/skydome_simple.vert.glsl",
-                                              "internal/skydome_simple.frag.glsl");
+        prog_skydome_simple_ =
+            sh.LoadProgram(ctx, "internal/skydome_simple.vert.glsl", "internal/skydome_simple.frag.glsl");
         assert(prog_skydome_simple_->ready());
 
-        prog_skydome_phys_ = sh.LoadProgram(ctx, "skydome_phys_screen", "internal/skydome_phys.vert.glsl",
-                                            "internal/skydome_phys.frag.glsl@SCREEN");
+        prog_skydome_phys_ =
+            sh.LoadProgram(ctx, "internal/skydome_phys.vert.glsl", "internal/skydome_phys.frag.glsl@SCREEN");
         assert(prog_skydome_phys_->ready());
 
         initialized = true;

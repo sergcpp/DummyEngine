@@ -117,8 +117,7 @@ void Eng::RpRTGICache::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef rt_gi_cache_swrt_prog =
-            sh.LoadProgram(ctx, "rt_gi_cache_swrt", "internal/rt_gi_cache_swrt.comp.glsl");
+        Ren::ProgramRef rt_gi_cache_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_swrt.comp.glsl");
         assert(rt_gi_cache_swrt_prog->ready());
 
         if (!pi_rt_gi_cache_swrt_.Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {

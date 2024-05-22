@@ -198,7 +198,7 @@ void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
         if (ctx.capabilities.raytracing) {
             /*Ren::ProgramRef rt_gi_prog =
-                sh.LoadProgram(ctx, "rt_gi_cache", "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
+                sh.LoadProgram(ctx, "internal/rt_gi.rgen.glsl", "internal/rt_gi.rchit.glsl",
                                "internal/rt_gi.rahit.glsl", "internal/rt_gi.rmiss.glsl", {});
             assert(rt_gi_prog->ready());
 
@@ -207,8 +207,7 @@ void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             }*/
 
             if (ctx.capabilities.ray_query) {
-                Ren::ProgramRef rt_gi_cache_inline_prog =
-                    sh.LoadProgram(ctx, "rt_gi_cache_inline", "internal/rt_gi_cache_hwrt.comp.glsl");
+                Ren::ProgramRef rt_gi_cache_inline_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_hwrt.comp.glsl");
                 assert(rt_gi_cache_inline_prog->ready());
 
                 if (!pi_rt_gi_cache_inline_.Init(ctx.api_ctx(), std::move(rt_gi_cache_inline_prog), ctx.log())) {
@@ -217,8 +216,7 @@ void Eng::RpRTGICache::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
             }
         }
 
-        Ren::ProgramRef rt_gi_cache_swrt_prog =
-            sh.LoadProgram(ctx, "rt_gi_cache_swrt", "internal/rt_gi_cache_swrt.comp.glsl");
+        Ren::ProgramRef rt_gi_cache_swrt_prog = sh.LoadProgram(ctx, "internal/rt_gi_cache_swrt.comp.glsl");
         assert(rt_gi_cache_swrt_prog->ready());
 
         if (!pi_rt_gi_cache_swrt_.Init(ctx.api_ctx(), std::move(rt_gi_cache_swrt_prog), ctx.log())) {

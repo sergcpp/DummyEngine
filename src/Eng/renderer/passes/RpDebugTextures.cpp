@@ -220,19 +220,19 @@ void RpDebugTextures::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
         blit_prog_ = sh.LoadProgram(ctx, "blit", "internal/blit.vert.glsl", "internal/blit.frag.glsl");
         assert(blit_prog_->ready());
         blit_debug_prog_ =
-            sh.LoadProgram(ctx, "blit_debug", "internal/blit.vert.glsl", "internal/blit_debug.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_debug.frag.glsl");
         assert(blit_debug_prog_->ready());
         blit_debug_ms_prog_ =
-            sh.LoadProgram(ctx, "blit_debug_ms", "internal/blit.vert.glsl", "internal/blit_debug.frag.glsl@MSAA_4");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_debug.frag.glsl@MSAA_4");
         assert(blit_debug_ms_prog_->ready());
         blit_debug_bvh_prog_ =
-            sh.LoadProgram(ctx, "blit_debug_bvh", "internal/blit.vert.glsl", "internal/blit_debug_bvh.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_debug_bvh.frag.glsl");
         assert(blit_debug_bvh_prog_->ready());
-        blit_debug_bvh_ms_prog_ = sh.LoadProgram(ctx, "blit_debug_bvh_ms", "internal/blit.vert.glsl",
+        blit_debug_bvh_ms_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
                                                  "internal/blit_debug_bvh.frag.glsl@MSAA_4");
         assert(blit_debug_bvh_ms_prog_->ready());
         blit_depth_prog_ =
-            sh.LoadProgram(ctx, "blit_depth", "internal/blit.vert.glsl", "internal/blit_depth.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_depth.frag.glsl");
         assert(blit_depth_prog_->ready());
 
         initialized = true;

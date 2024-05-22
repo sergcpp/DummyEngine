@@ -1233,7 +1233,7 @@ ModlApp::eCompileResult ModlApp::CompileModel(const std::string &in_file_name, c
                 Ren::eMatLoadStatus status;
                 Ren::MaterialRef mat_ref = ctx_->LoadMaterial(
                     materials[i].c_str(), mat_data.get(), &status,
-                    std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
+                    std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6),
                     std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
                 Ren::Material *mat = mat_ref.get();
                 alpha_test = bool(mat->flags() & Ren::eMatFlags::AlphaTest);
@@ -1904,9 +1904,18 @@ Ren::SamplerRef ModlApp::OnSamplerNeeded(Ren::SamplingParams params) {
     return ctx_->LoadSampler(params, &status);
 }
 
-void ModlApp::OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, std::string_view vs_shader,
-                                std::string_view fs_shader, std::string_view arg3, std::string_view arg4,
+void ModlApp::OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std::string_view fs_shader,
+                                std::string_view arg3, std::string_view arg4,
                                 Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
+    std::string prog_name = std::string(vs_shader);
+    prog_name += "&" + std::string(fs_shader);
+    if (!arg3.empty()) {
+        prog_name += "&" + std::string(arg3);
+    }
+    if (!arg4.empty()) {
+        prog_name += "&" + std::string(arg4);
+    }
+
 #if defined(USE_GL_RENDER)
     Ren::eProgLoadStatus status;
     Ren::ProgramRef prog = ctx_->LoadProgram(prog_name, {}, {}, {}, {}, &status);
@@ -1981,7 +1990,7 @@ std::pair<Ren::MaterialRef, Ren::MaterialRef> ModlApp::OnMaterialNeeded(std::str
         using namespace std::placeholders;
 
         ret = ctx_->LoadMaterial(
-            name, mat_src.data(), &status, std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6, _7),
+            name, mat_src.data(), &status, std::bind(&ModlApp::OnPipelinesNeeded, this, _1, _2, _3, _4, _5, _6),
             std::bind(&ModlApp::OnTextureNeeded, this, _1), std::bind(&ModlApp::OnSamplerNeeded, this, _1));
         assert(status == Ren::eMatLoadStatus::CreatedFromData);
     }

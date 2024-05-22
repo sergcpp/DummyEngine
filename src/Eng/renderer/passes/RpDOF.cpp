@@ -238,28 +238,28 @@ void RpDOF::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &down_
                      RpAllocTex &blur2_temp_4x, RpAllocTex &coc1_tex, RpAllocTex &coc2_tex, RpAllocTex &output_tex) {
     if (!initialized) {
         blit_dof_init_coc_prog_ =
-            sh.LoadProgram(ctx, "blit_dof_init_coc", "internal/blit.vert.glsl", "internal/blit_dof_init_coc.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_dof_init_coc.frag.glsl");
         assert(blit_dof_init_coc_prog_->ready());
-        blit_dof_bilateral_prog_ = sh.LoadProgram(ctx, "blit_dof_bilateral", "internal/blit.vert.glsl",
+        blit_dof_bilateral_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
                                                   "internal/blit_dof_bilateral.frag.glsl");
         assert(blit_dof_bilateral_prog_->ready());
-        blit_dof_calc_near_prog_ = sh.LoadProgram(ctx, "blit_dof_calc_near", "internal/blit.vert.glsl",
+        blit_dof_calc_near_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
                                                   "internal/blit_dof_calc_near.frag.glsl");
         assert(blit_dof_calc_near_prog_->ready());
-        blit_dof_small_blur_prog_ = sh.LoadProgram(ctx, "blit_dof_small_blur", "internal/blit.vert.glsl",
+        blit_dof_small_blur_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
                                                    "internal/blit_dof_small_blur.frag.glsl");
         assert(blit_dof_small_blur_prog_->ready());
         blit_dof_combine_prog_ =
-            sh.LoadProgram(ctx, "blit_dof_combine", "internal/blit.vert.glsl", "internal/blit_dof_combine.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_dof_combine.frag.glsl");
         assert(blit_dof_combine_prog_->ready());
-        blit_dof_combine_ms_prog_ = sh.LoadProgram(ctx, "blit_dof_combine_ms", "internal/blit.vert.glsl",
+        blit_dof_combine_ms_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
                                                    "internal/blit_dof_combine.frag.glsl@MSAA_4");
         assert(blit_dof_combine_ms_prog_->ready());
         blit_gauss_prog_ =
-            sh.LoadProgram(ctx, "blit_gauss", "internal/blit.vert.glsl", "internal/blit_gauss.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_gauss.frag.glsl");
         assert(blit_gauss_prog_->ready());
         blit_down_depth_prog_ =
-            sh.LoadProgram(ctx, "blit_down_depth", "internal/blit.vert.glsl", "internal/blit_down_depth.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_down_depth.frag.glsl");
         assert(blit_down_depth_prog_->ready());
 
         initialized = true;

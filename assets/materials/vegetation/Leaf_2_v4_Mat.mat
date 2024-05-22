@@ -1,6 +1,6 @@
 gl_programs:
-    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit_vege_nossr main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit_vege.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - vegetation/Leaf_2_v4_diff.png
     - default_normalmap.dds

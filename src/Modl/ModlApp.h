@@ -126,8 +126,8 @@ class ModlApp {
 
     Ren::Tex2DRef OnTextureNeeded(std::string_view name);
     Ren::SamplerRef OnSamplerNeeded(Ren::SamplingParams params);
-    void OnPipelinesNeeded(std::string_view prog_name, uint32_t flags, std::string_view vs_shader,
-                           std::string_view fs_shader, std::string_view arg3, std::string_view arg4,
+    void OnPipelinesNeeded(uint32_t flags, std::string_view vs_shader, std::string_view fs_shader,
+                           std::string_view arg3, std::string_view arg4,
                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     std::pair<Ren::MaterialRef, Ren::MaterialRef> OnMaterialNeeded(std::string_view name);
 

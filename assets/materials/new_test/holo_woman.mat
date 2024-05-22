@@ -1,6 +1,6 @@
 gl_programs:
-    - holographic holographic.vert.glsl holographic.frag.glsl
-    - holographic holographic.vert.glsl holographic.frag.glsl
+    - holographic.vert.glsl holographic.frag.glsl
+    - holographic.vert.glsl holographic.frag.glsl
 flags:
     - alpha_blend
 textures:

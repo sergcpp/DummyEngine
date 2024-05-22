@@ -85,7 +85,6 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
     flags_ = {};
 
     bool multi_doc = false;
-    SmallVector<std::string, 4> program_names;
     SmallVector<std::string, 4> v_shader_names, f_shader_names, tc_shader_names, te_shader_names;
 
     for (; p && q; q = strpbrk(p, delims)) {
@@ -106,9 +105,6 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
                     break;
                 }
 #if defined(USE_GL_RENDER) || defined(USE_VK_RENDER)
-                p = q + 1;
-                q = strpbrk(p, delims);
-                program_names.emplace_back(p, q);
                 p = q + 1;
                 q = strpbrk(p, delims);
                 v_shader_names.emplace_back(p, q);
@@ -313,9 +309,8 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
 
     assert(textures.size() == samplers.size());
 
-    for (size_t i = 0; i < program_names.size(); ++i) {
-        on_pipes_load(program_names[i], flags_, v_shader_names[i], f_shader_names[i], tc_shader_names[i],
-                      te_shader_names[i], pipelines);
+    for (size_t i = 0; i < v_shader_names.size(); ++i) {
+        on_pipes_load(flags_, v_shader_names[i], f_shader_names[i], tc_shader_names[i], te_shader_names[i], pipelines);
     }
 
     ready_ = true;

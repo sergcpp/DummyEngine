@@ -81,14 +81,14 @@ void Eng::RpSSRCompose::Execute(RpBuilder &builder) {
 
 void Eng::RpSSRCompose::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &output_tex) {
     if (!initialized) {
-        blit_ssr_compose_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose", "internal/blit_ssr_compose.vert.glsl",
+        blit_ssr_compose_prog_ = sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl",
                                                 "internal/blit_ssr_compose.frag.glsl@HALFRES");
         assert(blit_ssr_compose_prog_->ready());
-        blit_ssr_compose_ms_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose_ms", "internal/blit.vert.glsl",
+        blit_ssr_compose_ms_prog_ = sh.LoadProgram(ctx, "internal/blit.vert.glsl",
                                                    "internal/blit_ssr_compose.frag.glsl@HALFRES;MSAA_4");
         assert(blit_ssr_compose_ms_prog_->ready());
 
-        blit_ssr_compose_hq_prog_ = sh.LoadProgram(ctx, "blit_ssr_compose_hq", "internal/blit_ssr_compose.vert.glsl",
+        blit_ssr_compose_hq_prog_ = sh.LoadProgram(ctx, "internal/blit_ssr_compose.vert.glsl",
                                                    "internal/blit_ssr_compose.frag.glsl");
         assert(blit_ssr_compose_hq_prog_->ready());
 

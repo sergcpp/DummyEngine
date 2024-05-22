@@ -1,6 +1,6 @@
 gl_programs:
-    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 flags:
     - alpha_test
 textures:
@@ -15,8 +15,8 @@ params:
     - 1.0 0.0 0.0 0.0      # metallic, transmission, clearcoat, clearcoat_roughness
 ---
 gl_programs:
-    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
-    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - default_basecolor.png
     - default_normalmap.dds

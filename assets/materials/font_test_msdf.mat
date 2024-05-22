@@ -1,6 +1,6 @@
 gl_programs:
-    - _font_test_msdf _font_test_msdf.vert.glsl _font_test_msdf.frag.glsl
-    - _font_test_msdf _font_test_msdf.vert.glsl _font_test_msdf.frag.glsl
+    - _font_test_msdf.vert.glsl _font_test_msdf.frag.glsl
+    - _font_test_msdf.vert.glsl _font_test_msdf.frag.glsl
 flags:
     - alpha_blend
 textures:

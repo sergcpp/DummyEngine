@@ -24,9 +24,9 @@ enum class eMatLoadStatus { Found, SetToDefault, CreatedFromData, CreatedFromDat
 
 using texture_load_callback = std::function<Tex2DRef(std::string_view name, const uint8_t color[4], eTexFlags flags)>;
 using sampler_load_callback = std::function<SamplerRef(SamplingParams params)>;
-using pipelines_load_callback = std::function<void(std::string_view prog_name, Bitmask<eMatFlags> flags,
-                                                   std::string_view arg1, std::string_view arg2, std::string_view arg3,
-                                                   std::string_view arg4, SmallVectorImpl<PipelineRef> &out_pipelines)>;
+using pipelines_load_callback =
+    std::function<void(Bitmask<eMatFlags> flags, std::string_view arg1, std::string_view arg2, std::string_view arg3,
+                       std::string_view arg4, SmallVectorImpl<PipelineRef> &out_pipelines)>;
 
 class Material : public RefCounter {
     Bitmask<eMatFlags> flags_;

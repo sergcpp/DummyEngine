@@ -1,6 +1,6 @@
 gl_programs:
-    - main_unlit_yuv main_unlit.vert.glsl main_unlit_yuv.frag.glsl
-    - main_unlit_yuv main_unlit.vert.glsl main_unlit_yuv.frag.glsl
+    - main_unlit.vert.glsl main_unlit_yuv.frag.glsl
+    - main_unlit.vert.glsl main_unlit_yuv.frag.glsl
 textures:
     - wall_picture_diff.png
     - default_normalmap.dds

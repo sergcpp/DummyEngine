@@ -47,7 +47,7 @@ void Eng::RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
 
     if (!initialized) {
         blit_ms_resolve_prog_ =
-            sh.LoadProgram(ctx, "blit_ms_resolve", "internal/blit.vert.glsl", "internal/blit_ms_resolve.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_ms_resolve.frag.glsl");
         assert(blit_ms_resolve_prog_->ready());
 
         ////////////////////////////////////////

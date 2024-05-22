@@ -1252,16 +1252,16 @@ std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(
 
         using namespace std::placeholders;
 
-        ret.first = ret.second = LoadMaterial(
-            name, mat_src, &status, std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6, _7),
-            std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
-            std::bind(&SceneManager::OnLoadSampler, this, _1));
+        ret.first = ret.second = LoadMaterial(name, mat_src, &status,
+                                              std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
+                                              std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
+                                              std::bind(&SceneManager::OnLoadSampler, this, _1));
         if (status == Ren::eMatLoadStatus::CreatedFromData_NeedsMore) {
             const size_t n = mat_src.find("---");
             mat_src = mat_src.substr(n + 4);
             const std::string backside_name = std::string(name) + "@back";
             ret.second = LoadMaterial(backside_name, mat_src, &status,
-                                      std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6, _7),
+                                      std::bind(&SceneManager::OnLoadPipelines, this, _1, _2, _3, _4, _5, _6),
                                       std::bind(&SceneManager::OnLoadTexture, this, _1, _2, _3),
                                       std::bind(&SceneManager::OnLoadSampler, this, _1));
         }
@@ -1274,13 +1274,13 @@ std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(
     return ret;
 }
 
-void Eng::SceneManager::OnLoadPipelines(std::string_view name, Ren::Bitmask<Ren::eMatFlags> flags,
-                                        std::string_view v_shader, std::string_view f_shader,
-                                        std::string_view tc_shader, std::string_view te_shader,
+void Eng::SceneManager::OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader,
+                                        std::string_view f_shader, std::string_view tc_shader,
+                                        std::string_view te_shader,
                                         Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
     using namespace SceneManagerConstants;
 
-    const Ren::ProgramRef ret = sh_.LoadProgram(ren_ctx_, name, v_shader, f_shader, tc_shader, te_shader);
+    const Ren::ProgramRef ret = sh_.LoadProgram(ren_ctx_, v_shader, f_shader, tc_shader, te_shader);
     init_pipelines_(ret, flags, scene_data_.persistent_data.pipelines, out_pipelines);
 }
 

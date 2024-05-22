@@ -1,6 +1,6 @@
 gl_programs:
-    - main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
-    - main_probelit_sss main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
+    - main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
+    - main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
 textures:
     - chars/Std_Nails2_diff.png
     - chars/Std_Nails2_norm.png

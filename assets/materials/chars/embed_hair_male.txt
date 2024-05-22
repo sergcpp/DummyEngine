@@ -1,6 +1,6 @@
 gl_programs:
-    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
-    - main_probelit_blend main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
 flags:
     - two_sided
     - alpha_blend

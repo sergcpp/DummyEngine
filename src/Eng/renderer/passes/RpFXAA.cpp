@@ -58,7 +58,7 @@ void RpFXAA::Execute(RpBuilder &builder) {
 void RpFXAA::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex *output_tex) {
     if (!initialized) {
         blit_fxaa_prog_ =
-            sh.LoadProgram(ctx, "blit_fxaa_prog", "internal/blit.vert.glsl", "internal/blit_fxaa.frag.glsl");
+            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_fxaa.frag.glsl");
         assert(blit_fxaa_prog_->ready());
 
         initialized = true;

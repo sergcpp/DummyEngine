@@ -68,8 +68,7 @@ void Eng::RpSampleBrightness::Execute(RpBuilder &builder) {
 
 void Eng::RpSampleBrightness::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAllocTex &reduced_tex) {
     if (!initialized_) {
-        blit_red_prog_ =
-            sh.LoadProgram(ctx, "blit_red2", "internal/blit_reduced.vert.glsl", "internal/blit_reduced.frag.glsl");
+        blit_red_prog_ = sh.LoadProgram(ctx, "internal/blit_reduced.vert.glsl", "internal/blit_reduced.frag.glsl");
         assert(blit_red_prog_->ready());
 
         readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Readback,

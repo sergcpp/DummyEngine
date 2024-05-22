@@ -1,6 +1,6 @@
 gl_programs:
-    - main_lightmapped_nossr main_lightmapped.vert.glsl main_lightmapped_nossr.frag.glsl
-    - main_probelit_nossr main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_lightmapped.vert.glsl main_lightmapped_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 textures:
     - grey_204_diff.png
     - default_normalmap.dds

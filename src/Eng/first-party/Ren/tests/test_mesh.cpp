@@ -88,8 +88,8 @@ void test_mesh() {
 
         TestContext test;
 
-        auto on_pipelines_needed = [&test](std::string_view prog_name, const uint32_t flags, std::string_view arg1,
-                                           std::string_view arg2, std::string_view arg3, std::string_view arg4,
+        auto on_pipelines_needed = [&test](const uint32_t flags, std::string_view arg1, std::string_view arg2,
+                                           std::string_view arg3, std::string_view arg4,
                                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {};
 
         auto on_texture_needed = [&test](std::string_view name, const uint8_t color[4], const Ren::eTexFlags flags) {
@@ -105,7 +105,8 @@ void test_mesh() {
 
         auto on_material_needed = [&](std::string_view name) {
             Ren::eMatLoadStatus status;
-            Ren::MaterialRef ret = test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            Ren::MaterialRef ret =
+                test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
             return std::pair{ret, ret};
         };
 
@@ -148,8 +149,8 @@ void test_mesh() {
 
         TestContext test;
 
-        auto on_pipelines_needed = [&test](std::string_view prog_name, const uint32_t flags, std::string_view arg1,
-                                           std::string_view arg2, std::string_view arg3, std::string_view arg4,
+        auto on_pipelines_needed = [&test](const uint32_t flags, std::string_view arg1, std::string_view arg2,
+                                           std::string_view arg3, std::string_view arg4,
                                            Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines) {
 #if defined(USE_GL_RENDER)
 
@@ -173,7 +174,8 @@ void test_mesh() {
 
         auto on_material_needed = [&](std::string_view name) {
             Ren::eMatLoadStatus status;
-            Ren::MaterialRef ret = test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
+            Ren::MaterialRef ret =
+                test.LoadMaterial(name, {}, &status, on_pipelines_needed, on_texture_needed, on_sampler_needed);
             return std::pair{ret, ret};
         };
 

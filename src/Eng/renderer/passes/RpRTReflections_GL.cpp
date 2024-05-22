@@ -151,32 +151,28 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
 
 void Eng::RpRTReflections::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        Ren::ProgramRef rt_reflections_swrt_prog =
-            sh.LoadProgram(ctx, "rt_reflections_swrt", "internal/rt_reflections_swrt.comp.glsl");
+        Ren::ProgramRef rt_reflections_swrt_prog = sh.LoadProgram(ctx, "internal/rt_reflections_swrt.comp.glsl");
         assert(rt_reflections_swrt_prog->ready());
 
         if (!pi_rt_reflections_swrt_[0].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 
-        rt_reflections_swrt_prog =
-            sh.LoadProgram(ctx, "rt_reflections_swrt_gi", "internal/rt_reflections_swrt.comp.glsl@GI_CACHE");
+        rt_reflections_swrt_prog = sh.LoadProgram(ctx, "internal/rt_reflections_swrt.comp.glsl@GI_CACHE");
         assert(rt_reflections_swrt_prog->ready());
 
         if (!pi_rt_reflections_swrt_[1].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 
-        rt_reflections_swrt_prog =
-            sh.LoadProgram(ctx, "rt_reflections_4bounce_swrt", "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES");
+        rt_reflections_swrt_prog = sh.LoadProgram(ctx, "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES");
         assert(rt_reflections_swrt_prog->ready());
 
         if (!pi_rt_reflections_4bounce_swrt_[0].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {
             ctx.log()->Error("RpRTReflections: Failed to initialize pipeline!");
         }
 
-        rt_reflections_swrt_prog = sh.LoadProgram(ctx, "rt_reflections_4bounce_swrt_gi",
-                                                  "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES;GI_CACHE");
+        rt_reflections_swrt_prog = sh.LoadProgram(ctx, "internal/rt_reflections_swrt.comp.glsl@FOUR_BOUNCES;GI_CACHE");
         assert(rt_reflections_swrt_prog->ready());
 
         if (!pi_rt_reflections_4bounce_swrt_[1].Init(ctx.api_ctx(), rt_reflections_swrt_prog, ctx.log())) {

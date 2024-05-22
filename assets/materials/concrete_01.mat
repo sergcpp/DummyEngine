@@ -1,6 +1,6 @@
 gl_programs:
-    - main_lightmapped main_lightmapped.vert.glsl main_lightmapped.frag.glsl
-    - main_probelit main_probelit.vert.glsl main_probelit.frag.glsl
+    - main_lightmapped.vert.glsl main_lightmapped.frag.glsl
+    - main_probelit.vert.glsl main_probelit.frag.glsl
 textures:
     - concrete_floor_01_diff.png
     - concrete_floor_01_norm.png
