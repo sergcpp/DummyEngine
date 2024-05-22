@@ -201,7 +201,7 @@
         "fov0" : 18.1806,
         "fov" : 45.0,
         "view_transform": "agx",
-        "autoexposure" : false,
-        "max_exposure" : -14.0
+        "min_exposure" : -14.0,
+        "max_exposure" : 8.0
     }
 }

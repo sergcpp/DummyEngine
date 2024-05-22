@@ -47,7 +47,7 @@ void main(void) {
     g_vtx_sh_uvs[2] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][2] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][2] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][2];
     g_vtx_sh_uvs[3] = gl_TessCoord[0] * g_vtx_sh_uvs_es[0][3] + gl_TessCoord[1] * g_vtx_sh_uvs_es[1][3] + gl_TessCoord[2] * g_vtx_sh_uvs_es[2][3];
 
-    float k = clamp((32.0 - distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos)) / 32.0, 0.0, 1.0);
+    float k = clamp((32.0 - distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos)) / 32.0, 0.0, 1.0);
     k *= k;
     k = 1.0;
     //float k = gl_TessLevelInner[0] / 64.0;
@@ -56,5 +56,5 @@ void main(void) {
     g_tex_height = 0.5 * texture(SAMPLER2D(g_bump_tex), g_vtx_uvs).r * k;
     g_vtx_pos += 1.0 * 0.05 * normalize(g_vtx_normal) * g_tex_height * k;
 
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(g_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(g_vtx_pos - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
 }

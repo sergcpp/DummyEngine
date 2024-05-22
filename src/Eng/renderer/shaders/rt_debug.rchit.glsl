@@ -116,7 +116,7 @@ void main() {
         N = normalize((gl_ObjectToWorldEXT * vec4(N, 0.0)).xyz);
 
         const vec3 P = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT * gl_HitTEXT;
-        const vec3 I = -gl_WorldRayDirectionEXT;//normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
+        const vec3 I = -gl_WorldRayDirectionEXT;//normalize(g_shrd_data.cam_pos_and_exp.xyz - P);
         const float N_dot_V = saturate(dot(N, I));
 
         vec3 tint_color = vec3(0.0);

@@ -859,7 +859,7 @@ void Eng::SceneManager::LoadProbeCache() {
 }
 
 void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up,
-                                  const float fov, const bool autoexposure, const float gamma,
+                                  const float fov, const float gamma, const float min_exposure,
                                   const float max_exposure) {
     using namespace SceneManagerConstants;
 
@@ -882,8 +882,8 @@ void Eng::SceneManager::SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &ta
     ext_cam_.Perspective(cam_.angle(), cam_.aspect(), 1.0f, ExtendedFrustumOffset + ExtendedFrustumFrontOffset);
     ext_cam_.UpdatePlanes();
 
-    cam_.autoexposure = autoexposure;
     cam_.gamma = gamma;
+    cam_.min_exposure = min_exposure;
     cam_.max_exposure = max_exposure;
 
     const double cur_time_s = Sys::GetTimeS();

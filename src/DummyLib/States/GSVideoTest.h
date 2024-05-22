@@ -47,7 +47,7 @@ class GSVideoTest final : public GSBaseState {
     float fwd_press_speed_ = 0, side_press_speed_ = 0, fwd_touch_speed_ = 0, side_touch_speed_ = 0;
 
     float max_fwd_speed_ = 0.5f, view_fov_ = 60.0f;
-    float max_exposure_ = 1000.0f;
+    float min_exposure_ = -1000.0f, max_exposure_ = 1000.0f;
 
     uint64_t click_time_ = 0;
 

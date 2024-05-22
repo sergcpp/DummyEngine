@@ -33,11 +33,14 @@ void main() {
     const vec2 u = vec2(float(gl_LocalInvocationID.x) / LOCAL_GROUP_SIZE_X,
                         float(gl_LocalInvocationID.y) / LOCAL_GROUP_SIZE_Y);
     const vec3 sample_dir = MapToCone(u, g_shrd_data.sun_dir.xyz, g_shrd_data.sun_dir.w);
+    const vec3 sample_pos = vec3(0.0, g_shrd_data.atmosphere.viewpoint_height, 0.0);
 
-    vec3 transmittance;
-    IntegrateScattering(vec3(0.0, g_shrd_data.atmosphere.viewpoint_height, 0.0), sample_dir, FLT_MAX, 0,
-                        g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
-
+    vec3 transmittance = vec3(0.0);
+    const vec2 planet_intersection = PlanetIntersection(sample_pos, sample_dir);
+    if (planet_intersection.x <= 0) {
+        IntegrateScattering(sample_pos, sample_dir, FLT_MAX, 0,
+                            g_trasmittance_lut, g_multiscatter_lut, g_moon_tex, g_weather_tex, g_cirrus_tex, g_noise3d_tex, transmittance);
+    }
     barrier(); groupMemoryBarrier();
 
     atomicAdd(g_avg_transmittance.x, uint(transmittance.x * 10000.0));

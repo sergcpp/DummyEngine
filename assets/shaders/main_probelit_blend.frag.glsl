@@ -139,7 +139,7 @@ void main(void) {
         }
     }
 
-    vec3 view_ray_ws = normalize(g_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz);
+    vec3 view_ray_ws = normalize(g_vtx_pos - g_shrd_data.cam_pos_and_exp.xyz);
     vec3 refl_ray_ws = reflect(view_ray_ws, normal);
 
     float refl_lod = 6.0 * specular_color.a;

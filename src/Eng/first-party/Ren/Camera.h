@@ -51,12 +51,11 @@ class Camera {
     mutable Vec2f px_offset_;
 
   public:
-    float max_exposure = 1000.0f;
+    float min_exposure = -1000.0f, max_exposure = 1000.0f;
     float focus_distance = 4.0f, focus_depth = 2.0f;
     float focus_near_mul = 0.0f, focus_far_mul = 0.0f;
     float fade = 0.0f;
     float gamma = 1.0f;
-    bool autoexposure = true;
 
     Camera() = default;
     Camera(const Vec3f &center, const Vec3f &target, const Vec3f &up);

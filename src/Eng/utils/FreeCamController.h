@@ -23,7 +23,7 @@ class FreeCamController {
     float max_fwd_speed = 1.0f;
     float fwd_speed = 0.0f, side_speed = 0.0f;
     Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0.0f, 0.0f, -1.0f};
-    float view_fov = 20.0f, max_exposure = 1000.0f;
+    float view_fov = 20.0f, min_exposure = -1000.0f, max_exposure = 1000.0f;
     bool invalidate_view = false;
 };
 } // namespace Eng

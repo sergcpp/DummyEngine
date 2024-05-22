@@ -173,7 +173,7 @@ bool IsDisoccluded(uvec2 did, float depth, vec2 velocity) {
         // How aligned with the view vector? (the more Z aligned, the higher the depth errors)
         vec4 homogeneous = g_shrd_data.view_from_clip * vec4(ndc, depth, 1.0);
         vec3 world_position = homogeneous.xyz / homogeneous.w;  // perspective divide
-        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_gamma.xyz - world_position);
+        vec3 view_direction = normalize(g_shrd_data.cam_pos_and_exp.xyz - world_position);
         float z_alignment = 1.0 - dot(view_direction, normal);
         z_alignment = pow(z_alignment, 8);
 
@@ -470,7 +470,7 @@ void TileClassification(uint group_index, uvec2 gid) {
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    uvec2 group_id = gl_WorkGroupID.xy;
-    uint group_index = gl_LocalInvocationIndex;
+    const uvec2 group_id = gl_WorkGroupID.xy;
+    const uint group_index = gl_LocalInvocationIndex;
     TileClassification(group_index, group_id);
 }

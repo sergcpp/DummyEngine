@@ -158,7 +158,7 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_gamma.xyz - g_vtx_pos);
+    vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);
     vec3 view_ray_ts = vec3(
         dot(view_ray_ws, cross(g_vtx_tangent, g_vtx_normal)),
         -dot(view_ray_ws, g_vtx_tangent),

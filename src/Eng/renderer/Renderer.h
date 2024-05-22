@@ -76,7 +76,7 @@ class Renderer {
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
-                           float exposure, const Ren::Tex2DRef &target, bool compressed,
+                           float min_exposure, float max_exposure, const Ren::Tex2DRef &target, bool compressed,
                            bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
@@ -180,6 +180,7 @@ class Renderer {
     const DrawList *p_list_;
     const Ren::ProbeStorage *probe_storage_ = nullptr;
     Ren::SmallVector<RpResRef, 8> backbuffer_sources_;
+    float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
 
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydomeCube rp_skydome_cube_ = {prim_draw_};
@@ -196,7 +197,6 @@ class Renderer {
     RpRTReflections rp_rt_reflections_;
     RpRTShadows rp_rt_shadows_;
     RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
-    RpReadBrightness rp_read_brightness_;
     RpCombineData rp_combine_data_;
     RpCombine rp_combine_ = {prim_draw_};
 
@@ -225,6 +225,8 @@ class Renderer {
     Ren::Pipeline pi_shadow_classify_, pi_sun_shadows_, pi_shadow_prepare_mask_, pi_shadow_classify_tiles_,
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::Pipeline pi_sun_brightness_;
+    // Autoexposure
+    Ren::Pipeline pi_histogram_sample_[2], pi_histogram_exposure_;
     // Debug
     Ren::Pipeline pi_debug_velocity_;
 
@@ -256,6 +258,7 @@ class Renderer {
         RpResRef ssao;
         RpResRef gi;
         RpResRef sun_shadow;
+        RpResRef exposure;
 
         RpResRef gi_cache;
         RpResRef gi_cache_dist;
@@ -312,11 +315,13 @@ class Renderer {
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                              bool enabled, FrameTextures &frame_textures);
 
+    RpResRef AddAutoexposurePasses(RpResRef hdr_texture);
+
     void AddDebugVelocityPass(RpResRef velocity, RpResRef &output_tex);
 
     void GatherDrawables(const SceneData &scene, const Ren::Camera &cam, const Ren::Camera &ext_cam, DrawList &list);
 
-    void InitPipelines();
+    bool InitPipelines();
     // void InitRendererInternal();
     void UpdateFilterTable(ePixelFilter filter, float filter_width);
 

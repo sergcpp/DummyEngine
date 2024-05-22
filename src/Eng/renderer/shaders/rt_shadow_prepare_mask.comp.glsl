@@ -65,7 +65,7 @@ void PrepareShadowMask(uvec2 group_thread_id, uvec2 group_id) {
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
 
 void main() {
-    uvec2 group_thread_id = gl_LocalInvocationID.xy;
-    uvec2 group_id = gl_WorkGroupID.xy;
+    const uvec2 group_thread_id = gl_LocalInvocationID.xy;
+    const uvec2 group_id = gl_WorkGroupID.xy;
     PrepareShadowMask(group_thread_id, group_id);
 }

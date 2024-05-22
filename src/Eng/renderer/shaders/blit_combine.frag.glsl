@@ -15,8 +15,9 @@
 
 layout(binding = HDR_TEX_SLOT) uniform sampler2D g_tex;
 layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_tex;
+layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 #if defined(LUT)
-layout(binding = LUT_TEX_SLOT) uniform sampler3D g_lut_tex;
+    layout(binding = LUT_TEX_SLOT) uniform sampler3D g_lut_tex;
 #endif
 
 LAYOUT_PARAMS uniform UniformParams {
@@ -45,7 +46,7 @@ void main() {
 #ifdef COMPRESSED
     col = decompress_hdr(col);
 #endif
-    col *= g_params.exposure;
+    col *= texelFetch(g_exp_tex, ivec2(0), 0).x;
 
 #if defined(LUT)
     col = TonemapLUT(g_lut_tex, col);

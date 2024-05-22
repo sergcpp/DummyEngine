@@ -34,7 +34,7 @@ void main() {
     vec4 point_ws = g_shrd_data.world_from_clip_no_translation * point_cs;
     point_ws /= point_ws.w;
 
-    point_ws.xyz += (g_shrd_data.cam_pos_and_gamma.xyz - g_shrd_data.prev_cam_pos.xyz);
+    point_ws.xyz += (g_shrd_data.cam_pos_and_exp.xyz - g_shrd_data.prev_cam_pos.xyz);
 
     vec4 point_prev_cs = g_shrd_data.prev_clip_from_world_no_translation * point_ws;
     point_prev_cs /= point_prev_cs.w;

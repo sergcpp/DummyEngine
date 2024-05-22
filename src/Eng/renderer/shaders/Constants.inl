@@ -148,6 +148,9 @@ const float SKY_MOON_SUN_RELATION = 0.0000001f;
 const float SKY_STARS_THRESHOLD = 14.0f;
 const float SKY_SUN_BLEND_VAL = 0.000005f;
 
+// Autoexposure
+const int EXPOSURE_HISTOGRAM_RES = 64;
+
 #define USE_OCT_PACKED_NORMALS 1
 
 #define OIT_DISABLED 0

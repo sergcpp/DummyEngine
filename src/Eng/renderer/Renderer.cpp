@@ -661,6 +661,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
     std::copy(std::begin(list.env.lm_indir_sh), std::end(list.env.lm_indir_sh), std::begin(lm_indir_sh_));
     p_list_ = &list;
     probe_storage_ = list.probe_storage;
+    min_exposure_ = std::pow(2.0f, list.draw_cam.min_exposure);
+    max_exposure_ = std::pow(2.0f, list.draw_cam.max_exposure);
 
     if (rebuild_renderpasses) {
         const uint64_t rp_setup_beg_us = Sys::GetTimeUs();
@@ -1070,6 +1072,8 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
         }
 
+        frame_textures.exposure = AddAutoexposurePasses(frame_textures.color);
+
         //
         // Debug geometry
         //
@@ -1226,7 +1230,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         // Sample brightness
         //
-        RpResRef exposure_tex; // fake for now
         if (list.render_settings.tonemap_mode != eTonemapMode::Off) {
             RpResRef lum_tex;
             { // Sample brightness
@@ -1247,26 +1250,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
 
                 rp_sample_brightness_.Setup(data);
                 lum_sample.set_executor(&rp_sample_brightness_);
-            }
-            { // Readback brightness
-                auto &lum_read = rp_builder_.AddPass("LUM READBACK");
-
-                auto *data = lum_read.AllocPassData<RpReadBrightnessData>();
-                data->input_tex = lum_read.AddTransferImageInput(lum_tex);
-                data->output_buf = lum_read.AddTransferOutput(readback_buf_);
-
-                { // 1px exposure texture (fake for now)
-                    Ren::Tex2DParams params;
-                    params.w = params.h = 1;
-                    params.format = Ren::eTexFormat::RawR32F;
-                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    exposure_tex = data->exposure_tex = lum_read.AddColorOutput("Exposure Tex", params);
-                }
-
-                rp_read_brightness_.Setup(data);
-                lum_read.set_executor(&rp_read_brightness_);
             }
         }
 
@@ -1316,30 +1299,17 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             }
 
             const bool tonemap = (list.render_settings.tonemap_mode != eTonemapMode::Off);
-            const float reduced_average = rp_read_brightness_.reduced_average();
-
-            float exposure = list.draw_cam.max_exposure;
-            if (list.draw_cam.autoexposure) {
-                exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
-                exposure = std::min(exposure, list.draw_cam.max_exposure);
-            }
 
             // TODO: Remove this condition
             if (list.env.env_map || true) {
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
+                rp_combine_data_.exposure_tex = combine.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
                 rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
                 if (false && list.render_settings.enable_bloom && blur_tex) {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(blur_tex, Ren::eStageBits::FragmentShader);
                 } else {
                     rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-                }
-                if (exposure_tex) {
-                    rp_combine_data_.exposure_tex =
-                        combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
-                } else {
-                    rp_combine_data_.exposure_tex =
-                        combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
                 }
                 if (output_tex) {
                     Ren::Tex2DParams params;
@@ -1358,7 +1328,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 rp_combine_data_.lut_tex = tonemap_lut_;
                 rp_combine_data_.tonemap_mode = int(list.render_settings.tonemap_mode);
                 rp_combine_data_.inv_gamma = 1.0f / list.draw_cam.gamma;
-                rp_combine_data_.exposure = powf(2.0f, exposure);
                 rp_combine_data_.fade = list.draw_cam.fade;
 
                 backbuffer_sources_.push_back(rp_combine_data_.output_tex);
@@ -1413,15 +1382,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             rp_combine_data_.output_tex = combine.ReplaceColorOutput(0, ctx_.backbuffer_ref());
         }
 
-        const float reduced_average = rp_read_brightness_.reduced_average();
-
-        float exposure = list.draw_cam.max_exposure;
-        if (list.draw_cam.autoexposure) {
-            exposure = reduced_average > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average) : 1.0f;
-            exposure = std::min(exposure, list.draw_cam.max_exposure);
-        }
-
-        rp_combine_data_.exposure = powf(2.0f, exposure);
         rp_combine_data_.fade = list.draw_cam.fade;
 
         rp_combine_.Setup(&view_state_, &rp_combine_data_);
@@ -1589,8 +1549,8 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
 }
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
-                                      const Ren::eTexFormat format, const float gamma, const float exposure,
-                                      const Ren::Tex2DRef &target, const bool compressed,
+                                      const Ren::eTexFormat format, const float gamma, const float min_exposure,
+                                      const float max_exposure, const Ren::Tex2DRef &target, const bool compressed,
                                       const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
@@ -1614,6 +1574,9 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
                                       !rp_builder_.ready() || cached_rp_index_ != 1 || resolution_changed;
     cached_settings_ = settings;
     cached_rp_index_ = 1;
+
+    min_exposure_ = std::pow(2.0f, min_exposure);
+    max_exposure_ = std::pow(2.0f, max_exposure);
 
     assert(format == Ren::eTexFormat::RawRGBA32F);
 
@@ -1655,11 +1618,13 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
                                           builder.ctx().current_cmd_buf(), 0, stage_buf.ref->size());
         });
 
+        RpResRef exposure_tex = AddAutoexposurePasses(output_tex_res);
+
         auto &combine = rp_builder_.AddPass("COMBINE");
 
+        rp_combine_data_.exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
         rp_combine_data_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
         rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
-        rp_combine_data_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
         if (target) {
             rp_combine_data_.output_tex = combine.AddColorOutput(target);
             if (blit_to_backbuffer) {
@@ -1673,7 +1638,6 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         rp_combine_data_.lut_tex = tonemap_lut_;
         rp_combine_data_.tonemap_mode = int(settings.tonemap_mode);
         rp_combine_data_.inv_gamma = 1.0f / gamma;
-        rp_combine_data_.exposure = powf(2.0f, exposure);
         rp_combine_data_.fade = 0.0f;
 
         backbuffer_sources_.push_back(rp_combine_data_.output_tex);

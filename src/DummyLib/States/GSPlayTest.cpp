@@ -226,7 +226,8 @@ void GSPlayTest::UpdateAnim(const uint64_t dt_us) {
     GSBaseState::UpdateAnim(dt_us);
 
     scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, true, 1.0f, cam_ctrl_->max_exposure);
+                              Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, 1.0f, cam_ctrl_->min_exposure,
+                              cam_ctrl_->max_exposure);
 
     const Eng::SceneData &scene = scene_manager_->scene_data();
 

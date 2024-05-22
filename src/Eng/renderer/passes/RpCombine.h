@@ -9,9 +9,9 @@ namespace Eng {
 class PrimDraw;
 struct ViewState;
 struct RpCombineData {
+    RpResRef exposure_tex;
     RpResRef color_tex;
     RpResRef blur_tex;
-    RpResRef exposure_tex;
     RpResRef output_tex;
     RpResRef output_tex2;
 
@@ -19,7 +19,7 @@ struct RpCombineData {
 
     bool compressed = true;
     int tonemap_mode = 1;
-    float inv_gamma = 1.0f, exposure = 1.0f, fade = 0.0f;
+    float inv_gamma = 1.0f, fade = 0.0f;
 };
 
 class RpCombine : public RpExecutor {

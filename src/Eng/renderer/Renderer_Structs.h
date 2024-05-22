@@ -366,7 +366,7 @@ struct SharedDataBlock {
     Ren::Mat4f rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     Ren::Vec4f sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
-    Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
+    Ren::Vec4f clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     Ren::Vec4f res_and_fres, transp_params_and_time;
     Ren::Vec4f wind_scroll, wind_scroll_prev;
     Ren::Vec4u item_counts;

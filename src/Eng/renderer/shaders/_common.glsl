@@ -193,7 +193,7 @@ vec4 UnpackNormalAndRoughness(const uint f) {
     return r;
 }
 
-uint PackMaterialParams(vec4 params0, vec4 params1) {
+uint PackMaterialParams(const vec4 params0, const vec4 params1) {
     uvec4 uparams0 = uvec4(round(params0 * 15.0));
     uvec4 uparams1 = uvec4(round(params1 * 15.0));
 
@@ -328,7 +328,7 @@ struct SharedData {
     mat4 rt_clip_from_world;
     ShadowMapRegion shadowmap_regions[MAX_SHADOWMAPS_TOTAL];
     vec4 sun_dir, sun_col, sun_col_point, env_col, taa_info, frustum_info;
-    vec4 clip_info, rt_clip_info, cam_pos_and_gamma, prev_cam_pos;
+    vec4 clip_info, rt_clip_info, cam_pos_and_exp, prev_cam_pos;
     vec4 res_and_fres, transp_params_and_time;
     vec4 wind_scroll, wind_scroll_prev;
     uvec4 item_counts;

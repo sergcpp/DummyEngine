@@ -25,7 +25,7 @@ layout(location = LOC_OUT_COLOR) out vec4 g_out_color;
 void main() {
     const vec3 view_dir_ws = normalize(g_vtx_pos);
 
-    const vec3 rotated_dir = view_dir_ws;//rotate_xz(view_dir_ws, g_shrd_data.env_col.w);
-    g_out_color.rgb = g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb;
+    const vec3 rotated_dir = rotate_xz(view_dir_ws, g_shrd_data.env_col.w);
+    g_out_color.rgb = compress_hdr(g_shrd_data.env_col.xyz * texture(g_env_tex, rotated_dir).rgb);
     g_out_color.a = 1.0;
 }

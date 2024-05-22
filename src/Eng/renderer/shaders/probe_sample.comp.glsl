@@ -56,7 +56,7 @@ void main() {
     pos_ws /= pos_ws.w;
 
     const vec3 P = pos_ws.xyz;
-    const vec3 I = normalize(P - g_shrd_data.cam_pos_and_gamma.xyz);
+    const vec3 I = normalize(P - g_shrd_data.cam_pos_and_exp.xyz);
 
     const vec4 normal = UnpackNormalAndRoughness(texelFetch(g_normal_tex, icoord, 0).r);
 

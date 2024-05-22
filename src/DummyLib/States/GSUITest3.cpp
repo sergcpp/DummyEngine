@@ -43,7 +43,7 @@ GSUITest3::GSUITest3(Viewer *viewer) : GSBaseState(viewer) {
     book_main_font_ = viewer->font_storage()->FindFont("book_main_font");
     book_emph_font_ = viewer->font_storage()->FindFont("book_emph_font");
     book_caption_font_ = viewer->font_storage()->FindFont("book_caption_font");
-    //book_caption_font_->set_scale(1.25f);
+    // book_caption_font_->set_scale(1.25f);
 }
 
 GSUITest3::~GSUITest3() = default;
@@ -294,7 +294,8 @@ void GSUITest3::Draw() {
 
     const Ren::Vec3f view_origin = view_origin_ + Ren::Vec3f{0.0f, view_offset_, 0.0f};
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, true, 1.0f, max_exposure_);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir_), up_vector, view_fov_, 1.0f, min_exposure_,
+                              max_exposure_);
 
     GSBaseState::Draw();
 }

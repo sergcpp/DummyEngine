@@ -24,7 +24,7 @@ using JsObjectP = JsObjectT<Sys::MultiPoolAllocator<char, std::allocator<char>>>
 namespace Phy {
 struct prim_t;
 struct split_settings_t;
-}
+} // namespace Phy
 
 namespace Sys {
 template <typename T, typename FallBackAllocator> class MultiPoolAllocator;
@@ -133,8 +133,8 @@ class SceneManager {
 
     void LoadProbeCache();
 
-    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov,
-                   bool autoexposure, float gamma, float max_exposure);
+    void SetupView(const Ren::Vec3f &origin, const Ren::Vec3f &target, const Ren::Vec3f &up, float fov, float gamma,
+                   float min_exposure, float max_exposure);
 
     using PostLoadFunc = void(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
     void RegisterComponent(uint32_t index, Eng::CompStorage *storage, const std::function<PostLoadFunc> &post_init);
@@ -176,8 +176,8 @@ class SceneManager {
     void PostloadAccStructure(const JsObjectP &js_comp_obj, void *comp, Ren::Vec3f obj_bbox[2]);
 
     std::pair<Ren::MaterialRef, Ren::MaterialRef> OnLoadMaterial(std::string_view name);
-    void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader,
-                         std::string_view f_shader, std::string_view tc_shader, std::string_view te_shader,
+    void OnLoadPipelines(Ren::Bitmask<Ren::eMatFlags> flags, std::string_view v_shader, std::string_view f_shader,
+                         std::string_view tc_shader, std::string_view te_shader,
                          Ren::SmallVectorImpl<Ren::PipelineRef> &out_pipelines);
     Ren::Tex2DRef OnLoadTexture(std::string_view name, const uint8_t color[4], Ren::eTexFlags flags);
     Ren::SamplerRef OnLoadSampler(Ren::SamplingParams params);

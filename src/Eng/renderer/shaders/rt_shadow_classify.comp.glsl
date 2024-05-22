@@ -65,7 +65,7 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
         // TODO: ...
     }
 
-    uint bit_index = LaneIdToBitShift(group_thread_id);
+    const uint bit_index = LaneIdToBitShift(group_thread_id);
     uint mask = uint(is_active_lane) << bit_index;
 #ifndef NO_SUBGROUP
     mask = subgroupOr(mask);
@@ -91,13 +91,13 @@ void ClassifyTiles(uvec2 px_coord, uvec2 group_thread_id, uvec2 group_id, bool u
 //
 float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
     // wrap arguments
-    uint pixel_i = pixel.x & 127u;
-    uint pixel_j = pixel.y & 127u;
+    const uint pixel_i = pixel.x & 127u;
+    const uint pixel_j = pixel.y & 127u;
     sample_index = sample_index & 255u;
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
 
     // fetch value in sequence
     uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
@@ -110,8 +110,8 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
 }
 
 vec2 SampleRandomVector2D(uvec2 pixel) {
-    vec2 u = vec2(fract(SampleRandomNumber(pixel, 0, 6u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                  fract(SampleRandomNumber(pixel, 0, 7u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
+    const vec2 u = vec2(fract(SampleRandomNumber(pixel, 0, 6u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
+                        fract(SampleRandomNumber(pixel, 0, 7u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
     return u;
 }
 
@@ -121,10 +121,10 @@ void main() {
     if (gl_GlobalInvocationID.x < 128u && gl_GlobalInvocationID.y < 128u) {
         imageStore(g_noise_img, ivec2(gl_GlobalInvocationID.xy), vec4(SampleRandomVector2D(gl_GlobalInvocationID.xy), 0, 0));
     }
-    uvec2 group_id = gl_WorkGroupID.xy;
-    uint group_index = gl_LocalInvocationIndex;
-    uvec2 group_thread_id = RemapLane8x8(group_index);
-    uvec2 dispatch_thread_id = group_id * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + group_thread_id;
+    const uvec2 group_id = gl_WorkGroupID.xy;
+    const uint group_index = gl_LocalInvocationIndex;
+    const uvec2 group_thread_id = RemapLane8x8(group_index);
+    const uvec2 dispatch_thread_id = group_id * uvec2(TILE_SIZE_X, TILE_SIZE_Y) + group_thread_id;
     //if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
     //    return;
     //}

@@ -404,7 +404,7 @@ void main(void) {
     highp uvec2 dcount_and_pcount = uvec2(bitfieldExtract(cell_data.y, 0, 8),
                                           bitfieldExtract(cell_data.y, 8, 8));
 
-    vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_gamma.xyz - g_vtx_pos);
+    vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);
 
     mat3 basis = mat3(cross(g_vtx_tangent, g_vtx_normal), -g_vtx_tangent, g_vtx_normal);
     /*mat3 basis;

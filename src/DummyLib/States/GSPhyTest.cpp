@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include <Eng/gui/Renderer.h>
 #include <Eng/Log.h>
+#include <Eng/gui/Renderer.h>
 #include <Eng/scene/SceneManager.h>
 #include <Eng/utils/Cmdline.h>
 #include <Ren/Context.h>
@@ -238,7 +238,7 @@ bool GSPhyTest::HandleInput(const Eng::InputManager::Event &evt) {
             if (new_time - click_time_ < 400) {
                 use_pt_ = !use_pt_;
                 if (use_pt_) {
-                    //scene_manager_->InitScene_PT();
+                    // scene_manager_->InitScene_PT();
                     invalidate_view_ = true;
                 }
 
@@ -377,8 +377,8 @@ void GSPhyTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, true,
-                              1.0f, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, 1.0f,
+                              min_exposure_, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f",
     //        view_origin_[0], view_origin_[1], view_origin_[2],

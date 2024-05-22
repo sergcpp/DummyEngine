@@ -33,8 +33,8 @@
         "filter": "blackman-harris",
         "view_transform": "filmic_high_contrast",
         "filter_width": 1.0,
-        "autoexposure": false,
         "gamma": 0.5,
+        "min_exposure": 2.2,
         "max_exposure": 2.2,
         "fwd_speed": 0.04
     },

@@ -21,378 +21,135 @@
 #include "shaders/blit_upscale_interface.h"
 #include "shaders/debug_velocity_interface.h"
 #include "shaders/gbuffer_shade_interface.h"
+#include "shaders/histogram_exposure_interface.h"
+#include "shaders/histogram_sample_interface.h"
 #include "shaders/sun_brightness_interface.h"
 
 namespace RendererInternal {
 extern const int TaaSampleCountStatic;
 }
 
-void Eng::Renderer::InitPipelines() {
-    { // Init skinning pipeline
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/skinning.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_skinning_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
+bool Eng::Renderer::InitPipelines() {
+    auto init_pipeline = [&](Ren::Pipeline &pi, std::string_view cs_name,
+                             std::optional<int> subgroup_size = std::nullopt) {
+        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, cs_name);
+        if (!prog->ready() || !pi.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), subgroup_size)) {
             ctx_.log()->Error("Renderer: failed to initialize pipeline!");
+            return false;
         }
-    }
-    { // Init gbuffer shading pipeline
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gbuffer_shade.comp.glsl");
-        assert(prog->ready());
+        return true;
+    };
 
-        if (!pi_gbuf_shade_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
+    bool success = true;
 
-        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "internal/gbuffer_shade.comp.glsl@HQ_HDR");
-        assert(prog_hq->ready());
+    success &= init_pipeline(pi_skinning_, "internal/skinning.comp.glsl");
+    success &= init_pipeline(pi_gbuf_shade_, "internal/gbuffer_shade.comp.glsl");
+    success &= init_pipeline(pi_gbuf_shade_hq_, "internal/gbuffer_shade.comp.glsl@HQ_HDR");
+    success &= init_pipeline(pi_ssr_classify_tiles_[0], "internal/ssr_classify_tiles.comp.glsl");
+    success &= init_pipeline(pi_ssr_classify_tiles_[1], "internal/ssr_classify_tiles.comp.glsl@HQ_HDR");
+    success &= init_pipeline(pi_ssr_write_indirect_, "internal/ssr_write_indirect_args.comp.glsl");
+    success &= init_pipeline(pi_ssr_trace_hq_, "internal/ssr_trace_hq.comp.glsl");
+    success &= init_pipeline(pi_rt_write_indirect_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
+    success &= init_pipeline(pi_ssr_reproject_[0], "internal/ssr_reproject.comp.glsl");
+    success &= init_pipeline(pi_ssr_reproject_[1], "internal/ssr_reproject.comp.glsl@HQ_HDR");
 
-        if (!pi_gbuf_shade_hq_.Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Quad classification for SSR
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_classify_tiles.comp.glsl");
-        assert(prog->ready());
+    // GI Cache
+    success &= init_pipeline(pi_probe_blend_[0], "internal/probe_blend.comp.glsl@RADIANCE");
+    success &= init_pipeline(pi_probe_blend_[1], "internal/probe_blend.comp.glsl@DISTANCE");
+    success &= init_pipeline(pi_probe_relocate_[0], "internal/probe_relocate.comp.glsl");
+    success &= init_pipeline(pi_probe_relocate_[1], "internal/probe_relocate.comp.glsl@RESET");
+    success &= init_pipeline(pi_probe_classify_[0], "internal/probe_classify.comp.glsl");
+    success &= init_pipeline(pi_probe_classify_[1], "internal/probe_classify.comp.glsl@RESET");
+    success &= init_pipeline(pi_probe_sample_[0], "internal/probe_sample.comp.glsl");
+    success &= init_pipeline(pi_probe_sample_[1], "internal/probe_sample.comp.glsl@HQ_HDR");
 
-        if (!pi_ssr_classify_tiles_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
+    // Reflections prefilter
+    success &= init_pipeline(pi_ssr_prefilter_[0], "internal/ssr_prefilter.comp.glsl");
+    success &= init_pipeline(pi_ssr_prefilter_[1], "internal/ssr_prefilter.comp.glsl@HQ_HDR");
 
-        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "internal/ssr_classify_tiles.comp.glsl@HQ_HDR");
-        assert(prog_hq->ready());
+    // Reflections accumulation
+    success &= init_pipeline(pi_ssr_resolve_temporal_[0], "internal/ssr_resolve_temporal.comp.glsl");
+    success &= init_pipeline(pi_ssr_resolve_temporal_[1], "internal/ssr_resolve_temporal.comp.glsl@HQ_HDR");
 
-        if (!pi_ssr_classify_tiles_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Indirect dispatch arguments preparation for SSR
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_write_indirect_args.comp.glsl");
-        assert(prog->ready());
+    // Flat normals reconstruction
+    success &= init_pipeline(pi_reconstruct_normals_, "internal/reconstruct_normals.comp.glsl");
 
-        if (!pi_ssr_write_indirect_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // HQ screen-space ray tracing
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_trace_hq.comp.glsl");
-        assert(prog->ready());
+    // GI
+    success &= init_pipeline(pi_gi_classify_tiles_, "internal/gi_classify_tiles.comp.glsl");
+    success &= init_pipeline(pi_gi_write_indirect_, "internal/gi_write_indirect_args.comp.glsl");
+    success &= init_pipeline(pi_gi_trace_ss_, "internal/gi_trace_ss.comp.glsl");
+    success &= init_pipeline(pi_gi_rt_write_indirect_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
+    success &= init_pipeline(pi_gi_reproject_, "internal/gi_reproject.comp.glsl");
+    success &= init_pipeline(pi_gi_prefilter_, "internal/gi_prefilter.comp.glsl");
+    success &= init_pipeline(pi_gi_resolve_temporal_, "internal/gi_resolve_temporal.comp.glsl");
+    success &= init_pipeline(pi_gi_blur_, "internal/gi_blur.comp.glsl");
+    success &= init_pipeline(pi_gi_post_blur_, "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
 
-        if (!pi_ssr_trace_hq_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // RT dispatch arguments preparation for reflections
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_write_indir_rt_dispatch.comp.glsl");
-        assert(prog->ready());
+    // RT Sun Shadow
+    success &= init_pipeline(pi_shadow_classify_, "internal/rt_shadow_classify.comp.glsl", 32);
+    success &= init_pipeline(pi_sun_shadows_, "internal/sun_shadows.comp.glsl");
+    success &= init_pipeline(pi_shadow_prepare_mask_, "internal/rt_shadow_prepare_mask.comp.glsl", 32);
+    success &= init_pipeline(pi_shadow_classify_tiles_, "internal/rt_shadow_classify_tiles.comp.glsl", 32);
+    success &= init_pipeline(pi_shadow_filter_[0], "internal/rt_shadow_filter.comp.glsl@PASS_0");
+    success &= init_pipeline(pi_shadow_filter_[1], "internal/rt_shadow_filter.comp.glsl@PASS_1");
+    success &= init_pipeline(pi_shadow_filter_[2], "internal/rt_shadow_filter.comp.glsl");
+    success &= init_pipeline(pi_shadow_debug_, "internal/rt_shadow_debug.comp.glsl");
+    success &= init_pipeline(pi_sun_brightness_, "internal/sun_brightness.comp.glsl");
 
-        if (!pi_rt_write_indirect_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Reflections reprojection
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_reproject.comp.glsl");
-        assert(prog->ready());
-        if (!pi_ssr_reproject_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
+    // Autoexposure
+    success &= init_pipeline(pi_histogram_sample_[0], "internal/histogram_sample.comp.glsl");
+    success &= init_pipeline(pi_histogram_sample_[1], "internal/histogram_sample.comp.glsl@COMPRESSED");
+    success &= init_pipeline(pi_histogram_exposure_, "internal/histogram_exposure.comp.glsl");
 
-        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "internal/ssr_reproject.comp.glsl@HQ_HDR");
-        assert(prog_hq->ready());
-        if (!pi_ssr_reproject_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI Cache
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/probe_blend.comp.glsl@RADIANCE");
-        assert(prog->ready());
-        if (!pi_probe_blend_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_blend.comp.glsl@DISTANCE");
-        assert(prog->ready());
-        if (!pi_probe_blend_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_relocate.comp.glsl");
-        assert(prog->ready());
-        if (!pi_probe_relocate_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_relocate.comp.glsl@RESET");
-        assert(prog->ready());
-        if (!pi_probe_relocate_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_classify.comp.glsl");
-        assert(prog->ready());
-        if (!pi_probe_classify_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_classify.comp.glsl@RESET");
-        assert(prog->ready());
-        if (!pi_probe_classify_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_sample.comp.glsl");
-        assert(prog->ready());
-        if (!pi_probe_sample_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        prog = sh_.LoadProgram(ctx_, "internal/probe_sample.comp.glsl@HQ_HDR");
-        assert(prog->ready());
-        if (!pi_probe_sample_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Reflections prefilter
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_prefilter.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_ssr_prefilter_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "internal/ssr_prefilter.comp.glsl@HQ_HDR");
-        assert(prog_hq->ready());
-
-        if (!pi_ssr_prefilter_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Reflections accumulation
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/ssr_resolve_temporal.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_ssr_resolve_temporal_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-
-        Ren::ProgramRef prog_hq = sh_.LoadProgram(ctx_, "internal/ssr_resolve_temporal.comp.glsl@HQ_HDR");
-        assert(prog_hq->ready());
-
-        if (!pi_ssr_resolve_temporal_[1].Init(ctx_.api_ctx(), std::move(prog_hq), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Flat normals reconstruction
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/reconstruct_normals.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_reconstruct_normals_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
+    // Debugging
+    success &= init_pipeline(pi_debug_velocity_, "internal/debug_velocity.comp.glsl");
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     blit_static_vel_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_static_vel.vert.glsl", "internal/blit_static_vel.frag.glsl");
-    assert(blit_static_vel_prog_->ready());
+    success &= blit_static_vel_prog_->ready();
 
     blit_gauss2_prog_ = sh_.LoadProgram(ctx_, "internal/blit_gauss.vert.glsl", "internal/blit_gauss.frag.glsl");
-    assert(blit_gauss2_prog_->ready());
+    success &= blit_gauss2_prog_->ready();
 
     blit_ao_prog_ = sh_.LoadProgram(ctx_, "internal/blit_ssao.vert.glsl", "internal/blit_ssao.frag.glsl");
-    assert(blit_ao_prog_->ready());
+    success &= blit_ao_prog_->ready();
 
     blit_bilateral_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_bilateral.vert.glsl", "internal/blit_bilateral.frag.glsl");
-    assert(blit_bilateral_prog_->ready());
+    success &= blit_bilateral_prog_->ready();
 
     blit_taa_prog_ = sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl",
                                      "internal/blit_taa.frag.glsl@CLIPPING;ROUNDED_NEIBOURHOOD;TONEMAP");
-    assert(blit_taa_prog_->ready());
+    success &= blit_taa_prog_->ready();
 
     blit_taa_static_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_taa.vert.glsl", "internal/blit_taa.frag.glsl@STATIC_ACCUMULATION");
-    assert(blit_taa_static_prog_->ready());
+    success &= blit_taa_static_prog_->ready();
 
     blit_ssr_prog_ = sh_.LoadProgram(ctx_, "internal/blit_ssr.vert.glsl", "internal/blit_ssr.frag.glsl");
-    assert(blit_ssr_prog_->ready());
+    success &= blit_ssr_prog_->ready();
 
     blit_ssr_dilate_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_ssr_dilate.vert.glsl", "internal/blit_ssr_dilate.frag.glsl");
-    assert(blit_ssr_dilate_prog_->ready());
+    success &= blit_ssr_dilate_prog_->ready();
 
     blit_ssr_compose_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_ssr_compose_new.vert.glsl", "internal/blit_ssr_compose_new.frag.glsl");
-    assert(blit_ssr_compose_prog_->ready());
+    success &= blit_ssr_compose_prog_->ready();
 
     blit_upscale_prog_ = sh_.LoadProgram(ctx_, "internal/blit_upscale.vert.glsl", "internal/blit_upscale.frag.glsl");
-    assert(blit_upscale_prog_->ready());
+    success &= blit_upscale_prog_->ready();
 
     blit_down2_prog_ = sh_.LoadProgram(ctx_, "internal/blit_down.vert.glsl", "internal/blit_down.frag.glsl");
-    assert(blit_down2_prog_->ready());
+    success &= blit_down2_prog_->ready();
 
     blit_down_depth_prog_ =
         sh_.LoadProgram(ctx_, "internal/blit_down_depth.vert.glsl", "internal/blit_down_depth.frag.glsl");
-    assert(blit_down_depth_prog_->ready());
+    success &= blit_down_depth_prog_->ready();
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    { // Quad classification for GI
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_classify_tiles.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_classify_tiles_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Indirect dispatch arguments preparation for GI
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_write_indirect_args.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_write_indirect_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI screen-space tracing
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_trace_ss.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_trace_ss_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI RT dispatch arguments preparation
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_write_indir_rt_dispatch.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_rt_write_indirect_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI reprojection
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_reproject.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_reproject_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI prefilter
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_prefilter.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_prefilter_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI accumulation
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_resolve_temporal.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_resolve_temporal_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI blur
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_blur.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_gi_blur_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // GI post-blur
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/gi_blur.comp.glsl@PER_PIXEL_KERNEL_ROTATION");
-        assert(prog->ready());
-
-        if (!pi_gi_post_blur_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun RT Shadow classify
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_classify.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_shadow_classify_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), 32)) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun shadows
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/sun_shadows.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_sun_shadows_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Prepare sun shadow mask
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_prepare_mask.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_shadow_prepare_mask_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), 32)) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun RT Shadow classify tiles
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_classify_tiles.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_shadow_classify_tiles_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log(), 32)) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun RT Shadow filter 0
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_filter.comp.glsl@PASS_0");
-        assert(prog->ready());
-
-        if (!pi_shadow_filter_[0].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun RT Shadow filter 1
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_filter.comp.glsl@PASS_1");
-        assert(prog->ready());
-
-        if (!pi_shadow_filter_[1].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun RT Shadow filter 2
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_filter.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_shadow_filter_[2].Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun RT Shadow debug
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/rt_shadow_debug.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_shadow_debug_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-    { // Sun brightness
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/sun_brightness.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_sun_brightness_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    { // Velocity debugging
-        Ren::ProgramRef prog = sh_.LoadProgram(ctx_, "internal/debug_velocity.comp.glsl");
-        assert(prog->ready());
-
-        if (!pi_debug_velocity_.Init(ctx_.api_ctx(), std::move(prog), ctx_.log())) {
-            ctx_.log()->Error("Renderer: failed to initialize pipeline!");
-        }
-    }
+    return success;
 }
 
 void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
@@ -586,7 +343,7 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
             shrd_data.prev_cam_pos =
                 Ren::Vec4f{view_state_.prev_cam_pos[0], view_state_.prev_cam_pos[1], view_state_.prev_cam_pos[2], 0.0f};
-            shrd_data.cam_pos_and_gamma = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 2.2f};
+            shrd_data.cam_pos_and_exp = Ren::Vec4f{cam_pos[0], cam_pos[1], cam_pos[2], 1.0f};
             shrd_data.wind_scroll =
                 Ren::Vec4f{p_list_->env.curr_wind_scroll_lf[0], p_list_->env.curr_wind_scroll_lf[1],
                            p_list_->env.curr_wind_scroll_hf[0], p_list_->env.curr_wind_scroll_hf[1]};
@@ -1696,23 +1453,21 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         auto &taa = rp_builder_.AddPass("TAA");
 
         struct PassData {
-            RpResRef shared_data;
-
             RpResRef clean_tex;
             RpResRef depth_tex;
             RpResRef velocity_tex;
             RpResRef history_tex;
+            RpResRef exposure_tex;
 
             RpResRef output_tex;
             RpResRef output_history_tex;
         };
 
         auto *data = taa.AllocPassData<PassData>();
-        data->shared_data = taa.AddUniformBufferInput(common_buffers.shared_data_res,
-                                                      Ren::eStageBits::VertexShader | Ren::eStageBits::FragmentShader);
         data->clean_tex = taa.AddTextureInput(frame_textures.color, Ren::eStageBits::FragmentShader);
         data->depth_tex = taa.AddTextureInput(frame_textures.depth, Ren::eStageBits::FragmentShader);
         data->velocity_tex = taa.AddTextureInput(frame_textures.velocity, Ren::eStageBits::FragmentShader);
+        data->exposure_tex = taa.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
 
         { // Texture that holds resolved color
             Ren::Tex2DParams params;
@@ -1732,12 +1487,11 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
 
         taa.set_execute_cb([this, data, static_accumulation](RpBuilder &builder) {
-            RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
-
             RpAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth_tex);
             RpAllocTex &velocity_tex = builder.GetReadTexture(data->velocity_tex);
             RpAllocTex &history_tex = builder.GetReadTexture(data->history_tex);
+            RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             RpAllocTex &output_tex = builder.GetWriteTexture(data->output_tex);
             RpAllocTex &output_history_tex = builder.GetWriteTexture(data->output_history_tex);
 
@@ -1756,6 +1510,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                     {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::DEPTH_TEX_SLOT, *depth_tex.ref},
+                    {Ren::eBindTarget::Tex2DSampled, TempAA::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::VELOCITY_TEX_SLOT, *velocity_tex.ref}};
 
                 TempAA::Params uniform_params;
@@ -1860,6 +1615,88 @@ void Eng::Renderer::AddDownsampleDepthPass(const CommonBuffers &common_buffers, 
         prim_draw_.DrawPrim(PrimDraw::ePrim::Quad, blit_down_depth_prog_, render_targets, {}, rast_state,
                             builder.rast_state(), bindings, &uniform_params, sizeof(DownDepth::Params), 0);
     });
+}
+
+Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
+    RpResRef histogram;
+    { // Clear histogram image
+        auto &histogram_clear = rp_builder_.AddPass("HISTOGRAM CLEAR");
+
+        Ren::Tex2DParams params;
+        params.w = EXPOSURE_HISTOGRAM_RES + 1;
+        params.h = 1;
+        params.format = Ren::eTexFormat::RawR32UI;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+
+        histogram = histogram_clear.AddTransferImageOutput("Exposure Histogram", params);
+
+        histogram_clear.set_execute_cb([histogram](RpBuilder &builder) {
+            RpAllocTex &histogram_tex = builder.GetWriteTexture(histogram);
+
+            const float zero[4] = {};
+            Ren::ClearImage(*histogram_tex.ref, zero, builder.ctx().current_cmd_buf());
+        });
+    }
+    { // Sample histogram
+        auto &histogram_sample = rp_builder_.AddPass("HISTOGRAM SAMPLE");
+
+        RpResRef input = histogram_sample.AddTextureInput(hdr_texture, Ren::eStageBits::ComputeShader);
+        histogram = histogram_sample.AddStorageImageOutput(histogram, Ren::eStageBits::ComputeShader);
+
+        histogram_sample.set_execute_cb([this, input, histogram](RpBuilder &builder) {
+            RpAllocTex &input_tex = builder.GetReadTexture(input);
+            RpAllocTex &output_tex = builder.GetWriteTexture(histogram);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::Tex2DSampled, HistogramSample::HDR_TEX_SLOT, *input_tex.ref},
+                {Ren::eBindTarget::Image2D, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
+
+            const bool compressed = (input_tex.ref->params.format == Ren::eTexFormat::RawRGBA16F);
+            Ren::DispatchCompute(pi_histogram_sample_[compressed], Ren::Vec3u{16, 8, 1}, bindings, nullptr, 0,
+                                 builder.ctx().default_descr_alloc(), builder.log());
+        });
+    }
+    RpResRef exposure;
+    { // Calc exposure
+        auto &histogram_exposure = rp_builder_.AddPass("HISTOGRAM EXPOSURE");
+
+        struct PassData {
+            RpResRef histogram;
+            RpResRef exposure_prev;
+            RpResRef exposure;
+        };
+
+        auto *data = histogram_exposure.AllocPassData<PassData>();
+
+        data->histogram = histogram_exposure.AddTextureInput(histogram, Ren::eStageBits::ComputeShader);
+
+        Ren::Tex2DParams params;
+        params.w = params.h = 1;
+        params.format = Ren::eTexFormat::RawR32F;
+        params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        exposure = data->exposure =
+            histogram_exposure.AddStorageImageOutput("Exposure", params, Ren::eStageBits::ComputeShader);
+        data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStageBits::ComputeShader);
+
+        histogram_exposure.set_execute_cb([this, data](RpBuilder &builder) {
+            RpAllocTex &histogram_tex = builder.GetReadTexture(data->histogram);
+            RpAllocTex &exposure_prev_tex = builder.GetReadTexture(data->exposure_prev);
+            RpAllocTex &exposure_tex = builder.GetWriteTexture(data->exposure);
+
+            const Ren::Binding bindings[] = {
+                {Ren::eBindTarget::Tex2DSampled, HistogramExposure::HISTOGRAM_TEX_SLOT, *histogram_tex.ref},
+                {Ren::eBindTarget::Tex2DSampled, HistogramExposure::EXPOSURE_PREV_TEX_SLOT, *exposure_prev_tex.ref},
+                {Ren::eBindTarget::Image2D, HistogramExposure::OUT_TEX_SLOT, *exposure_tex.ref}};
+
+            HistogramExposure::Params uniform_params = {};
+            uniform_params.min_exposure = min_exposure_;
+            uniform_params.max_exposure = max_exposure_;
+
+            Ren::DispatchCompute(pi_histogram_exposure_, Ren::Vec3u{1}, bindings, &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
+        });
+    }
+    return exposure;
 }
 
 void Eng::Renderer::AddDebugVelocityPass(const RpResRef velocity, RpResRef &output_tex) {

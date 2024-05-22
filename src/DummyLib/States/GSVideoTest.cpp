@@ -367,8 +367,8 @@ void GSVideoTest::UpdateAnim(const uint64_t dt_us) {
     const float delta_time_s = dt_us * 0.000001f;
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, true,
-                              1.0f, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, 1.0f,
+                              min_exposure_, max_exposure_);
 
     if (enable_video_update_) {
         video_time_us_ += fr_info_.delta_time_us;

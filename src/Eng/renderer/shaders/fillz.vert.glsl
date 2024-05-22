@@ -68,7 +68,7 @@ void main() {
 #endif // TRANSPARENT
 
     vec3 vtx_pos_ws_curr = (model_matrix_curr * vec4(g_in_vtx_pos, 1.0)).xyz;
-    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws_curr - g_shrd_data.cam_pos_and_gamma.xyz, 1.0);
+    gl_Position = g_shrd_data.clip_from_world_no_translation * vec4(vtx_pos_ws_curr - g_shrd_data.cam_pos_and_exp.xyz, 1.0);
 #if defined(VULKAN)
     gl_Position.y = -gl_Position.y;
 #endif

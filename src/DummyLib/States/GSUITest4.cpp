@@ -43,7 +43,7 @@ const char SEQ_NAME[] = "test/test_dialog/0_begin.json";
 
 GSUITest4::GSUITest4(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("book_main_font");
-    //dialog_font_->set_scale(1.5f);
+    // dialog_font_->set_scale(1.5f);
 
     const float font_height = dialog_font_->height(ui_root_);
 
@@ -279,7 +279,7 @@ void GSUITest4::UpdateAnim(const uint64_t dt_us) {
 
     if (use_free_cam_) {
         scene_manager_->SetupView(cam_ctrl_->view_origin, (cam_ctrl_->view_origin + cam_ctrl_->view_dir),
-                                  Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, true, 1.0f,
+                                  Ren::Vec3f{0.0f, 1.0f, 0.0f}, cam_ctrl_->view_fov, 1.0f, cam_ctrl_->min_exposure,
                                   cam_ctrl_->max_exposure);
     }
 }

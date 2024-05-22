@@ -343,14 +343,14 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
             view_fov_ = float(js_fov.val);
         }
 
-        if (js_cam.Has("autoexposure")) {
-            const JsLiteral &js_autoexposure = js_cam.at("autoexposure").as_lit();
-            autoexposure_ = js_autoexposure.val == JsLiteralType::True;
-        }
-
         if (js_cam.Has("gamma")) {
             const JsNumber &js_gamma = js_cam.at("gamma").as_num();
             gamma_ = float(js_gamma.val);
+        }
+
+        if (js_cam.Has("min_exposure")) {
+            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            min_exposure_ = float(js_min_exposure.val);
         }
 
         if (js_cam.Has("max_exposure")) {
@@ -813,8 +813,8 @@ void GSDrawTest::UpdateAnim(uint64_t dt_us) {
     TestUpdateAnims(delta_time_s);
 
     // Update camera
-    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_,
-                              autoexposure_, gamma_, max_exposure_);
+    scene_manager_->SetupView(view_origin_, (view_origin_ + view_dir_), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov_, gamma_,
+                              min_exposure_, max_exposure_);
 
     // log_->Info("%f %f %f | %f %f %f", view_origin_[0], view_origin_[1], view_origin_[2], view_dir_[0], view_dir_[1],
     //           view_dir_[2]);

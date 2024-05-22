@@ -200,7 +200,7 @@ void main(void) {
     vec3 diffuse_color = diff_color * (g_shrd_data.sun_col.xyz * lambert * visibility +
                                        ambient_occlusion * indirect_col + additional_light);
 
-    vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_gamma.xyz - g_vtx_pos);
+    vec3 view_ray_ws = normalize(g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos);
     float N_dot_V = clamp(dot(normal, view_ray_ws), 0.0, 1.0);
 
     vec3 kD = 1.0 - FresnelSchlickRoughness(N_dot_V, spec_color.xyz, spec_color.a);

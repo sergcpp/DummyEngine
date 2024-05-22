@@ -40,10 +40,10 @@ class GSUITest3 : public GSBaseState {
 
     Ren::Vec3f view_origin_, view_dir_;
     float view_fov_ = 0.0f, view_offset_ = 0.0f;
-    float max_exposure_ = 1000.0f;
+    float min_exposure_ = -1000.0f, max_exposure_ = 1000.0f;
 
     std::unique_ptr<Gui::Renderer> page_renderer_;
-    //FrameBuf page_buf_;
+    // FrameBuf page_buf_;
     Ren::Tex2DRef page_tex_;
     Ren::MaterialRef orig_page_mat_, page_mat_;
 

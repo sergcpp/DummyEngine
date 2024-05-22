@@ -62,7 +62,7 @@ void main(void) {
     normal = normalize(mat3(g_vtx_tangent, cross(g_vtx_normal, g_vtx_tangent),
                             g_vtx_normal) * normal);
 
-    vec3 view_ray_ws = normalize(g_vtx_pos - g_shrd_data.cam_pos_and_gamma.xyz);
+    vec3 view_ray_ws = normalize(g_vtx_pos - g_shrd_data.cam_pos_and_exp.xyz);
 
     const float R0 = 0.04f;
     float factor = pow5(clamp(1.0 - dot(normal, -view_ray_ws), 0.0, 1.0));

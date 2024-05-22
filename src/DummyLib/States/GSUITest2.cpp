@@ -87,7 +87,7 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
     GSBaseState::OnPostloadScene(js_scene);
 
     Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0.0f, 0.0f, 1.0f};
-    float view_fov = 45.0f, max_exposure = 1000.0f;
+    float view_fov = 45.0f, min_exposure = -1000.0f, max_exposure = 1000.0f;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -115,14 +115,19 @@ void GSUITest2::OnPostloadScene(JsObjectP &js_scene) {
             view_fov = float(js_fov.val);
         }
 
+        if (js_cam.Has("min_exposure")) {
+            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            min_exposure = float(js_min_exposure.val);
+        }
+
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure = float(js_max_exposure.val);
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, true, 1.0f,
-                              max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, 1.0f,
+                              min_exposure, max_exposure);
 }
 
 void GSUITest2::UpdateAnim(const uint64_t dt_us) {

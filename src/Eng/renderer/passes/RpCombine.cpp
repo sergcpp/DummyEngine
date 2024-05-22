@@ -14,9 +14,9 @@
 void Eng::RpCombine::Execute(RpBuilder &builder) {
     LazyInit(builder.ctx(), builder.sh());
 
+    RpAllocTex &exposure_tex = builder.GetReadTexture(pass_data_->exposure_tex);
     RpAllocTex &color_tex = builder.GetReadTexture(pass_data_->color_tex);
     RpAllocTex &blur_tex = builder.GetReadTexture(pass_data_->blur_tex);
-    RpAllocTex &exposure_tex = builder.GetReadTexture(pass_data_->exposure_tex);
     RpAllocTex &output_tex = builder.GetWriteTexture(pass_data_->output_tex);
     RpAllocTex *output_tex2 = nullptr;
     if (pass_data_->output_tex2) {
@@ -34,10 +34,10 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
     uniform_params.tex_size = Ren::Vec2f{float(view_state_->scr_res[0]), float(view_state_->scr_res[1])};
     uniform_params.tonemap_mode = float(pass_data_->tonemap_mode);
     uniform_params.inv_gamma = pass_data_->inv_gamma;
-    uniform_params.exposure = pass_data_->exposure;
     uniform_params.fade = pass_data_->fade;
 
     Ren::SmallVector<Ren::Binding, 8> bindings = {
+        {Ren::eBindTarget::Tex2DSampled, BlitCombine::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, BlitCombine::HDR_TEX_SLOT, *color_tex.ref},
         {Ren::eBindTarget::Tex2DSampled, BlitCombine::BLURED_TEX_SLOT, *blur_tex.ref}};
     if (pass_data_->tonemap_mode == 2) {

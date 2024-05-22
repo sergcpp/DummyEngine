@@ -55,9 +55,9 @@ void main(void) {
     g_vtx_sh_uvs_es[gl_InvocationID][3] = g_vtx_sh_uvs_cs[gl_InvocationID][3];
 
 #if 1
-    float EyeToVertexDistance0 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_es[0]);
-    float EyeToVertexDistance1 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_es[1]);
-    float EyeToVertexDistance2 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_es[2]);
+    float EyeToVertexDistance0 = distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos_es[0]);
+    float EyeToVertexDistance1 = distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos_es[1]);
+    float EyeToVertexDistance2 = distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos_es[2]);
 
     gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
     gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);
@@ -67,9 +67,9 @@ void main(void) {
     const float MaxTesselation = 64.0;
     const float ZoomFactor = 4.0;
 
-    vec3 v0 = g_shrd_data.cam_pos_and_gamma.xyz - g_vtx_pos_es[0];
-    vec3 v1 = g_shrd_data.cam_pos_and_gamma.xyz - g_vtx_pos_es[1];
-    vec3 v2 = g_shrd_data.cam_pos_and_gamma.xyz - g_vtx_pos_es[2];
+    vec3 v0 = g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos_es[0];
+    vec3 v1 = g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos_es[1];
+    vec3 v2 = g_shrd_data.cam_pos_and_exp.xyz - g_vtx_pos_es[2];
 
     float d0 = length(v0);
     float d1 = length(v1);

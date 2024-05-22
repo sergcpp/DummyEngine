@@ -21,6 +21,12 @@ layout(binding = HIST_TEX_SLOT) uniform sampler2D g_color_hist;
 layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth;
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity;
 
+layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exposure;
+
+layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
+    SharedData g_shrd_data;
+};
+
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
 };
@@ -33,6 +39,7 @@ layout(location = 1) out vec3 g_out_history;
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
 #if defined(TONEMAP)
+    c *= texelFetch(g_exposure, ivec2(0), 0).x;
     c = c / (c + vec3(1.0));
 #endif
     return c;
@@ -41,6 +48,7 @@ vec3 Tonemap(in vec3 c) {
 vec3 TonemapInvert(in vec3 c) {
 #if defined(TONEMAP)
     c = c / (vec3(1.0) - c);
+    c /= texelFetch(g_exposure, ivec2(0), 0).x;
 #endif
     return c;
 }
@@ -63,9 +71,9 @@ vec3 SampleColor(sampler2D s, vec2 uvs) {
 
 float Luma(vec3 col) {
 #if defined(YCoCg)
-    return col.r;
+    return HDR_FACTOR * col.r;
 #else
-    return dot(col, vec3(0.2125, 0.7154, 0.0721));
+    return HDR_FACTOR * dot(col, vec3(0.2125, 0.7154, 0.0721));
 #endif
 }
 
@@ -187,7 +195,11 @@ void main() {
     vec2 closest_vel = textureLod(g_velocity, closest_frag.xy, 0.0).rg;
 #endif
 
-    vec3 col_hist = SampleColor(g_color_hist, norm_uvs - closest_vel);
+    vec2 hist_uvs = norm_uvs - closest_vel;
+    vec3 col_hist = col_curr;
+    if (all(greaterThan(hist_uvs, vec2(0.0))) && all(lessThan(hist_uvs, vec2(1.0)))) {
+        col_hist = SampleColor(g_color_hist, hist_uvs);
+    }
 
 #if defined(CLIPPING)
     col_hist = clip_aabb(col_min, col_max, col_hist);

@@ -88,7 +88,7 @@ void main() {
     //
 
     const vec3 P = pos_ws.xyz;
-    const vec3 I = normalize(g_shrd_data.cam_pos_and_gamma.xyz - P);
+    const vec3 I = normalize(g_shrd_data.cam_pos_and_exp.xyz - P);
     const vec3 N = normal.xyz;
     const float N_dot_V = saturate(dot(N, I));
 

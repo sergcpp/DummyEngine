@@ -30,7 +30,7 @@ const char SCENE_NAME[] = "assets_pc/scenes/"
 
 GSUITest::GSUITest(Viewer *viewer) : GSBaseState(viewer) {
     dialog_font_ = viewer->font_storage()->FindFont("dialog_font");
-    //dialog_font_->set_scale(1.5f);
+    // dialog_font_->set_scale(1.5f);
 
     word_puzzle_ = std::make_unique<WordPuzzleUI>(*ren_ctx_, Ren::Vec2f{-0.995f, -0.995f}, Ren::Vec2f{1.99f, 1.1f},
                                                   ui_root_, *dialog_font_);
@@ -82,7 +82,7 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
     GSBaseState::OnPostloadScene(js_scene);
 
     Ren::Vec3f view_origin, view_dir = Ren::Vec3f{0.0f, 0.0f, 1.0f};
-    float view_fov = 45.0f, max_exposure = 1000.0f;
+    float view_fov = 45.0f, min_exposure = -1000.0f, max_exposure = 1000.0f;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -110,14 +110,19 @@ void GSUITest::OnPostloadScene(JsObjectP &js_scene) {
             view_fov = float(js_fov.val);
         }
 
+        if (js_cam.Has("min_exposure")) {
+            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            min_exposure = float(js_min_exposure.val);
+        }
+
         if (js_cam.Has("max_exposure")) {
             const JsNumber &js_max_exposure = js_cam.at("max_exposure").as_num();
             max_exposure = float(js_max_exposure.val);
         }
     }
 
-    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, true, 1.0f,
-                              max_exposure);
+    scene_manager_->SetupView(view_origin, (view_origin + view_dir), Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, 1.0f,
+                              min_exposure, max_exposure);
 
     {
         char sophia_name[] = "sophia_00";
@@ -187,7 +192,7 @@ void GSUITest::DrawUI(Gui::Renderer *r, Gui::BaseElement *root) {
 
     GSBaseState::DrawUI(r, root);
 
-    //dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
+    // dialog_font_->set_scale(std::max(root->size_px()[0] / 1024.0f, 1.0f));
 
     word_puzzle_->Draw(r);
 }

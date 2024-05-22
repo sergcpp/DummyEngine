@@ -142,7 +142,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     }
 
     Ren::Vec3f view_pos, view_dir;
-    float view_fov = 45.0f, gamma = 1.0f, max_exposure = 1.0f;
+    float view_fov = 45.0f, gamma = 1.0f, min_exposure = 0.0f, max_exposure = 0.0f;
 
     if (js_scene.Has("camera")) {
         const JsObjectP &js_cam = js_scene.at("camera").as_obj();
@@ -168,6 +168,11 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         if (js_cam.Has("gamma")) {
             const JsNumber &js_gamma = js_cam.at("gamma").as_num();
             gamma = float(js_gamma.val);
+        }
+
+        if (js_cam.Has("min_exposure")) {
+            const JsNumber &js_min_exposure = js_cam.at("min_exposure").as_num();
+            min_exposure = float(js_min_exposure.val);
         }
 
         if (js_cam.Has("max_exposure")) {
@@ -196,7 +201,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         scene_manager.SaveScene(js_scene_out);
         require(js_scene_out.Equals(js_scene, 0.001));
     }
-    scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, false, gamma,
+    scene_manager.SetupView(view_pos, view_pos + view_dir, Ren::Vec3f{0.0f, 1.0f, 0.0f}, view_fov, gamma, min_exposure,
                             max_exposure);
 
     //

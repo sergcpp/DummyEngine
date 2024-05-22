@@ -109,9 +109,9 @@ void main(void) {
 
     CalcPositions();
 
-    float EyeToVertexDistance0 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_cs[0]);
-    float EyeToVertexDistance1 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_cs[1]);
-    float EyeToVertexDistance2 = distance(g_shrd_data.cam_pos_and_gamma.xyz, g_vtx_pos_cs[2]);
+    float EyeToVertexDistance0 = distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos_cs[0]);
+    float EyeToVertexDistance1 = distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos_cs[1]);
+    float EyeToVertexDistance2 = distance(g_shrd_data.cam_pos_and_exp.xyz, g_vtx_pos_cs[2]);
 
     gl_TessLevelOuter[0] = GetTessLevel(EyeToVertexDistance1, EyeToVertexDistance2);
     gl_TessLevelOuter[1] = GetTessLevel(EyeToVertexDistance2, EyeToVertexDistance0);
