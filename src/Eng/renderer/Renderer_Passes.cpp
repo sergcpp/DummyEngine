@@ -213,7 +213,7 @@ void Eng::Renderer::InitPipelines() {
     assert(blit_bilateral_prog_->ready());
 
     blit_taa_prog_ = sh_.LoadProgram(ctx_, "blit_taa_prog", "internal/blit_taa.vert.glsl",
-                                     "internal/blit_taa.frag.glsl@CLIPPING;ROUNDED_NEIBOURHOOD;YCoCg");
+                                     "internal/blit_taa.frag.glsl@CLIPPING;ROUNDED_NEIBOURHOOD;TONEMAP");
     assert(blit_taa_prog_->ready());
 
     blit_taa_static_prog_ = sh_.LoadProgram(ctx_, "blit_taa_static_prog", "internal/blit_taa.vert.glsl",
@@ -1704,7 +1704,7 @@ void Eng::Renderer::AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpRes
 }
 
 void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures,
-                               const float max_exposure, const bool static_accumulation, RpResRef &resolved_color) {
+                               const bool static_accumulation, RpResRef &resolved_color) {
     assert(!view_state_.is_multisampled);
     { // TAA
         auto &taa = rp_builder_.AddPass("TAA");
@@ -1745,7 +1745,7 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
         }
         data->history_tex = taa.AddHistoryTextureInput(data->output_history_tex, Ren::eStageBits::FragmentShader);
 
-        taa.set_execute_cb([this, data, max_exposure, static_accumulation](RpBuilder &builder) {
+        taa.set_execute_cb([this, data, static_accumulation](RpBuilder &builder) {
             RpAllocBuf &unif_shared_data_buf = builder.GetReadBuffer(data->shared_data);
 
             RpAllocTex &clean_tex = builder.GetReadTexture(data->clean_tex);
@@ -1766,11 +1766,6 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                     {output_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store},
                     {output_history_tex.ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store}};
 
-                // exposure from previous frame
-                // float exposure =
-                //    reduced_average_ > std::numeric_limits<float>::epsilon() ? (1.0f / reduced_average_) : 1.0f;
-                // exposure = std::min(exposure, max_exposure);
-
                 const Ren::Binding bindings[] = {
                     {Ren::eBindTarget::Tex2DSampled, TempAA::CURR_TEX_SLOT, *clean_tex.ref},
                     {Ren::eBindTarget::Tex2DSampled, TempAA::HIST_TEX_SLOT, *history_tex.ref},
@@ -1780,7 +1775,6 @@ void Eng::Renderer::AddTaaPass(const CommonBuffers &common_buffers, FrameTexture
                 TempAA::Params uniform_params;
                 uniform_params.transform = Ren::Vec4f{0.0f, 0.0f, view_state_.act_res[0], view_state_.act_res[1]};
                 uniform_params.tex_size = Ren::Vec2f{float(view_state_.act_res[0]), float(view_state_.act_res[1])};
-                uniform_params.exposure = powf(2.0f, max_exposure);
                 if (static_accumulation && int(accumulated_frames_) < RendererInternal::TaaSampleCountStatic) {
                     uniform_params.mix_factor = 1.0f / (1.0f + accumulated_frames_);
                 } else {

@@ -280,8 +280,8 @@ class Renderer {
     void AddFillStaticVelocityPass(const CommonBuffers &common_buffers, RpResRef depth_tex,
                                    RpResRef &inout_velocity_tex);
     void AddFrameBlurPasses(const Ren::WeakTex2DRef &input_tex, RpResRef &output_tex);
-    void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, float max_exposure,
-                    bool static_accumulation, RpResRef &resolved_color);
+    void AddTaaPass(const CommonBuffers &common_buffers, FrameTextures &frame_textures, bool static_accumulation,
+                    RpResRef &resolved_color);
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 

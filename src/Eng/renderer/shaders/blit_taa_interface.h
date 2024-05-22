@@ -10,7 +10,6 @@ struct Params {
     vec2 tex_size;
     float tonemap;
     float gamma;
-    float exposure;
     float fade;
     float mix_factor; // for static accumulation
 };

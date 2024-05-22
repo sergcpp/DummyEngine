@@ -1165,7 +1165,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         //
         const bool use_taa = list.render_settings.taa_mode != eTAAMode::Off && !list.render_settings.debug_wireframe;
         if (use_taa) {
-            AddTaaPass(common_buffers, frame_textures, 0.0f, list.render_settings.taa_mode == eTAAMode::Static,
+            AddTaaPass(common_buffers, frame_textures, list.render_settings.taa_mode == eTAAMode::Static,
                        resolved_color);
         } else {
             resolved_color = frame_textures.color;

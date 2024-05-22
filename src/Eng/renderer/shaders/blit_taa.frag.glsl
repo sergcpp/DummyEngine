@@ -33,20 +33,16 @@ layout(location = 1) out vec3 g_out_history;
 // https://gpuopen.com/optimized-reversible-tonemapper-for-resolve/
 vec3 Tonemap(in vec3 c) {
 #if defined(TONEMAP)
-    c *= g_params.exposure;
-    return c * rcp(max3(c.r, c.g, c.b) + 1.0);
-#else
-    return c;
+    c = c / (c + vec3(1.0));
 #endif
+    return c;
 }
 
 vec3 TonemapInvert(in vec3 c) {
 #if defined(TONEMAP)
-    //c /= max(g_params.exposure, 0.001);
-    return (c / max(g_params.exposure, 0.001)) * rcp(1.0 - max3(c.r, c.g, c.b));
-#else
-    return c;
+    c = c / (vec3(1.0) - c);
 #endif
+    return c;
 }
 
 vec3 FetchColor(sampler2D s, ivec2 icoord) {
