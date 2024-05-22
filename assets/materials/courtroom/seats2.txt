@@ -1,7 +1,0 @@
-gl_programs:
-    - main_lightmapped.vert.glsl main_lightmapped_nossr.frag.glsl
-    - main_probelit.vert.glsl main_probelit.frag.glsl
-textures:
-    - courtroom/wood_01_diff.png
-    - default_normalmap.dds
-    - default_specular.png

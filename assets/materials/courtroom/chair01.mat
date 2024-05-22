@@ -1,0 +1,7 @@
+pipelines:
+    - main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
+    - main_probelit_occ.vert.glsl main_probelit_nossr_occ.frag.glsl
+textures:
+    - courtroom/wood_01_diff.png
+    - default_normalmap.dds
+    - default_specular.png

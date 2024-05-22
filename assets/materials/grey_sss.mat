@@ -1,4 +1,4 @@
-gl_programs:
+pipelines:
     - main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
     - main_probelit_sss.vert.glsl main_probelit_sss.frag.glsl
 textures:

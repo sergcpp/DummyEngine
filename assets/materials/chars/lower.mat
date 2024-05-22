@@ -1,0 +1,12 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+flags:
+    - two_sided
+    - alpha_blend
+    - alpha_test
+textures:
+    - chars/lower_diff.jpg
+    - default_normalmap.dds
+    - chars/skullcap_spec.png srgb
+    - chars/lower_mask.jpg

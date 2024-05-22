@@ -1,0 +1,10 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+flags:
+    - alpha_blend
+textures:
+    - chars/Std_Eyelash_diff.png
+    - default_normalmap.dds
+    - default_specular.png
+    - chars/Std_Eyelash_mask.png

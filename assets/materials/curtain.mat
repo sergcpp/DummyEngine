@@ -1,4 +1,4 @@
-gl_programs:
+pipelines:
     - main_translucent.vert.glsl main_translucent.frag.glsl
     - main_translucent.vert.glsl main_translucent.frag.glsl
 flags:

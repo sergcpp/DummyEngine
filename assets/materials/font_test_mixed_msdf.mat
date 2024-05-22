@@ -1,4 +1,4 @@
-gl_programs:
+pipelines:
     - _font_test_mixed_msdf.vert.glsl _font_test_mixed.frag.glsl
     - _font_test_mixed_msdf.vert.glsl _font_test_mixed.frag.glsl
 flags:

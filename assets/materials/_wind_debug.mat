@@ -1,4 +1,4 @@
-gl_programs:
+pipelines:
     - _wind_debug.vert.glsl _wind_debug.frag.glsl
     - _wind_debug.vert.glsl _wind_debug.frag.glsl
 textures:

@@ -1,0 +1,7 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit.frag.glsl
+    - main_probelit.vert.glsl main_probelit.frag.glsl
+textures:
+    - chars/Std_Tongue_diff.png
+    - chars/Std_Tongue_norm.png
+    - default_specular.png

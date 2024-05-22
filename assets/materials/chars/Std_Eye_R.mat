@@ -1,0 +1,7 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit.frag.glsl
+    - main_probelit.vert.glsl main_probelit.frag.glsl
+textures:
+    - chars/Std_Eye_L_diff.png
+    - default_normalmap.dds
+    - default_specular.png

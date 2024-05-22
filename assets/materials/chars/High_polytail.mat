@@ -1,0 +1,12 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+    - main_probelit.vert.glsl main_probelit_blend.frag.glsl
+flags:
+    - two_sided
+    - alpha_blend
+    - alpha_test
+textures:
+    - chars/High_polytail_diff.png
+    - default_normalmap.dds
+    - chars/High_polytail_spec.png
+    - chars/High_polytail_mask.png

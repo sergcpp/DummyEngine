@@ -1,4 +1,4 @@
-gl_programs:
+pipelines:
     - _tess_test.vert.glsl _tess_test.frag.glsl _tess_test.tesc.glsl _tess_test.tese.glsl
     - _tess_test.vert.glsl _tess_test.frag.glsl _tess_test.tesc.glsl _tess_test.tese.glsl
     - _tess_test.vert.glsl _tess_test.frag.glsl

@@ -93,7 +93,7 @@ void Ren::Material::InitFromMAT(std::string_view mat_src, eMatLoadStatus *status
             continue;
         }
         std::string item(p, q);
-        if (item == "gl_programs:") {
+        if (item == "pipelines:") {
             p = q + 1;
             q = strpbrk(p, delims);
             for (; p && q; q = strpbrk(p, delims)) {

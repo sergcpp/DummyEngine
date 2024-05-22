@@ -28,7 +28,7 @@ void test_material() {
             return test.LoadSampler(params, &status);
         };
 
-        const char mat_src[] = "gl_programs:\n"
+        const char mat_src[] = "pipelines:\n"
                                "    - constant.vert.glsl constant.frag.glsl\n"
                                "    - constant2.vert.glsl constant2.frag.glsl\n"
                                "flags:\n"

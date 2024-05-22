@@ -1,4 +1,4 @@
-gl_programs:
+pipelines:
     - main.vert.glsl main.frag.glsl
 textures:
     - grey_diff.png
