@@ -797,6 +797,12 @@ void GSBaseState::Draw() {
             ren_ctx_->frontend_frame = (ren_ctx_->backend_frame() + 1) % Ren::MaxFramesInFlight;
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
+            if (prev_sun_dir_[0] != sun_dir_[0] || prev_sun_dir_[1] != sun_dir_[1] || prev_sun_dir_[2] != sun_dir_[2]) {
+                if (renderer_->settings.taa_mode == Eng::eTAAMode::Static) {
+                    renderer_->reset_accumulation();
+                }
+                prev_sun_dir_ = scene_manager_->scene_data().env.sun_dir;
+            }
 
             notified_ = true;
             thr_notify_.notify_one();
@@ -1145,7 +1151,7 @@ void GSBaseState::InitScene_PT() {
         memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
         sun_desc.angle = scene_data.env.sun_angle;
         pt_sun_light_ = ray_scene_->AddLight(sun_desc);
-        pt_sun_dir_ = scene_data.env.sun_dir;
+        prev_sun_dir_ = scene_data.env.sun_dir;
     }
 
     // Add default material
@@ -1441,7 +1447,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     }
 
     const Eng::SceneData &scene_data = scene_manager_->scene_data();
-    if (Distance2(pt_sun_dir_, scene_data.env.sun_dir) > 0.001f && pt_sun_light_ != Ray::InvalidLightHandle) {
+    if (Distance2(prev_sun_dir_, scene_data.env.sun_dir) > 0.001f && pt_sun_light_ != Ray::InvalidLightHandle) {
         ray_scene_->RemoveLight(pt_sun_light_);
         // Re-add sun light
         Ray::directional_light_desc_t sun_desc;
@@ -1449,7 +1455,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
         sun_desc.angle = scene_data.env.sun_angle;
         pt_sun_light_ = ray_scene_->AddLight(sun_desc);
-        pt_sun_dir_ = scene_data.env.sun_dir;
+        prev_sun_dir_ = scene_data.env.sun_dir;
 
         using namespace std::placeholders;
         ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
@@ -1494,7 +1500,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     const Ray::color_data_rgba_t pixels = ray_renderer_->get_raw_pixels_ref();
     renderer_->BlitPixelsTonemap(reinterpret_cast<const uint8_t *>(pixels.ptr), res_x, res_y, pixels.pitch,
                                  Ren::eTexFormat::RawRGBA32F, scene_manager_->main_cam().gamma,
-                                 scene_manager_->main_cam().max_exposure, target, true);
+                                 scene_manager_->main_cam().max_exposure, target, false, true);
 }
 
 int GSBaseState::WriteAndValidateCaptureResult() {

@@ -436,7 +436,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     if (all(equal(group_thread_id, uvec2(0)))) {
         /* mediump */ vec4 sum = LoadFromGroupSharedMemoryRaw(ivec2(0));
         /* mediump */ float weight_acc = max(sum.w, 1.0e-3);
-        vec3 radiance_avg = sum.xyz / weight_acc;
+        const vec3 radiance_avg = (sum.xyz / weight_acc);
 
         imageStore(g_out_avg_refl_img, ivec2(dispatch_thread_id / 8), vec4(radiance_avg, 0.0));
     }

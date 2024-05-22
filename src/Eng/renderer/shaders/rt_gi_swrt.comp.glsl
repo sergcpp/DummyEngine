@@ -494,7 +494,8 @@ void main() {
         }
     }
 
-    //final_color *= vec3(10.0, 0.0, 0.0);
+    final_color = compress_hdr(final_color);
+
     imageStore(g_out_color_img, icoord, vec4(final_color, first_ray_len));
 
     ivec2 copy_target = icoord ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad

@@ -455,6 +455,8 @@ void main() {
         }
     }
 
+    final_color = compress_hdr(final_color);
+
     imageStore(g_out_color_img, icoord, vec4(final_color, 1.0));
     imageStore(g_out_raylen_img, icoord, vec4(first_ray_len));
 

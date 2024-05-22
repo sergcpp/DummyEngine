@@ -7,6 +7,9 @@
 #define M_PI 3.1415926535897932384626433832795
 #define GOLDEN_RATIO 1.61803398875
 
+#define HALF_MAX 65504.0
+#define HDR_FACTOR 32.0
+
 #define FLT_MAX 3.402823466e+38
 #define FLT_MIN 1e-15
 
@@ -225,6 +228,14 @@ vec3 YCoCg_to_RGB(vec4 col) {
 
 float lum(vec3 color) {
     return dot(vec3(0.212671, 0.715160, 0.715160), color);
+}
+
+vec3 compress_hdr(const vec3 val) {
+    return clamp(val / HDR_FACTOR, vec3(0.0), vec3(HALF_MAX - 1.0));
+}
+
+vec3 decompress_hdr(const vec3 val) {
+    return val * HDR_FACTOR;
 }
 
 vec2 RotateVector(vec4 rotator, vec2 v) { return v.x * rotator.xz + v.y * rotator.yw; }

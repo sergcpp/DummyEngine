@@ -50,26 +50,43 @@ void Eng::RpCombine::Execute(RpBuilder &builder) {
         render_targets.emplace_back(output_tex2->ref, Ren::eLoadOp::DontCare, Ren::eStoreOp::Store);
     }
 
-    prim_draw_.DrawPrim(PrimDraw::ePrim::Quad,
-                        blit_combine_prog_[pass_data_->tonemap_mode == 2][output_tex2 != nullptr], render_targets, {},
-                        rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(BlitCombine::Params), 0);
+    prim_draw_.DrawPrim(
+        PrimDraw::ePrim::Quad,
+        blit_combine_prog_[pass_data_->compressed][pass_data_->tonemap_mode == 2][output_tex2 != nullptr],
+        render_targets, {}, rast_state, builder.rast_state(), bindings, &uniform_params, sizeof(BlitCombine::Params),
+        0);
 }
 
 void Eng::RpCombine::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        blit_combine_prog_[0][0] =
+        blit_combine_prog_[0][0][0] =
             sh.LoadProgram(ctx, "blit_combine", "internal/blit_combine.vert.glsl", "internal/blit_combine.frag.glsl");
-        assert(blit_combine_prog_[0][0]->ready());
-        blit_combine_prog_[0][1] = sh.LoadProgram(ctx, "blit_combine_two_targets", "internal/blit_combine.vert.glsl",
-                                                  "internal/blit_combine.frag.glsl@TWO_TARGETS");
-        assert(blit_combine_prog_[0][1]->ready());
-        blit_combine_prog_[1][0] = sh.LoadProgram(ctx, "blit_combine_lut", "internal/blit_combine.vert.glsl",
-                                                  "internal/blit_combine.frag.glsl@LUT");
-        assert(blit_combine_prog_[1][0]->ready());
-        blit_combine_prog_[1][1] =
+        assert(blit_combine_prog_[0][0][0]->ready());
+        blit_combine_prog_[0][0][1] = sh.LoadProgram(ctx, "blit_combine_two_targets", "internal/blit_combine.vert.glsl",
+                                                     "internal/blit_combine.frag.glsl@TWO_TARGETS");
+        assert(blit_combine_prog_[0][0][1]->ready());
+        blit_combine_prog_[0][1][0] = sh.LoadProgram(ctx, "blit_combine_lut", "internal/blit_combine.vert.glsl",
+                                                     "internal/blit_combine.frag.glsl@LUT");
+        assert(blit_combine_prog_[0][1][0]->ready());
+        blit_combine_prog_[0][1][1] =
             sh.LoadProgram(ctx, "blit_combine_lut_two_targets", "internal/blit_combine.vert.glsl",
                            "internal/blit_combine.frag.glsl@LUT;TWO_TARGETS");
-        assert(blit_combine_prog_[1][1]->ready());
+        assert(blit_combine_prog_[0][1][1]->ready());
+
+        blit_combine_prog_[1][0][0] = sh.LoadProgram(ctx, "blit_combine_comp", "internal/blit_combine.vert.glsl",
+                                                     "internal/blit_combine.frag.glsl@COMPRESSED");
+        assert(blit_combine_prog_[1][0][0]->ready());
+        blit_combine_prog_[1][0][1] =
+            sh.LoadProgram(ctx, "blit_combine_comp_two_targets", "internal/blit_combine.vert.glsl",
+                           "internal/blit_combine.frag.glsl@COMPRESSED;TWO_TARGETS");
+        assert(blit_combine_prog_[1][0][1]->ready());
+        blit_combine_prog_[1][1][0] = sh.LoadProgram(ctx, "blit_combine_comp_lut", "internal/blit_combine.vert.glsl",
+                                                     "internal/blit_combine.frag.glsl@COMPRESSED;LUT");
+        assert(blit_combine_prog_[1][1][0]->ready());
+        blit_combine_prog_[1][1][1] =
+            sh.LoadProgram(ctx, "blit_combine_comp_lut_two_targets", "internal/blit_combine.vert.glsl",
+                           "internal/blit_combine.frag.glsl@COMPRESSED;LUT;TWO_TARGETS");
+        assert(blit_combine_prog_[1][1][1]->ready());
 
         initialized = true;
     }

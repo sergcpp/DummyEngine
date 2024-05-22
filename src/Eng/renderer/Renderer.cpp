@@ -1590,7 +1590,8 @@ void Eng::Renderer::InitPipelinesForProgram(const Ren::ProgramRef &prog, const R
 
 void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const int h, const int stride,
                                       const Ren::eTexFormat format, const float gamma, const float exposure,
-                                      const Ren::Tex2DRef &target, const bool blit_to_backbuffer) {
+                                      const Ren::Tex2DRef &target, const bool compressed,
+                                      const bool blit_to_backbuffer) {
     const int cur_scr_w = ctx_.w(), cur_scr_h = ctx_.h();
     Ren::ILog *log = ctx_.log();
 
@@ -1668,6 +1669,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
             rp_combine_data_.output_tex = combine.AddColorOutput(ctx_.backbuffer_ref());
         }
 
+        rp_combine_data_.compressed = compressed;
         rp_combine_data_.lut_tex = tonemap_lut_;
         rp_combine_data_.tonemap_mode = int(settings.tonemap_mode);
         rp_combine_data_.inv_gamma = 1.0f / gamma;

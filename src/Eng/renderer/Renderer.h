@@ -76,7 +76,8 @@ class Renderer {
     void SetTonemapLUT(int res, Ren::eTexFormat format, Ren::Span<const uint8_t> data);
 
     void BlitPixelsTonemap(const uint8_t *data, int w, int h, int stride, Ren::eTexFormat format, float gamma,
-                           float exposure, const Ren::Tex2DRef &target, bool blit_to_backbuffer = false);
+                           float exposure, const Ren::Tex2DRef &target, bool compressed,
+                           bool blit_to_backbuffer = false);
     render_settings_t settings = {};
 
   private:
@@ -85,8 +86,8 @@ class Renderer {
     Random &rand_;
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
-    Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_combine_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_,
-        blit_rgbm_prog_, blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
+    Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_,
+        blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
 
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
@@ -284,12 +285,11 @@ class Renderer {
     void AddDownsampleColorPass(RpResRef input_tex, RpResRef &output_tex);
     void AddDownsampleDepthPass(const CommonBuffers &common_buffers, RpResRef depth_tex, RpResRef &out_depth_down_2x);
 
-    void AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct,
-                             const Ren::WeakTex2DRef lm_indir_sh[4], bool deferred_shading, bool debug_denoise,
-                             const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
-                             const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                             const BindlessTextureData &bindless, RpResRef depth_hierarchy,
-                             RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
+    void AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, const Ren::WeakTex2DRef lm_indir_sh[4],
+                             bool deferred_shading, bool debug_denoise, const Ren::ProbeStorage *probe_storage,
+                             const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
+                             const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
+                             RpResRef depth_hierarchy, RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              RpResRef depth_down_2x, FrameTextures &frame_textures);
 

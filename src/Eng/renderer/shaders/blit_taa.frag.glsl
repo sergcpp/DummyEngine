@@ -1,7 +1,7 @@
 #version 320 es
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
-    precision mediump int;
+    precision highp int;
     precision highp float;
 #endif
 
@@ -15,11 +15,11 @@
 #pragma multi_compile _ YCoCg
 #pragma multi_compile _ STATIC_ACCUMULATION
 
-layout(binding = CURR_TEX_SLOT) uniform mediump sampler2D g_color_curr;
-layout(binding = HIST_TEX_SLOT) uniform mediump sampler2D g_color_hist;
+layout(binding = CURR_TEX_SLOT) uniform sampler2D g_color_curr;
+layout(binding = HIST_TEX_SLOT) uniform sampler2D g_color_hist;
 
-layout(binding = DEPTH_TEX_SLOT) uniform mediump sampler2D g_depth;
-layout(binding = VELOCITY_TEX_SLOT) uniform mediump sampler2D g_velocity;
+layout(binding = DEPTH_TEX_SLOT) uniform sampler2D g_depth;
+layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity;
 
 LAYOUT_PARAMS uniform UniformParams {
     Params g_params;
@@ -42,6 +42,7 @@ vec3 Tonemap(in vec3 c) {
 
 vec3 TonemapInvert(in vec3 c) {
 #if defined(TONEMAP)
+    //c /= max(g_params.exposure, 0.001);
     return (c / max(g_params.exposure, 0.001)) * rcp(1.0 - max3(c.r, c.g, c.b));
 #else
     return c;
@@ -49,19 +50,19 @@ vec3 TonemapInvert(in vec3 c) {
 }
 
 vec3 FetchColor(sampler2D s, ivec2 icoord) {
+    vec3 ret = Tonemap(clamp(texelFetch(s, icoord, 0).rgb, vec3(0.0), vec3(HALF_MAX)));
 #if defined(YCoCg)
-    return RGB_to_YCoCg(Tonemap(texelFetch(s, icoord, 0).rgb));
-#else
-    return Tonemap(texelFetch(s, icoord, 0).rgb);
+    ret = RGB_to_YCoCg(ret);
 #endif
+    return ret;
 }
 
 vec3 SampleColor(sampler2D s, vec2 uvs) {
+    vec3 ret = Tonemap(clamp(textureLod(s, uvs, 0.0).rgb, vec3(0.0), vec3(HALF_MAX)));
 #if defined(YCoCg)
-    return RGB_to_YCoCg(Tonemap(textureLod(s, uvs, 0.0).rgb));
-#else
-    return Tonemap(textureLod(s, uvs, 0.0).rgb);
+    ret = RGB_to_YCoCg(ret);
 #endif
+    return ret;
 }
 
 float Luma(vec3 col) {
@@ -213,7 +214,7 @@ void main() {
 #if defined(YCoCg)
     col = YCoCg_to_RGB(col);
 #endif
-    g_out_color = TonemapInvert(col);
+    g_out_color = clamp(TonemapInvert(col), vec3(0.0), vec3(HALF_MAX));
     g_out_history = g_out_color;
 #endif // STATIC_ACCUMULATION
 }

@@ -3,16 +3,17 @@
 
 #if defined(GL_ES) || defined(VULKAN) || defined(GL_SPIRV)
     precision highp int;
-    precision mediump float;
+    precision highp float;
 #endif
 
 #include "_fs_common.glsl"
 #include "blit_combine_interface.h"
 
+#pragma multi_compile _ COMPRESSED
 #pragma multi_compile _ LUT
 #pragma multi_compile _ TWO_TARGETS
 
-layout(binding = HDR_TEX_SLOT) uniform mediump sampler2D g_tex;
+layout(binding = HDR_TEX_SLOT) uniform sampler2D g_tex;
 layout(binding = BLURED_TEX_SLOT) uniform sampler2D g_blured_tex;
 #if defined(LUT)
 layout(binding = LUT_TEX_SLOT) uniform sampler3D g_lut_tex;
@@ -41,6 +42,9 @@ vec3 TonemapLUT(sampler3D lut, vec3 col) {
 
 void main() {
     vec3 col = textureLod(g_tex, g_vtx_uvs, 0.0).rgb + 0.1 * textureLod(g_blured_tex, g_vtx_uvs, 0.0).xyz;
+#ifdef COMPRESSED
+    col = decompress_hdr(col);
+#endif
     col *= g_params.exposure;
 
 #if defined(LUT)

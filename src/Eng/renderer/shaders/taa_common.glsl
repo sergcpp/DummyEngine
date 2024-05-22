@@ -34,11 +34,11 @@ vec3 YCoCg_to_RGB(vec3 c) {
     // R = Y + Co - Cg
     // G = Y + Cg
     // B = Y - Co - Cg
-    return clamp(vec3(
+    return max(vec3(
         c.x + c.y - c.z,
         c.x + c.z,
         c.x - c.y - c.z
-    ), vec3(0.0), vec3(1.0));
+    ), vec3(0.0));
 }
 
 #endif // TAA_COMMON_GLSL

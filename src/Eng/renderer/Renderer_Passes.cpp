@@ -213,7 +213,7 @@ void Eng::Renderer::InitPipelines() {
     assert(blit_bilateral_prog_->ready());
 
     blit_taa_prog_ = sh_.LoadProgram(ctx_, "blit_taa_prog", "internal/blit_taa.vert.glsl",
-                                     "internal/blit_taa.frag.glsl@CLIPPING;TONEMAP");
+                                     "internal/blit_taa.frag.glsl@CLIPPING;ROUNDED_NEIBOURHOOD;YCoCg");
     assert(blit_taa_prog_->ready());
 
     blit_taa_static_prog_ = sh_.LoadProgram(ctx_, "blit_taa_static_prog", "internal/blit_taa.vert.glsl",

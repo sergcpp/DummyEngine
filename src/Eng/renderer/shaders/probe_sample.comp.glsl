@@ -63,5 +63,5 @@ void main() {
     vec3 final_color = get_volume_irradiance(g_irradiance_tex, g_distance_tex, g_offset_tex, P, get_surface_bias(normal.xyz, I, g_params.grid_spacing.xyz), normal.xyz,
                                              g_params.grid_scroll.xyz, g_params.grid_origin.xyz, g_params.grid_spacing.xyz);
 
-    imageStore(g_out_color_img, icoord, vec4(final_color / M_PI, 1.0));
+    imageStore(g_out_color_img, icoord, vec4(compress_hdr(final_color / M_PI), 1.0));
 }
