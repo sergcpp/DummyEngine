@@ -4,4 +4,4 @@ pipelines:
 textures:
     - chars/Blue_jeans_diff.png
     - chars/Blue_jeans_norm.png
-    - default_roughness.texx
+    - default_roughness.tex

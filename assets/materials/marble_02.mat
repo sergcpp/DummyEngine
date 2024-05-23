@@ -4,4 +4,4 @@ pipelines:
 textures:
     - marble_speckled_diff.png
     - default_normalmap.dds
-    - default_roughness.texx
+    - default_roughness.tex

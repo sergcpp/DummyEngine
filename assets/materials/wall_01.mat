@@ -4,4 +4,4 @@ pipelines:
 textures:
     - wall_01_diff.png
     - wall_01_norm.png
-    - default_roughness.texx
+    - default_roughness.tex

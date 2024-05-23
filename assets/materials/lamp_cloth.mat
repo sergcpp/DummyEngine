@@ -4,4 +4,4 @@ pipelines:
 textures:
     - lamp_diff.png
     - lamp_norm.png
-    - default_roughness.texx
+    - default_roughness.tex

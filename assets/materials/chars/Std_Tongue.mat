@@ -4,4 +4,4 @@ pipelines:
 textures:
     - chars/Std_Tongue_diff.png
     - chars/Std_Tongue_norm.png
-    - default_roughness.texx
+    - default_roughness.tex

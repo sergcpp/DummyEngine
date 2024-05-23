@@ -4,4 +4,4 @@ pipelines:
 textures:
     - concrete_03_diff.png
     - concrete_03_norm.png
-    - default_roughness.texx
+    - default_roughness.tex

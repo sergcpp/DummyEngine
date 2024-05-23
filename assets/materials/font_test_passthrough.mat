@@ -6,4 +6,4 @@ flags:
 textures:
     - digits.uncompressed.png
     - default_normalmap.dds
-    - default_roughness.texx
+    - default_roughness.tex

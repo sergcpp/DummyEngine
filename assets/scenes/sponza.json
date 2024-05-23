@@ -1,0 +1,2410 @@
+{
+    "name": "sponza",
+    "environment": {
+        "sun_col": [
+            99999.98807907104,
+            99999.98211860657,
+            100000.0
+        ],
+        "sun_angle": 0.5260000183369693,
+        "env_col": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "sun_rot": [
+            12.000000333930423,
+            90.16239708218438,
+            -33.61769932118252
+        ],
+        "env_map": "physical_sky",
+        "probe_volume_spacing": 1.25
+    },
+    "camera": {
+        "view_origin": [
+            10.531100273132324,
+            7.352980136871338,
+            1.528249979019165
+        ],
+        "view_rot": [
+            7.18963982791572,
+            90.16239708218438,
+            -91.29739693732209
+        ],
+        "fov": 58.62679896721022,
+        "view_transform": "agx_punchy",
+        "filter": "blackman-harris",
+        "filter_width": 1.0,
+        "gamma": 1.0,
+        "min_exposure": -14.0,
+        "max_exposure": 8.0,
+        "fwd_speed": 0.05
+    },
+    "objects": [
+        {
+            "transform": {
+                "pos": [
+                    0.14014999568462372,
+                    4.069159984588623,
+                    3.087209939956665
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/arch_stones_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/arch_stones_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.14014899730682373,
+                    4.069159984588623,
+                    -3.114759922027588
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/arch_stones_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/arch_stones_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.11376500129699707,
+                    4.373889923095703,
+                    -0.016881000250577927
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/arch_stones_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/arch_stones_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.2583799958229065,
+                    9.925780296325684,
+                    -0.020968999713659286
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/arch_wall_2ndfloor.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/arch_wall_2ndfloor.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.40212199091911316,
+                    4.096159934997559,
+                    -0.15080399811267853
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ceiling_1stfloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ceiling_1stfloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    15.272600173950195,
+                    3.912450075149536,
+                    -2.0942800045013428
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ceiling_1stfloor_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ceiling_1stfloor_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.14894999563694,
+                    9.553939819335938,
+                    -0.050252001732587814
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ceiling_2ndfloor.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ceiling_2ndfloor.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -3.859649896621704,
+                    6.108540058135986,
+                    3.1062700748443604
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.14297200739383698,
+                    6.107756614685059,
+                    3.103250026702881
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    4.158140182495117,
+                    6.10853910446167,
+                    3.1034035682678223
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    8.318650245666504,
+                    6.108538627624512,
+                    2.9791901111602783
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -3.859649896621704,
+                    6.108536720275879,
+                    -3.131469964981079
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.14740100502967834,
+                    6.107755661010742,
+                    -3.120759963989258
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    4.148009777069092,
+                    6.1085357666015625,
+                    -3.1275999546051025
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    8.31779956817627,
+                    6.10853910446167,
+                    -2.982840061187744
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.8593900203704834,
+                    6.100160121917725,
+                    -3.084820032119751
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_09.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_09.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.16510009765625,
+                    6.100160598754883,
+                    -3.084820032119751
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_10.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_10.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.153649806976318,
+                    6.100160598754883,
+                    -3.0848195552825928
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_11.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_11.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.8683799505233765,
+                    6.100160598754883,
+                    3.0724499225616455
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_12.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_12.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.1561100482940674,
+                    6.100160598754883,
+                    3.072448253631592
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_13.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_13.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.170249938964844,
+                    6.100160598754883,
+                    3.0724480152130127
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_14.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_14.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    8.420499801635742,
+                    6.100160598754883,
+                    -0.030616000294685364
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_15.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_15.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -8.063949584960938,
+                    6.066609859466553,
+                    2.9510300159454346
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_16.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_16.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -8.069540023803711,
+                    6.108540058135986,
+                    -2.992110013961792
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_17.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_17.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.87352991104126,
+                    6.100160121917725,
+                    -3.084820032119751
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_18.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_18.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -8.144189834594727,
+                    6.100160598754883,
+                    0.021669000387191772
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_19.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_19.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.856929779052734,
+                    6.100160598754883,
+                    3.0724499225616455
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/column_2ndfloor_20.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/column_2ndfloor_20.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    8.329469680786133,
+                    -0.011513999663293362,
+                    -0.031897999346256256
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/columns_1stfloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/columns_1stfloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    4.207320213317871,
+                    -0.012799999676644802,
+                    -0.04089900106191635
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/columns_1stfloor_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/columns_1stfloor_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.14418500661849976,
+                    -0.011830000206828117,
+                    -0.036201998591423035
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/columns_1stfloor_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/columns_1stfloor_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -3.896320104598999,
+                    -0.011481000110507011,
+                    -0.03693399950861931
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/columns_1stfloor_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/columns_1stfloor_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -8.081870079040527,
+                    -0.011513999663293362,
+                    -0.029486000537872314
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/columns_1stfloor_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/columns_1stfloor_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    8.344220161437988,
+                    3.104909896850586,
+                    1.5779199600219727
+                ],
+                "rot": [
+                    -0.0,
+                    -90.00000250447816,
+                    90.00000250447816
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.365210056304932,
+                    2.224760055541992,
+                    -3.1316099166870117
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.362689971923828,
+                    0.0,
+                    -2.9966399669647217
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.7075799703598022,
+                    0.0,
+                    -2.9961700439453125
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.7582502365112305,
+                    2.22406005859375,
+                    -3.155319929122925
+                ],
+                "rot": [
+                    89.999995674289,
+                    -0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    5.670450210571289,
+                    2.224760055541992,
+                    3.044110059738159
+                ],
+                "rot": [
+                    -0.0,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -2.059890031814575,
+                    0.0,
+                    2.9039700031280518
+                ],
+                "rot": [
+                    -0.0,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    1.9387199878692627,
+                    0.0,
+                    2.9062600135803223
+                ],
+                "rot": [
+                    -0.0,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.063290119171143,
+                    2.22406005859375,
+                    3.05472993850708
+                ],
+                "rot": [
+                    -89.99998201391065,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_09.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_09.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    4.149219989776611,
+                    4.82859992980957,
+                    -3.0213100910186768
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_hanging_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_hanging_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.3631200790405273,
+                    0.0,
+                    -2.9961299896240234
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_hanging_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_hanging_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.6478300094604492,
+                    0.0,
+                    -2.996840000152588
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_hanging_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_hanging_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -3.875570058822632,
+                    4.82859992980957,
+                    2.9926400184631348
+                ],
+                "rot": [
+                    -0.0,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_hanging_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_hanging_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -2.0894699096679688,
+                    0.0,
+                    2.9674599170684814
+                ],
+                "rot": [
+                    -0.0,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_hanging_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_hanging_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    1.9214799404144287,
+                    0.0,
+                    2.968169927597046
+                ],
+                "rot": [
+                    -0.0,
+                    -179.999991348578,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_hanging_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_hanging_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.1645669937133789,
+                    4.031390190124512,
+                    -3.2706499099731445
+                ],
+                "rot": [
+                    89.999995674289,
+                    -0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_holder_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_holder_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.1351809948682785,
+                    4.031390190124512,
+                    3.17618989944458
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/curtain_holder_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/curtain_holder_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    1.8778599500656128,
+                    8.259140014648438,
+                    0.4965130090713501
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/exterior.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/exterior.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    -9.334667642611415e-06,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/IvySim_Leaves.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/IvySim_Leaves.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.0,
+                    0.0,
+                    -0.0
+                ],
+                "rot": [
+                    -9.334667642611415e-06,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/IvySim_Lianas.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/IvySim_Lianas.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    15.610799789428711,
+                    3.883090019226074,
+                    -0.9186580181121826
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamp_1stfloor_entrance.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamp_1stfloor_entrance.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.8523399829864502,
+                    4.823319911956787,
+                    -4.795820236206055
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_00.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_00.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.9214701652526855,
+                    4.823324203491211,
+                    -4.795820236206055
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.822649955749512,
+                    4.823324203491211,
+                    -4.795820236206055
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.146870136260986,
+                    4.823319911956787,
+                    4.730490207672119
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.1880199909210205,
+                    4.823319911956787,
+                    4.74015998840332
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.8523399829864502,
+                    4.823319911956787,
+                    4.74015998840332
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.9214701652526855,
+                    4.823324203491211,
+                    4.74015998840332
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.822649955749512,
+                    4.823324203491211,
+                    4.74015998840332
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.02750015258789,
+                    4.823324203491211,
+                    -4.795820236206055
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.158100128173828,
+                    4.823324203491211,
+                    4.743030071258545
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_09.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_09.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.1880199909210205,
+                    4.823324203491211,
+                    -4.795820236206055
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_10.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_10.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.146870136260986,
+                    4.823324203491211,
+                    -4.805490016937256
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_11.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_11.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -13.598600387573242,
+                    4.565310001373291,
+                    0.06351900100708008
+                ],
+                "rot": [
+                    0.0,
+                    -25.000003541600535,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_1stfloor_14.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_1stfloor_14.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.1627800464630127,
+                    10.383399963378906,
+                    -4.696780204772949
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndflloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndflloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.853270053863525,
+                    10.383399963378906,
+                    -4.662859916687012
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.75430965423584,
+                    10.383399963378906,
+                    -4.72730016708374
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.064900398254395,
+                    10.383399963378906,
+                    4.720069885253906
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.1627800464630127,
+                    10.383399963378906,
+                    4.665830135345459
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.847789764404297,
+                    10.383399963378906,
+                    4.669529914855957
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.772820472717285,
+                    10.383440971374512,
+                    4.73838996887207
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.06779956817627,
+                    10.383399963378906,
+                    -4.725709915161133
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lamps_2ndfloor_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lamps_2ndfloor_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -15.945799827575684,
+                    0.22804400324821472,
+                    0.09938099980354309
+                ],
+                "rot": [
+                    -0.0,
+                    90.00000933466734,
+                    -0.0
+                ],
+                "scale": [
+                    0.4699629545211792,
+                    0.4699629545211792,
+                    0.4699629545211792
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/lionhead.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/lionhead.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.274329900741577,
+                    5.450930118560791,
+                    -7.468500137329102
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.8412100076675415,
+                    5.450930118560791,
+                    -7.468500137329102
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.736629962921143,
+                    5.450930595397949,
+                    -7.468500137329102
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.1605401039123535,
+                    5.43257999420166,
+                    -7.452779769897461
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.058500289916992,
+                    5.450930118560791,
+                    -7.468500137329102
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.634869575500488,
+                    5.450930118560791,
+                    -7.468500137329102
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -12.403200149536133,
+                    5.437640190124512,
+                    0.1246199980378151
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -12.421699523925781,
+                    5.450930118560791,
+                    -4.7081499099731445
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -12.424400329589844,
+                    5.450930118560791,
+                    4.697770118713379
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_09.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_09.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.2569899559020996,
+                    5.450930118560791,
+                    7.43011999130249
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_10.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_10.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.9147900342941284,
+                    5.450930118560791,
+                    7.43011999130249
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_11.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_11.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.841040134429932,
+                    5.450930118560791,
+                    7.43011999130249
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_12.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_12.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.692319869995117,
+                    5.450930118560791,
+                    7.43011999130249
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_13.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_13.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.040200233459473,
+                    4.796760082244873,
+                    7.407770156860352
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_14.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_14.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    12.739100456237793,
+                    5.422550201416016,
+                    4.7360100746154785
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_15.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_door_2ndfloor_15.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    15.481599807739258,
+                    1.5200400352478027,
+                    1.4644999504089355
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    18.311399459838867,
+                    0.8876339793205261,
+                    -3.9128201007843018
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    6.195549964904785,
+                    1.7943799495697021,
+                    6.13332986831665
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    2.1816599369049072,
+                    1.7943799495697021,
+                    6.13332986831665
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_04.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_04.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.8183599710464478,
+                    1.7943835258483887,
+                    6.13332986831665
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -5.776969909667969,
+                    1.7943799495697021,
+                    6.13332986831665
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -11.230199813842773,
+                    1.7943835258483887,
+                    4.657639980316162
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.720210075378418,
+                    1.7943835258483887,
+                    6.1392998695373535
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -2.048530101776123,
+                    1.8173999786376953,
+                    -6.098110198974609
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_09.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_09.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -9.992210388183594,
+                    1.8124799728393555,
+                    -4.94966983795166
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_doors_10.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_doors_10.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.8993909955024719,
+                    15.942500114440918,
+                    -0.0030139998998492956
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_roof.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_roof.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -1.2055000066757202,
+                    2.8793699741363525,
+                    -0.1339319944381714
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_stones_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_stones_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.153206005692482,
+                    8.437970161437988,
+                    -0.029053999111056328
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_stones_2ndfloor.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_stones_2ndfloor.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    1.022029995918274,
+                    12.184700012207031,
+                    0.006694000214338303
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/ornament_windows.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/ornament_windows.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -11.028599739074707,
+                    16.174999237060547,
+                    5.498770236968994
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -0.8206980228424072,
+                    16.174999237060547,
+                    5.498770236968994
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_02.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_02.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    10.204400062561035,
+                    16.703500747680664,
+                    0.14466899633407593
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_05.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_05.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -11.965700149536133,
+                    16.88479995727539,
+                    0.018022000789642334
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_06.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_06.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    7.446070194244385,
+                    16.174999237060547,
+                    5.498770236968994
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_07.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_07.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    7.517240047454834,
+                    16.174999237060547,
+                    -5.476749897003174
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_08.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_08.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -11.032099723815918,
+                    16.172300338745117,
+                    -5.472139835357666
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_09.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_09.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -0.8403279781341553,
+                    16.174999237060547,
+                    -5.476739883422852
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/roof_floor_03_10.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/roof_floor_03_10.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -7.899509906768799,
+                    13.326299667358398,
+                    -0.011114000342786312
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/sponza_ornament.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/sponza_ornament.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    0.1390630006790161,
+                    7.855090141296387,
+                    0.11462999880313873
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/stone_walls_2ndfloor.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/stone_walls_2ndfloor.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    -11.354299545288086,
+                    2.8561899662017822,
+                    0.06835199892520905
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/walls_1stfloor_01.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/walls_1stfloor_01.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    1.4462499618530273,
+                    13.452500343322754,
+                    0.04944700002670288
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/walls_floor_03.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/walls_floor_03.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    19.491899490356445,
+                    0.7786179780960083,
+                    0.03165699914097786
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/wood_door.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/wood_door.gltf"
+            }
+        },
+        {
+            "transform": {
+                "pos": [
+                    14.160300254821777,
+                    1.8342700004577637,
+                    -2.4964001178741455
+                ],
+                "rot": [
+                    -0.0,
+                    0.0,
+                    -0.0
+                ]
+            },
+            "drawable": {
+                "mesh_file": "sponza/wooden_parts.gltf"
+            },
+            "acc_structure": {
+                "mesh_file": "sponza/wooden_parts.gltf"
+            }
+        }
+    ]
+}

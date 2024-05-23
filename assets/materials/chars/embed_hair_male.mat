@@ -8,5 +8,5 @@ flags:
 textures:
     - chars/embed_hair_male_diff.png
     - default_normalmap.dds
-    - default_roughness.texx
+    - default_roughness.tex
     - chars/embed_hair_male_mask.png

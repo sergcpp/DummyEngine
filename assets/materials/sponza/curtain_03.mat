@@ -1,0 +1,14 @@
+pipelines:
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+    - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
+flags:
+    - two_sided
+textures:
+    - sponza/curtain_fabric_blue_BaseColor.tex
+    - sponza/curtain_fabric_Normal.tex
+    - sponza/curtain_03_roughness.tex
+    - sponza/curtain_03_metallic.tex
+params:
+    - 1.0 1.0 1.0 1.0    # base color, roughness
+    - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
+    - 1.0 0.0 0.0 0.0    # metallic, transmission, clearcoat, clearcoat_roughness

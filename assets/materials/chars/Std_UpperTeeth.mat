@@ -4,4 +4,4 @@ pipelines:
 textures:
     - chars/Std_Upper_Teeth_diff.png
     - chars/Std_Upper_Teeth_norm.png
-    - default_roughness.texx
+    - default_roughness.tex
