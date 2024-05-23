@@ -607,7 +607,7 @@ void Ren::Texture2D::InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf,
         }
     }
 
-    { // create default image view(s)
+    if (p.usage != eTexUsageBits::Transfer) {
         VkImageViewCreateInfo view_info = {VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO};
         view_info.image = handle_.img;
         view_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
