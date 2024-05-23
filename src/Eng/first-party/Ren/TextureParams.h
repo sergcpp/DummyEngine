@@ -139,7 +139,7 @@ struct Tex2DParams {
     eTexUsage usage = {};
     uint8_t cube = 0;
     uint8_t samples = 1;
-    uint8_t fallback_color[4] = {0, 255, 255, 255};
+    uint8_t fallback_color[4] = {0, 0, 0, 255};
     eTexFormat format = eTexFormat::Undefined;
     eTexBlock block = eTexBlock::_None;
     SamplingParams sampling;
