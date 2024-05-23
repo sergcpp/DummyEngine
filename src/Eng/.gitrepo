@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refactor_23_05
-	commit = 147d3d6ebeb30e59d50a8b7d1029deb918b8997a
+	branch = autoexposure
+	commit = 3e58f8f02448ec37ff201a92618786937563d599
 	method = merge
 	cmdver = 0.4.6
-	parent = 8e6f8682ed9bd2c015ecac03a44163d030de6cec
+	parent = 663d2b6258ea9258917e612f452303bd4e821d97
