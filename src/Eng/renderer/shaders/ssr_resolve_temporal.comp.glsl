@@ -41,6 +41,7 @@ layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
 layout(binding = REPROJ_REFL_TEX_SLOT) uniform sampler2D g_reproj_refl_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
 layout(binding = SAMPLE_COUNT_TEX_SLOT) uniform sampler2D g_sample_count_tex;
+layout(binding = EXPOSURE_TEX_SLOT) uniform sampler2D g_exp_tex;
 
 layout(std430, binding = TILE_LIST_BUF_SLOT) readonly buffer TileList {
     uint g_tile_list[];
@@ -68,7 +69,7 @@ bool IsMirrorReflection(float roughness) {
 shared uint g_shared_storage_0[16][16];
 shared uint g_shared_storage_1[16][16];
 
-void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size) {
+void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2 screen_size, float exposure) {
     // Load 16x16 region into shared memory using 4 8x8 blocks
     const ivec2 offset[4] = {ivec2(0, 0), ivec2(8, 0), ivec2(0, 8), ivec2(8, 8)};
 
@@ -80,7 +81,7 @@ void LoadIntoSharedMemory(ivec2 dispatch_thread_id, ivec2 group_thread_id, ivec2
 
     // Load into registers
     for (int i = 0; i < 4; ++i) {
-        refl[i] = texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0).xyz;
+        refl[i] = texelFetch(g_refl_tex, dispatch_thread_id + offset[i], 0).xyz * exposure;
     }
 
     // Move to shared memory
@@ -202,8 +203,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 ********************************************************************/
-void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight) {
-    LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size));
+void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, vec2 inv_screen_size, float history_clip_weight, float exposure) {
+    LoadIntoSharedMemory(dispatch_thread_id, group_thread_id, ivec2(screen_size), exposure);
 
     groupMemoryBarrier();
     barrier();
@@ -218,9 +219,9 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
     if (IsGlossyReflection(roughness)) {
         /* mediump */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
         vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* mediump */ vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb;
+        /* mediump */ vec3 avg_radiance = textureLod(g_avg_refl_tex, uv8, 0.0).rgb * exposure;
 
-        /* mediump */ vec3 old_signal = texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0).rgb;
+        /* mediump */ vec3 old_signal = texelFetch(g_reproj_refl_tex, dispatch_thread_id, 0).rgb * exposure;
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
         /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean - avg_radiance)) * history_clip_weight * 1.4;
@@ -247,7 +248,7 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         }
     }
 
-    imageStore(g_out_refl_img, dispatch_thread_id, vec4(new_signal, 0.0));
+    imageStore(g_out_refl_img, dispatch_thread_id, vec4(new_signal / exposure, 0.0));
     imageStore(g_out_variance_img, dispatch_thread_id, vec4(new_variance));
 }
 
@@ -262,5 +263,7 @@ void main() {
 
     vec2 inv_screen_size = 1.0 / vec2(g_params.img_size);
 
-    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 0.7 /* history_clip_weight */);
+    const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
+
+    ResolveTemporal(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size, inv_screen_size, 0.7 /* history_clip_weight */, exposure);
 }

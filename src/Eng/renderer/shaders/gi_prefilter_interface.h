@@ -20,6 +20,7 @@ const int GI_TEX_SLOT = 5;
 const int VARIANCE_TEX_SLOT = 6;
 const int SAMPLE_COUNT_TEX_SLOT = 7;
 const int TILE_LIST_BUF_SLOT = 8;
+const int EXPOSURE_TEX_SLOT = 9;
 
 const int OUT_GI_IMG_SLOT = 0;
 const int OUT_VARIANCE_IMG_SLOT = 1;

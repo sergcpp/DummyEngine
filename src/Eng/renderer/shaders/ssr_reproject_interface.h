@@ -24,6 +24,7 @@ const int VELOCITY_TEX_SLOT = 11;
 const int VARIANCE_HIST_TEX_SLOT = 12;
 const int SAMPLE_COUNT_HIST_TEX_SLOT = 13;
 const int TILE_LIST_BUF_SLOT = 14;
+const int EXPOSURE_TEX_SLOT = 15;
 
 const int OUT_REPROJECTED_IMG_SLOT = 0;
 const int OUT_AVG_REFL_IMG_SLOT = 1;

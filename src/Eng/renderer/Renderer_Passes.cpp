@@ -1674,6 +1674,7 @@ Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
         params.w = params.h = 1;
         params.format = Ren::eTexFormat::RawR32F;
         params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
+        params.fallback_color[0] = params.fallback_color[1] = params.fallback_color[2] = 255;
         exposure = data->exposure =
             histogram_exposure.AddStorageImageOutput("Exposure", params, Ren::eStageBits::ComputeShader);
         data->exposure_prev = histogram_exposure.AddHistoryTextureInput(exposure, Ren::eStageBits::ComputeShader);
