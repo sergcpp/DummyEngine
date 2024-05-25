@@ -396,6 +396,14 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]),
                         reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX)]) +
                             4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
+            } else if (js_view_transform.val == "agx_punchy") {
+                renderer_->settings.tonemap_mode = Eng::eTonemapMode::LUT;
+                renderer_->SetTonemapLUT(
+                    Ray::LUT_DIMS, Ren::eTexFormat::RawRGB10_A2,
+                    Ren::Span<const uint8_t>(
+                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX_Punchy)]),
+                        reinterpret_cast<const uint8_t *>(Ray::transform_luts[int(Ray::eViewTransform::AgX_Punchy)]) +
+                            4 * Ray::LUT_DIMS * Ray::LUT_DIMS * Ray::LUT_DIMS));
             } else if (js_view_transform.val == "standard") {
                 renderer_->settings.tonemap_mode = Eng::eTonemapMode::Standard;
             } else if (js_view_transform.val == "off") {
