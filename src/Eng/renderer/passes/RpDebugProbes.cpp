@@ -49,8 +49,7 @@ void Eng::RpDebugProbes::Execute(RpBuilder &builder) {
 
 void Eng::RpDebugProbes::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh) {
     if (!initialized) {
-        prog_probe_debug_ =
-            sh.LoadProgram(ctx, "probe_debug", "internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
+        prog_probe_debug_ = sh.LoadProgram(ctx, "internal/probe_debug.vert.glsl", "internal/probe_debug.frag.glsl");
         assert(prog_probe_debug_->ready());
 
         initialized = true;
