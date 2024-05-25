@@ -6,4 +6,4 @@ flags:
 textures:
     - laptop_screen_diff.png
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.texx

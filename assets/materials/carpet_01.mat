@@ -4,5 +4,5 @@ pipelines:
 textures:
     - carpet_01_diff.png
     - carpet_01_norm.png
-    - default_specular.png
+    - default_roughness.tex
 

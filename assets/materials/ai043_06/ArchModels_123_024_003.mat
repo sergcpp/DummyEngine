@@ -4,10 +4,10 @@ pipelines:
 flags:
     - two_sided
 textures:
-    - default_basecolor.png
-    - ai043_06/ArchModels_123_024_003_norm.jpg
-    - ai043_06/ArchModels_123_024_003_rough.jpg
-    - default_metallic.png
+    - default_basecolor.tex
+    - ai043_06/ArchModels_123_024_003_norm.tex
+    - ai043_06/ArchModels_123_024_003_rough.tex
+    - default_metallic.tex
 params:
     - 0.0782879963517189 0.0782879963517189 0.0782879963517189 1.0    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint

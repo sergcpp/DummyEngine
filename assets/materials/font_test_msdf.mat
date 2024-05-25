@@ -6,4 +6,4 @@ flags:
 textures:
     - digits_sdf.uncompressed.png
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex

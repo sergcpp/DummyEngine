@@ -4,10 +4,10 @@ pipelines:
 flags:
     - two_sided
 textures:
-    - ai043_06/AM141_041_008_diffuse.jpg
-    - default_normalmap.png
-    - default_roughness.png
-    - default_metallic.png
+    - ai043_06/AM141_041_008_diffuse.tex
+    - default_normalmap.dds
+    - default_roughness.tex
+    - default_metallic.tex
 params:
     - 1.0 1.0 1.0 0.375    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint

@@ -4,4 +4,4 @@ pipelines:
 textures:
     - house_04.png srgb
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex

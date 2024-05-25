@@ -4,4 +4,4 @@ pipelines:
 textures:
     - chars/Std_Eye_L_diff.png
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex

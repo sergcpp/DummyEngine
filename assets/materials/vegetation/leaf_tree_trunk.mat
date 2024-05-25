@@ -4,7 +4,7 @@ pipelines:
 textures:
     - vegetation/leaf_tree_trunk_diff.png
     - vegetation/leaf_tree_trunk_norm.png
-    - default_specular.png
-    - default_mask.png
+    - default_roughness.tex
+    - default_opacity.png
     - vegetation/leaf_tree_pp_pos.dds nofilter
     - vegetation/leaf_tree_pp_dir.dds nofilter

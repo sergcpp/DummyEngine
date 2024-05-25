@@ -6,5 +6,5 @@ flags:
 textures:
     - vegetation/leaf_tree_leaves_diff.png
     - vegetation/leaf_tree_leaves_norm.png
-    - default_specular.png
+    - default_roughness.tex
     - vegetation/leaf_tree_leaves_mask.png

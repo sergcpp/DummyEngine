@@ -6,8 +6,8 @@ flags:
 textures:
     - ai043_06/AI43_006_background_diff.jpg
     - default_normalmap.png
-    - default_roughness.png
-    - default_metallic.png
+    - default_roughness.tex
+    - default_metallic.tex
 params:
     - 1.0 1.0 1.0 0.5    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint

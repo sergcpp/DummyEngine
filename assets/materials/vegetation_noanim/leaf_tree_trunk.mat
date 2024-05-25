@@ -4,4 +4,4 @@ pipelines:
 textures:
     - vegetation/leaf_tree_trunk_diff.png
     - vegetation/leaf_tree_trunk_norm.png
-    - default_specular.png
+    - default_roughness.tex

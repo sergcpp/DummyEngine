@@ -4,7 +4,7 @@ pipelines:
 textures:
     - chars/Std_Skin_Head3_diff.png
     - chars/Std_Skin_Head3_norm.png
-    - default_specular.png
+    - default_roughness.texx
     - skin_diffusion.uncompressed.png srgb norepeat
     - chars/skin_detail_norm.png
 params:

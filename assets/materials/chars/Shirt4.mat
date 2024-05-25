@@ -4,4 +4,4 @@ pipelines:
 textures:
     - chars/Shirt4_diff.png
     - chars/Shirt4_norm.png
-    - default_specular.png
+    - default_roughness.texx

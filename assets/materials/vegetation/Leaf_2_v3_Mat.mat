@@ -4,4 +4,4 @@ pipelines:
 textures:
     - vegetation/Leaf_2_v3_diff.png
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex

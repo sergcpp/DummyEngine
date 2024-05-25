@@ -4,10 +4,10 @@ pipelines:
 flags:
     - two_sided
 textures:
-    - mat_test/gold-scuffed_basecolor-boosted.png
-    - mat_test/gold-scuffed_normal.png
-    - mat_test/gold-scuffed_roughness.png
-    - mat_test/gold-scuffed_metallic.png
+    - mat_test/gold-scuffed_basecolor-boosted.tex
+    - mat_test/gold-scuffed_normal.tex
+    - mat_test/gold-scuffed_roughness.tex
+    - mat_test/gold-scuffed_metallic.tex
 params:
     - 1.0 1.0 1.0 1.0      # base color, roughness
     - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint

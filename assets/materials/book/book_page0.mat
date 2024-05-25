@@ -4,4 +4,4 @@ pipelines:
 textures:
     - book/book_page.png srgb
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.texx

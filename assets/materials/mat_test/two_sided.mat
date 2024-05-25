@@ -4,11 +4,11 @@ pipelines:
 flags:
     - alpha_test
 textures:
-    - default_basecolor.png
+    - default_basecolor.tex
     - default_normalmap.dds
-    - default_roughness.png
-    - default_metallic.png
-    - mat_test/Fence007A_2K_Opacity.png
+    - default_roughness.tex
+    - default_metallic.tex
+    - mat_test/Fence007A_2K_Opacity.tex
 params:
     - 0.5 0.0 0.0 0.0      # base color, roughness
     - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint
@@ -18,10 +18,10 @@ pipelines:
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
     - main_probelit.vert.glsl main_probelit_nossr.frag.glsl
 textures:
-    - default_basecolor.png
+    - default_basecolor.tex
     - default_normalmap.dds
-    - default_roughness.png
-    - default_metallic.png
+    - default_roughness.tex
+    - default_metallic.tex
 params:
     - 0.0 0.0 0.5 0.0      # base color, roughness
     - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint

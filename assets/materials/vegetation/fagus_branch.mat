@@ -7,7 +7,7 @@ flags:
 textures:
     - vegetation/tree_branches_fagus_a_tex_diff.png
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex
     - vegetation/tree_branches_fagus_a_tex_mask.png
     - vegetation/fagus_pp_pos.dds nofilter
     - vegetation/fagus_pp_dir.dds nofilter

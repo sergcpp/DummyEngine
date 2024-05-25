@@ -5,5 +5,5 @@ pipelines:
 textures:
     - cobblestone_diff.png
     - cobblestone_norm.png
-    - default_specular.png
+    - default_roughness.tex
     - cobblestone_bump.png

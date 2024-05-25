@@ -27,3 +27,4 @@ test.mesh
 cmake-build*
 .DS_Store
 *_diff.png
+__pycache__

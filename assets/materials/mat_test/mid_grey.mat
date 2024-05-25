@@ -4,9 +4,9 @@ pipelines:
 flags:
     - two_sided
 textures:
-    - default_basecolor.png
+    - default_basecolor.tex
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex
 params:
     - 0.16 0.16 0.16 0.0
     - 0.0 0.0 0.0 0.0

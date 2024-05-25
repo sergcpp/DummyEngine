@@ -4,4 +4,4 @@ pipelines:
 textures:
     - chars/Biker_Jeans_diff.png
     - chars/Biker_Jeans_norm.png
-    - default_specular.png
+    - default_roughness.texx

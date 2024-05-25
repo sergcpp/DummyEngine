@@ -4,4 +4,4 @@ pipelines:
 textures:
     - rp_eric_rigged_001_diff.png
     - rp_eric_rigged_001_norm.png
-    - default_specular.png
+    - default_roughness.texx

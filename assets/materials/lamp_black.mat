@@ -4,4 +4,4 @@ pipelines:
 textures:
     - black_033_diff.png
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.tex

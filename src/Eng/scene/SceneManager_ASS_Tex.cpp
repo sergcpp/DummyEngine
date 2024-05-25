@@ -42,29 +42,6 @@ void GetTexturesAverageColor(const unsigned char *image_data, int w, int h, int 
     }
 }
 
-bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
-    std::ifstream src_stream(in_file, std::ios::binary | std::ios::ate);
-    if (!src_stream) {
-        return false;
-    }
-    const auto src_size = size_t(src_stream.tellg());
-    src_stream.seekg(0, std::ios::beg);
-
-    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
-    src_stream.read((char *)&src_buf[0], src_size);
-
-    int width, height, channels;
-    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
-    if (image_data) {
-        GetTexturesAverageColor(image_data, width, height, channels, out_color);
-        free(image_data);
-        return true;
-    }
-
-    out_color[0] = out_color[1] = out_color[2] = out_color[3] = 0;
-    return false;
-}
-
 std::unique_ptr<uint8_t[]> ComputeBumpConemap(unsigned char *img_data, int width, int height, int channels,
                                               Eng::assets_context_t &ctx) {
     std::unique_ptr<uint8_t[]> _out_conemap(new uint8_t[width * height * 4]);
@@ -337,15 +314,13 @@ bool Write_RGBM(Ren::Span<const float> data, const int w, const int h, const int
 }
 
 bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int *heights, const int mip_count,
-                    const int channels, const char *out_file) {
+                    const int channels, const bool use_YCoCg, const char *out_file) {
     //
     // Compress mip images
     //
     std::unique_ptr<uint8_t[]> compressed_data[16];
     int compressed_size[16] = {}, compressed_size_total = 0;
 
-    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_albedo") ||
-                           strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
     const bool use_BC3 = (channels == 4) || use_YCoCg;
 
     for (int i = 0; i < mip_count; i++) {
@@ -418,11 +393,9 @@ bool Write_DDS_Mips(const uint8_t *const *mipmaps, const int *widths, const int 
 }
 
 bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int channels, const bool flip_y,
-               const bool is_rgbm, const char *out_file, uint8_t out_color[4]) {
+               const bool use_YCoCg, const char *out_file, uint8_t out_avg_color[4]) {
     // Check if resolution is power of two
     const bool store_mipmaps = (unsigned(w) & unsigned(w - 1)) == 0 && (unsigned(h) & unsigned(h - 1)) == 0;
-    const bool use_YCoCg = strstr(out_file, "_diff") || strstr(out_file, "_albedo") ||
-                           strstr(out_file, "_basecolor"); // Store diffuse as YCoCg
 
     std::unique_ptr<uint8_t[]> mipmaps[16] = {};
     int widths[16] = {}, heights[16] = {};
@@ -440,38 +413,36 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
     int mip_count;
 
     if (store_mipmaps) {
-        if (is_rgbm) {
-            assert(channels == 4);
-            mip_count = Ren::InitMipMapsRGBM(mipmaps, widths, heights);
-        } else {
-            const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg};
-            mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
-        }
+        const Ren::eMipOp ops[4] = {Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg, Ren::eMipOp::Avg};
+        mip_count = Ren::InitMipMaps(mipmaps, widths, heights, channels, ops);
 
-        if (out_color) {
+        if (out_avg_color) {
             // Use color of the last mip level
-            memcpy(out_color, &mipmaps[mip_count - 1][0], channels);
+            memcpy(out_avg_color, &mipmaps[mip_count - 1][0], channels);
+            for (int i = channels; i < 4; ++i) {
+                out_avg_color[i] = out_avg_color[channels - 1];
+            }
         }
     } else {
         mip_count = 1;
 
-        if (out_color) {
-            GetTexturesAverageColor(image_data, w, h, channels, out_color);
+        if (out_avg_color) {
+            GetTexturesAverageColor(image_data, w, h, channels, out_avg_color);
         }
     }
 
-    if (out_color && channels == 3) {
-        out_color[3] = 255;
+    if (out_avg_color && channels == 3) {
+        out_avg_color[3] = 255;
     }
 
-    if (use_YCoCg && out_color) {
+    if (use_YCoCg && out_avg_color) {
         uint8_t YCoCg[3];
-        Ren::ConvertRGB_to_YCoCg(out_color, YCoCg);
+        Ren::ConvertRGB_to_YCoCg(out_avg_color, YCoCg);
 
-        out_color[0] = YCoCg[1];
-        out_color[1] = YCoCg[2];
-        out_color[2] = 0;
-        out_color[3] = YCoCg[0];
+        out_avg_color[0] = YCoCg[1];
+        out_avg_color[1] = YCoCg[2];
+        out_avg_color[2] = 0;
+        out_avg_color[3] = YCoCg[0];
     }
 
     uint8_t *_mipmaps[16];
@@ -479,7 +450,7 @@ bool Write_DDS(const uint8_t *image_data, const int w, const int h, const int ch
         _mipmaps[i] = mipmaps[i].get();
     }
 
-    return Write_DDS_Mips(_mipmaps, widths, heights, mip_count, channels, out_file);
+    return Write_DDS_Mips(_mipmaps, widths, heights, mip_count, channels, use_YCoCg, out_file);
 }
 
 bool Write_KTX_DXT(const uint8_t *image_data, const int w, const int h, const int channels, const bool is_rgbm,
@@ -730,7 +701,7 @@ int WriteImage(const uint8_t *out_data, const int w, const int h, const int chan
         }
     } else if (strstr(name, ".dds")) {
         res = 1;
-        Write_DDS(out_data, w, h, channels, flip_y, is_rgbm, name, nullptr);
+        Write_DDS(out_data, w, h, channels, flip_y, false, name, nullptr);
     } else if (strstr(name, ".ktx")) {
         res = 1;
         Write_KTX_ASTC(out_data, w, h, channels, flip_y, is_rgbm, name);
@@ -810,11 +781,185 @@ bool WriteCubemapDDS(Ren::Span<uint32_t> data[6], const int res, const int chann
     return out_stream.good();
 }
 
+enum class eImageType { Color, NormalMap, Metallic, Roughness, Opacity };
+
+struct tex_config_t {
+    std::string image_name;
+    eImageType image_type = eImageType::Color;
+    bool compress = true;
+    bool dx_convention = false;
+    int extract_channel = -1;
+};
+
+tex_config_t ParseTextureConfig(const char *in_file) {
+    tex_config_t ret;
+
+    std::ifstream src_stream(in_file, std::ios::binary);
+    if (!src_stream) {
+        return ret;
+    }
+
+    std::string line;
+    while (std::getline(src_stream, line)) {
+        if (!line.empty()) {
+            if (line.back() == '\n') {
+                line.pop_back();
+            }
+            if (line.back() == '\r') {
+                line.pop_back();
+            }
+
+            if (line.rfind("image:", 0) == 0) {
+                if (std::getline(src_stream, line)) {
+                    if (line.rfind("    - ", 0) != 0) {
+                        break;
+                    }
+
+                    if (line.back() == '\n') {
+                        line.pop_back();
+                    }
+                    if (line.back() == '\r') {
+                        line.pop_back();
+                    }
+
+                    const size_t n2 = line.find(' ', 6);
+                    ret.image_name = line.substr(6, n2 - 6);
+
+                    const size_t n3 = ret.image_name.find('@');
+                    if (n3 != std::string::npos) {
+                        std::string flag = ret.image_name.substr(n3 + 1);
+                        ret.image_name = ret.image_name.substr(0, n3);
+                        if (flag == "red") {
+                            ret.extract_channel = 0;
+                        } else if (flag == "green") {
+                            ret.extract_channel = 1;
+                        } else if (flag == "blue") {
+                            ret.extract_channel = 2;
+                        } else if (flag == "alpha") {
+                            ret.extract_channel = 3;
+                        } else if (flag == "dx") {
+                            ret.dx_convention = true;
+                        }
+                    }
+                }
+            }
+
+            if (line.rfind("type:", 0) == 0) {
+                if (std::getline(src_stream, line)) {
+                    if (line.rfind("    - ", 0) != 0) {
+                        break;
+                    }
+
+                    if (line.back() == '\n') {
+                        line.pop_back();
+                    }
+                    if (line.back() == '\r') {
+                        line.pop_back();
+                    }
+
+                    const size_t n2 = line.find(' ', 6);
+                    const std::string type_name = line.substr(6, n2 - 6);
+                    if (type_name == "color") {
+                        ret.image_type = eImageType::Color;
+                    } else if (type_name == "normalmap") {
+                        ret.image_type = eImageType::NormalMap;
+                    } else if (type_name == "metallic") {
+                        ret.image_type = eImageType::Metallic;
+                    } else if (type_name == "roughness") {
+                        ret.image_type = eImageType::Roughness;
+                    } else if (type_name == "opacity") {
+                        ret.image_type = eImageType::Opacity;
+                    }
+                }
+            }
+
+            if (line.rfind("flags:", 0) == 0) {
+                while (std::getline(src_stream, line)) {
+                    if (line.rfind("    - ", 0) != 0) {
+                        break;
+                    }
+
+                    if (line.back() == '\n') {
+                        line.pop_back();
+                    }
+                    if (line.back() == '\r') {
+                        line.pop_back();
+                    }
+
+                    const size_t n2 = line.find(' ', 6);
+                    const std::string flag_str = line.substr(6, n2 - 6);
+                    if (flag_str == "compressed") {
+                        ret.compress = true;
+                    } else if (flag_str == "uncompressed") {
+                        ret.compress = false;
+                    }
+                }
+            }
+        }
+    }
+    return ret;
+};
+
+bool GetTexturesAverageColor(const char *in_file, uint8_t out_color[4]) {
+    if (strcmp(in_file, "assets/textures/default_normalmap.dds") == 0) {
+        out_color[0] = out_color[1] = 127;
+        return true;
+    }
+
+    const tex_config_t tex = ParseTextureConfig(in_file);
+    if (tex.image_name.empty()) {
+        return false;
+    }
+
+    std::filesystem::path image_path = in_file;
+    image_path.replace_filename(tex.image_name);
+
+    std::ifstream src_stream(image_path, std::ios::binary | std::ios::ate);
+    if (!src_stream) {
+        return false;
+    }
+    const auto src_size = size_t(src_stream.tellg());
+    src_stream.seekg(0, std::ios::beg);
+
+    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+    src_stream.read((char *)&src_buf[0], src_size);
+    if (!src_stream) {
+        return false;
+    }
+
+    int width, height, channels;
+    unsigned char *const image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    if (!image_data) {
+        return false;
+    }
+    SCOPE_EXIT({ stbi_image_free(image_data); })
+
+    GetTexturesAverageColor(image_data, width, height, channels, out_color);
+
+    if (tex.image_type == eImageType::Color) {
+        uint8_t YCoCg[3];
+        Ren::ConvertRGB_to_YCoCg(out_color, YCoCg);
+
+        out_color[0] = YCoCg[1];
+        out_color[1] = YCoCg[2];
+        out_color[2] = 0;
+        out_color[3] = YCoCg[0];
+    } else if (tex.image_type == eImageType::NormalMap && tex.dx_convention) {
+        out_color[1] = 255 - out_color[1];
+    }
+
+    for (int i = 0; i < 4 && tex.extract_channel != -1; ++i) {
+        out_color[i] = out_color[tex.extract_channel];
+    }
+
+    return true;
+}
+
 extern bool g_astc_initialized;
 } // namespace SceneManagerInternal
 
-bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                   Ren::SmallVectorImpl<std::string> &) {
+bool Eng::SceneManager::HConvToDDS_old(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                       Ren::SmallVectorImpl<std::string> &) {
     using namespace SceneManagerInternal;
 
     ctx.log->Info("Conv %s", out_file);
@@ -834,11 +979,14 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
 
     int width, height, channels;
     uint8_t *image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    if (!image_data) {
+        return false;
+    }
     SCOPE_EXIT({ free(image_data); })
 
     bool is_1px_texture = (width > 4 && height > 4),
          is_single_channel = !strstr(out_file, "_diff") && !strstr(out_file, "_albedo") &&
-                             !strstr(out_file, "_basecolor") && (channels > 1);
+                             !strstr(out_file, "_basecolor") && !strstr(out_file, "_BaseColor") && (channels > 1);
     for (int i = 0; i < width * height && (is_1px_texture || is_single_channel); ++i) {
         for (int j = 0; j < channels; ++j) {
             is_1px_texture &= (image_data[i * channels + j] == image_data[j]);
@@ -869,7 +1017,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
     uint8_t average_color[4] = {};
 
     bool res = true;
-    if (strstr(in_file, "_norm")) {
+    if (strstr(in_file, "_norm") || strstr(in_file, "_Normal")) {
         // this is normal map, store it in BC5 format
         std::unique_ptr<uint8_t[]> temp_data(new uint8_t[width * height * 2]);
         assert(channels == 3);
@@ -881,7 +1029,7 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
             }
         }
 
-        res &= Write_DDS(temp_data.get(), width, height, 2, false /* flip_y */, false /* is_rgbm */, out_file,
+        res &= Write_DDS(temp_data.get(), width, height, 2, false /* flip_y */, false /* use_YCoCg */, out_file,
                          average_color);
     } else if (strstr(in_file, "_bump")) {
         if (channels != 1) {
@@ -935,11 +1083,10 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
         for (int i = 0; i < mip_count; i++) {
             _mipmaps[i] = mipmaps[i].get();
         }
-        res &= Write_DDS_Mips(_mipmaps, widths, heights, mip_count, 4, out_file);
+        res &= Write_DDS_Mips(_mipmaps, widths, heights, mip_count, 4, false, out_file);
     } else {
         const bool is_rgbm = channels == 4 && strstr(in_file, "lightmaps") != nullptr;
-        res &= Write_DDS(image_data, width, height, channels, false /* flip_y */, is_rgbm /* is_rgbm */, out_file,
-                         average_color);
+        res &= Write_DDS(image_data, width, height, channels, false /* flip_y */, false, out_file, average_color);
     }
 
     {
@@ -947,6 +1094,114 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
         ctx.cache->WriteTextureAverage(in_file, average_color);
     }
 
+    return res;
+}
+
+bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
+                                   Ren::SmallVectorImpl<std::string> &out_dependencies) {
+    using namespace SceneManagerInternal;
+
+    ctx.log->Info("Conv %s", out_file);
+
+    const tex_config_t tex = ParseTextureConfig(in_file);
+    if (tex.image_name.empty()) {
+        return false;
+    }
+
+    std::filesystem::path image_path = in_file;
+    image_path.replace_filename(tex.image_name);
+
+    out_dependencies.push_back(image_path.generic_u8string());
+
+    std::ifstream src_image(image_path, std::ios::binary | std::ios::ate);
+    if (!src_image) {
+        return false;
+    }
+    auto src_size = (size_t)src_image.tellg();
+    src_image.seekg(0, std::ios::beg);
+
+    std::unique_ptr<uint8_t[]> src_buf(new uint8_t[src_size]);
+    src_image.read((char *)&src_buf[0], src_size);
+    if (!src_image) {
+        return false;
+    }
+
+    int width, height, channels;
+    unsigned char *image_data = stbi_load_from_memory(&src_buf[0], int(src_size), &width, &height, &channels, 0);
+    if (!image_data) {
+        return false;
+    }
+    SCOPE_EXIT({ stbi_image_free(image_data); })
+
+    bool is_1px_texture = (width > 4 && height > 4),
+         is_single_channel = (tex.image_type != eImageType::Color) && (channels > 1);
+    for (int i = 0; i < width * height && (is_1px_texture || is_single_channel); ++i) {
+        for (int j = 0; j < channels; ++j) {
+            is_1px_texture &= (image_data[i * channels + j] == image_data[j]);
+            is_single_channel &= (image_data[i * channels + j] == image_data[i * channels + 0]);
+        }
+    }
+    is_single_channel |= (tex.extract_channel != -1);
+    is_single_channel |= (tex.image_type == eImageType::Metallic);
+    is_single_channel |= (tex.image_type == eImageType::Roughness);
+    is_single_channel |= (tex.image_type == eImageType::Opacity);
+    if (is_single_channel || is_1px_texture) {
+        // drop resolution to minimal block size
+        const int width_new = is_1px_texture ? 4 : width;
+        const int height_new = is_1px_texture ? 4 : height;
+        // drop unnecessary channels
+        const int channels_new = is_single_channel ? 1 : channels;
+        unsigned char *image_data_new = (unsigned char *)malloc(width_new * height_new * channels_new);
+        if (!image_data_new) {
+            return false;
+        }
+        SCOPE_EXIT({ free(image_data_new); })
+
+        for (int y = 0; y < height_new; ++y) {
+            for (int x = 0; x < width_new; ++x) {
+                for (int j = 0; j < channels_new; ++j) {
+                    const int jj = (tex.extract_channel != -1) ? tex.extract_channel : j;
+                    image_data_new[(y * width_new + x) * channels_new + j] =
+                        image_data[(y * width + x) * channels + jj];
+                }
+            }
+        }
+        std::swap(image_data, image_data_new);
+        width = width_new;
+        height = height_new;
+        channels = channels_new;
+    }
+
+    if (tex.image_type == eImageType::NormalMap && channels == 3) {
+        // this is normal map, drop it to two channels
+        unsigned char *image_data_new = (unsigned char *)malloc(width * height * 2);
+        if (!image_data_new) {
+            return false;
+        }
+        SCOPE_EXIT({ free(image_data_new); })
+
+        const bool invert_y = tex.dx_convention;
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++) {
+                image_data_new[2 * (j * width + i) + 0] = image_data[3 * (j * width + i) + 0];
+                image_data_new[2 * (j * width + i) + 1] =
+                    invert_y ? 255 - image_data[3 * (j * width + i) + 1] : image_data[3 * (j * width + i) + 1];
+            }
+        }
+
+        std::swap(image_data, image_data_new);
+        channels = 2;
+    }
+
+    const bool use_YCoCg = (tex.image_type == eImageType::Color);
+
+    uint8_t average_color[4] = {};
+    const bool res =
+        Write_DDS(image_data, width, height, channels, false /* flip_y */, use_YCoCg, out_file, average_color);
+    if (res) {
+        std::lock_guard<std::mutex> _(ctx.cache_mtx);
+        ctx.cache->WriteTextureAverage(in_file, average_color);
+    }
     return res;
 }
 
@@ -1191,7 +1446,7 @@ bool Eng::SceneManager::HConvImgToDDS(assets_context_t &ctx, const char *in_file
         return false;
     }
 
-    return Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, out_file);
+    return Write_DDS_Mips(_mipmaps, widths, heights, mips_count, 4, false, out_file);
 }
 
 bool Eng::SceneManager::HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,

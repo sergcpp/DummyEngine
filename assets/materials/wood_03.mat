@@ -4,4 +4,4 @@ pipelines:
 textures:
     - wood_03_diff.png ycocg
     - default_normalmap.dds
-    - default_specular.png
+    - default_roughness.texx

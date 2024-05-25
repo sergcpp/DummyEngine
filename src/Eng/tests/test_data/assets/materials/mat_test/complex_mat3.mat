@@ -5,11 +5,11 @@ flags:
     - two_sided
     - alpha_test
 textures:
-    - mat_test/Fence007A_2K_basecolor.png
-    - mat_test/Fence007A_2K_normal.png
-    - mat_test/Fence007A_2K_Roughness.png
-    - mat_test/Fence007A_2K_Metalness.png
-    - mat_test/Fence007A_2K_Opacity.png
+    - mat_test/Fence007A_2K_basecolor.tex
+    - mat_test/Fence007A_2K_normal.tex
+    - mat_test/Fence007A_2K_Roughness.tex
+    - mat_test/Fence007A_2K_Metalness.tex
+    - mat_test/Fence007A_2K_Opacity.tex
 params:
     - 1.0 1.0 1.0 1.0      # base color, roughness
     - 0.0 0.0 0.5 0.0      # sheen, sheen_tint, specular, spec_tint

@@ -308,8 +308,10 @@ class SceneManager {
     // image textures
     static bool HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
                             Ren::SmallVectorImpl<std::string> &);
+    static bool HConvToDDS_old(assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string> &);
     static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                           Ren::SmallVectorImpl<std::string> &);
+                           Ren::SmallVectorImpl<std::string> &out_dependencies);
     static bool HConvHDRToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
                               Ren::SmallVectorImpl<std::string> &out_dependencies);
 

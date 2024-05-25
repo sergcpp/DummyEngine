@@ -367,6 +367,8 @@ void ReplaceTextureExtension(const char *platform, std::string &tex) {
             }
         } else if ((n = tex.find(".hdr")) != std::string::npos) {
             tex.replace(n + 1, 3, "dds");
+        } else if ((n = tex.find(".tex")) != std::string::npos) {
+            tex.replace(n + 1, 3, "dds");
         }
     }
 }
@@ -587,11 +589,9 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     g_asset_handlers["json"] = {"json", HPreprocessJson};
 
     if (strcmp(platform, "pc") == 0) {
-        g_asset_handlers["tga"] = {"dds", HConvToDDS};
         // g_asset_handlers["hdr"] = {"dds", HConvHDRToRGBM};
         g_asset_handlers["hdr"] = {"dds", HConvHDRToDDS};
-        g_asset_handlers["png"] = {"dds", HConvToDDS};
-        g_asset_handlers["jpg"] = {"dds", HConvToDDS};
+        g_asset_handlers["tex"] = {"dds", HConvToDDS};
         g_asset_handlers["img"] = {"dds", HConvImgToDDS};
         g_asset_handlers["dds"] = {"dds", HCopy};
         g_asset_handlers["rgen.glsl"] = {"rgen.glsl", HCompileShader};
@@ -603,8 +603,8 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
     } else if (strcmp(platform, "android") == 0) {
         g_asset_handlers["tga"] = {"ktx", HConvToASTC};
         // g_asset_handlers["hdr"] = {"ktx", HConvHDRToRGBM};
-        g_asset_handlers["png"] = {"ktx", HConvToASTC};
-        g_asset_handlers["jpg"] = {"ktx", HConvToASTC};
+        // g_asset_handlers["png"] = {"ktx", HConvToASTC};
+        // g_asset_handlers["jpg"] = {"ktx", HConvToASTC};
         g_asset_handlers["img"] = {"ktx", HConvImgToASTC};
         g_asset_handlers["ktx"] = {"ktx", HCopy};
     }
@@ -638,7 +638,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
         Handler *handler = g_asset_handlers.Find(ext);
         if (!handler) {
-            ctx.log->Info("No handler found for %s", in_file.generic_string().c_str());
+            //ctx.log->Info("No handler found for %s", in_file.generic_string().c_str());
             return;
         }
 
@@ -965,7 +965,7 @@ bool Eng::SceneManager::HConvGLTFToMesh(assets_context_t &ctx, const char *in_fi
             int vertex_count = int(positions.size() / 3);
             uvs2.resize(2 * vertex_count, 0.0f);
 
-            if (tangents.empty()){
+            if (tangents.empty()) {
                 // generate tangents
                 std::vector<Ren::vertex_t> vertices(vertex_count);
 

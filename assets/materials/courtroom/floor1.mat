@@ -4,4 +4,4 @@ pipelines:
 textures:
     - courtroom/wood_floor_diff.png
     - courtroom/wood_floor_norm.png
-    - default_specular.png
+    - default_roughness.texx

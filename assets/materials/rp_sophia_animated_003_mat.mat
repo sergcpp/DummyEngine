@@ -4,4 +4,4 @@ pipelines:
 textures:
     - rp_sophia_animated_003_diff.png
     - rp_sophia_animated_003_norm.png
-    - default_specular.png
+    - default_roughness.texx

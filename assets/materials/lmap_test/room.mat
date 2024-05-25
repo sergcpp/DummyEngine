@@ -4,4 +4,4 @@ pipelines:
 textures:
     - grey_diff.png
     - nmap_norm.png
-    - default_specular.png
+    - default_roughness.tex

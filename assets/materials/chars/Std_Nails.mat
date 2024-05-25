@@ -4,5 +4,5 @@ pipelines:
 textures:
     - chars/Std_Nails_diff.png
     - chars/Std_Nails_norm.png
-    - default_specular.png
+    - default_roughness.texx
     - skin_diffusion.uncompressed.png srgb norepeat

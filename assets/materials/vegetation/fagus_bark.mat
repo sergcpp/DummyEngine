@@ -4,7 +4,7 @@ pipelines:
 textures:
     - vegetation/tree_bark_fagus_a_tex_diff.png
     - default_normalmap.dds
-    - default_specular.png
-    - default_mask.png
+    - default_roughness.tex
+    - default_opacity.png
     - vegetation/fagus_pp_pos.dds nofilter
     - vegetation/fagus_pp_dir.dds nofilter

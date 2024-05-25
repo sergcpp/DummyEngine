@@ -4,10 +4,10 @@ pipelines:
 flags:
     - two_sided
 textures:
-    - ai043_06/AM149_set1_typewriter_print_diffuse.jpg
-    - ai043_06/AM149_set01_002_typewriter_norm.jpg
-    - ai043_06/AM149_set01_002_typewriter_rough.jpg
-    - default_metallic.png
+    - ai043_06/AM149_set1_typewriter_print_diffuse.tex
+    - ai043_06/AM149_set01_002_typewriter_norm.tex
+    - ai043_06/AM149_set01_002_typewriter_rough.tex
+    - default_metallic.tex
 params:
     - 1.0 1.0 1.0 1.0    # base color, roughness
     - 0.0 0.0 0.5 0.0    # sheen, sheen_tint, specular, spec_tint
