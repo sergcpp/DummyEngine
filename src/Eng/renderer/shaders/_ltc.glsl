@@ -413,19 +413,23 @@ vec3 LTC_Evaluate_Disk(sampler2D ltc_2, float u_offset, vec3 N, vec3 V, vec3 P, 
     avgDir = rotate * avgDir;
     avgDir = normalize(avgDir);
 
-    float L1 = sqrt(max(-e2 / e3, 0.0));
-    float L2 = sqrt(max(-e2 / e1, 0.0));
+    float L1 = sqrt(max(0.0, -e2 / e3));
+    float L2 = sqrt(max(0.0, -e2 / e1));
 
-    float formFactor = L1 * L2 * inversesqrt((1.0 + L1 * L1) * (1.0 + L2 * L2));
+    float form_factor = L1 * L2 * inversesqrt((1.0 + L1 * L1) * (1.0 + L2 * L2));
+    // TODO: Remove this check
+    if (isnan(form_factor)) {
+        return vec3(0.0);
+    }
 
     // use tabulated horizon-clipped sphere
-    vec2 uv = vec2(avgDir.z * 0.5 + 0.5, formFactor);
+    vec2 uv = vec2(avgDir.z * 0.5 + 0.5, form_factor);
     uv = uv * LTC_LUT_SCALE + LTC_LUT_BIAS;
     uv.x = (uv.x / 8.0) + u_offset;
 
     float scale = textureLod(ltc_2, uv, 0.0).w;
 
-    float spec = formFactor * scale;
+    float spec = form_factor * scale;
 
     return vec3(spec, spec, spec);
 }
