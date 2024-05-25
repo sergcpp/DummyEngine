@@ -401,6 +401,8 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         }
     }
 
+    float probe_volume_spacing = 0.5f;
+
     if (js_scene.Has("environment")) {
         const JsObjectP &js_env = js_scene.at("environment").as_obj();
         if (js_env.Has("sun_dir")) {
@@ -542,6 +544,10 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
             scene_data_.env.sun_shadow_bias[0] = DefaultSunShadowBias[0];
             scene_data_.env.sun_shadow_bias[1] = DefaultSunShadowBias[1];
         }
+
+        if (js_env.Has("probe_volume_spacing")) {
+            probe_volume_spacing = float(js_env.at("probe_volume_spacing").as_num().val);
+        }
     } else {
         scene_data_.env = {};
     }
@@ -567,7 +573,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
 
     scene_data_.persistent_data.probe_volume.origin = Ren::Vec3f{0.0f, 0.0f, 0.0f};
-    scene_data_.persistent_data.probe_volume.spacing = Ren::Vec3f{0.5f, 0.5f, 0.5f};
+    scene_data_.persistent_data.probe_volume.spacing = Ren::Vec3f{probe_volume_spacing};
 
     scene_data_.persistent_data.probe_volume.ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
