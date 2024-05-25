@@ -241,6 +241,8 @@ int DummyApp::Run(int argc, char *argv[]) {
             app_params.pt_denoise = false;
         } else if (strcmp(arg, "--pt_max_samples") == 0 && (i + 1 < argc)) {
             app_params.pt_max_samples = std::atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--exposure") == 0 && (++i != argc)) {
+            app_params.exposure = strtof(argv[i], nullptr);
         }
     }
 

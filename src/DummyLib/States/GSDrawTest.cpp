@@ -423,6 +423,10 @@ void GSDrawTest::OnPostloadScene(JsObjectP &js_scene) {
         }
     }
 
+    if (viewer_->app_params.exposure.has_value()) {
+        min_exposure_ = max_exposure_ = viewer_->app_params.exposure.value();
+    }
+
     view_origin_ = initial_view_pos_;
     view_dir_ = initial_view_dir_;
 

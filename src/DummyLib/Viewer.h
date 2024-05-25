@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <Eng/ViewerBase.h>
 
 #if defined(__ANDROID__)
@@ -43,6 +45,7 @@ struct AppParams {
     bool pt_denoise = true;
     bool pt_nohwrt = false;
     int pt_max_samples = 128;
+    std::optional<float> exposure;
 #ifndef NDEBUG
     int validation_level = 1;
 #else
