@@ -716,8 +716,13 @@ void Eng::SceneManager::ForceTextureReload() {
         Ren::Tex2DParams p = it->params;
 
         // drop to lowest lod
-        const int w = std::max(p.w >> p.mip_count, 1);
-        const int h = std::max(p.h >> p.mip_count, 1);
+        const int w = std::max(p.w >> (p.mip_count - 1), 1);
+        const int h = std::max(p.h >> (p.mip_count - 1), 1);
+
+        if (w == p.w && h == p.h) {
+            // Already has the lowest mip loaded
+            continue;
+        }
 
         it->Realloc(w, h, 1 /* mip_count */, 1 /* samples */, p.format, p.block,
                     bool(p.flags & Ren::eTexFlagBits::SRGB), ren_ctx_.current_cmd_buf(), ren_ctx_.default_mem_allocs(),
