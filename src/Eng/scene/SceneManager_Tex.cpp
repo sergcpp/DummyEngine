@@ -14,7 +14,7 @@ namespace SceneManagerConstants {
 __itt_string_handle *itt_read_file_str = __itt_string_handle_create("ReadFile");
 __itt_string_handle *itt_sort_tex_str = __itt_string_handle_create("SortTextures");
 
-const size_t TextureMemoryLimit = 768 * 1024 * 1024;
+const size_t TextureMemoryLimit = 2048ull * 1024 * 1024;
 } // namespace SceneManagerConstants
 
 namespace SceneManagerInternal {
