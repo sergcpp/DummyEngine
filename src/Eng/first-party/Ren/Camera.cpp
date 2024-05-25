@@ -233,16 +233,14 @@ Ren::eVisResult Ren::Camera::CheckFrustumVisibility(const Vec3f &bbox_min, const
 float Ren::Camera::GetBoundingSphere(Vec3f &out_center) const {
     const float f = far_, n = near_;
 
-    const Vec3f fwd = Vec3f{-view_matrix_[0][2], -view_matrix_[1][2], -view_matrix_[2][2]};
-
     const float k =
-        std::sqrt(1 + (1.0f / (aspect_ * aspect_))) * aspect_ * std::tan(0.5f * angle_ * Pi<float>() / 180.0f);
+        std::sqrt(1 + (1.0f / (aspect_ * aspect_))) * std::tan(aspect_ * 0.5f * angle_ * Pi<float>() / 180.0f);
     const float k_sqr = k * k;
     if (k_sqr >= (f - n) / (f + n)) {
-        out_center = world_position_ + fwd * f;
+        out_center = world_position_ + fwd() * f;
         return f * k;
     } else {
-        out_center = world_position_ + fwd * 0.5f * (f + n) * (1 + k_sqr);
+        out_center = world_position_ + fwd() * 0.5f * (f + n) * (1 + k_sqr);
         return 0.5f * std::sqrt((f - n) * (f - n) + 2.0f * (f * f + n * n) * k_sqr + (f + n) * (f + n) * k_sqr * k_sqr);
     }
 }

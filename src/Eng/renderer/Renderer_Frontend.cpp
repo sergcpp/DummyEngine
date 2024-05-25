@@ -72,7 +72,7 @@ Ren::Vec3f FindSupport(const Ren::Vec3f &bbox_min, const Ren::Vec3f &bbox_max, c
                                   bbox_max};
 
     Ren::Vec3f ret = points[0];
-    float max_dist = Ren::Dot(dir, bbox_max);
+    float max_dist = Ren::Dot(dir, points[0]);
 
     for (int i = 1; i < 8; ++i) {
         const float dist = Dot(dir, points[i]);
@@ -771,14 +771,14 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const Vec3f cam_support1 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, light_dir);
             const Vec3f cam_support2 = FindSupport(scene.nodes[0].bbox_min, scene.nodes[0].bbox_max, -light_dir);
             const Vec3f cam_center = cam_target + fabsf(Dot(cam_support1 - cam_target, light_dir)) * light_dir;
-            const float cam_extents = fabsf(Dot(cam_center, light_dir) - Dot(cam_support2, light_dir));
+            const float cam_extents = Distance(cam_center, cam_target) + bounding_radius;
 
             list.sun_shadow_bounds[casc] = bounding_radius;
 
             Camera shadow_cam;
             shadow_cam.SetupView(cam_center, cam_target, cam_up);
             shadow_cam.Orthographic(-bounding_radius, bounding_radius, bounding_radius, -bounding_radius, 0.0f,
-                                    2 * bounding_radius);
+                                    cam_extents);
             shadow_cam.UpdatePlanes();
 
             const Mat4f sh_clip_from_world = shadow_cam.proj_matrix() * shadow_cam.view_matrix();
@@ -986,8 +986,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             const int ZSliceCount = (casc + 1) * 6;
             Ren::Frustum z_frustums[24];
 
-            const float z_beg = -sh_clip_frustum.planes[int(eCamPlane::Near)].d;
-            const float z_end = sh_clip_frustum.planes[int(eCamPlane::Far)].d;
+            const float z_beg = -sh_clip_frustum.planes[sh_clip_frustum.planes_count - 2].d;
+            const float z_end = sh_clip_frustum.planes[sh_clip_frustum.planes_count - 1].d;
 
             for (int i = 0; i < ZSliceCount; ++i) {
                 z_frustums[i] = sh_clip_frustum;
@@ -995,8 +995,8 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                 const float k_near = float(i) / ZSliceCount;
                 const float k_far = float(i + 1) / ZSliceCount;
 
-                z_frustums[i].planes[int(eCamPlane::Near)].d = -(z_beg + k_near * (z_end - z_beg));
-                z_frustums[i].planes[int(eCamPlane::Far)].d = z_beg + k_far * (z_end - z_beg);
+                z_frustums[i].planes[sh_clip_frustum.planes_count - 2].d = -(z_beg + k_near * (z_end - z_beg));
+                z_frustums[i].planes[sh_clip_frustum.planes_count - 1].d = z_beg + k_far * (z_end - z_beg);
             }
 
             std::future<void> futures[24];
