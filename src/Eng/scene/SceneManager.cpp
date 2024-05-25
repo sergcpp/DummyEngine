@@ -412,6 +412,22 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
 
             scene_data_.env.sun_dir = Ren::Vec3f{float(x), float(y), float(z)};
             scene_data_.env.sun_dir = Normalize(scene_data_.env.sun_dir);
+        } else if (js_env.Has("sun_rot")) {
+            const JsArrayP &js_rot = js_env.at("sun_rot").as_arr();
+
+            const float rot[3] = {float(js_rot.at(0).as_num().val) * Ren::Pi<float>() / 180.0f,
+                                  float(js_rot.at(1).as_num().val) * Ren::Pi<float>() / 180.0f,
+                                  float(js_rot.at(2).as_num().val) * Ren::Pi<float>() / 180.0f};
+
+            Ren::Mat4f transform;
+            transform = Ren::Rotate(transform, rot[2], Ren::Vec3f{0.0f, 0.0f, 1.0f});
+            transform = Ren::Rotate(transform, rot[0], Ren::Vec3f{1.0f, 0.0f, 0.0f});
+            transform = Ren::Rotate(transform, rot[1], Ren::Vec3f{0.0f, 1.0f, 0.0f});
+
+            const Ren::Vec4f sun_dir = Normalize(transform * Ren::Vec4f{0.0f, -1.0f, 0.0f, 0.0f});
+            scene_data_.env.sun_dir[0] = sun_dir[0];
+            scene_data_.env.sun_dir[1] = sun_dir[1];
+            scene_data_.env.sun_dir[2] = sun_dir[2];
         }
         if (js_env.Has("sun_col")) {
             const JsArrayP &js_col = js_env.at("sun_col").as_arr();
