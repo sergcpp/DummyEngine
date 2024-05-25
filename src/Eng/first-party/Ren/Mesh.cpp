@@ -328,7 +328,7 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
     }
 }
 
-void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &_stage_buf,
                                void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
                                ILog *log) {
     char mesh_type_str[12];
@@ -397,9 +397,15 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     indices_buf_.size = index_data_size;
 
     const uint32_t total_mem_required = attribs_buf1_.size + attribs_buf2_.size + indices_buf_.size;
-    assert(stage_buf.size() >= total_mem_required);
 
-    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf.Map());
+    Buffer *stage_buf = &_stage_buf;
+    Buffer temp_stage_buf;
+    if (_stage_buf.size() < total_mem_required) {
+        temp_stage_buf = Buffer{"Temp Stage Buf", _stage_buf.api_ctx(), eBufType::Upload, total_mem_required};
+        stage_buf = &temp_stage_buf;
+    }
+
+    auto *vertices_data1 = reinterpret_cast<packed_vertex_data1_t *>(stage_buf->Map());
     auto *vertices_data2 = reinterpret_cast<packed_vertex_data2_t *>(vertices_data1 + vertex_count);
     assert(uintptr_t(vertices_data2) % alignof(packed_vertex_data2_t) == 0);
     auto *index_data = reinterpret_cast<uint32_t *>(vertices_data2 + vertex_count);
@@ -413,17 +419,17 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
     }
     memcpy(index_data, indices_.get(), indices_buf_.size);
 
-    stage_buf.Unmap();
+    stage_buf->Unmap();
 
     attribs_buf1_.sub =
-        vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_.c_str(), &stage_buf, cmd_buf, 0 /* offset */);
+        vertex_buf1->AllocSubRegion(attribs_buf1_.size, name_.c_str(), stage_buf, cmd_buf, 0 /* offset */);
     attribs_buf1_.buf = std::move(vertex_buf1);
 
     attribs_buf2_.sub =
-        vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_.c_str(), &stage_buf, cmd_buf, attribs_buf1_.size);
+        vertex_buf2->AllocSubRegion(attribs_buf2_.size, name_.c_str(), stage_buf, cmd_buf, attribs_buf1_.size);
     attribs_buf2_.buf = std::move(vertex_buf2);
 
-    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, name_.c_str(), &stage_buf, cmd_buf,
+    indices_buf_.sub = index_buf->AllocSubRegion(indices_buf_.size, name_.c_str(), stage_buf, cmd_buf,
                                                  attribs_buf1_.size + attribs_buf2_.size);
     indices_buf_.buf = std::move(index_buf);
 

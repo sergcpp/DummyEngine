@@ -114,8 +114,8 @@ class Buffer : public RefCounter {
     uint32_t size() const { return size_; }
 
     BufHandle handle() const { return handle_; }
-#if defined(USE_VK_RENDER)
     ApiContext *api_ctx() const { return api_ctx_; }
+#if defined(USE_VK_RENDER)
     VkBuffer vk_handle() const { return handle_.buf; }
     VkDeviceMemory mem() const { return mem_; }
     VkDeviceAddress vk_device_address() const;
