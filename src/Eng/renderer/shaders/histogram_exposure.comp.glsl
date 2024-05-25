@@ -31,9 +31,9 @@ void main() {
     }
 
     const float avg_luma = total.x / max(0.00001, total.y);
-    const float exposure_curr = clamp(1.25 / avg_luma, g_params.min_exposure, g_params.max_exposure);
+    const float exposure_curr = (1.25 / avg_luma);
     const float exposure_prev = texelFetch(g_exposure_prev, ivec2(0), 0).x;
 
-    const float exposure = 0.8 * exposure_prev + 0.2 * exposure_curr;
+    const float exposure = clamp(0.8 * exposure_prev + 0.2 * exposure_curr, g_params.min_exposure, g_params.max_exposure);
     imageStore(g_out_img, ivec2(0), vec4(exposure));
 }
