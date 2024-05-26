@@ -5,7 +5,7 @@ flags:
     - two_sided
 textures:
     - ai043_06/AI43_006_background_diff.jpg
-    - default_normalmap.png
+    - default_normalmap.dds
     - default_roughness.tex
     - default_metallic.tex
 params:
