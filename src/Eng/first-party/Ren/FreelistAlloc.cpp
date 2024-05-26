@@ -93,6 +93,7 @@ template struct Ren::tlsf_index_t<uint64_t, true>;
 /////////////
 
 uint16_t Ren::FreelistAlloc::AddPool(const uint32_t size) {
+    assert(size < (1u << tlsf_index_t<uint32_t, false>::FL_INDEX_MAX));
     uint16_t pool_index = create_pool();
 
     const uint32_t main_block_index = create_block();

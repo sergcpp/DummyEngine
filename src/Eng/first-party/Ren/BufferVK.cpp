@@ -59,8 +59,7 @@ int Ren::Buffer::g_GenCounter = 0;
 
 Ren::Buffer::Buffer(std::string_view name, ApiContext *api_ctx, const eBufType type, const uint32_t initial_size,
                     const uint32_t suballoc_align)
-    : name_(name), api_ctx_(api_ctx), type_(type), size_(0), alloc_(std::make_unique<FreelistAlloc>(initial_size)),
-      suballoc_align_(suballoc_align) {
+    : name_(name), api_ctx_(api_ctx), type_(type), size_(0), suballoc_align_(suballoc_align) {
     Resize(initial_size);
 }
 
@@ -104,6 +103,10 @@ VkDeviceAddress Ren::Buffer::vk_device_address() const {
 
 Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf,
                                                void *_cmd_buf, const uint32_t init_off) {
+    if (!alloc_) {
+        alloc_ = std::make_unique<FreelistAlloc>(size_);
+    }
+
     FreelistAlloc::Allocation alloc = alloc_->Alloc(suballoc_align_, req_size);
     while (alloc.pool == 0xffff) {
         Resize(uint32_t(size_ * 1.25f));
@@ -246,8 +249,10 @@ void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
     size_ = new_size;
     assert(size_ > 0);
 
-    alloc_->ResizePool(0, size_);
-    assert(alloc_->IntegrityCheck());
+    if (alloc_) {
+        alloc_->ResizePool(0, size_);
+        assert(alloc_->IntegrityCheck());
+    }
 
     VkBufferCreateInfo buf_create_info = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     buf_create_info.size = VkDeviceSize(new_size);
