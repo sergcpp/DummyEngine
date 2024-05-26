@@ -1304,6 +1304,7 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
             if (list.env.env_map || true) {
                 auto &combine = rp_builder_.AddPass("COMBINE");
 
+                rp_combine_data_ = {};
                 rp_combine_data_.exposure_tex = combine.AddTextureInput(frame_textures.exposure, Ren::eStageBits::FragmentShader);
                 rp_combine_data_.color_tex = combine.AddTextureInput(color_tex, Ren::eStageBits::FragmentShader);
                 if (false && list.render_settings.enable_bloom && blur_tex) {
@@ -1622,6 +1623,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         auto &combine = rp_builder_.AddPass("COMBINE");
 
+        rp_combine_data_ = {};
         rp_combine_data_.exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
         rp_combine_data_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
         rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
