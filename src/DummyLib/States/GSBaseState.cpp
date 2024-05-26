@@ -1200,6 +1200,7 @@ void GSBaseState::InitScene_PT() {
             tex_desc.name = tex.name().c_str();
             tex_desc.is_srgb = is_srgb;
             tex_desc.is_YCoCg = is_YCoCg;
+            tex_desc.reconstruct_z = true;
 
             const uint8_t *mapped_ptr = temp_stage_buf.Map();
             tex_desc.data = {mapped_ptr, temp_stage_buf.size()};
