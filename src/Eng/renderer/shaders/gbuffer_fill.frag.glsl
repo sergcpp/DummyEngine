@@ -124,8 +124,9 @@ void main(void) {
         }
     }
 
-    vec3 normal = vec3(norm_color, 1.0);
-    normal = normal * 2.0 - 1.0;
+    vec3 normal;
+    normal.xy = norm_color * 2.0 - 1.0;
+    normal.z = sqrt(saturate(1.0 - normal.x * normal.x - normal.y * normal.y));
     normal = normalize(mat3(cross(g_vtx_tangent, g_vtx_normal), g_vtx_tangent, g_vtx_normal) * normal);
     if (!gl_FrontFacing) {
         normal = -normal;

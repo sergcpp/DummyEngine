@@ -1181,12 +1181,21 @@ bool Eng::SceneManager::HConvToDDS(assets_context_t &ctx, const char *in_file, c
         SCOPE_EXIT({ free(image_data_new); })
 
         const bool invert_y = tex.dx_convention;
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
-                image_data_new[2 * (j * width + i) + 0] = image_data[3 * (j * width + i) + 0];
-                image_data_new[2 * (j * width + i) + 1] =
-                    invert_y ? 255 - image_data[3 * (j * width + i) + 1] : image_data[3 * (j * width + i) + 1];
-            }
+        bool z_is_one = true;
+        for (int i = 0; i < width * height; ++i) {
+            image_data_new[2 * i + 0] = image_data[3 * i + 0];
+            image_data_new[2 * i + 1] = invert_y ? 255 - image_data[3 * i + 1] : image_data[3 * i + 1];
+            z_is_one &= (image_data[3 * i + 2] >= 250);
+        }
+
+        for (int i = 0; z_is_one && i < width * height; ++i) {
+            auto n =
+                Ren::Vec3f{float(image_data_new[2 * i + 0]) / 255.0f, float(image_data_new[2 * i + 1]) / 255.0f, 1.0f};
+            n = Normalize(n * 2.0f - 1.0f);
+            n = n * 0.5f + 0.5f;
+
+            image_data_new[2 * i + 0] = std::min(std::max(int(n[0] * 255.0f), 0), 255);
+            image_data_new[2 * i + 1] = std::min(std::max(int(n[1] * 255.0f), 0), 255);
         }
 
         std::swap(image_data, image_data_new);
