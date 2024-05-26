@@ -356,7 +356,6 @@ void Ren::Buffer::Free() {
 
         handle_ = {};
         size_ = 0;
-        // LinearAlloc::Clear();
     }
 }
 

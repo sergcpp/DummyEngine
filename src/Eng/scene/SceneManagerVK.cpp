@@ -198,7 +198,7 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     }
 
     Ren::Buffer materials_upload_buf("Materials Upload Buffer", ren_ctx_.api_ctx(), Ren::eBufType::Upload,
-                                    (update_range.second - update_range.first) * sizeof(MaterialData));
+                                     (update_range.second - update_range.first) * sizeof(MaterialData));
     MaterialData *material_data = reinterpret_cast<MaterialData *>(materials_upload_buf.Map());
 
     Ren::SmallVector<VkDescriptorImageInfo, 256> img_infos;
@@ -415,8 +415,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
         //
         // Allocate memory
         //
-        Ren::Buffer scratch_buf("BLAS Scratch Buf", api_ctx, Ren::eBufType::Storage,
-                                next_power_of_two(needed_build_scratch_size));
+        Ren::Buffer scratch_buf("BLAS Scratch Buf", api_ctx, Ren::eBufType::Storage, needed_build_scratch_size);
         VkDeviceAddress scratch_addr = scratch_buf.vk_device_address();
 
         Ren::Buffer acc_structs_buf("BLAS Before-Compaction Buf", api_ctx, Ren::eBufType::AccStructure,
@@ -654,7 +653,7 @@ void Eng::SceneManager::InitHWRTAccStructures() {
     scene_data_.persistent_data.rt_geo_data_buf = ren_ctx_.LoadBuffer(
         "RT Geo Data Buf", Ren::eBufType::Storage, uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
     Ren::Buffer geo_data_upload_buf("RT Geo Data Upload Buf", api_ctx, Ren::eBufType::Upload,
-                                   uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
+                                    uint32_t(geo_instances.size() * sizeof(RTGeoInstance)));
 
     {
         uint8_t *geo_data_stage = geo_data_upload_buf.Map();
