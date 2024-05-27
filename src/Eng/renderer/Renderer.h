@@ -292,7 +292,8 @@ class Renderer {
                              bool deferred_shading, bool debug_denoise, const Ren::ProbeStorage *probe_storage,
                              const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                             RpResRef depth_hierarchy, RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
+                             RpResRef depth_hierarchy, RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                             FrameTextures &frame_textures);
     void AddLQSpecularPasses(const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                              RpResRef depth_down_2x, FrameTextures &frame_textures);
 
@@ -300,17 +301,18 @@ class Renderer {
                           const Ren::WeakTex2DRef lm_indir_sh[4], bool debug_denoise,
                           const Ren::ProbeStorage *probe_storage, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, RpResRef depth_hierarchy, RpResRef rt_obj_instances_res,
-                          FrameTextures &frame_textures);
+                          const BindlessTextureData &bindless, RpResRef depth_hierarchy, RpResRef rt_geo_instances_res,
+                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     void AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
                           const PersistentGpuData &persistent_data, const AccelerationStructureData &acc_struct_data,
-                          const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
-                          FrameTextures &frame_textures);
+                          const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
+                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures);
 
     void AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
-                               RpResRef rt_obj_instances_res, FrameTextures &frame_textures, bool debug_denoise);
+                               RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                               FrameTextures &frame_textures, bool debug_denoise);
     void AddLQSunShadowsPass(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                              const AccelerationStructureData &acc_struct_data, const BindlessTextureData &bindless,
                              bool enabled, FrameTextures &frame_textures);

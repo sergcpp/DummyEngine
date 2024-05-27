@@ -839,7 +839,7 @@ void Eng::RpBuilder::AllocateNeededResources(RpSubpass &pass) {
     }
 
     if (!textures_to_clear.empty()) { // Clear textures
-        void *cmd_buf = ctx_.BegTempSingleTimeCommands();
+        Ren::CommandBuffer cmd_buf = ctx_.BegTempSingleTimeCommands();
 
         std::vector<Ren::TransitionInfo> transitions;
         for (const Ren::Tex2DRef &t : textures_to_clear) {

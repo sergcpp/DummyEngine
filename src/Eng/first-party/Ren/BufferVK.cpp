@@ -102,7 +102,7 @@ VkDeviceAddress Ren::Buffer::vk_device_address() const {
 }
 
 Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const char *tag, const Buffer *init_buf,
-                                               void *_cmd_buf, const uint32_t init_off) {
+                                               CommandBuffer cmd_buf, const uint32_t init_off) {
     if (!alloc_) {
         alloc_ = std::make_unique<FreelistAlloc>(size_);
     }
@@ -118,7 +118,6 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
     if (ret.offset != 0xffffffff) {
         if (init_buf) {
             assert(init_buf->type_ == eBufType::Upload);
-            VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
             VkPipelineStageFlags src_stages = 0, dst_stages = 0;
             SmallVector<VkBufferMemoryBarrier, 2> barriers;
@@ -176,9 +175,8 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
 }
 
 void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, const Buffer &init_buf,
-                                  const uint32_t init_off, void *_cmd_buf) {
+                                  const uint32_t init_off, CommandBuffer cmd_buf) {
     assert(init_buf.type_ == eBufType::Upload);
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 2> barriers;
@@ -239,7 +237,8 @@ bool Ren::Buffer::FreeSubRegion(const SubAllocation alloc) {
     return true;
 }
 
-void Ren::Buffer::Resize(const uint32_t new_size, const bool keep_content) {
+void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
+    new_size = suballoc_align_ * ((new_size + suballoc_align_ - 1) / suballoc_align_);
     if (size_ >= new_size) {
         return;
     }
@@ -411,9 +410,7 @@ void Ren::Buffer::Unmap() {
     mapped_offset_ = 0xffffffff;
 }
 
-void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> barriers;
 
@@ -445,9 +442,7 @@ void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uin
     resource_state = eResState::CopyDst;
 }
 
-void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> barriers;
 
@@ -489,9 +484,7 @@ void Ren::Buffer::Print(ILog *log) {
 }
 
 void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
-                             const uint32_t size, void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+                             const uint32_t size, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 2> barriers;
 

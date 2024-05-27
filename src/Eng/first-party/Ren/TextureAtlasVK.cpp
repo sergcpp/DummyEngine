@@ -157,7 +157,7 @@ int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
     return index;
 }
 
-void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, void *_cmd_buf,
+void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
                                    const eTexFormat format, const eTexFlags flags, const int layer, const int level,
                                    const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
@@ -170,7 +170,6 @@ void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const
 #endif
 
     assert(sbuf.type() == eBufType::Upload);
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
 
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> buf_barriers;
@@ -245,9 +244,7 @@ bool Ren::TextureAtlas::Free(const int pos[2]) {
     return splitter_.Free(pos);
 }
 
-void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
     SmallVector<VkImageMemoryBarrier, MaxTextureCount> img_barriers;
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
 

@@ -120,7 +120,8 @@ struct DrawList {
     DynArray<ItemData> items, rt_items;
     mutable Ren::BufferRef items_stage_buf, rt_items_stage_buf;
 
-    DynArray<RTGeoInstance> rt_geo_instances;
+    DynArray<RTGeoInstance> rt_geo_instances[int(eTLASIndex::_Count)];
+    mutable Ren::BufferRef rt_geo_instances_stage_buf[int(eTLASIndex::_Count)];
     DynArray<RTObjInstance> rt_obj_instances[int(eTLASIndex::_Count)];
     mutable Ren::BufferRef rt_obj_instances_stage_buf[int(eTLASIndex::_Count)];
     struct {
@@ -149,6 +150,7 @@ struct DrawList {
               Ren::BufferRef skin_transforms_stage_buf, Ren::BufferRef shape_keys_stage_buf,
               Ren::BufferRef cells_stage_buf, Ren::BufferRef rt_cells_stage_buf, Ren::BufferRef items_stage_buf,
               Ren::BufferRef rt_items_stage_buf, Ren::BufferRef lights_stage_buf, Ren::BufferRef decals_stage_buf,
+              Ren::BufferRef rt_geo_instances_stage_buf, Ren::BufferRef rt_sh_geo_instances_stage_buf,
               Ren::BufferRef rt_obj_instances_stage_buf, Ren::BufferRef rt_sh_obj_instances_stage_buf,
               Ren::BufferRef rt_tlas_nodes_stage_buf, Ren::BufferRef rt_sh_tlas_nodes_stage_buf);
     void Clear();

@@ -581,9 +581,9 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     }
 
     if (ren_ctx_.capabilities.raytracing) {
-        InitHWRTAccStructures();
+        Alloc_HWRT_TLAS();
     } else {
-        InitSWRTAccStructures();
+        Alloc_SWRT_TLAS();
     }
 
     const bvh_node_t &root_node = scene_data_.nodes[scene_data_.root_node];
@@ -591,6 +591,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
     scene_data_.persistent_data.probe_volume.origin = Ren::Vec3f{0.0f, 0.0f, 0.0f};
     scene_data_.persistent_data.probe_volume.spacing = Ren::Vec3f{probe_volume_spacing};
 
+    // TODO: Allocate atlases on demand!
     scene_data_.persistent_data.probe_volume.ray_data = std::make_unique<Ren::Texture2DArray>(
         ren_ctx_.api_ctx(), "Probe Volume RayData", PROBE_TOTAL_RAYS_COUNT, PROBE_VOLUME_RES * PROBE_VOLUME_RES,
         PROBE_VOLUME_RES, Ren::eTexFormat::RawRGBA32F, Ren::eTexFilter::BilinearNoMipmap,
@@ -611,7 +612,7 @@ void Eng::SceneManager::LoadScene(const JsObjectP &js_scene) {
         Ren::eTexUsageBits::Storage | Ren::eTexUsageBits::Sampled | Ren::eTexUsageBits::Transfer);
 
     { // clear data
-        void *cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
+        Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
         const Ren::TransitionInfo transitions[] = {
             {scene_data_.persistent_data.probe_volume.ray_data.get(), Ren::eResState::CopyDst},
@@ -1243,6 +1244,14 @@ void Eng::SceneManager::PostloadAccStructure(const JsObjectP &js_comp_obj, void 
 
     obj_bbox[0] = Min(obj_bbox[0], acc->mesh->bbox_min());
     obj_bbox[1] = Max(obj_bbox[1], acc->mesh->bbox_max());
+
+    if (!acc->mesh->blas) {
+        if (ren_ctx_.capabilities.raytracing) {
+            acc->mesh->blas = Build_HWRT_BLAS(*acc);
+        } else {
+            acc->mesh->blas = Build_SWRT_BLAS(*acc);
+        }
+    }
 }
 
 std::pair<Ren::MaterialRef, Ren::MaterialRef> Eng::SceneManager::OnLoadMaterial(std::string_view name) {

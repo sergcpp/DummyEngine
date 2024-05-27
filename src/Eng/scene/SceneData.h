@@ -195,12 +195,19 @@ struct PersistentGpuData {
 #endif
     Ren::PipelineStorage pipelines;
 
-    Ren::BufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf, rt_blas_buf;
+    static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
+    struct {
+        Ren::FreelistAlloc rt_blas_mem_alloc;
+        std::vector<Ren::BufferRef> rt_blas_buffers;
+    } hwrt;
+
+    Ren::BufferRef rt_tlas_buf, rt_sh_tlas_buf;
 
     struct {
         Ren::BufferRef rt_prim_indices_buf;
         uint32_t rt_root_node = 0;
         Ren::BufferRef rt_meshes_buf;
+        Ren::BufferRef rt_blas_buf;
     } swrt;
     uint32_t rt_tlas_build_scratch_size = 0;
     std::unique_ptr<Ren::IAccStructure> rt_tlas, rt_sh_tlas;

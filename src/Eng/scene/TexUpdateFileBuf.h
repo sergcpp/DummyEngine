@@ -63,6 +63,6 @@ class TextureUpdateFileBuf : public Sys::FileReadBufBase {
     }
 
     Ren::SyncFence fence;
-    void *cmd_buf = nullptr;
+    Ren::CommandBuffer cmd_buf = {};
 };
 } // namespace Eng

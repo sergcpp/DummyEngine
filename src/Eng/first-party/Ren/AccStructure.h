@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "Buffer.h"
+#include "FreelistAlloc.h"
 #include "Fwd.h"
 #include "Resource.h"
 
@@ -11,8 +13,6 @@ struct ApiContext;
 class IAccStructure {
   public:
     virtual ~IAccStructure() {}
-
-    uint32_t geo_index = 0, geo_count = 0;
 };
 
 #if defined(USE_VK_RENDER)
@@ -20,11 +20,11 @@ class AccStructureVK : public IAccStructure {
     ApiContext *api_ctx_ = nullptr;
     VkAccelerationStructureKHR handle_ = {};
 
-    void Destroy();
-
   public:
+    FreelistAlloc::Allocation mem_alloc;
+
     AccStructureVK() = default;
-    ~AccStructureVK() override { Destroy(); }
+    ~AccStructureVK() override { Free(); }
 
     AccStructureVK(const AccStructureVK &rhs) = delete;
     AccStructureVK(AccStructureVK &&rhs) = delete;
@@ -39,15 +39,18 @@ class AccStructureVK : public IAccStructure {
 
     bool Init(ApiContext *api_ctx, VkAccelerationStructureKHR handle);
 
+    void Free();
+    void FreeImmediate();
+
     eResState resource_state = eResState::Undefined;
 };
 #endif
 
 class AccStructureSW : public IAccStructure {
   public:
-    AccStructureSW(uint32_t _mesh_index)
-        : mesh_index(_mesh_index) {}
+    AccStructureSW(SubAllocation _mesh_alloc, SubAllocation _nodes_alloc, SubAllocation _prim_alloc)
+        : mesh_alloc(_mesh_alloc), nodes_alloc(_nodes_alloc), prim_alloc(_prim_alloc) {}
 
-    uint32_t mesh_index = 0;
+    SubAllocation mesh_alloc, nodes_alloc, prim_alloc;
 };
 } // namespace Ren

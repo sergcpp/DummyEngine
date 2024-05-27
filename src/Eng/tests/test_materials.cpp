@@ -225,6 +225,11 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
         ren_ctx.LoadBuffer("Lights (Upload)", Ren::eBufType::Upload, Eng::LightsBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef decals_stage_buf =
         ren_ctx.LoadBuffer("Decals (Upload)", Ren::eBufType::Upload, Eng::DecalsBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_geo_instances_stage_buf = ren_ctx.LoadBuffer(
+        "RT Geo Instances (Upload)", Ren::eBufType::Upload, Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
+    Ren::BufferRef rt_sh_geo_instances_stage_buf =
+        ren_ctx.LoadBuffer("RT Shadow Geo Instances (Upload)", Ren::eBufType::Upload,
+                           Eng::RTGeoInstancesBufChunkSize * Ren::MaxFramesInFlight);
     Ren::BufferRef rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
         rt_sh_tlas_nodes_stage_buf;
     if (ren_ctx.capabilities.raytracing) {
@@ -252,7 +257,8 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     Eng::DrawList draw_list;
     draw_list.Init(shared_data_stage_buf, instance_indices_stage_buf, skin_transforms_stage_buf, shape_keys_stage_buf,
                    cells_stage_buf, rt_cells_stage_buf, items_stage_buf, rt_items_stage_buf, lights_stage_buf,
-                   decals_stage_buf, rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
+                   decals_stage_buf, rt_geo_instances_stage_buf, rt_sh_geo_instances_stage_buf,
+                   rt_obj_instances_stage_buf, rt_sh_obj_instances_stage_buf, rt_tlas_nodes_stage_buf,
                    rt_sh_tlas_nodes_stage_buf);
     draw_list.render_settings = renderer.settings;
 
@@ -386,7 +392,7 @@ void run_image_test(std::string_view test_name, const double min_psnr, const eIm
     Ren::BufferRef stage_buf = ren_ctx.LoadBuffer("Temp readback buf", Ren::eBufType::Readback, 4 * ref_w * ref_h);
 
     { // Download result
-        void *cmd_buf = ren_ctx.BegTempSingleTimeCommands();
+        Ren::CommandBuffer cmd_buf = ren_ctx.BegTempSingleTimeCommands();
         render_result->CopyTextureData(*stage_buf, cmd_buf, 0);
         ren_ctx.InsertReadbackMemoryBarrier(cmd_buf);
         ren_ctx.EndTempSingleTimeCommands(cmd_buf);

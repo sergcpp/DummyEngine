@@ -67,26 +67,26 @@ class Texture2D : public RefCounter {
 
     void Free();
 
-    void InitFromRAWData(Buffer *sbuf, int data_off, void *_cmd_buf, MemoryAllocators *mem_allocs, const Tex2DParams &p,
-                         ILog *log);
-    void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromRAWData(Buffer *sbuf, int data_off, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
+                         MemoryAllocators *mem_allocs, const Tex2DParams &p, ILog *log);
+    void InitFromDDSFile(Span<const uint8_t> data, Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromPNGFile(Span<const uint8_t> data, Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromKTXFile(Span<const uint8_t> data, Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
 
-    void InitFromRAWData(Buffer &sbuf, int data_off[6], void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromRAWData(Buffer &sbuf, int data_off[6], CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromTGAFile(Span<const uint8_t> data[6], Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromPNGFile(Span<const uint8_t> data[6], Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromDDSFile(Span<const uint8_t> data[6], Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
-    void InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, void *_cmd_buf, MemoryAllocators *mem_allocs,
+    void InitFromKTXFile(Span<const uint8_t> data[6], Buffer &sbuf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs,
                          const Tex2DParams &p, ILog *log);
 
   public:
@@ -102,9 +102,11 @@ class Texture2D : public RefCounter {
               const Tex2DParams &_params, ILog *log)
         : handle_{img, view, VK_NULL_HANDLE, sampler, 0}, params(_params), ready_(true), name_(name) {}
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data, const Tex2DParams &p,
-              Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
+              Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+              ILog *log);
     Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-              Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
+              Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+              ILog *log);
     Texture2D(const Texture2D &rhs) = delete;
     Texture2D(Texture2D &&rhs) noexcept { (*this) = std::move(rhs); }
     ~Texture2D();
@@ -118,13 +120,13 @@ class Texture2D : public RefCounter {
         params = _params;
         ready_ = true;
     }
-    void Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
+    void Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
-    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &stage_buf, void *_cmd_buf,
+    void Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &stage_buf, CommandBuffer cmd_buf,
               MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log);
 
     bool Realloc(int w, int h, int mip_count, int samples, eTexFormat format, eTexBlock block, bool is_srgb,
-                 void *_cmd_buf, MemoryAllocators *mem_allocs, ILog *log);
+                 CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, ILog *log);
 
     const TexHandle &handle() const { return handle_; }
     TexHandle &handle() { return handle_; }
@@ -151,15 +153,15 @@ class Texture2D : public RefCounter {
     void ApplySampling(SamplingParams sampling, ILog *log) { SetSampling(sampling); }
 
     void SetSubImage(int level, int offsetx, int offsety, int sizex, int sizey, eTexFormat format, const Buffer &sbuf,
-                     void *_cmd_buf, int data_off, int data_len);
-    void CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) const;
+                     CommandBuffer cmd_buf, int data_off, int data_len);
+    void CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off) const;
 };
 
-void CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
+void CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, uint32_t src_level, uint32_t src_x, uint32_t src_y,
                       Texture2D &dst_tex, uint32_t dst_level, uint32_t dst_x, uint32_t dst_y, uint32_t dst_face,
                       uint32_t width, uint32_t height);
 
-void ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf);
+void ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf);
 
 class Texture1D : public RefCounter {
     BufferRef buf_;
@@ -219,7 +221,7 @@ class Texture3D : public RefCounter {
     void Init(const Tex3DParams &params, MemoryAllocators *mem_allocs, ILog *log);
 
     void SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez, eTexFormat format,
-                     const Buffer &sbuf, void *_cmd_buf, int data_off, int data_len);
+                     const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len);
 };
 
 VkFormat VKFormatFromTexFormat(eTexFormat format);

@@ -140,7 +140,7 @@ int Ren::TextureAtlas::AllocateRegion(const int res[2], int out_pos[2]) {
     return index;
 }
 
-void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, void *cmd_buf,
+void Ren::TextureAtlas::InitRegion(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
                                    const eTexFormat format, const eTexFlags flags, const int layer, const int level,
                                    const int pos[2], const int res[2], ILog *log) {
 #ifndef NDEBUG
@@ -182,7 +182,7 @@ bool Ren::TextureAtlas::Free(const int pos[2]) {
     return splitter_.Free(pos);
 }
 
-void Ren::TextureAtlas::Finalize(void *_cmd_buf) {
+void Ren::TextureAtlas::Finalize(CommandBuffer cmd_buf) {
     if (filter_ == eTexFilter::Trilinear || filter_ == eTexFilter::Bilinear) {
         for (int i = 0; i < MaxTextureCount && (formats_[i] != eTexFormat::Undefined); i++) {
             if (!IsCompressedFormat(formats_[i])) {

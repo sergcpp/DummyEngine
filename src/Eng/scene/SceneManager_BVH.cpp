@@ -524,216 +524,119 @@ void Eng::SceneManager::UpdateObjects() {
     __itt_task_end(__g_itt_domain);
 }
 
-void Eng::SceneManager::InitSWRTAccStructures() {
+std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_SWRT_BLAS(const AccStructure &acc) {
     using namespace SceneManagerInternal;
 
-    std::vector<gpu_bvh_node_t> nodes;
-    std::vector<gpu_mesh_t> meshes;
-    std::vector<gpu_mesh_instance_t> mesh_instances;
-    std::vector<uint32_t> prim_indices;
+    Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
+
+    const Ren::BufferRange &attribs = acc.mesh->attribs_buf1(), &indices = acc.mesh->indices_buf();
+
+    assert((attribs.sub.offset % 16) == 0);
+    const uint32_t first_vertex = attribs.sub.offset / 16;
+    assert((indices.sub.offset % (3 * sizeof(uint32_t))) == 0);
+    const uint32_t prim_offset = indices.sub.offset / (3 * sizeof(uint32_t));
+
+    assert(acc.mesh->type() == Ren::eMeshType::Simple);
+    const int VertexStride = 13;
+
+    if (!scene_data_.persistent_data.swrt.rt_meshes_buf) {
+        scene_data_.persistent_data.swrt.rt_meshes_buf =
+            ren_ctx_.LoadBuffer("SWRT Meshes Buf", Ren::eBufType::Storage, 16 * sizeof(gpu_mesh_t), sizeof(gpu_mesh_t));
+    }
+    if (!scene_data_.persistent_data.swrt.rt_prim_indices_buf) {
+        scene_data_.persistent_data.swrt.rt_prim_indices_buf = ren_ctx_.LoadBuffer(
+            "SWRT Prim Indices Buf", Ren::eBufType::Texture, 1024 * sizeof(uint32_t), sizeof(uint32_t));
+    }
+    if (!scene_data_.persistent_data.swrt.rt_blas_buf) {
+        scene_data_.persistent_data.swrt.rt_blas_buf = ren_ctx_.LoadBuffer(
+            "SWRT BLAS Buf", Ren::eBufType::Storage, 1024 * sizeof(gpu_bvh_node_t), sizeof(gpu_bvh_node_t));
+    }
+
+    const Ren::SubAllocation mesh_alloc =
+        scene_data_.persistent_data.swrt.rt_meshes_buf->AllocSubRegion(sizeof(gpu_mesh_t), nullptr);
+
+    //
+    // Gather geometries
+    //
+
+    gpu_mesh_t new_mesh = {};
 
     std::vector<Phy::prim_t> temp_primitives;
     std::vector<uint32_t> temp_indices;
 
-    uint32_t acc_index = scene_data_.comp_store[CompAccStructure]->First();
-    while (acc_index != 0xffffffff) {
-        auto *acc = (AccStructure *)scene_data_.comp_store[CompAccStructure]->Get(acc_index);
-        if (acc->mesh->blas) {
-            // already processed
-            acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
+    const float *positions = reinterpret_cast<const float *>(acc.mesh->attribs());
+    const uint32_t *tri_indices = reinterpret_cast<const uint32_t *>(acc.mesh->indices());
+
+    for (const Ren::TriGroup &grp : acc.mesh->groups()) {
+        const Ren::Material *mat = grp.front_mat.get();
+        const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
+        if (mat_flags & Ren::eMatFlags::AlphaBlend) {
+            // Include only opaque surfaces
             continue;
         }
 
-        const Ren::BufferRange &attribs = acc->mesh->attribs_buf1();
-        const Ren::BufferRange &indices = acc->mesh->indices_buf();
+        const uint32_t index_beg = grp.offset / sizeof(uint32_t);
+        const uint32_t index_end = index_beg + grp.num_indices;
 
-        assert((attribs.sub.offset % 16) == 0);
-        const uint32_t first_vertex = attribs.sub.offset / 16;
-        assert((indices.sub.offset % (3 * sizeof(uint32_t))) == 0);
-        const uint32_t prim_offset = indices.sub.offset / (3 * sizeof(uint32_t));
+        for (uint32_t i = index_beg; i < index_end; i += 3) {
+            const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
 
-        assert(acc->mesh->type() == Ren::eMeshType::Simple);
-        const int VertexStride = 13;
+            const Phy::Vec3f p0 = Phy::MakeVec3(&positions[i0 * VertexStride]),
+                             p1 = Phy::MakeVec3(&positions[i1 * VertexStride]),
+                             p2 = Phy::MakeVec3(&positions[i2 * VertexStride]);
 
-        const uint32_t mesh_index = uint32_t(meshes.size());
+            const Phy::Vec3f bbox_min = Min(p0, Min(p1, p2)), bbox_max = Max(p0, Max(p1, p2));
 
-        meshes.emplace_back();
-        auto &new_mesh = meshes.back();
-        new_mesh.node_index = uint32_t(nodes.size());
-        new_mesh.tris_index = uint32_t(prim_indices.size());
-        new_mesh.geo_count = 0;
-
-        //
-        // Gather geometries
-        //
-
-        temp_primitives.clear();
-        temp_indices.clear();
-
-        const float *positions = reinterpret_cast<const float *>(acc->mesh->attribs());
-        const uint32_t *tri_indices = reinterpret_cast<const uint32_t *>(acc->mesh->indices());
-
-        for (const Ren::TriGroup &grp : acc->mesh->groups()) {
-            const Ren::Material *mat = grp.front_mat.get();
-            const Ren::Bitmask<Ren::eMatFlags> mat_flags = mat->flags();
-            if (mat_flags & Ren::eMatFlags::AlphaBlend) {
-                // Include only opaque surfaces
-                continue;
-            }
-
-            const uint32_t index_beg = grp.offset / sizeof(uint32_t);
-            const uint32_t index_end = index_beg + grp.num_indices;
-
-            for (uint32_t i = index_beg; i < index_end; i += 3) {
-                const uint32_t i0 = tri_indices[i + 0], i1 = tri_indices[i + 1], i2 = tri_indices[i + 2];
-
-                const Phy::Vec3f p0 = Phy::MakeVec3(&positions[i0 * VertexStride]),
-                                 p1 = Phy::MakeVec3(&positions[i1 * VertexStride]),
-                                 p2 = Phy::MakeVec3(&positions[i2 * VertexStride]);
-
-                const Phy::Vec3f bbox_min = Min(p0, Min(p1, p2)), bbox_max = Max(p0, Max(p1, p2));
-
-                temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
-                temp_indices.push_back(i / 3);
-            }
-
-            ++new_mesh.geo_count;
+            temp_primitives.push_back({i0, i1, i2, bbox_min, bbox_max});
+            temp_indices.push_back(i / 3);
         }
 
-        Phy::split_settings_t s;
-        new_mesh.node_count = PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
-
-        for (int i = new_mesh.tris_index; i < int(prim_indices.size()); ++i) {
-            // prim_indices[i] += prim_offset;
-
-            prim_indices[i] = prim_offset + temp_indices[prim_indices[i]];
-        }
-
-        new_mesh.tris_count = uint32_t(prim_indices.size()) - new_mesh.tris_index;
-        new_mesh.vert_index = first_vertex;
-
-        acc->mesh->blas = std::make_unique<Ren::AccStructureSW>(mesh_index);
-
-        acc_index = scene_data_.comp_store[CompAccStructure]->Next(acc_index);
+        ++new_mesh.geo_count;
     }
 
-    //
-    // Build TLAS
-    //
+    std::vector<gpu_bvh_node_t> nodes;
+    std::vector<uint32_t> prim_indices;
 
-    // retrieve pointers to components for fast access
-    const auto *transforms = (Transform *)scene_data_.comp_store[CompTransform]->SequentialData();
-    const auto *acc_structs = (AccStructure *)scene_data_.comp_store[CompAccStructure]->SequentialData();
-    const auto *lightmaps = (Lightmap *)scene_data_.comp_store[CompLightmap]->SequentialData();
-    const auto *probes = (LightProbe *)scene_data_.comp_store[CompProbe]->SequentialData();
-    const CompStorage *probe_store = scene_data_.comp_store[CompProbe];
+    Phy::split_settings_t s;
+    PreprocessPrims_SAH(temp_primitives, s, nodes, prim_indices);
 
-    std::vector<RTGeoInstance> geo_instances;
+    const Ren::SubAllocation nodes_alloc = scene_data_.persistent_data.swrt.rt_blas_buf->AllocSubRegion(
+        uint32_t(nodes.size()) * sizeof(gpu_bvh_node_t), nullptr);
+    const Ren::SubAllocation prim_alloc = scene_data_.persistent_data.swrt.rt_prim_indices_buf->AllocSubRegion(
+        uint32_t(prim_indices.size()) * sizeof(uint32_t), nullptr);
 
-    for (const auto &obj : scene_data_.objects) {
-        if ((obj.comp_mask & (CompTransformBit | CompAccStructureBit)) != (CompTransformBit | CompAccStructureBit)) {
-            continue;
-        }
+    new_mesh.node_index = nodes_alloc.offset / sizeof(gpu_bvh_node_t);
+    new_mesh.node_count = uint32_t(nodes.size());
+    new_mesh.tris_index = prim_alloc.offset / sizeof(uint32_t);
+    new_mesh.tris_count = uint32_t(prim_indices.size());
+    new_mesh.vert_index = first_vertex;
 
-        const Transform &tr = transforms[obj.components[CompTransform]];
-        const AccStructure &acc = acc_structs[obj.components[CompAccStructure]];
-        const Lightmap *lm = nullptr;
-        if (obj.comp_mask & CompLightmapBit) {
-            lm = &lightmaps[obj.components[CompLightmap]];
-        }
-        uint32_t closest_probe = 0xffffffff;
-        if (obj.comp_mask & CompProbeBit) {
-            closest_probe = probes[obj.components[CompProbe]].layer_index;
-        }
-
-        auto &swrt_blas = static_cast<Ren::AccStructureSW &>(*acc.mesh->blas);
-        swrt_blas.geo_index = uint32_t(geo_instances.size());
-        swrt_blas.geo_count = 0;
-
-        mesh_instances.emplace_back();
-        auto &new_instance = mesh_instances.back();
-
-        new_instance.bbox_min = tr.bbox_min;
-        new_instance.bbox_max = tr.bbox_max;
-        new_instance.mesh_index = swrt_blas.mesh_index;
-        new_instance.visibility = uint8_t(acc.vis_mask);
-        for (int i = 0; i < 3; ++i) {
-            for (int j = 0; j < 4; ++j) {
-                new_instance.inv_transform[i][j] = tr.object_from_world[j][i];
-                new_instance.transform[i][j] = tr.world_from_object[j][i];
-            }
-        }
-
-        const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
-        const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
-        for (int j = 0; j < int(groups.size()); ++j) {
-            const Ren::TriGroup &grp = groups[j];
-
-            const Ren::MaterialRef &front_mat =
-                (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
-            const Ren::MaterialRef &back_mat =
-                (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
-            const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags();
-            if (mat_flags & Ren::eMatFlags::AlphaBlend) {
-                // Include only opaque surfaces
-                continue;
-            }
-
-            ++swrt_blas.geo_count;
-
-            geo_instances.emplace_back();
-            auto &geo = geo_instances.back();
-            geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
-            geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
-            assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
-            geo.material_index = front_mat.index() | (back_mat.index() << 16);
-            geo.flags = 0;
-            if (lm) {
-                geo.flags |= RTGeoLightmappedBit;
-                memcpy(&geo.lmap_transform[0], ValuePtr(lm->xform), 4 * sizeof(float));
-            } else {
-                if (closest_probe == 0xffffffff) {
-                    // find closest probe
-                    float min_dist2 = std::numeric_limits<float>::max();
-                    for (const auto &probe : scene_data_.objects) {
-                        if ((probe.comp_mask & (CompTransformBit | CompProbeBit)) !=
-                            (CompTransformBit | CompProbeBit)) {
-                            continue;
-                        }
-
-                        const Transform &probe_tr = transforms[probe.components[CompTransform]];
-                        const LightProbe &probe_pr = probes[probe.components[CompProbe]];
-
-                        const float dist2 =
-                            Distance2(0.5f * (tr.bbox_min_ws + tr.bbox_max_ws),
-                                      0.5f * (probe_tr.bbox_min_ws + probe_tr.bbox_max_ws) + probe_pr.offset);
-                        if (dist2 < min_dist2) {
-                            closest_probe = probe_pr.layer_index;
-                            min_dist2 = dist2;
-                        }
-                    }
-                }
-                geo.flags |= (closest_probe & 0xff);
-            }
+    // offset node indices
+    for (int i = 0; i < int(nodes.size()); ++i) {
+        gpu_bvh_node_t &n = nodes[i];
+        if (n.prim_index & LEAF_NODE_BIT) {
+            n.prim_index += new_mesh.tris_index;
+        } else {
+            n.left_child += new_mesh.node_index;
+            n.right_child += new_mesh.node_index;
         }
     }
+
+    for (int i = 0; i < int(prim_indices.size()); ++i) {
+        prim_indices[i] = prim_offset + temp_indices[prim_indices[i]];
+    }
+
+    auto new_blas = std::make_unique<Ren::AccStructureSW>(mesh_alloc, nodes_alloc, prim_alloc);
 
     const uint32_t total_nodes_size = uint32_t(nodes.size() * sizeof(gpu_bvh_node_t));
     const uint32_t total_prim_indices_size = uint32_t(prim_indices.size() * sizeof(uint32_t));
-    const uint32_t total_meshes_size = uint32_t(meshes.size() * sizeof(gpu_mesh_t));
-    const uint32_t total_mesh_instances_size = uint32_t(mesh_instances.size() * sizeof(gpu_mesh_instance_t));
-    const uint32_t total_geo_instances_size = uint32_t(geo_instances.size() * sizeof(RTGeoInstance));
 
-    if (!total_nodes_size) {
-        scene_data_.persistent_data.rt_blas_buf = {};
-        scene_data_.persistent_data.swrt.rt_prim_indices_buf = {};
-        scene_data_.persistent_data.swrt.rt_meshes_buf = {};
-        scene_data_.persistent_data.rt_instance_buf = {};
-        scene_data_.persistent_data.rt_geo_data_buf = {};
-        return;
+    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload Buf", api_ctx, Ren::eBufType::Upload, sizeof(gpu_mesh_t));
+    {
+        uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map();
+        memcpy(rt_meshes_stage, &new_mesh, sizeof(gpu_mesh_t));
+        rt_meshes_stage_buf.Unmap();
     }
-
-    Ren::ApiContext *api_ctx = ren_ctx_.api_ctx();
 
     Ren::Buffer rt_blas_stage_buf("SWRT BLAS Upload Buf", api_ctx, Ren::eBufType::Upload, total_nodes_size);
     {
@@ -750,59 +653,29 @@ void Eng::SceneManager::InitSWRTAccStructures() {
         rt_prim_indices_stage_buf.Unmap();
     }
 
-    Ren::Buffer rt_meshes_stage_buf("SWRT Meshes Upload Buf", api_ctx, Ren::eBufType::Upload, total_meshes_size);
-    {
-        uint8_t *rt_meshes_stage = rt_meshes_stage_buf.Map();
-        memcpy(rt_meshes_stage, meshes.data(), total_meshes_size);
-        rt_meshes_stage_buf.Unmap();
-    }
+    Ren::CommandBuffer cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
 
-    Ren::Buffer rt_mesh_instances_stage_buf("SWRT Mesh Instances Upload Buf", api_ctx, Ren::eBufType::Upload,
-                                            total_mesh_instances_size);
-    {
-        uint8_t *rt_mesh_instances_stage = rt_mesh_instances_stage_buf.Map();
-        memcpy(rt_mesh_instances_stage, mesh_instances.data(), total_mesh_instances_size);
-        rt_mesh_instances_stage_buf.Unmap();
-    }
-
-    Ren::Buffer geo_data_stage_buf("SWRT Geo Data Upload Buf", api_ctx, Ren::eBufType::Upload, total_geo_instances_size);
-    {
-        uint8_t *geo_data_stage = geo_data_stage_buf.Map();
-        memcpy(geo_data_stage, geo_instances.data(), total_geo_instances_size);
-        geo_data_stage_buf.Unmap();
-    }
-
-    scene_data_.persistent_data.rt_blas_buf =
-        ren_ctx_.LoadBuffer("SWRT BLAS Buf", Ren::eBufType::Storage, total_nodes_size);
-    scene_data_.persistent_data.swrt.rt_prim_indices_buf =
-        ren_ctx_.LoadBuffer("SWRT Prim Indices Buf", Ren::eBufType::Texture, total_prim_indices_size);
-    scene_data_.persistent_data.swrt.rt_meshes_buf =
-        ren_ctx_.LoadBuffer("SWRT Meshes Buf", Ren::eBufType::Storage, total_meshes_size);
-    scene_data_.persistent_data.rt_instance_buf =
-        ren_ctx_.LoadBuffer("SWRT Mesh Instances Buf", Ren::eBufType::Storage, total_mesh_instances_size);
-    scene_data_.persistent_data.rt_geo_data_buf =
-        ren_ctx_.LoadBuffer("SWRT Geo Data Buf", Ren::eBufType::Storage, total_geo_instances_size);
-
-    const uint32_t max_nodes_count = MAX_RT_TLAS_NODES;
-    scene_data_.persistent_data.rt_tlas_buf =
-        ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
-    scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
-        "TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(max_nodes_count * sizeof(gpu_bvh_node_t)));
-
-    void *cmd_buf = ren_ctx_.BegTempSingleTimeCommands();
-
-    Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.rt_blas_buf, 0, total_nodes_size,
-                            cmd_buf);
-    Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_prim_indices_buf, 0,
-                            total_prim_indices_size, cmd_buf);
-    Ren::CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_meshes_buf, 0,
-                            total_meshes_size, cmd_buf);
-    Ren::CopyBufferToBuffer(rt_mesh_instances_stage_buf, 0, *scene_data_.persistent_data.rt_instance_buf, 0,
-                            total_mesh_instances_size, cmd_buf);
-    Ren::CopyBufferToBuffer(geo_data_stage_buf, 0, *scene_data_.persistent_data.rt_geo_data_buf, 0,
-                            total_geo_instances_size, cmd_buf);
+    Ren::CopyBufferToBuffer(rt_meshes_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_meshes_buf, mesh_alloc.offset,
+                            sizeof(gpu_mesh_t), cmd_buf);
+    Ren::CopyBufferToBuffer(rt_blas_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_blas_buf, nodes_alloc.offset,
+                            total_nodes_size, cmd_buf);
+    Ren::CopyBufferToBuffer(rt_prim_indices_stage_buf, 0, *scene_data_.persistent_data.swrt.rt_prim_indices_buf,
+                            prim_alloc.offset, total_prim_indices_size, cmd_buf);
 
     ren_ctx_.EndTempSingleTimeCommands(cmd_buf);
+
+    rt_meshes_stage_buf.FreeImmediate();
+    rt_blas_stage_buf.FreeImmediate();
+    rt_prim_indices_stage_buf.FreeImmediate();
+
+    return new_blas;
+}
+
+void Eng::SceneManager::Alloc_SWRT_TLAS() {
+    scene_data_.persistent_data.rt_tlas_buf =
+        ren_ctx_.LoadBuffer("TLAS Buf", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
+    scene_data_.persistent_data.rt_sh_tlas_buf = ren_ctx_.LoadBuffer(
+        "TLAS Shadow Buf", Ren::eBufType::Storage, uint32_t(MAX_RT_TLAS_NODES * sizeof(gpu_bvh_node_t)));
 }
 
 uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> prims, const Phy::split_settings_t &s,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Fwd.h"
 #include "Span.h"
 #include "Storage.h"
 #include "TextureParams.h"
@@ -15,20 +16,20 @@ class TextureRegion : public Ren::RefCounter {
     Tex2DParams params_;
     bool ready_ = false;
 
-    void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
+    void InitFromTGAFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
                          Ren::TextureAtlasArray *atlas);
-    void InitFromPNGFile(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
+    void InitFromPNGFile(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
                          Ren::TextureAtlasArray *atlas);
 
-    void InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, void *cmd_buf, const Tex2DParams &p,
+    void InitFromRAWData(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
                          Ren::TextureAtlasArray *atlas);
 
   public:
     TextureRegion() = default;
     TextureRegion(std::string_view name, TextureAtlasArray *atlas, const int texture_pos[3]);
-    TextureRegion(std::string_view name, Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf,
+    TextureRegion(std::string_view name, Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf,
                   const Tex2DParams &p, Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status);
-    TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len, void *cmd_buf,
+    TextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf,
                   const Tex2DParams &p, Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status);
     ~TextureRegion();
 
@@ -43,9 +44,9 @@ class TextureRegion : public Ren::RefCounter {
 
     bool ready() const { return ready_; }
 
-    void Init(Span<const uint8_t> data, Buffer &stage_buf, void *cmd_buf, const Tex2DParams &p,
+    void Init(Span<const uint8_t> data, Buffer &stage_buf, CommandBuffer cmd_buf, const Tex2DParams &p,
               Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status);
-    void Init(const Buffer &sbuf, int data_off, int data_len, void *cmd_buf, const Tex2DParams &p,
+    void Init(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
               Ren::TextureAtlasArray *atlas, eTexLoadStatus *load_status);
 };
 

@@ -422,7 +422,7 @@ struct BindlessTextureData {
 enum class eTLASIndex { Main, Shadow, _Count };
 
 struct AccelerationStructureData {
-    Ren::WeakBufferRef rt_instance_buf, rt_geo_data_buf, rt_tlas_buf, rt_sh_tlas_buf;
+    Ren::WeakBufferRef rt_tlas_buf, rt_sh_tlas_buf;
     struct {
         uint32_t rt_tlas_build_scratch_size = 0;
     } hwrt;
@@ -490,6 +490,7 @@ const size_t LightsBufChunkSize = sizeof(LightItem) * MAX_LIGHTS_TOTAL;
 const size_t DecalsBufChunkSize = sizeof(DecalItem) * MAX_DECALS_TOTAL;
 const size_t CellsBufChunkSize = sizeof(CellData) * ITEM_CELLS_COUNT;
 const size_t ItemsBufChunkSize = sizeof(ItemData) * MAX_ITEMS_TOTAL;
+const size_t RTGeoInstancesBufChunkSize = MAX_RT_GEO_INSTANCES;
 const size_t HWRTObjInstancesBufChunkSize = sizeof_VkAccelerationStructureInstanceKHR * MAX_RT_OBJ_INSTANCES;
 const size_t SWRTObjInstancesBufChunkSize = sizeof(gpu_mesh_instance_t) * MAX_RT_OBJ_INSTANCES;
 const size_t SWRTTLASNodesBufChunkSize = sizeof(gpu_bvh_node_t) * MAX_RT_TLAS_NODES;

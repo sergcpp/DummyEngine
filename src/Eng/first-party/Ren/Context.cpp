@@ -348,7 +348,7 @@ Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, Spa
 }
 
 Ren::TextureRegionRef Ren::Context::LoadTextureRegion(std::string_view name, const Buffer &sbuf, const int data_off,
-                                                      const int data_len, void *cmd_buf, const Tex2DParams &p,
+                                                      const int data_len, CommandBuffer cmd_buf, const Tex2DParams &p,
                                                       eTexLoadStatus *load_status) {
     TextureRegionRef ref = texture_regions_.FindByName(name);
     if (!ref) {
@@ -431,10 +431,11 @@ void Ren::Context::ReleaseAnims() {
     anims_.clear();
 }
 
-Ren::BufferRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const uint32_t initial_size) {
+Ren::BufferRef Ren::Context::LoadBuffer(std::string_view name, const eBufType type, const uint32_t initial_size,
+                                        const uint32_t suballoc_align) {
     Ren::BufferRef ref = buffers_.FindByName(name);
     if (!ref) {
-        ref = buffers_.Add(name, api_ctx_.get(), type, initial_size);
+        ref = buffers_.Add(name, api_ctx_.get(), type, initial_size, suballoc_align);
     } else if (ref->size() < initial_size) {
         assert(ref->type() == type);
         ref->Resize(initial_size, false /* keep_content */);
@@ -535,7 +536,8 @@ uint64_t Ren::Context::GetTimestampIntervalDuration(const int query_beg, const i
            api_ctx_->query_results[api_ctx_->backend_frame][query_beg];
 }
 
-Ren::StageBufRef::StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, void *_cmd_buf, bool &_is_in_use)
+Ren::StageBufRef::StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, CommandBuffer _cmd_buf,
+                              bool &_is_in_use)
     : ctx(_ctx), buf(_buf), fence(_fence), cmd_buf(_cmd_buf), is_in_use(_is_in_use) {
     is_in_use = true;
     const Ren::WaitResult res = fence.ClientWaitSync();

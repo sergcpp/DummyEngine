@@ -5,6 +5,7 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
                          Ren::BufferRef _cells_stage_buf, Ren::BufferRef _rt_cells_stage_buf,
                          Ren::BufferRef _items_stage_buf, Ren::BufferRef _rt_items_stage_buf,
                          Ren::BufferRef _lights_stage_buf, Ren::BufferRef _decals_stage_buf,
+                         Ren::BufferRef _rt_geo_instances_stage_buf, Ren::BufferRef _rt_sh_geo_instances_stage_buf,
                          Ren::BufferRef _rt_obj_instances_stage_buf, Ren::BufferRef _rt_sh_obj_instances_stage_buf,
                          Ren::BufferRef _rt_tlas_nodes_stage_buf, Ren::BufferRef _rt_sh_tlas_nodes_stage_buf) {
     instance_indices_stage_buf = std::move(_instance_indices_stage_buf);
@@ -28,10 +29,12 @@ void Eng::DrawList::Init(Ren::BufferRef _shared_data_stage_buf, Ren::BufferRef _
     rt_items.realloc(MAX_ITEMS_TOTAL);
     rt_items_stage_buf = std::move(_rt_items_stage_buf);
 
-    rt_geo_instances.realloc(MAX_RT_GEO_INSTANCES);
     for (int i = 0; i < 2; ++i) {
+        rt_geo_instances[i].realloc(MAX_RT_GEO_INSTANCES);
         rt_obj_instances[i].realloc(MAX_RT_OBJ_INSTANCES);
     }
+    rt_geo_instances_stage_buf[0] = std::move(_rt_geo_instances_stage_buf);
+    rt_geo_instances_stage_buf[1] = std::move(_rt_sh_geo_instances_stage_buf);
     rt_obj_instances_stage_buf[0] = std::move(_rt_obj_instances_stage_buf);
     rt_obj_instances_stage_buf[1] = std::move(_rt_sh_obj_instances_stage_buf);
     swrt.rt_tlas_nodes_stage_buf[0] = std::move(_rt_tlas_nodes_stage_buf);

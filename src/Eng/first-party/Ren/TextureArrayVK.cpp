@@ -136,9 +136,7 @@ Ren::Texture2DArray &Ren::Texture2DArray::operator=(Texture2DArray &&rhs) noexce
 
 void Ren::Texture2DArray::SetSubImage(const int level, const int layer, const int offsetx, const int offsety,
                                       const int sizex, const int sizey, const eTexFormat format, const Buffer &sbuf,
-                                      const int data_off, const int data_len, void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+                                      const int data_off, const int data_len, CommandBuffer cmd_buf) {
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 1> buf_barriers;
 
@@ -207,8 +205,7 @@ void Ren::Texture2DArray::SetSubImage(const int level, const int layer, const in
                                      VkImageLayout(VKImageLayoutForState(eResState::CopyDst)), 1, &region);
 }
 
-void Ren::Texture2DArray::Clear(const float rgba[4], void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
+void Ren::Texture2DArray::Clear(const float rgba[4], CommandBuffer cmd_buf) {
     assert(resource_state == eResState::CopyDst);
 
     VkClearColorValue clear_val = {};

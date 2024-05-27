@@ -102,7 +102,7 @@ Ren::SubAllocation Ren::Buffer::AllocSubRegion(const uint32_t req_size, const ch
 }
 
 void Ren::Buffer::UpdateSubRegion(const uint32_t offset, const uint32_t size, const Buffer &init_buf,
-                                  const uint32_t init_off, void *cmd_buf) {
+                                  const uint32_t init_off, CommandBuffer cmd_buf) {
     glBindBuffer(GL_COPY_READ_BUFFER, GLuint(init_buf.handle_.id));
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
 
@@ -120,6 +120,7 @@ bool Ren::Buffer::FreeSubRegion(const SubAllocation alloc) {
 }
 
 void Ren::Buffer::Resize(uint32_t new_size, const bool keep_content) {
+    new_size = suballoc_align_ * ((new_size + suballoc_align_ - 1) / suballoc_align_);
     if (size_ >= new_size) {
         return;
     }
@@ -222,14 +223,14 @@ void Ren::Buffer::Unmap() {
     mapped_ptr_ = nullptr;
 }
 
-void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, void *_cmd_buf) {
+void Ren::Buffer::Fill(const uint32_t dst_offset, const uint32_t size, const uint32_t data, CommandBuffer cmd_buf) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
     glClearBufferSubData(GL_COPY_WRITE_BUFFER, GL_R32UI, GLintptr(dst_offset), GLsizeiptr(size), GL_RED,
                          GL_UNSIGNED_INT, &data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
 }
 
-void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, void *_cmd_buf) {
+void Ren::Buffer::UpdateImmediate(uint32_t dst_offset, uint32_t size, const void *data, CommandBuffer cmd_buf) {
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(handle_.id));
     glBufferSubData(GL_COPY_WRITE_BUFFER, GLintptr(dst_offset), size, data);
     glBindBuffer(GL_COPY_WRITE_BUFFER, 0);
@@ -247,7 +248,7 @@ void Ren::Buffer::Print(ILog *log) {
 uint32_t Ren::Buffer::AlignMapOffset(const uint32_t offset) { return offset; }
 
 void Ren::CopyBufferToBuffer(Buffer &src, const uint32_t src_offset, Buffer &dst, const uint32_t dst_offset,
-                             const uint32_t size, void *cmd_buf) {
+                             const uint32_t size, CommandBuffer cmd_buf) {
     glBindBuffer(GL_COPY_READ_BUFFER, GLuint(src.id()));
     glBindBuffer(GL_COPY_WRITE_BUFFER, GLuint(dst.id()));
     glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, src_offset /* readOffset */,

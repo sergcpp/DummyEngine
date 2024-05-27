@@ -58,7 +58,7 @@ void Eng::RpBuildAccStructuresExecutor::Execute_SWRT(RpBuilder &builder) {
             new_mi.visibility = inst.mask;
 
             const auto *acc = reinterpret_cast<const Ren::AccStructureSW *>(inst.blas_ref);
-            new_mi.mesh_index = acc->mesh_index;
+            new_mi.mesh_index = acc->mesh_alloc.offset / sizeof(gpu_mesh_t);
 
             Ren::Mat4f transform;
             memcpy(&transform[0][0], inst.xform, 12 * sizeof(float));

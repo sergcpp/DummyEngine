@@ -138,6 +138,8 @@ bool Eng::SceneManager::UpdateMaterialsBuffer() {
     return false;
 }
 
-void Eng::SceneManager::InitHWRTAccStructures() {
-    // stub
+// stubs
+void Eng::SceneManager::Alloc_HWRT_TLAS() {
+    
 }
+std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const AccStructure &acc) { return nullptr; }

@@ -39,13 +39,13 @@ class TextureAtlas {
 #endif
 
     int AllocateRegion(const int res[2], int out_pos[2]);
-    void InitRegion(const Buffer &sbuf, int data_off, int data_len, void *cmd_buf, eTexFormat format, eTexFlags flags,
+    void InitRegion(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format, eTexFlags flags,
                     int layer, int level, const int pos[2], const int res[2], ILog *log);
 
     bool Free(const int pos[2]);
 
     // create mipmaps, compress etc.
-    void Finalize(void *cmd_buf);
+    void Finalize(CommandBuffer cmd_buf);
 
 #if defined(USE_VK_RENDER)
     eResState resource_state = eResState::Undefined;
@@ -86,7 +86,7 @@ class TextureAtlasArray : public Texture2DArray {
     TextureAtlasArray &operator=(const TextureAtlasArray &rhs) = delete;
     TextureAtlasArray &operator=(TextureAtlasArray &&rhs) noexcept;
 
-    int Allocate(const Buffer &sbuf, int data_off, int data_len, void *cmd_buf, eTexFormat format, const int res[2],
+    int Allocate(const Buffer &sbuf, int data_off, int data_len, CommandBuffer cmd_buf, eTexFormat format, const int res[2],
                  int out_pos[3], int border);
     bool Free(const int pos[3]);
 

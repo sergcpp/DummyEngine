@@ -125,10 +125,8 @@ uint32_t Ren::VKAccessFlagsForState(const eResState state) { return g_access_fla
 
 uint32_t Ren::VKPipelineStagesForState(const eResState state) { return g_pipeline_stages_per_state_vk[int(state)]; }
 
-void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, void *_cmd_buf, const eStageBits src_stages_mask,
+void Ren::TransitionResourceStates(Ren::ApiContext *api_ctx, CommandBuffer cmd_buf, const eStageBits src_stages_mask,
                                    const eStageBits dst_stages_mask, Span<const TransitionInfo> transitions) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
     VkPipelineStageFlags src_stages = 0, dst_stages = 0;
     SmallVector<VkBufferMemoryBarrier, 32> buf_barriers;
     SmallVector<VkImageMemoryBarrier, 32> img_barriers;

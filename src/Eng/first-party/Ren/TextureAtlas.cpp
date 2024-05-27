@@ -19,7 +19,7 @@ Ren::TextureAtlasArray &Ren::TextureAtlasArray::operator=(TextureAtlasArray &&rh
     return (*this);
 }
 
-int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, const int data_off, const int data_len, void *_cmd_buf,
+int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, const int data_off, const int data_len, CommandBuffer cmd_buf,
                                      const eTexFormat format, const int res[2], int out_pos[3], const int border) {
     const int alloc_res[] = {res[0] < splitters_[0].resx() ? res[0] + border : res[0],
                              res[1] < splitters_[1].resy() ? res[1] + border : res[1]};
@@ -29,7 +29,7 @@ int Ren::TextureAtlasArray::Allocate(const Buffer &sbuf, const int data_off, con
         if (index != -1) {
             out_pos[2] = i;
 
-            SetSubImage(0, i, out_pos[0], out_pos[1], res[0], res[1], format, sbuf, data_off, data_len, _cmd_buf);
+            SetSubImage(0, i, out_pos[0], out_pos[1], res[0], res[1], format, sbuf, data_off, data_len, cmd_buf);
 
             return index;
         }

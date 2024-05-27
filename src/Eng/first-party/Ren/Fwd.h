@@ -2,7 +2,6 @@
 
 #include "Bitmask.h"
 #include "Log.h"
-#include "Resource.h"
 #include "Storage.h"
 
 #if defined(USE_VK_RENDER)
@@ -37,6 +36,9 @@ typedef struct VkTraceRaysIndirectCommandKHR {
 namespace Ren {
 #if defined(USE_VK_RENDER)
 class AccStructureVK;
+using CommandBuffer = VkCommandBuffer;
+#else
+using CommandBuffer = void *;
 #endif
 class AnimSequence;
 class Buffer;

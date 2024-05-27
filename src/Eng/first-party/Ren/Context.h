@@ -27,10 +27,10 @@ struct StageBufRef {
     Context &ctx;
     BufferRef buf;
     SyncFence &fence;
-    void *cmd_buf;
+    CommandBuffer cmd_buf;
     bool &is_in_use;
 
-    StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, void *_cmd_buf, bool &_is_in_use);
+    StageBufRef(Context &_ctx, BufferRef &_buf, SyncFence &_fence, CommandBuffer cmd_buf, bool &_is_in_use);
     ~StageBufRef();
 
     StageBufRef(const StageBufRef &rhs) = delete;
@@ -41,7 +41,7 @@ struct StageBufs {
     Context *ctx = nullptr;
     BufferRef bufs[StageBufferCount];
     SyncFence fences[StageBufferCount];
-    void *cmd_bufs[StageBufferCount] = {};
+    CommandBuffer cmd_bufs[StageBufferCount] = {};
     bool is_in_use[StageBufferCount] = {};
 
   private:
@@ -131,14 +131,14 @@ class Context {
     MemoryAllocators *default_mem_allocs() { return default_memory_allocs_.get(); }
     DescrMultiPoolAlloc *default_descr_alloc() const;
 
-    void BegSingleTimeCommands(void *cmd_buf);
-    void *BegTempSingleTimeCommands();
-    SyncFence EndSingleTimeCommands(void *cmd_buf);
-    void EndTempSingleTimeCommands(void *cmd_buf);
+    void BegSingleTimeCommands(CommandBuffer cmd_buf);
+    CommandBuffer BegTempSingleTimeCommands();
+    SyncFence EndSingleTimeCommands(CommandBuffer cmd_buf);
+    void EndTempSingleTimeCommands(CommandBuffer cmd_buf);
 
-    void InsertReadbackMemoryBarrier(void *cmd_buf);
+    void InsertReadbackMemoryBarrier(CommandBuffer cmd_buf);
 
-    void *current_cmd_buf();
+    CommandBuffer current_cmd_buf();
 
     TextureAtlasArray &texture_atlas() { return texture_atlas_; }
 
@@ -213,7 +213,7 @@ class Context {
     TextureRegionRef LoadTextureRegion(std::string_view name, Span<const uint8_t> data, StageBufs &stage_bufs,
                                        const Tex2DParams &p, eTexLoadStatus *load_status);
     TextureRegionRef LoadTextureRegion(std::string_view name, const Buffer &sbuf, int data_off, int data_len,
-                                       void *cmd_buf, const Tex2DParams &p, eTexLoadStatus *load_status);
+                                       CommandBuffer cmd_buf, const Tex2DParams &p, eTexLoadStatus *load_status);
 
     void ReleaseTextureRegions();
 
@@ -227,7 +227,7 @@ class Context {
     void ReleaseAnims();
 
     /*** Buffers ***/
-    BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size);
+    BufferRef LoadBuffer(std::string_view name, eBufType type, uint32_t initial_size, uint32_t suballoc_align = 1);
     void ReleaseBuffers();
 
     void InitDefaultBuffers();

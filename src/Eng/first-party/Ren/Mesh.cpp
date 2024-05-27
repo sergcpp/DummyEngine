@@ -219,15 +219,15 @@ void pack_vertex_delta(const VtxDelta &in_v, packed_vertex_delta_t &out_v) {
 } // namespace Ren
 
 Ren::Mesh::Mesh(std::string_view name, const float *positions, const int vtx_count, const uint32_t *indices,
-                const int ndx_count, Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
-                BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
+                const int ndx_count, Buffer &stage_buf, CommandBuffer cmd_buf, BufferRef vertex_buf1,
+                BufferRef vertex_buf2, BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
     Init(positions, vtx_count, indices, ndx_count, stage_buf, cmd_buf, std::move(vertex_buf1), std::move(vertex_buf2),
          std::move(index_buf), load_status, log);
 }
 
 Ren::Mesh::Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
                 BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
     name_ = String{name};
     Init(data, on_mat_load, stage_buf, cmd_buf, std::move(vertex_buf1), std::move(vertex_buf2), std::move(index_buf),
@@ -235,7 +235,7 @@ Ren::Mesh::Mesh(std::string_view name, std::istream *data, const material_load_c
 }
 
 void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t *indices, const int ndx_count,
-                     Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
+                     Buffer &stage_buf, CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
                      BufferRef index_buf, eMeshLoadStatus *load_status, ILog *log) {
 
     if (!positions) {
@@ -299,9 +299,9 @@ void Ren::Mesh::Init(const float *positions, const int vtx_count, const uint32_t
     (*load_status) = Ren::eMeshLoadStatus::CreatedFromData;
 }
 
-void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
-                     BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
-                     BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
+void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                     CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                     BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log) {
 
     if (data) {
         char mesh_type_str[12];
@@ -329,7 +329,7 @@ void Ren::Mesh::Init(std::istream *data, const material_load_callback &on_mat_lo
 }
 
 void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &_stage_buf,
-                               void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                               CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
                                ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
@@ -438,8 +438,8 @@ void Ren::Mesh::InitMeshSimple(std::istream &data, const material_load_callback 
 }
 
 void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                                void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
-                                ILog *log) {
+                                CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2,
+                                BufferRef index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "COLORE_MESH\0") == 0);
@@ -542,8 +542,8 @@ void Ren::Mesh::InitMeshColored(std::istream &data, const material_load_callback
 }
 
 void Ren::Mesh::InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                                 void *cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
-                                 ILog *log) {
+                                 CommandBuffer cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf,
+                                 BufferRef index_buf, ILog *log) {
     char mesh_type_str[12];
     data.read(mesh_type_str, 12);
     assert(strcmp(mesh_type_str, "SKELET_MESH\0") == 0 || strcmp(mesh_type_str, "SKECOL_MESH\0") == 0);

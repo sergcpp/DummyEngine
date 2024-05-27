@@ -434,7 +434,6 @@ vec3 IntegrateScattering(vec3 ray_start, const vec3 ray_dir, float ray_length, u
     //
     // Main clouds
     //
-
     if (planet_intersection.x < 0 && clouds_intersection.y > 0 && g_shrd_data.atmosphere.clouds_density > 0.0 &&
         light_brightness > 0.0 && ray_dir.y > SKY_CLOUDS_HORIZON_CUTOFF) {
 

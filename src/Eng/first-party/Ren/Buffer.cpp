@@ -1,7 +1,7 @@
 #include "Buffer.h"
 
 bool Ren::UpdateBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t data_size, const void *data,
-                       Buffer &stage, const uint32_t map_offset, const uint32_t map_size, void *_cmd_buf) {
+                       Buffer &stage, const uint32_t map_offset, const uint32_t map_size, CommandBuffer cmd_buf) {
     if (!data || !data_size) {
         return true;
     }
@@ -14,7 +14,7 @@ bool Ren::UpdateBuffer(Buffer &dst, const uint32_t dst_offset, const uint32_t da
         return false;
     }
 
-    Ren::CopyBufferToBuffer(stage, map_offset, dst, dst_offset, data_size, _cmd_buf);
+    Ren::CopyBufferToBuffer(stage, map_offset, dst, dst_offset, data_size, cmd_buf);
 
     return true;
 }

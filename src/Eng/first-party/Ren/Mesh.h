@@ -70,7 +70,7 @@ enum class eMeshLoadStatus { Found, SetToDefault, CreatedFromData };
 
 enum class eMeshType { Undefined, Simple, Colored, Skeletal };
 
-using material_load_callback = std::function<std::pair<MaterialRef, MaterialRef> (std::string_view name)>;
+using material_load_callback = std::function<std::pair<MaterialRef, MaterialRef>(std::string_view name)>;
 
 enum class eMeshFileChunk { Info = 0, VtxAttributes, TriIndices, Materials, TriGroups, Bones, ShapeKeys };
 
@@ -101,14 +101,16 @@ class Mesh : public RefCounter {
     Skeleton skel_;
 
     // simple static mesh with normals
-    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
-                        BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log);
+    void InitMeshSimple(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
+                        CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                        ILog *log);
     // simple mesh with 4 per-vertex colors
     void InitMeshColored(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                         void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, ILog *log);
+                         CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+                         ILog *log);
     // mesh with 4 bone weights per vertex
     void InitMeshSkeletal(std::istream &data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-                          void *cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
+                          CommandBuffer cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
                           ILog *log);
 
     // split skeletal mesh into chunks to fit uniforms limit in shader
@@ -117,11 +119,11 @@ class Mesh : public RefCounter {
   public:
     Mesh() = default;
     Mesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
-         Buffer &stage_buf, void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+         Buffer &stage_buf, CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
          eMeshLoadStatus *load_status, ILog *log);
     Mesh(std::string_view name, std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf,
-         void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
-         BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
+         CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+         BufferRef skin_vertex_buf, BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 
     Mesh(const Mesh &rhs) = delete;
     Mesh(Mesh &&rhs) = default;
@@ -157,9 +159,9 @@ class Mesh : public RefCounter {
     Skeleton *skel() { return &skel_; }
 
     void Init(const float *positions, int vtx_count, const uint32_t *indices, int ndx_count, Buffer &stage_buf,
-              void *cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
+              CommandBuffer cmd_buf, BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf,
               eMeshLoadStatus *load_status, ILog *log);
-    void Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, void *cmd_buf,
+    void Init(std::istream *data, const material_load_callback &on_mat_load, Buffer &stage_buf, CommandBuffer cmd_buf,
               BufferRef vertex_buf1, BufferRef vertex_buf2, BufferRef index_buf, BufferRef skin_vertex_buf,
               BufferRef delta_buf, eMeshLoadStatus *load_status, ILog *log);
 

@@ -21,7 +21,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
                                      const BindlessTextureData &bindless, const RpResRef depth_hierarchy,
-                                     RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
+                                     RpResRef rt_geo_instances_res, RpResRef rt_obj_instances_res,
+                                     FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -376,15 +377,16 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::Tex2DSampled, GITraceSS::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
-                                             {Trg::Tex2DSampled, GITraceSS::COLOR_TEX_SLOT, *color_tex.ref},
-                                             {Trg::Tex2DSampled, GITraceSS::NORM_TEX_SLOT, *normal_tex.ref},
-                                             {Trg::Tex2DSampled, GITraceSS::NOISE_TEX_SLOT, *noise_tex.ref},
-                                             {Trg::SBufRO, GITraceSS::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
-                                             {Trg::Image2D, GITraceSS::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
-                                             {Trg::SBufRW, GITraceSS::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
-                                             {Trg::SBufRW, GITraceSS::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, GITraceSS::DEPTH_TEX_SLOT, *depth_hierarchy_tex.ref},
+                {Trg::Tex2DSampled, GITraceSS::COLOR_TEX_SLOT, *color_tex.ref},
+                {Trg::Tex2DSampled, GITraceSS::NORM_TEX_SLOT, *normal_tex.ref},
+                {Trg::Tex2DSampled, GITraceSS::NOISE_TEX_SLOT, *noise_tex.ref},
+                {Trg::SBufRO, GITraceSS::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
+                {Trg::Image2D, GITraceSS::OUT_GI_IMG_SLOT, *out_gi_tex.ref},
+                {Trg::SBufRW, GITraceSS::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
+                {Trg::SBufRW, GITraceSS::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
             GITraceSS::Params uniform_params;
             uniform_params.resolution =
@@ -443,7 +445,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                                    ? Stg::ComputeShader
                                    : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
 
-            data->geo_data = rt_gi.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
+            data->geo_data = rt_gi.AddStorageReadonlyInput(rt_geo_instances_res, stage);
             data->materials = rt_gi.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
             data->vtx_buf1 = rt_gi.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
             data->vtx_buf2 = rt_gi.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
@@ -466,7 +468,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             if (!ctx_.capabilities.raytracing) {
                 data->swrt.root_node = persistent_data.swrt.rt_root_node;
-                data->swrt.rt_blas_buf = rt_gi.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stage);
+                data->swrt.rt_blas_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
                 data->swrt.prim_ndx_buf =
                     rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
                 data->swrt.meshes_buf = rt_gi.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);

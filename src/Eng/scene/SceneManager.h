@@ -204,8 +204,10 @@ class SceneManager {
     bool UpdateMaterialsBuffer();
     bool UpdateInstanceBuffer();
     void UpdateInstanceBufferRange(uint32_t obj_beg, uint32_t obj_end);
-    void InitHWRTAccStructures();
-    void InitSWRTAccStructures();
+    std::unique_ptr<Ren::IAccStructure> Build_HWRT_BLAS(const AccStructure &acc);
+    std::unique_ptr<Ren::IAccStructure> Build_SWRT_BLAS(const AccStructure &acc);
+    void Alloc_HWRT_TLAS();
+    void Alloc_SWRT_TLAS();
 
     void RebuildSceneBVH();
     void RemoveNode(uint32_t node_index);

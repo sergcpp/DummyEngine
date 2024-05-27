@@ -360,9 +360,7 @@ void Ren::Context::CheckDeviceCapabilities() {
     }
 }
 
-void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
-    VkCommandBuffer cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+void Ren::Context::BegSingleTimeCommands(CommandBuffer cmd_buf) {
     VkCommandBufferBeginInfo begin_info = {VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
     begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
@@ -370,9 +368,9 @@ void Ren::Context::BegSingleTimeCommands(void *_cmd_buf) {
     assert(res == VK_SUCCESS);
 }
 
-void *Ren::Context::BegTempSingleTimeCommands() { return api_ctx_->BegSingleTimeCommands(); }
+Ren::CommandBuffer Ren::Context::BegTempSingleTimeCommands() { return api_ctx_->BegSingleTimeCommands(); }
 
-Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
+Ren::SyncFence Ren::Context::EndSingleTimeCommands(CommandBuffer cmd_buf) {
     VkFenceCreateInfo fence_info = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
     VkFence new_fence;
     const VkResult res = api_ctx_->vkCreateFence(api_ctx_->device, &fence_info, nullptr, &new_fence);
@@ -381,18 +379,14 @@ Ren::SyncFence Ren::Context::EndSingleTimeCommands(void *cmd_buf) {
         return {};
     }
 
-    api_ctx_->EndSingleTimeCommands(reinterpret_cast<VkCommandBuffer>(cmd_buf), new_fence);
+    api_ctx_->EndSingleTimeCommands(cmd_buf, new_fence);
 
     return SyncFence{api_ctx_.get(), new_fence};
 }
 
-void Ren::Context::EndTempSingleTimeCommands(void *cmd_buf) {
-    api_ctx_->EndSingleTimeCommands(reinterpret_cast<VkCommandBuffer>(cmd_buf));
-}
+void Ren::Context::EndTempSingleTimeCommands(CommandBuffer cmd_buf) { api_ctx_->EndSingleTimeCommands(cmd_buf); }
 
-void Ren::Context::InsertReadbackMemoryBarrier(void *_cmd_buf) {
-    auto cmd_buf = reinterpret_cast<VkCommandBuffer>(_cmd_buf);
-
+void Ren::Context::InsertReadbackMemoryBarrier(CommandBuffer cmd_buf) {
     VkMemoryBarrier mem_barrier = {VK_STRUCTURE_TYPE_MEMORY_BARRIER};
     mem_barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     mem_barrier.dstAccessMask = VK_ACCESS_HOST_READ_BIT;
@@ -401,7 +395,7 @@ void Ren::Context::InsertReadbackMemoryBarrier(void *_cmd_buf) {
                                    &mem_barrier, 0, nullptr, 0, nullptr);
 }
 
-void *Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
+Ren::CommandBuffer Ren::Context::current_cmd_buf() { return api_ctx_->draw_cmd_buf[api_ctx_->backend_frame]; }
 
 int Ren::Context::WriteTimestamp(const bool start) {
     VkCommandBuffer cmd_buf = api_ctx_->draw_cmd_buf[api_ctx_->backend_frame];

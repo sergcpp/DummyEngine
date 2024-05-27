@@ -9,8 +9,8 @@
 void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const CommonBuffers &common_buffers,
                                      const PersistentGpuData &persistent_data,
                                      const AccelerationStructureData &acc_struct_data,
-                                     const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
-                                     FrameTextures &frame_textures) {
+                                     const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
+                                     RpResRef rt_obj_instances_res, FrameTextures &frame_textures) {
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
@@ -25,7 +25,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
                                ? Stg::ComputeShader
                                : (ctx_.capabilities.raytracing ? Stg::RayTracingShader : Stg::ComputeShader);
 
-        data->geo_data = rt_gi_cache.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
+        data->geo_data = rt_gi_cache.AddStorageReadonlyInput(rt_geo_instances_res, stage);
         data->materials = rt_gi_cache.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
         data->vtx_buf1 = rt_gi_cache.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
         data->vtx_buf2 = rt_gi_cache.AddStorageReadonlyInput(ctx_.default_vertex_buf2(), stage);
@@ -41,7 +41,7 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
 
         if (!ctx_.capabilities.raytracing) {
             data->swrt.root_node = persistent_data.swrt.rt_root_node;
-            data->swrt.rt_blas_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stage);
+            data->swrt.rt_blas_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
             data->swrt.prim_ndx_buf =
                 rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
             data->swrt.meshes_buf = rt_gi_cache.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);

@@ -227,7 +227,7 @@ Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const
 }
 
 Ren::Texture2D::Texture2D(std::string_view name, ApiContext *api_ctx, Span<const uint8_t> data[6], const Tex2DParams &p,
-                          Buffer &stage_buf, void *_cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
+                          Buffer &stage_buf, CommandBuffer cmd_buf, MemoryAllocators *mem_allocs, eTexLoadStatus *load_status,
                           ILog *log)
     : name_(name) {
     Init(data, p, stage_buf, nullptr, nullptr, load_status, log);
@@ -260,7 +260,7 @@ void Ren::Texture2D::Init(const Tex2DParams &p, MemoryAllocators *, ILog *log) {
     ready_ = true;
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer &sbuf, CommandBuffer cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
     if (data.empty()) {
         uint8_t *stage_data = sbuf.Map();
@@ -296,7 +296,7 @@ void Ren::Texture2D::Init(Span<const uint8_t> data, const Tex2DParams &p, Buffer
     }
 }
 
-void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &sbuf, void *_cmd_buf,
+void Ren::Texture2D::Init(Span<const uint8_t> data[6], const Tex2DParams &p, Buffer &sbuf, CommandBuffer cmd_buf,
                           MemoryAllocators *mem_allocs, eTexLoadStatus *load_status, ILog *log) {
     if (!data) {
         uint8_t *stage_data = sbuf.Map();
@@ -356,7 +356,7 @@ void Ren::Texture2D::Free() {
 }
 
 void Ren::Texture2D::Realloc(const int w, const int h, int mip_count, const int samples, const Ren::eTexFormat format,
-                             const Ren::eTexBlock block, const bool is_srgb, void *_cmd_buf,
+                             const Ren::eTexBlock block, const bool is_srgb, CommandBuffer cmd_buf,
                              MemoryAllocators *mem_allocs, ILog *log) {
     GLuint tex_id;
     glCreateTextures(samples > 1 ? GL_TEXTURE_2D_MULTISAMPLE : GL_TEXTURE_2D, 1, &tex_id);
@@ -1098,7 +1098,7 @@ void Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int o
 
 Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, const int offsety, const int sizex,
                                            const int sizey, const Ren::eTexFormat format, const Buffer &sbuf,
-                                           void *_cmd_buf, const int data_off, const int data_len) {
+                                           CommandBuffer cmd_buf, const int data_off, const int data_len) {
     assert(format == params.format);
     assert(params.samples == 1);
     assert(offsetx >= 0 && offsetx + sizex <= std::max(params.w >> level, 1));
@@ -1128,7 +1128,7 @@ Ren::SyncFence Ren::Texture2D::SetSubImage(const int level, const int offsetx, c
     return MakeFence();
 }
 
-void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int data_off) const {
+void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, CommandBuffer cmd_buf, int data_off) const {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, GLuint(handle_.id));
 
@@ -1142,7 +1142,7 @@ void Ren::Texture2D::CopyTextureData(const Buffer &sbuf, void *_cmd_buf, int dat
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
+void Ren::CopyImageToImage(CommandBuffer cmd_buf, Texture2D &src_tex, const uint32_t src_level, const uint32_t src_x,
                            const uint32_t src_y, Texture2D &dst_tex, const uint32_t dst_level, const uint32_t dst_x,
                            const uint32_t dst_y, const uint32_t width, const uint32_t height) {
     glCopyImageSubData(GLuint(src_tex.id()), GL_TEXTURE_2D, GLint(src_level), GLint(src_x), GLint(src_y), 0,
@@ -1150,7 +1150,7 @@ void Ren::CopyImageToImage(void *_cmd_buf, Texture2D &src_tex, const uint32_t sr
                        GLsizei(width), GLsizei(height), 1);
 }
 
-void Ren::ClearImage(Texture2D &tex, const float rgba[4], void *_cmd_buf) {
+void Ren::ClearImage(Texture2D &tex, const float rgba[4], CommandBuffer cmd_buf) {
     if (IsDepthStencilFormat(tex.params.format) || IsUnsignedIntegerFormat(tex.params.format)) {
         glClearTexImage(tex.id(), 0, GLFormatFromTexFormat(tex.params.format), GLTypeFromTexFormat(tex.params.format),
                         rgba);
@@ -1282,7 +1282,7 @@ void Ren::Texture3D::Free() {
 }
 
 void Ren::Texture3D::SetSubImage(int offsetx, int offsety, int offsetz, int sizex, int sizey, int sizez,
-                                 eTexFormat format, const Buffer &sbuf, void *_cmd_buf, int data_off, int data_len) {
+                                 eTexFormat format, const Buffer &sbuf, CommandBuffer cmd_buf, int data_off, int data_len) {
     assert(format == params.format);
     assert(offsetx >= 0 && offsetx + sizex <= params.w);
     assert(offsety >= 0 && offsety + sizey <= params.h);

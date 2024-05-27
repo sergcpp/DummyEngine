@@ -175,7 +175,9 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
     list.shape_keys_data.count = 0;
     list.skin_vertices_count = 0;
 
-    list.rt_geo_instances.count = 0;
+    for (auto &rt : list.rt_geo_instances) {
+        rt.count = 0;
+    }
     for (auto &rt : list.rt_obj_instances) {
         rt.count = 0;
     }
@@ -610,11 +612,36 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
             RTObjInstance &new_instance = list.rt_obj_instances[0].data[list.rt_obj_instances[0].count++];
             memcpy(new_instance.xform, ValuePtr(Transpose(tr.world_from_object)), 12 * sizeof(float));
             memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-            new_instance.geo_index = acc.mesh->blas->geo_index;
-            new_instance.geo_count = acc.mesh->blas->geo_count;
+            new_instance.geo_index = list.rt_geo_instances[0].count;
+            new_instance.geo_count = 0;
             new_instance.mask = uint8_t(acc.vis_mask);
             memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
             new_instance.blas_ref = acc.mesh->blas.get();
+
+            const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
+            const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+            for (int j = 0; j < int(groups.size()); ++j) {
+                const Ren::TriGroup &grp = groups[j];
+
+                const Ren::MaterialRef &front_mat =
+                    (j >= acc.material_override.size()) ? grp.front_mat : acc.material_override[j].first;
+                const Ren::MaterialRef &back_mat =
+                    (j >= acc.material_override.size()) ? grp.back_mat : acc.material_override[j].second;
+                const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags();
+                if (mat_flags & Ren::eMatFlags::AlphaBlend) {
+                    // Include only opaque surfaces
+                    continue;
+                }
+
+                RTGeoInstance &geo = list.rt_geo_instances[0].data[list.rt_geo_instances[0].count++];
+                geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
+                geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
+                assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
+                geo.material_index = front_mat.index() | (back_mat.index() << 16);
+                geo.flags = 0;
+
+                ++new_instance.geo_count;
+            }
         }
 
         if (lighting_enabled) {
@@ -1066,11 +1093,38 @@ void Eng::Renderer::GatherDrawables(const SceneData &scene, const Ren::Camera &c
                                 list.rt_obj_instances[1].data[list.rt_obj_instances[1].count++];
                             memcpy(new_instance.xform, ValuePtr(world_from_object_trans), 12 * sizeof(float));
                             memcpy(new_instance.bbox_min_ws, ValuePtr(tr.bbox_min_ws), 3 * sizeof(float));
-                            new_instance.geo_index = acc.mesh->blas->geo_index;
-                            new_instance.geo_count = acc.mesh->blas->geo_count;
+                            new_instance.geo_index = list.rt_geo_instances[1].count;
+                            new_instance.geo_count = 0;
                             new_instance.mask = uint8_t(acc.vis_mask);
                             memcpy(new_instance.bbox_max_ws, ValuePtr(tr.bbox_max_ws), 3 * sizeof(float));
                             new_instance.blas_ref = acc.mesh->blas.get();
+
+                            const uint32_t indices_start = acc.mesh->indices_buf().sub.offset;
+                            const Ren::Span<const Ren::TriGroup> groups = acc.mesh->groups();
+                            for (int j = 0; j < int(groups.size()); ++j) {
+                                const Ren::TriGroup &grp = groups[j];
+
+                                const Ren::MaterialRef &front_mat = (j >= acc.material_override.size())
+                                                                        ? grp.front_mat
+                                                                        : acc.material_override[j].first;
+                                const Ren::MaterialRef &back_mat = (j >= acc.material_override.size())
+                                                                       ? grp.back_mat
+                                                                       : acc.material_override[j].second;
+                                const Ren::Bitmask<Ren::eMatFlags> mat_flags = front_mat->flags();
+                                if (mat_flags & Ren::eMatFlags::AlphaBlend) {
+                                    // Include only opaque surfaces
+                                    continue;
+                                }
+
+                                RTGeoInstance &geo = list.rt_geo_instances[1].data[list.rt_geo_instances[1].count++];
+                                geo.indices_start = (indices_start + grp.offset) / sizeof(uint32_t);
+                                geo.vertices_start = acc.mesh->attribs_buf1().sub.offset / 16;
+                                assert(front_mat.index() < 0xffff && back_mat.index() < 0xffff);
+                                geo.material_index = front_mat.index() | (back_mat.index() << 16);
+                                geo.flags = 0;
+
+                                ++new_instance.geo_count;
+                            }
                         }
                     }
 

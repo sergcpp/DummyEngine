@@ -12,8 +12,9 @@
 
 void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, const PersistentGpuData &persistent_data,
                                           const AccelerationStructureData &acc_struct_data,
-                                          const BindlessTextureData &bindless, RpResRef rt_obj_instances_res,
-                                          FrameTextures &frame_textures, const bool debug_denoise) {
+                                          const BindlessTextureData &bindless, RpResRef rt_geo_instances_res,
+                                          RpResRef rt_obj_instances_res, FrameTextures &frame_textures,
+                                          const bool debug_denoise) {
     RpResRef indir_args;
 
     { // Prepare atomic counter
@@ -164,7 +165,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
         const Ren::eStageBits stage =
             ctx_.capabilities.ray_query ? Ren::eStageBits::ComputeShader : Ren::eStageBits::RayTracingShader;
 
-        data->geo_data = rt_shadows.AddStorageReadonlyInput(acc_struct_data.rt_geo_data_buf, stage);
+        data->geo_data = rt_shadows.AddStorageReadonlyInput(rt_geo_instances_res, stage);
         data->materials = rt_shadows.AddStorageReadonlyInput(persistent_data.materials_buf, stage);
         data->vtx_buf1 = rt_shadows.AddStorageReadonlyInput(ctx_.default_vertex_buf1(), stage);
         data->ndx_buf = rt_shadows.AddStorageReadonlyInput(ctx_.default_indices_buf(), stage);
@@ -182,7 +183,7 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
 
         if (!ctx_.capabilities.raytracing) {
             data->swrt.root_node = persistent_data.swrt.rt_root_node;
-            data->swrt.blas_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.rt_blas_buf, stage);
+            data->swrt.blas_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_blas_buf, stage);
             data->swrt.prim_ndx_buf =
                 rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_prim_indices_buf, stage);
             data->swrt.meshes_buf = rt_shadows.AddStorageReadonlyInput(persistent_data.swrt.rt_meshes_buf, stage);
@@ -380,7 +381,8 @@ void Eng::Renderer::AddHQSunShadowsPasses(const CommonBuffers &common_buffers, c
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::PREV_DEPTH_TEX_SLOT, *prev_depth_tex.ref},
                 {Ren::eBindTarget::Tex2DSampled, RTShadowClassifyTiles::PREV_MOMENTS_TEX_SLOT, *prev_moments_tex.ref},
                 {Ren::eBindTarget::SBufRO, RTShadowClassifyTiles::RAY_HITS_BUF_SLOT, *ray_hits_buf.ref},
-                {Ren::eBindTarget::SBufRW, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT, *out_tile_metadata_buf.ref},
+                {Ren::eBindTarget::SBufRW, RTShadowClassifyTiles::OUT_TILE_METADATA_BUF_SLOT,
+                 *out_tile_metadata_buf.ref},
                 {Ren::eBindTarget::Image2D, RTShadowClassifyTiles::OUT_REPROJ_RESULTS_IMG_SLOT,
                  *out_repro_results_img.ref},
                 {Ren::eBindTarget::Image2D, RTShadowClassifyTiles::OUT_MOMENTS_IMG_SLOT, *out_moments_img.ref},
