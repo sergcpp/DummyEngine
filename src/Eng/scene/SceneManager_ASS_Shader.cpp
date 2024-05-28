@@ -8,47 +8,8 @@
 
 #include <glslang/Include/glslang_c_interface.h>
 #include <glslang/Public/resource_limits_c.h>
+#include <glslang/include/spirv-tools/optimizer.hpp>
 #include <glslx/glslx.h>
-
-#define _AS_STR(x) #x
-#define AS_STR(x) _AS_STR(x)
-
-void Eng::SceneManager::InlineShaderConstants(assets_context_t &ctx, std::string &line) {
-    static std::once_flag constants_initialized;
-    static Ren::HashMap32<std::string, std::string> shader_constants;
-    std::call_once(constants_initialized, [&]() {
-        // Shadow properties
-        if (strcmp(ctx.platform, "pc") == 0) {
-            shader_constants.Insert("$ShadRes", AS_STR(SHADOWMAP_RES_PC));
-        } else if (strcmp(ctx.platform, "android") == 0) {
-            shader_constants.Insert("$ShadRes", AS_STR(SHADOWMAP_RES_ANDROID));
-        } else {
-            ctx.log->Error("Unknown platform %s", ctx.platform);
-            return;
-        }
-    });
-
-    size_t n = 0;
-    while ((n = line.find('$', n)) != std::string::npos) {
-        size_t l = 1;
-
-        const char punctuation_chars[] = ".,(); $*[]\r\n";
-        while (std::find(std::begin(punctuation_chars), std::end(punctuation_chars), line[n + l]) ==
-               std::end(punctuation_chars)) {
-            l++;
-        }
-
-        const std::string var = line.substr(n, l);
-
-        const std::string *it = shader_constants.Find(var);
-        if (it) {
-            line.replace(n, l, *it);
-        } else {
-            ctx.log->Error("Unknown variable %s", var.c_str());
-            throw std::runtime_error("Unknown variable!");
-        }
-    }
-}
 
 bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,
                                         Ren::SmallVectorImpl<std::string> &out_dependencies) {
@@ -88,8 +49,6 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
 
             output += "\r\n#line " + std::to_string(line_counter) + "\r\n";
         } else {
-            InlineShaderConstants(ctx, line);
-
             output += line + "\r\n";
         }
     }
@@ -186,8 +145,6 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
 
                 permutations = std::move(all_permutations);
             } else {
-                InlineShaderConstants(ctx, line);
-
                 if (!line.empty() && line.back() == '\r') {
                     line.pop_back();
                 }

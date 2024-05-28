@@ -462,7 +462,7 @@ std::unique_ptr<Ren::IAccStructure> Eng::SceneManager::Build_HWRT_BLAS(const Acc
     if (mem_alloc.offset == 0xffffffff) {
         // allocate one more buffer
         const uint32_t buf_size =
-            std::max(next_power_of_two(uint32_t(compact_size)), Eng::PersistentGpuData::RtBLASChunkSize);
+            std::max(next_power_of_two(uint32_t(compact_size)), Eng::RtBLASChunkSize);
         std::string buf_name =
             "RT BLAS Buffer #" + std::to_string(scene_data_.persistent_data.hwrt.rt_blas_buffers.size());
         scene_data_.persistent_data.hwrt.rt_blas_buffers.emplace_back(

@@ -179,6 +179,8 @@ struct ProbeVolume {
     std::unique_ptr<Ren::Texture2DArray> data;
 };
 
+static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
+
 struct PersistentGpuData {
     Ren::BufferRef instance_buf;
     Ren::Tex1DRef instance_buf_tbo;
@@ -195,7 +197,6 @@ struct PersistentGpuData {
 #endif
     Ren::PipelineStorage pipelines;
 
-    static const uint32_t RtBLASChunkSize = 16 * 1024 * 1024;
     struct {
         Ren::FreelistAlloc rt_blas_mem_alloc;
         std::vector<Ren::BufferRef> rt_blas_buffers;

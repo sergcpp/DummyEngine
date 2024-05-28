@@ -34,11 +34,15 @@ IF(WIN32)
                      debug glslangd                         optimized glslang
                      debug glslang-default-resource-limitsd optimized glslang-default-resource-limits
                      debug MachineIndependentd              optimized MachineIndependent
-                     debug OGLCompilerd                     optimized OGLCompiler
                      debug OSDependentd                     optimized OSDependent
                      debug SPIRVd                           optimized SPIRV
                      debug SPIRV-Toolsd                     optimized SPIRV-Tools
-                     debug SPIRV-Tools-optd                 optimized SPIRV-Tools-opt)
+                     debug SPIRV-Tools-diffd                optimized SPIRV-Tools-diff
+                     debug SPIRV-Tools-linkd                optimized SPIRV-Tools-link
+                     debug SPIRV-Tools-lintd                optimized SPIRV-Tools-lint
+                     debug SPIRV-Tools-optd                 optimized SPIRV-Tools-opt
+                     debug SPIRV-Tools-reduced              optimized SPIRV-Tools-reduce
+                     debug SPVRemapperd                     optimized SPVRemapper)
 ELSE(WIN32)
     set(VPX_LIB "vpx")
     if(NOT CMAKE_SYSTEM_NAME MATCHES "Android" AND NOT CMAKE_APPLE_SILICON_PROCESSOR MATCHES "arm64")
@@ -48,11 +52,15 @@ ELSE(WIN32)
                      glslang-default-resource-limits
                      MachineIndependent
                      GenericCodeGen
-                     OGLCompiler
                      OSDependent
                      SPIRV
                      SPIRV-Tools-opt
-                     SPIRV-Tools)
+                     SPIRV-Tools
+                     SPIRV-Tools-diff
+                     SPIRV-Tools-link
+                     SPIRV-Tools-lint
+                     SPIRV-Tools-reduce
+                     SPVRemapper)
     if (NOT APPLE)
         set(GLSLANG_LIBS ${GLSLANG_LIBS}
                          X11)
@@ -356,11 +364,12 @@ if (WIN32)
     endif()
 else(WIN32)
     if (APPLE)
-        target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/macos)
         target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vtune/osx/x64)
         if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "arm64")
+            target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/macos/arm64)
             target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/osx/arm64)
         else()
+            target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/glslang/macos/x64)
             target_link_directories(Eng PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/third-party/vpx/osx/x64)
         endif()
     else(APPLE)

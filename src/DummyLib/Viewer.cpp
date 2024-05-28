@@ -251,7 +251,7 @@ void Viewer::PrepareAssets(const char *platform) {
     const double t1 = Sys::GetTimeS();
     Eng::SceneManager::RegisterAsset("tei.json", "dict", HConvTEIToDict);
 
-    Sys::ThreadPool temp_threads(12, Sys::eThreadPriority::Normal, "prepare_assets_thread");
+    Sys::ThreadPool temp_threads(std::thread::hardware_concurrency(), Sys::eThreadPriority::Normal, "prepare_assets_thread");
 
 #if !defined(__ANDROID__)
     if (strcmp(platform, "all") == 0) {

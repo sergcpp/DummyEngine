@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include <Ren/Fwd.h>
 
 #include "Common.h"
