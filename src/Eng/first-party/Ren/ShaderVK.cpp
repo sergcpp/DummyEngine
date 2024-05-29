@@ -122,7 +122,9 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
         const auto *var = module.input_variables[i];
         if (var->built_in == -1) {
             Descr &new_item = attr_bindings.emplace_back();
-            new_item.name = String{var->name};
+            if (var->name) {
+                new_item.name = String{var->name};
+            }
             new_item.loc = var->location;
             new_item.format = VkFormat(var->format);
         }
@@ -131,7 +133,9 @@ void Ren::Shader::InitFromSPIRV(Span<const uint8_t> shader_code, const eShaderTy
     for (uint32_t i = 0; i < module.descriptor_binding_count; i++) {
         const auto &desc = module.descriptor_bindings[i];
         Descr &new_item = unif_bindings.emplace_back();
-        new_item.name = String{desc.name};
+        if (desc.name) {
+            new_item.name = String{desc.name};
+        }
         new_item.desc_type = VkDescriptorType(desc.descriptor_type);
         new_item.loc = desc.binding;
         new_item.set = desc.set;

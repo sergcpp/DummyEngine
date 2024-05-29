@@ -235,6 +235,7 @@ void Ren::Program::InitBindings(ILog *log) {
         }
     }
 
+#if 0
     log->Info("PROGRAM %s", name_.c_str());
 
     // Print all attributes
@@ -254,6 +255,7 @@ void Ren::Program::InitBindings(ILog *log) {
         }
         log->Info("\t\t%s : %i", uniforms_[i].name.c_str(), uniforms_[i].loc);
     }
+#endif
 }
 
 #ifdef _MSC_VER

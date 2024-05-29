@@ -192,6 +192,7 @@ void Ren::Program::InitBindings(ILog *log) {
         new_attr.loc = glGetAttribLocation(GLuint(id_), name);
     }
 
+#if 0
     log->Info("PROGRAM %s", name_.c_str());
 
     // Print all attributes
@@ -202,6 +203,7 @@ void Ren::Program::InitBindings(ILog *log) {
         }
         log->Info("\t\t%s : %i", attributes_[i].name.c_str(), attributes_[i].loc);
     }
+#endif
 
     // Enumerate uniforms
     glGetProgramiv(GLuint(id_), GL_ACTIVE_UNIFORMS, &num);
@@ -216,6 +218,7 @@ void Ren::Program::InitBindings(ILog *log) {
         new_uniform.loc = glGetUniformLocation(GLuint(id_), name);
     }
 
+#if 0
     // Print all uniforms
     log->Info("\tUNIFORMS");
     for (int i = 0; i < int(uniforms_.size()); i++) {
@@ -224,6 +227,7 @@ void Ren::Program::InitBindings(ILog *log) {
         }
         log->Info("\t\t%s : %i", uniforms_[i].name.c_str(), uniforms_[i].loc);
     }
+#endif
 }
 
 #ifdef _MSC_VER

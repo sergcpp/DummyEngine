@@ -435,6 +435,68 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
                 std::vector<uint32_t> out_shader_module(glslang_program_SPIRV_get_size(program));
                 glslang_program_SPIRV_get(program, out_shader_module.data());
 
+                spvtools::Optimizer opt(use_spv14 ? SPV_ENV_UNIVERSAL_1_4 : SPV_ENV_UNIVERSAL_1_3);
+
+                auto print_msg_to_stderr = [&ctx](spv_message_level_t, const char *, const spv_position_t &,
+                                                  const char *m) { ctx.log->Error("%s", m); };
+                opt.SetMessageConsumer(print_msg_to_stderr);
+
+                opt.RegisterPass(spvtools::CreateWrapOpKillPass())
+                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                    .RegisterPass(spvtools::CreateMergeReturnPass())
+                    .RegisterPass(spvtools::CreateEliminateDeadFunctionsPass())
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreatePrivateToLocalPass())
+                    .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+                    .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateScalarReplacementPass())
+                    .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+                    .RegisterPass(spvtools::CreateLocalSingleBlockLoadStoreElimPass())
+                    .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateEliminateDeadConstantPass())
+                    .RegisterPass(spvtools::CreateUnifyConstantPass())
+                    .RegisterPass(spvtools::CreateCCPPass())
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateLoopUnrollPass(true))
+                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                    .RegisterPass(spvtools::CreateLocalRedundancyEliminationPass())
+                    .RegisterPass(spvtools::CreateCombineAccessChainsPass())
+                    .RegisterPass(spvtools::CreateSimplificationPass())
+                    .RegisterPass(spvtools::CreateScalarReplacementPass())
+                    .RegisterPass(spvtools::CreateLocalAccessChainConvertPass())
+                    .RegisterPass(spvtools::CreateLocalSingleStoreElimPass())
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateVectorDCEPass())
+                    .RegisterPass(spvtools::CreateDeadInsertElimPass())
+                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                    .RegisterPass(spvtools::CreateSimplificationPass())
+                    .RegisterPass(spvtools::CreateIfConversionPass())
+                    .RegisterPass(spvtools::CreateCopyPropagateArraysPass())
+                    .RegisterPass(spvtools::CreateReduceLoadSizePass())
+                    .RegisterPass(spvtools::CreateAggressiveDCEPass(true, false))
+                    .RegisterPass(spvtools::CreateBlockMergePass())
+                    .RegisterPass(spvtools::CreateRedundancyEliminationPass())
+                    .RegisterPass(spvtools::CreateDeadBranchElimPass())
+                    .RegisterPass(spvtools::CreateBlockMergePass())
+                    .RegisterPass(spvtools::CreateSimplificationPass())
+                    .RegisterPass(spvtools::CreateStripDebugInfoPass())
+                    .RegisterPass(spvtools::CreateStripNonSemanticInfoPass());
+                opt.SetValidateAfterAll(true);
+
+                spvtools::OptimizerOptions opt_options;
+                opt_options.set_preserve_bindings(true);
+
+                if (!opt.Run(out_shader_module.data(), out_shader_module.size(), &out_shader_module, opt_options)) {
+#if !defined(NDEBUG) && defined(_WIN32)
+                    __debugbreak();
+#endif
+                    return false;
+                }
+
                 { // write output file
                     std::ofstream out_spv_file(output_file, std::ios::binary);
                     out_spv_file.write((char *)out_shader_module.data(), out_shader_module.size() * sizeof(uint32_t));
@@ -445,6 +507,3 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
 
     return true;
 }
-
-#undef AS_STR
-#undef _AS_STR

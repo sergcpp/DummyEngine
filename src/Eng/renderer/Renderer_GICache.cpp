@@ -107,14 +107,13 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
 
-            ProbeBlend::Params uniform_params = {};
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
+            // ProbeBlend::Params uniform_params = {};
+            // uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+            // uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+            // uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
 
             Ren::DispatchCompute(pi_probe_blend_[0], Ren::Vec3u{PROBE_VOLUME_RES, PROBE_VOLUME_RES, PROBE_VOLUME_RES},
-                                 bindings, &uniform_params, sizeof(uniform_params), ctx_.default_descr_alloc(),
-                                 ctx_.log());
+                                 bindings, nullptr, 0, ctx_.default_descr_alloc(), ctx_.log());
         });
     }
 
@@ -187,23 +186,23 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
 
-            ProbeRelocate::Params uniform_params = {};
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
-
             const int probe_count = PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES;
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (probe_count + ProbeRelocate::LOCAL_GROUP_SIZE_X - 1) / ProbeRelocate::LOCAL_GROUP_SIZE_X, 1u, 1u};
 
-            int pi_index = 0;
             if (persistent_data.probe_volume.reset_relocation) {
-                pi_index = 1;
                 persistent_data.probe_volume.reset_relocation = false;
-            }
+                Ren::DispatchCompute(pi_probe_relocate_[1], grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
+                                     ctx_.log());
+            } else {
+                ProbeRelocate::Params uniform_params = {};
+                uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+                uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+                uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
 
-            Ren::DispatchCompute(pi_probe_relocate_[pi_index], grp_count, bindings, &uniform_params,
-                                 sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                Ren::DispatchCompute(pi_probe_relocate_[0], grp_count, bindings, &uniform_params,
+                                     sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            }
         });
     }
 
@@ -234,23 +233,23 @@ void Eng::Renderer::AddGICachePasses(const Ren::WeakTex2DRef &env_map, const Com
             const Ren::Vec3i &grid_scroll = persistent_data.probe_volume.scroll;
             const Ren::Vec3f &grid_spacing = persistent_data.probe_volume.spacing;
 
-            ProbeClassify::Params uniform_params = {};
-            uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
-            uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
-            uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
-
             const int probe_count = PROBE_VOLUME_RES * PROBE_VOLUME_RES * PROBE_VOLUME_RES;
             const Ren::Vec3u grp_count = Ren::Vec3u{
                 (probe_count + ProbeClassify::LOCAL_GROUP_SIZE_X - 1) / ProbeClassify::LOCAL_GROUP_SIZE_X, 1u, 1u};
 
-            int pi_index = 0;
             if (persistent_data.probe_volume.reset_classification) {
-                pi_index = 1;
+                Ren::DispatchCompute(pi_probe_classify_[1], grp_count, bindings, nullptr, 0, ctx_.default_descr_alloc(),
+                                     ctx_.log());
                 persistent_data.probe_volume.reset_classification = false;
-            }
+            } else {
+                ProbeClassify::Params uniform_params = {};
+                uniform_params.grid_origin = Ren::Vec4f{grid_origin[0], grid_origin[1], grid_origin[2], 0.0f};
+                uniform_params.grid_scroll = Ren::Vec4i{grid_scroll[0], grid_scroll[1], grid_scroll[2], 0};
+                uniform_params.grid_spacing = Ren::Vec4f{grid_spacing[0], grid_spacing[1], grid_spacing[2], 0.0f};
 
-            Ren::DispatchCompute(pi_probe_classify_[pi_index], grp_count, bindings, &uniform_params,
-                                 sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+                Ren::DispatchCompute(pi_probe_classify_[0], grp_count, bindings, &uniform_params,
+                                     sizeof(uniform_params), ctx_.default_descr_alloc(), ctx_.log());
+            }
         });
     }
 }
