@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = refactor_27_05
-	commit = b5fb374b54788d93ee8b5a26833dfc49a85cf80c
+	branch = spirv_tools
+	commit = 669de633df1166c1309d6a73c2c499275f6c1265
 	method = merge
 	cmdver = 0.4.6
-	parent = 8c4371971e53add827d13b18e6b0eda39781e643
+	parent = c196ca2ba87cbb248a5a614fe5f572c650e571b2
