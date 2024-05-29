@@ -1261,10 +1261,6 @@ void GSBaseState::InitScene_PT() {
                 for (int j = 0; j < int(groups.size()); ++j) {
                     const Ren::TriGroup &grp = groups[j];
 
-                    if (!dr.material_override.empty()) {
-                        volatile int ii = 0;
-                    }
-
                     const Ren::Material *front_mat =
                         (j >= dr.material_override.size()) ? grp.front_mat.get() : dr.material_override[j].first.get();
                     const char *mat_name = front_mat->name().c_str();

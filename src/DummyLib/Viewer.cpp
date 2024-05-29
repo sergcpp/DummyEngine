@@ -126,7 +126,7 @@ void Viewer::Frame() {
                                                   VK_NULL_HANDLE, &next_image_index);
     if (res != VK_SUCCESS) {
         ren_ctx()->log()->Error("Failed to acquire next image!");
-    };
+    }
 
     api_ctx->active_present_image = next_image_index;
 
@@ -236,7 +236,7 @@ void Viewer::Frame() {
     present_info.pImageIndices = &next_image_index;
 
     res = api_ctx->vkQueuePresentKHR(api_ctx->present_queue, &present_info);
-    if (res != VK_SUCCESS) {
+    if (res != VK_SUCCESS && res != VK_ERROR_OUT_OF_DATE_KHR) {
         ren_ctx()->log()->Error("Failed to present queue!");
     }
 #elif defined(USE_GL_RENDER)
