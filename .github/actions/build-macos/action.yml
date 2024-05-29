@@ -1,0 +1,34 @@
+name: 'Build Repo'
+inputs:
+  cmake-args:
+    required: true
+  config:
+    required: true
+  bin-dir:
+    required: false
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        WORK_DIR=`pwd`
+        cd ../../builds/DummyEngine
+        python3 src/Eng/scripts/update_version_string.py src/DummyApp/DummyApp.cpp
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=${{ inputs.config }} ${{ inputs.cmake-args }}
+        cd ..
+        cmake --build build --target DummyApp test_Eng test_Ray test_SW test_Sys test_Net test_Phy test_Snd --parallel 16
+        if [ -n "${{ inputs.bin-dir }}" ]; then
+          mkdir $WORK_DIR/${{ inputs.bin-dir }}
+          mkdir $WORK_DIR/${{ inputs.bin-dir }}/test_data
+          cp build/src/Eng/tests/test_Eng* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Ray/tests/test_Ray* $WORK_DIR/${{ inputs.bin-dir }}
+          #cp build/src/Eng/first-party/Ren/tests/test_Ren* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Ren/SW/tests/test_SW* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Sys/tests/test_Sys* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Phy/tests/test_Phy* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Snd/tests/test_Snd* $WORK_DIR/${{ inputs.bin-dir }}
+          cp build/src/Eng/first-party/Net/tests/test_Net* $WORK_DIR/${{ inputs.bin-dir }}
+          cp DummyApp* $WORK_DIR/${{ inputs.bin-dir }}
+        fi
+      shell: bash

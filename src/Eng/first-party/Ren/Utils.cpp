@@ -1187,16 +1187,16 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
 
                 int w = 2;
                 tangent = Vec3f{0.0f, 1.0f, 0.0f};
-                if (std::abs(plane_N[0]) <= std::abs(plane_N[1]) && std::abs(plane_N[0]) <= std::abs(plane_N[2])) {
+                if (fabsf(plane_N[0]) <= fabsf(plane_N[1]) && fabsf(plane_N[0]) <= fabsf(plane_N[2])) {
                     tangent = Vec3f{1.0f, 0.0f, 0.0f};
                     w = 1;
-                } else if (std::abs(plane_N[2]) <= std::abs(plane_N[0]) &&
-                           std::abs(plane_N[2]) <= std::abs(plane_N[1])) {
+                } else if (fabsf(plane_N[2]) <= fabsf(plane_N[0]) &&
+                           fabsf(plane_N[2]) <= fabsf(plane_N[1])) {
                     tangent = Vec3f{0.0f, 0.0f, 1.0f};
                     w = 0;
                 }
 
-                if (fabsf(plane_N[w] > flt_eps)) {
+                if (fabsf(plane_N[w]) > flt_eps) {
                     binormal = Normalize(Cross(Vec3f(plane_N), tangent));
                     tangent = Normalize(Cross(Vec3f(plane_N), binormal));
                 } else {
@@ -1280,7 +1280,7 @@ void Ren::ComputeTangentBasis(std::vector<vertex_t> &vertices, std::vector<uint3
     }
 
     for (vertex_t &v : vertices) {
-        if (std::abs(v.b[0]) > flt_eps || std::abs(v.b[1]) > flt_eps || std::abs(v.b[2]) > flt_eps) {
+        if (fabsf(v.b[0]) > flt_eps || fabsf(v.b[1]) > flt_eps || fabsf(v.b[2]) > flt_eps) {
             const Vec3f tangent = MakeVec3(v.b);
             Vec3f binormal = Cross(MakeVec3(v.n), tangent);
             float l = Length(binormal);

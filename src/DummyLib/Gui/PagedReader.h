@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 #include <Eng/gui/BaseElement.h>
 #include <Ren/Fwd.h>

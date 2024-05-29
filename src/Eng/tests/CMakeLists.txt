@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.1)
 project(test_Eng)
 
+find_library(CORE_GRAPHICS CoreGraphics)
+
 if(NOT CMAKE_SYSTEM_NAME MATCHES "Android")
     if(WIN32)
         set(LIBS winmm opengl32)
     elseif(APPLE)
-        
+        set(LIBS ${CORE_GRAPHICS})
     else()
         
     endif()

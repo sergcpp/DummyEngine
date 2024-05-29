@@ -96,6 +96,29 @@ jobs:
         with:
           name: linux-x86_64-vk
           path: linux-x86_64-vk/
+  build-macos-x86_64-vk-rel:
+    runs-on: [ macos, builder ]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout Workflows
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github
+      - name: Re-initialize repository
+        uses: ./.github/actions/checkout
+      - name: Compile the code
+        uses: ./.github/actions/build-macos
+        with:
+          cmake-args: "-DRENDERER=VK -DENABLE_DX_IMPL=OFF -DENABLE_VK_IMPL=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64"
+          config: "Release"
+          bin-dir: "macos-x86_64-vk"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-x86_64-vk
+          path: macos-x86_64-vk/
   # test-windows-x86_64-gl-nv:
   #   runs-on: [ windows, x86_64, nv ]
   #   needs:
