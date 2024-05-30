@@ -803,7 +803,8 @@ void GSBaseState::Draw() {
             ren_ctx_->frontend_frame = (ren_ctx_->backend_frame() + 1) % Ren::MaxFramesInFlight;
 
             scene_manager_->scene_data().env.sun_dir = sun_dir_;
-            if (prev_sun_dir_[0] != sun_dir_[0] || prev_sun_dir_[1] != sun_dir_[1] || prev_sun_dir_[2] != sun_dir_[2]) {
+            if (!use_pt_ && (prev_sun_dir_[0] != sun_dir_[0] || prev_sun_dir_[1] != sun_dir_[1] ||
+                             prev_sun_dir_[2] != sun_dir_[2])) {
                 if (renderer_->settings.taa_mode == Eng::eTAAMode::Static) {
                     renderer_->reset_accumulation();
                 }
