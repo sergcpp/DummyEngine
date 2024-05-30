@@ -710,8 +710,7 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
         if (split_data.right_indices.empty()) {
             Phy::Vec3f bbox_min = split_data.left_bounds[0], bbox_max = split_data.left_bounds[1];
 
-            out_nodes.emplace_back();
-            gpu_bvh_node_t &n = out_nodes.back();
+            gpu_bvh_node_t &n = out_nodes.emplace_back();
 
             n.prim_index = LEAF_NODE_BIT + uint32_t(out_indices.size());
             n.prim_count = uint32_t(split_data.left_indices.size());
@@ -738,8 +737,7 @@ uint32_t Eng::SceneManager::PreprocessPrims_SAH(Ren::Span<const Phy::prim_t> pri
             const Phy::Vec3f bbox_min = Min(split_data.left_bounds[0], split_data.right_bounds[0]),
                              bbox_max = Max(split_data.left_bounds[1], split_data.right_bounds[1]);
 
-            out_nodes.emplace_back();
-            gpu_bvh_node_t &n = out_nodes.back();
+            gpu_bvh_node_t &n = out_nodes.emplace_back();
             n.left_child = index + 1;
             n.right_child = (space_axis << 30) + index + 2;
             memcpy(&n.bbox_min[0], &bbox_min[0], 3 * sizeof(float));

@@ -113,9 +113,6 @@ class Mesh : public RefCounter {
                           CommandBuffer cmd_buf, BufferRef skin_vertex_buf, BufferRef delta_buf, BufferRef index_buf,
                           ILog *log);
 
-    // split skeletal mesh into chunks to fit uniforms limit in shader
-    // void SplitMesh(int bones_limit, ILog *log);
-
   public:
     Mesh() = default;
     Mesh(std::string_view name, const float *positions, int vtx_count, const uint32_t *indices, int ndx_count,
