@@ -10,6 +10,8 @@
 #include "TextureUtils.h"
 #include "Time_.h"
 
+#include "shaders/shade_sky_interface.h"
+
 namespace Ray {
 extern const int MOON_TEX_W;
 extern const int MOON_TEX_H;
@@ -20,6 +22,8 @@ extern const int NOISE_3D_RES;
 extern const uint8_t __3d_noise_tex[];
 extern const int CIRRUS_TEX_RES;
 extern const uint8_t __cirrus_tex[];
+
+Ref::fvec4 rgb_to_rgbe(const Ref::fvec4 &rgb);
 namespace NS {
 class Context;
 class Renderer;
@@ -112,6 +116,18 @@ class Scene : public SceneCommon {
     std::vector<Buffer> rt_blas_buffers_;
     AccStructure rt_tlas_;
 
+    Buffer atmosphere_params_buf_;
+
+    Shader sh_bake_sky_;
+
+    Program prog_bake_sky_;
+
+    Pipeline pi_bake_sky_;
+
+    Texture2D temp_img_;
+
+    bool InitPipelines();
+
     MaterialHandle AddMaterial_nolock(const shading_node_desc_t &m);
     void SetMeshInstanceTransform_nolock(MeshInstanceHandle mi_handle, const float *xform);
 
@@ -120,6 +136,8 @@ class Scene : public SceneCommon {
     void Rebuild_SWRT_TLAS_nolock();
     void RebuildLightTree_nolock();
 
+    std::vector<Ray::color_rgba8_t> CalcSkyEnvTexture(const atmosphere_params_t &params, const int res[2],
+                                                      const light_t lights[], Span<const uint32_t> dir_lights);
     void PrepareSkyEnvMap_nolock(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for);
     void PrepareEnvMapQTree_nolock();
     void GenerateTextureMips_nolock();
@@ -236,6 +254,7 @@ inline Ray::NS::Scene::Scene(Context *ctx, const bool use_hwrt, const bool use_b
       spatial_cache_voxels_curr_(ctx, "Spatial Cache Voxels (1/2)"),
       spatial_cache_voxels_prev_(ctx, "Spatial Cache Voxels (2/2)") {
     SceneBase::log_ = ctx->log();
+    InitPipelines();
     SetEnvironment({});
     if (use_spatial_cache) {
         spatial_cache_entries_.Resize(HASH_GRID_CACHE_ENTRIES_COUNT);
@@ -1455,8 +1474,26 @@ inline void Ray::NS::Scene::Finalize(const std::function<void(int, int, Parallel
 
     if (env_.env_map != InvalidTextureHandle._index &&
         (env_.env_map == PhysicalSkyTexture._index || env_.env_map == physical_sky_texture_._index)) {
-        PrepareSkyEnvMap_nolock(parallel_for);
         env_.sky_map_spread_angle = 2 * PI / float(env_.envmap_resolution);
+        if (!atmosphere_params_buf_) {
+            atmosphere_params_buf_ = Buffer{"Atmosphere Params", ctx_, eBufType::Uniform, sizeof(atmosphere_params_t)};
+        }
+        { // Update atmosphere parameters
+            Buffer temp_upload_buf{"Temp atmosphere params upload", ctx_, eBufType::Upload,
+                                   sizeof(atmosphere_params_t)};
+            { // update stage buffer
+                uint8_t *mapped_ptr = temp_upload_buf.Map();
+                memcpy(mapped_ptr, &env_.atmosphere, sizeof(atmosphere_params_t));
+                temp_upload_buf.Unmap();
+            }
+            CommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
+            CopyBufferToBuffer(temp_upload_buf, 0, atmosphere_params_buf_, 0, sizeof(atmosphere_params_t), cmd_buf);
+            EndSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->graphics_queue(), cmd_buf,
+                                  ctx_->temp_command_pool());
+
+            temp_upload_buf.FreeImmediate();
+        }
+        PrepareSkyEnvMap_nolock(parallel_for);
     }
 
     if (env_.multiple_importance && env_.env_col[0] > 0.0f && env_.env_col[1] > 0.0f && env_.env_col[2] > 0.0f) {
@@ -1563,6 +1600,113 @@ inline void Ray::NS::Scene::Rebuild_SWRT_TLAS_nolock() {
     tlas_root_node_ = bvh_nodes[0];
 }
 
+inline std::vector<Ray::color_rgba8_t> Ray::NS::Scene::CalcSkyEnvTexture(const atmosphere_params_t &params,
+                                                                         const int res[2], const light_t lights[],
+                                                                         Span<const uint32_t> dir_lights) {
+    Tex2DParams p;
+    p.w = res[0];
+    p.h = res[1];
+    p.format = eTexFormat::RawRGBA32F;
+    p.usage = eTexUsageBits::Storage | eTexUsageBits::Transfer;
+    temp_img_ = Texture2D{"Temp Sky Tex", ctx_, p, ctx_->default_memory_allocs(), log_};
+
+    { // Write sky image
+        CommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
+
+        const TransitionInfo res_transition = {&temp_img_, eResState::CopyDst};
+        TransitionResourceStates(cmd_buf, AllStages, AllStages, {&res_transition, 1});
+
+        static const float rgba[4] = {};
+        ClearColorImage(temp_img_, rgba, cmd_buf);
+
+        const TransitionInfo res_transitions[] = {{&atmosphere_params_buf_, eResState::UniformBuffer},
+                                                  {&sky_transmittance_lut_tex_, eResState::ShaderResource},
+                                                  {&sky_multiscatter_lut_tex_, eResState::ShaderResource},
+                                                  {&sky_moon_tex_, eResState::ShaderResource},
+                                                  {&sky_weather_tex_, eResState::ShaderResource},
+                                                  {&sky_cirrus_tex_, eResState::ShaderResource},
+                                                  {&sky_noise3d_tex_, eResState::ShaderResource},
+                                                  {&temp_img_, eResState::UnorderedAccess}};
+        TransitionResourceStates(cmd_buf, AllStages, AllStages, res_transitions);
+
+        const Binding bindings[] = {
+            {eBindTarget::UBuf, ShadeSky::ATMOSPHERE_PARAMS_BUF_SLOT, atmosphere_params_buf_},
+            {eBindTarget::Tex2DSampled, ShadeSky::TRANSMITTANCE_LUT_SLOT, sky_transmittance_lut_tex_},
+            {eBindTarget::Tex2DSampled, ShadeSky::MULTISCATTER_LUT_SLOT, sky_multiscatter_lut_tex_},
+            {eBindTarget::Tex2DSampled, ShadeSky::MOON_TEX_SLOT, sky_moon_tex_},
+            {eBindTarget::Tex2DSampled, ShadeSky::WEATHER_TEX_SLOT, sky_weather_tex_},
+            {eBindTarget::Tex2DSampled, ShadeSky::CIRRUS_TEX_SLOT, sky_cirrus_tex_},
+            {eBindTarget::Tex3DSampled, ShadeSky::NOISE3D_TEX_SLOT, sky_noise3d_tex_},
+            {eBindTarget::Image, ShadeSky::OUT_IMG_SLOT, temp_img_}};
+
+        ShadeSky::Params uniform_params = {};
+        uniform_params.res[0] = res[0];
+        uniform_params.res[1] = res[1];
+
+        const uint32_t grp_count[3] = {uint32_t(res[0]) / ShadeSky::LOCAL_GROUP_SIZE_X,
+                                       uint32_t(res[1]) / ShadeSky::LOCAL_GROUP_SIZE_Y, 1};
+
+        if (!dir_lights.empty()) {
+            for (const uint32_t li : dir_lights) {
+                const light_t &l = lights[li];
+
+                memcpy(uniform_params.light_dir, l.dir.dir, 3 * sizeof(float));
+                uniform_params.light_dir[3] = l.dir.angle;
+                memcpy(uniform_params.light_col, l.col, 3 * sizeof(float));
+                if (l.dir.angle != 0.0f) {
+                    const float radius = tanf(l.dir.angle);
+                    uniform_params.light_col[0] *= (PI * radius * radius);
+                    uniform_params.light_col[1] *= (PI * radius * radius);
+                    uniform_params.light_col[2] *= (PI * radius * radius);
+                }
+
+                DispatchCompute(cmd_buf, pi_bake_sky_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                                ctx_->default_descr_alloc(), ctx_->log());
+            }
+        } else if (env_.atmosphere.stars_brightness > 0.0f) {
+            // Use fake lightsource (to light up the moon)
+            const fvec4 light_dir = {0.0f, -1.0f, 0.0f, 0.0f},
+                        light_col = {144809.866891f, 129443.618266f, 127098.894121f, 0.0f};
+
+            memcpy(uniform_params.light_dir, value_ptr(light_dir), 3 * sizeof(float));
+            uniform_params.light_dir[3] = 0.0f;
+            memcpy(uniform_params.light_col, value_ptr(light_col), 3 * sizeof(float));
+
+            DispatchCompute(cmd_buf, pi_bake_sky_, grp_count, bindings, &uniform_params, sizeof(uniform_params),
+                            ctx_->default_descr_alloc(), ctx_->log());
+        }
+
+        EndSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
+    }
+
+    Buffer temp_readback_buf("Temp Sky Readback", ctx_, eBufType::Readback,
+                             round_up(4 * res[0] * sizeof(float), TextureDataPitchAlignment) * res[1]);
+
+    { // Readback texture data
+        CommandBuffer cmd_buf = BegSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->temp_command_pool());
+        CopyImageToBuffer(temp_img_, 0, 0, 0, res[0], res[1], temp_readback_buf, cmd_buf, 0);
+        InsertReadbackMemoryBarrier(ctx_->api(), cmd_buf);
+        EndSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
+    }
+
+    std::vector<color_rgba8_t> rgbe_pixels(res[0] * res[1]);
+
+    const float *f32_data = reinterpret_cast<const float *>(temp_readback_buf.Map());
+    for (int i = 0; i < res[0] * res[1]; ++i) {
+        Ref::fvec4 color(&f32_data[4 * i]);
+        color = rgb_to_rgbe(color);
+
+        rgbe_pixels[i].v[0] = uint8_t(color.get<0>());
+        rgbe_pixels[i].v[1] = uint8_t(color.get<1>());
+        rgbe_pixels[i].v[2] = uint8_t(color.get<2>());
+        rgbe_pixels[i].v[3] = uint8_t(color.get<3>());
+    }
+    temp_readback_buf.Unmap();
+    temp_readback_buf.FreeImmediate();
+
+    return rgbe_pixels;
+}
+
 inline void
 Ray::NS::Scene::PrepareSkyEnvMap_nolock(const std::function<void(int, int, ParallelForFunction &&)> &parallel_for) {
     const uint64_t t1 = Ray::GetTimeMs();
@@ -1590,30 +1734,6 @@ Ray::NS::Scene::PrepareSkyEnvMap_nolock(const std::function<void(int, int, Paral
     //     }
     //     return;
     // }
-
-    const int SkyEnvRes[] = {env_.envmap_resolution, env_.envmap_resolution / 2};
-    const std::vector<color_rgba8_t> rgbe_pixels =
-        CalcSkyEnvTexture(env_.atmosphere, SkyEnvRes, lights_.data(), dir_lights_, parallel_for);
-
-    tex_desc_t desc = {};
-    desc.format = eTextureFormat::RGBA8888;
-    desc.name = "Physical Sky Texture";
-    desc.data = Span<const uint8_t>{&rgbe_pixels[0].v[0], 4 * SkyEnvRes[0] * SkyEnvRes[1]};
-    desc.w = SkyEnvRes[0];
-    desc.h = SkyEnvRes[1];
-    desc.is_srgb = false;
-    desc.force_no_compression = true;
-
-    if (use_bindless_) {
-        physical_sky_texture_ = AddBindlessTexture_nolock(desc);
-    } else {
-        physical_sky_texture_ = AddAtlasTexture_nolock(desc);
-    }
-
-    env_.env_map = physical_sky_texture_._index;
-    if (env_.back_map == PhysicalSkyTexture._index) {
-        env_.back_map = physical_sky_texture_._index;
-    }
 
     if (!sky_moon_tex_.ready()) {
         Tex2DParams params;
@@ -1677,7 +1797,7 @@ Ray::NS::Scene::PrepareSkyEnvMap_nolock(const std::function<void(int, int, Paral
         Tex2DParams params;
         params.w = params.h = CIRRUS_TEX_RES;
         params.format = eTexFormat::RawRG88;
-        //params.flags = eTexFlags::SRGB;
+        // params.flags = eTexFlags::SRGB;
         params.usage = eTexUsageBits::Sampled | eTexUsageBits::Transfer;
         params.sampling.filter = eTexFilter::BilinearNoMipmap;
         params.sampling.wrap = eTexWrap::Repeat;
@@ -1707,8 +1827,7 @@ Ray::NS::Scene::PrepareSkyEnvMap_nolock(const std::function<void(int, int, Paral
 
         sky_noise3d_tex_ = Texture3D{"Noise 3d Tex", ctx_, params, ctx_->default_memory_allocs(), log_};
 
-        const uint32_t data_len =
-            NOISE_3D_RES * NOISE_3D_RES * round_up(NOISE_3D_RES, TextureDataPitchAlignment);
+        const uint32_t data_len = NOISE_3D_RES * NOISE_3D_RES * round_up(NOISE_3D_RES, TextureDataPitchAlignment);
         Buffer stage_buf = Buffer("Temp stage buf", ctx_, eBufType::Upload, data_len);
         uint8_t *mapped_ptr = stage_buf.Map();
 
@@ -1726,6 +1845,37 @@ Ray::NS::Scene::PrepareSkyEnvMap_nolock(const std::function<void(int, int, Paral
         EndSingleTimeCommands(ctx_->api(), ctx_->device(), ctx_->graphics_queue(), cmd_buf, ctx_->temp_command_pool());
 
         stage_buf.FreeImmediate();
+    }
+
+    const int SkyEnvRes[] = {env_.envmap_resolution, env_.envmap_resolution / 2};
+    std::vector<color_rgba8_t> rgbe_pixels;
+    if (pi_bake_sky_) {
+        // Use GPU
+        rgbe_pixels = CalcSkyEnvTexture(env_.atmosphere, SkyEnvRes, lights_.data(), dir_lights_);
+    } else {
+        // Use CPU
+        rgbe_pixels =
+            SceneCommon::CalcSkyEnvTexture(env_.atmosphere, SkyEnvRes, lights_.data(), dir_lights_, parallel_for);
+    }
+
+    tex_desc_t desc = {};
+    desc.format = eTextureFormat::RGBA8888;
+    desc.name = "Physical Sky Texture";
+    desc.data = Span<const uint8_t>{&rgbe_pixels[0].v[0], 4 * SkyEnvRes[0] * SkyEnvRes[1]};
+    desc.w = SkyEnvRes[0];
+    desc.h = SkyEnvRes[1];
+    desc.is_srgb = false;
+    desc.force_no_compression = true;
+
+    if (use_bindless_) {
+        physical_sky_texture_ = AddBindlessTexture_nolock(desc);
+    } else {
+        physical_sky_texture_ = AddAtlasTexture_nolock(desc);
+    }
+
+    env_.env_map = physical_sky_texture_._index;
+    if (env_.back_map == PhysicalSkyTexture._index) {
+        env_.back_map = physical_sky_texture_._index;
     }
 
     log_->Info("PrepareSkyEnvMap (%ix%i) done in %lldms", SkyEnvRes[0], SkyEnvRes[1], GetTimeMs() - t1);
@@ -1796,43 +1946,57 @@ inline void Ray::NS::Scene::PrepareEnvMapQTree_nolock() {
     { // initialize the first quadtree level
         env_map_qtree_.mips.emplace_back(cur_res * cur_res / 4, 0.0f);
 
-        for (int y = 0; y < size[1]; ++y) {
-            for (int x = 0; x < size[0]; ++x) {
-                const uint8_t *col_rgbe = &rgbe_data[4 * (y * pitch + x)];
-                fvec4 col_rgb;
-                rgbe_to_rgb(col_rgbe, value_ptr(col_rgb));
+        static const float FilterWeights[][5] = {{1 / 273.0f, 4 / 273.0f, 7 / 273.0f, 4 / 273.0f, 1 / 273.0f},    //
+                                                 {4 / 273.0f, 16 / 273.0f, 26 / 273.0f, 16 / 273.0f, 4 / 273.0f}, //
+                                                 {7 / 273.0f, 26 / 273.0f, 41 / 273.0f, 26 / 273.0f, 7 / 273.0f}, //
+                                                 {4 / 273.0f, 16 / 273.0f, 26 / 273.0f, 16 / 273.0f, 4 / 273.0f}, //
+                                                 {1 / 273.0f, 4 / 273.0f, 7 / 273.0f, 4 / 273.0f, 1 / 273.0f}};
+        static const float FilterSize = 0.5f;
 
-                const float cur_lum = (col_rgb[0] + col_rgb[1] + col_rgb[2]);
+        for (int qy = 0; qy < cur_res; ++qy) {
+            for (int qx = 0; qx < cur_res; ++qx) {
+                for (int jj = -2; jj <= 2; ++jj) {
+                    for (int ii = -2; ii <= 2; ++ii) {
+                        const Ref::fvec2 q = {Ref::fract(1.0f + (float(qx) + 0.5f + ii * FilterSize) / cur_res),
+                                              Ref::fract(1.0f + (float(qy) + 0.5f + jj * FilterSize) / cur_res)};
+                        fvec4 dir;
+                        CanonicalToDir(value_ptr(q), 0.0f, value_ptr(dir));
 
-                for (int jj = -1; jj <= 1; ++jj) {
-                    const float theta = PI * float(y + jj) / float(size[1]);
-                    for (int ii = -1; ii <= 1; ++ii) {
-                        const float phi = 2.0f * PI * float(x + ii) / float(size[0]);
-                        auto dir = fvec4{std::sin(theta) * std::cos(phi), std::cos(theta),
-                                         std::sin(theta) * std::sin(phi), 0.0f};
+                        const float theta = acosf(clamp(dir.get<1>(), -1.0f, 1.0f)) / PI;
+                        float phi = atan2f(dir.get<2>(), dir.get<0>());
+                        if (phi < 0) {
+                            phi += 2 * PI;
+                        }
+                        if (phi > 2 * PI) {
+                            phi -= 2 * PI;
+                        }
 
-                        fvec2 q;
-                        DirToCanonical(value_ptr(dir), 0.0f, value_ptr(q));
+                        const float u = Ref::fract(0.5f * phi / PI);
 
-                        int qx = clamp(int(cur_res * q[0]), 0, cur_res - 1);
-                        int qy = clamp(int(cur_res * q[1]), 0, cur_res - 1);
+                        const fvec2 uvs = fvec2{u, theta} * fvec2(size);
+                        const ivec2 iuvs = clamp(ivec2(uvs), ivec2(0), size - 1);
+
+                        const uint8_t *col_rgbe = &rgbe_data[4 * (iuvs.get<1>() * pitch + iuvs.get<0>())];
+                        fvec4 col_rgb;
+                        rgbe_to_rgb(col_rgbe, value_ptr(col_rgb));
+                        const float cur_lum = (col_rgb.get<0>() + col_rgb.get<1>() + col_rgb.get<2>());
 
                         int index = 0;
                         index |= (qx & 1) << 0;
                         index |= (qy & 1) << 1;
 
-                        qx /= 2;
-                        qy /= 2;
+                        const int _qx = (qx / 2);
+                        const int _qy = (qy / 2);
 
-                        fvec4 &qvec = env_map_qtree_.mips[0][qy * cur_res / 2 + qx];
-                        qvec.set(index, std::max(qvec[index], cur_lum));
+                        auto &qvec = env_map_qtree_.mips[0][_qy * cur_res / 2 + _qx];
+                        qvec.set(index, qvec[index] + cur_lum * FilterWeights[ii + 2][jj + 2]);
                     }
                 }
             }
         }
 
         for (const fvec4 &v : env_map_qtree_.mips[0]) {
-            total_lum += (v[0] + v[1] + v[2] + v[3]);
+            total_lum += hsum(v);
         }
 
         cur_res /= 2;
@@ -1870,7 +2034,7 @@ inline void Ray::NS::Scene::PrepareEnvMapQTree_nolock() {
     // Determine how many levels was actually required
     //
 
-    const float LumFractThreshold = 0.01f;
+    const float LumFractThreshold = 0.005f;
 
     cur_res = 2;
     int the_last_required_lod = 0;
