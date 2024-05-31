@@ -97,8 +97,7 @@ bool Eng::Renderer::InitPipelines() {
     success &= init_pipeline(pi_sun_brightness_, "internal/sun_brightness.comp.glsl");
 
     // Autoexposure
-    success &= init_pipeline(pi_histogram_sample_[0], "internal/histogram_sample.comp.glsl");
-    success &= init_pipeline(pi_histogram_sample_[1], "internal/histogram_sample.comp.glsl@COMPRESSED");
+    success &= init_pipeline(pi_histogram_sample_, "internal/histogram_sample.comp.glsl");
     success &= init_pipeline(pi_histogram_exposure_, "internal/histogram_exposure.comp.glsl");
 
     // Debugging
@@ -1652,8 +1651,12 @@ Eng::RpResRef Eng::Renderer::AddAutoexposurePasses(RpResRef hdr_texture) {
                 {Ren::eBindTarget::Image2D, HistogramSample::OUT_IMG_SLOT, *output_tex.ref}};
 
             const bool compressed = (input_tex.ref->params.format == Ren::eTexFormat::RawRGBA16F);
-            Ren::DispatchCompute(pi_histogram_sample_[compressed], Ren::Vec3u{16, 8, 1}, bindings, nullptr, 0,
-                                 builder.ctx().default_descr_alloc(), builder.log());
+
+            HistogramSample::Params uniform_params = {};
+            uniform_params.scale = compressed ? HDR_FACTOR : (1.0f / pre_exposure_);
+
+            Ren::DispatchCompute(pi_histogram_sample_, Ren::Vec3u{16, 8, 1}, bindings, &uniform_params,
+                                 sizeof(uniform_params), builder.ctx().default_descr_alloc(), builder.log());
         });
     }
     RpResRef exposure;

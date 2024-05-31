@@ -138,6 +138,8 @@ const int PROBE_DISTANCE_RES = 16;
 const float PROBE_STATE_INACTIVE = 0;
 const float PROBE_STATE_ACTIVE = 1;
 
+const float HDR_FACTOR = 32;
+
 // Atmosphere
 const int SKY_MULTISCATTER_LUT_RES = 32;
 const int SKY_PRE_ATMOSPHERE_SAMPLE_COUNT = 4;

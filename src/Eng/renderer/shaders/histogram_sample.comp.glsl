@@ -8,7 +8,9 @@
 #include "_cs_common.glsl"
 #include "histogram_sample_interface.h"
 
-#pragma multi_compile _ COMPRESSED
+LAYOUT_PARAMS uniform UniformParams {
+    Params g_params;
+};
 
 layout(binding = HDR_TEX_SLOT) uniform sampler2D g_hdr_tex;
 
@@ -33,10 +35,8 @@ void main() {
     const vec2 uv_corner = vec2(grp) / vec2(16.0, 8.0);
     const vec2 uv_sample = uv_corner + hammersley(gl_LocalInvocationIndex, LOCAL_GROUP_SIZE_X * LOCAL_GROUP_SIZE_Y) / vec2(16.0, 8.0);
 
-    vec3 color = textureLod(g_hdr_tex, uv_sample, 0.0).xyz;
-#ifdef COMPRESSED
-    color = decompress_hdr(color);
-#endif
+    const vec3 color = g_params.scale * textureLod(g_hdr_tex, uv_sample, 0.0).xyz;
+
     const float luma = lum(color);
     const float bucketId = saturate(histogram_from_luma(luma)) * (EXPOSURE_HISTOGRAM_RES - 1) * (1.0 - 1e-5);
     const uint bucket = uint(bucketId);

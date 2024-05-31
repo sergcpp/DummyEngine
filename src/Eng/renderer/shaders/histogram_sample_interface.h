@@ -5,6 +5,13 @@
 
 INTERFACE_START(HistogramSample)
 
+struct Params {
+    float scale;
+    float _pad0;
+    float _pad1;
+    float _pad2;
+};
+
 const int LOCAL_GROUP_SIZE_X = 8;
 const int LOCAL_GROUP_SIZE_Y = 8;
 

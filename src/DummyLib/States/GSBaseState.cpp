@@ -1089,8 +1089,7 @@ void GSBaseState::InitRenderer_PT() {
         }
         s.use_hwrt = !viewer_->app_params.pt_nohwrt;
         s.validation_level = viewer_->app_params.validation_level;
-        ray_renderer_ =
-            std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
+        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
         ray_renderer_->InitUNetFilter(true /* alias_memory */, unet_props_);
     }
@@ -1421,6 +1420,9 @@ void GSBaseState::InitScene_PT() {
 }
 
 void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, const Ren::Vec3f &up, const float fov) {
+    using namespace std::placeholders;
+    auto parallel_for = std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3);
+
     Ray::camera_desc_t cam_desc;
     ray_scene_->GetCamera(Ray::CameraHandle{0}, cam_desc);
 
@@ -1428,6 +1430,32 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
     memcpy(&cam_desc.fwd[0], ValuePtr(fwd), 3 * sizeof(float));
     memcpy(&cam_desc.up[0], ValuePtr(up), 3 * sizeof(float));
     cam_desc.fov = fov;
+
+    const float desired_exposure = log2f(renderer_->readback_exposure());
+    if (renderer_->readback_exposure() > 0.0f && std::abs(cam_desc.exposure - desired_exposure) > 0.5f) {
+        ray_renderer_->ResetSpatialCache(*ray_scene_, parallel_for);
+        invalidate_view_ = true;
+    }
+
+    const Eng::SceneData &scene_data = scene_manager_->scene_data();
+    if (Distance2(prev_sun_dir_, scene_data.env.sun_dir) > 0.001f && pt_sun_light_ != Ray::InvalidLightHandle) {
+        ray_scene_->RemoveLight(pt_sun_light_);
+        // Re-add sun light
+        Ray::directional_light_desc_t sun_desc;
+        memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
+        memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
+        sun_desc.angle = scene_data.env.sun_angle;
+        pt_sun_light_ = ray_scene_->AddLight(sun_desc);
+        prev_sun_dir_ = scene_data.env.sun_dir;
+
+        ray_scene_->Finalize(parallel_for);
+        invalidate_view_ = true;
+    }
+
+    if (invalidate_view_) {
+        cam_desc.exposure = desired_exposure;
+        renderer_->set_pre_exposure(renderer_->readback_exposure());
+    }
 
     ray_scene_->SetCamera(Ray::CameraHandle{0}, cam_desc);
 }
@@ -1453,22 +1481,6 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
 
     using namespace std::placeholders;
     auto parallel_for = std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3);
-
-    const Eng::SceneData &scene_data = scene_manager_->scene_data();
-    if (Distance2(prev_sun_dir_, scene_data.env.sun_dir) > 0.001f && pt_sun_light_ != Ray::InvalidLightHandle) {
-        ray_scene_->RemoveLight(pt_sun_light_);
-        // Re-add sun light
-        Ray::directional_light_desc_t sun_desc;
-        memcpy(sun_desc.color, ValuePtr(scene_data.env.sun_col), 3 * sizeof(float));
-        memcpy(sun_desc.direction, ValuePtr(scene_data.env.sun_dir), 3 * sizeof(float));
-        sun_desc.angle = scene_data.env.sun_angle;
-        pt_sun_light_ = ray_scene_->AddLight(sun_desc);
-        prev_sun_dir_ = scene_data.env.sun_dir;
-
-        ray_scene_->Finalize(parallel_for);
-        ray_renderer_->ResetSpatialCache(*ray_scene_, parallel_for);
-        invalidate_view_ = true;
-    }
 
     if (ray_reg_ctx_.empty()) {
         if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
@@ -1584,7 +1596,7 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
             threads_->Enqueue(*update_cache_tasks_).wait();
             ray_renderer_->ResolveSpatialCache(*ray_scene_, parallel_for);
         }
-        if (viewer_->app_params.pt_denoise) {
+        if (viewer_->app_params.pt_denoise && ray_reg_ctx_[0][0].iteration > 1) {
             threads_->Enqueue(*render_and_denoise_tasks_).wait();
         } else {
             threads_->Enqueue(*render_tasks_).wait();

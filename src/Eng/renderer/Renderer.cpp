@@ -154,12 +154,6 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         assert(status == Ren::eTexLoadStatus::CreatedFromData);
     }
 
-    { // Brightness readback buffer
-        readback_buf_ = ctx.LoadBuffer("Brightness Readback", Ren::eBufType::Readback,
-                                       rp_sample_brightness_.res()[0] * rp_sample_brightness_.res()[1] * sizeof(float) *
-                                           Ren::MaxFramesInFlight);
-    }
-
     { // cone/sphere intersection LUT
         /*const int resx = 128, resy = 128;
 
@@ -571,10 +565,10 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         log->Info("Successfully initialized framebuffers %ix%i", view_state_.scr_res[0], view_state_.scr_res[1]);
     }
 
-    if (settings.pixel_filter != filter_table_filter_ || settings.pixel_filter_width != filter_table_width_) {
-        UpdateFilterTable(settings.pixel_filter, settings.pixel_filter_width);
-        filter_table_filter_ = settings.pixel_filter;
-        filter_table_width_ = settings.pixel_filter_width;
+    if (settings.pixel_filter != px_filter_table_filter_ || settings.pixel_filter_width != px_filter_table_width_) {
+        UpdatePixelFilterTable(settings.pixel_filter, settings.pixel_filter_width);
+        px_filter_table_filter_ = settings.pixel_filter;
+        px_filter_table_width_ = settings.pixel_filter_width;
     }
 
     if (!target) {
@@ -606,18 +600,18 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         Ren::Vec2f jitter = HaltonSeq23[halton_sample];
 
         auto lookup_filter_table = [this](float x) {
-            x *= (FilterTableSize - 1);
+            x *= (PxFilterTableSize - 1);
 
-            const int index = std::min(int(x), FilterTableSize - 1);
-            const int nindex = std::min(index + 1, FilterTableSize - 1);
+            const int index = std::min(int(x), PxFilterTableSize - 1);
+            const int nindex = std::min(index + 1, PxFilterTableSize - 1);
             const float t = x - float(index);
 
-            const float data0 = filter_table_[index];
+            const float data0 = px_filter_table_[index];
             if (t == 0.0f) {
                 return data0;
             }
 
-            float data1 = filter_table_[nindex];
+            float data1 = px_filter_table_[nindex];
             return (1.0f - t) * data0 + t * data1;
         };
 
@@ -1267,32 +1261,6 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
         }
 
         //
-        // Sample brightness
-        //
-        if (list.render_settings.tonemap_mode != eTonemapMode::Off) {
-            RpResRef lum_tex;
-            { // Sample brightness
-                auto &lum_sample = rp_builder_.AddPass("LUM SAMPLE");
-
-                auto *data = lum_sample.AllocPassData<RpSampleBrightnessData>();
-                data->input_tex = lum_sample.AddTextureInput(down_tex_4x_, Ren::eStageBits::FragmentShader);
-                { // aux buffer which gathers frame luminance
-                    Ren::Tex2DParams params;
-                    params.w = 16;
-                    params.h = 8;
-                    params.format = Ren::eTexFormat::RawR32F;
-                    params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-                    params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-                    lum_tex = data->reduced_tex = lum_sample.AddColorOutput(REDUCED_TEX, params);
-                }
-
-                rp_sample_brightness_.Setup(data);
-                lum_sample.set_executor(&rp_sample_brightness_);
-            }
-        }
-
-        //
         // Debugging
         //
         if (list.render_settings.debug_motion) {
@@ -1376,6 +1344,23 @@ void Eng::Renderer::ExecuteDrawList(const DrawList &list, const PersistentGpuDat
                 rp_combine_.Setup(&view_state_, &rp_combine_data_);
                 combine.set_executor(&rp_combine_);
             }
+        }
+
+        { // Readback exposure
+            auto &read_exposure = rp_builder_.AddPass("READ EXPOSURE");
+
+            auto *data = read_exposure.AllocPassData<RpReadExposureData>();
+            data->input_tex = read_exposure.AddTransferImageInput(frame_textures.exposure);
+
+            RpBufDesc desc;
+            desc.type = Ren::eBufType::Readback;
+            desc.size = Ren::MaxFramesInFlight * sizeof(float);
+            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback Buf", desc);
+
+            backbuffer_sources_.push_back(data->output_buf);
+
+            rp_read_exposure_.Setup(data);
+            read_exposure.set_executor(&rp_read_exposure_);
         }
 
 #if defined(USE_GL_RENDER) && 0 // gl-only for now
@@ -1501,7 +1486,7 @@ void Eng::Renderer::SetTonemapLUT(const int res, const Ren::eTexFormat format, R
     temp_upload_buf.FreeImmediate();
 }
 
-void Eng::Renderer::UpdateFilterTable(const ePixelFilter filter, float filter_width) {
+void Eng::Renderer::UpdatePixelFilterTable(const ePixelFilter filter, float filter_width) {
     float (*filter_func)(float v, float width);
 
     switch (filter) {
@@ -1521,8 +1506,9 @@ void Eng::Renderer::UpdateFilterTable(const ePixelFilter filter, float filter_wi
         assert(false && "Unknown filter!");
     }
 
-    filter_table_ = CDFInverted(FilterTableSize, 0.0f, filter_width * 0.5f,
-                                std::bind(filter_func, std::placeholders::_1, filter_width), true /* make_symmetric */);
+    px_filter_table_ =
+        CDFInverted(PxFilterTableSize, 0.0f, filter_width * 0.5f,
+                    std::bind(filter_func, std::placeholders::_1, filter_width), true /* make_symmetric */);
 }
 
 void Eng::Renderer::InitBackendInfo() {
@@ -1664,7 +1650,7 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
         auto &combine = rp_builder_.AddPass("COMBINE");
 
         rp_combine_data_ = {};
-        rp_combine_data_.exposure_tex = combine.AddTextureInput(exposure_tex, Ren::eStageBits::FragmentShader);
+        rp_combine_data_.exposure_tex = combine.AddTextureInput(dummy_white_, Ren::eStageBits::FragmentShader);
         rp_combine_data_.color_tex = combine.AddTextureInput(output_tex_res, Ren::eStageBits::FragmentShader);
         rp_combine_data_.blur_tex = combine.AddTextureInput(dummy_black_, Ren::eStageBits::FragmentShader);
         if (target) {
@@ -1686,6 +1672,23 @@ void Eng::Renderer::BlitPixelsTonemap(const uint8_t *data, const int w, const in
 
         rp_combine_.Setup(&view_state_, &rp_combine_data_);
         combine.set_executor(&rp_combine_);
+
+        { // Readback exposure
+            auto &read_exposure = rp_builder_.AddPass("READ EXPOSURE");
+
+            auto *data = read_exposure.AllocPassData<RpReadExposureData>();
+            data->input_tex = read_exposure.AddTransferImageInput(exposure_tex);
+
+            RpBufDesc desc;
+            desc.type = Ren::eBufType::Readback;
+            desc.size = Ren::MaxFramesInFlight * sizeof(float);
+            data->output_buf = read_exposure.AddTransferOutput("Exposure Readback Buf", desc);
+
+            backbuffer_sources_.push_back(data->output_buf);
+
+            rp_read_exposure_.Setup(data);
+            read_exposure.set_executor(&rp_read_exposure_);
+        }
 
         rp_builder_.Compile();
 

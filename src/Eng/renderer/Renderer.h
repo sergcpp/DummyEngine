@@ -26,10 +26,9 @@ extern "C" {
 #include "passes/RpRTGICache.h"
 #include "passes/RpRTReflections.h"
 #include "passes/RpRTShadows.h"
-#include "passes/RpReadBrightness.h"
+#include "passes/RpReadExposure.h"
 #include "passes/RpSSRCompose.h"
 #include "passes/RpSSRCompose2.h"
-#include "passes/RpSampleBrightness.h"
 #include "passes/RpShadowMaps.h"
 #include "passes/RpSkinning.h"
 #include "passes/RpSkydome.h"
@@ -60,6 +59,14 @@ class Renderer {
 
     int accumulated_frames() const { return accumulated_frames_; }
     void reset_accumulation() { frame_index_ = view_state_.frame_index = accumulated_frames_ = 0; }
+
+    float readback_exposure() const {
+        if (rp_read_exposure_.exposure() > 0.0f) {
+            return rp_read_exposure_.exposure();
+        }
+        return 1.0f;
+    }
+    void set_pre_exposure(const float exposure) { pre_exposure_ = exposure; }
 
     const BackendInfo &backend_info() const { return backend_info_; }
 
@@ -92,7 +99,6 @@ class Renderer {
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,
         noise_tex_;
     Ren::Tex3DRef tonemap_lut_;
-    Ren::BufferRef readback_buf_;
     Ren::BufferRef sobol_seq_buf_, scrambling_tile_1spp_buf_, ranking_tile_1spp_buf_;
     Ren::Tex2DRef sky_transmittance_lut_, sky_multiscatter_lut_, sky_moon_tex_, sky_weather_tex_, sky_cirrus_tex_;
     Ren::Tex3DRef sky_noise3d_tex_;
@@ -114,10 +120,10 @@ class Renderer {
     std::vector<uint32_t> litem_to_lsource_;
     DynArray<const Decal *> ditem_to_decal_;
 
-    static const int FilterTableSize = 1024;
-    ePixelFilter filter_table_filter_ = ePixelFilter(-1);
-    float filter_table_width_ = 0.0f;
-    std::vector<float> filter_table_;
+    static const int PxFilterTableSize = 1024;
+    ePixelFilter px_filter_table_filter_ = ePixelFilter(-1);
+    float px_filter_table_width_ = 0.0f;
+    std::vector<float> px_filter_table_;
 
     struct ProcessedObjData {
         uint32_t base_vertex;
@@ -181,6 +187,7 @@ class Renderer {
     const Ren::ProbeStorage *probe_storage_ = nullptr;
     Ren::SmallVector<RpResRef, 8> backbuffer_sources_;
     float min_exposure_ = 1.0f, max_exposure_ = 1.0f;
+    float pre_exposure_ = 1.0f;
 
     RpShadowMaps rp_shadow_maps_ = {SHADOWMAP_WIDTH, SHADOWMAP_HEIGHT};
     RpSkydomeCube rp_skydome_cube_ = {prim_draw_};
@@ -196,7 +203,7 @@ class Renderer {
     RpRTGICache rp_rt_gi_cache_;
     RpRTReflections rp_rt_reflections_;
     RpRTShadows rp_rt_shadows_;
-    RpSampleBrightness rp_sample_brightness_ = {prim_draw_, Ren::Vec2i{16, 8}};
+    RpReadExposure rp_read_exposure_;
     RpCombineData rp_combine_data_;
     RpCombine rp_combine_ = {prim_draw_};
 
@@ -226,7 +233,7 @@ class Renderer {
         pi_shadow_filter_[3], pi_shadow_debug_;
     Ren::Pipeline pi_sun_brightness_;
     // Autoexposure
-    Ren::Pipeline pi_histogram_sample_[2], pi_histogram_exposure_;
+    Ren::Pipeline pi_histogram_sample_, pi_histogram_exposure_;
     // Debug
     Ren::Pipeline pi_debug_velocity_;
 
@@ -325,7 +332,7 @@ class Renderer {
 
     bool InitPipelines();
     // void InitRendererInternal();
-    void UpdateFilterTable(ePixelFilter filter, float filter_width);
+    void UpdatePixelFilterTable(ePixelFilter filter, float filter_width);
 
     // Parallel Jobs
     static void GatherObjectsForZSlice_Job(const Ren::Frustum &frustum, const SceneData &scene,

@@ -181,8 +181,8 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpGBufferFill.cpp
                     renderer/passes/RpOpaque.h
                     renderer/passes/RpOpaque.cpp
-                    renderer/passes/RpReadBrightness.h
-                    renderer/passes/RpReadBrightness.cpp
+                    renderer/passes/RpReadExposure.h
+                    renderer/passes/RpReadExposure.cpp
                     renderer/passes/RpRTGI.h
                     renderer/passes/RpRTGI.cpp
                     renderer/passes/RpRTGICache.h
@@ -191,8 +191,6 @@ set(PASS_SOURCES    renderer/passes/RpBuildAccStructures.h
                     renderer/passes/RpRTReflections.cpp
                     renderer/passes/RpRTShadows.h
                     renderer/passes/RpRTShadows.cpp
-                    renderer/passes/RpSampleBrightness.h
-                    renderer/passes/RpSampleBrightness.cpp
                     renderer/passes/RpShadowMaps.h
                     renderer/passes/RpShadowMaps.cpp
                     renderer/passes/RpSkinning.h

@@ -8,7 +8,6 @@
 #define GOLDEN_RATIO 1.61803398875
 
 #define HALF_MAX 65504.0
-#define HDR_FACTOR 32.0
 
 #define FLT_MAX 3.402823466e+38
 #define FLT_MIN 1e-15
