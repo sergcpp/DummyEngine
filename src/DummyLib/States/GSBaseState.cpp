@@ -1450,6 +1450,9 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         res_y = ren_ctx_->h();
     }
 
+    using namespace std::placeholders;
+    auto parallel_for = std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3);
+
     const Eng::SceneData &scene_data = scene_manager_->scene_data();
     if (Distance2(prev_sun_dir_, scene_data.env.sun_dir) > 0.001f && pt_sun_light_ != Ray::InvalidLightHandle) {
         ray_scene_->RemoveLight(pt_sun_light_);
@@ -1461,8 +1464,8 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
         pt_sun_light_ = ray_scene_->AddLight(sun_desc);
         prev_sun_dir_ = scene_data.env.sun_dir;
 
-        using namespace std::placeholders;
-        ray_scene_->Finalize(std::bind(&Sys::ThreadPool::ParallelFor<Ray::ParallelForFunction>, threads_, _1, _2, _3));
+        ray_scene_->Finalize(parallel_for);
+        ray_renderer_->ResetSpatialCache(*ray_scene_, parallel_for);
         invalidate_view_ = true;
     }
 
@@ -1483,13 +1486,28 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
     }
 
     if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
+        auto update_cache_task = [this](const int i) {
+            ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[i]);
+        };
         auto render_task = [this](const int i) { ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[i]); };
-        std::vector<std::future<void>> ev(ray_reg_ctx_.size());
-        for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
-            ev[i] = threads_->Enqueue(render_task, i);
+        { // Update cache
+            std::vector<std::future<void>> ev(ray_reg_ctx_.size());
+            for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
+                ev[i] = threads_->Enqueue(update_cache_task, i);
+            }
+            for (const std::future<void> &e : ev) {
+                e.wait();
+            }
         }
-        for (const std::future<void> &e : ev) {
-            e.wait();
+        ray_renderer_->ResolveSpatialCache(*ray_scene_, parallel_for);
+        { // Render
+            std::vector<std::future<void>> ev(ray_reg_ctx_.size());
+            for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
+                ev[i] = threads_->Enqueue(render_task, i);
+            }
+            for (const std::future<void> &e : ev) {
+                e.wait();
+            }
         }
     } else {
         ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[0]);
