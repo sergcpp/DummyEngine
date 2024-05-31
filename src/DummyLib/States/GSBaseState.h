@@ -15,6 +15,7 @@
 #include <Ren/Program.h>
 #include <Ren/SW/SW.h>
 #include <Ren/Texture.h>
+#include <Sys/SmallVector.h>
 
 class DebugInfoUI;
 class FontStorage;
@@ -39,10 +40,14 @@ namespace Ray {
 class RegionContext;
 class RendererBase;
 class SceneBase;
-}
+} // namespace Ray
 
 namespace Snd {
 class Context;
+}
+
+namespace Sys {
+struct TaskList;
 }
 
 class GSBaseState : public Eng::ViewerState {
@@ -59,9 +64,11 @@ class GSBaseState : public Eng::ViewerState {
     Eng::ShaderLoader *shader_loader_ = nullptr;
     std::unique_ptr<Ray::RendererBase> ray_renderer_;
     std::unique_ptr<Ray::SceneBase> ray_scene_;
-    std::vector<Ray::RegionContext> ray_reg_ctx_;
-    int unet_filter_passes_count_ = 0;
+    std::vector<Sys::SmallVector<Ray::RegionContext, 128>> ray_reg_ctx_;
+    Ray::unet_filter_properties_t unet_props_ = {};
     Sys::ThreadPool *threads_ = nullptr;
+    std::unique_ptr<Sys::TaskList> render_tasks_, render_and_denoise_tasks_;
+    std::unique_ptr<Sys::TaskList> update_cache_tasks_;
 
     Gui::Renderer *ui_renderer_ = nullptr;
     Gui::BaseElement *ui_root_ = nullptr;

@@ -695,7 +695,7 @@ void GSBaseState::Draw() {
     Ren::Tex2DRef render_target;
     if (capture_started_) {
         if (use_pt_) {
-            const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0].iteration;
+            const int iteration = ray_reg_ctx_.empty() ? 0 : ray_reg_ctx_[0][0].iteration;
             if (iteration < viewer_->app_params.pt_max_samples) {
                 render_target = capture_result_;
                 log_->Info("Capturing iteration #%i", iteration);
@@ -1089,11 +1089,10 @@ void GSBaseState::InitRenderer_PT() {
         }
         s.use_hwrt = !viewer_->app_params.pt_nohwrt;
         s.validation_level = viewer_->app_params.validation_level;
-        ray_renderer_ = std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
+        ray_renderer_ =
+            std::unique_ptr<Ray::RendererBase>(Ray::CreateRenderer(s, viewer_->ray_log()));
 
-        Ray::unet_filter_properties_t unet_props;
-        ray_renderer_->InitUNetFilter(true, unet_props);
-        unet_filter_passes_count_ = unet_props.pass_count;
+        ray_renderer_->InitUNetFilter(true /* alias_memory */, unet_props_);
     }
 }
 
@@ -1434,8 +1433,10 @@ void GSBaseState::SetupView_PT(const Ren::Vec3f &origin, const Ren::Vec3f &fwd, 
 }
 
 void GSBaseState::Clear_PT() {
-    for (Ray::RegionContext &c : ray_reg_ctx_) {
-        c.Clear();
+    for (auto &ctxs : ray_reg_ctx_) {
+        for (auto &ctx : ctxs) {
+            ctx.Clear();
+        }
     }
     ray_renderer_->Clear({});
 }
@@ -1471,51 +1472,130 @@ void GSBaseState::Draw_PT(const Ren::Tex2DRef &target) {
 
     if (ray_reg_ctx_.empty()) {
         if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
-            static const int TILE_SIZE = 64;
-            for (int y = 0; y < res_y + TILE_SIZE - 1; y += TILE_SIZE) {
-                for (int x = 0; x < res_x + TILE_SIZE - 1; x += TILE_SIZE) {
-                    auto rect = Ray::rect_t{x, y, std::min(TILE_SIZE, res_x - x), std::min(TILE_SIZE, res_y - y)};
-                    if (rect.w > 0 && rect.h > 0) {
-                        ray_reg_ctx_.emplace_back(rect);
+            const int TileSize = 64;
+
+            for (int y = 0; y < res_y; y += TileSize) {
+                ray_reg_ctx_.emplace_back();
+                for (int x = 0; x < res_x; x += TileSize) {
+                    const auto rect = Ray::rect_t{x, y, std::min(res_x - x, TileSize), std::min(res_y - y, TileSize)};
+                    ray_reg_ctx_.back().emplace_back(rect);
+                }
+            }
+
+            auto render_job = [this](const int i, const int j) {
+                ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[i][j]);
+            };
+
+            auto denoise_job = [this](const int pass, const int i, const int j) {
+                ray_renderer_->DenoiseImage(pass, ray_reg_ctx_[i][j]);
+            };
+
+            auto update_cache_job = [this](const int i, const int j) {
+                ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[i][j]);
+            };
+
+            render_tasks_ = std::make_unique<Sys::TaskList>();
+            render_and_denoise_tasks_ = std::make_unique<Sys::TaskList>();
+            update_cache_tasks_ = std::make_unique<Sys::TaskList>();
+
+            std::vector<Sys::SmallVector<short, 128>> render_task_ids;
+
+            for (int i = 0; i < int(ray_reg_ctx_.size()); ++i) {
+                render_task_ids.emplace_back();
+                for (int j = 0; j < int(ray_reg_ctx_[i].size()); ++j) {
+                    render_tasks_->AddTask(render_job, i, j);
+                    update_cache_tasks_->AddTask(update_cache_job, i, j);
+                    render_task_ids.back().emplace_back(render_and_denoise_tasks_->AddTask(render_job, i, j));
+                }
+            }
+
+            std::vector<Sys::SmallVector<short, 128>> denoise_task_ids[16];
+
+            for (int i = 0; i < int(ray_reg_ctx_.size()); ++i) {
+                denoise_task_ids[0].emplace_back();
+                for (int j = 0; j < int(ray_reg_ctx_[i].size()); ++j) {
+                    const short id = render_and_denoise_tasks_->AddTask(denoise_job, 0, i, j);
+
+                    denoise_task_ids[0].back().push_back(id);
+
+                    for (int k = -1; k <= 1; ++k) {
+                        if (i + k < 0 || i + k >= int(render_task_ids.size())) {
+                            continue;
+                        }
+                        for (int l = -1; l <= 1; ++l) {
+                            if (j + l < 0 || j + l >= int(render_task_ids[i + k].size())) {
+                                continue;
+                            }
+                            render_and_denoise_tasks_->AddDependency(id, render_task_ids[i + k][j + l]);
+                        }
                     }
                 }
             }
+
+            for (int pass = 1; pass < unet_props_.pass_count; ++pass) {
+                for (int y = 0, i = 0; y < res_y; y += TileSize, ++i) {
+                    denoise_task_ids[pass].emplace_back();
+                    for (int x = 0, j = 0; x < res_x; x += TileSize, ++j) {
+                        const short id = render_and_denoise_tasks_->AddTask(denoise_job, pass, i, j);
+
+                        denoise_task_ids[pass].back().push_back(id);
+
+                        // Always assume dependency on previous pass
+                        for (int k = -1; k <= 1; ++k) {
+                            if (i + k < 0 || i + k >= int(denoise_task_ids[pass - 1].size())) {
+                                continue;
+                            }
+                            for (int l = -1; l <= 1; ++l) {
+                                if (j + l < 0 || j + l >= int(denoise_task_ids[pass - 1][i + k].size())) {
+                                    continue;
+                                }
+                                render_and_denoise_tasks_->AddDependency(id, denoise_task_ids[pass - 1][i + k][j + l]);
+                            }
+                        }
+
+                        // Account for aliasing dependency (wait for all tasks which use this memory region)
+                        for (int ndx : unet_props_.alias_dependencies[pass]) {
+                            if (ndx == -1) {
+                                break;
+                            }
+                            for (const auto &deps : denoise_task_ids[ndx]) {
+                                for (const short dep : deps) {
+                                    render_and_denoise_tasks_->AddDependency(id, dep);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            render_tasks_->Sort();
+            update_cache_tasks_->Sort();
+            render_and_denoise_tasks_->Sort();
+            assert(!render_and_denoise_tasks_->HasCycles());
         } else {
-            ray_reg_ctx_.emplace_back(Ray::rect_t{0, 0, res_x, res_y});
+            ray_reg_ctx_.emplace_back();
+            ray_reg_ctx_.back().emplace_back(Ray::rect_t{0, 0, res_x, res_y});
         }
     }
 
     if (Ray::RendererSupportsMultithreading(ray_renderer_->type())) {
-        auto update_cache_task = [this](const int i) {
-            ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[i]);
-        };
-        auto render_task = [this](const int i) { ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[i]); };
-        { // Update cache
-            std::vector<std::future<void>> ev(ray_reg_ctx_.size());
-            for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
-                ev[i] = threads_->Enqueue(update_cache_task, i);
-            }
-            for (const std::future<void> &e : ev) {
-                e.wait();
-            }
+        if (viewer_->app_params.ref_name.empty()) {
+            // Unfortunatedly has to happen in lockstep with rendering
+            threads_->Enqueue(*update_cache_tasks_).wait();
+            ray_renderer_->ResolveSpatialCache(*ray_scene_, parallel_for);
         }
-        ray_renderer_->ResolveSpatialCache(*ray_scene_, parallel_for);
-        { // Render
-            std::vector<std::future<void>> ev(ray_reg_ctx_.size());
-            for (int i = 0; i < int(ray_reg_ctx_.size()); i++) {
-                ev[i] = threads_->Enqueue(render_task, i);
-            }
-            for (const std::future<void> &e : ev) {
-                e.wait();
-            }
+        if (viewer_->app_params.pt_denoise) {
+            threads_->Enqueue(*render_and_denoise_tasks_).wait();
+        } else {
+            threads_->Enqueue(*render_tasks_).wait();
         }
     } else {
-        ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[0]);
+        ray_renderer_->UpdateSpatialCache(*ray_scene_, ray_reg_ctx_[0][0]);
         ray_renderer_->ResolveSpatialCache(*ray_scene_);
-        ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0]);
+        ray_renderer_->RenderScene(*ray_scene_, ray_reg_ctx_[0][0]);
         for (int i = 0;
-             i < unet_filter_passes_count_ && ray_reg_ctx_[0].iteration > 1 && viewer_->app_params.pt_denoise; ++i) {
-            ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0]);
+             i < unet_props_.pass_count && ray_reg_ctx_[0][0].iteration > 1 && viewer_->app_params.pt_denoise; ++i) {
+            ray_renderer_->DenoiseImage(i, ray_reg_ctx_[0][0]);
         }
     }
 
