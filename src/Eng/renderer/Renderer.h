@@ -64,7 +64,7 @@ class Renderer {
         if (rp_read_exposure_.exposure() > 0.0f) {
             return rp_read_exposure_.exposure();
         }
-        return 1.0f;
+        return std::min(std::max(1.0f, min_exposure_), max_exposure_);
     }
     void set_pre_exposure(const float exposure) { pre_exposure_ = exposure; }
 
