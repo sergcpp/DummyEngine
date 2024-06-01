@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = spirv_tools
-	commit = 669de633df1166c1309d6a73c2c499275f6c1265
+	branch = exposure_read
+	commit = 211993326f41a11a4e1d1317cb30a6faf6652857
 	method = merge
 	cmdver = 0.4.6
-	parent = c196ca2ba87cbb248a5a614fe5f572c650e571b2
+	parent = 308c9fc7e889fe10b4b1142bcdd5904add285682
