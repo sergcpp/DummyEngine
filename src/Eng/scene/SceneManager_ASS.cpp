@@ -166,10 +166,6 @@ void ReadAllFiles_MT_r(Eng::assets_context_t &ctx, const std::filesystem::path &
         if (std::filesystem::is_directory(entry.path())) {
             ReadAllFiles_MT_r(ctx, entry.path(), callback, threads, events);
         } else {
-            if (events.size() > 64) {
-                events.front().wait();
-                events.pop_front();
-            }
             events.push_back(threads->Enqueue([entry, &ctx, callback]() { callback(ctx, entry.path()); }));
         }
     }
@@ -638,7 +634,7 @@ bool Eng::SceneManager::PrepareAssets(const char *in_folder, const char *out_fol
 
         Handler *handler = g_asset_handlers.Find(ext);
         if (!handler) {
-            //ctx.log->Info("No handler found for %s", in_file.generic_string().c_str());
+            // ctx.log->Info("No handler found for %s", in_file.generic_string().c_str());
             return;
         }
 
