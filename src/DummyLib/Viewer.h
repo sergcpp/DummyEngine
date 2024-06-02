@@ -74,5 +74,6 @@ class Viewer : public Eng::ViewerBase {
 
     static void PrepareAssets(const char *platform = "all");
     static bool HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
+                               Ren::SmallVectorImpl<std::string, alignof(std::string)> &,
                                Ren::SmallVectorImpl<std::string, alignof(std::string)> &);
 };

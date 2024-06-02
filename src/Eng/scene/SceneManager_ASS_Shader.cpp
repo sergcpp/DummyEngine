@@ -57,7 +57,8 @@ bool Eng::SceneManager::ResolveIncludes(assets_context_t &ctx, const char *in_fi
 }
 
 bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                       Ren::SmallVectorImpl<std::string> &out_dependencies) {
+                                       Ren::SmallVectorImpl<std::string> &out_dependencies,
+                                       Ren::SmallVectorImpl<std::string> &out_outputs) {
     std::remove(out_file);
 
     std::vector<std::string> permutations;
@@ -314,6 +315,8 @@ bool Eng::SceneManager::HCompileShader(assets_context_t &ctx, const char *in_fil
             if (sh_output != eShaderOutput::VK_SPIRV && use_spv14) {
                 continue;
             }
+
+            out_outputs.push_back(output_file);
 
             if (sh_output == eShaderOutput::GLSL) {
                 // write preprocessed file

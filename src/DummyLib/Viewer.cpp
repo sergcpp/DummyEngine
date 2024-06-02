@@ -268,7 +268,7 @@ void Viewer::PrepareAssets(const char *platform) {
 }
 
 bool Viewer::HConvTEIToDict(Eng::assets_context_t &ctx, const char *in_file, const char *out_file,
-                            Ren::SmallVectorImpl<std::string> &) {
+                            Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &) {
     ctx.log->Info("Prep %s", out_file);
 
     struct dict_link_t {

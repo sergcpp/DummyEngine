@@ -158,7 +158,8 @@ class SceneManager {
     bool Serve(int texture_budget = 1, bool animate_texture_lod = true);
 
     using ConvertAssetFunc = std::function<bool(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                                Ren::SmallVectorImpl<std::string> &out_dependencies)>;
+                                                Ren::SmallVectorImpl<std::string> &out_dependencies,
+                                                Ren::SmallVectorImpl<std::string> &out_outputs)>;
     static void RegisterAsset(const char *in_ext, const char *out_ext, const ConvertAssetFunc &convert_func);
     static bool PrepareAssets(const char *in_folder, const char *out_folder, const char *platform,
                               Sys::ThreadPool *p_threads, Ren::ILog *log);
@@ -303,49 +304,52 @@ class SceneManager {
     static void InitASTCCodec();
 
     static bool HSkip(assets_context_t &ctx, const char *in_file, const char *out_file,
-                      Ren::SmallVectorImpl<std::string> &);
+                      Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
     static bool HCopy(assets_context_t &ctx, const char *in_file, const char *out_file,
-                      Ren::SmallVectorImpl<std::string> &);
+                      Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
 
     // image textures
     static bool HConvToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                            Ren::SmallVectorImpl<std::string> &);
+                            Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
     static bool HConvToDDS_old(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &);
+                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
     static bool HConvToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                           Ren::SmallVectorImpl<std::string> &out_dependencies);
+                           Ren::SmallVectorImpl<std::string> &out_dependencies, Ren::SmallVectorImpl<std::string> &);
     static bool HConvHDRToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                              Ren::SmallVectorImpl<std::string> &out_dependencies);
+                              Ren::SmallVectorImpl<std::string> &out_dependencies, Ren::SmallVectorImpl<std::string> &);
 
     static bool HConvHDRToRGBM(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &);
+                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
 
     // probe textures
     static bool HConvImgToDDS(assets_context_t &ctx, const char *in_file, const char *out_file,
-                              Ren::SmallVectorImpl<std::string> &);
+                              Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
     static bool HConvImgToASTC(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &);
+                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
 
     // shaders
     static bool ResolveIncludes(assets_context_t &ctx, const char *in_file, std::string &output,
                                 Ren::SmallVectorImpl<std::string> &out_dependencies);
     static bool HCompileShader(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &out_dependencies);
+                               Ren::SmallVectorImpl<std::string> &out_dependencies,
+                               Ren::SmallVectorImpl<std::string> &out_outputs);
 
     // meshes
     static bool HConvGLTFToMesh(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                Ren::SmallVectorImpl<std::string> &out_dependencies);
+                                Ren::SmallVectorImpl<std::string> &out_dependencies,
+                                Ren::SmallVectorImpl<std::string> &);
 
     // materials
     static bool HPreprocessMaterial(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                    Ren::SmallVectorImpl<std::string> &out_dependencies);
+                                    Ren::SmallVectorImpl<std::string> &out_dependencies,
+                                    Ren::SmallVectorImpl<std::string> &);
 
     // scenes
     static bool HPreprocessJson(assets_context_t &ctx, const char *in_file, const char *out_file,
-                                Ren::SmallVectorImpl<std::string> &);
+                                Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
 
     // fonts
     static bool HConvTTFToFont(assets_context_t &ctx, const char *in_file, const char *out_file,
-                               Ren::SmallVectorImpl<std::string> &);
+                               Ren::SmallVectorImpl<std::string> &, Ren::SmallVectorImpl<std::string> &);
 };
 } // namespace Eng
