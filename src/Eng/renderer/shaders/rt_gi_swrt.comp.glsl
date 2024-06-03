@@ -134,6 +134,7 @@ void main() {
 
     vec4 ray_origin_vs = g_shrd_data.view_from_clip * ray_origin_cs;
     ray_origin_vs /= ray_origin_vs.w;
+    const float view_z = -ray_origin_vs.z;
 
     vec3 view_ray_vs = normalize(ray_origin_vs.xyz);
     vec3 gi_ray_vs = SampleDiffuseVector(normal_vs, icoord, 0);
@@ -145,7 +146,7 @@ void main() {
     // Bias to avoid self-intersection
     // TODO: use flat normal here
     ray_origin_ws.xyz += 0.001 * normal_ws;//offset_ray(ray_origin_ws.xyz, normal_ws);
-    float _cone_width = g_params.pixel_spread_angle * (-ray_origin_vs.z);
+    float _cone_width = g_params.pixel_spread_angle * view_z;
 
     const float t_min = 0.0;
     const float t_max = 100.0;

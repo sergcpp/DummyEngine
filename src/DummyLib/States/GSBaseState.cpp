@@ -794,7 +794,9 @@ void GSBaseState::Draw() {
                 front_list_ = (front_list_ + 1) % 2;
 
                 if (invalidate_view_) {
-                    renderer_->reset_accumulation();
+                    if (renderer_->settings.taa_mode == Eng::eTAAMode::Static) {
+                        renderer_->reset_accumulation();
+                    }
                     invalidate_view_ = false;
                 }
             }

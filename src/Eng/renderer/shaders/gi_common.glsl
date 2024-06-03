@@ -6,7 +6,7 @@ float GetEdgeStoppingNormalWeight(vec3 normal_p, vec3 normal_q, float sigma) {
 }
 
 vec2 GetGeometryWeightParams(float plane_dist_sensitivity, vec3 Xv, vec3 Nv, float scale) {
-    const float MeterToUnitsMultiplier = 0.0;
+    const float MeterToUnitsMultiplier = 1.0;
 
     float a = scale * plane_dist_sensitivity / (Xv.z + MeterToUnitsMultiplier);
     float b = -dot(Nv, Xv) * a;

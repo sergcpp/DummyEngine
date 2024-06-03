@@ -105,7 +105,7 @@ class Renderer {
 
     // FrameBuf probe_sample_buf_;
     Ren::Tex2DRef shadow_map_tex_;
-    Ren::SamplerRef shadow_map_val_sampler_;
+    Ren::SamplerRef nearest_sampler_;
     Ren::Tex2DRef down_tex_4x_;
     Ren::Framebuffer blur_tex_fb_[2], down_tex_4x_fb_;
     eTAAMode taa_mode_ = eTAAMode::Off;

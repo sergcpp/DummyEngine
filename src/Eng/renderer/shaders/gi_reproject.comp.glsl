@@ -100,7 +100,7 @@ THE SOFTWARE.
 #define REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT 1.5
 #define DISOCCLUSION_NORMAL_WEIGHT 1.4
 #define DISOCCLUSION_DEPTH_WEIGHT 0.4
-#define DISOCCLUSION_THRESHOLD 0.9
+#define DISOCCLUSION_THRESHOLD 0.95
 
 /* mediump */ float GetLuminanceWeight(/* mediump */ vec3 val) {
     /* mediump */ float luma = Luminance(val.xyz);
@@ -144,49 +144,6 @@ moments_t EstimateLocalNeighbourhoodInGroup(ivec2 group_thread_id) {
     return ret;
 }
 
-vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflected_ray_length) {
-    float z = texelFetch(g_depth_tex, dispatch_thread_id, 0).r;
-    vec3 ray_vs = vec3(uv, z);
-
-    vec2 unjitter = g_shrd_data.taa_info.xy;
-#if defined(VULKAN)
-    unjitter.y = -unjitter.y;
-#endif
-
-    { // project from screen space to view space
-        ray_vs.y = (1.0 - ray_vs.y);
-        ray_vs.xy = 2.0 * ray_vs.xy - 1.0;
-        ray_vs.xy -= unjitter;
-        vec4 projected = g_shrd_data.view_from_clip * vec4(ray_vs, 1.0);
-        ray_vs = projected.xyz / projected.w;
-    }
-
-    // We start out with reconstructing the ray length in view space.
-    // This includes the portion from the camera to the reflecting surface as well as the portion from the surface to the hit position.
-    float surface_depth = length(ray_vs);
-    float ray_length = surface_depth + reflected_ray_length;
-
-    // We then perform a parallax correction by shooting a ray of the same length "straight through" the reflecting surface and reprojecting the tip of that ray to the previous frame.
-    ray_vs /= surface_depth; // == normalize(ray_vs)
-    ray_vs *= ray_length;
-    vec3 hit_position_ws; // This is the "fake" hit position if we would follow the ray straight through the surface.
-    { // project from view space to world space
-        // TODO: use matrix without translation here
-        vec4 projected = g_shrd_data.world_from_view * vec4(ray_vs, 1.0);
-        hit_position_ws = projected.xyz;
-    }
-
-    vec2 prev_hit_position;
-    { // project to screen space of previous frame
-        vec4 projected = g_shrd_data.prev_clip_from_world_no_translation * vec4(hit_position_ws - g_shrd_data.prev_cam_pos.xyz, 1.0);
-        projected.xyz /= projected.w;
-        projected.xy = 0.5 * projected.xy + 0.5;
-        projected.y = (1.0 - projected.y);
-        prev_hit_position = projected.xy;
-    }
-    return prev_hit_position;
-}
-
 /* mediump */ float GetDisocclusionFactor(/* mediump */ vec3 normal, /* mediump */ vec3 history_normal, float linear_depth, float history_linear_depth) {
     /* mediump */ float factor = 1.0;
     //factor *= exp(-abs(1.0 - max(0.0, dot(normal, history_normal))) * DISOCCLUSION_NORMAL_WEIGHT);
@@ -194,7 +151,7 @@ vec2 GetHitPositionReprojection(ivec2 dispatch_thread_id, vec2 uv, float reflect
     return factor;
 }
 
-void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size,
+void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size, float exposure,
                       /* mediump */ out float disocclusion_factor, out vec2 reprojection_uv,
                       /* mediump */ out vec4 reprojection) {
     moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
@@ -202,108 +159,103 @@ void PickReprojection(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scr
     vec2 uv = (vec2(dispatch_thread_id) + vec2(0.5)) / vec2(screen_size);
     /* mediump */ vec3 normal = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x).xyz;
     /* mediump */ vec3 history_normal;
+
+    vec2 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xy;
+    vec2 surf_repr_uv = uv - motion_vector;
+
+    /* mediump */ vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
+    surf_history.rgb *= exposure;
+    /* mediump */ vec3 surf_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
     float history_linear_depth;
 
-    {
-        vec2 motion_vector = texelFetch(g_velocity_tex, ivec2(dispatch_thread_id), 0).xy;
-        vec2 surf_repr_uv = uv - motion_vector;
 
-        /* mediump */ vec4 surf_history = textureLod(g_gi_hist_tex, surf_repr_uv, 0.0);
-        /* mediump */ vec3 surf_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, surf_repr_uv, 0.0).x).xyz;
+    // Surface reflection
+    history_normal = surf_normal;
+    float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
+    history_linear_depth = LinearizeDepth(surf_history_depth, g_shrd_data.clip_info);
+    reprojection_uv = surf_repr_uv;
+    reprojection = surf_history;
 
-        // Reject surface reprojection based on simple distance
-        if (length2(surf_history.rgb - local_neighborhood.mean) < REPROJECT_SURFACE_DISCARD_VARIANCE_WEIGHT * length(local_neighborhood.variance) ||
-            true) {
-            // Surface reflection
-            history_normal = surf_normal;
-            float surf_history_depth = textureLod(g_depth_hist_tex, surf_repr_uv, 0.0).x;
-            history_linear_depth = LinearizeDepth(surf_history_depth, g_shrd_data.clip_info);
-            reprojection_uv = surf_repr_uv;
-            reprojection = surf_history;
-        } else {
-            disocclusion_factor = 0.0;
-            return;
-        }
 
-        float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
-        float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
-        // Determine disocclusion factor based on history
-        disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+    float depth = texelFetch(g_depth_tex, ivec2(dispatch_thread_id), 0).x;
+    float linear_depth  = LinearizeDepth(depth, g_shrd_data.clip_info);
+    // Determine disocclusion factor based on history
+    disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
 
-        if (disocclusion_factor > DISOCCLUSION_THRESHOLD) {
-            return;
-        }
+    if (disocclusion_factor > DISOCCLUSION_THRESHOLD) {
+        return;
+    }
 
-        // Try to find the closest sample in the vicinity if we are not convinced of a disocclusion
-        if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
-            vec2 closest_uv = reprojection_uv;
-            vec2 dudv = 1.0 / vec2(screen_size);
+    // Try to find the closest sample in the vicinity if we are not convinced of a disocclusion
+    if (disocclusion_factor < DISOCCLUSION_THRESHOLD && false) {
+        vec2 closest_uv = reprojection_uv;
+        vec2 dudv = 1.0 / vec2(screen_size);
 
-            const int SearchRadius = 1;
-            for (int y = -SearchRadius; y <= SearchRadius; ++y) {
-                for (int x = -SearchRadius; x <= SearchRadius; ++x) {
-                    vec2 uv = reprojection_uv + vec2(x, y) * dudv;
-                    /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
-                    float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
-                    float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
-                    /* mediump */ float weight = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-                    if (weight > disocclusion_factor) {
-                        disocclusion_factor = weight;
-                        closest_uv = uv;
-                        reprojection_uv = closest_uv;
-                    }
+        const int SearchRadius = 1;
+        for (int y = -SearchRadius; y <= SearchRadius; ++y) {
+            for (int x = -SearchRadius; x <= SearchRadius; ++x) {
+                vec2 uv = reprojection_uv + vec2(x, y) * dudv;
+                /* mediump */ vec3 history_normal = UnpackNormalAndRoughness(textureLod(g_norm_hist_tex, uv, 0.0).x).xyz;
+                float history_depth = textureLod(g_depth_hist_tex, uv, 0.0).x;
+                float history_linear_depth = LinearizeDepth(history_depth, g_shrd_data.clip_info);
+                /* mediump */ float weight = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+                if (weight > disocclusion_factor) {
+                    disocclusion_factor = weight;
+                    closest_uv = uv;
+                    reprojection_uv = closest_uv;
                 }
             }
-            reprojection = textureLod(g_gi_hist_tex, reprojection_uv, 0.0);
         }
-
-        // Try to get rid of potential leaks at bilinear interpolation level
-        if (disocclusion_factor < DISOCCLUSION_THRESHOLD) {
-            // If we've got a discarded history, try to construct a better sample out of 2x2 interpolation neighborhood
-            // Helps quite a bit on the edges in movement
-            float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
-            float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
-            ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
-
-            /* mediump */ vec4 reprojection00 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
-            /* mediump */ vec4 reprojection10 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
-            /* mediump */ vec4 reprojection01 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
-            /* mediump */ vec4 reprojection11 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
-
-            /* mediump */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
-            /* mediump */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
-            /* mediump */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
-            /* mediump */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
-
-            float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
-            float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
-            float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
-            float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
-
-            /* mediump */ vec4 w;
-            // Initialize with occlusion weights
-            w.x = GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            w.y = GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            w.z = GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            w.w = GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
-            // And then mix in bilinear weights
-            w.x = w.x * (1.0 - uvx) * (1.0 - uvy);
-            w.y = w.y * (uvx) * (1.0 - uvy);
-            w.z = w.z * (1.0 - uvx) * (uvy);
-            w.w = w.w * (uvx) * (uvy);
-            /* mediump */ float ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
-            // normalize
-            w /= ws;
-
-            /* mediump */ vec3 history_normal;
-            float history_linear_depth;
-            reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
-            history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
-            history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
-            disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
-        }
-        disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
+        reprojection = textureLod(g_gi_hist_tex, reprojection_uv, 0.0);
+        reprojection.rgb *= exposure;
     }
+
+    // Try to get rid of potential leaks at bilinear interpolation level
+    if (disocclusion_factor < DISOCCLUSION_THRESHOLD && false) {
+        // If we've got a discarded history, try to construct a better sample out of 2x2 interpolation neighborhood
+        // Helps quite a bit on the edges in movement
+        float uvx = fract(float(screen_size.x) * reprojection_uv.x + 0.5);
+        float uvy = fract(float(screen_size.y) * reprojection_uv.y + 0.5);
+        ivec2 reproject_texel_coords = ivec2(vec2(screen_size) * reprojection_uv - vec2(0.5));
+
+        /* mediump */ vec4 reprojection00 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(0, 0), 0);
+        /* mediump */ vec4 reprojection10 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(1, 0), 0);
+        /* mediump */ vec4 reprojection01 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(0, 1), 0);
+        /* mediump */ vec4 reprojection11 = texelFetch(g_gi_hist_tex, reproject_texel_coords + ivec2(1, 1), 0);
+
+        /* mediump */ vec3 normal00 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x).xyz;
+        /* mediump */ vec3 normal10 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x).xyz;
+        /* mediump */ vec3 normal01 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x).xyz;
+        /* mediump */ vec3 normal11 = UnpackNormalAndRoughness(texelFetch(g_norm_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x).xyz;
+
+        float depth00 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 0), 0).x, g_shrd_data.clip_info);
+        float depth10 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 0), 0).x, g_shrd_data.clip_info);
+        float depth01 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(0, 1), 0).x, g_shrd_data.clip_info);
+        float depth11 = LinearizeDepth(texelFetch(g_depth_hist_tex, reproject_texel_coords + ivec2(1, 1), 0).x, g_shrd_data.clip_info);
+
+        /* mediump */ vec4 w;
+        // Initialize with occlusion weights
+        w.x = GetDisocclusionFactor(normal, normal00, linear_depth, depth00) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.y = GetDisocclusionFactor(normal, normal10, linear_depth, depth10) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.z = GetDisocclusionFactor(normal, normal01, linear_depth, depth01) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        w.w = GetDisocclusionFactor(normal, normal11, linear_depth, depth11) > DISOCCLUSION_THRESHOLD / 2.0 ? 1.0 : 0.0;
+        // And then mix in bilinear weights
+        w.x = w.x * (1.0 - uvx) * (1.0 - uvy);
+        w.y = w.y * (uvx) * (1.0 - uvy);
+        w.z = w.z * (1.0 - uvx) * (uvy);
+        w.w = w.w * (uvx) * (uvy);
+        /* mediump */ float ws = max(w.x + w.y + w.z + w.w, 1.0e-3);
+        // normalize
+        w /= ws;
+
+        /* mediump */ vec3 history_normal;
+        float history_linear_depth;
+        reprojection = reprojection00 * w.x + reprojection10 * w.y + reprojection01 * w.z + reprojection11 * w.w;
+        history_linear_depth = depth00 * w.x + depth10 * w.y + depth01 * w.z + depth11 * w.w;
+        history_normal = normal00 * w.x + normal10 * w.y + normal01 * w.z + normal11 * w.w;
+        disocclusion_factor = GetDisocclusionFactor(normal, history_normal, linear_depth, history_linear_depth);
+    }
+    disocclusion_factor = disocclusion_factor < DISOCCLUSION_THRESHOLD ? 0.0 : disocclusion_factor;
 }
 
 void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_size, int max_samples, float exposure) {
@@ -324,9 +276,8 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
         /* mediump */ float disocclusion_factor;
         vec2 reprojection_uv;
         /* mediump */ vec4 reprojection;
-        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size,
+        PickReprojection(ivec2(dispatch_thread_id), ivec2(group_thread_id), screen_size, exposure,
                          disocclusion_factor, reprojection_uv, reprojection);
-        reprojection.xyz *= exposure;
 
         if (all(greaterThan(reprojection_uv, vec2(0.0))) && all(lessThan(reprojection_uv, vec2(1.0)))) {
             /* mediump */ float prev_variance = textureLod(g_variance_hist_tex, reprojection_uv, 0.0).x;
@@ -344,7 +295,7 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
                 imageStore(g_out_variance_img, ivec2(dispatch_thread_id), vec4(variance_mix));
                 imageStore(g_out_sample_count_img, ivec2(dispatch_thread_id), vec4(sample_count));
                 // Mix in reprojection for radiance mip computation
-                gi = mix(gi, reprojection, 0.3);
+                //gi = mix(gi, reprojection, 0.3);
             }
         } else {
             imageStore(g_out_reprojected_img, ivec2(dispatch_thread_id), vec4(0.0));

@@ -325,18 +325,16 @@ void Eng::Renderer::AddBuffersUpdatePass(CommonBuffers &common_buffers) {
                 shrd_data.rt_clip_info = Ren::Vec4f{near * far, near, far, std::log2(1.0f + far / near)};
             }
 
-            { // rotator for GI prefilter
-                const float rand_angle = rand_.GetNormalizedFloat() * 2.0f * Ren::Pi<float>();
-                const float ca = std::cos(rand_angle);
-                const float sa = std::sin(rand_angle);
-                view_state_.rand_rotators[0] = Ren::Vec4f{ca, sa, -sa, ca};
-            }
+            const float GoldenRatio = 1.61803398875f;
+
             { // 2 rotators for GI blur (perpendicular to each other)
-                const float rand_angle = rand_.GetNormalizedFloat() * 2.0f * Ren::Pi<float>();
+                float _unused;
+                const float rand_angle =
+                    std::modf(float(view_state_.frame_index) * GoldenRatio, &_unused) * 2.0f * Ren::Pi<float>();
                 const float ca = std::cos(rand_angle);
                 const float sa = std::sin(rand_angle);
-                view_state_.rand_rotators[1] = Ren::Vec4f{-sa, ca, -ca, sa};
-                view_state_.rand_rotators[2] = Ren::Vec4f{ca, sa, -sa, ca};
+                view_state_.rand_rotators[0] = Ren::Vec4f{-sa, ca, -ca, sa};
+                view_state_.rand_rotators[1] = Ren::Vec4f{ca, sa, -sa, ca};
             }
 
             const Ren::Vec3f &cam_pos = p_list_->draw_cam.world_position();
@@ -1049,8 +1047,7 @@ void Eng::Renderer::AddDeferredShadingPass(const CommonBuffers &common_buffers, 
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::NORMAL_TEX_SLOT, *normal_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SPECULAR_TEX_SLOT, *spec_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_TEX_SLOT, *shad_tex.ref},
-            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref,
-             shadow_map_val_sampler_.get()},
+            {Ren::eBindTarget::Tex2DSampled, GBufferShade::SHADOW_VAL_TEX_SLOT, *shad_tex.ref, nearest_sampler_.get()},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SSAO_TEX_SLOT, *ssao_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::GI_TEX_SLOT, *gi_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, GBufferShade::SUN_SHADOW_TEX_SLOT, *sun_shadow_tex.ref},

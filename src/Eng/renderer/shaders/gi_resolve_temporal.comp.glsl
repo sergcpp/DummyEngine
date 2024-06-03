@@ -31,6 +31,7 @@ layout (binding = BIND_UB_SHARED_DATA_BUF, std140) uniform SharedDataBlock {
 
 layout(binding = NORM_TEX_SLOT) uniform sampler2D g_norm_tex;
 layout(binding = AVG_GI_TEX_SLOT) uniform sampler2D g_avg_gi_tex;
+layout(binding = FALLBACK_TEX_SLOT) uniform sampler2D g_fallback_tex;
 layout(binding = GI_TEX_SLOT) uniform sampler2D g_gi_tex;
 layout(binding = REPROJ_GI_TEX_SLOT) uniform sampler2D g_reproj_gi_tex;
 layout(binding = VARIANCE_TEX_SLOT) uniform sampler2D g_variance_tex;
@@ -200,14 +201,15 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
 
     {
         /* mediump */ float sample_count = texelFetch(g_sample_count_tex, dispatch_thread_id, 0).x;
-        vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
-        /* mediump */ vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;
+        const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
+        const vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;
+        const vec3 fallback_radiance = texelFetch(g_fallback_tex, dispatch_thread_id, 0).rgb * exposure;
 
         /* mediump */ vec4 old_signal = texelFetch(g_reproj_gi_tex, dispatch_thread_id, 0);
         old_signal.xyz *= exposure;
         moments_t local_neighborhood = EstimateLocalNeighbourhoodInGroup(group_thread_id);
         // Clip history based on the current local statistics
-        /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.rgb - avg_radiance)) * history_clip_weight * 1.4;
+        /* mediump */ vec3 color_std = (sqrt(local_neighborhood.variance) + length(local_neighborhood.mean.rgb - fallback_radiance)) * history_clip_weight * 1.4;
         local_neighborhood.mean.rgb = mix(local_neighborhood.mean.rgb, avg_radiance, 0.2);
         /* mediump */ vec3 radiance_min = local_neighborhood.mean.rgb - color_std;
         /* mediump */ vec3 radiance_max = local_neighborhood.mean.rgb + color_std;
@@ -217,11 +219,11 @@ void ResolveTemporal(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 scre
         /* mediump */ float accumulation_speed = 1.0 / max(sample_count, 1.0);
         /* mediump */ float weight = (1.0 - accumulation_speed);
         // Blend with average for small sample count
-        new_signal.rgb = mix(new_signal.rgb, avg_radiance.rgb, 1.0 / max(sample_count + 1.0, 1.0));
+        new_signal.rgb = mix(new_signal.rgb, fallback_radiance, 1.0 / max(sample_count + 1.0, 1.0));
         // Clip outliers
         {
-            /* mediump */ vec3 radiance_min = avg_radiance - color_std * 1.0;
-            /* mediump */ vec3 radiance_max = avg_radiance + color_std * 1.0;
+            /* mediump */ vec3 radiance_min = fallback_radiance - color_std * 1.0;
+            /* mediump */ vec3 radiance_max = fallback_radiance + color_std * 1.0;
             new_signal.rgb = ClipAABB(radiance_min, radiance_max, new_signal.rgb);
         }
         // Blend with history

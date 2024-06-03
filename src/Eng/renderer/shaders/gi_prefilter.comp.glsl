@@ -162,13 +162,32 @@ void Resolve(ivec2 group_thread_id, /* mediump */ vec3 avg_radiance, sample_t ce
     /* mediump */ vec4 accumulated_radiance = center.radiance * accumulated_weight;
     /* mediump */ float accumulated_variance = center.variance * accumulated_weight * accumulated_weight;
     /* mediump */ float variance_weight = max(PREFILTER_VARIANCE_BIAS, 1.0 - exp(-(center.variance * PREFILTER_VARIANCE_WEIGHT)));
+    // First 15 numbers of Halton(2, 3) streteched to [-3, 3]
+    const uint sample_count = 15;
+    const ivec2 sample_offsets[] = {
+        ivec2(0, 1),
+        ivec2(-2, 1),
+        ivec2(2, -3),
+        ivec2(-3, 0),
+        ivec2(1, 2),
+        ivec2(-1, -2),
+        ivec2(3, 0),
+        ivec2(-3, 3),
+        ivec2(0, -3),
+        ivec2(-1, -1),
+        ivec2(2, 1),
+        ivec2(-2, -2),
+        ivec2(1, 0),
+        ivec2(0, 2),
+        ivec2(3, -1)
+    };
 
-    for (int i = 0; i < 16; ++i) {
-        ivec2 new_idx = group_thread_id + ivec2(RotateVector(g_params.rotator, 4.0 * g_Poisson16[i].xy));
+    for (int i = 0; i < sample_count; ++i) {
+        ivec2 new_idx = group_thread_id + sample_offsets[i];
         sample_t neighbor = LoadFromSharedMemory(new_idx);
 
-        /* mediump */ float weight = GetGaussianWeight(g_Poisson16[i].z);
-        weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
+        /* mediump */ float weight = 1.0;
+        //weight *= GetEdgeStoppingNormalWeight(center.normal, neighbor.normal);
         weight *= GetEdgeStoppingDepthWeight(center.depth, neighbor.depth);
         weight *= GetRadianceWeight(avg_radiance, neighbor.radiance.rgb, center.variance);
         weight *= variance_weight;
@@ -199,9 +218,9 @@ void Prefilter(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_siz
     /* mediump */ vec4 resolved_radiance = center.radiance;
     /* mediump */ float resolved_variance = center.variance;
 
-    bool needs_denoiser = center.variance > 0.0 /*&& IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w)*/;
+    const bool needs_denoiser = true;//center.variance > 0.0 /*&& IsGlossyReflection(center.normal.w) && !IsMirrorReflection(center.normal.w)*/;
     if (needs_denoiser) {
-        vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
+        const vec2 uv8 = (vec2(dispatch_thread_id) + 0.5) / RoundUp8(screen_size);
         /* mediump */ vec3 avg_radiance = textureLod(g_avg_gi_tex, uv8, 0.0).rgb * exposure;
         Resolve(group_thread_id, avg_radiance, center, resolved_radiance, resolved_variance);
     }

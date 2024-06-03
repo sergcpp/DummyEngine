@@ -128,6 +128,18 @@ float GetGaussianWeight(float r) {
     return exp( -0.66 * r * r );
 }
 
+const vec3 g_Special8[8] = vec3[8](
+    // https://www.desmos.com/calculator/abaqyvswem
+    vec3( -1.00               ,  0.00               , 1.0 ),
+    vec3(  0.00               ,  1.00               , 1.0 ),
+    vec3(  1.00               ,  0.00               , 1.0 ),
+    vec3(  0.00               , -1.00               , 1.0 ),
+    vec3( -0.25 * SQRT_2      ,  0.25 * SQRT_2      , 0.5 ),
+    vec3(  0.25 * SQRT_2      ,  0.25 * SQRT_2      , 0.5 ),
+    vec3(  0.25 * SQRT_2      , -0.25 * SQRT_2      , 0.5 ),
+    vec3( -0.25 * SQRT_2      , -0.25 * SQRT_2      , 0.5 )
+);
+
 // Acos(x) (approximate)
 // http://fooplot.com/#W3sidHlwZSI6MCwiZXEiOiJhY29zKHgpIiwiY29sb3IiOiIjMDAwMDAwIn0seyJ0eXBlIjowLCJlcSI6InNxcnQoMS14KSpzcXJ0KDIpIiwiY29sb3IiOiIjRjIwQzBDIn0seyJ0eXBlIjoxMDAwLCJ3aW5kb3ciOlsiMCIsIjEiLCIwIiwiMiJdLCJzaXplIjpbMTE1MCw5MDBdfV0-
 #define _AcosApprox(x) (sqrt(2.0) * sqrt(saturate(1.0 - (x))))
@@ -230,7 +242,7 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     const float RadiusScale = 1.0;
 #endif
 
-    const float InitialBlurRadius = 0.025;
+    const float InitialBlurRadius = 0.05;
 
     /* mediump */ vec4 sum = texelFetch(g_gi_tex, dispatch_thread_id, 0);
     /* mediump */ vec2 total_weight = vec2(1.0);
@@ -243,7 +255,7 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
     vec4 kernel_rotator = GetBlurKernelRotation(uvec2(dispatch_thread_id), g_params.rotator, g_params.frame_index.x);
 
     for (int i = 0; i < 8; ++i) {
-        vec3 offset = g_Poisson8[i];
+        vec3 offset = g_Special8[i];
         vec2 uv = GetKernelSampleCoordinates(g_shrd_data.clip_from_view, offset, center_point_vs, TvBv[0], TvBv[1], kernel_rotator);
 
         float neighbor_depth = LinearizeDepth(textureLod(g_depth_tex, uv, 0.0).x, g_shrd_data.clip_info);
@@ -264,6 +276,10 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         weight *= GetEdgeStoppingNormalWeight(center_normal_ws, neighbor_normal_ws);
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
+
+        //if (pix_uv.x < 0.5) {
+        //    weight *= 0.0;
+        //}
 
         //const float normalWeightParams = 0.0;
         //const vec2 hitDistanceWeightParams = vec2(0.0, 0.0);
@@ -298,11 +314,11 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
 }
 
 void main() {
-    uint packed_coords = g_tile_list[gl_WorkGroupID.x];
-    ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
-    ivec2  dispatch_group_id = dispatch_thread_id / 8;
-    uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
-    uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
+    const uint packed_coords = g_tile_list[gl_WorkGroupID.x];
+    const ivec2 dispatch_thread_id = ivec2(packed_coords & 0xffffu, (packed_coords >> 16) & 0xffffu) + ivec2(gl_LocalInvocationID.xy);
+    const ivec2  dispatch_group_id = dispatch_thread_id / 8;
+    const uvec2 remapped_group_thread_id = RemapLane8x8(gl_LocalInvocationIndex);
+    const uvec2 remapped_dispatch_thread_id = dispatch_group_id * 8 + remapped_group_thread_id;
 
     Blur2(ivec2(remapped_dispatch_thread_id), ivec2(remapped_group_thread_id), g_params.img_size.xy);
 }

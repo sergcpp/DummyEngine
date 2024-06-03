@@ -6,7 +6,6 @@
 INTERFACE_START(GIPrefilter)
 
 struct Params {
-    vec4 rotator;
     uvec2 img_size;
 };
 

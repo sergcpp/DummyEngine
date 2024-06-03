@@ -107,7 +107,7 @@ void main() {
 #endif // VULKAN
         uv.xy = 0.5 * uv.xy + 0.5;
 
-        out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point_cs, ray_origin_vs.xyz));
+        out_color = vec4(textureLod(color_tex, uv, 0.0).rgb, distance(hit_point_vs, ray_origin_vs.xyz));
     }
 
     { // schedule rt rays

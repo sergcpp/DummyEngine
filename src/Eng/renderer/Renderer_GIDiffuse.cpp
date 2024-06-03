@@ -26,7 +26,9 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
     using Stg = Ren::eStageBits;
     using Trg = Ren::eBindTarget;
 
-    if (settings.gi_quality == eGIQuality::Medium && frame_textures.gi_cache) {
+    RpResRef gi_fallback;
+
+    if (frame_textures.gi_cache) {
         // Skip expensive raytracing, sample GI cache probes to gather indirect lighting
         auto &probe_sample = rp_builder_.AddPass("PROBE SAMPLE");
 
@@ -53,11 +55,10 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
             params.format = Ren::eTexFormat::RawRGBA16F;
-            params.sampling.filter = Ren::eTexFilter::NoFilter;
+            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
             params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
 
-            frame_textures.gi = data->out_tex =
-                probe_sample.AddStorageImageOutput("GI Tex", params, Stg::ComputeShader);
+            gi_fallback = data->out_tex = probe_sample.AddStorageImageOutput("GI Tex", params, Stg::ComputeShader);
         }
 
         probe_sample.set_execute_cb([data, &persistent_data, this](RpBuilder &builder) {
@@ -95,14 +96,19 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             Ren::DispatchCompute(pi_probe_sample_[1], grp_count, bindings, &uniform_params, sizeof(uniform_params),
                                  builder.ctx().default_descr_alloc(), builder.ctx().log());
         });
+    } else {
+        gi_fallback = rp_builder_.MakeTextureResource(dummy_black_);
+    }
 
+    if (settings.gi_quality == eGIQuality::Medium) {
+        frame_textures.gi = gi_fallback;
         return;
     }
 
     // GI settings
     static const int SamplesPerQuad = 4;
     static const bool VarianceGuided = false;
-    static const bool EnableBlur = false;
+    static const bool EnableBlur = true;
 
     RpResRef flat_normals_tex;
 
@@ -189,6 +195,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
         struct PassData {
             RpResRef depth;
+            RpResRef spec_tex;
             RpResRef variance_history;
             RpResRef sobol, scrambling_tile, ranking_tile;
             RpResRef ray_counter;
@@ -199,7 +206,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
         auto *data = gi_classify.AllocPassData<PassData>();
         data->depth = gi_classify.AddTextureInput(frame_textures.depth, Stg::ComputeShader);
-        data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
+        data->spec_tex = gi_classify.AddTextureInput(frame_textures.specular, Stg::ComputeShader);
+        // data->variance_history = gi_classify.AddHistoryTextureInput("GI Variance", Stg::ComputeShader);
         data->sobol = gi_classify.AddStorageReadonlyInput(sobol_seq_buf_, Stg::ComputeShader);
         data->scrambling_tile = gi_classify.AddStorageReadonlyInput(scrambling_tile_1spp_buf_, Stg::ComputeShader);
         data->ranking_tile = gi_classify.AddStorageReadonlyInput(ranking_tile_1spp_buf_, Stg::ComputeShader);
@@ -240,7 +248,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
         gi_classify.set_execute_cb([this, data](RpBuilder &builder) {
             RpAllocTex &depth_tex = builder.GetReadTexture(data->depth);
-            RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
+            RpAllocTex &spec_tex = builder.GetReadTexture(data->spec_tex);
+            // RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_history);
             RpAllocBuf &sobol_buf = builder.GetReadBuffer(data->sobol);
             RpAllocBuf &scrambling_tile_buf = builder.GetReadBuffer(data->scrambling_tile);
             RpAllocBuf &ranking_tile_buf = builder.GetReadBuffer(data->ranking_tile);
@@ -269,7 +278,8 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             const Ren::Binding bindings[] = {
                 {Trg::Tex2DSampled, GIClassifyTiles::DEPTH_TEX_SLOT, *depth_tex.ref},
-                {Trg::Tex2DSampled, GIClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::Tex2DSampled, GIClassifyTiles::SPEC_TEX_SLOT, *spec_tex.ref},
+                //{Trg::Tex2DSampled, GIClassifyTiles::VARIANCE_TEX_SLOT, *variance_tex.ref},
                 {Trg::SBufRO, GIClassifyTiles::RAY_COUNTER_SLOT, *ray_counter_buf.ref},
                 {Trg::SBufRO, GIClassifyTiles::RAY_LIST_SLOT, *ray_list_buf.ref},
                 {Trg::SBufRO, GIClassifyTiles::TILE_LIST_SLOT, *tile_list_buf.ref},
@@ -540,7 +550,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->indir_args = gi_reproject.AddIndirectBufferInput(indir_disp_buf);
         data->indir_args_offset = 3 * sizeof(uint32_t);
 
-        { // Reprojected reflections texture
+        { // Reprojected gi texture
             Ren::Tex2DParams params;
             params.w = view_state_.scr_res[0];
             params.h = view_state_.scr_res[1];
@@ -716,7 +726,6 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 (view_state_.act_res[1] + GIPrefilter::LOCAL_GROUP_SIZE_Y - 1u) / GIPrefilter::LOCAL_GROUP_SIZE_Y, 1u};
 
             GIPrefilter::Params uniform_params;
-            uniform_params.rotator = view_state_.rand_rotators[0];
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
 
             Ren::DispatchComputeIndirect(pi_gi_prefilter_, *indir_args_buf.ref, data->indir_args_offset, bindings,
@@ -732,7 +741,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
         struct PassData {
             RpResRef shared_data;
-            RpResRef norm_tex, avg_gi_tex, gi_tex, reproj_gi_tex;
+            RpResRef norm_tex, avg_gi_tex, fallback_gi_tex, gi_tex, reproj_gi_tex;
             RpResRef variance_tex, sample_count_tex, tile_list;
             RpResRef exposure_tex;
             RpResRef indir_args;
@@ -744,6 +753,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
         data->shared_data = gi_temporal.AddUniformBufferInput(common_buffers.shared_data_res, Stg::ComputeShader);
         data->norm_tex = gi_temporal.AddTextureInput(frame_textures.normal, Stg::ComputeShader);
         data->avg_gi_tex = gi_temporal.AddTextureInput(avg_gi_tex, Stg::ComputeShader);
+        data->fallback_gi_tex = gi_temporal.AddTextureInput(gi_fallback, Stg::ComputeShader);
         data->gi_tex = gi_temporal.AddTextureInput(prefiltered_gi, Stg::ComputeShader);
         data->reproj_gi_tex = gi_temporal.AddTextureInput(reproj_gi_tex, Stg::ComputeShader);
         data->variance_tex = gi_temporal.AddTextureInput(variance_temp2_tex, Stg::ComputeShader);
@@ -780,6 +790,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
             RpAllocBuf &unif_sh_data_buf = builder.GetReadBuffer(data->shared_data);
             RpAllocTex &norm_tex = builder.GetReadTexture(data->norm_tex);
             RpAllocTex &avg_gi_tex = builder.GetReadTexture(data->avg_gi_tex);
+            RpAllocTex &fallback_gi_tex = builder.GetReadTexture(data->fallback_gi_tex);
             RpAllocTex &gi_tex = builder.GetReadTexture(data->gi_tex);
             RpAllocTex &reproj_gi_tex = builder.GetReadTexture(data->reproj_gi_tex);
             RpAllocTex &variance_tex = builder.GetReadTexture(data->variance_tex);
@@ -795,6 +806,7 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
                 {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::NORM_TEX_SLOT, *norm_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
+                {Trg::Tex2DSampled, GIResolveTemporal::FALLBACK_TEX_SLOT, *fallback_gi_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::GI_TEX_SLOT, *gi_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
                 {Trg::Tex2DSampled, GIResolveTemporal::VARIANCE_TEX_SLOT, *variance_tex.ref},
@@ -862,19 +874,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
-                                             //{Trg::Tex2DSampled, GIBlur::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref},
-                                             //{Trg::Tex2DSampled, GIBlur::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                             {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                             {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
+                {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
             GIBlur::Params uniform_params;
-            uniform_params.rotator = view_state_.rand_rotators[1];
+            uniform_params.rotator = view_state_.rand_rotators[0];
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 
@@ -933,19 +944,18 @@ void Eng::Renderer::AddDiffusePasses(const Ren::WeakTex2DRef &env_map, const Ren
 
             RpAllocTex &out_gi_tex = builder.GetWriteTexture(data->out_gi_tex);
 
-            const Ren::Binding bindings[] = {{Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
-                                             {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
-                                             //{Trg::Tex2DSampled, GIBlur::AVG_GI_TEX_SLOT, *avg_gi_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref},
-                                             //{Trg::Tex2DSampled, GIBlur::REPROJ_GI_TEX_SLOT, *reproj_gi_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
-                                             {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
-                                             {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
-                                             {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
+            const Ren::Binding bindings[] = {
+                {Trg::UBuf, BIND_UB_SHARED_DATA_BUF, *unif_sh_data_buf.ref},
+                {Trg::Tex2DSampled, GIBlur::DEPTH_TEX_SLOT, *depth_tex.ref},
+                {Trg::Tex2DSampled, GIBlur::NORM_TEX_SLOT, *norm_tex.ref},
+                {Trg::Tex2DSampled, GIBlur::GI_TEX_SLOT, *gi_tex.ref, nearest_sampler_.get()},
+                {Trg::Tex2DSampled, GIBlur::SAMPLE_COUNT_TEX_SLOT, *sample_count_tex.ref},
+                {Trg::Tex2DSampled, GIBlur::VARIANCE_TEX_SLOT, *variance_tex.ref},
+                {Trg::SBufRO, GIBlur::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
+                {Trg::Image2D, GIBlur::OUT_DENOISED_IMG_SLOT, *out_gi_tex.ref}};
 
             GIBlur::Params uniform_params;
-            uniform_params.rotator = view_state_.rand_rotators[2];
+            uniform_params.rotator = view_state_.rand_rotators[1];
             uniform_params.img_size = Ren::Vec2u{uint32_t(view_state_.act_res[0]), uint32_t(view_state_.act_res[1])};
             uniform_params.frame_index[0] = uint32_t(view_state_.frame_index) & 0xFFu;
 

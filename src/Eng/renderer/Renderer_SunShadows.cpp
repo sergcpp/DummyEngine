@@ -653,7 +653,7 @@ void Eng::Renderer::AddLQSunShadowsPass(const CommonBuffers &common_buffers, con
             {Ren::eBindTarget::Tex2DSampled, SunShadows::NORM_TEX_SLOT, *norm_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_SLOT, *shadow_tex.ref},
             {Ren::eBindTarget::Tex2DSampled, SunShadows::SHADOW_TEX_VAL_SLOT, *shadow_tex.ref,
-             shadow_map_val_sampler_.get()},
+             nearest_sampler_.get()},
             {Ren::eBindTarget::Image2D, SunShadows::OUT_SHADOW_IMG_SLOT, *out_shadow_tex.ref}};
 
         const Ren::Vec3u grp_count = Ren::Vec3u{

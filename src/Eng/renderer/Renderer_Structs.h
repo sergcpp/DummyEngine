@@ -355,7 +355,7 @@ struct ViewState {
     Ren::Vec3f prev_cam_pos;
     Ren::Mat4f clip_from_world_no_translation, prev_clip_from_world_no_translation, down_buf_view_from_world,
         prev_clip_from_view;
-    mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[3];
+    mutable Ren::Vec4f clip_info, frustum_info, rand_rotators[2];
     bool is_multisampled = false;
 };
 

@@ -429,13 +429,12 @@ Eng::Renderer::Renderer(Ren::Context &ctx, ShaderLoader &sh, Random &rand, Sys::
         shadow_map_tex_ = ctx_.LoadTexture2D("Shadow Map", params, ctx_.default_mem_allocs(), &status);
     }
 
-    { // shadow map value sampler
+    { // nearest sampler
         Ren::SamplingParams sampler_params;
-        // sampler_params.filter = Ren::eTexFilter::BilinearNoMipmap;
         sampler_params.wrap = Ren::eTexWrap::ClampToEdge;
 
         Ren::eSamplerLoadStatus status;
-        shadow_map_val_sampler_ = ctx_.LoadSampler(sampler_params, &status);
+        nearest_sampler_ = ctx_.LoadSampler(sampler_params, &status);
     }
 
     {

@@ -16,6 +16,7 @@ const int LOCAL_GROUP_SIZE_X = 8;
 const int LOCAL_GROUP_SIZE_Y = 8;
 
 const int DEPTH_TEX_SLOT = 2;
+const int SPEC_TEX_SLOT = 3;
 const int VARIANCE_TEX_SLOT = 4;
 const int RAY_COUNTER_SLOT = 5;
 const int RAY_LIST_SLOT = 6;
