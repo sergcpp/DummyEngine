@@ -208,14 +208,11 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
     return (float(value) + 0.5) / 256.0;
 }
 
-vec4 SampleRandomVector2D(uvec2 pixel) {
-    //return vec4(fract(SampleRandomNumber(pixel, 0, 4u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-    //            fract(SampleRandomNumber(pixel, 0, 5u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-    //            fract(SampleRandomNumber(pixel, 0, 6u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-    //            fract(SampleRandomNumber(pixel, 0, 7u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
-
-    return vec4(SampleRandomNumber(pixel, g_params.frame_index, 4u), SampleRandomNumber(pixel, g_params.frame_index, 5u),
-                SampleRandomNumber(pixel, g_params.frame_index, 6u), SampleRandomNumber(pixel, g_params.frame_index, 7u));
+vec4 SampleRandomVector2D(const uvec2 pixel) {
+    return vec4(SampleRandomNumber(pixel, g_params.frame_index, 4u),
+                SampleRandomNumber(pixel, g_params.frame_index, 5u),
+                SampleRandomNumber(pixel, g_params.frame_index, 6u),
+                SampleRandomNumber(pixel, g_params.frame_index, 7u));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
@@ -228,9 +225,9 @@ void main() {
     const uint group_index = gl_LocalInvocationIndex;
     const uvec2 group_thread_id = RemapLane8x8(group_index);
     const uvec2 dispatch_thread_id = group_id * 8u + group_thread_id;
-    if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
-        return;
-    }
+    //if (dispatch_thread_id.x >= g_params.img_size.x || dispatch_thread_id.y >= g_params.img_size.y) {
+    //    return;
+    //}
 
     ClassifyTiles(dispatch_thread_id, group_thread_id, g_params.img_size,
                   g_params.samples_and_guided.x, g_params.samples_and_guided.y != 0u);

@@ -194,13 +194,13 @@ void ClassifyTiles(uvec2 dispatch_thread_id, uvec2 group_thread_id, float roughn
 //
 float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_dimension) {
     // wrap arguments
-    uint pixel_i = pixel.x & 127u;
-    uint pixel_j = pixel.y & 127u;
+    const uint pixel_i = pixel.x & 127u;
+    const uint pixel_j = pixel.y & 127u;
     sample_index = sample_index & 255u;
     sample_dimension = sample_dimension & 255u;
 
     // xor index based on optimized ranking
-    uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
+    const uint ranked_sample_index = sample_index ^ texelFetch(g_ranking_tile_tex, int((sample_dimension & 7u) + (pixel_i + pixel_j * 128u) * 8u)).r;
 
     // fetch value in sequence
     uint value = texelFetch(g_sobol_seq_tex, int(sample_dimension + ranked_sample_index * 256u)).r;
@@ -212,11 +212,11 @@ float SampleRandomNumber(in uvec2 pixel, in uint sample_index, in uint sample_di
     return (float(value) + 0.5) / 256.0;
 }
 
-vec4 SampleRandomVector2D(uvec2 pixel) {
-    return vec4(fract(SampleRandomNumber(pixel, 0, 0u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                fract(SampleRandomNumber(pixel, 0, 1u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                fract(SampleRandomNumber(pixel, 0, 2u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO),
-                fract(SampleRandomNumber(pixel, 0, 3u) + float(g_params.frame_index & 0xFFu) * GOLDEN_RATIO));
+vec4 SampleRandomVector2D(const uvec2 pixel) {
+    return vec4(SampleRandomNumber(pixel, g_params.frame_index, 0u),
+                SampleRandomNumber(pixel, g_params.frame_index, 1u),
+                SampleRandomNumber(pixel, g_params.frame_index, 2u),
+                SampleRandomNumber(pixel, g_params.frame_index, 3u));
 }
 
 layout (local_size_x = LOCAL_GROUP_SIZE_X, local_size_y = LOCAL_GROUP_SIZE_Y, local_size_z = 1) in;
