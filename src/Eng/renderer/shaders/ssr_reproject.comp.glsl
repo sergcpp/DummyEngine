@@ -448,5 +448,5 @@ void main() {
 
     const float exposure = texelFetch(g_exp_tex, ivec2(0), 0).x;
 
-    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 0.7 /* temporal_stability */, 64, exposure);
+    Reproject(remapped_dispatch_thread_id, remapped_group_thread_id, g_params.img_size, 0.7 /* temporal_stability */, 8, exposure);
 }
