@@ -5,8 +5,8 @@
 ;
 [subrepo]
 	remote = Eng
-	branch = denoising2
-	commit = 61e03141966af2b1699b429dcc7f141469806077
+	branch = denoising3
+	commit = 9b79d8cf43d0cfd7dcb6f13fbd7716aab13eb896
 	method = merge
 	cmdver = 0.4.6
-	parent = af2545a24d8b20b0eba77eab3932690f524c38fa
+	parent = bbc8cc950c14992cf7f690567c6b5424af2c0631
