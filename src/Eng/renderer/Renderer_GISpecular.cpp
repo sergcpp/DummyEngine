@@ -30,7 +30,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
     static const int SamplesPerQuad = 1;
     static const bool VarianceGuided = true;
 
-    RpResRef ray_counter, raylen_tex;
+    RpResRef ray_counter;
 
     { // Prepare atomic counter and ray length texture
         auto &ssr_prepare = rp_builder_.AddPass("SSR PREPARE");
@@ -49,26 +49,12 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
 
             ray_counter = data->ray_counter = ssr_prepare.AddTransferOutput("Ray Counter", desc);
         }
-        { // ray length
-            Ren::Tex2DParams params;
-            params.w = view_state_.scr_res[0];
-            params.h = view_state_.scr_res[1];
-            params.format = Ren::eTexFormat::RawR16F;
-            params.sampling.filter = Ren::eTexFilter::BilinearNoMipmap;
-            params.sampling.wrap = Ren::eTexWrap::ClampToEdge;
-
-            raylen_tex = data->ray_length_tex = ssr_prepare.AddTransferImageOutput("Refl Ray Length", params);
-        }
 
         ssr_prepare.set_execute_cb([data](RpBuilder &builder) {
             RpAllocBuf &ray_counter_buf = builder.GetWriteBuffer(data->ray_counter);
-            RpAllocTex &raylen_tex = builder.GetWriteTexture(data->ray_length_tex);
 
             Ren::Context &ctx = builder.ctx();
             ray_counter_buf.ref->Fill(0, ray_counter_buf.ref->size(), 0, ctx.current_cmd_buf());
-
-            static const float clear_color[4] = {};
-            Ren::ClearImage(*raylen_tex.ref, clear_color, ctx.current_cmd_buf());
         });
     }
 
@@ -239,7 +225,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             RpResRef color_tex, normal_tex, depth_hierarchy;
 
             RpResRef in_ray_list, indir_args, inout_ray_counter;
-            RpResRef refl_tex, raylen_tex, out_ray_list;
+            RpResRef refl_tex, out_ray_list;
         };
 
         auto *data = ssr_trace_hq.AllocPassData<PassData>();
@@ -253,7 +239,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         data->indir_args = ssr_trace_hq.AddIndirectBufferInput(indir_disp_buf);
         ray_counter = data->inout_ray_counter = ssr_trace_hq.AddStorageOutput(ray_counter, Stg::ComputeShader);
         refl_tex = data->refl_tex = ssr_trace_hq.AddStorageImageOutput(refl_tex, Stg::ComputeShader);
-        raylen_tex = data->raylen_tex = ssr_trace_hq.AddStorageImageOutput(raylen_tex, Stg::ComputeShader);
 
         { // packed ray list
             RpBufDesc desc;
@@ -273,7 +258,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
 
             RpAllocTex &out_refl_tex = builder.GetWriteTexture(data->refl_tex);
-            RpAllocTex &out_raylen_tex = builder.GetWriteTexture(data->raylen_tex);
             RpAllocBuf &inout_ray_counter_buf = builder.GetWriteBuffer(data->inout_ray_counter);
             RpAllocBuf &out_ray_list_buf = builder.GetWriteBuffer(data->out_ray_list);
 
@@ -285,7 +269,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
                 {Trg::Tex2DSampled, SSRTraceHQ::NOISE_TEX_SLOT, *noise_tex.ref},
                 {Trg::SBufRO, SSRTraceHQ::IN_RAY_LIST_SLOT, *in_ray_list_buf.ref},
                 {Trg::Image2D, SSRTraceHQ::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-                {Trg::Image2D, SSRTraceHQ::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref},
                 {Trg::SBufRW, SSRTraceHQ::INOUT_RAY_COUNTER_SLOT, *inout_ray_counter_buf.ref},
                 {Trg::SBufRW, SSRTraceHQ::OUT_RAY_LIST_SLOT, *out_ray_list_buf.ref}};
 
@@ -399,7 +382,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             }
 
             refl_tex = data->out_refl_tex = rt_refl.AddStorageImageOutput(refl_tex, stage);
-            raylen_tex = data->out_raylen_tex = rt_refl.AddStorageImageOutput(raylen_tex, stage);
 
             rp_rt_reflections_.Setup(rp_builder_, &view_state_, &bindless, data);
             rt_refl.set_executor(&rp_rt_reflections_);
@@ -416,7 +398,7 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             RpResRef shared_data;
             RpResRef depth_tex, norm_tex, velocity_tex;
             RpResRef depth_hist_tex, norm_hist_tex, refl_hist_tex, variance_hist_tex, sample_count_hist_tex;
-            RpResRef refl_tex, raylen_tex;
+            RpResRef refl_tex;
             RpResRef exposure_tex;
             RpResRef tile_list;
             RpResRef indir_args;
@@ -435,7 +417,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
         data->refl_hist_tex = ssr_reproject.AddHistoryTextureInput("GI Specular", Stg::ComputeShader);
         data->variance_hist_tex = ssr_reproject.AddHistoryTextureInput("Variance", Stg::ComputeShader);
         data->refl_tex = ssr_reproject.AddTextureInput(refl_tex, Stg::ComputeShader);
-        data->raylen_tex = ssr_reproject.AddTextureInput(raylen_tex, Stg::ComputeShader);
         data->exposure_tex = ssr_reproject.AddHistoryTextureInput("Exposure", Stg::ComputeShader);
 
         data->tile_list = ssr_reproject.AddStorageReadonlyInput(tile_list, Stg::ComputeShader);
@@ -501,7 +482,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
             RpAllocTex &variance_hist_tex = builder.GetReadTexture(data->variance_hist_tex);
             RpAllocTex &sample_count_hist_tex = builder.GetReadTexture(data->sample_count_hist_tex);
             RpAllocTex &relf_tex = builder.GetReadTexture(data->refl_tex);
-            RpAllocTex &raylen_tex = builder.GetReadTexture(data->raylen_tex);
             RpAllocTex &exposure_tex = builder.GetReadTexture(data->exposure_tex);
             RpAllocBuf &tile_list_buf = builder.GetReadBuffer(data->tile_list);
             RpAllocBuf &indir_args_buf = builder.GetReadBuffer(data->indir_args);
@@ -521,7 +501,6 @@ void Eng::Renderer::AddHQSpecularPasses(const Ren::WeakTex2DRef &lm_direct, cons
                 {Trg::Tex2DSampled, SSRReproject::VARIANCE_HIST_TEX_SLOT, *variance_hist_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::SAMPLE_COUNT_HIST_TEX_SLOT, *sample_count_hist_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::REFL_TEX_SLOT, *relf_tex.ref},
-                {Trg::Tex2DSampled, SSRReproject::RAYLEN_TEX_SLOT, *raylen_tex.ref},
                 {Trg::Tex2DSampled, SSRReproject::EXPOSURE_TEX_SLOT, *exposure_tex.ref},
                 {Trg::SBufRO, SSRReproject::TILE_LIST_BUF_SLOT, *tile_list_buf.ref},
                 {Trg::Image2D, SSRReproject::OUT_REPROJECTED_IMG_SLOT, *out_reprojected_tex.ref},

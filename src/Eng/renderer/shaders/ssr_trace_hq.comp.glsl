@@ -35,8 +35,7 @@ layout(std430, binding = IN_RAY_LIST_SLOT) readonly buffer InRayList {
     uint g_in_ray_list[];
 };
 
-layout(binding = OUT_REFL_IMG_SLOT, r11f_g11f_b10f) uniform image2D g_out_color_img;
-layout(binding = OUT_RAYLEN_IMG_SLOT, r16f) uniform image2D g_out_raylen_img;
+layout(binding = OUT_REFL_IMG_SLOT, rgba16f) uniform image2D g_out_color_img;
 layout(std430, binding = OUT_RAY_LIST_SLOT) writeonly buffer OutRayList {
     uint g_out_ray_list[];
 };
@@ -142,26 +141,22 @@ void main() {
 #endif
     }
 
-    float ray_len = hit_found ? distance(hit_point_vs, ray_origin_vs.xyz) : 0.0;
+    const float ray_len = hit_found ? distance(hit_point_vs, ray_origin_vs.xyz) : 0.0;
 
-    imageStore(g_out_color_img, pix_uvs, vec4(out_color, 0.0));
-    imageStore(g_out_raylen_img, pix_uvs, vec4(ray_len));
+    imageStore(g_out_color_img, pix_uvs, vec4(out_color, ray_len));
 
-    ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
+    const ivec2 copy_target = pix_uvs ^ 1; // flip last bit to find the mirrored coords along the x and y axis within a quad
     if (copy_horizontal) {
-        ivec2 copy_coords = ivec2(copy_target.x, pix_uvs.y);
-        imageStore(g_out_color_img, copy_coords, vec4(out_color, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
+        const ivec2 copy_coords = ivec2(copy_target.x, pix_uvs.y);
+        imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
     }
     if (copy_vertical) {
-        ivec2 copy_coords = ivec2(pix_uvs.x, copy_target.y);
-        imageStore(g_out_color_img, copy_coords, vec4(out_color, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
+        const ivec2 copy_coords = ivec2(pix_uvs.x, copy_target.y);
+        imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
     }
     if (copy_diagonal) {
-        ivec2 copy_coords = copy_target;
-        imageStore(g_out_color_img, copy_coords, vec4(out_color, 0.0));
-        imageStore(g_out_raylen_img, copy_coords, vec4(ray_len));
+        const ivec2 copy_coords = copy_target;
+        imageStore(g_out_color_img, copy_coords, vec4(out_color, ray_len));
     }
 }
 

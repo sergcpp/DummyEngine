@@ -23,7 +23,6 @@ layout(binding = NORM_TEX_SLOT) uniform usampler2D g_norm_tex;
 layout(binding = DEPTH_HIST_TEX_SLOT) uniform sampler2D g_depth_hist_tex;
 layout(binding = NORM_HIST_TEX_SLOT) uniform usampler2D g_norm_hist_tex;
 layout(binding = REFL_TEX_SLOT) uniform sampler2D g_refl_tex;
-layout(binding = RAYLEN_TEX_SLOT) uniform sampler2D g_raylen_tex;
 layout(binding = REFL_HIST_TEX_SLOT) uniform sampler2D g_refl_hist_tex;
 layout(binding = VELOCITY_TEX_SLOT) uniform sampler2D g_velocity_tex;
 layout(binding = VARIANCE_HIST_TEX_SLOT) uniform sampler2D g_variance_hist_tex;
@@ -353,11 +352,12 @@ void Reproject(uvec2 dispatch_thread_id, uvec2 group_thread_id, uvec2 screen_siz
     /* mediump */ float sample_count = 0.0;
     /* mediump */ float roughness;
     vec3 normal;
-    vec4 fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
-    normal = fetch.xyz;
-    roughness = fetch.w;
-    /* mediump */ vec3 refl = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0).xyz * exposure;
-    /* mediump */ float ray_len = texelFetch(g_raylen_tex, ivec2(dispatch_thread_id), 0).x;
+    const vec4 normal_fetch = UnpackNormalAndRoughness(texelFetch(g_norm_tex, ivec2(dispatch_thread_id), 0).x);
+    normal = normal_fetch.xyz;
+    roughness = normal_fetch.w;
+    const vec4 fetch = texelFetch(g_refl_tex, ivec2(dispatch_thread_id), 0);
+    /* mediump */ vec3 refl = fetch.xyz * exposure;
+    /* mediump */ float ray_len = fetch.w;
 
     if (IsGlossyReflection(roughness)) {
         /* mediump */ float disocclusion_factor;

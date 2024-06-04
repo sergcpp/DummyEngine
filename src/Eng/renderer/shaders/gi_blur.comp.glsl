@@ -277,35 +277,8 @@ void Blur2(ivec2 dispatch_thread_id, ivec2 group_thread_id, uvec2 screen_size) {
         //weight *= GetEdgeStoppingDepthWeight(center_depth_lin, neighbor_depth);
         weight *= GetEdgeStoppingPlanarDistanceWeight(geometry_weight_params, center_normal_vs, neighbor_point_vs);
 
-        //if (pix_uv.x < 0.5) {
-        //    weight *= 0.0;
-        //}
-
-        //const float normalWeightParams = 0.0;
-        //const vec2 hitDistanceWeightParams = vec2(0.0, 0.0);
-
-        //const vec2 minwh = vec2(0.0, 0.2);
-
-        //vec2 ww = GetCombinedWeight(weight,
-        //                            geometry_weight_params, center_normal_vs, neighbor_point_vs,
-        //                            normalWeightParams, center_normal_ws, vec4(neighbor_normal_ws, 1.0),
-        //                            hitDistanceWeightParams, 1.0 /*hit_dist*/, minwh, vec2(0.0));
-
-        //float d = dot(center_normal_vs, neighbor_point_vs);
-        //float w2 = SmoothStep01(1.0 - abs(d * geometry_weight_params.x + geometry_weight_params.y));
-
-        //sum += ww.xxxy * textureLod(g_gi_tex, uv, 0.0);
-        //total_weight += ww;
-
-        //if (dot(center_normal_ws, neighbor_normal_ws) < 0.9) weight = 0.0;
-
-#ifdef PER_PIXEL_KERNEL_ROTATION
-        //if (pix_uv.x > 0.5)
-#endif
-        {
         sum += weight * textureLod(g_gi_tex, uv, 0.0);
         total_weight += vec2(weight);
-        }
     }
 
     sum /= total_weight.xxxy;

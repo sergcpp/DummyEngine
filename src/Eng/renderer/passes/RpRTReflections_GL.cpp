@@ -49,7 +49,6 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
     }
 
     RpAllocTex &out_refl_tex = builder.GetWriteTexture(pass_data_->out_refl_tex);
-    RpAllocTex &out_raylen_tex = builder.GetWriteTexture(pass_data_->out_raylen_tex);
 
     Ren::Context &ctx = builder.ctx();
     Ren::ApiContext *api_ctx = ctx.api_ctx();
@@ -119,8 +118,7 @@ void Eng::RpRTReflections::Execute_SWRT(RpBuilder &builder) {
         {Ren::eBindTarget::Tex2DSampled, RTReflections::LTC_LUTS_TEX_SLOT, *ltc_luts_tex.ref},
         {Ren::eBindTarget::TBuf, RTReflections::CELLS_BUF_SLOT, *cells_buf.tbos[0]},
         {Ren::eBindTarget::TBuf, RTReflections::ITEMS_BUF_SLOT, *items_buf.tbos[0]},
-        {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref},
-        {Ren::eBindTarget::Image2D, RTReflections::OUT_RAYLEN_IMG_SLOT, *out_raylen_tex.ref}};
+        {Ren::eBindTarget::Image2D, RTReflections::OUT_REFL_IMG_SLOT, *out_refl_tex.ref}};
     if (irradiance_tex) {
         bindings.emplace_back(Ren::eBindTarget::Tex2DArraySampled, RTReflections::IRRADIANCE_TEX_SLOT,
                               *irradiance_tex->arr);

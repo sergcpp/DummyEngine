@@ -51,7 +51,6 @@ struct RpRTReflectionsData {
     bool four_bounces = false;
 
     RpResRef out_refl_tex;
-    RpResRef out_raylen_tex;
 };
 
 class RpRTReflections : public RpExecutor {
