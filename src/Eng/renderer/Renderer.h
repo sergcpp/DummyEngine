@@ -93,7 +93,7 @@ class Renderer {
     Random &rand_;
     Sys::ThreadPool &threads_;
     SWcull_ctx cull_ctx_ = {};
-    Ren::ProgramRef blit_prog_, blit_ms_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_,
+    Ren::ProgramRef blit_prog_, blit_down_prog_, blit_gauss_prog_, blit_depth_prog_, blit_rgbm_prog_,
         blit_mipmap_prog_, blit_prefilter_prog_, blit_project_sh_prog_;
 
     Ren::Tex2DRef dummy_black_, dummy_white_, rand2d_8x8_, rand2d_dirs_4x4_, brdf_lut_, ltc_luts_, cone_rt_lut_,

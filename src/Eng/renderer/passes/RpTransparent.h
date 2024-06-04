@@ -13,7 +13,6 @@ class RpTransparent : public RpExecutor {
     bool initialized = false;
 
     // lazily initialized data
-    Ren::ProgramRef blit_ms_resolve_prog_;
     Ren::VertexInput draw_pass_vi_;
     Ren::RenderPass rp_transparent_;
     Ren::Framebuffer transparent_draw_fb_[Ren::MaxFramesInFlight][2], color_only_fb_[2], resolved_fb_, moments_fb_;

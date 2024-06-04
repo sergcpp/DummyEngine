@@ -46,12 +46,6 @@ void Eng::RpTransparent::LazyInit(Ren::Context &ctx, Eng::ShaderLoader &sh, RpAl
                                             Ren::eStoreOp::Store};
 
     if (!initialized) {
-        blit_ms_resolve_prog_ =
-            sh.LoadProgram(ctx, "internal/blit.vert.glsl", "internal/blit_ms_resolve.frag.glsl");
-        assert(blit_ms_resolve_prog_->ready());
-
-        ////////////////////////////////////////
-
         if (!rp_transparent_.Setup(ctx.api_ctx(), color_targets, depth_target, ctx.log())) {
             ctx.log()->Error("[RpOpaque::LazyInit]: Failed to init render pass!");
         }
